@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-09-18T19:21:03.146857+00:00",
+  "pdf_count": 80,
+  "readable_by_pdfinfo": 80,
+  "diagnostics": [
+    {
+      "reference_id": "cheng2026engram",
+      "pdfinfo_exit_code": 0,
+      "warnings": "Syntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary\nSyntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary\nSyntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary\nSyntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary\nSyntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary\nSyntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary\nSyntax Error (1077): Unterminated string\nSyntax Error (1083): End of file inside dictionary"
+    }
+  ],
+  "visual_inspection": [
+    {
+      "reference_id": "cheng2026engram",
+      "pages_checked": [
+        1
+      ],
+      "result": "Portada y resumen legibles pese a avisos de metadatos del PDF original."
+    },
+    {
+      "reference_id": "deepseek2026v41flash",
+      "pages_checked": [
+        1
+      ],
+      "result": "Portada, resumen y figuras legibles."
+    },
+    {
+      "reference_id": "liu2026tiem",
+      "pages_checked": [
+        1
+      ],
+      "result": "Portada, resumen y esquema legibles."
+    }
+  ],
+  "scope": "Validación de archivos y muestras visuales. No acredita lectura integral ni corrección científica de las publicaciones. Los originales no se han alterado."
+}
