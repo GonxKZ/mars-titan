@@ -3,7 +3,7 @@
     {
       "key": "O1",
       "title": "O1 · Datos multimodales y disponibilidad temporal",
-      "description": "Auditar FinMultiTime y construir un subconjunto con procedencia, calidad y disponibilidad temporal verificables. El hito se completa con una versión documentada de los datos, no con la descarga original."
+      "description": "Inventariar toda la copia de FinMultiTime y construir una muestra principal auditada con procedencia, calidad y disponibilidad temporal verificables. Se propone un piloto de hasta 64 activos y una muestra principal de 128 activos estadounidenses, sujetos a cobertura y recursos. Universo completo y China son ampliaciones condicionadas."
     },
     {
       "key": "O2",
@@ -111,6 +111,26 @@
       "name": "bloqueado",
       "color": "B60205",
       "description": "Impedimento concreto documentado. No indica avance."
+    },
+    {
+      "name": "macroeconomia",
+      "color": "1B6B53",
+      "description": "Indicadores macroeconómicos, publicaciones y revisiones históricas."
+    },
+    {
+      "name": "aprendizaje-continuo",
+      "color": "6F42C1",
+      "description": "Retención, interferencia, reaprendizaje y consolidación de memoria."
+    },
+    {
+      "name": "checkpoints",
+      "color": "0052CC",
+      "description": "Guardado coherente, recuperación y reanudación de ejecuciones."
+    },
+    {
+      "name": "fuentes-externas",
+      "color": "BF6C00",
+      "description": "Fuentes complementarias, condiciones de uso e ingesta de actualizaciones."
     }
   ],
   "issues": [
@@ -131,12 +151,12 @@
     },
     {
       "id": "MT-002",
-      "title": "MT-002 · Confirmar plantilla, calendario y requisitos con la dirección",
-      "body": "## Contexto\n\nLa guía remite al campus y al director para documentos y decisiones que no se pueden sustituir por supuestos.\n\n## Trabajo delimitado\n\n- Obtener plantilla, instrucciones, calendario real y manual de IA aplicable.\n- Registrar el estado de la propuesta y las validaciones exigidas por el uso real de herramientas y ayudas.\n\n## Criterios de aceptación\n\n- [ ] La versión de la plantilla y las fechas reales de las tres entregas y el predepósito quedan registradas.\n- [ ] Se acredita el estado de la propuesta sin confundir presentación con aprobación.\n- [ ] Se registra la validación y citación exigible de herramientas según Guía p. 22 y Reglamento art. 8.4, sin declaraciones ficticias.\n\n## Evidencia prevista\n\n- `docs/academic/requirements.md`\n- `docs/academic/decisions.md`\n- `docs/academic/calendar.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-001\n\n## Riesgo y prioridad\n\nP0: Evita preparar una entrega que incumpla requisitos formales. Las comunicaciones al director corresponden al estudiante. Esta issue no autoriza envíos automáticos.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-002 · Confirmar requisitos y calendario académico",
+      "body": "## Contexto\n\nLa guía remite al campus y al director para documentos y decisiones que no se pueden sustituir por supuestos.\n\n## Trabajo delimitado\n\n- Obtener plantilla, instrucciones, calendario real y manual de IA aplicable.\n- Registrar el estado de la propuesta y las validaciones exigidas por el uso real de herramientas y ayudas.\n\n## Criterios de aceptación\n\n- [ ] La versión de la plantilla y las fechas reales de las tres entregas y el predepósito quedan registradas.\n- [ ] Se acredita el estado de la propuesta sin confundir presentación con aprobación.\n- [ ] Se registra la validación y citación exigible de herramientas según Guía p. 22 y Reglamento art. 8.4, sin declaraciones ficticias.\n\n## Evidencia prevista\n\n- `docs/academic/requirements.md`\n- `docs/academic/decisions.md`\n- `docs/academic/calendar.md`\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-001\n\n## Riesgo y prioridad\n\nP0: Evita preparar una entrega que incumpla requisitos formales. Las comunicaciones al director corresponden al estudiante. Esta issue no autoriza envíos automáticos.",
       "labels": [
         "transversal",
-        "integridad-academica",
-        "redaccion"
+        "redaccion",
+        "integridad-academica"
       ],
       "milestone": null,
       "priority": "P0",
@@ -148,8 +168,8 @@
     },
     {
       "id": "MT-003",
-      "title": "MT-003 · Completar el estado del arte y mantener referencias verificables",
-      "body": "## Contexto\n\nLas revisiones iniciales necesitan una síntesis crítica vinculada a las decisiones finales del estudio.\n\n## Trabajo delimitado\n\n- Contrastar fuentes primarias y distinguir artículo completo, resumen y acceso pendiente.\n- Mantener catálogos, BibTeX, citas y copias locales con origen y permisos. Usar las herramientas de biblioteca existentes.\n\n## Criterios de aceptación\n\n- [ ] Cada afirmación central sobre datos, memoria, calibración y evaluación tiene una fuente leída y localizable.\n- [ ] Las adaptaciones propias se distinguen de reproducciones publicadas.\n- [ ] Las citas y la bibliografía final son coherentes. APA se aplica según la edición indicada por el campus, si la especifica.\n\n## Evidencia prevista\n\n- `docs/references/finance-review.md`\n- `docs/references/neural-review.md`\n- `docs/references/finance.bib`\n- `docs/references/neural.bib`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C4 · Marco teórico y referencias (10 %)\n\n## Dependencias\n\nMT-001\n\n## Riesgo y prioridad\n\nP1: Una atribución incorrecta o una referencia no leída debilita la justificación de la comparación.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-003 · Completar el estado del arte y las referencias",
+      "body": "## Contexto\n\nLas revisiones iniciales necesitan una síntesis crítica vinculada a las decisiones finales del estudio.\n\n## Trabajo delimitado\n\n- Contrastar fuentes primarias y distinguir artículo completo, resumen y acceso pendiente.\n- Mantener catálogos, BibTeX, citas y copias locales con origen y permisos. Usar las herramientas de biblioteca existentes.\n\n## Criterios de aceptación\n\n- [ ] Cada afirmación central sobre datos, memoria, calibración y evaluación tiene una fuente leída y localizable.\n- [ ] Las adaptaciones propias se distinguen de reproducciones publicadas.\n- [ ] Las citas y la bibliografía final son coherentes. APA se aplica según la edición indicada por el campus, si la especifica.\n\n## Evidencia prevista\n\n- `docs/references/finance-review.md`\n- `docs/references/neural-review.md`\n- `docs/references/finance.bib`\n- `docs/references/neural.bib`\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C4 · Marco teórico y referencias (10 %)\n\n## Dependencias\n\nMT-001\n\n## Riesgo y prioridad\n\nP1: Una atribución incorrecta o una referencia no leída debilita la justificación de la comparación.",
       "labels": [
         "bibliografia",
         "redaccion"
@@ -164,8 +184,8 @@
     },
     {
       "id": "MT-004",
-      "title": "MT-004 · Verificar el entorno científico con uv y CUDA explícita",
-      "body": "## Contexto\n\nLa base de mantenimiento existe. El entorno de entrenamiento debe verificarse antes de cualquier carga científica.\n\n## Trabajo delimitado\n\n- Fijar dependencias y comandos reproducibles mediante uv.\n- Comprobar nvidia-smi y torch.cuda.is_available(). Seleccionar cuda:0 y registrar hardware, controlador y build de PyTorch.\n- Definir el presupuesto experimental de 8 GB independientemente de la memoria física de la GPU.\n\n## Criterios de aceptación\n\n- [ ] Un entorno reproducible se reconstruye mediante uv y registra versiones y lockfile.\n- [ ] La comprobación CUDA identifica la RTX 4070 disponible o informa del impedimento concreto. No hay fallback silencioso a CPU.\n- [ ] Se registra el procedimiento de medición del pico de VRAM y se separan pruebas de calidad sin GPU de cargas de aprendizaje acelerables.\n\n## Evidencia prevista\n\n- `pyproject.toml`\n- `uv.lock`\n- `docs/engineering/environment.md`\n- `reports/environment/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nNinguna dependencia de otra tarea.\n\n## Riesgo y prioridad\n\nP0: Sin entorno medido no puede compararse el coste de soluciones ni afirmarse viabilidad bajo 8 GB.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-004 · Verificar el entorno con uv y CUDA",
+      "body": "## Contexto\n\nLa base de mantenimiento existe. El entorno de entrenamiento debe verificarse antes de cualquier carga científica.\n\n## Trabajo delimitado\n\n- Fijar dependencias y comandos reproducibles mediante uv.\n- Comprobar nvidia-smi y torch.cuda.is_available(). Seleccionar cuda:0 y registrar hardware, controlador y build de PyTorch.\n- Definir el presupuesto experimental de 8 GB independientemente de la memoria física de la GPU.\n\n## Criterios de aceptación\n\n- [ ] Un entorno reproducible se reconstruye mediante uv y registra versiones y lockfile.\n- [ ] La comprobación CUDA identifica la RTX 4070 disponible o informa del impedimento concreto. No hay fallback silencioso a CPU.\n- [ ] Se registra el procedimiento de medición del pico de VRAM y se separan pruebas de calidad sin GPU de cargas de aprendizaje acelerables.\n\n## Evidencia prevista\n\n- `pyproject.toml`\n- `uv.lock`\n- `docs/engineering/environment.md`\n- `reports/environment/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nNinguna dependencia de otra tarea.\n\n## Riesgo y prioridad\n\nP0: Sin entorno medido no puede compararse el coste de soluciones ni afirmarse viabilidad bajo 8 GB.",
       "labels": [
         "transversal",
         "reproducibilidad",
@@ -179,8 +199,8 @@
     },
     {
       "id": "MT-005",
-      "title": "MT-005 · Inventariar FinMultiTime y sus condiciones de uso",
-      "body": "## Contexto\n\nEl tamaño y cobertura de la copia local no se deducen del artículo ni de la ficha pública.\n\n## Trabajo delimitado\n\n- Inventariar archivos, mercados, activos, periodos y modalidades sin modificar dataset/.\n- Registrar procedencia, licencia declarada, límites de redistribución y huellas de versión.\n\n## Criterios de aceptación\n\n- [ ] Existe un manifiesto reproducible con recuentos por modalidad y mercado y fecha de auditoría.\n- [ ] Las discrepancias con las cifras del artículo y ficha están explicadas o registradas como abiertas.\n- [ ] Los datos de terceros permanecen fuera de Git y sus permisos no se infieren solo de su acceso público.\n\n## Evidencia prevista\n\n- `data/manifests/`\n- `docs/data/data-inventory.md`\n- `docs/data/permissions.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nNinguna dependencia de otra tarea.\n\n## Riesgo y prioridad\n\nP0: Es la entrada de todo el estudio. Una población o permiso mal descrito afecta a los resultados y a su difusión.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-005 · Inventariar FinMultiTime",
+      "body": "## Contexto\n\nEl inventario describe toda la copia local de FinMultiTime. La validación detallada de cada modalidad se realiza en sus tareas específicas y prioriza la muestra del estudio.\n\n## Trabajo delimitado\n\n- Recorrer archivos, mercados, activos, periodos y modalidades sin modificar dataset/. Registrar procedencia, huellas y condiciones de uso.\n- Distinguir archivos inventariados, inspeccionados y validados, y reconciliar los recuentos de toda la copia.\n\n## Criterios de aceptación\n\n- [ ] Todos los archivos tienen una entrada y un estado en un manifiesto reproducible, con fecha de inspección y recuentos por mercado y modalidad.\n- [ ] Las discrepancias con el artículo y la ficha pública quedan explicadas o registradas como pendientes, sin equiparar inventario y calidad.\n- [ ] Los permisos y límites de redistribución están documentados. Las auditorías de MT-006 a MT-011 y la selección de MT-012 reutilizan este inventario.\n\n## Evidencia prevista\n\n- `data/manifests/full-source/`\n- `docs/data/data-inventory.md`\n- `docs/data/permissions.md`\n- `reports/data/full-source-inventory.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nNinguna dependencia de otra tarea.\n\n## Riesgo y prioridad\n\nP0: Es la entrada de todo el estudio. Una población o permiso mal descrito afecta a los resultados y a su difusión.",
       "labels": [
         "datos",
         "reproducibilidad",
@@ -194,8 +214,8 @@
     },
     {
       "id": "MT-006",
-      "title": "MT-006 · Auditar precios, identificadores y sesgo de supervivencia",
-      "body": "## Contexto\n\nLa continuidad de identificadores, los ajustes corporativos y la selección de activos condicionan los retornos.\n\n## Trabajo delimitado\n\n- Comprobar OHLCV, duplicados, sesiones, cambios de ticker, splits y dividendos.\n- Reconstruir composición histórica y exclusiones cuando sea posible. Delimitar la muestra retrospectiva cuando no lo sea.\n\n## Criterios de aceptación\n\n- [ ] Se define un identificador estable y se documentan ajustes, bajas y tratamientos de valores imposibles.\n- [ ] La cobertura y las exclusiones se cuantifican por activo y fecha.\n- [ ] La data card distingue universo histórico reconstruido de universo seleccionado retrospectivamente y explicita supervivencia no corregible.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/prices.py`\n- `src/mars_titan/data/universe.py`\n- `tests/data/`\n- `reports/data/price-audit.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP0: Retornos incorrectos o supervivencia oculta pueden producir mejoras aparentes.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-006 · Auditar precios y universo histórico",
+      "body": "## Contexto\n\nLa continuidad de identificadores, los ajustes corporativos y la selección de activos condicionan los retornos.\n\n## Trabajo delimitado\n\n- Comprobar OHLCV, duplicados, sesiones, cambios de ticker, splits y dividendos.\n- Reconstruir composición histórica y exclusiones cuando sea posible. Delimitar la muestra retrospectiva cuando no lo sea.\n\n## Criterios de aceptación\n\n- [ ] Se define un identificador estable y se documentan ajustes, bajas y tratamientos de valores imposibles.\n- [ ] La cobertura y las exclusiones se cuantifican por activo y fecha.\n- [ ] La data card distingue universo histórico reconstruido de universo seleccionado retrospectivamente y explicita supervivencia no corregible.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/prices.py`\n- `src/mars_titan/data/universe.py`\n- `tests/data/`\n- `reports/data/price-audit.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP0: Retornos incorrectos o supervivencia oculta pueden producir mejoras aparentes.",
       "labels": [
         "datos",
         "metodologia"
@@ -210,8 +230,8 @@
     },
     {
       "id": "MT-007",
-      "title": "MT-007 · Normalizar noticias con disponibilidad conservadora y deduplicación",
-      "body": "## Contexto\n\nLas noticias con fecha sin hora no pueden darse por conocidas al comienzo de esa misma sesión.\n\n## Trabajo delimitado\n\n- Normalizar idioma, zona horaria, calendario y campos de publicación y disponibilidad.\n- Deduplicar sin borrar eventos distintos. Aplicar lag de una sesión negociable si solo existe fecha.\n\n## Criterios de aceptación\n\n- [ ] Cada noticia conserva procedencia, event_time y available_at o motivo de exclusión.\n- [ ] Los casos de fecha sola, publicación tras cierre, festivo y zona horaria cruzada tienen resultados esperados verificables.\n- [ ] La regla fecha-only lag 1 no usa días naturales por error y su sensibilidad queda prevista.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/news.py`\n- `tests/data/test_news_availability.py`\n- `docs/data/news-policy.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP0: La asignación temporal de texto es una fuente directa de fuga y debe quedar resuelta antes de entrenar.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-007 · Normalizar noticias y su disponibilidad",
+      "body": "## Contexto\n\nLas noticias con fecha sin hora no pueden darse por conocidas al comienzo de esa misma sesión.\n\n## Trabajo delimitado\n\n- Normalizar idioma, zona horaria, calendario y campos de publicación y disponibilidad.\n- Deduplicar sin borrar eventos distintos. Aplicar lag de una sesión negociable si solo existe fecha.\n\n## Criterios de aceptación\n\n- [ ] Cada noticia conserva procedencia, event_time y available_at o motivo de exclusión.\n- [ ] Los casos de fecha sola, publicación tras cierre, festivo y zona horaria cruzada tienen resultados esperados verificables.\n- [ ] La regla fecha-only lag 1 no usa días naturales por error y su sensibilidad queda prevista.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/news.py`\n- `tests/data/test_news_availability.py`\n- `docs/data/news-policy.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP0: La asignación temporal de texto es una fuente directa de fuga y debe quedar resuelta antes de entrenar.",
       "labels": [
         "datos",
         "metodologia"
@@ -226,8 +246,8 @@
     },
     {
       "id": "MT-008",
-      "title": "MT-008 · Reconstruir disponibilidad de fundamentales por filings",
-      "body": "## Contexto\n\nEl periodo contable y las tablas propagadas no acreditan cuándo se publicó una cifra.\n\n## Trabajo delimitado\n\n- Relacionar fundamentales con fecha de filing/publicación y revisiones documentadas.\n- Separar ausencia de datos, revisiones posteriores y fechas no acreditadas.\n\n## Criterios de aceptación\n\n- [ ] La entrada de cada cifra depende de su disponibilidad, nunca del cierre del trimestre.\n- [ ] Los fundamentales sin fecha fiable quedan fuera del experimento principal o en una sensibilidad explícita, sin rellenar retrospectivamente el pasado.\n- [ ] Se conserva la fuente de filing, versión y motivo de exclusión. Se distingue aceptación de disponibilidad pública.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/fundamentals.py`\n- `tests/data/test_fundamentals_availability.py`\n- `reports/data/filing-audit.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP0: La propagación contable retrospectiva puede invalidar el conjunto multimodal.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-008 · Reconstruir fundamentales por publicación",
+      "body": "## Contexto\n\nEl periodo contable y las tablas propagadas no acreditan cuándo se publicó una cifra.\n\n## Trabajo delimitado\n\n- Relacionar fundamentales con fecha de filing/publicación y revisiones documentadas.\n- Separar ausencia de datos, revisiones posteriores y fechas no acreditadas.\n\n## Criterios de aceptación\n\n- [ ] La entrada de cada cifra depende de su disponibilidad, nunca del cierre del trimestre.\n- [ ] Los fundamentales sin fecha fiable quedan fuera del experimento principal o en una sensibilidad explícita, sin rellenar retrospectivamente el pasado.\n- [ ] Se conserva la fuente de filing, versión y motivo de exclusión. Se distingue aceptación de disponibilidad pública.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/fundamentals.py`\n- `tests/data/test_fundamentals_availability.py`\n- `reports/data/filing-audit.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP0: La propagación contable retrospectiva puede invalidar el conjunto multimodal.",
       "labels": [
         "datos",
         "metodologia"
@@ -242,8 +262,8 @@
     },
     {
       "id": "MT-009",
-      "title": "MT-009 · Regenerar gráficos con ventanas truncadas al instante de decisión",
-      "body": "## Contexto\n\nLas imágenes semestrales pueden contener futuro y representan información de precios, no una fuente independiente.\n\n## Trabajo delimitado\n\n- Generar representaciones visuales a partir de OHLCV temporalmente permitido.\n- Fijar ventana, escala, resolución y caché con parámetros comunes a los modelos.\n\n## Criterios de aceptación\n\n- [ ] Ninguna imagen incorpora observaciones posteriores a su corte documentado.\n- [ ] La misma serie y configuración producen la misma imagen y huella.\n- [ ] Se documenta qué aporta la representación visual y se reserva su valor incremental para una ablación.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/charts.py`\n- `tests/data/test_charts_cutoff.py`\n- `configs/data/charts.yaml`\n- `data/derived/charts/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-006\n\n## Riesgo y prioridad\n\nP1: La imagen solo entra en la comparación si se puede acreditar su ventana histórica.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-009 · Generar gráficos con historia disponible",
+      "body": "## Contexto\n\nLas imágenes semestrales pueden contener futuro y representan información de precios, no una fuente independiente.\n\n## Trabajo delimitado\n\n- Generar representaciones visuales a partir de OHLCV temporalmente permitido.\n- Fijar ventana, escala, resolución y caché con parámetros comunes a los modelos.\n\n## Criterios de aceptación\n\n- [ ] Ninguna imagen incorpora observaciones posteriores a su corte documentado.\n- [ ] La misma serie y configuración producen la misma imagen y huella.\n- [ ] Se documenta qué aporta la representación visual y se reserva su valor incremental para una ablación.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/charts.py`\n- `tests/data/test_charts_cutoff.py`\n- `configs/data/charts.yaml`\n- `data/derived/charts/`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-006\n\n## Riesgo y prioridad\n\nP1: La imagen solo entra en la comparación si se puede acreditar su ventana histórica.",
       "labels": [
         "datos",
         "modelos"
@@ -258,8 +278,8 @@
     },
     {
       "id": "MT-010",
-      "title": "MT-010 · Auditar preentrenamiento y versionar representaciones congeladas",
-      "body": "## Contexto\n\nUn encoder publicado después del periodo de prueba introduce un límite histórico distinto del orden temporal de las observaciones.\n\n## Trabajo delimitado\n\n- Registrar checkpoint, revisión, fecha, corpus conocido, idioma y licencia de cada encoder.\n- Precomputar representaciones congeladas sin ajustar el extractor con test y compartirlas entre candidatos.\n\n## Criterios de aceptación\n\n- [ ] Cada caché identifica modelo, tokenizer, datos, configuración y hashes.\n- [ ] Se distingue experimento retrospectivo con encoder posterior de simulación históricamente disponible.\n- [ ] Hay una alternativa o análisis de sensibilidad sin preentrenamiento posterior cuando sea viable. Las limitaciones no corregibles quedan explícitas.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/embeddings.py`\n- `configs/encoders/`\n- `data/manifests/embeddings/`\n- `docs/data/pretraining-audit.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-007, MT-009, MT-004\n\n## Riesgo y prioridad\n\nP1: Un checkpoint moderno puede contaminar la interpretación histórica aunque los joins sean correctos.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-010 · Auditar y versionar codificadores congelados",
+      "body": "## Contexto\n\nUn codificador publicado después del periodo de prueba introduce un límite histórico distinto del orden temporal de las observaciones.\n\n## Trabajo delimitado\n\n- Registrar checkpoint, revisión, fecha, corpus conocido, idioma y licencia de cada codificador.\n- Precomputar representaciones congeladas sin ajustar el extractor con test y compartirlas entre candidatos.\n\n## Criterios de aceptación\n\n- [ ] Cada caché identifica modelo, tokenizer, datos, configuración y hashes.\n- [ ] Se distingue experimento retrospectivo con codificador posterior de simulación históricamente disponible.\n- [ ] Hay una alternativa o análisis de sensibilidad sin preentrenamiento posterior cuando sea viable. Las limitaciones no corregibles quedan explícitas.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/embeddings.py`\n- `configs/encoders/`\n- `data/manifests/embeddings/`\n- `docs/data/pretraining-audit.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-007, MT-009, MT-004\n\n## Riesgo y prioridad\n\nP1: Un checkpoint moderno puede contaminar la interpretación histórica aunque los joins sean correctos.",
       "labels": [
         "datos",
         "modelos",
@@ -277,10 +297,11 @@
     },
     {
       "id": "MT-011",
-      "title": "MT-011 · Construir contratos point-in-time y uniones as-of",
-      "body": "## Contexto\n\nTodas las modalidades deben compartir una política de disponibilidad comprobable.\n\n## Trabajo delimitado\n\n- Construir la tabla de eventos y uniones por disponibilidad, preservando máscaras, edad y procedencia.\n- Separar características, etiquetas y datos de evaluación. Ajustar imputación y escalado solo dentro del pasado permitido.\n\n## Criterios de aceptación\n\n- [ ] Una perturbación de registros futuros no cambia características de decisiones anteriores.\n- [ ] Se rechazan duplicados ambiguos, ventanas futuras y registros sin política de disponibilidad.\n- [ ] Hay ejemplos verificables de joins as-of, modalidades ausentes y transformaciones ajustadas sin test.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/events.py`\n- `src/mars_titan/data/contracts.py`\n- `tests/data/test_point_in_time.py`\n- `docs/data/schema.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-006, MT-007, MT-008\n\n## Riesgo y prioridad\n\nP0: Es un requisito de validez anterior a cualquier evaluación del predictor.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-011 · Construir el contrato temporal de datos",
+      "body": "## Contexto\n\nTodas las modalidades deben compartir una política de disponibilidad comprobable.\n\n## Trabajo delimitado\n\n- Construir la tabla de eventos y uniones por disponibilidad, preservando máscaras, edad y procedencia.\n- Separar características, etiquetas y datos de evaluación. Ajustar imputación y escalado solo dentro del pasado permitido.\n\n## Criterios de aceptación\n\n- [ ] Una perturbación de registros futuros no cambia características de decisiones anteriores.\n- [ ] Se rechazan duplicados ambiguos, ventanas futuras y registros sin política de disponibilidad.\n- [ ] Hay ejemplos verificables de joins as-of, modalidades ausentes y transformaciones ajustadas sin test.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/events.py`\n- `src/mars_titan/data/contracts.py`\n- `tests/data/test_point_in_time.py`\n- `docs/data/schema.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-006, MT-007, MT-008\n\n## Riesgo y prioridad\n\nP0: Es un requisito de validez anterior a cualquier evaluación del predictor.",
       "labels": [
         "datos",
+        "metodologia",
         "reproducibilidad"
       ],
       "milestone": "O1",
@@ -295,10 +316,11 @@
     },
     {
       "id": "MT-012",
-      "title": "MT-012 · Congelar el subconjunto experimental y su data card",
-      "body": "## Contexto\n\nEl experimento mínimo debe poder empezar con modalidades acreditadas. Imágenes y embeddings pueden incorporarse después mediante versiones.\n\n## Trabajo delimitado\n\n- Fijar universo, periodos, modalidades admitidas, exclusiones y limitaciones.\n- Generar un manifiesto inmutable del subconjunto mínimo y el informe de calidad.\n\n## Criterios de aceptación\n\n- [ ] Se publican recuentos antes y después de exclusiones y cobertura por modalidad, activo y periodo.\n- [ ] La versión mínima se reconstruye desde fuentes y políticas identificadas sin copiar datos a Git.\n- [ ] Las modalidades pendientes no bloquean la referencia de precios. Las ampliaciones reciben una nueva versión y se comparan con población común.\n\n## Evidencia prevista\n\n- `data/manifests/experimental-subset.json`\n- `docs/data/data-card.md`\n- `reports/data/quality.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005, MT-006, MT-007, MT-008, MT-011\n\n## Riesgo y prioridad\n\nP0: Evita cambiar silenciosamente la muestra al comparar modelos o modalidades.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-012 · Definir la selección y publicar el piloto",
+      "body": "## Contexto\n\nLa selección se define con información de entrenamiento. Se prepara un piloto de hasta 64 activos y una regla reproducible para la muestra principal, inicialmente propuesta en 128 activos estadounidenses.\n\n## Trabajo delimitado\n\n- Fijar identificadores, criterios de cobertura, periodos, modalidades y exclusiones sin seleccionar por rentabilidad futura.\n- Publicar el manifiesto piloto y la regla para ampliar o reducir la muestra. MT-060 estima el presupuesto y MT-034 congela la versión principal.\n\n## Criterios de aceptación\n\n- [ ] El piloto se reconstruye desde el inventario y las políticas de disponibilidad, con recuentos y motivos de exclusión.\n- [ ] La regla de selección utiliza solo información permitida y no exige supervivencia hasta el final del test.\n- [ ] Esta tarea puede cerrarse con reglas y piloto verificados. El tamaño final se decide después de medir recursos y antes del test, sin crear una dependencia circular.\n\n## Evidencia prevista\n\n- `data/manifests/pilot.json`\n- `docs/data/data-card.md`\n- `reports/data/selection-policy.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005, MT-006, MT-007, MT-008, MT-011\n\n## Riesgo y prioridad\n\nP0: Una campaña demasiado amplia puede impedir completar la evaluación. El recorte debe ser transparente y preservar validez temporal y comparabilidad.",
       "labels": [
         "datos",
+        "metodologia",
         "reproducibilidad"
       ],
       "milestone": "O1",
@@ -315,8 +337,8 @@
     },
     {
       "id": "MT-013",
-      "title": "MT-013 · Definir horizonte, retorno residual y cronología de decisión",
-      "body": "## Contexto\n\nLa tarea predictiva debe ser idéntica para todas las alternativas.\n\n## Trabajo delimitado\n\n- Fijar instante de decisión, ejecución, horizonte, retorno simple/logarítmico e intercepto.\n- Definir ajuste de mercado y sector condicionado a datos disponibles, y momento de maduración de la etiqueta.\n\n## Criterios de aceptación\n\n- [ ] La fórmula identifica todas las variables y distingue características conocidas de factores futuros usados solo en etiquetas.\n- [ ] Se incluye un ejemplo numérico y temporal completo, con target_start, target_end y label_available_at.\n- [ ] El horizonte principal y las sensibilidades se eligen antes de observar la prueba final.\n\n## Evidencia prevista\n\n- `docs/research/target-definition.md`\n- `configs/targets/residual.yaml`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-001\n\n## Riesgo y prioridad\n\nP0: Una ambigüedad del objetivo impide interpretar las diferencias entre soluciones.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-013 · Definir objetivo y reloj de decisión",
+      "body": "## Contexto\n\nLa tarea predictiva debe ser idéntica para todas las alternativas.\n\n## Trabajo delimitado\n\n- Fijar instante de decisión, ejecución, horizonte, retorno simple/logarítmico e intercepto.\n- Definir ajuste de mercado y sector condicionado a datos disponibles, y momento de maduración de la etiqueta.\n\n## Criterios de aceptación\n\n- [ ] La fórmula identifica todas las variables y distingue características conocidas de factores futuros usados solo en etiquetas.\n- [ ] Se incluye un ejemplo numérico y temporal completo, con target_start, target_end y label_available_at.\n- [ ] El horizonte principal y las sensibilidades se eligen antes de observar la prueba final.\n\n## Evidencia prevista\n\n- `docs/research/target-definition.md`\n- `configs/targets/residual.yaml`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-001\n\n## Riesgo y prioridad\n\nP0: Una ambigüedad del objetivo impide interpretar las diferencias entre soluciones.",
       "labels": [
         "metodologia",
         "datos"
@@ -331,8 +353,8 @@
     },
     {
       "id": "MT-014",
-      "title": "MT-014 · Versionar factores de mercado y sector con su disponibilidad",
-      "body": "## Contexto\n\nLos factores realizados sirven para construir etiquetas. Sus revisiones y calendario deben identificarse.\n\n## Trabajo delimitado\n\n- Seleccionar fuentes y convenciones de mercado y sector compatibles con la muestra.\n- Registrar unidades, moneda, calendario, versiones y limitaciones históricas de factores o clasificaciones.\n\n## Criterios de aceptación\n\n- [ ] Cada serie tiene origen, hash, fecha de descarga y tratamiento de revisiones.\n- [ ] No se introduce un factor futuro como característica ni se presume disponibilidad operativa instantánea.\n- [ ] Se documenta si el ajuste sectorial es viable. Si no lo es, se mantiene mercado y se explica el límite.\n\n## Evidencia prevista\n\n- `src/mars_titan/targets/factors.py`\n- `data/manifests/factors/`\n- `docs/data/factor-sources.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-005, MT-006, MT-013\n\n## Riesgo y prioridad\n\nP0: Datos factoriales revisados o sectores actuales pueden introducir sesgos adicionales.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-014 · Versionar factores de mercado y sector",
+      "body": "## Contexto\n\nLos factores realizados sirven para construir etiquetas. Sus revisiones y calendario deben identificarse.\n\n## Trabajo delimitado\n\n- Seleccionar fuentes y convenciones de mercado y sector compatibles con la muestra.\n- Registrar unidades, moneda, calendario, versiones y limitaciones históricas de factores o clasificaciones.\n\n## Criterios de aceptación\n\n- [ ] Cada serie tiene origen, hash, fecha de descarga y tratamiento de revisiones.\n- [ ] No se introduce un factor futuro como característica ni se presume disponibilidad operativa instantánea.\n- [ ] Se documenta si el ajuste sectorial es viable. Si no lo es, se mantiene mercado y se explica el límite.\n\n## Evidencia prevista\n\n- `src/mars_titan/targets/factors.py`\n- `data/manifests/factors/`\n- `docs/data/factor-sources.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-005, MT-006, MT-013\n\n## Riesgo y prioridad\n\nP0: Datos factoriales revisados o sectores actuales pueden introducir sesgos adicionales.",
       "labels": [
         "datos",
         "metodologia"
@@ -349,8 +371,8 @@
     },
     {
       "id": "MT-015",
-      "title": "MT-015 · Implementar residuales con coeficientes históricos y etiquetas diferidas",
-      "body": "## Contexto\n\nLos coeficientes deben estimarse con pasado y cada retorno futuro debe permanecer inaccesible hasta su maduración.\n\n## Trabajo delimitado\n\n- Implementar ventanas históricas, historia mínima y regularización si procede.\n- Construir la tabla de etiquetas con disponibilidad separada de las características.\n\n## Criterios de aceptación\n\n- [ ] Cambiar datos posteriores al corte no cambia los coeficientes estimados en ese corte.\n- [ ] Un ejemplo sintético de exposiciones conocidas produce el residual esperado.\n- [ ] Las etiquetas inmaduras no pueden usarse en entrenamiento, sorpresa, retención o calibración.\n\n## Evidencia prevista\n\n- `src/mars_titan/targets/residuals.py`\n- `tests/targets/test_residuals.py`\n- `tests/targets/test_label_maturity.py`\n- `data/derived/targets/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-011, MT-013, MT-014\n\n## Riesgo y prioridad\n\nP0: La fuga en coeficientes o en etiquetas invalida las memorias adaptativas y los baselines.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-015 · Calcular residuales y maduración de etiquetas",
+      "body": "## Contexto\n\nLos coeficientes deben estimarse con pasado y cada retorno futuro debe permanecer inaccesible hasta su maduración.\n\n## Trabajo delimitado\n\n- Implementar ventanas históricas, historia mínima y regularización si procede.\n- Construir la tabla de etiquetas con disponibilidad separada de las características.\n\n## Criterios de aceptación\n\n- [ ] Cambiar datos posteriores al corte no cambia los coeficientes estimados en ese corte.\n- [ ] Un ejemplo sintético de exposiciones conocidas produce el residual esperado.\n- [ ] Las etiquetas inmaduras no pueden usarse en entrenamiento, sorpresa, retención o calibración.\n\n## Evidencia prevista\n\n- `src/mars_titan/targets/residuals.py`\n- `tests/targets/test_residuals.py`\n- `tests/targets/test_label_maturity.py`\n- `data/derived/targets/`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-011, MT-013, MT-014\n\n## Riesgo y prioridad\n\nP0: La fuga en coeficientes o en etiquetas invalida las memorias adaptativas y los referencias.",
       "labels": [
         "datos",
         "metodologia",
@@ -368,8 +390,8 @@
     },
     {
       "id": "MT-016",
-      "title": "MT-016 · Diagnosticar estabilidad y cobertura del objetivo residual",
-      "body": "## Contexto\n\nLa residualización debe revisarse antes de interpretar mejoras como predicción idiosincrática.\n\n## Trabajo delimitado\n\n- Medir cobertura, valores extremos, estabilidad de coeficientes y sensibilidad a mercado/sector.\n- Contrastar retorno bruto y residual sin modificar decisiones con la prueba final.\n\n## Criterios de aceptación\n\n- [ ] Se informa del número de etiquetas válidas y de activos excluidos por historia insuficiente.\n- [ ] La exposición restante y las sensibilidades se cuantifican en entrenamiento/validación.\n- [ ] Las conclusiones distinguen ajuste estadístico de identificación causal.\n\n## Evidencia prevista\n\n- `reports/targets/diagnostics.md`\n- `reports/targets/figures/`\n- `configs/targets/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-012, MT-015\n\n## Riesgo y prioridad\n\nP1: Una etiqueta inestable puede explicar una supuesta ventaja de la arquitectura.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-016 · Diagnosticar cobertura y estabilidad del residual",
+      "body": "## Contexto\n\nLa residualización debe revisarse antes de interpretar mejoras como predicción idiosincrática.\n\n## Trabajo delimitado\n\n- Medir cobertura, valores extremos, estabilidad de coeficientes y sensibilidad a mercado/sector.\n- Contrastar retorno bruto y residual sin modificar decisiones con la prueba final.\n\n## Criterios de aceptación\n\n- [ ] Se informa del número de etiquetas válidas y de activos excluidos por historia insuficiente.\n- [ ] La exposición restante y las sensibilidades se cuantifican en entrenamiento/validación.\n- [ ] Las conclusiones distinguen ajuste estadístico de identificación causal.\n\n## Evidencia prevista\n\n- `reports/targets/diagnostics.md`\n- `reports/targets/figures/`\n- `configs/targets/`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-012, MT-015\n\n## Riesgo y prioridad\n\nP1: Una etiqueta inestable puede explicar una supuesta ventaja de la arquitectura.",
       "labels": [
         "evaluacion",
         "metodologia"
@@ -385,8 +407,8 @@
     },
     {
       "id": "MT-017",
-      "title": "MT-017 · Implementar representación de eventos y fusión común",
-      "body": "## Contexto\n\nLa comparación debe compartir la representación de entrada para aislar el efecto de la memoria.\n\n## Trabajo delimitado\n\n- Construir un encoder temporal compacto y proyecciones de modalidades con máscaras y antigüedad.\n- Separar la fusión de la memoria para poder ejecutar exactamente el mismo predictor sin memoria.\n\n## Criterios de aceptación\n\n- [ ] La salida tiene contrato estable y respeta la causalidad temporal de las ventanas.\n- [ ] La ausencia de una modalidad tiene un tratamiento explícito y verificable.\n- [ ] La variante sin memoria mantiene las mismas entradas y componentes comunes. Texto e imágenes se activan solo tras sus auditorías.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/events.py`\n- `src/mars_titan/models/fusion.py`\n- `tests/models/`\n- `configs/models/event-encoder.yaml`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-011, MT-012\n\n## Riesgo y prioridad\n\nP1: Cambiar simultáneamente la fusión y la memoria impediría atribuir el efecto observado.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-017 · Implementar codificación y fusión de eventos",
+      "body": "## Contexto\n\nLa comparación debe compartir la representación de entrada para aislar el efecto de la memoria.\n\n## Trabajo delimitado\n\n- Construir un codificador temporal compacto y proyecciones de modalidades con máscaras y antigüedad.\n- Separar la fusión de la memoria para poder ejecutar exactamente el mismo predictor sin memoria.\n\n## Criterios de aceptación\n\n- [ ] La salida tiene contrato estable y respeta la causalidad temporal de las ventanas.\n- [ ] La ausencia de una modalidad tiene un tratamiento explícito y verificable.\n- [ ] La variante sin memoria mantiene las mismas entradas y componentes comunes. Texto e imágenes se activan solo tras sus auditorías.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/events.py`\n- `src/mars_titan/models/fusion.py`\n- `tests/models/`\n- `configs/models/event-encoder.yaml`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-011, MT-012\n\n## Riesgo y prioridad\n\nP1: Cambiar simultáneamente la fusión y la memoria impediría atribuir el efecto observado.",
       "labels": [
         "modelos",
         "datos"
@@ -403,11 +425,12 @@
     },
     {
       "id": "MT-018",
-      "title": "MT-018 · Implementar memoria global mínima y trazable",
-      "body": "## Contexto\n\nUna memoria sencilla constituye una referencia interpretable antes del enrutamiento por regímenes.\n\n## Trabajo delimitado\n\n- Definir claves, valores, capacidad, lectura y política de olvido o sustitución.\n- Registrar qué recuerdos se recuperan y qué información estaba disponible al escribirlos.\n\n## Criterios de aceptación\n\n- [ ] Se verifican capacidad limitada, lectura, escritura y restauración del estado.\n- [ ] Cada recuerdo conserva disponibilidad, procedencia y versión de la regla de escritura.\n- [ ] La variante global funciona con la misma interfaz que el predictor sin memoria.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/global_memory.py`\n- `tests/memory/test_global_memory.py`\n- `configs/memory/global.yaml`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-017\n\n## Riesgo y prioridad\n\nP1: La complejidad de la memoria debe justificarse respecto a una alternativa pequeña y comprobable.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-018 · Implementar memoria global acotada",
+      "body": "## Contexto\n\nLa memoria global proporciona almacenamiento y recuperación comunes a las políticas de escritura y a las variantes por régimen.\n\n## Trabajo delimitado\n\n- Implementar claves, valores, lectura, sustitución y estado por activo con una interfaz común.\n- Fijar límites de episodios y bytes que incluyan índices, metadatos y copias, y registrar los eventos recuperados o expulsados.\n\n## Criterios de aceptación\n\n- [ ] Las pruebas verifican lectura, escritura, sustitución y capacidad total, incluida una ráfaga de eventos.\n- [ ] Cada episodio conserva procedencia, disponibilidad y revisión del codificador. El estado puede reiniciarse sin mezclar versiones.\n- [ ] La memoria comparte interfaz con el predictor sin memoria. MT-019 decide qué escribir y MT-020 cómo enrutar consultas, sin duplicar este componente.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/global_memory.py`\n- `tests/memory/test_global_memory.py`\n- `configs/memory/global.yaml`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-017\n\n## Riesgo y prioridad\n\nP1: La complejidad de la memoria debe justificarse respecto a una alternativa pequeña y comprobable.",
       "labels": [
         "memoria",
-        "modelos"
+        "modelos",
+        "reproducibilidad"
       ],
       "milestone": "O3",
       "priority": "P1",
@@ -419,28 +442,31 @@
     },
     {
       "id": "MT-019",
-      "title": "MT-019 · Definir sorpresa económica con información ya observada",
-      "body": "## Contexto\n\nError, anomalía y relevancia económica no están disponibles en el mismo instante. La sorpresa debe respetar sus relojes.\n\n## Trabajo delimitado\n\n- Separar componentes observables al predecir de componentes dependientes del retorno realizado.\n- Fijar normalización, pesos y umbrales usando entrenamiento/validación.\n\n## Criterios de aceptación\n\n- [ ] El error predictivo y regret solo se calculan cuando label_available_at permite conocer el resultado.\n- [ ] Las escalas y umbrales se documentan y no se seleccionan sobre test.\n- [ ] La variante sin sorpresa conserva capacidad y calendario para aislar el efecto del criterio de escritura.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/surprise.py`\n- `tests/memory/test_surprise_maturity.py`\n- `configs/memory/surprise.yaml`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-015, MT-018\n\n## Riesgo y prioridad\n\nP1: Una sorpresa calculada con resultados futuros produce fuga aunque el encoder sea causal.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-019 · Comparar políticas de escritura",
+      "body": "## Contexto\n\nError, anomalía, relevancia y diversidad son criterios de selección que pueden favorecer eventos distintos. Su utilidad debe contrastarse con la misma capacidad y número de escrituras.\n\n## Trabajo delimitado\n\n- Implementar políticas uniformes, aleatorias y selectivas sobre la memoria de MT-018, con componentes de error maduro, relevancia publicada y diversidad.\n- Fijar escalas, umbrales y presupuesto en desarrollo, registrando admisiones, rechazos y expulsiones.\n\n## Criterios de aceptación\n\n- [ ] El error procede de la predicción que se emitió y de una etiqueta madura. No se recalcula retrospectivamente con un modelo posterior.\n- [ ] Las políticas se comparan con capacidad y escrituras equiparables, incluidos controles uniformes y aleatorios.\n- [ ] La diversidad, los estratos y los límites de actualización tienen definiciones verificables. Los resultados de recuperación no se presentan por sí solos como mejora predictiva.\n- [ ] Las configuraciones y registros permiten ejecutar las ablaciones de MT-029 sin otra implementación de la memoria.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/write_policy.py`\n- `configs/memory/write-policies/`\n- `reports/memory/selection-ablation.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-015, MT-018, MT-021, MT-028\n\n## Riesgo y prioridad\n\nP1: Una sorpresa calculada con resultados futuros produce fuga aunque el codificador sea causal.",
       "labels": [
         "memoria",
-        "metodologia"
+        "metodologia",
+        "comparativa"
       ],
       "milestone": "O3",
       "priority": "P1",
-      "size": "M",
+      "size": "L",
       "dependencies": [
         "MT-015",
-        "MT-018"
+        "MT-018",
+        "MT-021",
+        "MT-028"
       ],
       "status": "Todo"
     },
     {
       "id": "MT-020",
-      "title": "MT-020 · Evaluar un enrutamiento por regímenes observables",
-      "body": "## Contexto\n\nLos estados de mercado deben inferirse con pasado. Etiquetas retrospectivas de crisis no pueden usarse como entradas conocidas.\n\n## Trabajo delimitado\n\n- Definir un conjunto reducido de variables y reglas o estimador de régimen.\n- Comparar bancos por régimen con memoria global a capacidad total documentada.\n\n## Criterios de aceptación\n\n- [ ] Ningún estado usa periodos posteriores al instante inferido.\n- [ ] Se documenta cómo se tratan solapamientos, cambios y bancos con poca historia.\n- [ ] La comparación conserva el mismo presupuesto total de memoria o declara la diferencia.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/regimes.py`\n- `tests/memory/test_regimes.py`\n- `configs/memory/regimes.yaml`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-018, MT-019\n\n## Riesgo y prioridad\n\nP1: Un régimen definido a posteriori puede esconder fuga o convertir capacidad extra en una falsa ventaja.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-020 · Comparar enrutamiento por regímenes",
+      "body": "## Contexto\n\nLos estados de mercado deben inferirse con pasado. Etiquetas retrospectivas de crisis no pueden usarse como entradas conocidas.\n\n## Trabajo delimitado\n\n- Definir un conjunto reducido de variables y reglas o estimador de régimen.\n- Comparar bancos por régimen con memoria global a capacidad total documentada.\n\n## Criterios de aceptación\n\n- [ ] Ningún estado usa periodos posteriores al instante inferido.\n- [ ] Se documenta cómo se tratan solapamientos, cambios y bancos con poca historia.\n- [ ] La comparación conserva el mismo presupuesto total de memoria o declara la diferencia.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/regimes.py`\n- `tests/memory/test_regimes.py`\n- `configs/memory/regimes.yaml`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-018, MT-019\n\n## Riesgo y prioridad\n\nP1: Un régimen definido a posteriori puede esconder fuga o convertir capacidad extra en una falsa ventaja.",
       "labels": [
         "memoria",
-        "modelos"
+        "comparativa"
       ],
       "milestone": "O3",
       "priority": "P1",
@@ -453,8 +479,8 @@
     },
     {
       "id": "MT-021",
-      "title": "MT-021 · Verificar estado prequential, reinicios y aislamiento por fold",
-      "body": "## Contexto\n\nLa integridad del estado de memoria es tan importante como la disponibilidad de las características.\n\n## Trabajo delimitado\n\n- Implementar cola de etiquetas maduras, snapshots y modos congelado y adaptativo.\n- Predecir todos los activos de un mismo instante antes de las escrituras de ese lote. Aplicar las escrituras maduras en orden canónico estable por (label_available_at, event_id, asset_id).\n- Reconstruir o reiniciar el estado por fold y definir cómo se restaura cada ejecución.\n\n## Criterios de aceptación\n\n- [ ] Permutar el lote del mismo día conserva sus predicciones, el mismo estado resultante tras todas las escrituras y las predicciones de instantes posteriores.\n- [ ] El orden de actualización por (label_available_at, event_id, asset_id) es estable. Se rechazan identificadores duplicados ambiguos y se verifica el desempate.\n- [ ] Ningún fold hereda memoria entrenada con su futuro o resultados de otro fold incompatibles.\n- [ ] Se verifican etiquetas maduras, predicción anterior a las escrituras correspondientes, modo freeze y restauración equivalente del snapshot. Las pasadas de incertidumbre parten del mismo estado.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/state.py`\n- `src/mars_titan/training/prequential.py`\n- `tests/memory/test_state_isolation.py`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-015, MT-018\n\n## Riesgo y prioridad\n\nP0: Es un control obligatorio de validez antes de evaluar cualquier memoria adaptativa.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-021 · Verificar orden temporal y aislamiento",
+      "body": "## Contexto\n\nLa memoria debe respetar el orden de información en cada cohorte y permanecer aislada entre ventanas de evaluación.\n\n## Trabajo delimitado\n\n- Gestionar etiquetas maduras y emitir todas las predicciones de una cohorte antes de sus escrituras, con orden canónico por disponibilidad e identificadores.\n- Verificar reinicios y reconstrucción entre ventanas. Reutilizar el contrato de estado que comprobará MT-059 y la persistencia de MT-065.\n\n## Criterios de aceptación\n\n- [ ] Permutar la carga de activos conserva predicciones, estado final y predicciones posteriores dentro de la tolerancia declarada.\n- [ ] Ninguna ventana hereda información futura ni estado incompatible. Los eventos ambiguos y las etiquetas inmaduras se rechazan.\n- [ ] Las lecturas repetidas de incertidumbre o recurrencia parten del mismo estado y no acumulan escrituras.\n- [ ] Las pruebas verifican semántica temporal. La recuperación de archivos tras interrupciones pertenece a MT-065.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/state.py`\n- `src/mars_titan/training/prequential.py`\n- `tests/memory/test_state_isolation.py`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-015, MT-018\n\n## Riesgo y prioridad\n\nP0: Es un control obligatorio de validez antes de evaluar cualquier memoria adaptativa.",
       "labels": [
         "memoria",
         "reproducibilidad",
@@ -471,8 +497,8 @@
     },
     {
       "id": "MT-022",
-      "title": "MT-022 · Implementar cuantiles y calibración temporal controlada",
-      "body": "## Contexto\n\nEl núcleo de incertidumbre utiliza cuantiles y un calibrador congelado. La evaluación debe separar precisión, cobertura y anchura, sin presuponer una densidad predictiva.\n\n## Trabajo delimitado\n\n- Implementar una cabeza de cuantiles con pérdida pinball y un calibrador común ajustado antes del test y congelado durante la comparación principal.\n- Separar entrenamiento, calibración y evaluación, con cuantiles y niveles fijados antes de analizar la reserva final.\n- Considerar ACI solo como opción prequential diferenciada. Fijar hiperparámetros y política de actualización antes del test y utilizar exclusivamente etiquetas maduras.\n\n## Criterios de aceptación\n\n- [ ] La pérdida pinball, la cobertura y la anchura tienen definiciones verificables. Se comprueba orden de cuantiles y el tratamiento explícito de cruces.\n- [ ] El calibrador del núcleo permanece congelado en test. Los niveles, umbrales de abstención y reglas de selección se ajustan con datos anteriores permitidos.\n- [ ] NLL solo se calcula si se ha especificado y justificado una densidad predictiva. Los cuantiles por sí solos no se evalúan con NLL.\n- [ ] Si se ejecuta ACI, sus hiperparámetros y política quedan fijados antes del test. La actualización online usa únicamente etiquetas maduras y no realiza tuning sobre test.\n- [ ] Las pasadas estocásticas parten del mismo estado de memoria y no lo modifican acumulativamente. Se distingue cobertura marginal de cobertura por régimen sin garantías inventadas.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/heads.py`\n- `src/mars_titan/calibration/`\n- `tests/calibration/`\n- `configs/calibration/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013, MT-017, MT-021\n\n## Riesgo y prioridad\n\nP1: La confianza mal calibrada puede ocultarse tras mejoras de ranking o error.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-022 · Implementar cuantiles y calibración",
+      "body": "## Contexto\n\nEl núcleo de incertidumbre utiliza cuantiles y un calibrador congelado. La evaluación debe separar precisión, cobertura y anchura, sin presuponer una densidad predictiva.\n\n## Trabajo delimitado\n\n- Implementar una cabeza de cuantiles con pérdida pinball y un calibrador común ajustado antes del test y congelado durante la comparación principal.\n- Separar entrenamiento, calibración y evaluación, con cuantiles y niveles fijados antes de analizar la reserva final.\n- Considerar ACI solo como opción prequential diferenciada. Fijar hiperparámetros y política de actualización antes del test y utilizar exclusivamente etiquetas maduras.\n\n## Criterios de aceptación\n\n- [ ] La pérdida pinball, la cobertura y la anchura tienen definiciones verificables. Se comprueba orden de cuantiles y el tratamiento explícito de cruces.\n- [ ] El calibrador del núcleo permanece congelado en test. Los niveles, umbrales de abstención y reglas de selección se ajustan con datos anteriores permitidos.\n- [ ] NLL solo se calcula si se ha especificado y justificado una densidad predictiva. Los cuantiles por sí solos no se evalúan con NLL.\n- [ ] Si se ejecuta ACI, sus hiperparámetros y política quedan fijados antes del test. La actualización online usa únicamente etiquetas maduras y no realiza tuning sobre test.\n- [ ] Las pasadas estocásticas parten del mismo estado de memoria y no lo modifican acumulativamente. Se distingue cobertura marginal de cobertura por régimen sin garantías inventadas.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/heads.py`\n- `src/mars_titan/calibration/`\n- `tests/calibration/`\n- `configs/calibration/`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013, MT-017, MT-021\n\n## Riesgo y prioridad\n\nP1: La confianza mal calibrada puede ocultarse tras mejoras de ranking o error.",
       "labels": [
         "incertidumbre",
         "modelos",
@@ -490,8 +516,8 @@
     },
     {
       "id": "MT-023",
-      "title": "MT-023 · Integrar MARS-TITAN compacto y verificar un entrenamiento mínimo",
-      "body": "## Contexto\n\nLa integración debe demostrar funcionamiento antes de iniciar la campaña comparativa.\n\n## Trabajo delimitado\n\n- Integrar encoder, fusión, memoria, sorpresa y salida probabilística con componentes desconectables.\n- Ejecutar un entrenamiento pequeño permitido por los datos y registrar pérdidas, tiempo y recursos.\n\n## Criterios de aceptación\n\n- [ ] Se reconstruye el modelo desde configuración y checkpoint sin cambios silenciosos de estado.\n- [ ] La ejecución usa cuda:0 y respeta el presupuesto de 8 GB medido.\n- [ ] El ensayo verifica funcionamiento y no se presenta como evidencia de superioridad. Cada componente tiene configuración de ablación.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/mars_titan.py`\n- `src/mars_titan/training/`\n- `configs/models/mars-titan.yaml`\n- `reports/smoke/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022\n\n## Riesgo y prioridad\n\nP1: Una integración grande sin comprobación mínima consume presupuesto y dificulta localizar fallos.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-023 · Integrar el modelo y ejecutar un ensayo mínimo",
+      "body": "## Contexto\n\nLa integración debe demostrar funcionamiento antes de iniciar la campaña comparativa.\n\n## Trabajo delimitado\n\n- Integrar codificador, fusión, memoria, sorpresa y salida probabilística con componentes desconectables.\n- Ejecutar un entrenamiento pequeño permitido por los datos y registrar pérdidas, tiempo y recursos.\n\n## Criterios de aceptación\n\n- [ ] Se reconstruye el modelo desde configuración y checkpoint sin cambios silenciosos de estado.\n- [ ] La ejecución usa cuda:0 y respeta el presupuesto de 8 GB medido.\n- [ ] El ensayo verifica funcionamiento y no se presenta como evidencia de superioridad. Cada componente tiene configuración de ablación.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/mars_titan.py`\n- `src/mars_titan/training/`\n- `configs/models/mars-titan.yaml`\n- `reports/smoke/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022\n\n## Riesgo y prioridad\n\nP1: Una integración grande sin comprobación mínima consume presupuesto y dificulta localizar fallos.",
       "labels": [
         "modelos",
         "memoria",
@@ -513,8 +539,8 @@
     },
     {
       "id": "MT-024",
-      "title": "MT-024 · Establecer predicción cero y Ridge como referencias iniciales",
-      "body": "## Contexto\n\nLas referencias simples permiten comprobar si existe señal y pueden ejecutarse antes de completar la memoria.\n\n## Trabajo delimitado\n\n- Implementar predicción residual cero y Ridge con variables temporalmente válidas.\n- Seleccionar regularización dentro de validación y registrar el predictor trivial sin ajuste.\n\n## Criterios de aceptación\n\n- [ ] Ambas referencias usan idéntico objetivo, universo, fechas y métricas del protocolo.\n- [ ] Imputación y escalado se ajustan solo en entrenamiento de cada fold.\n- [ ] Se guardan predicciones y configuraciones de referencia reproducibles, incluyendo ausencia de mejora.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/zero.py`\n- `src/mars_titan/models/baselines/ridge.py`\n- `configs/baselines/`\n- `experiments/baselines/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-015, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP0: Sin referencias simples no se puede justificar la complejidad adicional.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-024 · Validar cero, Ridge y el cálculo por bloques",
+      "body": "## Contexto\n\nLas referencias simples comprueban si existe señal antes de completar la memoria. La versión por bloques debe distinguir un cálculo equivalente de Ridge de un entrenamiento incremental con otra optimización.\n\n## Trabajo delimitado\n\n- Implementar predicción cero y Ridge con variables válidas, ajustando regularización solo en validación.\n- Definir el solucionador por bloques y contrastar su objetivo, normalización y precisión frente a la referencia en memoria. Si se usa SGD, registrarlo como variante.\n\n## Criterios de aceptación\n\n- [ ] Las referencias usan idéntico objetivo, universo, fechas y métricas. Imputación y escalado se ajustan con entrenamiento de cada fold.\n- [ ] El método por bloques conserva evidencia de equivalencia numérica cuando se declara Ridge. SGD declara pérdidas, convergencia y tolerancias sin presentarse como idéntico por defecto.\n- [ ] Se guardan predicciones y configuraciones del piloto. La extensión MT-064 verifica la cobertura ampliada si se activa, sin descartar resultados desfavorables.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/zero.py`\n- `src/mars_titan/models/baselines/ridge.py`\n- `reports/baselines/linear-solvers.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-015, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP0: Una referencia lineal mal resuelta o entrenada con menos datos puede exagerar la ventaja del modelo complejo.",
       "labels": [
         "comparativa",
         "modelos"
@@ -531,11 +557,12 @@
     },
     {
       "id": "MT-025",
-      "title": "MT-025 · Añadir un baseline de gradient boosting con presupuesto acotado",
-      "body": "## Contexto\n\nUn predictor no lineal tabular sirve para contrastar si la ventaja procede solo de no linealidades.\n\n## Trabajo delimitado\n\n- Elegir una implementación de boosting y documentar hiperparámetros y recursos.\n- Reutilizar variables, folds y artefactos del runner común.\n\n## Criterios de aceptación\n\n- [ ] La búsqueda tiene un presupuesto previo comparable y registra todos los ensayos.\n- [ ] Los resultados son reconstruibles a partir de configuración, semilla y versión de datos.\n- [ ] La aceleración, si se utiliza, está verificada. La elección de una implementación CPU se declara como tal, sin fallback silencioso.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/boosting.py`\n- `configs/baselines/boosting.yaml`\n- `experiments/baselines/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-024\n\n## Riesgo y prioridad\n\nP1: Un ajuste desproporcionado de una sola familia hace injusta la comparación.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-025 · Evaluar la referencia de boosting",
+      "body": "## Contexto\n\nUna referencia tabular no lineal permite comprobar si las mejoras dependen de la memoria o de relaciones que un modelo de boosting ya captura.\n\n## Trabajo delimitado\n\n- Seleccionar una implementación adecuada para la muestra principal y verificar características, cortes y presupuesto comunes.\n- Usar HistGradientBoosting como control inicial o justificar XGBoost. Preparar memoria externa solo si el tamaño y el perfil la requieren.\n\n## Criterios de aceptación\n\n- [ ] La búsqueda registra todos los intentos y utiliza la misma población y objetivo que las demás referencias.\n- [ ] Los ejemplos usados, transformaciones, versión y dispositivo quedan identificados. Si se utiliza CUDA, su disponibilidad se verifica.\n- [ ] El coste y las predicciones son reproducibles. La ruta de memoria externa no bloquea una muestra que no la necesita y se valida antes de una ampliación de MT-064.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/boosting.py`\n- `configs/baselines/boosting.yaml`\n- `reports/baselines/external-memory-pilot.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-024\n\n## Riesgo y prioridad\n\nP1: El presupuesto acotado limita búsqueda y complejidad, no autoriza a anunciar entrenamiento completo tras usar solo un subconjunto.",
       "labels": [
         "comparativa",
-        "modelos"
+        "modelos",
+        "rendimiento"
       ],
       "milestone": "O4",
       "priority": "P1",
@@ -547,8 +574,8 @@
     },
     {
       "id": "MT-026",
-      "title": "MT-026 · Comparar referencias temporales compactas",
-      "body": "## Contexto\n\nLa referencia GRU es obligatoria en el núcleo comparativo. DLinear es una referencia deseable cuya exclusión justificada no bloquea la evaluación. Ambas deben predecir el mismo objetivo residual cuando se ejecuten.\n\n## Trabajo delimitado\n\n- Implementar y evaluar una GRU compacta con ventana y presupuesto comparables.\n- Evaluar la viabilidad de una adaptación documentada de DLinear. Ejecutarla si cabe en el presupuesto y registrar de forma concreta su exclusión si no se incorpora.\n- Registrar parámetros, ventana, entrenamiento y ajustes necesarios respecto a las fuentes.\n\n## Criterios de aceptación\n\n- [ ] La GRU utiliza las mismas particiones, etiquetas y presupuesto de selección que los demás candidatos.\n- [ ] DLinear cuenta con resultados comparables o con una exclusión justificada por alcance, recursos o viabilidad. Su exclusión no bloquea el cierre de esta tarea ni la evaluación principal.\n- [ ] Las ejecuciones acelerables utilizan cuda:0 y reportan pico de VRAM dentro de 8 GB.\n- [ ] Se conservan predicciones y errores por ventana, sin descartar ejecuciones desfavorables.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/gru.py`\n- `src/mars_titan/models/baselines/dlinear.py`\n- `configs/baselines/`\n- `reports/baselines/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-024\n\n## Riesgo y prioridad\n\nP1: Comparar tareas o contextos distintos impediría atribuir diferencias a la familia de modelos.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-026 · Evaluar GRU y decidir sobre DLinear",
+      "body": "## Contexto\n\nLa referencia GRU es obligatoria en el núcleo comparativo. DLinear es una referencia deseable cuya exclusión justificada no bloquea la evaluación. Ambas deben predecir el mismo objetivo residual cuando se ejecuten.\n\n## Trabajo delimitado\n\n- Implementar y evaluar una GRU compacta con ventana y presupuesto comparables.\n- Evaluar la viabilidad de una adaptación documentada de DLinear. Ejecutarla si cabe en el presupuesto y registrar de forma concreta su exclusión si no se incorpora.\n- Registrar parámetros, ventana, entrenamiento y ajustes necesarios respecto a las fuentes.\n\n## Criterios de aceptación\n\n- [ ] La GRU utiliza las mismas particiones, etiquetas y presupuesto de selección que los demás candidatos.\n- [ ] DLinear cuenta con resultados comparables o con una exclusión justificada por alcance, recursos o viabilidad. Su exclusión no bloquea el cierre de esta tarea ni la evaluación principal.\n- [ ] Las ejecuciones acelerables utilizan cuda:0 y reportan pico de VRAM dentro de 8 GB.\n- [ ] Se conservan predicciones y errores por ventana, sin descartar ejecuciones desfavorables.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/gru.py`\n- `src/mars_titan/models/baselines/dlinear.py`\n- `configs/baselines/`\n- `reports/baselines/`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-024\n\n## Riesgo y prioridad\n\nP1: Comparar tareas o contextos distintos impediría atribuir diferencias a la familia de modelos.",
       "labels": [
         "comparativa",
         "modelos",
@@ -565,8 +592,8 @@
     },
     {
       "id": "MT-027",
-      "title": "MT-027 · Contrastar una referencia de memoria con fidelidad explícita",
-      "body": "## Contexto\n\nLa inspiración en TITANS debe convertirse en una comparación identificable, sin prometer una reproducción completa que no cabe.\n\n## Trabajo delimitado\n\n- Documentar una referencia compacta de memoria basada en el método elegido y sus diferencias con la publicación.\n- Ejecutar la referencia con los mismos datos y presupuesto. Si una reproducción exacta no es viable, justificar la adaptación y su denominación.\n\n## Criterios de aceptación\n\n- [ ] Se identifica versión de fuente, regla de actualización, retención y componentes omitidos.\n- [ ] Existe una referencia de memoria ejecutable, aunque la reproducción completa se descarte justificadamente.\n- [ ] La tabla final distingue reproducción, adaptación y propuesta propia, y respeta estado y etiquetas del protocolo.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/memory_reference.py`\n- `docs/research/memory-reference.md`\n- `configs/baselines/memory-reference.yaml`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-003, MT-018, MT-021, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP1: Una implementación propia etiquetada como TITANS exacto invalidaría la comparación bibliográfica.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-027 · Evaluar una referencia de memoria identificable",
+      "body": "## Contexto\n\nLa inspiración en TITANS debe convertirse en una comparación identificable, sin prometer una reproducción completa que no cabe.\n\n## Trabajo delimitado\n\n- Documentar una referencia compacta de memoria basada en el método elegido y sus diferencias con la publicación.\n- Ejecutar la referencia con los mismos datos y presupuesto. Si una reproducción exacta no es viable, justificar la adaptación y su denominación.\n\n## Criterios de aceptación\n\n- [ ] Se identifica versión de fuente, regla de actualización, retención y componentes omitidos.\n- [ ] Existe una referencia de memoria ejecutable, aunque la reproducción completa se descarte justificadamente.\n- [ ] La tabla final distingue reproducción, adaptación y propuesta propia, y respeta estado y etiquetas del protocolo.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/baselines/memory_reference.py`\n- `docs/research/memory-reference.md`\n- `configs/baselines/memory-reference.yaml`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-003, MT-018, MT-021, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP1: Una implementación propia etiquetada como TITANS exacto invalidaría la comparación bibliográfica.",
       "labels": [
         "comparativa",
         "memoria",
@@ -586,8 +613,8 @@
     },
     {
       "id": "MT-028",
-      "title": "MT-028 · Fijar la matriz de ablaciones y los controles de capacidad",
-      "body": "## Contexto\n\nCada experimento debe aislar una pregunta y conservar población, entradas y oportunidades de ajuste.\n\n## Trabajo delimitado\n\n- Definir variantes sin memoria, global y sin sorpresa, y congelada frente a adaptativa.\n- Definir adiciones de modalidades sobre población común y presupuesto comparable. Reservar extensiones prescindibles.\n\n## Criterios de aceptación\n\n- [ ] Cada variante tiene hipótesis, cambio único, control y configuración prevista.\n- [ ] Se registra la capacidad total, datos y presupuesto, y cómo se interpretan diferencias inevitables.\n- [ ] La matriz se congela antes del análisis del test. No exige implementar todos los modelos mencionados en el original.\n\n## Evidencia prevista\n\n- `docs/research/ablation-matrix.md`\n- `configs/ablations/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013, MT-017, MT-030\n\n## Riesgo y prioridad\n\nP0: Una lista abierta de experimentos favorece selección posterior de resultados convenientes.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-028 · Diseñar ablaciones y falsaciones",
+      "body": "## Contexto\n\nLas comparaciones deben responder a hipótesis concretas y separar cambios de datos, capacidad y cómputo.\n\n## Trabajo delimitado\n\n- Definir ablaciones de memoria, escritura, régimen, modalidades e incertidumbre, utilizando los antecedentes de MT-003.\n- Registrar falsaciones y perturbaciones de robustez antes de ejecutar resultados finales, con intensidad, semilla y criterio de interpretación.\n\n## Criterios de aceptación\n\n- [ ] Cada contraste identifica una pregunta, una modificación, su referencia y los recursos que deben mantenerse comparables.\n- [ ] La matriz distingue núcleo, extensiones y análisis exploratorios, sin exigir todas las familias del catálogo.\n- [ ] Las pruebas que ejecutarán MT-029 y MT-037 quedan definidas antes del test. Los criterios no se eligen después de observar resultados.\n\n## Evidencia prevista\n\n- `docs/research/ablation-matrix.md`\n- `configs/ablations/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013, MT-017, MT-030, MT-003\n\n## Riesgo y prioridad\n\nP0: Una lista abierta de experimentos favorece selección posterior de resultados convenientes.",
       "labels": [
         "comparativa",
         "metodologia"
@@ -598,17 +625,19 @@
       "dependencies": [
         "MT-013",
         "MT-017",
-        "MT-030"
+        "MT-030",
+        "MT-003"
       ],
       "status": "Todo"
     },
     {
       "id": "MT-029",
-      "title": "MT-029 · Ejecutar ablaciones de memoria, sorpresa y modalidades",
-      "body": "## Contexto\n\nLas ablaciones deben producir predicciones comparables y conservar también resultados negativos.\n\n## Trabajo delimitado\n\n- Ejecutar la matriz acordada en desarrollo/validación con semillas y muestra comunes.\n- Incluir modalidades solo cuando se complete su auditoría. Registrar exclusiones y fallos.\n\n## Criterios de aceptación\n\n- [ ] Se completan sin memoria, memoria global, sin sorpresa y freeze/adaptación bajo el protocolo común.\n- [ ] Las modalidades se comparan sobre una población común y se informa la cobertura perdida.\n- [ ] Todos los ensayos, interrupciones y decisiones de descarte quedan registrados antes del test final.\n\n## Evidencia prevista\n\n- `experiments/ablations/`\n- `reports/ablations/`\n- `configs/ablations/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-010, MT-023, MT-027, MT-028, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP1: La ausencia de un resultado desfavorable no puede confundirse con un experimento no ejecutado.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-029 · Ejecutar ablaciones y falsaciones",
+      "body": "## Contexto\n\nLas ablaciones de desarrollo producen evidencia sobre el candidato implementado y permiten revisar objeciones antes de fijar finalistas.\n\n## Trabajo delimitado\n\n- Ejecutar la matriz acordada con muestras y semillas comunes, conservando fallos y resultados desfavorables.\n- Relacionar mecanismos, código y antecedentes. Ejecutar las falsaciones pertinentes y actualizar el registro de objeciones y decisiones.\n\n## Criterios de aceptación\n\n- [ ] Se completan los contrastes comprometidos de memoria, escritura y adaptación, o se justifica una exclusión antes del test.\n- [ ] Las modalidades se comparan sobre población común y se informa la cobertura perdida.\n- [ ] Cada afirmación de aportación identifica una diferencia verificable frente a la referencia. Las variantes no ejecutadas siguen siendo hipótesis.\n- [ ] Predicciones, costes y decisiones quedan registrados y permiten seleccionar en MT-034 sin utilizar el test.\n\n## Evidencia prevista\n\n- `experiments/ablations/`\n- `reports/ablations/`\n- `docs/research/novelty-ledger.md`\n- `docs/research/adversarial-review.md`\n- `reports/research/candidate-falsification.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-010, MT-023, MT-027, MT-028, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP1: La ausencia de un resultado desfavorable no puede confundirse con un experimento no ejecutado.",
       "labels": [
         "comparativa",
-        "evaluacion"
+        "evaluacion",
+        "bibliografia"
       ],
       "milestone": "O4",
       "priority": "P1",
@@ -625,8 +654,8 @@
     },
     {
       "id": "MT-030",
-      "title": "MT-030 · Cerrar el protocolo walk-forward y la reserva final",
-      "body": "## Contexto\n\nLos seis hitos no son barreras secuenciales. Este protocolo se prepara pronto para habilitar los baselines.\n\n## Trabajo delimitado\n\n- Fijar ventanas de entrenamiento, validación/calibración y test, reentrenamiento, semillas y presupuesto de búsqueda.\n- Definir purga por solapamiento de etiquetas, separación temporal justificada, estado inicial/freeze y métrica principal.\n\n## Criterios de aceptación\n\n- [ ] Los cortes son comunes a todo el panel y nunca aleatorios por filas activo-fecha.\n- [ ] La purga y separación tienen una justificación ligada al horizonte y a la disponibilidad. No se usa un embargo arbitrario como garantía.\n- [ ] La reserva final no interviene en selección, normalización, calibración o elección de umbrales. El protocolo distingue modelo congelado de adaptación prequential permitida.\n\n## Evidencia prevista\n\n- `docs/research/evaluation-protocol.md`\n- `configs/evaluation/walk-forward.yaml`\n- `data/manifests/splits/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013\n\n## Riesgo y prioridad\n\nP0: La selección sobre test no puede corregirse después mediante mejores métricas.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-030 · Fijar el protocolo y la reserva final",
+      "body": "## Contexto\n\nEl protocolo se prepara pronto para habilitar referencias. El núcleo compara una muestra estadounidense acotada. China requiere un protocolo por mercado y una decisión de continuidad compatible con los recursos y entregas.\n\n## Trabajo delimitado\n\n- Fijar entrenamiento, validación, calibración y test principal, con reentrenamiento, semillas y presupuesto de búsqueda.\n- Definir purga por intervalo de etiqueta, maduración en UTC, estado inicial y política de adaptación. Especificar las condiciones de ampliación antes de ejecutar variantes.\n\n## Criterios de aceptación\n\n- [ ] Los cortes son comunes al panel y nunca aleatorios por filas. La muestra principal, métrica y test final se fijan antes de seleccionar finalistas.\n- [ ] La información de validación, calibración y test conserva funciones separadas. Memoria prequential y adaptación paramétrica son políticas distintas.\n- [ ] Si se activa China, sus cortes, calendarios y resultados se documentan por separado. Un cierre estadounidense posterior no entra en una decisión china anterior. La exclusión de esa ampliación no bloquea el núcleo.\n\n## Evidencia prevista\n\n- `docs/research/evaluation-protocol.md`\n- `configs/evaluation/walk-forward.yaml`\n- `data/manifests/splits/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013\n\n## Riesgo y prioridad\n\nP0: Un alcance mayor no compensa fuga temporal ni falta de repetición. El test reservado no se utiliza para decidir ampliaciones.",
       "labels": [
         "metodologia",
         "evaluacion",
@@ -642,11 +671,12 @@
     },
     {
       "id": "MT-031",
-      "title": "MT-031 · Construir el runner y registro de experimentos reproducibles",
-      "body": "## Contexto\n\nLos candidatos necesitan una interfaz de ejecución y trazabilidad común antes de comparar resultados.\n\n## Trabajo delimitado\n\n- Implementar ejecución por configuración con folds, semillas, versiones y manejo explícito del estado.\n- Guardar predicciones, etiquetas accesibles, métricas, tiempos, estado de ejecución y presupuesto consumido.\n\n## Criterios de aceptación\n\n- [ ] Una ejecución identifica datos, código, entorno, configuración y semilla sin secretos ni rutas personales.\n- [ ] Se detectan predicciones duplicadas, filas fuera de fold y etiquetas utilizadas prematuramente.\n- [ ] Se puede reanudar una ejecución o declararla fallida sin mezclar artefactos. Los resultados se reconstruyen desde manifiestos.\n\n## Evidencia prevista\n\n- `src/mars_titan/training/runner.py`\n- `src/mars_titan/evaluation/artifacts.py`\n- `tests/evaluation/`\n- `experiments/manifests/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-004, MT-012, MT-015, MT-030\n\n## Riesgo y prioridad\n\nP0: Registros incompletos hacen imposible distinguir una mejora real de cambios de datos o configuración.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-031 · Implementar ejecución y trazabilidad",
+      "body": "## Contexto\n\nLas referencias y el candidato necesitan una ejecución común que registre sus datos, estado y resultados.\n\n## Trabajo delimitado\n\n- Implementar ejecución por configuración con ventanas, semillas, versiones y registro de predicciones, métricas y recursos.\n- Integrar la recuperación de MT-065 sin crear otra serialización ni otro formato de checkpoint.\n\n## Criterios de aceptación\n\n- [ ] Cada ejecución identifica datos, código, entorno, configuración y semilla, sin incluir secretos ni rutas personales.\n- [ ] Se detectan predicciones duplicadas, filas fuera de la ventana y etiquetas usadas antes de madurar.\n- [ ] La reanudación utiliza el checkpoint completo y conserva el cursor y el corte temporal. Un fallo no mezcla artefactos de ejecuciones distintas.\n\n## Evidencia prevista\n\n- `src/mars_titan/training/runner.py`\n- `src/mars_titan/evaluation/artifacts.py`\n- `tests/evaluation/`\n- `experiments/manifests/`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-004, MT-012, MT-015, MT-030, MT-065\n\n## Riesgo y prioridad\n\nP0: Registros incompletos hacen imposible distinguir una mejora real de cambios de datos o configuración.",
       "labels": [
         "evaluacion",
-        "reproducibilidad"
+        "reproducibilidad",
+        "checkpoints"
       ],
       "milestone": "O5",
       "priority": "P0",
@@ -655,14 +685,15 @@
         "MT-004",
         "MT-012",
         "MT-015",
-        "MT-030"
+        "MT-030",
+        "MT-065"
       ],
       "status": "Todo"
     },
     {
       "id": "MT-032",
-      "title": "MT-032 · Verificar métricas predictivas, de ranking y calibración",
-      "body": "## Contexto\n\nCada métrica necesita una definición precisa de agregación y de observaciones admisibles.\n\n## Trabajo delimitado\n\n- Implementar MAE/MSE, dirección, Rank IC por fecha, pérdida pinball, cobertura y anchura de intervalos.\n- Incluir NLL únicamente cuando el predictor especifique una densidad. Reservar ECE para probabilidades de eventos definidos.\n- Definir tratamiento de constantes, empates, faltantes y días con pocos activos.\n\n## Criterios de aceptación\n\n- [ ] Casos de resultado conocido verifican cada métrica y su agregación por fecha y fold.\n- [ ] Los predictores de cuantiles se evalúan con pinball, cobertura y anchura. NLL queda deshabilitada si no existe una densidad especificada.\n- [ ] Se informa denominador, cobertura de muestra y métricas no definidas en lugar de convertirlas silenciosamente en cero.\n- [ ] La métrica principal coincide con el protocolo y los pesos de agregación no cambian tras ver test.\n\n## Evidencia prevista\n\n- `src/mars_titan/evaluation/metrics.py`\n- `tests/evaluation/test_metrics.py`\n- `docs/research/metrics.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013, MT-030\n\n## Riesgo y prioridad\n\nP0: Un cálculo o denominador ambiguo puede cambiar el orden de los modelos.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-032 · Verificar métricas y agregaciones",
+      "body": "## Contexto\n\nCada métrica necesita una definición precisa de agregación y de observaciones admisibles.\n\n## Trabajo delimitado\n\n- Implementar MAE/MSE, dirección, Rank IC por fecha, pérdida pinball, cobertura y anchura de intervalos.\n- Incluir NLL únicamente cuando el predictor especifique una densidad. Reservar ECE para probabilidades de eventos definidos.\n- Definir tratamiento de constantes, empates, faltantes y días con pocos activos.\n\n## Criterios de aceptación\n\n- [ ] Casos de resultado conocido verifican cada métrica y su agregación por fecha y fold.\n- [ ] Los predictores de cuantiles se evalúan con pinball, cobertura y anchura. NLL queda deshabilitada si no existe una densidad especificada.\n- [ ] Se informa denominador, cobertura de muestra y métricas no definidas en lugar de convertirlas silenciosamente en cero.\n- [ ] La métrica principal coincide con el protocolo y los pesos de agregación no cambian tras ver test.\n\n## Evidencia prevista\n\n- `src/mars_titan/evaluation/metrics.py`\n- `tests/evaluation/test_metrics.py`\n- `docs/research/metrics.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-013, MT-030\n\n## Riesgo y prioridad\n\nP0: Un cálculo o denominador ambiguo puede cambiar el orden de los modelos.",
       "labels": [
         "evaluacion",
         "incertidumbre"
@@ -678,8 +709,8 @@
     },
     {
       "id": "MT-033",
-      "title": "MT-033 · Implementar simulación long-short con costes y cronología operable",
-      "body": "## Contexto\n\nLa evaluación económica es una simulación retrospectiva y debe declarar todos sus supuestos.\n\n## Trabajo delimitado\n\n- Definir ranking a cartera, rebalanceo, ejecución posterior a la información y posiciones solapadas.\n- Incluir spread, slippage, rotación, préstamo si hay cortos y restricciones de liquidez/exposición.\n\n## Criterios de aceptación\n\n- [ ] Ejemplos manuales verifican PnL bruto/neto, turnover y drawdown.\n- [ ] La definición de volumen negociado y coste por unidad es consistente. Se diferencian rotación de un sentido y volumen total.\n- [ ] No se ejecuta al mismo cierre usado como información sin una justificación temporal. Se registran costes, exposiciones y abstención.\n\n## Evidencia prevista\n\n- `src/mars_titan/evaluation/backtest.py`\n- `tests/evaluation/test_backtest.py`\n- `configs/evaluation/costs.yaml`\n- `docs/research/trading-assumptions.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-006, MT-013, MT-030\n\n## Riesgo y prioridad\n\nP1: Un backtest sin costes ni secuencia realista no permite discutir utilidad económica.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-033 · Implementar la simulación con costes",
+      "body": "## Contexto\n\nLa evaluación económica es una simulación retrospectiva y debe declarar todos sus supuestos.\n\n## Trabajo delimitado\n\n- Definir ranking a cartera, rebalanceo, ejecución posterior a la información y posiciones solapadas.\n- Incluir spread, slippage, rotación, préstamo si hay cortos y restricciones de liquidez/exposición.\n\n## Criterios de aceptación\n\n- [ ] Ejemplos manuales verifican PnL bruto/neto, turnover y drawdown.\n- [ ] La definición de volumen negociado y coste por unidad es consistente. Se diferencian rotación de un sentido y volumen total.\n- [ ] No se ejecuta al mismo cierre usado como información sin una justificación temporal. Se registran costes, exposiciones y abstención.\n\n## Evidencia prevista\n\n- `src/mars_titan/evaluation/backtest.py`\n- `tests/evaluation/test_backtest.py`\n- `configs/evaluation/costs.yaml`\n- `docs/research/trading-assumptions.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-006, MT-013, MT-030\n\n## Riesgo y prioridad\n\nP1: Un backtest sin costes ni secuencia realista no permite discutir utilidad económica.",
       "labels": [
         "evaluacion",
         "metodologia"
@@ -696,8 +727,8 @@
     },
     {
       "id": "MT-034",
-      "title": "MT-034 · Seleccionar configuraciones solo con entrenamiento y validación",
-      "body": "## Contexto\n\nLa campaña de selección debe conservar todos los intentos y cerrar decisiones antes de la reserva final.\n\n## Trabajo delimitado\n\n- Ejecutar búsquedas acotadas por familia y seleccionar según el criterio registrado.\n- Ajustar calibración, abstención y reglas de memoria con datos permitidos. Revisar comparabilidad de presupuestos.\n\n## Criterios de aceptación\n\n- [ ] Se conservan todos los ensayos, incluidos fallos y configuraciones descartadas.\n- [ ] La configuración seleccionada de cada familia queda identificada antes de analizar test.\n- [ ] Ningún umbral ni modalidad se elige por rendimiento en la reserva final. Las desviaciones del plan quedan justificadas.\n\n## Evidencia prevista\n\n- `experiments/selection/`\n- `configs/finalists/`\n- `reports/selection.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-023, MT-024, MT-025, MT-026, MT-027, MT-028, MT-031, MT-032, MT-033\n\n## Riesgo y prioridad\n\nP1: La selección reiterada sobre test produce sobreajuste aunque el entrenamiento sea temporalmente correcto.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-034 · Fijar muestra principal y finalistas",
+      "body": "## Contexto\n\nLos tiempos del piloto y las ablaciones permiten fijar una comparación principal viable antes de abrir el test.\n\n## Trabajo delimitado\n\n- Congelar el manifiesto de la muestra principal aplicando la regla de MT-012 y el presupuesto medido de MT-060.\n- Seleccionar configuraciones con entrenamiento y validación, y fijar calibración, abstención, escritura y política de recurrencia.\n\n## Criterios de aceptación\n\n- [ ] Muestra y configuraciones quedan identificadas por huella, con población común para las familias obligatorias.\n- [ ] Se conservan búsquedas, fallos y costes. La selección utiliza las ablaciones de MT-029 y mantiene separados validación, calibración y test.\n- [ ] La elección de tamaño y finalistas deja margen para repetir y completar las entregas. Las extensiones P2 no bloquean el núcleo ni se activan tras observar el test.\n\n## Evidencia prevista\n\n- `data/manifests/main-sample.json`\n- `experiments/selection/`\n- `configs/finalists/`\n- `reports/selection.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-023, MT-024, MT-025, MT-026, MT-027, MT-028, MT-031, MT-032, MT-033, MT-059, MT-060, MT-029\n\n## Riesgo y prioridad\n\nP1: La amplitud de búsqueda y una campaña sobredimensionada pueden impedir cerrar la comparación o producir una ventaja aparente.",
       "labels": [
         "comparativa",
         "evaluacion"
@@ -714,14 +745,17 @@
         "MT-028",
         "MT-031",
         "MT-032",
-        "MT-033"
+        "MT-033",
+        "MT-059",
+        "MT-060",
+        "MT-029"
       ],
       "status": "Todo"
     },
     {
       "id": "MT-035",
-      "title": "MT-035 · Ejecutar la comparación final fuera de muestra",
-      "body": "## Contexto\n\nLa prueba final contrasta configuraciones cerradas y no debe convertirse en otra ronda de selección.\n\n## Trabajo delimitado\n\n- Ejecutar finalistas y ablaciones comprometidas en las ventanas de prueba registradas.\n- Conservar predicciones, recursos, errores y estados de memoria por fold y semilla.\n\n## Criterios de aceptación\n\n- [ ] Los hashes de configuración y datos coinciden con las versiones congeladas.\n- [ ] La ejecución respeta purga, etiquetas maduras, predicción de todo el día antes de escribir y estado aislado por fold.\n- [ ] Se publican resultados favorables y desfavorables. Cualquier repetición debida a fallo técnico conserva el historial y su motivo.\n\n## Evidencia prevista\n\n- `experiments/final/`\n- `reports/results/predictions-manifest.json`\n- `reports/results/metrics.csv`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-029, MT-034\n\n## Riesgo y prioridad\n\nP0: Es la evidencia principal del Tipo 3. No puede sustituirse por métricas de entrenamiento.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-035 · Ejecutar la comparación fuera de muestra",
+      "body": "## Contexto\n\nLa prueba final contrasta configuraciones cerradas sobre la muestra principal aprobada por el protocolo. Inventariar toda la fuente no obliga a entrenar ni evaluar todos sus activos.\n\n## Trabajo delimitado\n\n- Ejecutar finalistas obligatorios y ablaciones comprometidas sobre los mismos ejemplos elegibles de la muestra principal.\n- Conservar predicciones, recursos, incidencias y estados por fold y semilla. Identificar por separado las ampliaciones autorizadas antes del test.\n\n## Criterios de aceptación\n\n- [ ] Los hashes, recuentos y exclusiones coinciden con las versiones congeladas. Toda referencia usa la muestra principal acordada o declara una desviación.\n- [ ] La ejecución respeta purga, etiquetas maduras, predicción de toda la cohorte antes de escribir y estado aislado por fold.\n- [ ] Se publican resultados favorables y desfavorables con incertidumbre, costes y cobertura. No se reduce repetición para añadir mercados o familias después de ver el test.\n\n## Evidencia prevista\n\n- `experiments/final/`\n- `reports/results/predictions-manifest.json`\n- `reports/results/metrics.csv`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-029, MT-034\n\n## Riesgo y prioridad\n\nP0: Es la evidencia principal del Tipo 3. La cantidad de filas no sustituye una comparación temporal reproducible y terminada.",
       "labels": [
         "evaluacion",
         "comparativa",
@@ -738,8 +772,8 @@
     },
     {
       "id": "MT-036",
-      "title": "MT-036 · Estimar incertidumbre de las diferencias y sensibilidad a selección",
-      "body": "## Contexto\n\nUna diferencia media no informa de su estabilidad ni de la incertidumbre de la comparación.\n\n## Trabajo delimitado\n\n- Aplicar comparaciones pareadas y remuestreo temporal por bloques/fechas conservando la dependencia del panel.\n- Evaluar incertidumbre del Sharpe y diagnósticos de selección como DSR/PBO solo si sus datos y supuestos lo permiten.\n\n## Criterios de aceptación\n\n- [ ] Se declaran unidad de remuestreo, longitud de bloque, réplicas y contraste principal.\n- [ ] Los intervalos se acompañan de diferencias de magnitud y resultados por ventana, sin tratar activo-fecha como observaciones independientes.\n- [ ] Se distinguen mejora, ausencia de apoyo, inconclusión y equivalencia. DSR/PBO no se presentan como garantía de rentabilidad.\n\n## Evidencia prevista\n\n- `src/mars_titan/evaluation/statistics.py`\n- `reports/results/uncertainty.md`\n- `reports/results/intervals.csv`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-035\n\n## Riesgo y prioridad\n\nP1: La dependencia temporal y las pruebas múltiples pueden exagerar la evidencia de mejora.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-036 · Estimar incertidumbre y efecto de la selección",
+      "body": "## Contexto\n\nUna diferencia media no informa de su estabilidad ni de la incertidumbre de la comparación.\n\n## Trabajo delimitado\n\n- Aplicar comparaciones pareadas y remuestreo temporal por bloques/fechas conservando la dependencia del panel.\n- Evaluar incertidumbre del Sharpe y diagnósticos de selección como DSR/PBO solo si sus datos y supuestos lo permiten.\n\n## Criterios de aceptación\n\n- [ ] Se declaran unidad de remuestreo, longitud de bloque, réplicas y contraste principal.\n- [ ] Los intervalos se acompañan de diferencias de magnitud y resultados por ventana, sin tratar activo-fecha como observaciones independientes.\n- [ ] Se distinguen mejora, ausencia de apoyo, inconclusión y equivalencia. DSR/PBO no se presentan como garantía de rentabilidad.\n\n## Evidencia prevista\n\n- `src/mars_titan/evaluation/statistics.py`\n- `reports/results/uncertainty.md`\n- `reports/results/intervals.csv`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-035\n\n## Riesgo y prioridad\n\nP1: La dependencia temporal y las pruebas múltiples pueden exagerar la evidencia de mejora.",
       "labels": [
         "evaluacion",
         "metodologia"
@@ -754,15 +788,16 @@
     },
     {
       "id": "MT-037",
-      "title": "MT-037 · Analizar robustez a costes, regímenes y modalidades ausentes",
-      "body": "## Contexto\n\nLas pruebas de robustez delimitan dónde falla el resultado principal.\n\n## Trabajo delimitado\n\n- Ejecutar sensibilidades predefinidas de costes, latencia, ausencia modal, periodo y ajuste residual.\n- Medir olvido/retención y calibración por subperiodos con etiquetas ya observadas.\n\n## Criterios de aceptación\n\n- [ ] Cada sensibilidad mantiene identificable el cambio frente al experimento principal.\n- [ ] Se informa cobertura, drawdown, turnover, error y calibración donde sean pertinentes.\n- [ ] Los resultados no se usan para reoptimizar sobre test. Nuevos análisis exploratorios se etiquetan expresamente.\n\n## Evidencia prevista\n\n- `configs/stress/`\n- `reports/robustness/`\n- `experiments/stress/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-035\n\n## Riesgo y prioridad\n\nP1: La robustez no puede inferirse de un promedio agregado ni de un único régimen.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-037 · Evaluar robustez y abstención",
+      "body": "## Contexto\n\nLa robustez se estudia con sensibilidades predefinidas y permite delimitar dónde fallan las predicciones y la abstención.\n\n## Trabajo delimitado\n\n- Evaluar costes, ausencia modal, periodos y perturbaciones controladas de entradas, incluyendo ruido, duplicados, fechas erróneas y ráfagas.\n- Medir propagación al estado, recuperación, error y cobertura. Reutilizar el estudio de retención de MT-052 cuando se haya ejecutado.\n\n## Criterios de aceptación\n\n- [ ] Cada perturbación conserva una condición limpia comparable, intensidad y semilla, sin modificar la fuente original.\n- [ ] Las reglas proceden de MT-028. Los resultados del test no se usan para ajustar retrospectivamente umbrales.\n- [ ] Se informa calibración y riesgo a cobertura comparable, junto con degradaciones y perturbaciones no detectadas.\n- [ ] Las guardas se implementan en los módulos de datos y se reutilizan aquí. El estudio de retención no se repite sin una pregunta adicional.\n\n## Evidencia prevista\n\n- `configs/stress/`\n- `reports/robustness/`\n- `experiments/stress/`\n- `reports/robustness/data-contamination.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-035\n\n## Riesgo y prioridad\n\nP1: La robustez no puede inferirse de un promedio agregado ni de un único régimen.",
       "labels": [
         "evaluacion",
-        "comparativa"
+        "comparativa",
+        "incertidumbre"
       ],
       "milestone": "O5",
       "priority": "P1",
-      "size": "M",
+      "size": "L",
       "dependencies": [
         "MT-035"
       ],
@@ -770,11 +805,12 @@
     },
     {
       "id": "MT-038",
-      "title": "MT-038 · Medir recursos y verificar la restricción de 8 GB",
-      "body": "## Contexto\n\nLa viabilidad debe sustentarse en mediciones comparables de toda la solución.\n\n## Trabajo delimitado\n\n- Perfilar entrenamiento, inferencia, actualización de memoria y extracción de representaciones.\n- Registrar hardware, precisión, lote, longitud, parámetros, tiempo y pico de VRAM.\n\n## Criterios de aceptación\n\n- [ ] La comparación distingue memoria física disponible de presupuesto experimental de 8 GB.\n- [ ] Los ensayos acelerables usan cuda:0 y el pico observado respeta el presupuesto. Excesos quedan como incumplimiento o exclusión.\n- [ ] El coste de preprocesamiento y representaciones se reporta además del modelo principal y se identifican cuellos de botella medidos.\n\n## Evidencia prevista\n\n- `reports/resources/profile.md`\n- `reports/resources/measurements.csv`\n- `configs/profiling/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-023, MT-026, MT-027, MT-035\n\n## Riesgo y prioridad\n\nP0: No se puede afirmar cumplimiento de 8 GB a partir del número de parámetros o de un diagrama.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-038 · Informar recursos de los experimentos finales",
+      "body": "## Contexto\n\nEl informe final debe describir los recursos de las configuraciones realmente evaluadas, utilizando la instrumentación preparada en MT-060.\n\n## Trabajo delimitado\n\n- Consolidar registros de preparación, búsqueda, entrenamiento, inferencia y actualizaciones de los finalistas.\n- Medir de nuevo solo configuraciones distintas o aspectos no cubiertos, y explicar cualquier límite del perfil.\n\n## Criterios de aceptación\n\n- [ ] Se distinguen RAM, PSS, memoria del dispositivo y memoria asignada o reservada, sin duplicar memoria compartida.\n- [ ] El presupuesto de VRAM, los excesos y los tiempos completos incluyen procesos, cachés y componentes activados.\n- [ ] Se informa p50/p95/p99 y carga utilizada cuando proceda. Las mediciones finales reutilizan el método de MT-060 y no se sustituyen por estimaciones del piloto.\n\n## Evidencia prevista\n\n- `reports/resources/profile.md`\n- `reports/resources/measurements.csv`\n- `docs/engineering/latency-budget.md`\n- `configs/profiling/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-023, MT-026, MT-027, MT-035, MT-060\n\n## Riesgo y prioridad\n\nP0: La suma incorrecta de memoria compartida o la medida de inferencia aislada puede ocultar incumplimientos reales.",
       "labels": [
         "rendimiento",
-        "evaluacion"
+        "evaluacion",
+        "reproducibilidad"
       ],
       "milestone": "O6",
       "priority": "P0",
@@ -783,14 +819,15 @@
         "MT-023",
         "MT-026",
         "MT-027",
-        "MT-035"
+        "MT-035",
+        "MT-060"
       ],
       "status": "Todo"
     },
     {
       "id": "MT-039",
-      "title": "MT-039 · Decidir si compensa una optimización C++/CUDA",
-      "body": "## Contexto\n\nLa optimización nativa solo se justifica después de localizar un cuello de botella relevante.\n\n## Trabajo delimitado\n\n- Definir benchmark aislado, referencia Python/PyTorch y umbral de ganancia que compense mantenimiento.\n- Emitir decisión go/no-go. Solo con go implementar un prototipo acotado y comparar exactitud y rendimiento.\n\n## Criterios de aceptación\n\n- [ ] El informe identifica el cuello de botella y el porcentaje del tiempo total que ocupa.\n- [ ] La decisión no-go con evidencia cierra la tarea válidamente sin código nativo.\n- [ ] Si hay go, el prototipo tiene paridad numérica tolerada y mejora medida. No altera la comparación científica ni bloquea el cierre del proyecto.\n\n## Evidencia prevista\n\n- `reports/resources/native-go-no-go.md`\n- `benchmarks/`\n- `native/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-038\n\n## Riesgo y prioridad\n\nP2: Extensión opcional: optimizar sin perfil puede consumir tiempo sin mejorar la investigación.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-039 · Decidir sobre optimización nativa",
+      "body": "## Contexto\n\nLa optimización nativa solo se justifica después de localizar un cuello de botella relevante.\n\n## Trabajo delimitado\n\n- Definir benchmark aislado, referencia Python/PyTorch y umbral de ganancia que compense mantenimiento.\n- Emitir decisión de mantener o descartar. Solo si compensa, implementar un prototipo acotado y comparar exactitud y rendimiento.\n\n## Criterios de aceptación\n\n- [ ] El informe identifica el cuello de botella y el porcentaje del tiempo total que ocupa.\n- [ ] La decisión de descarte con evidencia cierra la tarea válidamente sin código nativo.\n- [ ] Si se mantiene la opción, el prototipo tiene paridad numérica tolerada y mejora medida. No altera la comparación científica ni bloquea el cierre del proyecto.\n\n## Evidencia prevista\n\n- `reports/resources/native-go-no-go.md`\n- `benchmarks/`\n- `native/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-038\n\n## Riesgo y prioridad\n\nP2: Extensión opcional: optimizar sin perfil puede consumir tiempo sin mejorar la investigación.",
       "labels": [
         "opcional",
         "rendimiento"
@@ -805,8 +842,8 @@
     },
     {
       "id": "MT-040",
-      "title": "MT-040 · Sintetizar fallos, aportaciones y límites de los seis objetivos",
-      "body": "## Contexto\n\nLas conclusiones deben derivar de resultados, aunque la propuesta no supere modelos simples.\n\n## Trabajo delimitado\n\n- Responder a O1-O6 con resultados identificados y comparar evidencia con hipótesis iniciales.\n- Analizar modalidades, memoria, calibración, recursos, sesgos pendientes y experimentos fallidos.\n\n## Criterios de aceptación\n\n- [ ] Cada conclusión enlaza a una tabla, figura, ejecución o limitación comprobable.\n- [ ] Se distingue validez del estudio de superioridad del modelo y se mantienen resultados negativos.\n- [ ] No se atribuye causalidad económica a residualización/ablaciones ni se presenta simulación como rentabilidad futura o sistema de producción.\n\n## Evidencia prevista\n\n- `docs/research/findings.md`\n- `docs/research/limitations.md`\n- `reports/results/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-016, MT-029, MT-036, MT-037, MT-038\n\n## Riesgo y prioridad\n\nP1: Una interpretación excesiva puede invalidar la calidad de una comparación bien ejecutada.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-040 · Redactar conclusiones de los seis objetivos",
+      "body": "## Contexto\n\nLas conclusiones deben derivar de resultados, aunque la propuesta no supere modelos simples.\n\n## Trabajo delimitado\n\n- Responder a O1-O6 con resultados identificados y comparar evidencia con hipótesis iniciales.\n- Analizar modalidades, memoria, calibración, recursos, sesgos pendientes y experimentos fallidos.\n\n## Criterios de aceptación\n\n- [ ] Cada conclusión enlaza a una tabla, figura, ejecución o limitación comprobable.\n- [ ] Se distingue validez del estudio de superioridad del modelo y se mantienen resultados negativos.\n- [ ] No se atribuye causalidad económica a residualización/ablaciones ni se presenta simulación como rentabilidad futura o sistema de producción.\n\n## Evidencia prevista\n\n- `docs/research/findings.md`\n- `docs/research/limitations.md`\n- `reports/results/`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-016, MT-029, MT-036, MT-037, MT-038\n\n## Riesgo y prioridad\n\nP1: Una interpretación excesiva puede invalidar la calidad de una comparación bien ejecutada.",
       "labels": [
         "redaccion",
         "evaluacion"
@@ -825,8 +862,8 @@
     },
     {
       "id": "MT-041",
-      "title": "MT-041 · Preparar y entregar el primer borrador académico",
-      "body": "## Contexto\n\nLa primera entrega debe presentar contexto, estado del arte, bibliografía y objetivos claros (Guía p. 24).\n\n## Trabajo delimitado\n\n- Redactar los apartados iniciales en la plantilla del campus usando los seis objetivos presentados.\n- Revisar atribuciones, alcance y preguntas de investigación. Incorporar el calendario real.\n\n## Criterios de aceptación\n\n- [ ] El documento contiene problemática, revisión crítica, referencias y objetivos alcanzables.\n- [ ] Se distingue lo propuesto de lo ejecutado y se cumple el formato/citación aplicable.\n- [ ] Se registra la entrega real mediante la actividad del campus y las observaciones recibidas. Preparar el borrador no equivale a entregarlo.\n\n## Evidencia prevista\n\n- `thesis/`\n- `docs/academic/deliveries/first-draft.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n\n## Dependencias\n\nMT-001, MT-002, MT-003, MT-013, MT-030\n\n## Riesgo y prioridad\n\nP1: Las fechas y el estado de entrega no se pueden inventar. La interacción con el campus corresponde al estudiante.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-041 · Preparar y entregar el primer borrador",
+      "body": "## Contexto\n\nLa primera entrega debe presentar contexto, estado del arte, bibliografía y objetivos claros (Guía p. 24).\n\n## Trabajo delimitado\n\n- Redactar los apartados iniciales en la plantilla del campus usando los seis objetivos presentados.\n- Revisar atribuciones, alcance y preguntas de investigación. Incorporar el calendario real.\n\n## Criterios de aceptación\n\n- [ ] El documento contiene problemática, revisión crítica, referencias y objetivos alcanzables.\n- [ ] Se distingue lo propuesto de lo ejecutado y se cumple el formato/citación aplicable.\n- [ ] Se registra la entrega real mediante la actividad del campus y las observaciones recibidas. Preparar el borrador no equivale a entregarlo.\n\n## Evidencia prevista\n\n- `thesis/`\n- `docs/academic/deliveries/first-draft.md`\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n\n## Dependencias\n\nMT-001, MT-002, MT-003, MT-013, MT-030\n\n## Riesgo y prioridad\n\nP1: Las fechas y el estado de entrega no se pueden inventar. La interacción con el campus corresponde al estudiante.",
       "labels": [
         "redaccion",
         "integridad-academica"
@@ -845,8 +882,8 @@
     },
     {
       "id": "MT-042",
-      "title": "MT-042 · Preparar y entregar el segundo borrador con avance comprobado",
-      "body": "## Contexto\n\nLa segunda entrega debe demostrar avance sustancial y objetivos realistas, aplicando las correcciones anteriores (Guía p. 24).\n\n## Trabajo delimitado\n\n- Actualizar método, datos y primeras comparaciones verificadas, indicando resultados aún pendientes.\n- Resolver observaciones del director y registrar decisiones de alcance.\n\n## Criterios de aceptación\n\n- [ ] Se aporta evidencia de datos, target, referencias simples e integración mínima. No se sustituyen por expectativas.\n- [ ] Cada observación de la primera entrega tiene respuesta o motivo de no aplicación.\n- [ ] Se registra la entrega real y su devolución, sin confundir APTO con calificación final.\n\n## Evidencia prevista\n\n- `thesis/`\n- `docs/academic/deliveries/second-draft.md`\n- `reports/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C2 · Estructura y apartados (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-041, MT-012, MT-015, MT-024, MT-023, MT-028\n\n## Riesgo y prioridad\n\nP1: El avance insuficiente puede impedir el depósito ordinario. El calendario real gobierna la entrega.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-042 · Preparar y entregar el segundo borrador",
+      "body": "## Contexto\n\nLa segunda entrega debe demostrar avance sustancial y objetivos realistas, aplicando las correcciones anteriores (Guía p. 24).\n\n## Trabajo delimitado\n\n- Actualizar método, datos y primeras comparaciones verificadas, indicando resultados aún pendientes.\n- Resolver observaciones del director y registrar decisiones de alcance.\n\n## Criterios de aceptación\n\n- [ ] Se aporta evidencia de datos, objetivo, referencias simples e integración mínima. No se sustituyen por expectativas.\n- [ ] Cada observación de la primera entrega tiene respuesta o motivo de no aplicación.\n- [ ] Se registra la entrega real y su devolución, sin confundir APTO con calificación final.\n\n## Evidencia prevista\n\n- `thesis/`\n- `docs/academic/deliveries/second-draft.md`\n- `reports/`\n\n## Relación con la rúbrica\n\n- C2 · Estructura y apartados (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-041, MT-012, MT-015, MT-024, MT-023, MT-028\n\n## Riesgo y prioridad\n\nP1: El avance insuficiente puede impedir el depósito ordinario. El calendario real gobierna la entrega.",
       "labels": [
         "redaccion",
         "integridad-academica"
@@ -866,8 +903,8 @@
     },
     {
       "id": "MT-043",
-      "title": "MT-043 · Completar y entregar el tercer borrador de la memoria",
-      "body": "## Contexto\n\nLa tercera entrega debe contener todos los capítulos completos, incluidas introducción y conclusiones (Guía pp. 24-25).\n\n## Trabajo delimitado\n\n- Integrar resultados, discusión, conclusiones, límites, referencias y anexos en un documento coherente.\n- Aplicar correcciones de la segunda entrega y eliminar cifras o figuras meramente ilustrativas de la sección de resultados.\n\n## Criterios de aceptación\n\n- [ ] Todos los apartados exigidos por la plantilla están desarrollados y O1-O6 tienen respuesta explícita.\n- [ ] Las cifras coinciden con artefactos reales y las expectativas permanecen identificadas como hipótesis.\n- [ ] Se registra la entrega y las observaciones finales. No se afirma autorización de depósito por haber entregado el borrador.\n\n## Evidencia prevista\n\n- `thesis/`\n- `docs/academic/deliveries/third-draft.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-042, MT-040\n\n## Riesgo y prioridad\n\nP1: La memoria completa debe existir antes del cierre. La redacción no se deja para después del predepósito.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-043 · Completar y entregar el tercer borrador",
+      "body": "## Contexto\n\nLa tercera entrega debe contener todos los capítulos completos, incluidas introducción y conclusiones (Guía pp. 24-25).\n\n## Trabajo delimitado\n\n- Integrar resultados, discusión, conclusiones, límites, referencias y anexos en un documento coherente.\n- Aplicar correcciones de la segunda entrega y eliminar cifras o figuras meramente ilustrativas de la sección de resultados.\n\n## Criterios de aceptación\n\n- [ ] Todos los apartados exigidos por la plantilla están desarrollados y O1-O6 tienen respuesta explícita.\n- [ ] Las cifras coinciden con artefactos reales y las expectativas permanecen identificadas como hipótesis.\n- [ ] Se registra la entrega y las observaciones finales. No se afirma autorización de depósito por haber entregado el borrador.\n\n## Evidencia prevista\n\n- `thesis/`\n- `docs/academic/deliveries/third-draft.md`\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-042, MT-040\n\n## Riesgo y prioridad\n\nP1: La memoria completa debe existir antes del cierre. La redacción no se deja para después del predepósito.",
       "labels": [
         "redaccion",
         "integridad-academica"
@@ -883,8 +920,8 @@
     },
     {
       "id": "MT-044",
-      "title": "MT-044 · Reproducir tablas y figuras y revisar el paquete de evidencias",
-      "body": "## Contexto\n\nLa memoria y el repositorio deben contar la misma comparación y permitir comprobar sus resultados.\n\n## Trabajo delimitado\n\n- Reconstruir tablas y figuras desde resultados versionados. Revisar citas, enlaces, permisos y exclusiones de datos.\n- Revisar comandos, configuraciones y documentación desde un entorno limpio. Mantener solo los scripts de documentación/biblioteca necesarios.\n\n## Criterios de aceptación\n\n- [ ] Un manifiesto enlaza cada tabla y figura a configuración, datos y artefactos de origen.\n- [ ] Se verifican los comandos documentados, enlaces locales y correspondencia cita-bibliografía. No se incorporan datos o PDF de terceros a Git.\n- [ ] La matriz de rúbrica se actualiza con evidencia real y pendientes, sin autoasignar una nota ni fabricar aprobaciones.\n\n## Evidencia prevista\n\n- `reports/results/artifact-index.json`\n- `thesis/figures/`\n- `docs/academic/rubric-matrix.md`\n- `docs/research/reproduction.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-003, MT-035, MT-036, MT-037, MT-038, MT-043\n\n## Riesgo y prioridad\n\nP0: Una discrepancia entre cifras, código y memoria compromete la revisión y la defensa.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-044 · Reproducir figuras y revisar las evidencias",
+      "body": "## Contexto\n\nLa memoria y el repositorio deben contar la misma comparación y permitir comprobar sus resultados.\n\n## Trabajo delimitado\n\n- Reconstruir tablas y figuras desde resultados versionados. Revisar citas, enlaces, permisos y exclusiones de datos.\n- Revisar comandos, configuraciones y documentación desde un entorno limpio. Mantener solo los scripts de documentación/biblioteca necesarios.\n\n## Criterios de aceptación\n\n- [ ] Un manifiesto enlaza cada tabla y figura a configuración, datos y artefactos de origen.\n- [ ] Se verifican los comandos documentados, enlaces locales y correspondencia cita-bibliografía. No se incorporan datos o PDF de terceros a Git.\n- [ ] La matriz de rúbrica se actualiza con evidencia real y pendientes, sin autoasignar una nota ni fabricar aprobaciones.\n\n## Evidencia prevista\n\n- `reports/results/artifact-index.json`\n- `thesis/figures/`\n- `docs/academic/rubric-matrix.md`\n- `docs/research/reproduction.md`\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-003, MT-035, MT-036, MT-037, MT-038, MT-043\n\n## Riesgo y prioridad\n\nP0: Una discrepancia entre cifras, código y memoria compromete la revisión y la defensa.",
       "labels": [
         "reproducibilidad",
         "redaccion"
@@ -904,8 +941,8 @@
     },
     {
       "id": "MT-045",
-      "title": "MT-045 · Cerrar predepósito y tramitar el depósito autorizado",
-      "body": "## Contexto\n\nEl predepósito es definitivo y no admite cambios de forma ni contenido. Se deposita el mismo documento tras el visto bueno (Guía pp. 25 y 27).\n\n## Trabajo delimitado\n\n- Cerrar el PDF, revisar autoría/citas/formato y registrar su hash y versión.\n- Tramitar las entregas y autorizaciones reales del campus, con expediente y plazos comprobados por el estudiante.\n\n## Criterios de aceptación\n\n- [ ] Se conserva el PDF exacto del predepósito y su hash. El archivo depositado es idéntico.\n- [ ] Se documentan visto bueno y autorización de defensa cuando se reciban, sin presumirlos.\n- [ ] No quedan correcciones pendientes y se cumple el procedimiento real. La autorización no se presenta como aprobado.\n\n## Evidencia prevista\n\n- `docs/academic/deliveries/predeposit.md`\n- `docs/academic/deliveries/deposit.md`\n- `thesis/`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-002, MT-043, MT-044\n\n## Riesgo y prioridad\n\nP0: El cierre es irreversible dentro del procedimiento ordinario. Todas las comprobaciones deben precederlo.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-045 · Cerrar predepósito y tramitar la autorización",
+      "body": "## Contexto\n\nEl predepósito es definitivo y no admite cambios de forma ni contenido. Se deposita el mismo documento tras el visto bueno (Guía pp. 25 y 27).\n\n## Trabajo delimitado\n\n- Cerrar el PDF, revisar autoría/citas/formato y registrar su hash y versión.\n- Tramitar las entregas y autorizaciones reales del campus, con expediente y plazos comprobados por el estudiante.\n\n## Criterios de aceptación\n\n- [ ] Se conserva el PDF exacto del predepósito y su hash. El archivo depositado es idéntico.\n- [ ] Se documentan visto bueno y autorización de defensa cuando se reciban, sin presumirlos.\n- [ ] No quedan correcciones pendientes y se cumple el procedimiento real. La autorización no se presenta como aprobado.\n\n## Evidencia prevista\n\n- `docs/academic/deliveries/predeposit.md`\n- `docs/academic/deliveries/deposit.md`\n- `thesis/`\n\n## Relación con la rúbrica\n\n- C1 · Estilo y formato académico (10 %)\n- C2 · Estructura y apartados (10 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-002, MT-043, MT-044\n\n## Riesgo y prioridad\n\nP0: El cierre es irreversible dentro del procedimiento ordinario. Todas las comprobaciones deben precederlo.",
       "labels": [
         "redaccion",
         "integridad-academica"
@@ -922,8 +959,8 @@
     },
     {
       "id": "MT-046",
-      "title": "MT-046 · Preparar y realizar la defensa con dominio de resultados",
-      "body": "## Contexto\n\nLa exposición pesa 30 % y exige al menos 1,5 de sus 3 puntos. La presentación individual dura como máximo 15 minutos, con 10 recomendados.\n\n## Trabajo delimitado\n\n- Preparar diapositivas y un discurso centrado en comparación, resultados y límites.\n- Ensayar con cronómetro, preguntas técnicas y demostración de autoría. Verificar PDF, identidad, audio y conexión.\n- Realizar la defensa en la convocatoria comunicada y registrar resultado y observaciones.\n\n## Criterios de aceptación\n\n- [ ] La exposición ensayada dura alrededor de 10 minutos y nunca supera 15. Usa diapositivas como apoyo.\n- [ ] El estudiante explica etiquetas maduras, estado de memoria, costes, calibración y resultados negativos con evidencia propia.\n- [ ] Se respeta la convocatoria real. Done requiere defensa realizada y resultado registrado, sin prometer alcanzar el mínimo de 1,5/3.\n\n## Evidencia prevista\n\n- `thesis/defense/`\n- `docs/academic/defense-rehearsal.md`\n- `docs/academic/defense-outcome.md`\n\nLas rutas previstas son entregables futuros. Su mención no implica que estén implementados. Los datos, pesos y artefactos grandes se conservan fuera de Git, con manifiestos e instrucciones reproducibles.\n\n## Relación con la rúbrica\n\n- C7 · Presentación y exposición (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-040, MT-044, MT-045\n\n## Riesgo y prioridad\n\nP0: La memoria no compensa suspender exposición. Dominio y autoría deben demostrarse oralmente.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "title": "MT-046 · Preparar y realizar la defensa",
+      "body": "## Contexto\n\nLa exposición pesa 30 % y exige al menos 1,5 de sus 3 puntos. La presentación individual dura como máximo 15 minutos, con 10 recomendados.\n\n## Trabajo delimitado\n\n- Preparar diapositivas y un discurso centrado en comparación, resultados y límites.\n- Ensayar con cronómetro, preguntas técnicas y demostración de autoría. Verificar PDF, identidad, audio y conexión.\n- Realizar la defensa en la convocatoria comunicada y registrar resultado y observaciones.\n\n## Criterios de aceptación\n\n- [ ] La exposición ensayada dura alrededor de 10 minutos y nunca supera 15. Usa diapositivas como apoyo.\n- [ ] El estudiante explica etiquetas maduras, estado de memoria, costes, calibración y resultados negativos con evidencia propia.\n- [ ] Se respeta la convocatoria real. Done requiere defensa realizada y resultado registrado, sin prometer alcanzar el mínimo de 1,5/3.\n\n## Evidencia prevista\n\n- `thesis/defense/`\n- `docs/academic/defense-rehearsal.md`\n- `docs/academic/defense-outcome.md`\n\n## Relación con la rúbrica\n\n- C7 · Presentación y exposición (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-040, MT-044, MT-045\n\n## Riesgo y prioridad\n\nP0: La memoria no compensa suspender exposición. Dominio y autoría deben demostrarse oralmente.",
       "labels": [
         "defensa",
         "integridad-academica"
@@ -935,6 +972,313 @@
         "MT-040",
         "MT-044",
         "MT-045"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-048",
+      "title": "MT-048 · Preparar datos por bloques y ventanas bajo demanda",
+      "body": "## Contexto\n\nLa copia completa supera la RAM, aunque la muestra principal sea acotada. La preparación necesita lectura limitada y ventanas bajo demanda, con diseño sencillo y recursos medidos.\n\n## Trabajo delimitado\n\n- Implementar preparación por particiones, deduplicación y acceso temporal a ventanas sin materializar todos los solapamientos.\n- Limitar lectores y cachés. Verificar la ruta sobre la muestra principal y conservar soporte para una ampliación posterior.\n\n## Criterios de aceptación\n\n- [ ] Los recuentos de la muestra principal se reconcilian y la reanudación no duplica ni omite ejemplos.\n- [ ] Las ventanas coinciden con una referencia pequeña y no usan observaciones posteriores a la decisión.\n- [ ] Se miden RAM, disco temporal y E/S. El soporte del corpus completo no se presenta como una ejecución completa ya realizada.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/streaming.py`\n- `tests/data/test_streaming.py`\n- `reports/data/streaming-validation.md`\n- `docs/engineering/full-dataset-training.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-004, MT-005, MT-011, MT-012\n\n## Riesgo y prioridad\n\nP1: Duplicar ventanas o llenar cachés sin límite puede hacer inviable un modelo pequeño. La ingeniería de escalado no debe desplazar el experimento principal.",
+      "labels": [
+        "datos",
+        "reproducibilidad",
+        "rendimiento"
+      ],
+      "milestone": "O1",
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        "MT-004",
+        "MT-005",
+        "MT-011",
+        "MT-012"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-050",
+      "title": "MT-050 · Contrastar familias secuenciales adicionales",
+      "body": "## Contexto\n\nSSM, delta-rule y atención compacta son alternativas del catálogo. Su disponibilidad no exige entrenar todas las combinaciones ni reemplazar la GRU de referencia.\n\n## Trabajo delimitado\n\n- Seleccionar mediante una prueba acotada los contrastes que respondan a capacidad, contexto o coste.\n- Documentar fidelidad a las fuentes y fijar decisiones de continuidad antes de cualquier evaluación final.\n\n## Criterios de aceptación\n\n- [ ] Cada familia activada utiliza entradas, etiquetas, cortes y presupuesto declarados. Se informa tanto capacidad como tiempo.\n- [ ] Las familias excluidas tienen una decisión de descarte respaldada por recursos, alcance o evidencia del piloto.\n- [ ] La tabla separa resultados medidos de expectativas. El núcleo puede cerrarse sin ejecutar esta extensión.\n\n## Evidencia prevista\n\n- `configs/baselines/sequence-candidates/`\n- `reports/baselines/sequence-family-gates.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-026, MT-028, MT-048\n\n## Riesgo y prioridad\n\nP2: Añadir familias sin pregunta ni presupuesto aumenta búsqueda múltiple y puede desplazar la comparación principal.",
+      "labels": [
+        "comparativa",
+        "modelos",
+        "opcional"
+      ],
+      "milestone": "O4",
+      "priority": "P2",
+      "size": "L",
+      "dependencies": [
+        "MT-026",
+        "MT-028",
+        "MT-048"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-052",
+      "title": "MT-052 · Medir retención e interferencia",
+      "body": "## Contexto\n\nLa memoria adaptativa no se evalúa solo con error medio. Conservar conocimiento y aprender cambios son propiedades diferentes.\n\n## Trabajo delimitado\n\n- Definir secuencias sintéticas controladas y revisitas de regímenes observables con reglas fijadas en desarrollo.\n- Medir retención, recuperación y velocidad de reaprendizaje, separando patrones recurrentes de cambios persistentes.\n\n## Criterios de aceptación\n\n- [ ] Las medidas identifican interferencia y plasticidad sin usar etiquetas futuras para definir los regímenes de entrada.\n- [ ] Los controles sin memoria y con igual capacidad permiten separar almacenamiento, recuperación y efecto predictivo.\n- [ ] Se conservan resultados negativos y límites de capacidad. No se concluye olvido cero ni extrapolación ilimitada desde una prueba finita.\n\n## Evidencia prevista\n\n- `tests/memory/test_retention_protocol.py`\n- `configs/memory/retention.yaml`\n- `reports/memory/retention.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-024, MT-030, MT-019\n\n## Riesgo y prioridad\n\nP1: Una mejora agregada puede ocultar pérdida de plasticidad o fallos sistemáticos cuando reaparece un régimen.",
+      "labels": [
+        "memoria",
+        "evaluacion",
+        "comparativa",
+        "aprendizaje-continuo"
+      ],
+      "milestone": "O3",
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        "MT-024",
+        "MT-030",
+        "MT-019"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-053",
+      "title": "MT-053 · Evaluar consolidación y replay",
+      "body": "## Contexto\n\nEl replay es una extensión condicionada a que la memoria mínima aporte evidencia. La consolidación paramétrica comienza en entrenamiento o reajustes programados con pasado.\n\n## Trabajo delimitado\n\n- Contrastar memoria sola, replay solo y combinación con igual presupuesto total.\n- Comparar muestreo histórico básico y diversidad, fijando frecuencia y tratamiento de representaciones por versión.\n\n## Criterios de aceptación\n\n- [ ] Cada ejemplo, etiqueta y objetivo del replay cumple el corte autorizado. El estado de final de una época no contamina su inicio.\n- [ ] Las claves y valores son compatibles con el codificador publicado o se reconstruyen con historia permitida.\n- [ ] El efecto se evalúa junto con tiempo, almacenamiento y pérdida de adaptación. Una decisión de descarte razonada cierra la extensión sin bloquear el núcleo.\n\n## Evidencia prevista\n\n- `src/mars_titan/training/replay.py`\n- `experiments/replay/`\n- `reports/memory/consolidation-decision.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-019, MT-052, MT-059\n\n## Riesgo y prioridad\n\nP2: Más actualizaciones o datos históricos pueden explicar la mejora aparente. El replay también puede conservar patrones obsoletos.",
+      "labels": [
+        "memoria",
+        "modelos",
+        "aprendizaje-continuo",
+        "opcional"
+      ],
+      "milestone": "O3",
+      "priority": "P2",
+      "size": "L",
+      "dependencies": [
+        "MT-019",
+        "MT-052",
+        "MT-059"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-054",
+      "title": "MT-054 · Evaluar pasos recurrentes y parada",
+      "body": "## Contexto\n\nEl refinamiento latente puede mejorar el cálculo con la misma información, pero también aumentar coste y confianza errónea. Se necesita una decisión verificable sobre su inclusión.\n\n## Trabajo delimitado\n\n- Implementar un contraste acotado de uno, dos y cuatro pasos con memoria e inputs inmutables dentro de la lectura.\n- Comparar puerta por presupuesto, por incertidumbre y asignación aleatoria con igual cómputo medio, frente a K fijo.\n\n## Criterios de aceptación\n\n- [ ] La política K se aprende y selecciona solo con pasado. La convergencia latente no se presenta como calibración.\n- [ ] Se mide error incremental, cobertura, frecuencia de cada K, VRAM y p50/p95/p99, incluyendo el coste de la puerta.\n- [ ] Una decisión de mantener o descartar fija K = 1 cuando los pasos extra no aportan una mejora defendible bajo el presupuesto. No es obligatorio incorporar recurrencia al finalista.\n\n## Evidencia prevista\n\n- `src/mars_titan/models/refinement.py`\n- `configs/ablations/recurrent-depth.yaml`\n- `reports/models/recurrence-gate.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-023, MT-028, MT-032\n\n## Riesgo y prioridad\n\nP1: Más iteraciones no añaden observaciones y pueden perder frente a un predictor sencillo con el mismo coste.",
+      "labels": [
+        "comparativa",
+        "modelos",
+        "rendimiento"
+      ],
+      "milestone": "O4",
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        "MT-023",
+        "MT-028",
+        "MT-032"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-055",
+      "title": "MT-055 · Evaluar destilación temporalmente válida",
+      "body": "## Contexto\n\nLa destilación puede desplazar cómputo hacia el entrenamiento. Solo tiene sentido si el profesor aporta utilidad y su información es temporalmente válida.\n\n## Trabajo delimitado\n\n- Entrenar un profesor permitido y transferir sus salidas a una cabeza rápida, con identidad y corte de cada artefacto.\n- Comparar estudiante directo, estudiante destilado y profesor, incluyendo preparación y calibración.\n\n## Criterios de aceptación\n\n- [ ] Profesor, selección y objetivos de destilación no acceden al test. Sus salidas no se presentan como predicciones históricas anteriores a su entrenamiento.\n- [ ] Las señales utilizadas para aprender escritura o utilidad de la puerta se generan con cortes históricos válidos.\n- [ ] Se contabilizan costes totales y calibración propia del estudiante. La extensión se descarta con evidencia si no conserva una relación útil entre error y latencia.\n\n## Evidencia prevista\n\n- `src/mars_titan/training/distillation.py`\n- `data/manifests/teacher-targets/`\n- `reports/models/distillation.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-030, MT-054, MT-059\n\n## Riesgo y prioridad\n\nP2: El estudiante puede heredar contaminación temporal, errores y confianza excesiva del profesor.",
+      "labels": [
+        "comparativa",
+        "modelos",
+        "opcional"
+      ],
+      "milestone": "O4",
+      "priority": "P2",
+      "size": "L",
+      "dependencies": [
+        "MT-030",
+        "MT-054",
+        "MT-059"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-056",
+      "title": "MT-056 · Auditar indicadores macro y sus versiones",
+      "body": "## Contexto\n\nEl catálogo macro contiene candidatos. Su admisión requiere comprobar significado, condiciones de uso y disponibilidad histórica de las series priorizadas.\n\n## Trabajo delimitado\n\n- Auditar definición, unidades, frecuencia, publicación y revisiones mediante fuentes oficiales.\n- Recuperar una muestra acotada con versiones y procedencia para verificar esas propiedades. Reutilizar herramientas de adquisición disponibles.\n\n## Criterios de aceptación\n\n- [ ] Cada serie admitida tiene evidencia de publicación y revisión. Se diferencian periodo observado, disponibilidad y recuperación.\n- [ ] No se inventan horas ni versiones históricas. Las series no verificables se excluyen o quedan pendientes con un motivo.\n- [ ] La auditoría valida el contenido macro. La actualización periódica general pertenece a MT-067 y no es requisito para cerrar esta revisión.\n\n## Evidencia prevista\n\n- `docs/data/macro-catalog.md`\n- `data/catalogs/macro-indicators.csv`\n- `data/manifests/macro-acquisition/`\n- `reports/data/macro-source-validation.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-003, MT-005\n\n## Riesgo y prioridad\n\nP1: La cantidad de indicadores no garantiza señal y multiplica problemas de revisiones, disponibilidad y selección.",
+      "labels": [
+        "datos",
+        "macroeconomia",
+        "bibliografia",
+        "reproducibilidad"
+      ],
+      "milestone": "O1",
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        "MT-003",
+        "MT-005"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-057",
+      "title": "MT-057 · Integrar macro con versiones y disponibilidad",
+      "body": "## Contexto\n\nToda familia macro activada debe reflejar lo conocido en cada decisión. La revisión posterior de un periodo antiguo no puede modificar retrospectivamente entradas ni memoria.\n\n## Trabajo delimitado\n\n- Implementar uniones por serie, observación, vintage y disponibilidad para las familias admitidas, con máscaras y antigüedad.\n- Procesar revisiones como eventos nuevos y realizar una ablación acotada sobre población común.\n\n## Criterios de aceptación\n\n- [ ] Añadir revisiones o publicaciones futuras no cambia características, predicciones ni estados anteriores.\n- [ ] Retrasos, festivos y zonas horarias respetan el calendario activo. China añade las comprobaciones de MT-058 si se autoriza esa ampliación.\n- [ ] Procedencia y versión quedan conservadas. Selección de series y transformaciones usan solo el tramo permitido. Familias no validadas no entran por cumplir una cuota de indicadores.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/macro.py`\n- `tests/data/test_macro_vintages.py`\n- `reports/data/macro-asof-validation.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-011, MT-056\n\n## Riesgo y prioridad\n\nP1: Una unión por fin de mes o una descarga de valores finales puede introducir fuga en una secuencia ordenada.",
+      "labels": [
+        "datos",
+        "macroeconomia",
+        "metodologia",
+        "reproducibilidad"
+      ],
+      "milestone": "O1",
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        "MT-011",
+        "MT-056"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-058",
+      "title": "MT-058 · Versionar calendarios y reglas de mercado",
+      "body": "## Contexto\n\nEl núcleo requiere calendario y restricciones estadounidenses coherentes con sus fechas. China exige verificar reglas propias antes de ampliar una simulación. Las reglas actuales no describen automáticamente el pasado.\n\n## Trabajo delimitado\n\n- Contrastar calendarios, sesiones especiales y restricciones relevantes para las operaciones realmente simuladas, con fuentes oficiales.\n- Registrar vigencias effective_from y effective_to. Evaluar la admisión de China según cobertura histórica, restricciones y presupuesto.\n\n## Criterios de aceptación\n\n- [ ] Los cambios de norma y calendario del universo activado producen instantes y condiciones verificables, sin aplicar reglas de 2026 retrospectivamente.\n- [ ] El objetivo predictivo se diferencia de una cartera ejecutable. No se presupone una operación intradía o posición corta permitida en todos los mercados.\n- [ ] China dispone de una decisión de mantener o descartar justificada. Su exclusión no bloquea el núcleo y las limitaciones de negociación quedan explícitas.\n\n## Evidencia prevista\n\n- `data/catalogs/market-rules.csv`\n- `src/mars_titan/data/market_calendars.py`\n- `tests/data/test_market_rules.py`\n- `reports/data/market-rule-audit.md`\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005, MT-013\n\n## Riesgo y prioridad\n\nP1: Una etiqueta estadística válida puede corresponder a una operación imposible bajo las restricciones históricas.",
+      "labels": [
+        "datos",
+        "metodologia",
+        "evaluacion"
+      ],
+      "milestone": "O2",
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        "MT-005",
+        "MT-013"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-059",
+      "title": "MT-059 · Comprobar compatibilidad de las versiones",
+      "body": "## Contexto\n\nUn estado legible puede ser incompatible con los pesos, el codificador o el calibrador que lo utilizan. La versión publicada debe ser coherente.\n\n## Trabajo delimitado\n\n- Definir un contrato común de versión con corte, codificador, normalizadores, pesos, memoria, macro, calibrador y política K.\n- Verificar compatibilidad y publicación íntegra, reutilizando el mismo contrato en MT-021, MT-031 y MT-065.\n\n## Criterios de aceptación\n\n- [ ] Una combinación deliberada de revisiones incompatibles se rechaza y una cohorte utiliza una sola versión.\n- [ ] Un cambio de representación exige reconstrucción o migración validada con pasado. No se presume calibración después de una mutación.\n- [ ] Esta tarea comprueba compatibilidad y publicación. MT-065 implementa persistencia recuperable y MT-063 estudia concurrencia cuando se active.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/snapshot.py`\n- `tests/memory/test_bundle_compatibility.py`\n- `reports/memory/bundle-validation.md`\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-010, MT-021, MT-022\n\n## Riesgo y prioridad\n\nP0: La publicación parcial o el uso de representaciones obsoletas puede producir fallos silenciosos aunque cada componente funcione por separado.",
+      "labels": [
+        "memoria",
+        "reproducibilidad",
+        "incertidumbre"
+      ],
+      "milestone": "O3",
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        "MT-010",
+        "MT-021",
+        "MT-022"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-060",
+      "title": "MT-060 · Medir el piloto y fijar el presupuesto",
+      "body": "## Contexto\n\nEl equipo puede estar disponible 24/7, con fechas académicas todavía sin fijar. La selección necesita medidas antes del test. El piloto determina tamaño de muestra, número de variantes y viabilidad de ampliaciones, con margen para redacción, repetición y entregas.\n\n## Trabajo delimitado\n\n- Medir temperatura, limitación térmica y potencia sostenida durante una carga representativa, junto con uso de CPU y el coste de consultar el estado. No extrapolar disponibilidad 24/7 a rendimiento máximo continuo.\n- Medir preparación, entrenamiento, inferencia por cohorte y actualización, incluyendo trabajadores, E/S y cachés.\n- Estimar la campaña con número de ejemplos, pasadas, folds, semillas y búsqueda. Contrastar la extrapolación con una segunda escala y registrar su incertidumbre.\n\n## Criterios de aceptación\n\n- [ ] El perfil distingue RSS/PSS, memoria asignada/reservada y uso total de GPU, sin duplicar memoria compartida. Incluye calentamiento y p50/p95/p99 cuando proceda.\n- [ ] La propuesta principal de 128 activos se confirma o ajusta con tiempos observados. Los saltos a 256, universo completo o China requieren margen verificable.\n- [ ] El calendario se expresa por dependencias e hitos mientras faltan fechas académicas. La disponibilidad 24/7 se combina con medidas de rendimiento sostenido y tiempos de descanso, mantenimiento y recuperación cuando sean necesarios. No se inventa una fecha de entrega ni se sacrifica repetición para ampliar filas.\n\n## Evidencia prevista\n\n- `configs/profiling/`\n- `reports/resources/development-measurements.csv`\n- `docs/engineering/latency-budget.md`\n- `reports/resources/campaign-budget.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-004, MT-023, MT-026, MT-027\n\n## Riesgo y prioridad\n\nP0: Sin presupuesto medido puede agotarse el tiempo en entrenamiento y quedar incompleta la evidencia académica.",
+      "labels": [
+        "rendimiento",
+        "reproducibilidad",
+        "evaluacion"
+      ],
+      "milestone": "O6",
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        "MT-004",
+        "MT-023",
+        "MT-026",
+        "MT-027"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-063",
+      "title": "MT-063 · Medir concurrencia y antigüedad del estado",
+      "body": "## Contexto\n\nLa concurrencia solo se justifica si la política de actualización demuestra utilidad y una ejecución secuencial no cumple el presupuesto medido.\n\n## Trabajo delimitado\n\n- Contrastar secuencial y concurrente con doble buffer, publicación controlada, colas acotadas y presión de recursos.\n- Medir la antigüedad del estado, eventos pendientes y política explícita de retraso, compactación o descarte.\n\n## Criterios de aceptación\n\n- [ ] La publicación no mezcla versiones ni adelanta el corte de información. Se prueban interrupciones, saturación y recuperación.\n- [ ] Los p95/p99 y picos de RAM/VRAM incluyen ambas copias, optimizador, activaciones y transferencias. Se registran efectos sobre cobertura y error.\n- [ ] Una decisión de descarte mantiene la ruta secuencial o K = 1 con límites declarados. La extensión no bloquea el estudio principal.\n\n## Evidencia prevista\n\n- `experiments/concurrency/`\n- `reports/resources/concurrency-decision.md`\n- `reports/memory/state-age.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-053, MT-059, MT-060\n\n## Riesgo y prioridad\n\nP2: Una mejora de latencia media puede ocultar estados obsoletos, picos de memoria o retrasos extremos.",
+      "labels": [
+        "memoria",
+        "rendimiento",
+        "opcional"
+      ],
+      "milestone": "O3",
+      "priority": "P2",
+      "size": "L",
+      "dependencies": [
+        "MT-053",
+        "MT-059",
+        "MT-060"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-064",
+      "title": "MT-064 · Evaluar ampliaciones del universo",
+      "body": "## Contexto\n\nLas ampliaciones a 256 activos, al universo completo o a China solo se mantienen si aportan una pregunta útil sin comprometer la comparación principal.\n\n## Trabajo delimitado\n\n- Decidir cada ampliación con cobertura y tiempos medidos, reservando recursos para repetición, análisis y entregas.\n- Si se mantiene, ejecutar referencias comparables con las implementaciones de MT-024 y MT-025 y la preparación por bloques de MT-048.\n\n## Criterios de aceptación\n\n- [ ] Cada opción tiene una decisión y presupuesto documentados antes del test. Un descarte razonado permite cerrar esta extensión.\n- [ ] Las ampliaciones ejecutadas conservan la misma población entre modelos, recuentos completos y costes reales. No hay submuestreo oculto.\n- [ ] Las rutas incrementales o de memoria externa se validan numéricamente antes de ampliar y no se confunden con sus alternativas de optimización.\n- [ ] China exige comprobar MT-058 y presentar resultados separados. Esa condición no bloquea una ampliación exclusivamente estadounidense.\n\n## Evidencia prevista\n\n- `reports/research/expansion-decisions.md`\n- `configs/expansions/`\n- `experiments/baselines/expanded/`\n- `reports/baselines/expansion-decision.md`\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-030, MT-048, MT-060, MT-024, MT-025\n\n## Riesgo y prioridad\n\nP2: Maximizar filas o mercados puede desplazar las comprobaciones y entregas que sostienen la calidad del trabajo.",
+      "labels": [
+        "comparativa",
+        "rendimiento",
+        "opcional"
+      ],
+      "milestone": "O4",
+      "priority": "P2",
+      "size": "L",
+      "dependencies": [
+        "MT-030",
+        "MT-048",
+        "MT-060",
+        "MT-024",
+        "MT-025"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-065",
+      "title": "MT-065 · Verificar checkpoints y reanudación",
+      "body": "## Contexto\n\nEl equipo puede permanecer disponible 24/7, pero una ejecución larga debe poder detenerse y reanudarse sin rehacer todo el entrenamiento ni mezclar estados temporales. La disponibilidad continua no garantiza potencia sostenida ni sustituye el calendario académico.\n\n## Trabajo delimitado\n\n- Definir checkpoints transaccionales en una barrera coherente dentro de la ventana, tras completar el paso de optimización y las operaciones de la cohorte.\n- Guardar pesos, optimizador, escalador de precisión, planificadores, contadores, RNG de CPU/CUDA y librerías, cursor, partición y muestreador. Incluir memoria, colas de etiquetas maduras y pendientes, revisiones, normalizadores, calibrador, política K, configuración y corte.\n- Implementar escritura íntegra y publicación atómica. Conservar dos checkpoints recientes y el mejor, con referencias al corpus en lugar de duplicarlo.\n\n## Criterios de aceptación\n\n- [ ] Una parada controlada o abrupta, incluida una escritura incompleta, permite recuperar el último checkpoint íntegro sin mezclar cortes ni revisiones.\n- [ ] La ejecución reanudada se compara con una continua en datos, pasos, actualizaciones, parámetros y predicciones, con determinismo o tolerancias documentadas.\n- [ ] El lote precargado se reconstruye desde el cursor confirmado sin omitir ni duplicar muestras. La reserva final y las etiquetas maduras conservan su tratamiento.\n- [ ] La retención está acotada y se verifican huellas y compatibilidad antes de cargar. MT-031 utiliza esta implementación y no desarrolla otra recuperación.\n\n## Evidencia prevista\n\n- `docs/engineering/checkpoint-recovery.md`\n- `configs/checkpoints.toml`\n- `src/mars_titan/training/checkpoints.py`\n- `tests/training/test_checkpoint_recovery.py`\n- `reports/reproducibility/checkpoint-recovery.md`\n\nLos documentos de diseño pueden existir antes de ejecutar esta tarea. Su cierre requiere implementar y verificar recuperación y equivalencia. No se inicia una carga científica por añadir esta planificación.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-004, MT-030\n\n## Riesgo y prioridad\n\nP0: Perder el estado del optimizador, del muestreador o de la memoria puede cambiar el experimento tras una interrupción. Una recuperación parcial no es una reanudación reproducible.",
+      "labels": [
+        "reproducibilidad",
+        "checkpoints",
+        "memoria",
+        "rendimiento"
+      ],
+      "milestone": "O5",
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        "MT-004",
+        "MT-030"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-066",
+      "title": "MT-066 · Verificar fuentes públicas complementarias",
+      "body": "## Contexto\n\nLas fuentes públicas complementarias se seleccionan por carencias documentadas, distinguiendo gratuidad, permiso de uso y disponibilidad histórica.\n\n## Trabajo delimitado\n\n- Contrastar fuentes primarias de distintas modalidades y registrar coste, licencia, límites, cobertura e identificadores.\n- Priorizar las que aporten información verificable y documentar admisión o descarte sin alterar el benchmark congelado.\n\n## Criterios de aceptación\n\n- [ ] Cada fuente tiene procedencia y condiciones de uso verificables. El acceso gratuito no implica permiso de redistribución.\n- [ ] La disponibilidad histórica se acredita con publicaciones o versiones, sin inferirla de una descarga actual.\n- [ ] Las fuentes no macro pueden revisarse sin esperar al catálogo macro completo. Ninguna incorporación cambia retrospectivamente el test.\n\n## Evidencia prevista\n\n- `docs/data/free-data-sources.md`\n- `data/catalogs/public-sources.json`\n- `reports/data/public-source-validation.md`\n\nEl catálogo documental no acredita descarga, disponibilidad histórica ni resultados. Esta tarea corresponde a preparación o validación futura. Los datos grandes y las credenciales permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005\n\n## Riesgo y prioridad\n\nP1: Una fuente sin coste puede tener restricciones de uso o carecer de historia verificable. La ampliación requiere una razón concreta.",
+      "labels": [
+        "datos",
+        "fuentes-externas",
+        "integridad-academica"
+      ],
+      "milestone": "O1",
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        "MT-005"
+      ],
+      "status": "Todo"
+    },
+    {
+      "id": "MT-067",
+      "title": "MT-067 · Implementar actualizaciones con instantáneas inmutables",
+      "body": "## Contexto\n\nActualizar una biblioteca local no debe alterar el benchmark ya congelado. La ingesta periódica es una extensión posterior a la verificación de las fuentes.\n\n## Trabajo delimitado\n\n- Implementar, cuando se active, descargas acotadas con ETag o Last-Modified cuando existan, reintentos limitados y respeto de los límites del proveedor.\n- Registrar instantáneas inmutables, huellas, retrieved_at, available_at, revisiones y manifiestos, sin duplicar datos idénticos ni sobrescribir fuentes originales.\n\n## Criterios de aceptación\n\n- [ ] Una descarga repetida es idempotente. Interrupciones y errores parciales conservan la última instantánea íntegra y un registro del fallo.\n- [ ] La nueva versión solo se incorpora a un experimento mediante una decisión explícita previa a su evaluación. Un benchmark congelado y sus predicciones no cambian al actualizar la biblioteca.\n- [ ] La actualización tiene presupuesto, condición de parada y controles de licencia. Los datos actuales sin vintages no se usan como disponibilidad histórica y la extensión puede descartarse sin bloquear la entrega.\n\n## Evidencia prevista\n\n- `src/mars_titan/data/public_sources.py`\n- `data/manifests/public-snapshots.json`\n- `tests/data/test_public_snapshots.py`\n- `reports/data/public-ingestion-validation.md`\n\nEl catálogo documental no acredita descarga, disponibilidad histórica ni resultados. Esta tarea corresponde a preparación o validación futura. Los datos grandes y las credenciales permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-011, MT-066\n\n## Riesgo y prioridad\n\nP2: Un proceso de actualización sin límites puede consumir recursos indefinidamente o contaminar resultados históricos mediante sustituciones silenciosas.",
+      "labels": [
+        "datos",
+        "fuentes-externas",
+        "reproducibilidad",
+        "opcional"
+      ],
+      "milestone": "O1",
+      "priority": "P2",
+      "size": "M",
+      "dependencies": [
+        "MT-011",
+        "MT-066"
       ],
       "status": "Todo"
     }
