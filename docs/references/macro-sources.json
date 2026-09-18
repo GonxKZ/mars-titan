@@ -1,0 +1,255 @@
+[
+  {
+    "id": "mccracken2016fredmd",
+    "title": "FRED-MD: A Monthly Database for Macroeconomic Research",
+    "authors": [
+      "Michael W. McCracken",
+      "Serena Ng"
+    ],
+    "year": 2016,
+    "url": "https://doi.org/10.1080/07350015.2015.1086655",
+    "pdf_url": "https://files.stlouisfed.org/files/htdocs/fred-databases/fredmd.pdf",
+    "access": "Ficha institucional de FRED-MD, resumen y metadatos. PDF de trabajo accesible en el banco autor, HTTP 200 y firma PDF comprobados. No se declara lectura completa. La versión de trabajo es de 2015 y la publicación de revista es de 2016.",
+    "redistribution": "unknown",
+    "relevance": "Panel macro de referencia, transformaciones y vintages mensuales. Su utilidad para pronosticar magnitudes macro no demuestra señal sobre retornos residuales diarios.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "alfred_vintages",
+    "title": "ALFRED Help: vintage data and release dates",
+    "authors": [
+      "Federal Reserve Bank of St. Louis"
+    ],
+    "year": null,
+    "url": "https://alfred.stlouisfed.org/help",
+    "pdf_url": null,
+    "access": "Documentación oficial HTML consultada. Describe revisiones, criterios de fecha de publicación y captura normalmente dentro de un día hábil.",
+    "redistribution": "Condiciones de FRED y de cada fuente original. La presencia en ALFRED no otorga licencia general de redistribución.",
+    "relevance": "Reconstrucción de qué versión de una observación podía conocerse en una fecha. La fecha diaria de vintage no sustituye una hora de publicación comprobada.",
+    "phase": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bls_release_calendar",
+    "title": "Schedule of Selected Releases 2026",
+    "authors": [
+      "U.S. Bureau of Labor Statistics"
+    ],
+    "year": 2026,
+    "url": "https://www.bls.gov/schedule/2026/home.htm",
+    "pdf_url": null,
+    "access": "Calendario oficial HTML con fechas y horas de las publicaciones. Calendario previsto y hora real del comunicado deben conservarse por separado.",
+    "redistribution": "Contenido gubernamental sujeto a las condiciones y excepciones de BLS. No cubre datos de terceros enlazados.",
+    "relevance": "Disponibilidad de empleo, salarios, CPI, PPI y JOLTS. Evita asignar las cifras al mes que describen.",
+    "phase": [
+      1,
+      3,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bea_release_calendar",
+    "title": "Release Schedule",
+    "authors": [
+      "U.S. Bureau of Economic Analysis"
+    ],
+    "year": null,
+    "url": "https://www.bea.gov/news/schedule",
+    "pdf_url": null,
+    "access": "Calendario oficial HTML consultado. Recurso vivo, sin año único de publicación.",
+    "redistribution": "Contenido gubernamental sujeto a las condiciones de BEA. Conservar la atribución y las notas de cada tabla.",
+    "relevance": "Publicaciones de PIB, consumo, renta y ahorro. Separación entre primera estimación y revisiones posteriores.",
+    "phase": [
+      1,
+      3,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bok2017nowcasting",
+    "title": "Macroeconomic Nowcasting and Forecasting with Big Data",
+    "authors": [
+      "Brandyn Bok",
+      "Daniele Caratelli",
+      "Domenico Giannone",
+      "Argia M. Sbordone",
+      "Andrea Tambalotti"
+    ],
+    "year": 2017,
+    "url": "https://www.newyorkfed.org/research/staff_reports/sr830",
+    "pdf_url": "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr830.pdf",
+    "access": "Ficha y resumen oficiales, Staff Report 830, noviembre de 2017. PDF institucional accesible con HTTP 200 y firma PDF comprobados. No se declara lectura completa.",
+    "redistribution": "unknown",
+    "relevance": "Calendario irregular de información, paneles de frecuencia mixta y actualización de un nowcast con cada publicación. Referencia metodológica, sin implementación ejecutada.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "gurkaynak2004actions",
+    "title": "Do Actions Speak Louder Than Words? The Response of Asset Prices to Monetary Policy Actions and Statements",
+    "authors": [
+      "Refet S. Gürkaynak",
+      "Brian Sack",
+      "Eric T. Swanson"
+    ],
+    "year": 2004,
+    "url": "https://www.federalreserve.gov/pubs/feds/2004/200466/200466abs.html",
+    "pdf_url": "https://www.federalreserve.gov/pubs/feds/2004/200466/200466pap.pdf",
+    "access": "Resumen oficial y manuscrito FEDS 2004-66. El PDF se fecha el 1 de noviembre de 2004 y la ficha en diciembre. HTTP 200 y firma PDF comprobados. No se declara lectura completa.",
+    "redistribution": "unknown",
+    "relevance": "Diferencia entre decisión monetaria esperada, sorpresa y comunicación sobre la trayectoria futura de tipos. Su diseño intradiario no puede reproducirse con cierres diarios.",
+    "phase": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hasbrouck2013latency",
+    "title": "Low-latency trading",
+    "authors": [
+      "Joel Hasbrouck",
+      "Gideon Saar"
+    ],
+    "year": 2013,
+    "url": "https://doi.org/10.1016/j.finmar.2013.05.003",
+    "pdf_url": "https://pages.stern.nyu.edu/jhasbrou/Research/lowLatencyTrading/lowLatencyTradingHasbrouckSaarJFM.pdf",
+    "access": "PDF editorial alojado en la página universitaria del autor, 34 páginas. Resumen, introducción y metadatos consultados. HTTP 200 y firma PDF comprobados. No se declara lectura completa.",
+    "redistribution": "El PDF indica copyright de Elsevier y todos los derechos reservados. No se verificó permiso de redistribución.",
+    "relevance": "Microestructura, mensajes de órdenes, spreads, profundidad y latencia. Los datos diarios del proyecto no permiten afirmar una medición equivalente.",
+    "phase": [
+      1,
+      2,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bis_credit_statistics",
+    "title": "Credit to the non-financial sector",
+    "authors": [
+      "Bank for International Settlements"
+    ],
+    "year": null,
+    "url": "https://data.bis.org/topics/TOTAL_CREDIT",
+    "pdf_url": null,
+    "access": "Documentación oficial y ficha FRED de China QCNPAM770A contrastadas. Descargas públicas por tema disponibles. No se ha reconstruido el archivo de vintages.",
+    "redistribution": "Sujeto a https://data.bis.org/help/legal. Atribución y condiciones BIS, sin relicenciar datos bajo MIT.",
+    "relevance": "Crédito, apalancamiento, ajustes por rupturas y comparación internacional. Crédito privado no financiero incluye empresas públicas dentro de la clasificación sectorial.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "nbs_release_calendar",
+    "title": "Regular Press Release Calendar of NBS in 2026",
+    "authors": [
+      "National Bureau of Statistics of China"
+    ],
+    "year": 2025,
+    "url": "https://www.stats.gov.cn/english/PressRelease/ReleaseCalendar/202512/t20251226_1962154.html",
+    "pdf_url": null,
+    "access": "Calendario oficial publicado el 26 de diciembre de 2025 para 2026. Se contrastó un comunicado PMI en chino y su traducción inglesa publicada otro día.",
+    "redistribution": "No se verificó licencia abierta de redistribución. Conservar enlaces, atribución y condiciones del NBS.",
+    "relevance": "Horas en China, revisiones del calendario, publicaciones mensuales y acumuladas, y tratamiento conjunto de enero-febrero para determinadas magnitudes.",
+    "phase": [
+      1,
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "pboc_statistics",
+    "title": "Statistics: Data",
+    "authors": [
+      "People's Bank of China"
+    ],
+    "year": null,
+    "url": "https://www.pbc.gov.cn/en/3688247/3688975/index.html",
+    "pdf_url": null,
+    "access": "Portal oficial consultado con tablas de financiación agregada y estadísticas monetarias. Identificadores estables, cobertura por edición y disponibilidad histórica pendientes de verificar.",
+    "redistribution": "No se verificó licencia abierta de redistribución. El acceso público al portal no acredita autorización general.",
+    "relevance": "M2 y financiación agregada a la economía real de China. Distinguir saldo, flujo mensual y flujo acumulado, con cambios de perímetro.",
+    "phase": [
+      1,
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "federalreserve_statistical_releases",
+    "title": "Data: statistical releases and historical data",
+    "authors": [
+      "Board of Governors of the Federal Reserve System"
+    ],
+    "year": null,
+    "url": "https://www.federalreserve.gov/data.htm",
+    "pdf_url": null,
+    "access": "Portal oficial accesible. Se contrastaron fichas FRED y la documentación H.10, que distingue observaciones diarias de difusión semanal.",
+    "redistribution": "Condiciones de la Reserva Federal y excepciones para materiales ajenos. Las notas del proveedor original prevalecen.",
+    "relevance": "Tipos, producción industrial, balance, dinero, crédito y divisas. Documenta calendarios, saldos frente a medias y revisiones.",
+    "phase": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "nyfed_gscpi",
+    "title": "Global Supply Chain Pressure Index (GSCPI)",
+    "authors": [
+      "Federal Reserve Bank of New York"
+    ],
+    "year": null,
+    "url": "https://www.newyorkfed.org/research/policy/gscpi",
+    "pdf_url": null,
+    "access": "Página oficial consultada. Actualización anunciada a las 10:00 de Nueva York del cuarto día hábil del mes. Histórico y modelo actuales no se han convertido en vintages utilizables.",
+    "redistribution": "Condiciones del New York Fed y de los insumos de terceros. No se verificó permiso general de redistribución.",
+    "relevance": "Presiones de oferta y comercio global. Su histórico retrospectivo no acredita que el indicador o esa versión existiesen en cada fecha.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

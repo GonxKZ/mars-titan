@@ -19,6 +19,10 @@
 - Antes de cambiar alcance, consultar `docs/research/protocol.md`, `docs/research/roadmap.md` y `docs/academic/rubric-matrix.md`.
 - Registrar decisiones, configuraciones, semillas, versiones y fallos. Un resultado negativo bien evaluado también es una aportación.
 - Mantener el test final cerrado durante selección de modelos. No ajustar transformaciones, umbrales, regímenes o residualizadores con el futuro.
+- Dimensionar el trabajo para 32 GB de RAM y RTX 4070 Max-Q de 8 GB. El equipo puede estar encendido 24/7, pero las fechas de entrega siguen sin confirmar.
+- Usar el piloto de hasta 64 activos para medir y una comparación principal propuesta de hasta 128. Escalar a 256, al universo completo o a China solo si el presupuesto lo permite. La calidad de validación tiene prioridad sobre ampliar filas o variantes.
+- Toda ejecución larga debe poder recuperarse desde un checkpoint coherente que incluya estado de memoria, etiquetas pendientes, RNG, optimizador y cursor confirmado. Ver `docs/engineering/checkpoint-recovery.md`.
+- Contrastar las propuestas con antecedentes y objeciones. No afirmar novedad, ausencia de olvido, eliminación total de ruido, precisión perfecta o superioridad antes de aportar evidencia.
 - Toda modalidad necesita evidencia de disponibilidad temporal. `period_end` no equivale a fecha de publicación.
 - «Causal» significa aquí respetar el orden de información. No afirmar identificación de causas económicas o contrafactuales sin un diseño adicional que la sostenga.
 
@@ -38,5 +42,8 @@
 - Todos los commits siguen **Conventional Commits**, en inglés: `type(scope): short description`.
 - Usar ramas breves en inglés acordes al trabajo: `feat/...`, `fix/...`, `docs/...`, `refactor/...`, `test/...`, `chore/...`.
 - Crear commits atómicos y significativos. Revisar el diff y los archivos incluidos antes de cada commit.
+- Durante trabajo prolongado, procurar bloques revisados de unos cuatro a siete minutos cuando encaje con la tarea. Mantener las fechas reales y no dividir artificialmente un cambio solo para aparentar actividad.
+- Revisar las issues y el Kanban antes de crear nuevas tareas. Unir solapes por resultado esperado, conservar dependencias y enlazar cualquier consolidación. Aplicar etiquetas por contenido y etapa con un vocabulario coherente.
+- Escribir las issues con contexto, trabajo delimitado, criterios comprobables y evidencia, usando el tono natural de un estudiante de máster que investiga aprendizaje automático. No usar punto y coma en la prosa.
 - No reescribir historia compartida ni borrar datos. Conservar cambios previos del usuario.
 - Al cerrar un objetivo, enlazar evidencia real con la matriz de rúbrica. No marcarlo completado por haber redactado su plan.

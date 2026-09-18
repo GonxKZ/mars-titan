@@ -6,7 +6,11 @@ evaluation_seeds = [17, 42, 123]
 [data]
 source = "FinMultiTime"
 market = "US"
-max_assets = 64
+scope = "bounded_confirmatory_comparison"
+pilot_max_assets = 64
+max_assets = 128
+inventory_complete_source = true
+full_dataset_training = "optional_after_profile"
 frequency = "daily"
 timezone = "America/New_York"
 news_date_only_lag_sessions = 1
@@ -41,6 +45,24 @@ initial_context_sessions = 64
 initial_latent_dimension = 64
 initial_batch_size = 16
 maximum_epochs = 30
+host_ram_nominal_gb = 32
+gpu_variant = "RTX 4070 Max-Q 8 GB"
+checkpoint_policy = "configs/checkpoints.toml"
+
+[memory_candidate]
+status = "unimplemented_hypothesis"
+episodic_capacity = 8192
+episodic_dimension = 128
+episodic_base_dimension = 256
+retrieval_top_k = 8
+key_projection = "fixed_seeded_projection"
+read_weights = "softmax_within_selected_entries"
+selector_priority = "immutable_admission_score"
+internal_steps = [1, 2, 4]
+freeze_memory_during_query = true
+freeze_encoder_within_evaluation_fold = true
+require_prediction_ledger_for_surprise = true
+parametric_consolidation = "training_and_scheduled_past_only_refits"
 
 [evaluation]
 primary_metric = "session_mean_residual_mae"

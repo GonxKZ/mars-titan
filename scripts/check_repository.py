@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import subprocess
@@ -11,6 +12,7 @@ from urllib.parse import unquote, urlsplit
 
 import bibtexparser
 import yaml
+from bibtexparser.bparser import BibTexParser
 from reference_library import read_catalogs
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,13 +55,16 @@ def main() -> int:
                 errors.append(f"Enlace local inexistente en {name}: {link}")
 
     reference_dir = ROOT / "docs/references"
-    entries = read_catalogs(
-        [reference_dir / f"{area}-sources.json" for area in ("finance", "neural", "book")]
-    )
+    registry = json.loads((reference_dir / "catalogs.json").read_text(encoding="utf-8"))
+    entries = read_catalogs([reference_dir / entry["sources"] for entry in registry])
     bibliography = []
-    for name in ("finance.bib", "neural.bib", "books.bib"):
+    for catalog in registry:
+        parser = BibTexParser()
+        parser.ignore_nonstandard_types = False
         bibliography.extend(
-            bibtexparser.loads((reference_dir / name).read_text(encoding="utf-8")).entries
+            bibtexparser.loads(
+                (reference_dir / catalog["bibliography"]).read_text(encoding="utf-8"), parser
+            ).entries
         )
     bib_ids = [entry["ID"] for entry in bibliography]
     source_ids = {entry["id"] for entry in entries}
@@ -103,6 +108,34 @@ def main() -> int:
         if issue["milestone"] is not None and issue["milestone"] not in milestones:
             errors.append(f"Hito no definido en {identifier}")
 
+    with (ROOT / "data/catalogs/macro-indicators.csv").open(encoding="utf-8", newline="") as stream:
+        macro_rows = list(csv.DictReader(stream))
+    macro = {row["id"]: row for row in macro_rows}
+    if len(macro) != len(macro_rows):
+        errors.append("Identificadores macroeconómicos duplicados")
+    macro_visited, macro_active = set(), set()
+
+    def visit_macro(identifier: str) -> None:
+        if identifier in macro_active:
+            raise ValueError(f"Ciclo de fórmulas macroeconómicas en {identifier}")
+        if identifier in macro_visited:
+            return
+        if identifier not in macro:
+            raise ValueError(f"Dependencia macroeconómica inexistente: {identifier}")
+        macro_active.add(identifier)
+        row = macro[identifier]
+        for dependency in filter(None, row["input_ids"].split("|")):
+            visit_macro(dependency)
+            if macro[dependency]["verification_status"] == "provider_verified_identifier_pending":
+                errors.append(f"Derivado {identifier} depende de una serie no identificada")
+        if row["kind"] == "derived" and (not row["formula"] or not row["input_ids"]):
+            errors.append(f"Derivado sin fórmula o entradas: {identifier}")
+        macro_active.remove(identifier)
+        macro_visited.add(identifier)
+
+    for identifier in macro:
+        visit_macro(identifier)
+
     for name in ("README.md", "LICENSE", "CITATION.cff", "AGENTS.md", "uv.lock"):
         if not (ROOT / name).is_file():
             errors.append(f"Falta {name}")
@@ -110,6 +143,7 @@ def main() -> int:
         print("\n".join(errors))
         return 1
     print(f"Verificados {len(paths)} archivos, {len(entries)} referencias y {len(issues)} tareas.")
+    print(f"Catálogo macroeconómico: {len(macro_rows)} entradas con dependencias válidas.")
     print("Enlaces locales, formatos, BibTeX y dependencias de tareas correctos.")
     return 0
 

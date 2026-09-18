@@ -22,6 +22,8 @@ Una muestra corresponde a un activo estable, un instante de decisión, una versi
 | `raw_return`, `market_return`, `residual_target` | Número finito | Etiquetas separadas de las columnas de entrada. Nunca accesibles al codificador antes de madurar. |
 | `residualizer_cutoff`, `residualizer_version` | Fecha/hora y texto | Historia máxima y regla de ajuste del objetivo. |
 | `split_id`, `feature_version` | Texto | Partición y transformación que generaron la muestra. |
+| `vintage_id`, `source_first_available_at` | Texto y fecha/hora | Versión macro o contable y evidencia de su disponibilidad, separadas de la descarga actual. |
+| `market_rule_version`, `effective_from`, `effective_to` | Texto y fechas | Reglas de negociación aplicables al instrumento en la fecha evaluada. |
 
 ## Reglas por modalidad
 
@@ -34,6 +36,10 @@ Una muestra corresponde a un activo estable, un instante de decisión, una versi
 **Imágenes.** Cada gráfico debe registrar la ventana de precios que lo originó, con extremo derecho menor o igual al corte. Un gráfico derivado de precios transforma información existente. No se supone que añade una fuente independiente. Las imágenes de periodo completo no se reasignan a días internos.
 
 **Representaciones externas.** Registrar modelo, revisión de pesos/tokenizador, idioma, fecha de publicación, corpus conocido y parámetros de extracción. El hash del embedding debe depender también del texto y de la regla temporal, no solo del ticker. Los modelos de texto modernos sobre periodos antiguos se describen como evaluación retrospectiva de representaciones, salvo que se acredite disponibilidad histórica.
+
+**Macroeconomía.** Aplicar el [contrato del catálogo](macro-catalog.md). Las fórmulas heredan la disponibilidad de todas sus entradas y de sus revisiones. El periodo económico no define el instante de publicación. Las series descargadas hoy sin versiones históricas acreditadas no se convierten en entradas pasadas mediante un simple desplazamiento de fechas.
+
+**Mercados e instrumentos.** Unir calendarios y reglas históricas por mercado, segmento e instrumento. La disponibilidad en UTC evita usar el cierre estadounidense del mismo día natural antes de una decisión china. Las restricciones de negociación y sus excepciones se verifican para cada periodo. Una norma publicada en 2026 no se aplica automáticamente al histórico anterior.
 
 ## Invariantes y futuros casos de prueba
 

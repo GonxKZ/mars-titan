@@ -29,9 +29,11 @@ Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) de
 
 ## Alcance mínimo y extensiones
 
-El mínimo científico es un subconjunto estadounidense, un horizonte diario, precios y texto de disponibilidad justificable, referencias de varias familias y una memoria compacta con ablaciones. Los fundamentales y gráficos deben auditarse y evaluarse cuando sean válidos. Excluirlos requiere evidencia y discusión, no omisión silenciosa del primer objetivo.
+El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, precios y texto de disponibilidad justificable, referencias de varias familias y una memoria compacta con ablaciones. Los fundamentales y gráficos deben auditarse y evaluarse cuando sean válidos. Excluirlos requiere evidencia y discusión, no omisión silenciosa del primer objetivo.
 
 La residualización sectorial, un Transformer adicional, HS300, memorias jerárquicas completas y kernels C++/CUDA son extensiones. Su activación exige que los controles temporales y las referencias funcionen, que exista presupuesto medido y que la comparación principal no quede comprometida.
+
+La [ampliación](research-expansion.md) añade estudio cerebral, macroeconomía, recurrencia y antecedentes recientes, con decisiones de continuidad por componente. El inventario completo y la capacidad de leer por bloques permiten crecer sin cargar todo en RAM. Entrenar el universo completo y transferir a otro mercado son extensiones P2. La recuperación mediante checkpoints se verifica antes de la campaña prolongada.
 
 ## Cierre de una tarea
 

@@ -1,0 +1,549 @@
+[
+  {
+    "id": "mcclelland1995cls",
+    "title": "Why There Are Complementary Learning Systems in the Hippocampus and Neocortex: Insights from the Successes and Failures of Connectionist Models of Learning and Memory",
+    "authors": [
+      "James L. McClelland",
+      "Bruce L. McNaughton",
+      "Randall C. O'Reilly"
+    ],
+    "year": 1995,
+    "url": "https://doi.org/10.1037/0033-295X.102.3.419",
+    "pdf_url": "https://web.stanford.edu/~jlmcc/papers/McCMcNaughtonOReilly95.pdf",
+    "access": "Psychological Review 102(3):419-457, revisado por pares. Artículo teórico y computacional. PDF público de la página del primer autor.",
+    "redistribution": "unknown",
+    "relevance": "Distinguir aprendizaje rápido de episodios y extracción gradual de regularidades. Motiva dos velocidades de actualización, sin establecer una equivalencia anatómica.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "wilson1994replay",
+    "title": "Reactivation of Hippocampal Ensemble Memories During Sleep",
+    "authors": [
+      "Matthew A. Wilson",
+      "Bruce L. McNaughton"
+    ],
+    "year": 1994,
+    "url": "https://doi.org/10.1126/science.8036517",
+    "pdf_url": "https://courses.csail.mit.edu/6.803/pdf/sleep.pdf",
+    "access": "Science 265(5172):676-679, revisado por pares. PDF institucional abierto. Experimento en tres ratas, no en humanos.",
+    "redistribution": "unknown",
+    "relevance": "Evidencia primaria de reactivación durante sueño. Motiva replay histórico acotado, sin demostrar que un buffer reproduzca la consolidación biológica.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bakker2008separation",
+    "title": "Pattern Separation in the Human Hippocampal CA3 and Dentate Gyrus",
+    "authors": [
+      "Arnold Bakker",
+      "C. Brock Kirwan",
+      "Michael Miller",
+      "Craig E. L. Stark"
+    ],
+    "year": 2008,
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2829853/",
+    "pdf_url": null,
+    "access": "Science 319(5870):1640-1642, revisado por pares. DOI 10.1126/science.1152882. Manuscrito de autor en PMC. El endpoint PDF devolvió una verificación HTML y no se confirmó una descarga alternativa del autor o editorial.",
+    "redistribution": "unknown",
+    "relevance": "Relaciona discriminación de experiencias parecidas con señal fMRI en CA3/DG. Motiva comparar representaciones separables y comprobar interferencia, no imponer módulos anatómicos.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "schuck2019replay",
+    "title": "Sequential Replay of Nonspatial Task States in the Human Hippocampus",
+    "authors": [
+      "Nicolas W. Schuck",
+      "Yael Niv"
+    ],
+    "year": 2019,
+    "url": "https://doi.org/10.1126/science.aaw5181",
+    "pdf_url": "https://schucklab.gitlab.io/docs/papers/Schuck_Niv_2019_Science.pdf",
+    "access": "Science 364(6447):eaaw5181, revisado por pares. PDF abierto enlazado por el laboratorio del primer autor. Evidencia humana mediante fMRI durante reposo.",
+    "redistribution": "unknown",
+    "relevance": "Extiende la evidencia de replay a estados de una tarea no espacial humana. La asociación con representaciones corticales no prueba que replay cause una mejora financiera.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "gagnepain2014suppression",
+    "title": "Suppressing Unwanted Memories Reduces Their Unconscious Influence via Targeted Cortical Inhibition",
+    "authors": [
+      "Pierre Gagnepain",
+      "Richard N. Henson",
+      "Michael C. Anderson"
+    ],
+    "year": 2014,
+    "url": "https://doi.org/10.1073/pnas.1311468111",
+    "pdf_url": "https://memorycontrol.net/2014Gagnepain.pdf",
+    "access": "PNAS 111(13):E1310-E1319, revisado por pares. PDF público del laboratorio de un autor, edición anticipada con portada adicional de ResearchGate.",
+    "redistribution": "unknown",
+    "relevance": "El control de recuperación puede reducir influencias posteriores de memorias visuales humanas. Sirve para discutir olvido selectivo, sin convertirlo en garantía de borrado exacto o mejora universal.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "nassar2012arousal",
+    "title": "Rational Regulation of Learning Dynamics by Pupil-Linked Arousal Systems",
+    "authors": [
+      "Matthew R. Nassar",
+      "Katherine M. Rumsey",
+      "Robert C. Wilson",
+      "Kinjan Parikh",
+      "Benjamin Heasly",
+      "Joshua I. Gold"
+    ],
+    "year": 2012,
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3386464/",
+    "pdf_url": null,
+    "access": "Nature Neuroscience 15(7):1040-1046, revisado por pares. DOI 10.1038/nn.3130. Manuscrito de autor en PMC. Los enlaces PDF de PMC y editorial no entregaron un PDF abierto verificable en esta consulta.",
+    "redistribution": "unknown",
+    "relevance": "Separar ruido, incertidumbre y cambios en el proceso generador. La pupila es un indicador indirecto de activación, no una lectura específica de noradrenalina.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "schultz1997reward",
+    "title": "A Neural Substrate of Prediction and Reward",
+    "authors": [
+      "Wolfram Schultz",
+      "Peter Dayan",
+      "P. Read Montague"
+    ],
+    "year": 1997,
+    "url": "https://doi.org/10.1126/science.275.5306.1593",
+    "pdf_url": "https://www.gatsby.ucl.ac.uk/~dayan/papers/sdm97.pdf",
+    "access": "Science 275(5306):1593-1599, revisado por pares. PDF público de un autor. Integra registros dopaminérgicos en primates no humanos con un modelo de error de predicción.",
+    "redistribution": "unknown",
+    "relevance": "Fundamenta la distinción entre error de predicción de recompensa, novedad y sorpresa. Ninguna de esas cantidades acredita relevancia económica o causalidad de una noticia.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "kirkpatrick2017ewc",
+    "title": "Overcoming Catastrophic Forgetting in Neural Networks",
+    "authors": [
+      "James Kirkpatrick",
+      "Razvan Pascanu",
+      "Neil Rabinowitz",
+      "Joel Veness",
+      "Guillaume Desjardins",
+      "Andrei A. Rusu",
+      "Kieran Milan",
+      "John Quan",
+      "Tiago Ramalho",
+      "Agnieszka Grabska-Barwinska",
+      "Demis Hassabis",
+      "Claudia Clopath",
+      "Dharshan Kumaran",
+      "Raia Hadsell"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.1073/pnas.1611835114",
+    "pdf_url": "https://arxiv.org/pdf/1612.00796v2",
+    "access": "PNAS 114(13):3521-3526, revisado por pares. PDF alternativo de autor en arXiv v2, 25-01-2017. No se presupone identidad de maquetación con la versión editorial.",
+    "redistribution": "unknown",
+    "relevance": "Regularización basada en importancia aproximada de parámetros. Referencia de estabilidad que debe contrastarse con su posible coste en adaptación a cambios de régimen.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zenke2017si",
+    "title": "Continual Learning Through Synaptic Intelligence",
+    "authors": [
+      "Friedemann Zenke",
+      "Ben Poole",
+      "Surya Ganguli"
+    ],
+    "year": 2017,
+    "url": "https://proceedings.mlr.press/v70/zenke17a.html",
+    "pdf_url": "https://proceedings.mlr.press/v70/zenke17a/zenke17a.pdf",
+    "access": "ICML 2017, PMLR 70:3987-3995, revisado por pares. PDF abierto de actas.",
+    "redistribution": "unknown",
+    "relevance": "Estima importancia durante la trayectoria de aprendizaje y protege parámetros relevantes. Distinguir acumulación online de importancia y consolidación entre tareas.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "lopezpaz2017gem",
+    "title": "Gradient Episodic Memory for Continual Learning",
+    "authors": [
+      "David Lopez-Paz",
+      "Marc'Aurelio Ranzato"
+    ],
+    "year": 2017,
+    "url": "https://proceedings.neurips.cc/paper/2017/hash/f87522788a2be2d171666752f97ddebb-Abstract.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper/2017/file/f87522788a2be2d171666752f97ddebb-Paper.pdf",
+    "access": "NeurIPS 2017, volumen 30, revisado por pares. PDF abierto de actas.",
+    "redistribution": "unknown",
+    "relevance": "Introduce restricciones de gradiente sobre una memoria episódica y métricas de transferencia. Sus restricciones locales sobre ejemplos retenidos no garantizan ausencia global de olvido.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "chaudhry2019replay",
+    "title": "On Tiny Episodic Memories in Continual Learning",
+    "authors": [
+      "Arslan Chaudhry",
+      "Marcus Rohrbach",
+      "Mohamed Elhoseiny",
+      "Thalaiyasingam Ajanthan",
+      "Puneet K. Dokania",
+      "Philip H. S. Torr",
+      "Marc'Aurelio Ranzato"
+    ],
+    "year": 2019,
+    "url": "https://arxiv.org/abs/1902.10486v4",
+    "pdf_url": "https://arxiv.org/pdf/1902.10486v4",
+    "access": "Preprint arXiv v4, 04-06-2019. No se atribuye publicación principal revisada por pares no verificada.",
+    "redistribution": "unknown",
+    "relevance": "Replay de ejemplos reales con memoria pequeña como referencia de bajo coste. Es necesario antes de justificar mecanismos complejos de consolidación.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "buzzega2020der",
+    "title": "Dark Experience for General Continual Learning: a Strong, Simple Baseline",
+    "authors": [
+      "Pietro Buzzega",
+      "Matteo Boschini",
+      "Angelo Porrello",
+      "Davide Abati",
+      "Simone Calderara"
+    ],
+    "year": 2020,
+    "url": "https://proceedings.neurips.cc/paper/2020/hash/b704ea2c39778f07c617f6b7ce480e9e-Abstract.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper/2020/file/b704ea2c39778f07c617f6b7ce480e9e-Paper.pdf",
+    "access": "NeurIPS 2020, volumen 33, revisado por pares. PDF abierto de actas.",
+    "redistribution": "unknown",
+    "relevance": "Replay y destilación de salidas pasadas en clasificación. Una adaptación a regresión financiera debe definirse y contrastar el riesgo de conservar predicciones obsoletas.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "shin2017generativereplay",
+    "title": "Continual Learning with Deep Generative Replay",
+    "authors": [
+      "Hanul Shin",
+      "Jung Kwon Lee",
+      "Jaehong Kim",
+      "Jiwon Kim"
+    ],
+    "year": 2017,
+    "url": "https://proceedings.neurips.cc/paper/2017/hash/0efbe98067c6c73dba1250d2beaa81f9-Abstract.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper/2017/file/0efbe98067c6c73dba1250d2beaa81f9-Paper.pdf",
+    "access": "NeurIPS 2017, volumen 30, revisado por pares. PDF abierto de actas.",
+    "redistribution": "unknown",
+    "relevance": "Alternativa que genera experiencias de tareas anteriores. Permite discutir compresión de memoria y propagación de errores del generador, sin añadirlo al núcleo experimental.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "dohare2024plasticity",
+    "title": "Loss of Plasticity in Deep Continual Learning",
+    "authors": [
+      "Shibhansh Dohare",
+      "J. Fernando Hernandez-Garcia",
+      "Qingfeng Lan",
+      "Parash Rahman",
+      "A. Rupam Mahmood",
+      "Richard S. Sutton"
+    ],
+    "year": 2024,
+    "url": "https://www.nature.com/articles/s41586-024-07711-7",
+    "pdf_url": "https://www.nature.com/articles/s41586-024-07711-7.pdf",
+    "access": "Nature 632:768-774, revisado por pares. Versión editorial abierta, DOI 10.1038/s41586-024-07711-7. Difiere del preprint 2306.13812 en título y autoría.",
+    "redistribution": "CC-BY-4.0, con atribución y las excepciones de materiales de terceros indicadas por la editorial",
+    "relevance": "Distingue pérdida de plasticidad de olvido. Motiva medir rapidez de aprendizaje de patrones nuevos y examinar renovación de unidades como extensión, no como solución garantizada.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "graves2016act",
+    "title": "Adaptive Computation Time for Recurrent Neural Networks",
+    "authors": [
+      "Alex Graves"
+    ],
+    "year": 2016,
+    "url": "https://arxiv.org/abs/1603.08983v6",
+    "pdf_url": "https://arxiv.org/pdf/1603.08983v6",
+    "access": "Preprint inicialmente publicado en 2016. Versión consultada v6, 21-02-2017. No se atribuye revisión por pares no verificada.",
+    "redistribution": "unknown",
+    "relevance": "Aprende cuántos pasos internos ejecutar antes de emitir una salida. Referencia para un coste explícito de cómputo y un máximo de iteraciones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "banino2021pondernet",
+    "title": "PonderNet: Learning to Ponder",
+    "authors": [
+      "Andrea Banino",
+      "Jan Balaguer",
+      "Charles Blundell"
+    ],
+    "year": 2021,
+    "url": "https://arxiv.org/abs/2107.05407v2",
+    "pdf_url": "https://arxiv.org/pdf/2107.05407v2",
+    "access": "PDF arXiv v2, 02-09-2021, con cabecera del 8th ICML Workshop on Automated Machine Learning. Artículo de taller, no de las actas principales de ICML.",
+    "redistribution": "unknown",
+    "relevance": "Formula una distribución de parada y regulariza su comportamiento. Ayuda a separar número esperado de pasos, límite máximo y latencia observada.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "dehghani2019universal",
+    "title": "Universal Transformers",
+    "authors": [
+      "Mostafa Dehghani",
+      "Stephan Gouws",
+      "Oriol Vinyals",
+      "Jakob Uszkoreit",
+      "Lukasz Kaiser"
+    ],
+    "year": 2019,
+    "url": "https://openreview.net/forum?id=HyzdRiR9Y7",
+    "pdf_url": "https://arxiv.org/pdf/1807.03819",
+    "access": "ICLR 2019, revisado por pares. Cabecera del PDF de OpenReview verificada por indexación. PDF abierto alternativo de autores en arXiv.",
+    "redistribution": "unknown",
+    "relevance": "Aplica un bloque compartido de atención repetidamente y permite parada por posición. La recurrencia en profundidad no equivale a memoria persistente entre sesiones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bai2019deq",
+    "title": "Deep Equilibrium Models",
+    "authors": [
+      "Shaojie Bai",
+      "J. Zico Kolter",
+      "Vladlen Koltun"
+    ],
+    "year": 2019,
+    "url": "https://proceedings.neurips.cc/paper/2019/hash/01386bd6d8e091c2ab4c7c7de644d37b-Abstract.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper/2019/file/01386bd6d8e091c2ab4c7c7de644d37b-Paper.pdf",
+    "access": "NeurIPS 2019, volumen 32, revisado por pares. PDF abierto de actas.",
+    "redistribution": "unknown",
+    "relevance": "Obtiene un punto fijo mediante un solver y usa diferenciación implícita. Ahorro de activaciones respecto a profundidad no significa tiempo constante ni convergencia universal.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hao2025coconut",
+    "title": "Training Large Language Models to Reason in a Continuous Latent Space",
+    "authors": [
+      "Shibo Hao",
+      "Sainbayar Sukhbaatar",
+      "DiJia Su",
+      "Xian Li",
+      "Zhiting Hu",
+      "Jason Weston",
+      "Yuandong Tian"
+    ],
+    "year": 2025,
+    "url": "https://openreview.net/forum?id=Itxz7S4Ip3",
+    "pdf_url": "https://arxiv.org/pdf/2412.06769v3",
+    "access": "COLM 2025, revisado por pares, corroborado por cabecera del PDF de OpenReview y ficha arXiv. Versión de consulta arXiv v3, 03-11-2025. Existe v4 de 23-08-2026, no usada para la síntesis técnica.",
+    "redistribution": "unknown",
+    "relevance": "Realimenta estados ocultos como entradas continuas con currículo de entrenamiento. No demuestra pensamiento humano ni una mejora sin supervisión adecuada.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "geiping2025recurrent",
+    "title": "Scaling up Test-Time Compute with Latent Reasoning: A Recurrent Depth Approach",
+    "authors": [
+      "Jonas Geiping",
+      "Sean McLeish",
+      "Neel Jain",
+      "John Kirchenbauer",
+      "Siddharth Singh",
+      "Brian R. Bartoldson",
+      "Bhavya Kailkhura",
+      "Abhinav Bhatele",
+      "Tom Goldstein"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/3b01972cf31e6fa0fe29e4b8b5c2a0a1-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3b01972cf31e6fa0fe29e4b8b5c2a0a1-Paper-Conference.pdf",
+    "access": "NeurIPS 2025, volumen 38, revisado por pares. DOI 10.52202/085713-1380. PDF abierto de actas.",
+    "redistribution": "unknown",
+    "relevance": "Estudia escalado de profundidad recurrente en un modelo de lenguaje de 3.500 millones de parámetros. La técnica inspira una ablación compacta, no reproducir ese entrenamiento con 8 GB.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "wang2025hrm",
+    "title": "Hierarchical Reasoning Model",
+    "authors": [
+      "Guan Wang",
+      "Jin Li",
+      "Yuhao Sun",
+      "Xing Chen",
+      "Changling Liu",
+      "Yue Wu",
+      "Meng Lu",
+      "Sen Song",
+      "Yasin Abbasi Yadkori"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2506.21734v3",
+    "pdf_url": "https://arxiv.org/pdf/2506.21734v3",
+    "access": "Preprint arXiv v3, 04-08-2025. No se confirmó una ficha editorial que acredite publicación revisada por pares. El PDF localizado en OpenReview no permitió verificar ese estado.",
+    "redistribution": "unknown",
+    "relevance": "Dos módulos recurrentes a ritmos diferentes para tareas de razonamiento. Sus resultados en puzles no prueban capacidad predictiva financiera ni memoria permanente.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "jolicoeur2025trm",
+    "title": "Less is More: Recursive Reasoning with Tiny Networks",
+    "authors": [
+      "Alexia Jolicoeur-Martineau"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2510.04871v1",
+    "pdf_url": "https://arxiv.org/pdf/2510.04871v1",
+    "access": "Preprint arXiv v1, 06-10-2025. No se atribuye aceptación en ICLR 2026 a partir de artículos que solo lo citan.",
+    "redistribution": "unknown",
+    "relevance": "Simplifica HRM con una red pequeña, dos estados y supervisión profunda. Sus ablaciones obligan a separar efecto de recurrencia, supervisión, capacidad y número de evaluaciones.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zhang2017sfm",
+    "title": "Stock Price Prediction via Discovering Multi-Frequency Trading Patterns",
+    "authors": [
+      "Liheng Zhang",
+      "Charu Aggarwal",
+      "Guo-Jun Qi"
+    ],
+    "year": 2017,
+    "url": "https://www.kdd.org/kdd2017/papers/view/stock-price-prediction-via-discovering-multi-frequency-trading-patterns",
+    "pdf_url": null,
+    "access": "KDD 2017, páginas 2141-2149, revisado por pares. DOI 10.1145/3097983.3098117. Ficha y resumen de la conferencia verificados. La descarga de ACM devolvió 403, sin PDF alternativo del autor confirmado.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente financiero directo de memoria recurrente en varias frecuencias. Impide atribuir novedad general a aplicar memoria multiescala a predicción bursátil.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zhao2023doubleadapt",
+    "title": "DoubleAdapt: A Meta-learning Approach to Incremental Learning for Stock Trend Forecasting",
+    "authors": [
+      "Lifan Zhao",
+      "Shuming Kong",
+      "Yanyan Shen"
+    ],
+    "year": 2023,
+    "url": "https://doi.org/10.1145/3580305.3599315",
+    "pdf_url": "https://arxiv.org/pdf/2306.09862",
+    "access": "KDD 2023, páginas 3492-3503, revisado por pares. Ficha editorial y preprint de autor verificados. Implementación oficial: https://github.com/SJTU-DMTai/DoubleAdapt.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente de adaptación incremental del modelo y de los datos en predicción bursátil. Requiere respetar retrasos de etiquetas y no confundir adaptación con una ventaja garantizada.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

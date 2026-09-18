@@ -1,0 +1,11 @@
+[
+  {"sources": "finance-sources.json", "bibliography": "finance.bib"},
+  {"sources": "neural-sources.json", "bibliography": "neural.bib"},
+  {"sources": "book-sources.json", "bibliography": "books.bib"},
+  {"sources": "brain-sources.json", "bibliography": "brain.bib"},
+  {"sources": "macro-sources.json", "bibliography": "macro.bib"},
+  {"sources": "systems-sources.json", "bibliography": "systems.bib"},
+  {"sources": "frontier-sources.json", "bibliography": "frontier.bib"},
+  {"sources": "deepseek-sources.json", "bibliography": "deepseek.bib"},
+  {"sources": "adversarial-sources.json", "bibliography": "adversarial.bib"}
+]

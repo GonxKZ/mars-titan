@@ -15,9 +15,17 @@ Los mercados cambian, las noticias llegan a distintas horas y una parte de la in
 
 MARS-TITAN estudia si una memoria neural adaptativa, que selecciona eventos financieros relevantes y conserva información útil de distintos contextos de mercado, aporta valor frente a modelos más sencillos. El trabajo combina precios, noticias y, cuando su disponibilidad temporal pueda justificarse, información fundamental y representaciones de gráficos de **FinMultiTime**.
 
+La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia interna de pocos pasos y contexto macroeconómico. La inspiración biológica se traduce en hipótesis sobre retención, adaptación y reaprendizaje. Los antecedentes recientes, incluidos DeepSeek y modelos financieros con memoria, sirven para decidir qué comparar y qué técnicas pueden ser útiles en una GPU pequeña.
+
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
 
 **Estado actual:** preparación documental y configuración del repositorio, sin implementación científica iniciada. La arquitectura está propuesta. Los experimentos y sus resultados están pendientes. Las únicas utilidades ejecutables mantienen y verifican la documentación. Los diagramas muestran el diseño del estudio, no rendimiento observado. «Causal» se refiere al orden de disponibilidad de la información. No implica haber identificado causas económicas.
+
+## Alcance y recursos
+
+El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. Se propone un piloto de hasta 64 activos y una comparación principal de hasta 128, seleccionados con información del periodo de desarrollo. La lectura por bloques permite preparar el recorrido de toda la copia, que ocupa unos 109 GiB. Ampliar el entrenamiento a más activos o a China dependerá del coste medido y del calendario.
+
+Los entrenamientos prolongados deberán guardar y restaurar optimizador, semillas, cursor de datos y memoria adaptativa. La política de [checkpoints](docs/engineering/checkpoint-recovery.md) está especificada, pero no existen todavía pesos entrenados. La disponibilidad 24/7 se incorpora al [plan de cómputo](docs/engineering/compute-plan.md), sin inventar fechas de entrega.
 
 ## Diseño del estudio
 
@@ -46,15 +54,18 @@ Una predicción solo puede usar datos disponibles en su instante de decisión. L
 | 5. Evaluación | Walk-forward, métricas predictivas y financieras, costes y estimación de incertidumbre de las diferencias. |
 | 6. Análisis crítico | Interpretación por periodo, modalidad y régimen. Resultados negativos, limitaciones y trabajo futuro. |
 
-Los objetivos se gestionan como seis hitos y 46 tareas, con prioridad, tamaño, dependencias y criterios de aceptación. El código y la documentación se organizan por su función, no por fase. El [plan de trabajo](docs/research/roadmap.md) y el [catálogo del tablero](docs/research/task-board.md) explican cómo avanzar y qué evidencia permite cerrar cada tarea.
+Los objetivos se gestionan como seis hitos, con tareas que tienen prioridad, tamaño, dependencias y criterios de aceptación. El código y la documentación se organizan por su función, no por fase. El [plan de trabajo](docs/research/roadmap.md) y el [catálogo del tablero](docs/research/task-board.md) explican cómo avanzar y qué evidencia permite cerrar cada tarea.
 
 ## Documentación
 
 - [Mapa de documentación](docs/README.md) y [propuesta presentada](docs/academic/proposal.md).
 - [Requisitos académicos](docs/academic/requirements.md) y [matriz completa de la rúbrica](docs/academic/rubric-matrix.md).
 - [Protocolo de investigación](docs/research/protocol.md), [experimentos](docs/research/experiment-matrix.md) y [revisión del documento inicial](docs/research/original-review.md).
+- [Arquitectura candidata](docs/research/candidate-architecture.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
 - [Contrato de datos](docs/data/data-contract.md), [inspección inicial de FinMultiTime](docs/data/finmultitime-card.md) y [arquitectura](docs/engineering/architecture.md).
+- [140 indicadores macroeconómicos candidatos](docs/data/macro-catalog.md), con fuentes, fórmulas y reglas de disponibilidad. Los valores no están calculados ni validados como entradas de entrenamiento.
 - [Biblioteca y revisión bibliográfica](docs/references/README.md): publicaciones primarias, libros, fuentes financieras, BibTeX y descargas locales con huella de integridad.
+- [Memoria y aprendizaje](docs/references/brain-review.md), [eficiencia de DeepSeek](docs/references/deepseek-review.md), [recorrido completo del dataset](docs/engineering/full-dataset-training.md) y [presupuesto de latencia](docs/engineering/latency-budget.md).
 - [Entorno y reproducción](docs/engineering/reproducibility.md), [riesgos](docs/research/risks.md) y [preparación de la defensa](docs/academic/defense.md).
 
 La rúbrica orienta el trabajo completo, incluida la exposición oral:
@@ -116,7 +127,7 @@ print(torch.ones(1, device=device).item())
 PY
 ```
 
-El equipo de referencia es una **RTX 4070 Laptop de 8 GB**. La comprobación falla si no hay CUDA. Los experimentos seleccionarán `cuda:0`. La instalación de PyTorch tiene un índice CUDA explícito y los controles de calidad no requieren descargarlo. Para tareas independientes existe además un entorno compartido compatible: véase [reproducibilidad](docs/engineering/reproducibility.md).
+La comprobación falla si no hay CUDA. Los experimentos seleccionarán `cuda:0`. La instalación de PyTorch tiene un índice CUDA explícito y los controles de calidad no requieren descargarlo. Para tareas independientes existe además un entorno compartido compatible: véase [reproducibilidad](docs/engineering/reproducibility.md).
 
 La biblioteca se obtiene desde las fuentes registradas:
 

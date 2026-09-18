@@ -2,6 +2,8 @@
 
 MARS-TITAN se diseña como una comparación reproducible de componentes. La estructura reserva módulos, pero no contiene una implementación científica en esta entrega.
 
+La [especificación candidata](../research/candidate-architecture.md) desarrolla memoria episódica, retención, recurrencia y actualización coherente. Su [revisión adversarial](../research/adversarial-review.md) recoge objeciones y pruebas pendientes. La comparación principal prioriza una variante compacta sobre 128 activos propuestos, dentro de 32 GB de RAM y 8 GB de VRAM.
+
 ## Límites entre componentes
 
 | Componente | Entrada | Salida y responsabilidad |
@@ -21,7 +23,7 @@ El codificador de precios podrá ser una GRU pequeña o una TCN. El texto se rep
 
 La primera memoria será global. Una consulta dependerá de la representación actual y recuperará un vector de contexto que la cabeza combine con el estado temporal. El estado y sus operaciones `read`, `update`, `reset` y `snapshot` deben tener responsabilidades separadas. Estas son interfaces previstas, todavía sin código. Después se podrá comparar la separación mercado/sector/activo manteniendo control de capacidad total.
 
-La actualización se inspirará en una tarea de memoria asociativa: ajustar localmente una función que relacione claves y valores observados. Es necesario documentar qué gradientes se propagan en el entrenamiento exterior, cuáles se detienen y qué estados persisten en inferencia. Una adaptación del mecanismo no se denomina reproducción de Titans sin comprobar esas correspondencias. Véanse [Titans, TTT y MIRAS](../references/neural-review.md).
+La actualización se estudiará en dos referencias separadas. Un banco episódico inserta y recupera eventos con lectura aprendida. Una memoria asociativa neural modifica un estado de pesos rápidos mediante una regla explícita. No son mecanismos equivalentes. La [candidata](../research/candidate-architecture.md) especifica esa separación y reserva su combinación para una extensión. En la variante neural se documentará qué gradientes se propagan, cuáles se detienen y qué estado persiste. Una adaptación no se denomina reproducción de Titans sin comprobar su correspondencia con [Titans, TTT y MIRAS](../references/neural-review.md).
 
 ## Sorpresa y régimen
 

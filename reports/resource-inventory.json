@@ -1,0 +1,46 @@
+{
+  "observed_on": "2026-09-18",
+  "scope": "Inventario físico de solo lectura y cálculos de dimensionamiento. No son muestras validadas ni mediciones de entrenamiento.",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "physical_cores": 8,
+    "logical_cpus": 16,
+    "ram_nominal_gb_declared_by_owner": 32,
+    "ram_bytes": 32313409536,
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "gpu_variant_declared_by_owner": "RTX 4070 Max-Q, 8 GB",
+    "gpu_memory_mib": 8188,
+    "power_limit_watts": null,
+    "driver": "595.91.07",
+    "filesystem_available_gib_rounded": 396
+  },
+  "dataset": {
+    "apparent_total_bytes": 116185016265,
+    "time_series_bytes": 2329970958,
+    "text_bytes": 14382105211,
+    "table_bytes": 90831585076,
+    "image_bytes": 8641208268,
+    "us_price_csv_files": 4213,
+    "cn_price_csv_files": 810,
+    "price_csv_physical_lines_including_headers": 20593172,
+    "potential_rows_if_one_header_per_file": 20588149,
+    "qualification": "Las líneas físicas no acreditan unicidad, tipos válidos, disponibilidad temporal, pertenencia histórica ni admisión al entrenamiento. Los bytes incluyen metadatos de directorio según du."
+  },
+  "dimensioning_examples": {
+    "dense_64_features_float32_gib": 4.908597230911255,
+    "dense_256_features_float32_gib": 19.63438892364502,
+    "materialized_64_steps_256_features_float32_gib": 1256.6008911132812,
+    "state_5023_assets_2_layers_128_bfloat16_mib": 2.45263671875,
+    "matrix_5023_assets_64_squared_float32_mib": 78.484375,
+    "matrix_5023_assets_256_squared_float32_gib": 1.226318359375,
+    "episodes_8192_by_128_bfloat16_mib": 2.0,
+    "qualification": "Cálculo aritmético de tensores densos sin índices, máscaras, alineación, copias, activaciones, gradientes, optimizador ni fragmentación. No es una predicción de consumo pico."
+  },
+  "method": [
+    "nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv",
+    "free -b y lscpu",
+    "du -sb de cada directorio y df -h del volumen",
+    "rg --files con filtro CSV y wc -l por lotes de 256 archivos",
+    "Cálculos con tamaño de elemento y potencias de 1024"
+  ]
+}

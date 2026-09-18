@@ -1,0 +1,257 @@
+[
+  {
+    "id": "lahoti2026mamba3",
+    "title": "Mamba-3: Improved Sequence Modeling using State Space Principles",
+    "authors": [
+      "Aakash Lahoti",
+      "Kevin Y. Li",
+      "Berlin Chen",
+      "Caitlin Wang",
+      "Aviv Bick",
+      "J. Zico Kolter",
+      "Tri Dao",
+      "Albert Gu"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2026/hash/8abd2043b71a074278d5f687947bff9c-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.iclr.cc/paper_files/paper/2026/file/8abd2043b71a074278d5f687947bff9c-Paper-Conference.pdf",
+    "access": "ICLR 2026, revisado por pares. PDF abierto de actas verificado, 30 páginas. Autoría según cabecera del PDF, con iniciales distintas de la ficha web. Preprint asociado 2603.15569v1.",
+    "redistribution": "unknown",
+    "relevance": "Actualiza la familia Mamba con discretización, estados complejos y formulación MIMO. Sus mejoras de lenguaje y uso de GPU no prueban menor latencia para una red financiera pequeña.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "geens2026hyperscale",
+    "title": "The Hyperscale Lottery: How State-Space Models Have Sacrificed Edge Efficiency",
+    "authors": [
+      "Robin Geens",
+      "Jonas De Schouwer",
+      "Marian Verhelst",
+      "Thierry Tambe"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2604.07935v2",
+    "pdf_url": "https://arxiv.org/pdf/2604.07935v2",
+    "access": "Artículo de taller, aceptado en ITEM junto a ECML-PKDD 2026. Programa primario: https://www.item-workshop.org/item-workshop-series. Versión arXiv v2, 08-07-2026. No se equipara a las actas principales de ECML-PKDD.",
+    "redistribution": "unknown",
+    "relevance": "Contraejemplo a extrapolar mejoras de throughput a dispositivos pequeños. La penalización para 15 millones de parámetros es una estimación roofline de un ASIC hipotético, no una medición en RTX 4070.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "liu2026tiem",
+    "title": "TIEM: Temporal Integration of Hypergraph Evidence and Skill Memory for Event-Driven Financial Forecasting",
+    "authors": [
+      "Wenjin Liu",
+      "Shen Pang",
+      "Chenxi Wang",
+      "Tiesunlong Shen",
+      "Jiajie He",
+      "Zhe Cui",
+      "Xiaobao Wu",
+      "Anh Tuan Luu",
+      "Haoran Luo"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2608.13024v5",
+    "pdf_url": "https://arxiv.org/pdf/2608.13024v5",
+    "access": "Preprint arXiv v5, 12-09-2026. Sin publicación revisada por pares confirmada. Autoría según ficha y texto v5. El BibTeX del repositorio consultado aún omite a Jiajie He.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente cercano que combina eventos financieros, memoria de experiencias, procedencia y restricciones temporales con LLM. Impide reivindicar novedad general de esa combinación.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "yang2026rwttt",
+    "title": "RW-TTT: Batched Serving for Request-Owned Test-Time Training State",
+    "authors": [
+      "Jian Yang",
+      "Zhizhuo Kou",
+      "Yao Tian",
+      "Hao Zhang",
+      "Han Chen",
+      "Sirui Han",
+      "Yike Guo"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2605.28053v2",
+    "pdf_url": "https://arxiv.org/pdf/2605.28053v2",
+    "access": "Preprint arXiv v2, 03-09-2026. Sin publicación revisada por pares confirmada. Se consulta la versión que explicita alcance de medidas, propiedad del estado y versiones.",
+    "redistribution": "unknown",
+    "relevance": "Separa lecturas y escrituras de estados adaptativos por propietario. Sus mejoras agregadas en múltiples peticiones no equivalen a reducir latencia individual ni demuestran cabida en 8 GB.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "wang2026ttc",
+    "title": "Beyond Test-Time Memory: State-Space Optimal Control for LLM Reasoning",
+    "authors": [
+      "Peihao Wang",
+      "Shan Yang",
+      "Xijun Wang",
+      "Tesi Xiao",
+      "Xin Liu",
+      "Changlong Yu",
+      "Yu Lou",
+      "Pan Li",
+      "Zhangyang Wang",
+      "Ming Lin",
+      "René Vidal"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2603.09221v2",
+    "pdf_url": "https://arxiv.org/pdf/2603.09221v2",
+    "access": "ICML 2026, confirmado por programa oficial https://icml.cc/virtual/2026/poster/64217 y ficha arXiv. Copia consultada v2, 29-05-2026. Sustituye el título inicial Beyond Test-Time Training: Learning to Reason via Hardware-Efficient Optimal Control.",
+    "redistribution": "unknown",
+    "relevance": "Planificación LQR de horizonte finito sobre estados latentes. Distinguir cálculo interno, memoria y razonamiento financiero. El solver CUDA añade coste que depende del horizonte y del hardware.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "yu2024finmem",
+    "title": "FinMem: A Performance-Enhanced LLM Trading Agent with Layered Memory and Character Design",
+    "authors": [
+      "Yangyang Yu",
+      "Haohang Li",
+      "Zhi Chen",
+      "Yuechen Jiang",
+      "Yang Li",
+      "Denghui Zhang",
+      "Rong Liu",
+      "Jordan W. Suchow",
+      "Khaldoun Khashanah"
+    ],
+    "year": 2024,
+    "url": "https://ojs.aaai.org/index.php/AAAI-SS/article/view/31290",
+    "pdf_url": "https://ojs.aaai.org/index.php/AAAI-SS/article/download/31290/33450/35346",
+    "access": "Proceedings of the AAAI Symposium Series 3(1):595-597, 2024. Publicación de simposio, no conferencia principal AAAI. DOI 10.1609/aaaiss.v3i1.31290. PDF editorial abierto de 3 páginas. Informe extenso previo: arXiv 2311.13743v2, 2023.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente de memoria financiera por capas, retención dependiente del tiempo, selección por importancia y reflexión. Usa memoria textual recuperada por un LLM, no actualización neuronal compacta por gradiente.",
+    "phase": [
+      1,
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zhang2024finagent",
+    "title": "A Multimodal Foundation Agent for Financial Trading: Tool-Augmented, Diversified, and Generalist",
+    "authors": [
+      "Wentao Zhang",
+      "Lingxuan Zhao",
+      "Haochong Xia",
+      "Shuo Sun",
+      "Jiaze Sun",
+      "Molei Qin",
+      "Xinyi Li",
+      "Yuqing Zhao",
+      "Yilei Zhao",
+      "Xinyu Cai",
+      "Longtao Zheng",
+      "Xinrun Wang",
+      "Bo An"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1145/3637528.3671801",
+    "pdf_url": "https://www3.ntu.edu.sg/home/boan/papers/KDD24_FinAgent.pdf",
+    "access": "KDD 2024, revisado por pares, páginas 4314-4325. PDF publicado en la página institucional de Bo An, 12 páginas. El preprint 2402.18485v3 es un informe extenso relacionado.",
+    "redistribution": "unknown",
+    "relevance": "Ya combina datos numéricos, texto, gráficos, recuperación de memoria y reflexión. Su tarea de negociación y uso de LLM difieren de pronosticar retornos residuales mediante una red pequeña.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "yu2024fincon",
+    "title": "FinCon: A Synthesized LLM Multi-Agent System with Conceptual Verbal Reinforcement for Enhanced Financial Decision Making",
+    "authors": [
+      "Yangyang Yu",
+      "Zhiyuan Yao",
+      "Haohang Li",
+      "Zhiyang Deng",
+      "Yuechen Jiang",
+      "Yupeng Cao",
+      "Zhi Chen",
+      "Jordan W. Suchow",
+      "Zhenyu Cui",
+      "Rong Liu",
+      "Zhaozhuo Xu",
+      "Denghui Zhang",
+      "Koduvayur Subbalakshmi",
+      "Guojun Xiong",
+      "Yueru He",
+      "Jimin Huang",
+      "Dong Li",
+      "Qianqian Xie"
+    ],
+    "year": 2024,
+    "url": "https://proceedings.neurips.cc/paper/2024/hash/f7ae4fe91d96f50abc2211f09b6a7e49-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/f7ae4fe91d96f50abc2211f09b6a7e49-Paper-Conference.pdf",
+    "access": "NeurIPS 2024, revisado por pares. DOI 10.52202/079017-4354. Autoría de actas: 18 autores. El preprint 2407.06567v3 enumera 17 y presenta un orden distinto.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente de jerarquía de agentes financieros, memoria y actualización de creencias mediante crítica verbal. No equivale a un bucle numérico con pesos compartidos ni a aprendizaje por refuerzo de esos pesos.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zong2024macrohft",
+    "title": "MacroHFT: Memory Augmented Context-aware Reinforcement Learning On High Frequency Trading",
+    "authors": [
+      "Chuqiao Zong",
+      "Chaojie Wang",
+      "Molei Qin",
+      "Lei Feng",
+      "Xinrun Wang",
+      "Bo An"
+    ],
+    "year": 2024,
+    "url": "https://doi.org/10.1145/3637528.3672064",
+    "pdf_url": "https://arxiv.org/pdf/2406.14537v1",
+    "access": "KDD 2024, revisado por pares, páginas 4712-4721. Publicación corroborada por PDF institucional de Bo An y repositorio oficial. Copia de consulta arXiv v1, 20-06-2024. PDF institucional: https://personal.ntu.edu.sg/boan/papers/KDD24_MacroHFT.pdf.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente financiero no basado en lenguaje que combina memoria, contexto de mercado y aprendizaje jerárquico por refuerzo en criptomonedas. Impide reclamar como nueva esa combinación general.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

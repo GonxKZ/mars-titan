@@ -1,5 +1,5 @@
 {
-  "retrieved_at": "2026-09-18T17:32:49.735937+00:00",
+  "retrieved_at": "2026-09-18T18:59:02.089157+00:00",
   "records": [
     {
       "id": "sec_edgar_timestamps",
@@ -340,6 +340,652 @@
       "sha256": "93316e525a034cfa935023c3c31196c86f5edfd0e056f50f09676f6364a0be56",
       "bytes": 39503008,
       "status": "cached"
+    },
+    {
+      "id": "mcclelland1995cls",
+      "requested_url": "https://web.stanford.edu/~jlmcc/papers/McCMcNaughtonOReilly95.pdf",
+      "url": "https://web.stanford.edu/~jlmcc/papers/McCMcNaughtonOReilly95.pdf",
+      "final_url": "https://web.stanford.edu/~jlmcc/papers/McCMcNaughtonOReilly95.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:33.783650+00:00",
+      "sha256": "4cece7b9e6804fe88d183a8e26fc19b6c078a7d840a6423a2ab3afa32efa8fb8",
+      "bytes": 5038568
+    },
+    {
+      "id": "wilson1994replay",
+      "requested_url": "https://courses.csail.mit.edu/6.803/pdf/sleep.pdf",
+      "url": "https://courses.csail.mit.edu/6.803/pdf/sleep.pdf",
+      "final_url": "https://courses.csail.mit.edu/6.803/pdf/sleep.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:28.058470+00:00",
+      "sha256": "717b1d0ab993d856e0f26d1ccfd7909321350e3ddf3e593287fe44a7f18dafc9",
+      "bytes": 516593
+    },
+    {
+      "id": "bakker2008separation",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "schuck2019replay",
+      "requested_url": "https://schucklab.gitlab.io/docs/papers/Schuck_Niv_2019_Science.pdf",
+      "url": "https://schucklab.gitlab.io/docs/papers/Schuck_Niv_2019_Science.pdf",
+      "final_url": "https://schucklab.gitlab.io/docs/papers/Schuck_Niv_2019_Science.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:26.269902+00:00",
+      "sha256": "aec80fa0e46f345f94a5a45b62ed0cb6e00ecb563dbd509efd0469935b71d8b3",
+      "bytes": 1560585
+    },
+    {
+      "id": "gagnepain2014suppression",
+      "requested_url": "https://memorycontrol.net/2014Gagnepain.pdf",
+      "url": "https://memorycontrol.net/2014Gagnepain.pdf",
+      "final_url": "https://memorycontrol.net/2014Gagnepain.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:28.403655+00:00",
+      "sha256": "0e34a2fcc9ff1524674413383466f421f4ac1f04fedcc267bfda763252003e6d",
+      "bytes": 1638023
+    },
+    {
+      "id": "nassar2012arousal",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "schultz1997reward",
+      "requested_url": "https://www.gatsby.ucl.ac.uk/~dayan/papers/sdm97.pdf",
+      "url": "https://www.gatsby.ucl.ac.uk/~dayan/papers/sdm97.pdf",
+      "final_url": "https://www.gatsby.ucl.ac.uk/~dayan/papers/sdm97.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:28.505167+00:00",
+      "sha256": "be98208b3d1d5c664af5ee9b8b1d45107a9c8595972ef3d5e0efc218463a7adb",
+      "bytes": 1442790
+    },
+    {
+      "id": "kirkpatrick2017ewc",
+      "requested_url": "https://arxiv.org/pdf/1612.00796v2",
+      "url": "https://arxiv.org/pdf/1612.00796v2",
+      "final_url": "https://arxiv.org/pdf/1612.00796v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:28.677157+00:00",
+      "sha256": "5e181839191ab4582da2b5ff9666f5222e40b8b8d2f1cdf4fa7100b3a58d7a29",
+      "bytes": 1250137
+    },
+    {
+      "id": "zenke2017si",
+      "requested_url": "https://proceedings.mlr.press/v70/zenke17a/zenke17a.pdf",
+      "url": "https://proceedings.mlr.press/v70/zenke17a/zenke17a.pdf",
+      "final_url": "https://proceedings.mlr.press/v70/zenke17a/zenke17a.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:28.882475+00:00",
+      "sha256": "ca871666ebb69aacf771174a245f3117564e0e621e55d906cb8c003b493daa05",
+      "bytes": 928409
+    },
+    {
+      "id": "lopezpaz2017gem",
+      "requested_url": "https://proceedings.neurips.cc/paper/2017/file/f87522788a2be2d171666752f97ddebb-Paper.pdf",
+      "url": "https://proceedings.neurips.cc/paper/2017/file/f87522788a2be2d171666752f97ddebb-Paper.pdf",
+      "final_url": "https://proceedings.neurips.cc/paper/2017/file/f87522788a2be2d171666752f97ddebb-Paper.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:30.268048+00:00",
+      "sha256": "9aa6a5f73220449cbe8b2c9bd4bdc3f5407ac49295c4ca1f242a36e79e34b763",
+      "bytes": 418148
+    },
+    {
+      "id": "chaudhry2019replay",
+      "requested_url": "https://arxiv.org/pdf/1902.10486v4",
+      "url": "https://arxiv.org/pdf/1902.10486v4",
+      "final_url": "https://arxiv.org/pdf/1902.10486v4",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:29.045939+00:00",
+      "sha256": "49fd308f26477c8a2861befc0b0fed727a6f745b6d0a0c11434a50a3b5255c6d",
+      "bytes": 640419
+    },
+    {
+      "id": "buzzega2020der",
+      "requested_url": "https://proceedings.neurips.cc/paper/2020/file/b704ea2c39778f07c617f6b7ce480e9e-Paper.pdf",
+      "url": "https://proceedings.neurips.cc/paper/2020/file/b704ea2c39778f07c617f6b7ce480e9e-Paper.pdf",
+      "final_url": "https://proceedings.neurips.cc/paper/2020/file/b704ea2c39778f07c617f6b7ce480e9e-Paper.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:31.329418+00:00",
+      "sha256": "1cbdffb3cea7fb8082f22bf245f1e6139217773066e6453eac396fc1a75b5f49",
+      "bytes": 3979608
+    },
+    {
+      "id": "shin2017generativereplay",
+      "requested_url": "https://proceedings.neurips.cc/paper/2017/file/0efbe98067c6c73dba1250d2beaa81f9-Paper.pdf",
+      "url": "https://proceedings.neurips.cc/paper/2017/file/0efbe98067c6c73dba1250d2beaa81f9-Paper.pdf",
+      "final_url": "https://proceedings.neurips.cc/paper/2017/file/0efbe98067c6c73dba1250d2beaa81f9-Paper.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:32.323324+00:00",
+      "sha256": "9efb87506bec05fff8c40c10238df006774c1b44ee395d2437cf6825bda73b20",
+      "bytes": 1799799
+    },
+    {
+      "id": "dohare2024plasticity",
+      "requested_url": "https://www.nature.com/articles/s41586-024-07711-7.pdf",
+      "url": "https://www.nature.com/articles/s41586-024-07711-7.pdf",
+      "final_url": "https://www.nature.com/articles/s41586-024-07711-7.pdf?error=cookies_not_supported&code=ed31e2c7-f977-48e9-9cc5-34051c5a5905",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:32.372495+00:00",
+      "sha256": "273b70522c1c428744b1e9abf2f7523c08845a2d5ecb3ee0959c825eefdadccd",
+      "bytes": 9163939
+    },
+    {
+      "id": "graves2016act",
+      "requested_url": "https://arxiv.org/pdf/1603.08983v6",
+      "url": "https://arxiv.org/pdf/1603.08983v6",
+      "final_url": "https://arxiv.org/pdf/1603.08983v6",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:33.907666+00:00",
+      "sha256": "34e793f2e1908c510b4fbe24afcf418978fa87d11396d0e24e132da0f7042e82",
+      "bytes": 6582868
+    },
+    {
+      "id": "banino2021pondernet",
+      "requested_url": "https://arxiv.org/pdf/2107.05407v2",
+      "url": "https://arxiv.org/pdf/2107.05407v2",
+      "final_url": "https://arxiv.org/pdf/2107.05407v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:32.561123+00:00",
+      "sha256": "2562cc63cb06bcf474e98102ef2116df097df35d207ee6e4846b217694fc2dfb",
+      "bytes": 571541
+    },
+    {
+      "id": "dehghani2019universal",
+      "requested_url": "https://arxiv.org/pdf/1807.03819",
+      "url": "https://arxiv.org/pdf/1807.03819",
+      "final_url": "https://arxiv.org/pdf/1807.03819",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:32.729106+00:00",
+      "sha256": "d4b8c752b7ad28b6df67bab764ba6744c575ffe8e2f09879c750b05c7daf3e90",
+      "bytes": 2371799
+    },
+    {
+      "id": "bai2019deq",
+      "requested_url": "https://proceedings.neurips.cc/paper/2019/file/01386bd6d8e091c2ab4c7c7de644d37b-Paper.pdf",
+      "url": "https://proceedings.neurips.cc/paper/2019/file/01386bd6d8e091c2ab4c7c7de644d37b-Paper.pdf",
+      "final_url": "https://proceedings.neurips.cc/paper/2019/file/01386bd6d8e091c2ab4c7c7de644d37b-Paper.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:34.349335+00:00",
+      "sha256": "afbc677a3fdc8f35f75c1e4ecc4c37582a694535c6751cc8055ee4286cd86a68",
+      "bytes": 328187
+    },
+    {
+      "id": "hao2025coconut",
+      "requested_url": "https://arxiv.org/pdf/2412.06769v3",
+      "url": "https://arxiv.org/pdf/2412.06769v3",
+      "final_url": "https://arxiv.org/pdf/2412.06769v3",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:34.182508+00:00",
+      "sha256": "6eb32c71eaa571b727ee95bce20396243fd70dc1ee8a37f91a7de717790d5b46",
+      "bytes": 3289091
+    },
+    {
+      "id": "geiping2025recurrent",
+      "requested_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3b01972cf31e6fa0fe29e4b8b5c2a0a1-Paper-Conference.pdf",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3b01972cf31e6fa0fe29e4b8b5c2a0a1-Paper-Conference.pdf",
+      "final_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/3b01972cf31e6fa0fe29e4b8b5c2a0a1-Paper-Conference.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:36.496139+00:00",
+      "sha256": "c7e8ee86b93c50a7bff59899c181fa3b5fbf6b19bd9643d06593ebcb989acff3",
+      "bytes": 12036096
+    },
+    {
+      "id": "wang2025hrm",
+      "requested_url": "https://arxiv.org/pdf/2506.21734v3",
+      "url": "https://arxiv.org/pdf/2506.21734v3",
+      "final_url": "https://arxiv.org/pdf/2506.21734v3",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:34.621709+00:00",
+      "sha256": "81b05b03ebd92748b1bc0e59d4b6e0d8271e1e56b84d1d589a03430db79b6e25",
+      "bytes": 2268976
+    },
+    {
+      "id": "jolicoeur2025trm",
+      "requested_url": "https://arxiv.org/pdf/2510.04871v1",
+      "url": "https://arxiv.org/pdf/2510.04871v1",
+      "final_url": "https://arxiv.org/pdf/2510.04871v1",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:34.507023+00:00",
+      "sha256": "c2b3ef5a8d6bc68e667aa01e8405dcfd9ebe88cfe1c6e58f04c5a6d652ce7af9",
+      "bytes": 427299
+    },
+    {
+      "id": "zhang2017sfm",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "zhao2023doubleadapt",
+      "requested_url": "https://arxiv.org/pdf/2306.09862",
+      "url": "https://arxiv.org/pdf/2306.09862",
+      "final_url": "https://arxiv.org/pdf/2306.09862",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:24:34.771729+00:00",
+      "sha256": "169763d27bdbd139c72f8d2c88c7085f96e61ff956e219b62c13d6fedd8ace65",
+      "bytes": 1360567
+    },
+    {
+      "id": "mccracken2016fredmd",
+      "requested_url": "https://files.stlouisfed.org/files/htdocs/fred-databases/fredmd.pdf",
+      "url": "https://files.stlouisfed.org/files/htdocs/fred-databases/fredmd.pdf",
+      "final_url": "https://files.stlouisfed.org/files/htdocs/fred-databases/fredmd.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:31:51.767948+00:00",
+      "sha256": "ebb266092c23f4466765e2d5092e818d731407e4eae329ff634b422e697b6e88",
+      "bytes": 390381
+    },
+    {
+      "id": "alfred_vintages",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "bls_release_calendar",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "bea_release_calendar",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "bok2017nowcasting",
+      "requested_url": "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr830.pdf",
+      "url": "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr830.pdf",
+      "final_url": "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr830.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:31:51.336911+00:00",
+      "sha256": "56b95b3339376513030534f70ecdbf1ab8f41bf945ed0a576c431c4bbb92e78e",
+      "bytes": 1180178
+    },
+    {
+      "id": "gurkaynak2004actions",
+      "requested_url": "https://www.federalreserve.gov/pubs/feds/2004/200466/200466pap.pdf",
+      "url": "https://www.federalreserve.gov/pubs/feds/2004/200466/200466pap.pdf",
+      "final_url": "https://www.federalreserve.gov/pubs/feds/2004/200466/200466pap.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:31:51.577927+00:00",
+      "sha256": "4b643f650f39cba24957d05dba10627d3eae53024c496345789e7c3ddc14ce9a",
+      "bytes": 612120
+    },
+    {
+      "id": "hasbrouck2013latency",
+      "requested_url": "https://pages.stern.nyu.edu/jhasbrou/Research/lowLatencyTrading/lowLatencyTradingHasbrouckSaarJFM.pdf",
+      "url": "https://pages.stern.nyu.edu/jhasbrou/Research/lowLatencyTrading/lowLatencyTradingHasbrouckSaarJFM.pdf",
+      "final_url": "https://pages.stern.nyu.edu/jhasbrou/Research/lowLatencyTrading/lowLatencyTradingHasbrouckSaarJFM.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:31:52.732199+00:00",
+      "sha256": "b253fb5f00c16e1bb91616f8d889a706751a931881e685734eb173deeadb61e0",
+      "bytes": 489285
+    },
+    {
+      "id": "bis_credit_statistics",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "nbs_release_calendar",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "pboc_statistics",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "federalreserve_statistical_releases",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "nyfed_gscpi",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "gu2023mamba",
+      "requested_url": "https://arxiv.org/pdf/2312.00752v2",
+      "url": "https://arxiv.org/pdf/2312.00752v2",
+      "final_url": "https://arxiv.org/pdf/2312.00752v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:34.488740+00:00",
+      "sha256": "adf70ed1803c85b1899dec3e21f3af0b124411439e8654b840ea65f7b9f52b2e",
+      "bytes": 1168615
+    },
+    {
+      "id": "dao2024mamba2",
+      "requested_url": "https://raw.githubusercontent.com/mlresearch/v235/main/assets/dao24a/dao24a.pdf",
+      "url": "https://raw.githubusercontent.com/mlresearch/v235/main/assets/dao24a/dao24a.pdf",
+      "final_url": "https://raw.githubusercontent.com/mlresearch/v235/main/assets/dao24a/dao24a.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:34.884968+00:00",
+      "sha256": "26dacf8c612feae41c8350e447fae914355220424925520096ad212dcc54bd47",
+      "bytes": 2120465
+    },
+    {
+      "id": "yang2024gateddelta",
+      "requested_url": "https://arxiv.org/pdf/2412.06464",
+      "url": "https://arxiv.org/pdf/2412.06464",
+      "final_url": "https://arxiv.org/pdf/2412.06464",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:34.493868+00:00",
+      "sha256": "55f84f2ae9c4e52ff494bfa699499867f5e9e17514994ac71de43888363a5fb9",
+      "bytes": 442953
+    },
+    {
+      "id": "beck2024xlstm",
+      "requested_url": "https://papers.neurips.cc/paper_files/paper/2024/file/c2ce2f2701c10a2b2f2ea0bfa43cfaa3-Paper-Conference.pdf",
+      "url": "https://papers.neurips.cc/paper_files/paper/2024/file/c2ce2f2701c10a2b2f2ea0bfa43cfaa3-Paper-Conference.pdf",
+      "final_url": "https://papers.neurips.cc/paper_files/paper/2024/file/c2ce2f2701c10a2b2f2ea0bfa43cfaa3-Paper-Conference.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:36.391406+00:00",
+      "sha256": "306b6a1a52920594d02a999738e5a2ecc159dfa46bfa736820f66e555a1a45d3",
+      "bytes": 1583874
+    },
+    {
+      "id": "kimi2025linear",
+      "requested_url": "https://arxiv.org/pdf/2510.26692v2",
+      "url": "https://arxiv.org/pdf/2510.26692v2",
+      "final_url": "https://arxiv.org/pdf/2510.26692v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:34.753657+00:00",
+      "sha256": "e2e23a449fc9bb27e34e783d20b2e6cd0f1ac67d58efdc0479c03c54db956a17",
+      "bytes": 1354769
+    },
+    {
+      "id": "dao2022flashattention",
+      "requested_url": "https://arxiv.org/pdf/2205.14135v2",
+      "url": "https://arxiv.org/pdf/2205.14135v2",
+      "final_url": "https://arxiv.org/pdf/2205.14135v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:35.099542+00:00",
+      "sha256": "ca7f9fda10b90fc05dd291a3accc85e9c1a4a860b99b31928dab03ed3fcb14e4",
+      "bytes": 2630825
+    },
+    {
+      "id": "dao2023flashattention2",
+      "requested_url": "https://arxiv.org/pdf/2307.08691",
+      "url": "https://arxiv.org/pdf/2307.08691",
+      "final_url": "https://arxiv.org/pdf/2307.08691",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:35.168548+00:00",
+      "sha256": "4aa8935dfacaf6ae8c68f772ca92f730154a0dd0e1bceeb59c7bc56c512d5868",
+      "bytes": 1660578
+    },
+    {
+      "id": "hinton2015distillation",
+      "requested_url": "https://arxiv.org/pdf/1503.02531",
+      "url": "https://arxiv.org/pdf/1503.02531",
+      "final_url": "https://arxiv.org/pdf/1503.02531",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:35.167726+00:00",
+      "sha256": "74e6689115c539db499f9d6153edecb364059926fd45402454f8210442444c5a",
+      "bytes": 106630
+    },
+    {
+      "id": "pellegrini2020latentreplay",
+      "requested_url": "https://arxiv.org/pdf/1912.01100v2",
+      "url": "https://arxiv.org/pdf/1912.01100v2",
+      "final_url": "https://arxiv.org/pdf/1912.01100v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:36.248930+00:00",
+      "sha256": "154754dce7a2a5b36b89e2b79ec1155800d10bab3cca21cf537a1fe27d5d0e90",
+      "bytes": 6433726
+    },
+    {
+      "id": "tur2026rdvla",
+      "requested_url": "https://arxiv.org/pdf/2602.07845v1",
+      "url": "https://arxiv.org/pdf/2602.07845v1",
+      "final_url": "https://arxiv.org/pdf/2602.07845v1",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:23:35.705426+00:00",
+      "sha256": "70de944d75c12d318f04da10a2d8062f276f32047ac41e557f19191f8fa12340",
+      "bytes": 3881031
+    },
+    {
+      "id": "pytorch2026cuda",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "pytorch2026data",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "pytorch2026benchmark",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "nvidia2026bestpractices",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "xgboost2026externalmemory",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "sklearn2026outofcore",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "lahoti2026mamba3",
+      "requested_url": "https://proceedings.iclr.cc/paper_files/paper/2026/file/8abd2043b71a074278d5f687947bff9c-Paper-Conference.pdf",
+      "url": "https://proceedings.iclr.cc/paper_files/paper/2026/file/8abd2043b71a074278d5f687947bff9c-Paper-Conference.pdf",
+      "final_url": "https://proceedings.iclr.cc/paper_files/paper/2026/file/8abd2043b71a074278d5f687947bff9c-Paper-Conference.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:35:51.549006+00:00",
+      "sha256": "1f271fd16f0a3c86624fb6a5a98244429e526849da5f6c02652bf74c8739503a",
+      "bytes": 746962
+    },
+    {
+      "id": "geens2026hyperscale",
+      "requested_url": "https://arxiv.org/pdf/2604.07935v2",
+      "url": "https://arxiv.org/pdf/2604.07935v2",
+      "recorded_at": "2026-09-18T18:59:01.963287+00:00",
+      "provenance": "Descarga HTTP directa con curl tras un fallo transitorio. Validada mediante pdfinfo y SHA-256.",
+      "sha256": "7bc4e985a8f63260041e970e42ceeeb0324b53749c07b9f6bea2d63673d4e66b",
+      "bytes": 478470,
+      "status": "cached"
+    },
+    {
+      "id": "liu2026tiem",
+      "requested_url": "https://arxiv.org/pdf/2608.13024v5",
+      "url": "https://arxiv.org/pdf/2608.13024v5",
+      "final_url": "https://arxiv.org/pdf/2608.13024v5",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:35:55.045241+00:00",
+      "sha256": "4d30eaf119fab718820c5bab0142fcc1b8d5aaf4e83ba086e8aaff7fdc1ca14d",
+      "bytes": 36250500
+    },
+    {
+      "id": "yang2026rwttt",
+      "requested_url": "https://arxiv.org/pdf/2605.28053v2",
+      "url": "https://arxiv.org/pdf/2605.28053v2",
+      "final_url": "https://arxiv.org/pdf/2605.28053v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:35:50.025794+00:00",
+      "sha256": "7a6c3c5e43ecbc8b4d8d804fd1c0419655220ed139d24cb3b5b4338f878294c8",
+      "bytes": 747309
+    },
+    {
+      "id": "wang2026ttc",
+      "requested_url": "https://arxiv.org/pdf/2603.09221v2",
+      "url": "https://arxiv.org/pdf/2603.09221v2",
+      "recorded_at": "2026-09-18T18:59:01.975248+00:00",
+      "provenance": "Descarga HTTP directa con curl tras un fallo transitorio. Validada mediante pdfinfo y SHA-256.",
+      "sha256": "22c616e6d5e2f4534838ca3d69debe6b366e04a786665f5486a419986a2bb78c",
+      "bytes": 5265695,
+      "status": "cached"
+    },
+    {
+      "id": "yu2024finmem",
+      "requested_url": "https://ojs.aaai.org/index.php/AAAI-SS/article/download/31290/33450/35346",
+      "url": "https://ojs.aaai.org/index.php/AAAI-SS/article/download/31290/33450/35346",
+      "recorded_at": "2026-09-18T18:59:01.983331+00:00",
+      "provenance": "Descarga HTTP directa con curl tras un fallo transitorio. Validada mediante pdfinfo y SHA-256.",
+      "sha256": "f30b4133a078cef74971d0dc0c5a08b06f0af1cbc91d8ad0f872d0165736769e",
+      "bytes": 64835,
+      "status": "cached"
+    },
+    {
+      "id": "zhang2024finagent",
+      "requested_url": "https://www3.ntu.edu.sg/home/boan/papers/KDD24_FinAgent.pdf",
+      "url": "https://www3.ntu.edu.sg/home/boan/papers/KDD24_FinAgent.pdf",
+      "final_url": "https://www3.ntu.edu.sg/home/boan/papers/KDD24_FinAgent.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:35:56.530148+00:00",
+      "sha256": "cfc31d78f7919c104f741aee197866bd8f8a938b2504b5f8eebc8b1b57f40dd8",
+      "bytes": 2508144
+    },
+    {
+      "id": "yu2024fincon",
+      "requested_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/f7ae4fe91d96f50abc2211f09b6a7e49-Paper-Conference.pdf",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/f7ae4fe91d96f50abc2211f09b6a7e49-Paper-Conference.pdf",
+      "final_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/f7ae4fe91d96f50abc2211f09b6a7e49-Paper-Conference.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:35:57.272420+00:00",
+      "sha256": "82af0bc37198f1110ca5c4c1d79a7fd22512fe879b5219746a9dec922a034a42",
+      "bytes": 15280048
+    },
+    {
+      "id": "zong2024macrohft",
+      "requested_url": "https://arxiv.org/pdf/2406.14537v1",
+      "url": "https://arxiv.org/pdf/2406.14537v1",
+      "final_url": "https://arxiv.org/pdf/2406.14537v1",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:35:55.951410+00:00",
+      "sha256": "f36a8260c071a2788fb6391e3fc4982386d8bb303b74464b79a57014499ab76f",
+      "bytes": 3474094
+    },
+    {
+      "id": "deepseek2024v2",
+      "requested_url": "https://arxiv.org/pdf/2405.04434v5",
+      "url": "https://arxiv.org/pdf/2405.04434v5",
+      "final_url": "https://arxiv.org/pdf/2405.04434v5",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:21.234913+00:00",
+      "sha256": "f149f9c09aa8b46ce6a740a255a99b7cc2317ac5b065989339919b7e6c329c9b",
+      "bytes": 1586880
+    },
+    {
+      "id": "deepseek2024v3",
+      "requested_url": "https://arxiv.org/pdf/2412.19437v2",
+      "url": "https://arxiv.org/pdf/2412.19437v2",
+      "final_url": "https://arxiv.org/pdf/2412.19437v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:22.034076+00:00",
+      "sha256": "812a3fd645c80725354de9d831a6785503007a60681461407f64e97305fa9330",
+      "bytes": 1887366
+    },
+    {
+      "id": "deepseek2025v32",
+      "requested_url": "https://arxiv.org/pdf/2512.02556v1",
+      "url": "https://arxiv.org/pdf/2512.02556v1",
+      "final_url": "https://arxiv.org/pdf/2512.02556v1",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:21.205742+00:00",
+      "sha256": "2bec0671778769c159ec389412727d1f3d4889fe1c71564b61edaa24705bd17b",
+      "bytes": 980616
+    },
+    {
+      "id": "cheng2026engram",
+      "requested_url": "https://arxiv.org/pdf/2601.07372v2",
+      "url": "https://arxiv.org/pdf/2601.07372v2",
+      "final_url": "https://arxiv.org/pdf/2601.07372v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:21.965288+00:00",
+      "sha256": "8eab2dd35e4557d4142e5959697836f6cf926d0fbc29016257f1eea5be73df5d",
+      "bytes": 772599
+    },
+    {
+      "id": "deepseek2026v4",
+      "requested_url": "https://arxiv.org/pdf/2606.19348v1",
+      "url": "https://arxiv.org/pdf/2606.19348v1",
+      "final_url": "https://arxiv.org/pdf/2606.19348v1",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:21.972116+00:00",
+      "sha256": "55b2d72f772ac00de2e470b3ee08443c648d971c7f57c52d6202895665e5978d",
+      "bytes": 4713349
+    },
+    {
+      "id": "deepseek2026v41flash",
+      "requested_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/main/DeepSeek_V41_Tech_Report.pdf",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/main/DeepSeek_V41_Tech_Report.pdf",
+      "final_url": "https://us.aws.cdn.hf.co/xet-bridge-us/6aa213563d5b3527359d1af2/3611438dc4b7fa3f6be8abbfa4a793e7c3336313172d36339611adeadd4a5ac9?X-Xet-Cas-Uid=public&response-content-type=application%2Fpdf&user_id=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27DeepSeek_V41_Tech_Report.pdf%3B+filename%3D%22DeepSeek_V41_Tech_Report.pdf%22%3B&Expires=1789760782&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNmFhMjEzNTYzZDViMzUyNzM1OWQxYWYyLzM2MTE0MzhkYzRiN2ZhM2Y2YmU4YWJiZmE0YTc5M2U3YzMzMzYzMTMxNzJkMzYzMzk2MTFhZGVhZGQ0YTVhYzlcXD9YLVhldC1DYXMtVWlkPXB1YmxpYyZyZXNwb25zZS1jb250ZW50LXR5cGU9YXBwbGljYXRpb24lMkZwZGYmdXNlcl9pZD1wdWJsaWMmcmVzcG9uc2UtY29udGVudC1kaXNwb3NpdGlvbj1pbmxpbmUlM0IrZmlsZW5hbWUlMkElM0RVVEYtOCUyNyUyN0RlZXBTZWVrX1Y0MV9UZWNoX1JlcG9ydC5wZGYlM0IrZmlsZW5hbWUlM0QlMjJEZWVwU2Vla19WNDFfVGVjaF9SZXBvcnQucGRmJTIyJTNCIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJFcG9jaFRpbWUiOjE3ODk3NjA3ODJ9fX1dfQ__&Signature=MEYCIQCMhHhXSCnjTAi09BhN2esRTXXSRtIWkIeB05sP1KBN5wIhAKaUHX0LEV3HxL2Q-rUi0m5V95Mgtwi%7EJ4YXHCG-CGPB&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F&Hash-Algorithm=SHA256",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:23.311202+00:00",
+      "sha256": "ba68e2e40408125ae6d2f63a9a241b61c73910691c74ec1a2a7023c851eac08d",
+      "bytes": 1809802
+    },
+    {
+      "id": "deepseek_deepgemm",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "deepseek_dualpipe",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "rolnick2019replay",
+      "requested_url": "https://arxiv.org/pdf/1811.11682v2",
+      "url": "https://arxiv.org/pdf/1811.11682v2",
+      "final_url": "https://arxiv.org/pdf/1811.11682v2",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:22.505061+00:00",
+      "sha256": "d67eea63e22842c92d9e7f84eb704e3f834bdc5998393853dc4291625d380345",
+      "bytes": 2700576
+    },
+    {
+      "id": "mclean2016predictability",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "pearl2009causaloverview",
+      "requested_url": "https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf",
+      "url": "https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf",
+      "final_url": "https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-18T18:46:25.089845+00:00",
+      "sha256": "1a5ecb7cb7c55a9b4f2c09aac091bc01a3eabfc94fc55ee692efbc013a8b7581",
+      "bytes": 593923
+    },
+    {
+      "id": "white2000realitycheck",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
     }
   ]
 }
