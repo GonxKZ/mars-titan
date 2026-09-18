@@ -88,7 +88,7 @@ reports/             Plantillas de resultados y fichas de experimentos
 
 ## Empezar
 
-Requisitos: Git y [uv](https://docs.astral.sh/uv/). El entorno de desarrollo usa Python 3.12. Uv lo gestiona automáticamente.
+Requisitos: Git, [uv](https://docs.astral.sh/uv/) y ripgrep. La comprobación nativa necesita CMake y compiladores C/C++. El entorno de desarrollo usa Python 3.12, gestionado por uv. La [guía de entorno](docs/engineering/reproducibility.md) recoge las dependencias del sistema.
 
 ```bash
 git clone https://github.com/GonxKZ/mars-titan.git

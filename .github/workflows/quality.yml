@@ -18,13 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: '0.12.16'
           enable-cache: true
+      - name: Instalar herramientas del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ripgrep cmake build-essential
       - name: Instalar entorno de calidad
         run: uv sync --locked
       - name: Revisar código
