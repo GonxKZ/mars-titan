@@ -21,6 +21,8 @@ La revisión tiene alcance documentado y fecha de corte del 18 de septiembre de 
 
 Las reseñas de memoria incluyen ACI y EnbPI, cuyas fichas canónicas están en el catálogo financiero. Hyndman también tiene su entrada canónica en finanzas. Se evita duplicar identificadores al descargar o citar.
 
+La [revisión ampliada de los ocho posts](social-followup.md) incorpora las imágenes, las doce bibliotecas de datos, los enlaces nuevos y sus condiciones. Distingue conceptos aprovechables de ganancias o sistemas cuya reproducción no puede comprobarse. Las descargas de datos complementarios se describen en [fuentes públicas](../data/free-data-sources.md).
+
 El [registro de catálogos](catalogs.json) es la entrada común del descargador y del verificador. Añadir una colección exige registrar su JSON y su BibTeX, sin modificar listas de nombres en varios programas. La [ampliación de investigación](../research/research-expansion.md) conecta estas fuentes con decisiones y experimentos propuestos.
 
 ## Búsqueda y selección

@@ -1,5 +1,7 @@
 # Revisión de los tres enlaces de X
 
+La [revisión ampliada](social-followup.md) incorpora la imagen de doce ecuaciones de Trackmind y precisa qué conceptos pueden aprovecharse. La imagen no acredita un paper identificable ni el código anunciado.
+
 Fecha de comprobación: 18 de septiembre de 2026. Alcance: documentación y contraste de fuentes. No se ha instalado software, ejecutado código de los posts ni iniciado experimentos científicos.
 
 Los originales devolvieron HTTP 403 al lector web. Se recuperaron posteriormente mediante la API pública de FxTwitter, que devolvió `code: 200`, el identificador solicitado, la URL original y el autor correspondiente. Esta es una recuperación mediante un intermediario: se conserva esa limitación de procedencia y no se afirma haber leído los originales directamente en X. Las afirmaciones técnicas aprovechables se contrastaron con sus fuentes oficiales.

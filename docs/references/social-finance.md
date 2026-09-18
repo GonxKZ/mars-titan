@@ -1,5 +1,7 @@
 # Seguimiento de las referencias de X
 
+La [revisión ampliada](social-followup.md) completa esta primera inspección con la lista del propio autor, las imágenes y las condiciones actuales de cada proveedor. Incluye además dos publicaciones recibidas posteriormente.
+
 Autor: Gonzalo. Verificación: 18 de septiembre de 2026.
 
 Los tres enlaces permiten localizar herramientas, pero tienen distinto valor para el proyecto. Esta nota separa el contenido del post, los recursos originales identificados y lo que todavía no puede darse por comprobado. Las afirmaciones técnicas se contrastan con los proyectos. Una publicación social no se trata como evidencia de rentabilidad.
