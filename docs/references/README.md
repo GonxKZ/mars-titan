@@ -57,6 +57,8 @@ Los PDF se guardan en `docs/references/library/`, con nombres basados en identif
 
 El [manifiesto de esta preparación](download-manifest.json) registra los 111 resultados, incluidos documentos disponibles solo como referencia. `cached` indica que el PDF ya estaba descargado al repetir la comprobación. La inspección con `pdfinfo` comprueba además que los archivos se pueden interpretar como PDF. Un hash acredita identidad de bytes, no la validez científica ni la licencia de un documento.
 
+El [registro de validación de archivos](../../reports/reference-validation.json) recoge la comprobación de los 80 PDF y las muestras visuales. La copia de Engram genera avisos de sintaxis al leer algunos metadatos, aunque el lector reconoce sus 35 páginas y la portada inspeccionada es legible. Se conserva el original y su hash, sin corregir silenciosamente el documento del autor.
+
 El historial de acceso distingue la versión consultada de la publicada. Por ejemplo, DLinear se cita como artículo AAAI de 2023, pero el PDF de consulta es el preprint arXiv v3 de 2022 porque la descarga editorial cerró la conexión. Los catálogos conservan esa diferencia.
 
 ## Derechos y uso académico
