@@ -2,6 +2,8 @@
 
 Autor del proyecto: Gonzalo García Lama. Fecha: 18 de septiembre de 2026.
 
+Registro de la consolidación inicial. La revisión posterior mantiene las cinco retiradas y añade dos trabajos distintos de preparación, el observatorio MT-068 y las guías MT-069. El [tablero actual](task-board.md) contiene 64 tareas con guías operativas y 183 dependencias. Los recuentos siguientes documentan la consolidación previa, no sustituyen ese estado actual.
+
 Estado: consolidación aplicada y verificada. Se han auditado las 67 tareas originales, sus criterios, dependencias, prioridades y etiquetas. El [catálogo activo](../../.github/planning/issues.json) contiene 62 tareas y el [registro de retiradas](../../.github/planning/retired-issues.json) conserva las cinco consolidadas.
 
 La comprobación posterior confirma 67 issues conservadas en el repositorio y 62 elementos en el tablero activo. MT-001 permanece cerrada y en Hecho, 61 tareas siguen abiertas y en Pendiente y cinco están cerradas como no planificadas por consolidación. Los números remotos de las nuevas tareas no coinciden con su identificador estable. Por ejemplo, MT-065 es la issue 67. El [mapa remoto](../../.github/planning/remote-map.json) conserva esa correspondencia.

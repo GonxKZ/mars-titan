@@ -1,5 +1,6 @@
 {
   "retrieved_at": "2026-09-18T18:59:02.089157+00:00",
+  "updated_at": "2026-09-18T20:26:27+00:00",
   "records": [
     {
       "id": "sec_edgar_timestamps",
@@ -986,6 +987,16 @@
       "requested_url": null,
       "url": null,
       "status": "reference_only"
+    },
+    {
+      "id": "lin2021tra",
+      "requested_url": "https://arxiv.org/pdf/2106.12950v2",
+      "url": "https://arxiv.org/pdf/2106.12950v2",
+      "final_url": "https://arxiv.org/pdf/2106.12950v2",
+      "status": "downloaded",
+      "downloaded_at": "2026-09-18T20:25:39.448277+00:00",
+      "sha256": "0e5eabf862cd382b63ac2943c2248e0b4826b842145c96c69f34676837bad383",
+      "bytes": 3331462
     }
   ]
 }
