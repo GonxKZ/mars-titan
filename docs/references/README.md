@@ -27,7 +27,7 @@ El [registro de catálogos](catalogs.json) es la entrada común del descargador 
 
 ## Búsqueda y selección
 
-Se partió del documento inicial, de FinMultiTime y de los conceptos necesarios para evaluar una memoria financiera. Se siguieron citas hacia autores, actas de congresos, arXiv, revistas, SEC, la biblioteca de Kenneth French y publicaciones de AQR. Los libros se localizaron en las webs de sus autores y editoriales. Los seis posts aportados se contrastaron por separado.
+Se partió del documento inicial, de FinMultiTime y de los conceptos necesarios para evaluar una memoria financiera. Se siguieron citas hacia autores, actas de congresos, arXiv, revistas, SEC, la biblioteca de Kenneth French y publicaciones de AQR. Los libros se localizaron en las webs de sus autores y editoriales. Los ocho posts aportados se contrastaron por separado, incorporando los dos últimos a la revisión ampliada.
 
 Familias de consulta utilizadas:
 
