@@ -32,5 +32,29 @@
       "result": "Portada, resumen y esquema legibles."
     }
   ],
-  "scope": "Validación de archivos y muestras visuales. No acredita lectura integral ni corrección científica de las publicaciones. Los originales no se han alterado."
+  "scope": "Validación de archivos y muestras visuales. No acredita lectura integral ni corrección científica de las publicaciones. Los originales no se han alterado.",
+  "incremental_checks": [
+    {
+      "recorded_at": "2026-09-18T20:26:27+00:00",
+      "reference_id": "lin2021tra",
+      "path": "docs/references/library/lin2021tra.pdf",
+      "requested_url": "https://arxiv.org/pdf/2106.12950v2",
+      "final_url": "https://arxiv.org/pdf/2106.12950v2",
+      "sha256": "0e5eabf862cd382b63ac2943c2248e0b4826b842145c96c69f34676837bad383",
+      "bytes": 3331462,
+      "pages": 10,
+      "pdfinfo_exit_code": 0,
+      "warnings": "",
+      "visual_inspection": {
+        "pages_checked": [
+          1
+        ],
+        "result": "Título, autoría, resumen, referencia y aviso ACM legibles en la primera página renderizada."
+      },
+      "rights_note": "El HTML arXiv v2 indica CC BY 4.0 y el PDF conserva un aviso ACM con condiciones distintas. Se conserva la discrepancia y no se autoriza su redistribución desde el proyecto.",
+      "catalog_reference_count": 112,
+      "library_pdf_count": 81,
+      "scope": "Comprobación nueva de TRA y recuento del catálogo y los PDF locales. La revisión anterior de 80 PDF permanece intacta y no se presenta como repetida en esta ampliación."
+    }
+  ]
 }

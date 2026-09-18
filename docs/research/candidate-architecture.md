@@ -10,7 +10,7 @@ El [aprendizaje complementario](../references/brain-review.md) motiva estudiar c
 
 ```mermaid
 flowchart LR
-    D[Datos disponibles<br/>precios, noticias y macro] --> E[Representación compacta<br/>versión congelada]
+    D[FinMultiTime disponible<br/>precios, noticias y modalidades auditadas] --> E[Representación compacta<br/>versión congelada]
     E --> H[Estado temporal<br/>por activo]
     H --> Q[Consulta de episodios<br/>instantánea inmutable]
     Q --> K[Refinamiento<br/>K = 1, 2 o 4]
@@ -26,9 +26,9 @@ La flecha de escritura solo afecta a decisiones posteriores. El gráfico no auto
 
 ## Núcleo que se comparará primero
 
-Un codificador temporal compacto procesa precios y máscaras. Las noticias se representan con un codificador congelado y una proyección pequeña. Las variables macro usan su última versión disponible y registran antigüedad y ausencias. La fusión se mantiene sencilla para poder atribuir el efecto de la memoria.
+Un codificador temporal compacto procesa precios y máscaras. Las noticias se representan con un codificador congelado y una proyección pequeña. Se auditan fundamentales y gráficos para incorporarlos cuando su disponibilidad sea defendible. La fusión se mantiene sencilla para poder atribuir el efecto de la memoria. Las variables macro son una ampliación condicionada y, si se activan, usan su última versión disponible y registran antigüedad y ausencias. No son un requisito para iniciar el núcleo multimodal.
 
-La referencia inicial es una GRU. Una SSM o regla delta entra como contraste moderno cuando la medida justifique su coste. El candidato comparte pesos entre activos y guarda estados pequeños por activo. No replica una red entrenable completa para cada uno de los miles de símbolos.
+La referencia secuencial inicial es una GRU. La memoria asociativa compacta con regla delta, definida más adelante, aporta el contraste neural adaptativo identificable. Una SSM adicional entra solo si una pregunta y el presupuesto justifican su coste. El candidato comparte pesos entre activos y guarda estados pequeños por activo. No replica una red entrenable completa para cada uno de los miles de símbolos.
 
 La memoria episódica tiene capacidad explícita. El punto inicial de dimensionamiento es E = 8.192 referencias de episodios, rasgos base de dimensión 256, claves de dimensión 128 y recuperación de hasta ocho entradas únicas por consulta. Son valores para el piloto, no hiperparámetros ya validados. Cada episodio conserva identificador estable, mercado, corte, origen, revisión de representación y motivo de escritura. Los vectores no sustituyen su procedencia.
 
@@ -44,11 +44,13 @@ $$e_j = \left|y_j-\widehat y_j^{\mathrm{emitida}}\right|.$$
 
 La predicción usada es la que se conservó en el registro original, junto con su versión. Recalcularla con pesos posteriores altera el significado de sorpresa. La escala del error se estima con historia permitida y se limita su influencia para que un dato erróneo no monopolice la memoria.
 
-La puntuación candidata combina error normalizado, diversidad respecto a episodios existentes y relevancia de información publicada. Los coeficientes y umbrales se eligen en desarrollo. El desacuerdo entre modelos o un error grande no demuestran que un evento sea aprendible. Se contrastarán con escrituras uniformes y muestreo aleatorio de igual coste.
+La puntuación candidata conserva los tres componentes de la propuesta: error predictivo maduro, anomalía de mercado calculada con información disponible y relevancia económica verificable. La diversidad respecto a episodios existentes es una extensión del selector, no un sustituto de la anomalía. Los coeficientes, escalas y umbrales se eligen en desarrollo. El desacuerdo entre modelos o un error grande no demuestran que un evento sea aprendible. Se contrastarán con escrituras uniformes y muestreo aleatorio de igual coste.
+
+Una especificación que deberá fijarse en MT-019 es `s_j = w_e · e_j_normalizado + w_a · anomalia_j_normalizada + w_r · relevancia_j_normalizada`. La anomalía puede partir de un cambio observado de retorno o volatilidad de mercado respecto a una escala histórica robusta. Se registrarán ventana, unidad, normalización y momento en que cada término se conoce. Añadir un término de diversidad identifica otra variante. Una puntuación estadística no demuestra causalidad económica ni permite imputar un consenso de analistas inexistente.
 
 Para limitar sesgos del selector se propone una mezcla inicial de cupos: la mitad mediante reservoir sampling uniforme de la historia elegible, un cuarto por puntuación selectiva y otro cuarto para eventos recientes. Cada evento elegible se ofrece a tres índices. El uniforme usa el algoritmo de reservorio con semilla y contador persistidos. El reciente conserva los últimos eventos en el orden temporal canónico. El selectivo conserva las mayores puntuaciones de admisión, con desempate determinista por identificador.
 
-La puntuación de error, novedad y relevancia gobierna únicamente el índice selectivo. Se calcula una vez al admitir el candidato frente al conjunto selectivo existente y permanece guardada. La novedad al ingresar no garantiza diversidad óptima del conjunto futuro. Así se evita recalcular todos los pares de recuerdos en cada escritura. El coste de consultar las claves para puntuar una admisión también debe medirse.
+La puntuación de error, anomalía y relevancia, con diversidad solo en la variante que la incluya, gobierna únicamente el índice selectivo. Se calcula una vez al admitir el candidato y permanece guardada. La novedad al ingresar se mide frente al conjunto selectivo existente y no garantiza diversidad óptima del conjunto futuro. Así se evita recalcular todos los pares de recuerdos en cada escritura. El coste de consultar las claves para puntuar una admisión también debe medirse.
 
 Los índices pueden apuntar al mismo evento, pero comparten un único registro de rasgos por `event_id`. Se eliminan duplicados antes de recuperar las ocho entradas. La suma de capacidades de índices no supera E y su unión puede contener menos episodios. Se informa número de registros únicos, referencias de índices y bytes totales. Las comparaciones igualan esos costes, no solo un parámetro llamado capacidad. La composición de cupos puede revisarse en el piloto, antes del test, y se contrastará con una política uniforme sin cupos.
 
@@ -107,6 +109,6 @@ El doble buffer se cuenta dentro de la VRAM. Si compartir GPU entre consolidaci�
 
 ## Qué constituiría una aportación
 
-La contribución candidata es determinar si la retención con diversidad y la asignación de pocos pasos internos a eventos disponibles mejoran la predicción financiera a igualdad de recursos. La interacción entre esas decisiones puede estudiarse mediante un diseño factorial pequeño. La memoria episódica, el replay, la recurrencia y la destilación ya tienen antecedentes directos.
+La contribución principal es determinar si una memoria adaptativa multimodal, con escritura por sorpresa, régimen e incertidumbre, mejora la predicción residual frente a referencias comparables. La diversidad y la asignación de pocos pasos internos son extensiones de esa pregunta, no un reemplazo de los seis objetivos. Su interacción puede estudiarse mediante un diseño factorial pequeño si ambas justifican el coste. La memoria episódica, el replay, la recurrencia y la destilación ya tienen antecedentes directos.
 
 La [revisión reciente](../references/frontier-review.md) incluye TIEM y modelos de memoria financiera. Se deberá comparar qué estado cambia durante evaluación, qué objetivo predicen, qué datos usan y qué coste introducen. MARS-TITAN no se declara original por cambiar el nombre de esos mecanismos. El [registro de hipótesis](novelty-ledger.md) define las diferencias y las pruebas que pueden refutarlas.

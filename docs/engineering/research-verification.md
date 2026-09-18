@@ -4,6 +4,8 @@ Autor: Gonzalo García Lama. Fecha: 18 de septiembre de 2026.
 
 Esta revisión recoge la ampliación posterior a la [preparación inicial](verification.md). Distingue los documentos y herramientas comprobados de los modelos y experimentos que siguen pendientes. Las cifras anteriores se conservan como historial, no como inventario actual.
 
+La revisión operativa posterior está reflejada en la [guía de implementación](implementation-guide.md) y en el [tablero actual](../research/task-board.md). Incorpora 64 guías, 183 dependencias y TRA como antecedente adicional, con 112 referencias y 81 PDF locales. Las cifras de las tablas siguientes conservan la instantánea de la primera ampliación. No acreditan ejecución científica.
+
 ## Investigación y alcance
 
 La documentación incluye aprendizaje y memoria biológica, aprendizaje continuo, recurrencia interna, predicción financiera, macroeconomía y eficiencia. La [arquitectura candidata](../research/candidate-architecture.md) separa parámetros compartidos, estado persistente y refinamiento de una consulta. La [revisión adversarial](../research/adversarial-review.md) y el [registro de hipótesis](../research/novelty-ledger.md) recogen antecedentes, objeciones y pruebas capaces de descartar las propuestas.
@@ -47,7 +49,7 @@ uv run --locked python scripts/check_repository.py
 cmake -S native -B native/build -DMARS_TITAN_ENABLE_CUDA=OFF
 ```
 
-Por decisión del proyecto, GitHub Actions está desactivado y se ha retirado su configuración, junto con la actualización automática de esas acciones. No había ejecuciones en curso ni en cola al desactivarlo. La validación se mantiene local y se repite antes de publicar. Los registros históricos de comprobaciones remotas no se eliminan ni se presentan como automatizaciones vigentes.
+Se retiraron el flujo de calidad y su actualización automática por decisión del proyecto. No había ejecuciones en curso ni en cola al desactivarlo. Posteriormente se autorizó una excepción limitada al despliegue de GitHub Pages. La validación se mantiene local y se repite antes de publicar. Los registros históricos no se eliminan ni se presentan como pruebas automáticas vigentes.
 
 ## Seguimiento contrastado en GitHub
 
@@ -67,4 +69,4 @@ No se ha entrenado ni comparado ningún modelo. No hay cifras propias de precisi
 
 La memoria LaTeX no se ha compilado y no sustituye la plantilla oficial del aula. Falta concretar esa plantilla y el calendario con la dirección. La cobertura máxima de la rúbrica dependerá de las evidencias científicas y de la defensa, no del volumen de documentación.
 
-El repositorio y el tablero permanecen privados. La protección de `main` no está activa porque GitHub la rechazó con el plan actual. Se conservan los controles locales, las convenciones y la limitación documentada, sin cambiar la visibilidad ni contratar servicios.
+El repositorio se hizo público posteriormente por autorización expresa, tras revisar archivos versionados e historial. El tablero conserva su acceso privado. El rechazo anterior de protección de `main` correspondía al repositorio privado y al plan disponible entonces. No se ha contratado ningún servicio. Los datos, pesos y PDF de terceros siguen fuera de Git.

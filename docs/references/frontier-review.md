@@ -2,7 +2,7 @@
 
 Autor del proyecto: Gonzalo García Lama. Verificación: 18 de septiembre de 2026.
 
-Esta ampliación incorpora nueve fuentes primarias que precisan la posición de MARS-TITAN. Los trabajos financieros ya estudian memoria por capas, reflexión, contexto de mercado y selección temporal de experiencias. Los trabajos de sistemas muestran que las mejoras de precisión y caudal dependen del tamaño del modelo, la concurrencia y el hardware. Esta selección complementa las revisiones [neuronal](neural-review.md), [biológica](brain-review.md) y [de sistemas](systems-review.md). No acredita una búsqueda exhaustiva ni prioridad científica de la propuesta.
+Esta ampliación incorpora diez fuentes primarias que precisan la posición de MARS-TITAN. Los trabajos financieros ya estudian memoria por capas, reflexión, contexto de mercado, enrutamiento por errores históricos y selección temporal de experiencias. Los trabajos de sistemas muestran que las mejoras de precisión y caudal dependen del tamaño del modelo, la concurrencia y el hardware. Esta selección complementa las revisiones [neuronal](neural-review.md), [biológica](brain-review.md) y [de sistemas](systems-review.md). No acredita una búsqueda exhaustiva ni prioridad científica de la propuesta.
 
 Las referencias y sus versiones están en [frontier-sources.json](frontier-sources.json) y [frontier.bib](frontier.bib). Se han contrastado fichas primarias y pasajes relevantes de métodos, evaluación y limitaciones. La fecha de consulta no implica que todos los trabajos se publicaran en 2026. Las propuestas de MARS-TITAN siguen sin resultados experimentales propios.
 
@@ -15,10 +15,11 @@ Las referencias y sus versiones están en [frontier-sources.json](frontier-sourc
 | [FinCon, Yu et al. (2024)](https://proceedings.neurips.cc/paper/2024/hash/f7ae4fe91d96f50abc2211f09b6a7e49-Abstract-Conference.html) | Jerarquía, crítica de experiencias y actualización de creencias financieras. | La comunicación y el refuerzo son verbales entre agentes. No equivalen a iterar un bloque numérico con pesos compartidos. |
 | [TIEM, Liu et al. (2026)](https://arxiv.org/abs/2608.13024v5) | Eventos, memoria de experiencias, procedencia completa y acceso restringido por tiempo. | Clasifica dirección a tres o cinco sesiones con LLM. La memoria de habilidades queda congelada durante evaluación. |
 | [MacroHFT, Zong et al. (2024)](https://doi.org/10.1145/3637528.3672064) | Memoria numérica, contexto financiero y combinación jerárquica de políticas. | Usa aprendizaje por refuerzo y negociación de criptomonedas por minutos. Acredita antecedentes fuera de los agentes de lenguaje, pero no valida pronósticos residuales diarios. |
+| [TRA, Lin et al. (2021)](https://arxiv.org/html/2106.12950v2) | Enrutamiento de predictores con memoria de errores pasados. | Predice ranking mensual en CSI800. No implementa memoria neural de pesos rápidos ni el objetivo residual diario. |
 
 TIEM es especialmente cercano en la combinación conceptual. Su versión v5 exige que todos los antecesores de una habilidad tengan resultados disponibles antes de usarla. En los experimentos principales desactiva el diagnóstico de estabilidad, la reponderación y el razonamiento multipath opcional. No debe describirse como evidencia de que esas extensiones funcionan ni como adaptación continua durante test. Su prueba de sensibilidad a nombres y fechas tampoco excluye toda contaminación del preentrenamiento. [Método y apéndices C, G y H](https://arxiv.org/html/2608.13024v5).
 
-El espacio de contribución debe expresarse como una comparación concreta: memoria compacta y escritura selectiva para retornos residuales, bajo cortes temporales verificables y un presupuesto local medido. Una recurrencia corta puede estudiarse como componente adicional. La originalidad dependerá de las decisiones precisas y del conocimiento obtenido, no de reunir nombres de mecanismos existentes. Estos antecedentes no obligan a implementar cinco agentes financieros ni a convertir el proyecto en un sistema de negociación por refuerzo.
+El espacio de contribución debe expresarse como una comparación concreta: memoria compacta y escritura selectiva para retornos residuales, bajo cortes temporales verificables y un presupuesto local medido. Una recurrencia corta puede estudiarse como componente adicional. La originalidad dependerá de las decisiones precisas y del conocimiento obtenido, no de reunir nombres de mecanismos existentes. Estos antecedentes no obligan a implementar todos sus modelos ni a convertir el proyecto en un sistema de negociación por refuerzo.
 
 ## Qué demuestran las cifras de eficiencia
 
@@ -39,7 +40,7 @@ RW-TTT trata cada actualización como un efecto sobre un propietario y una versi
 
 Los controles relevantes son reproducir una ejecución con distinto tamaño de lote, permutar el orden de activos, restaurar un estado guardado y verificar que una etiqueta pendiente no pueda modificarlos. Si una optimización cambia las predicciones porque mezcla propietarios o publica escrituras antes de tiempo, no representa el mismo experimento más rápido. El [protocolo](../research/protocol.md) debe seguir siendo la referencia para el orden de información.
 
-## Notas de las nueve fuentes
+## Notas de las diez fuentes
 
 Cada nota contiene menos de 80 palabras y utiliza el identificador del registro.
 
@@ -78,6 +79,10 @@ Cada nota contiene menos de 80 palabras y utiliza el identificador del registro.
 ### 9. `zong2024macrohft`
 
 **Estado:** KDD 2024, revisado por pares. Combina políticas condicionadas por mercado y una política superior con memoria en criptomonedas. Es un antecedente numérico que evita limitar la búsqueda a agentes LLM. Su objetivo, frecuencia y aprendizaje por refuerzo difieren del protocolo residual. El título menciona alta frecuencia, pero los experimentos descritos operan por minutos. [Preprint de consulta](https://arxiv.org/abs/2406.14537v1).
+
+### 10. `lin2021tra`
+
+**Estado:** KDD 2021, copia arXiv v2. TRA enruta predictores mediante errores históricos con separación respecto al horizonte de etiqueta. Su caché se refresca durante entrenamiento y la evaluación respeta el orden temporal. Delimita la novedad del enrutamiento financiero, pero sus errores recalculados no sustituyen la predicción originalmente emitida exigida por MARS-TITAN. [Método, §§5.1 y 5.3](https://arxiv.org/html/2106.12950v2).
 
 ## Consecuencia para la comparación
 
