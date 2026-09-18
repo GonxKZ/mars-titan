@@ -117,6 +117,14 @@ La salida debe estar fuera del directorio de estados privados. Los componentes d
 
 La salida se ordena por identidad de ejecución e intento y sus claves JSON se ordenan de forma estable. Con la misma entrada y fecha de exportación, el resultado es idéntico. El productor también debe publicar su `status.json` de forma atómica para evitar que una lectura coincida con una escritura parcial.
 
+## Límite de los automatismos de GitHub
+
+El repositorio solo versiona `.github/workflows/pages.yml`, dedicado a publicar esta web. Las pruebas y los entrenamientos siguen siendo locales. No hay configuración de actualizaciones de Dependabot y su API confirma que las actualizaciones de seguridad están deshabilitadas.
+
+La comprobación del 19 de septiembre de 2026 detectó además los workflows dinámicos `Dependabot Updates` y `Dependency Graph`. GitHub rechazó desactivarlos mediante el endpoint de Actions con HTTP 422. Esto no demuestra que se estén ejecutando en ese instante, pero impide afirmar que todos los automatismos ajenos a Pages estén desactivados.
+
+GitHub documenta que los repositorios Python con el grafo habilitado pueden ejecutar [trabajos internos de Dependabot](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-graph-data). Su [guía de ajustes de repositorios públicos](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-security-and-analysis-settings-for-your-repository) incluye el grafo entre las funciones permanentemente habilitadas. MT-068 permanece pendiente de una decisión sobre esta limitación de la plataforma. La web sigue publicada, pero no se amplía la autorización de Actions ni se cambia la visibilidad del repositorio por suposición.
+
 ## Integración futura con MT-031
 
 MT-031 mantiene el registro completo de eventos, la persistencia y las identidades. Su callback entrega un resumen pequeño a una cola acotada. Un consumidor fuera del camino de entrenamiento actualiza `status.json` con los últimos valores confirmados y el historial de la fase e intento actuales. Si hay saturación, puede sustituir un resumen pendiente por otro más reciente. Eso no autoriza a descartar eventos científicos del registro privado.
