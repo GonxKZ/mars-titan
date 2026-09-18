@@ -11,6 +11,7 @@ La documentación parte de la propuesta presentada y separa las obligaciones aca
 | Corregir la propuesta técnica inicial | [Revisión crítica del original](research/original-review.md). |
 | Trabajar con los datos | [Ficha de FinMultiTime](data/finmultitime-card.md) y [contrato temporal](data/data-contract.md). |
 | Diseñar y mantener la implementación futura | [Arquitectura](engineering/architecture.md), [entorno reproducible](engineering/reproducibility.md), [decisiones](engineering/decisions.md). |
+| Comprobar qué está preparado | [Verificación de la preparación](engineering/verification.md). |
 | Consultar el estado del arte | [Bibliografía y biblioteca](references/README.md), [finanzas](references/finance-review.md), [memoria neural](references/neural-review.md), [libros](references/books-review.md). |
 | Revisar los enlaces de redes sociales | [Posts financieros](references/social-finance.md) y [posts de arquitectura y rendimiento](references/social-neural.md). |
 | Preparar evidencias y redacción | [Plantillas de informes](../reports/README.md) y [memoria de trabajo](../thesis/README.md). |

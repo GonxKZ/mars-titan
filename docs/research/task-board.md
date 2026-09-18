@@ -4,7 +4,7 @@ Autor: Gonzalo García Lama.
 
 El [catálogo de tareas](../../.github/planning/issues.json) contiene 46 tareas con alcance, criterios verificables, evidencias previstas, riesgos, dependencias y relación con la rúbrica. Es la especificación para crear y mantener las issues del [repositorio MARS-TITAN](https://github.com/GonxKZ/mars-titan) y su [tablero de GitHub Projects](https://github.com/users/GonxKZ/projects/4). Los identificadores MT-001 a MT-046 son estables y no equivalen a los números que GitHub asigne.
 
-El catálogo local registra una tarea Done y 45 Todo. Done acredita únicamente la preparación documental de MT-001. En GitHub, MT-001 permanece abierta y En curso hasta verificar la entrega completa. Las demás tareas comienzan Pendiente. El código científico, los datos derivados, los entrenamientos y los resultados descritos son entregables futuros. La preparación del tablero no inicia su implementación.
+El tablero registra **una tarea Hecho y 45 Pendiente**. [MT-001](https://github.com/GonxKZ/mars-titan/issues/1) está cerrada tras verificar la preparación documental y la entrega del repositorio, respaldada por la [comprobación Quality completada](https://github.com/GonxKZ/mars-titan/actions/runs/35376345437). El catálogo local representa estos estados como Done y Todo. La implementación científica, los datos derivados, los entrenamientos y los resultados permanecen pendientes en las demás tareas.
 
 ## Organización por objetivos
 
@@ -71,54 +71,54 @@ Son destinos previstos, no una afirmación de que los módulos científicos exis
 
 ## Catálogo de trabajo
 
-| ID | Tarea | Hito | Prioridad | Tamaño | Estado inicial | Dependencias |
+| ID | Tarea | Hito | Prioridad | Tamaño | Estado actual | Dependencias |
 | --- | --- | --- | --- | --- | --- | --- |
-| MT-001 | Preparar requisitos, rúbrica y revisión del original | Transversal | P0 | M | Done | Ninguna |
-| MT-002 | Confirmar plantilla, calendario y requisitos con la dirección | Transversal | P0 | S | Todo | MT-001 |
-| MT-003 | Completar el estado del arte y mantener referencias verificables | O6 | P1 | M | Todo | MT-001 |
-| MT-004 | Verificar el entorno científico con uv y CUDA explícita | Transversal | P0 | M | Todo | Ninguna |
-| MT-005 | Inventariar FinMultiTime y sus condiciones de uso | O1 | P0 | M | Todo | Ninguna |
-| MT-006 | Auditar precios, identificadores y sesgo de supervivencia | O1 | P0 | L | Todo | MT-005 |
-| MT-007 | Normalizar noticias con disponibilidad conservadora y deduplicación | O1 | P0 | M | Todo | MT-005 |
-| MT-008 | Reconstruir disponibilidad de fundamentales por filings | O1 | P0 | L | Todo | MT-005 |
-| MT-009 | Regenerar gráficos con ventanas truncadas al instante de decisión | O1 | P1 | M | Todo | MT-006 |
-| MT-010 | Auditar preentrenamiento y versionar representaciones congeladas | O1 | P1 | M | Todo | MT-007, MT-009, MT-004 |
-| MT-011 | Construir contratos point-in-time y uniones as-of | O1 | P0 | L | Todo | MT-006, MT-007, MT-008 |
-| MT-012 | Congelar el subconjunto experimental y su data card | O1 | P0 | M | Todo | MT-005, MT-006, MT-007, MT-008, MT-011 |
-| MT-013 | Definir horizonte, retorno residual y cronología de decisión | O2 | P0 | M | Todo | MT-001 |
-| MT-014 | Versionar factores de mercado y sector con su disponibilidad | O2 | P0 | M | Todo | MT-005, MT-006, MT-013 |
-| MT-015 | Implementar residuales con coeficientes históricos y etiquetas diferidas | O2 | P0 | L | Todo | MT-011, MT-013, MT-014 |
-| MT-016 | Diagnosticar estabilidad y cobertura del objetivo residual | O2 | P1 | M | Todo | MT-012, MT-015 |
-| MT-017 | Implementar representación de eventos y fusión común | O3 | P1 | L | Todo | MT-004, MT-011, MT-012 |
-| MT-018 | Implementar memoria global mínima y trazable | O3 | P1 | M | Todo | MT-017 |
-| MT-019 | Definir sorpresa económica con información ya observada | O3 | P1 | M | Todo | MT-015, MT-018 |
-| MT-020 | Evaluar un enrutamiento por regímenes observables | O3 | P1 | M | Todo | MT-018, MT-019 |
-| MT-021 | Verificar estado prequential, reinicios y aislamiento por fold | O3 | P0 | L | Todo | MT-015, MT-018 |
-| MT-022 | Implementar cuantiles y calibración temporal controlada | O3 | P1 | L | Todo | MT-013, MT-017, MT-021 |
-| MT-023 | Integrar MARS-TITAN compacto y verificar un entrenamiento mínimo | O3 | P1 | L | Todo | MT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022 |
-| MT-024 | Establecer predicción cero y Ridge como referencias iniciales | O4 | P0 | M | Todo | MT-015, MT-031, MT-032 |
-| MT-025 | Añadir un baseline de gradient boosting con presupuesto acotado | O4 | P1 | M | Todo | MT-024 |
-| MT-026 | Comparar referencias temporales compactas | O4 | P1 | L | Todo | MT-004, MT-024 |
-| MT-027 | Contrastar una referencia de memoria con fidelidad explícita | O4 | P1 | L | Todo | MT-003, MT-018, MT-021, MT-031, MT-032 |
-| MT-028 | Fijar la matriz de ablaciones y los controles de capacidad | O4 | P0 | M | Todo | MT-013, MT-017, MT-030 |
-| MT-029 | Ejecutar ablaciones de memoria, sorpresa y modalidades | O4 | P1 | L | Todo | MT-010, MT-023, MT-027, MT-028, MT-031, MT-032 |
-| MT-030 | Cerrar el protocolo walk-forward y la reserva final | O5 | P0 | M | Todo | MT-013 |
-| MT-031 | Construir el runner y registro de experimentos reproducibles | O5 | P0 | L | Todo | MT-004, MT-012, MT-015, MT-030 |
-| MT-032 | Verificar métricas predictivas, de ranking y calibración | O5 | P0 | M | Todo | MT-013, MT-030 |
-| MT-033 | Implementar simulación long-short con costes y cronología operable | O5 | P1 | L | Todo | MT-006, MT-013, MT-030 |
-| MT-034 | Seleccionar configuraciones solo con entrenamiento y validación | O5 | P1 | L | Todo | MT-023, MT-024, MT-025, MT-026, MT-027, MT-028, MT-031, MT-032, MT-033 |
-| MT-035 | Ejecutar la comparación final fuera de muestra | O5 | P0 | L | Todo | MT-029, MT-034 |
-| MT-036 | Estimar incertidumbre de las diferencias y sensibilidad a selección | O5 | P1 | M | Todo | MT-035 |
-| MT-037 | Analizar robustez a costes, regímenes y modalidades ausentes | O5 | P1 | M | Todo | MT-035 |
-| MT-038 | Medir recursos y verificar la restricción de 8 GB | O6 | P0 | M | Todo | MT-023, MT-026, MT-027, MT-035 |
-| MT-039 | Decidir si compensa una optimización C++/CUDA | O6 | P2 | M | Todo | MT-038 |
-| MT-040 | Sintetizar fallos, aportaciones y límites de los seis objetivos | O6 | P1 | M | Todo | MT-016, MT-029, MT-036, MT-037, MT-038 |
-| MT-041 | Preparar y entregar el primer borrador académico | O6 | P1 | M | Todo | MT-001, MT-002, MT-003, MT-013, MT-030 |
-| MT-042 | Preparar y entregar el segundo borrador con avance comprobado | O6 | P1 | M | Todo | MT-041, MT-012, MT-015, MT-024, MT-023, MT-028 |
-| MT-043 | Completar y entregar el tercer borrador de la memoria | O6 | P1 | L | Todo | MT-042, MT-040 |
-| MT-044 | Reproducir tablas y figuras y revisar el paquete de evidencias | O6 | P0 | M | Todo | MT-003, MT-035, MT-036, MT-037, MT-038, MT-043 |
-| MT-045 | Cerrar predepósito y tramitar el depósito autorizado | O6 | P0 | M | Todo | MT-002, MT-043, MT-044 |
-| MT-046 | Preparar y realizar la defensa con dominio de resultados | O6 | P0 | L | Todo | MT-040, MT-044, MT-045 |
+| MT-001 | Preparar requisitos, rúbrica y revisión del original | Transversal | P0 | M | Hecho | Ninguna |
+| MT-002 | Confirmar plantilla, calendario y requisitos con la dirección | Transversal | P0 | S | Pendiente | MT-001 |
+| MT-003 | Completar el estado del arte y mantener referencias verificables | O6 | P1 | M | Pendiente | MT-001 |
+| MT-004 | Verificar el entorno científico con uv y CUDA explícita | Transversal | P0 | M | Pendiente | Ninguna |
+| MT-005 | Inventariar FinMultiTime y sus condiciones de uso | O1 | P0 | M | Pendiente | Ninguna |
+| MT-006 | Auditar precios, identificadores y sesgo de supervivencia | O1 | P0 | L | Pendiente | MT-005 |
+| MT-007 | Normalizar noticias con disponibilidad conservadora y deduplicación | O1 | P0 | M | Pendiente | MT-005 |
+| MT-008 | Reconstruir disponibilidad de fundamentales por filings | O1 | P0 | L | Pendiente | MT-005 |
+| MT-009 | Regenerar gráficos con ventanas truncadas al instante de decisión | O1 | P1 | M | Pendiente | MT-006 |
+| MT-010 | Auditar preentrenamiento y versionar representaciones congeladas | O1 | P1 | M | Pendiente | MT-007, MT-009, MT-004 |
+| MT-011 | Construir contratos point-in-time y uniones as-of | O1 | P0 | L | Pendiente | MT-006, MT-007, MT-008 |
+| MT-012 | Congelar el subconjunto experimental y su data card | O1 | P0 | M | Pendiente | MT-005, MT-006, MT-007, MT-008, MT-011 |
+| MT-013 | Definir horizonte, retorno residual y cronología de decisión | O2 | P0 | M | Pendiente | MT-001 |
+| MT-014 | Versionar factores de mercado y sector con su disponibilidad | O2 | P0 | M | Pendiente | MT-005, MT-006, MT-013 |
+| MT-015 | Implementar residuales con coeficientes históricos y etiquetas diferidas | O2 | P0 | L | Pendiente | MT-011, MT-013, MT-014 |
+| MT-016 | Diagnosticar estabilidad y cobertura del objetivo residual | O2 | P1 | M | Pendiente | MT-012, MT-015 |
+| MT-017 | Implementar representación de eventos y fusión común | O3 | P1 | L | Pendiente | MT-004, MT-011, MT-012 |
+| MT-018 | Implementar memoria global mínima y trazable | O3 | P1 | M | Pendiente | MT-017 |
+| MT-019 | Definir sorpresa económica con información ya observada | O3 | P1 | M | Pendiente | MT-015, MT-018 |
+| MT-020 | Evaluar un enrutamiento por regímenes observables | O3 | P1 | M | Pendiente | MT-018, MT-019 |
+| MT-021 | Verificar estado prequential, reinicios y aislamiento por fold | O3 | P0 | L | Pendiente | MT-015, MT-018 |
+| MT-022 | Implementar cuantiles y calibración temporal controlada | O3 | P1 | L | Pendiente | MT-013, MT-017, MT-021 |
+| MT-023 | Integrar MARS-TITAN compacto y verificar un entrenamiento mínimo | O3 | P1 | L | Pendiente | MT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022 |
+| MT-024 | Establecer predicción cero y Ridge como referencias iniciales | O4 | P0 | M | Pendiente | MT-015, MT-031, MT-032 |
+| MT-025 | Añadir un baseline de gradient boosting con presupuesto acotado | O4 | P1 | M | Pendiente | MT-024 |
+| MT-026 | Comparar referencias temporales compactas | O4 | P1 | L | Pendiente | MT-004, MT-024 |
+| MT-027 | Contrastar una referencia de memoria con fidelidad explícita | O4 | P1 | L | Pendiente | MT-003, MT-018, MT-021, MT-031, MT-032 |
+| MT-028 | Fijar la matriz de ablaciones y los controles de capacidad | O4 | P0 | M | Pendiente | MT-013, MT-017, MT-030 |
+| MT-029 | Ejecutar ablaciones de memoria, sorpresa y modalidades | O4 | P1 | L | Pendiente | MT-010, MT-023, MT-027, MT-028, MT-031, MT-032 |
+| MT-030 | Cerrar el protocolo walk-forward y la reserva final | O5 | P0 | M | Pendiente | MT-013 |
+| MT-031 | Construir el runner y registro de experimentos reproducibles | O5 | P0 | L | Pendiente | MT-004, MT-012, MT-015, MT-030 |
+| MT-032 | Verificar métricas predictivas, de ranking y calibración | O5 | P0 | M | Pendiente | MT-013, MT-030 |
+| MT-033 | Implementar simulación long-short con costes y cronología operable | O5 | P1 | L | Pendiente | MT-006, MT-013, MT-030 |
+| MT-034 | Seleccionar configuraciones solo con entrenamiento y validación | O5 | P1 | L | Pendiente | MT-023, MT-024, MT-025, MT-026, MT-027, MT-028, MT-031, MT-032, MT-033 |
+| MT-035 | Ejecutar la comparación final fuera de muestra | O5 | P0 | L | Pendiente | MT-029, MT-034 |
+| MT-036 | Estimar incertidumbre de las diferencias y sensibilidad a selección | O5 | P1 | M | Pendiente | MT-035 |
+| MT-037 | Analizar robustez a costes, regímenes y modalidades ausentes | O5 | P1 | M | Pendiente | MT-035 |
+| MT-038 | Medir recursos y verificar la restricción de 8 GB | O6 | P0 | M | Pendiente | MT-023, MT-026, MT-027, MT-035 |
+| MT-039 | Decidir si compensa una optimización C++/CUDA | O6 | P2 | M | Pendiente | MT-038 |
+| MT-040 | Sintetizar fallos, aportaciones y límites de los seis objetivos | O6 | P1 | M | Pendiente | MT-016, MT-029, MT-036, MT-037, MT-038 |
+| MT-041 | Preparar y entregar el primer borrador académico | O6 | P1 | M | Pendiente | MT-001, MT-002, MT-003, MT-013, MT-030 |
+| MT-042 | Preparar y entregar el segundo borrador con avance comprobado | O6 | P1 | M | Pendiente | MT-041, MT-012, MT-015, MT-024, MT-023, MT-028 |
+| MT-043 | Completar y entregar el tercer borrador de la memoria | O6 | P1 | L | Pendiente | MT-042, MT-040 |
+| MT-044 | Reproducir tablas y figuras y revisar el paquete de evidencias | O6 | P0 | M | Pendiente | MT-003, MT-035, MT-036, MT-037, MT-038, MT-043 |
+| MT-045 | Cerrar predepósito y tramitar el depósito autorizado | O6 | P0 | M | Pendiente | MT-002, MT-043, MT-044 |
+| MT-046 | Preparar y realizar la defensa con dominio de resultados | O6 | P0 | L | Pendiente | MT-040, MT-044, MT-045 |
 
 La preparación de MT-041 y MT-042 puede requerir adaptar el alcance al calendario real con el director, conservando una descripción veraz del avance. Las fechas se incorporarán desde el campus. El catálogo no declara presentada ninguna entrega ni concedida ninguna autorización.
 
