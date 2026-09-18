@@ -4,6 +4,8 @@ El observatorio permite consultar el estado de las ejecuciones sin abrir sus dat
 
 La interfaz puede existir antes que el entrenador. Mientras no haya estados registrados, la salida contiene el catálogo de modelos, `source_status: "no_runs_registered"` y una lista vacía de ejecuciones. No se generan métricas, curvas o entrenamientos de demostración como si fueran observaciones reales.
 
+La [página pública](https://gonxkz.github.io/mars-titan/) quedó desplegada mediante [PR #73](https://github.com/GonxKZ/mars-titan/pull/73). El [despliegue de Pages](https://github.com/GonxKZ/mars-titan/actions/runs/35396836916) terminó correctamente y se comprobaron sus cinco archivos por SHA-256 frente a la versión local. La vista pública se revisó en escritorio y móvil, sin errores de ejecución. El estado inicial contiene cero ejecuciones y nueve modelos planificados.
+
 ## Uso manual
 
 Desde la raíz del repositorio:
@@ -125,6 +127,8 @@ No se introduce un segundo formato de checkpoint. `checkpoint` solo informa del 
 
 ## Verificación realizada
 
+La revisión final pasó 109 pruebas Python del repositorio, incluidas 55 del exportador, y 21 pruebas JavaScript. La prueba real de navegador ejercitó importación, filtros, CSV, teclado, móvil, impresión, recuperación de errores, caducidad y límites. Las correcciones de contrato se contrastaron mediante CLI real a Node y a navegador, no solo con fixtures independientes.
+
 El [diagnóstico de complejidad y cobertura](../../reports/observatory-quality.json) registra la huella del exportador, Radon 6.0.1 y coverage.py 7.16.1. La cobertura de sentencias observada es del 87,38 % y la de ramas del 86,07 %. La estimación CRAP usa cobertura de sentencias por función, no cobertura de caminos base. El máximo observado de esa variante es 24,03. Es una señal para orientar revisión, no una garantía de corrección ni una medición de rendimiento. Las invocaciones de CLI se prueban en subprocesos, pero no están instrumentadas en esa captura de cobertura del proceso principal.
 
 Las pruebas de `tests/tooling/test_observatory.py` ejercitan la API y la CLI sobre directorios temporales. Cubren ausencia de ejecuciones, campos permitidos, reserva del test, estados inválidos, fechas, progreso, valores finitos, grupos de comparación, cambios de intento, tamaño, profundidad, enlaces y conservación del archivo anterior. Una prueba ejecuta la CLI y pasa su JSON a `validateSnapshot` de `site/state.mjs` con Node.js, incluyendo datos desconocidos, pérdida con signo y test reservado. Node.js es necesario para esa verificación de integración, pero no para ejecutar el exportador. Las fixtures permanecen en directorios temporales y no se publican. Las pruebas se ejecutan con:
@@ -136,3 +140,5 @@ uv run --locked pytest tests/tooling/test_observatory.py
 Se probaron tres mutaciones dirigidas sobre copias temporales del módulo. Desactivar el sellado provocó tres fallos, copiar el diccionario privado produjo un fallo de filtración y omitir la validación de estados y fases provocó dos fallos. La implementación original permaneció intacta. Esta comprobación fue dirigida y no equivale a ejecutar una campaña con mutmut.
 
 El 18 de septiembre de 2026 se midió la utilidad en CPU con Python 3.12.14 y una fixture sintética de 32 estados, cada uno con 500 puntos. Cinco invocaciones reales de la CLI, incluyendo el arranque de Python, tardaron entre 0,1009 y 0,1033 segundos, con mediana de 0,1014 segundos. El máximo RSS de los procesos hijos fue de 26.828 KiB y la salida ocupó 1.430.395 bytes. La fixture se creó fuera del repositorio y se eliminó al terminar. Estos datos miden una exportación local acotada. No representan coste de entrenamiento, latencia de MARS-TITAN ni rendimiento de la GPU.
+
+La [repetición sobre la versión final](../../reports/observatory-benchmark.json), con el mismo tamaño de muestra sintética y cinco invocaciones, observó una mediana de 0,1026 segundos, máximo RSS hijo de 26.956 KiB y salida de 1.435.027 bytes. La diferencia de tamaño responde a la versión del catálogo y del contrato, no a datos financieros. Tampoco mide el efecto de ejecutar la utilidad a la vez que un entrenamiento. Esa comparación pertenece a la integración de MT-031.

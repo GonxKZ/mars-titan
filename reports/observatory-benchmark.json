@@ -1,0 +1,21 @@
+{
+  "observed_on": "2026-09-18",
+  "kind": "synthetic_exporter_benchmark",
+  "fixture": "synthetic",
+  "runs": 32,
+  "history_points_per_run": 500,
+  "repetitions": 5,
+  "seconds": [
+    0.1025933159980923,
+    0.10384435599917197,
+    0.10196332299892674,
+    0.10312813999917125,
+    0.10214551500030211
+  ],
+  "median_seconds": 0.1025933159980923,
+  "max_child_rss_kib": 26956,
+  "output_bytes": 1435027,
+  "includes": "Python startup and complete CLI export",
+  "gpu_used": false,
+  "qualification": "Medición del exportador local en CPU, no de modelos, GPU o entrenamiento. No estima el coste concurrente dentro de un entrenador."
+}

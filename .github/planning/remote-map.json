@@ -5,8 +5,8 @@
     "number": 4,
     "url": "https://github.com/users/GonxKZ/projects/4"
   },
-  "verified_at": "2026-09-18T21:21:17.433472+00:00",
-  "catalog_sha256": "d51feddff378e19e7bfa20b96e088f65e170ba70b3918ed8625929da67cc691b",
+  "verified_at": "2026-09-18T21:39:51.366344+00:00",
+  "catalog_sha256": "c01222238e13299bb42ed3c04e4f6f37cbc2fcf0a68e3c3dd06dff88560126d9",
   "fields": {
     "Status": {
       "id": "PVTSSF_lAHOBFgeDs4Bj8Oqzhiuujk",
@@ -81,9 +81,9 @@
     "assigned_to_gonzalo": 64,
     "pending": 61,
     "in_progress": 0,
-    "in_review": 1,
-    "done": 2,
-    "closed": 2,
+    "in_review": 0,
+    "done": 3,
+    "closed": 3,
     "repository_issues": 69,
     "retired_issues": 5,
     "retired_closed_not_planned": 5,
@@ -98,7 +98,7 @@
     "mt001_closure_preserved": true,
     "retired_history_preserved": true,
     "linked_repository": "GonxKZ/mars-titan",
-    "changed_bodies_and_metadata": 2
+    "changed_bodies_and_metadata": 1
   },
   "milestones": [
     {
@@ -2754,10 +2754,10 @@
         "rendimiento",
         "opcional"
       ],
-      "status": "En revisión",
-      "issue_state": "open",
-      "state_reason": null,
-      "closed_at": null,
+      "status": "Hecho",
+      "issue_state": "closed",
+      "state_reason": "completed",
+      "closed_at": "2026-09-18T21:36:02Z",
       "assignees": [
         "GonxKZ"
       ],

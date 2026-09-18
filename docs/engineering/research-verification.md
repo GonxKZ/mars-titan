@@ -6,6 +6,8 @@ Esta revisión recoge la ampliación posterior a la [preparación inicial](verif
 
 La revisión operativa posterior está reflejada en la [guía de implementación](implementation-guide.md) y en el [tablero actual](../research/task-board.md). Incorpora 64 guías, 183 dependencias y TRA como antecedente adicional, con 112 referencias y 81 PDF locales. Las cifras de las tablas siguientes conservan la instantánea de la primera ampliación. No acreditan ejecución científica.
 
+El [observatorio](https://gonxkz.github.io/mars-titan/) también está publicado y verificado. Su [informe](observatory.md) distingue 109 pruebas Python, 21 JavaScript y comprobaciones de navegador de cualquier resultado científico. La conexión del futuro entrenador, el historial completo y las ejecuciones reales siguen en sus tareas, no se dan por realizados por publicar una interfaz.
+
 ## Investigación y alcance
 
 La documentación incluye aprendizaje y memoria biológica, aprendizaje continuo, recurrencia interna, predicción financiera, macroeconomía y eficiencia. La [arquitectura candidata](../research/candidate-architecture.md) separa parámetros compartidos, estado persistente y refinamiento de una consulta. La [revisión adversarial](../research/adversarial-review.md) y el [registro de hipótesis](../research/novelty-ledger.md) recogen antecedentes, objeciones y pruebas capaces de descartar las propuestas.
@@ -70,3 +72,5 @@ No se ha entrenado ni comparado ningún modelo. No hay cifras propias de precisi
 La memoria LaTeX no se ha compilado y no sustituye la plantilla oficial del aula. Falta concretar esa plantilla y el calendario con la dirección. La cobertura máxima de la rúbrica dependerá de las evidencias científicas y de la defensa, no del volumen de documentación.
 
 El repositorio se hizo público posteriormente por autorización expresa, tras revisar archivos versionados e historial. El tablero conserva su acceso privado. El rechazo anterior de protección de `main` correspondía al repositorio privado y al plan disponible entonces. No se ha contratado ningún servicio. Los datos, pesos y PDF de terceros siguen fuera de Git.
+
+Tras el cambio de visibilidad se activó la protección de `main`, incluida para administradores. Exige PR, historial lineal y conversaciones resueltas, y bloquea force-push y borrado de la rama. No exige comprobaciones de Actions ni aprobaciones de otro colaborador en este trabajo individual. Las pruebas siguen siendo locales y el único workflow configurado publica Pages.
