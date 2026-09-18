@@ -6,6 +6,15 @@ El repositorio prepara la documentación, el entorno y las herramientas necesari
 
 ## Entorno del proyecto
 
+Se requieren Git, uv y ripgrep. Para comprobar la configuración nativa se necesitan CMake y compiladores C/C++. En Debian o Ubuntu, las dependencias de sistema pueden prepararse con:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends git ripgrep cmake build-essential
+```
+
+La integración continua instala explícitamente sus herramientas de sistema para no depender de que la imagen del ejecutor ya incluya ripgrep. uv gestiona las dependencias de Python por separado.
+
 Python se gestiona con uv. El entorno local será `.venv/`, con Python 3.12 como versión de trabajo. `pyproject.toml` declara los grupos de dependencias y `uv.lock` conserva la resolución. La opción `package = false` indica que el repositorio aún no se construye ni se instala como un paquete Python.
 
 Para preparar las herramientas de documentación y calidad:
