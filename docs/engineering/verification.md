@@ -2,6 +2,8 @@
 
 Fecha: 18 de septiembre de 2026. Esta revisión corresponde a la base documental, la configuración y la planificación de MARS-TITAN. No acredita la ejecución de experimentos científicos.
 
+Registro histórico de la preparación inicial. Las cifras de referencias, pruebas y tareas de esta página describen aquella entrega. El inventario posterior y sus límites se recogen en la [verificación de la ampliación](research-verification.md).
+
 ## Repositorio y seguimiento
 
 El [repositorio privado](https://github.com/GonxKZ/mars-titan) tiene `main` como rama principal, licencia MIT, autoría y cita de Gonzalo García Lama, instrucciones de trabajo persistentes y plantillas de revisión. Los commits se redactan en inglés conforme a Conventional Commits.

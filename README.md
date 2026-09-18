@@ -69,6 +69,7 @@ Los objetivos se gestionan como seis hitos y 62 tareas canónicas, con prioridad
 - [Memoria y aprendizaje](docs/references/brain-review.md), [eficiencia de DeepSeek](docs/references/deepseek-review.md), [recorrido completo del dataset](docs/engineering/full-dataset-training.md) y [presupuesto de latencia](docs/engineering/latency-budget.md).
 - [Contraste de los ocho posts aportados](docs/references/social-followup.md): recursos aprovechables, límites de acceso y afirmaciones que no se pueden verificar.
 - [Entorno y reproducción](docs/engineering/reproducibility.md), [riesgos](docs/research/risks.md) y [preparación de la defensa](docs/academic/defense.md).
+- [Verificación de esta entrega](docs/engineering/research-verification.md), con comprobaciones realizadas y límites pendientes.
 
 La rúbrica orienta el trabajo completo, incluida la exposición oral:
 
