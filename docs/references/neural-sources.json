@@ -1,0 +1,341 @@
+[
+  {
+    "id": "xu2025finmultitime",
+    "title": "FinMultiTime: A Four-Modal Bilingual Dataset for Financial Time-Series Analysis",
+    "authors": [
+      "Wenyan Xu",
+      "Dawei Xiang",
+      "Yue Liu",
+      "Xiyu Wang",
+      "Yanxiang Ma",
+      "Shu Hu",
+      "Liang Zhang",
+      "Chang Xu",
+      "Jiaheng Zhang"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2506.05019v2",
+    "pdf_url": "https://arxiv.org/pdf/2506.05019v2",
+    "access": "PDF abierto verificado. Preprint v2, 11-09-2025. La ficha indica Under review. Autores ordenados según el PDF.",
+    "redistribution": "unknown",
+    "relevance": "Dataset central. Auditar disponibilidad temporal, universo y discrepancias de cobertura antes de cualquier comparativa.",
+    "phase": [
+      1,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "behrouz2025titans",
+    "title": "Titans: Learning to Memorize at Test Time",
+    "authors": [
+      "Ali Behrouz",
+      "Peilin Zhong",
+      "Vahab Mirrokni"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/a4ca07aa108036f80cbb5b82285fd4b1-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/a4ca07aa108036f80cbb5b82285fd4b1-Paper-Conference.pdf",
+    "access": "PDF de actas abierto verificado. NeurIPS 2025, revisado por pares. DOI 10.52202/085713-3786. Sustituye como referencia principal al preprint 2501.00663.",
+    "redistribution": "unknown",
+    "relevance": "Fundamento de memoria neuronal con actualización en inferencia. Adaptar y contrastar el módulo sin trasladar resultados de lenguaje a rentabilidades.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "sun2025ttt",
+    "title": "Learning to (Learn at Test Time): RNNs with Expressive Hidden States",
+    "authors": [
+      "Yu Sun",
+      "Xinhao Li",
+      "Karan Dalal",
+      "Jiarui Xu",
+      "Arjun Vikram",
+      "Genghan Zhang",
+      "Yann Dubois",
+      "Xinlei Chen",
+      "Xiaolong Wang",
+      "Sanmi Koyejo",
+      "Tatsunori Hashimoto",
+      "Carlos Guestrin"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/sun25h.html",
+    "pdf_url": "https://arxiv.org/pdf/2407.04620v4",
+    "access": "ICML 2025, PMLR 267:57503-57522, revisado por pares. PDF arXiv v4 abierto verificado. El PDF enlazado por PMLR sirve application/octet-stream al lector web.",
+    "redistribution": "unknown",
+    "relevance": "Distinguir estado aprendido mediante una tarea autosupervisada de reentrenar con objetivos futuros. Base para una ablación TTT lineal compacta.",
+    "phase": [
+      3,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "behrouz2026miras",
+    "title": "It's All Connected: A Journey Through Test-Time Memorization, Attentional Bias, Retention, and Online Optimization",
+    "authors": [
+      "Ali Behrouz",
+      "Meisam Razaviyayn",
+      "Peilin Zhong",
+      "Vahab Mirrokni"
+    ],
+    "year": 2026,
+    "url": "https://openreview.net/forum?id=gZyEJ2kMow",
+    "pdf_url": "https://arxiv.org/pdf/2504.13173",
+    "access": "Publicación ICLR 2026 corroborada por el PDF indexado de OpenReview y la página del autor. PDF arXiv 2025 abierto verificado. Acceso directo OpenReview presenta verificación de navegador.",
+    "redistribution": "unknown",
+    "relevance": "Ordenar la arquitectura y las ablaciones por memoria, objetivo interno, retención y regla de actualización.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "behrouz2025atlas",
+    "title": "ATLAS: Learning to Optimally Memorize the Context at Test Time",
+    "authors": [
+      "Ali Behrouz",
+      "Zeman Li",
+      "Praneeth Kacham",
+      "Majid Daliri",
+      "Yuan Deng",
+      "Peilin Zhong",
+      "Meisam Razaviyayn",
+      "Vahab Mirrokni"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2505.23735",
+    "pdf_url": "https://arxiv.org/pdf/2505.23735",
+    "access": "Preprint/PDF 2025 abierto verificado. La página del primer autor lo lista en ICML 2026. No se verificó una ficha independiente de actas accesible, por lo que se conserva la cita arXiv.",
+    "redistribution": "unknown",
+    "relevance": "Inspiración para revisar contexto pasado acotado al actualizar memoria. No requiere autoedición del código ni demuestra causalidad financiera.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zweiger2025seal",
+    "title": "Self-Adapting Language Models",
+    "authors": [
+      "Adam Zweiger",
+      "Jyothish Pari",
+      "Han Guo",
+      "Yoon Kim",
+      "Pulkit Agrawal"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/6b41e04c41726e2a60e456d0a2b961ab-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/6b41e04c41726e2a60e456d0a2b961ab-Paper-Conference.pdf",
+    "access": "PDF de actas abierto verificado. NeurIPS 2025, revisado por pares. DOI 10.52202/085713-2483. Autores según PDF publicado. El preprint añade Ekin Akyürek.",
+    "redistribution": "unknown",
+    "relevance": "Delimitar adaptación persistente mediante datos generados y aprendizaje por refuerzo. Referencia conceptual, fuera de la implementación mínima en 8 GB.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "behrouz2025nested",
+    "title": "Nested Learning: The Illusion of Deep Learning Architectures",
+    "authors": [
+      "Ali Behrouz",
+      "Meisam Razaviyayn",
+      "Peilin Zhong",
+      "Vahab Mirrokni"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/4309616aaed8e848009bc4a7ef73b493-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/4309616aaed8e848009bc4a7ef73b493-Paper-Conference.pdf",
+    "access": "PDF de actas abierto verificado. NeurIPS 2025, revisado por pares. DOI 10.52202/085713-1565.",
+    "redistribution": "unknown",
+    "relevance": "Actualiza el estado del arte con optimización a distintas escalas y HOPE. Sirve para discusión y trabajo futuro, sin ampliar el núcleo experimental.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zeng2023dlinear",
+    "title": "Are Transformers Effective for Time Series Forecasting?",
+    "authors": [
+      "Ailing Zeng",
+      "Muxi Chen",
+      "Lei Zhang",
+      "Qiang Xu"
+    ],
+    "year": 2023,
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/26317",
+    "pdf_url": "https://arxiv.org/pdf/2205.13504v3",
+    "access": "Artículo AAAI 2023, 37(9):11121-11128, revisado por pares, DOI 10.1609/aaai.v37i9.26317. La descarga editorial cerró la conexión. Se conserva el preprint completo arXiv v3 de agosto de 2022 como versión de consulta, sin afirmar identidad con la publicación definitiva.",
+    "redistribution": "unknown",
+    "relevance": "Baseline DLinear de bajo coste. Obliga a justificar la complejidad adicional bajo el mismo objetivo y protocolo.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "nie2023patchtst",
+    "title": "A Time Series is Worth 64 Words: Long-term Forecasting with Transformers",
+    "authors": [
+      "Yuqi Nie",
+      "Nam H. Nguyen",
+      "Phanwadee Sinthong",
+      "Jayant Kalagnanam"
+    ],
+    "year": 2023,
+    "url": "https://arxiv.org/abs/2211.14730v2",
+    "pdf_url": "https://arxiv.org/pdf/2211.14730v2",
+    "access": "PDF abierto verificado. ArXiv v2 declara aceptación en ICLR 2023 y el PDF contiene la cabecera de publicación.",
+    "redistribution": "unknown",
+    "relevance": "Baseline Transformer con patches. Controlar longitud de contexto y presupuesto de parámetros frente a la memoria adaptativa.",
+    "phase": [
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bai2018tcn",
+    "title": "An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling",
+    "authors": [
+      "Shaojie Bai",
+      "J. Zico Kolter",
+      "Vladlen Koltun"
+    ],
+    "year": 2018,
+    "url": "https://arxiv.org/abs/1803.01271",
+    "pdf_url": "https://arxiv.org/pdf/1803.01271",
+    "access": "Preprint y PDF abiertos verificados. No se atribuye una publicación de conferencia no confirmada.",
+    "redistribution": "unknown",
+    "relevance": "Baseline TCN compacto de convoluciones temporales causales. Causal significa aquí ausencia de información futura, no identificación causal económica.",
+    "phase": [
+      3,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "araci2019finbert",
+    "title": "FinBERT: Financial Sentiment Analysis with Pre-trained Language Models",
+    "authors": [
+      "Dogu Araci"
+    ],
+    "year": 2019,
+    "url": "https://arxiv.org/abs/1908.10063",
+    "pdf_url": "https://arxiv.org/pdf/1908.10063",
+    "access": "PDF abierto verificado. Trabajo de máster depositado en arXiv. No se presenta como artículo revisado por pares. Modelo asociado: https://huggingface.co/ProsusAI/finbert.",
+    "redistribution": "unknown",
+    "relevance": "Codificador financiero en inglés para extraer texto con pesos congelados. Clasificar sentimiento no equivale a pronosticar retornos.",
+    "phase": [
+      1,
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "xu2018stocknet",
+    "title": "Stock Movement Prediction from Tweets and Historical Prices",
+    "authors": [
+      "Yumo Xu",
+      "Shay B. Cohen"
+    ],
+    "year": 2018,
+    "url": "https://aclanthology.org/P18-1183/",
+    "pdf_url": "https://aclanthology.org/P18-1183.pdf",
+    "access": "PDF de actas abierto verificado. ACL 2018, revisado por pares. DOI 10.18653/v1/P18-1183.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente primario de combinar texto y precios para movimientos bursátiles. Justifica ablaciones de modalidad, no causalidad ni beneficio garantizado.",
+    "phase": [
+      1,
+      3,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "koval2024financial",
+    "title": "Financial Forecasting from Textual and Tabular Time Series",
+    "authors": [
+      "Ross Koval",
+      "Nicholas Andrews",
+      "Xifeng Yan"
+    ],
+    "year": 2024,
+    "url": "https://aclanthology.org/2024.findings-emnlp.486/",
+    "pdf_url": "https://aclanthology.org/2024.findings-emnlp.486.pdf",
+    "access": "PDF de actas abierto verificado. Findings of EMNLP 2024, revisado por pares. DOI 10.18653/v1/2024.findings-emnlp.486.",
+    "redistribution": "unknown",
+    "relevance": "Evidencia financiera multimodal textual y contable con baselines unimodales. Su objetivo trimestral difiere de la rentabilidad residual diaria propuesta.",
+    "phase": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "lakshminarayanan2017ensembles",
+    "title": "Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles",
+    "authors": [
+      "Balaji Lakshminarayanan",
+      "Alexander Pritzel",
+      "Charles Blundell"
+    ],
+    "year": 2017,
+    "url": "https://proceedings.neurips.cc/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2017/file/9ef2ed4b7fd2c810847ffa5fa85bce38-Paper.pdf",
+    "access": "PDF de actas abierto verificado. NeurIPS 2017, revisado por pares.",
+    "redistribution": "unknown",
+    "relevance": "Ensemble pequeño entrenado secuencialmente como contraste de incertidumbre. Evaluar calibración y coste adicional.",
+    "phase": [
+      3,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "gal2016dropout",
+    "title": "Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning",
+    "authors": [
+      "Yarin Gal",
+      "Zoubin Ghahramani"
+    ],
+    "year": 2016,
+    "url": "https://proceedings.mlr.press/v48/gal16.html",
+    "pdf_url": "https://proceedings.mlr.press/v48/gal16.pdf",
+    "access": "PDF de actas abierto verificado. ICML 2016, PMLR 48:1050-1059, revisado por pares.",
+    "redistribution": "unknown",
+    "relevance": "Alternativa de incertidumbre con un solo modelo y varias pasadas. La interpretación bayesiana aproximada no garantiza cobertura bajo deriva.",
+    "phase": [
+      3,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

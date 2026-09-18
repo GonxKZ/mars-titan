@@ -1,0 +1,54 @@
+# Datos, resultados y documentos de terceros permanecen en almacenamiento local.
+/dataset/
+/data/raw/
+/data/interim/
+/data/processed/
+/data/embeddings/
+/artifacts/
+/outputs/
+/tmp/
+/docs/academic/source/
+/docs/research/source/*.pdf
+/docs/references/library/
+/docs/references/download-log.json
+
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+/dist/
+/build/
+.ipynb_checkpoints/
+
+# Compilación nativa y LaTeX
+/native/build/
+*.so
+*.o
+*.a
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.toc
+*.synctex.gz
+/thesis/main.pdf
+
+# Credenciales y estado del equipo
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+.idea/
+.vscode/

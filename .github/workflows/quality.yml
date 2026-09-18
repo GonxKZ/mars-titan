@@ -1,0 +1,39 @@
+name: Quality
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'docs/**', 'refactor/**', 'test/**', 'chore/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          version: '0.12.16'
+          enable-cache: true
+      - name: Instalar entorno de calidad
+        run: uv sync --locked
+      - name: Revisar código
+        run: uv run ruff check .
+      - name: Revisar formato
+        run: uv run ruff format --check .
+      - name: Ejecutar pruebas
+        run: uv run pytest
+      - name: Verificar documentación y metadatos
+        run: uv run python scripts/check_repository.py
+      - name: Verificar configuración C y C++
+        run: cmake -S native -B native/build -DMARS_TITAN_ENABLE_CUDA=OFF
