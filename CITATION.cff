@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "Si utilizas el código o el diseño de este proyecto, cita este repositorio y las publicaciones originales correspondientes."
+type: software
+title: "MARS-TITAN: memoria causal adaptativa para predicción bursátil multimodal"
+authors:
+  - family-names: "García Lama"
+    given-names: "Gonzalo"
+version: 0.1.0
+date-released: 2026-09-18
+repository-code: "https://github.com/GonxKZ/mars-titan"
+url: "https://github.com/GonxKZ/mars-titan"
+license: MIT
+keywords:
+  - financial forecasting
+  - adaptive memory
+  - multimodal learning
+  - reproducible research

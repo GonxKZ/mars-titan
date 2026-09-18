@@ -1,0 +1,345 @@
+{
+  "retrieved_at": "2026-09-18T17:32:49.735937+00:00",
+  "records": [
+    {
+      "id": "sec_edgar_timestamps",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "shumway1997delisting",
+      "requested_url": "https://www.tylergshumway.org/Shumway-DelistingBiasCRSP-1997.pdf",
+      "url": "https://www.tylergshumway.org/Shumway-DelistingBiasCRSP-1997.pdf",
+      "recorded_at": "2026-09-18T17:31:24.179847+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "ec9f9e4b9815b57b0c1900c2c908a0e466b0d0e03b5b0eb29fddb130d1b00895",
+      "bytes": 534159,
+      "status": "cached"
+    },
+    {
+      "id": "fama1993risk",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "fama2015five",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "french_data_library",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "gu2020assetpricing",
+      "requested_url": "https://dachxiu.chicagobooth.edu/download/ML_BKP.pdf",
+      "url": "https://dachxiu.chicagobooth.edu/download/ML_BKP.pdf",
+      "recorded_at": "2026-09-18T17:31:24.181177+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "a40411f516b405d06ec4fc8e0fff3642b6549e8945a5e80f141a7a00e517c70a",
+      "bytes": 1177919,
+      "status": "cached"
+    },
+    {
+      "id": "lo2002sharpe",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "frazzini2018costs",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "bailey2017pbo",
+      "requested_url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+      "url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+      "recorded_at": "2026-09-18T17:31:24.181812+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "d8bfbadaaedb430d9dec929646d92f3580fdf18238f34121ae7738fa1c69a63d",
+      "bytes": 1145522,
+      "status": "cached"
+    },
+    {
+      "id": "bailey2014dsr",
+      "requested_url": "https://www.davidhbailey.com/dhbpapers/deflated-sharpe.pdf",
+      "url": "https://www.davidhbailey.com/dhbpapers/deflated-sharpe.pdf",
+      "recorded_at": "2026-09-18T17:31:24.182379+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "ca4a1e834a2954b84eb560776e903329cd9cef318d458aadf6d67bc8166d10b5",
+      "bytes": 1048118,
+      "status": "cached"
+    },
+    {
+      "id": "harvey2016multiple",
+      "requested_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P118_and_the_cross.PDF",
+      "url": "https://people.duke.edu/~charvey/Research/Published_Papers/P118_and_the_cross.PDF",
+      "recorded_at": "2026-09-18T17:31:24.182903+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "15e407e31867dcd5bae6cf843200a85d1409180e1340322554ab3fcf88fb13bf",
+      "bytes": 969629,
+      "status": "cached"
+    },
+    {
+      "id": "gibbs2021aci",
+      "requested_url": "https://proceedings.neurips.cc/paper/2021/file/0d441de75945e5acbc865406fc9a2559-Paper.pdf",
+      "url": "https://proceedings.neurips.cc/paper/2021/file/0d441de75945e5acbc865406fc9a2559-Paper.pdf",
+      "recorded_at": "2026-09-18T17:31:24.183369+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "09bafbdf509e985fd5add45f13a93f426d9083814dec3e78721711aac4ec035a",
+      "bytes": 845022,
+      "status": "cached"
+    },
+    {
+      "id": "barber2023exchangeability",
+      "requested_url": "https://arxiv.org/pdf/2202.13415",
+      "url": "https://arxiv.org/pdf/2202.13415",
+      "recorded_at": "2026-09-18T17:31:24.185328+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "7d09be24289de9a91d90e1ce6331ce28e229f067bea9cdb095cebfa067e3416f",
+      "bytes": 4176553,
+      "status": "cached"
+    },
+    {
+      "id": "xu2021enbpi",
+      "requested_url": "https://proceedings.mlr.press/v139/xu21h/xu21h.pdf",
+      "url": "https://proceedings.mlr.press/v139/xu21h/xu21h.pdf",
+      "recorded_at": "2026-09-18T17:31:24.186744+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "d7f3850a67f7bc7d2326d2bff426130184272c802af6ae85e1d958f804b0568e",
+      "bytes": 2930562,
+      "status": "cached"
+    },
+    {
+      "id": "hyndman2021fpp3",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "cochrane2005asset",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "lopez2018afml",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "hamilton2008regimes",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "xu2025finmultitime",
+      "requested_url": "https://arxiv.org/pdf/2506.05019v2",
+      "url": "https://arxiv.org/pdf/2506.05019v2",
+      "recorded_at": "2026-09-18T17:31:24.187691+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "a758f457504676adfc31908dbade2e61f057807227a280e49be90fe20bb56dcb",
+      "bytes": 1826647,
+      "status": "cached"
+    },
+    {
+      "id": "behrouz2025titans",
+      "requested_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/a4ca07aa108036f80cbb5b82285fd4b1-Paper-Conference.pdf",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/a4ca07aa108036f80cbb5b82285fd4b1-Paper-Conference.pdf",
+      "recorded_at": "2026-09-18T17:31:24.189340+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "9b0f0c4a0163abab6bc2f8acb105ae3c95f3fff25573aa71a252b0b9c040bf78",
+      "bytes": 3486606,
+      "status": "cached"
+    },
+    {
+      "id": "sun2025ttt",
+      "requested_url": "https://arxiv.org/pdf/2407.04620v4",
+      "url": "https://arxiv.org/pdf/2407.04620v4",
+      "recorded_at": "2026-09-18T17:31:24.190136+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "46c960fa5abc08a651d52ffba5e2e59d9b4cd2ebecda02f4fb999a1873102163",
+      "bytes": 1567155,
+      "status": "cached"
+    },
+    {
+      "id": "behrouz2026miras",
+      "requested_url": "https://arxiv.org/pdf/2504.13173",
+      "url": "https://arxiv.org/pdf/2504.13173",
+      "recorded_at": "2026-09-18T17:31:24.191115+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "faceb861d46d65fd7098cbdb97aa400081c7b5cb7e048ac8d010f01537915ab2",
+      "bytes": 1987057,
+      "status": "cached"
+    },
+    {
+      "id": "behrouz2025atlas",
+      "requested_url": "https://arxiv.org/pdf/2505.23735",
+      "url": "https://arxiv.org/pdf/2505.23735",
+      "recorded_at": "2026-09-18T17:31:24.192608+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "b5301e6f08db30ea783e36b7ae2558768cedfc8a51079a20e9f9a5f4ebb938c6",
+      "bytes": 3134980,
+      "status": "cached"
+    },
+    {
+      "id": "zweiger2025seal",
+      "requested_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/6b41e04c41726e2a60e456d0a2b961ab-Paper-Conference.pdf",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/6b41e04c41726e2a60e456d0a2b961ab-Paper-Conference.pdf",
+      "recorded_at": "2026-09-18T17:31:24.193875+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "49b0893bb4f3383fa4664b8ecc6c5d6b474ddb56edc163c8be0103f44e532aff",
+      "bytes": 2549738,
+      "status": "cached"
+    },
+    {
+      "id": "behrouz2025nested",
+      "requested_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/4309616aaed8e848009bc4a7ef73b493-Paper-Conference.pdf",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/4309616aaed8e848009bc4a7ef73b493-Paper-Conference.pdf",
+      "recorded_at": "2026-09-18T17:31:24.195223+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "038a3757b9f368922051e7129f086218708bac718d45fb0108b106c37cd66f5d",
+      "bytes": 2600590,
+      "status": "cached"
+    },
+    {
+      "id": "zeng2023dlinear",
+      "requested_url": "https://arxiv.org/pdf/2205.13504v3",
+      "url": "https://arxiv.org/pdf/2205.13504v3",
+      "recorded_at": "2026-09-18T17:31:24.196066+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "97abddd1821cc72942c8d7ddde7e99466bb91f1bddc37c2b54e0e97be7b5be1b",
+      "bytes": 1584902,
+      "status": "cached"
+    },
+    {
+      "id": "nie2023patchtst",
+      "requested_url": "https://arxiv.org/pdf/2211.14730v2",
+      "url": "https://arxiv.org/pdf/2211.14730v2",
+      "recorded_at": "2026-09-18T17:31:24.198001+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "ffd4021d25b4959883242f256b0fe4ec42f477f66db78c61bfacf7baa7848b0e",
+      "bytes": 4027069,
+      "status": "cached"
+    },
+    {
+      "id": "bai2018tcn",
+      "requested_url": "https://arxiv.org/pdf/1803.01271",
+      "url": "https://arxiv.org/pdf/1803.01271",
+      "recorded_at": "2026-09-18T17:31:24.198580+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "f7e5df08b234f1c395ff4f7b3597b28f170fc9d70af388be5b645bfc4456f42b",
+      "bytes": 1026546,
+      "status": "cached"
+    },
+    {
+      "id": "araci2019finbert",
+      "requested_url": "https://arxiv.org/pdf/1908.10063",
+      "url": "https://arxiv.org/pdf/1908.10063",
+      "recorded_at": "2026-09-18T17:31:24.199065+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "ce63c6b90be8c19ebbfc571a606cfefece714f99466f78aa5c6177049c3911a9",
+      "bytes": 889324,
+      "status": "cached"
+    },
+    {
+      "id": "xu2018stocknet",
+      "requested_url": "https://aclanthology.org/P18-1183.pdf",
+      "url": "https://aclanthology.org/P18-1183.pdf",
+      "recorded_at": "2026-09-18T17:31:24.199488+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "eda5e35bceccae78f36dc0d659b40f852c72dfd731608bf53c1caed0cffeb97d",
+      "bytes": 788187,
+      "status": "cached"
+    },
+    {
+      "id": "koval2024financial",
+      "requested_url": "https://aclanthology.org/2024.findings-emnlp.486.pdf",
+      "url": "https://aclanthology.org/2024.findings-emnlp.486.pdf",
+      "recorded_at": "2026-09-18T17:31:24.199712+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "6b255cfdf76196964beb40143478003612a0238ec7acef65e82f60f28cafd8f2",
+      "bytes": 318640,
+      "status": "cached"
+    },
+    {
+      "id": "lakshminarayanan2017ensembles",
+      "requested_url": "https://proceedings.neurips.cc/paper_files/paper/2017/file/9ef2ed4b7fd2c810847ffa5fa85bce38-Paper.pdf",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2017/file/9ef2ed4b7fd2c810847ffa5fa85bce38-Paper.pdf",
+      "recorded_at": "2026-09-18T17:31:24.200323+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "835735938688c03e411b23ffd8fff172b3b2db3ad33e29e7d6b567c8b94694a0",
+      "bytes": 1185123,
+      "status": "cached"
+    },
+    {
+      "id": "gal2016dropout",
+      "requested_url": "https://proceedings.mlr.press/v48/gal16.pdf",
+      "url": "https://proceedings.mlr.press/v48/gal16.pdf",
+      "recorded_at": "2026-09-18T17:31:24.200917+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "bce8ef24a1ccd970cdf741c37872c0941d879ea0c0b8f30c05efb2b4c346dd28",
+      "bytes": 1026051,
+      "status": "cached"
+    },
+    {
+      "id": "james2023islp",
+      "requested_url": "https://drive.google.com/uc?export=download&id=1ajFkHO6zjrdGNqhqW1jKBZdiNGh_8YQ1",
+      "url": "https://drive.google.com/uc?export=download&id=1ajFkHO6zjrdGNqhqW1jKBZdiNGh_8YQ1",
+      "recorded_at": "2026-09-18T17:31:24.210003+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "278d3bdd49a8a480c2ff8e03245822caad8a3a48e81afd6d039c52c8fc13ad60",
+      "bytes": 20053984,
+      "status": "cached"
+    },
+    {
+      "id": "hastie2009esl",
+      "requested_url": "https://drive.google.com/uc?export=download&id=1--Wo5Hcl2y_v3DL-tGgcJHRPdtjiVYjS",
+      "url": "https://drive.google.com/uc?export=download&id=1--Wo5Hcl2y_v3DL-tGgcJHRPdtjiVYjS",
+      "recorded_at": "2026-09-18T17:31:24.216273+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "8d098d65cf53925ba0fc13a52a2790d48a32433223cbd876d0a527cd1afe2e0f",
+      "bytes": 13399454,
+      "status": "cached"
+    },
+    {
+      "id": "prince2023udl",
+      "requested_url": "https://github.com/udlbook/udlbook/releases/download/v5.0.3/UnderstandingDeepLearning_02_09_26_C.pdf",
+      "url": "https://github.com/udlbook/udlbook/releases/download/v5.0.3/UnderstandingDeepLearning_02_09_26_C.pdf",
+      "recorded_at": "2026-09-18T17:31:24.226464+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "f8237d393163900fa8e43210e680a3f987b45ccac7750b372e156fae3df0bf32",
+      "bytes": 22344992,
+      "status": "cached"
+    },
+    {
+      "id": "hernan2020whatif",
+      "requested_url": "https://miguelhernan.org/s/hernanrobins_WhatIf_19aug26.pdf",
+      "url": "https://miguelhernan.org/s/hernanrobins_WhatIf_19aug26.pdf",
+      "recorded_at": "2026-09-18T17:31:24.231628+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "a1067af923e9156bb95fbe4b0d18699bd0723e9c902bdc74465cf7782820b1b5",
+      "bytes": 11315465,
+      "status": "cached"
+    },
+    {
+      "id": "zhang2023d2l",
+      "requested_url": "https://arxiv.org/pdf/2106.11342v5",
+      "url": "https://arxiv.org/pdf/2106.11342v5",
+      "recorded_at": "2026-09-18T17:32:49.650356+00:00",
+      "provenance": "Descarga directa realizada en esta preparación desde la URL registrada. Recibo consolidado tras verificar el archivo con pdfinfo.",
+      "sha256": "93316e525a034cfa935023c3c31196c86f5edfd0e056f50f09676f6364a0be56",
+      "bytes": 39503008,
+      "status": "cached"
+    }
+  ]
+}

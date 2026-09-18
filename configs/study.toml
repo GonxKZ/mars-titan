@@ -1,0 +1,51 @@
+project = "MARS-TITAN"
+status = "design_only"
+seed_selection = 42
+evaluation_seeds = [17, 42, 123]
+
+[data]
+source = "FinMultiTime"
+market = "US"
+max_assets = 64
+frequency = "daily"
+timezone = "America/New_York"
+news_date_only_lag_sessions = 1
+charts = "regenerate_from_past_only"
+fundamentals = "require_publication_evidence"
+
+[target]
+type = "market_residual"
+entry = "next_session_open"
+exit = "next_session_close"
+horizon_sessions = 1
+coefficient_window_sessions = 252
+minimum_history_sessions = 126
+
+[validation]
+method = "expanding_walk_forward"
+minimum_train_months = 36
+tuning_months = 6
+calibration_months = 3
+evaluation_months = 3
+step_months = 3
+final_holdout_months = 12
+purge_overlapping_labels = true
+reset_memory_each_fold = true
+max_configs_per_family = 10
+
+[compute]
+device = "cuda:0"
+allow_cpu_fallback = false
+planning_vram_gib = 8
+initial_context_sessions = 64
+initial_latent_dimension = 64
+initial_batch_size = 16
+maximum_epochs = 30
+
+[evaluation]
+primary_metric = "session_mean_residual_mae"
+cost_bps_per_side = [0, 5, 10, 20]
+long_gross_weight = 0.5
+short_gross_weight = 0.5
+liquidate_at_close = true
+interval_levels = [0.80, 0.95]

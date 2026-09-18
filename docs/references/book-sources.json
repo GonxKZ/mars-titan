@@ -1,0 +1,108 @@
+[
+  {
+    "id": "james2023islp",
+    "title": "An Introduction to Statistical Learning: with Applications in Python",
+    "authors": [
+      "Gareth James",
+      "Daniela Witten",
+      "Trevor Hastie",
+      "Robert Tibshirani",
+      "Jonathan Taylor"
+    ],
+    "year": 2023,
+    "url": "https://www.statlearning.com/",
+    "pdf_url": "https://drive.google.com/uc?export=download&id=1ajFkHO6zjrdGNqhqW1jKBZdiNGh_8YQ1",
+    "access": "Descarga gratuita enlazada por los autores a través de https://hastie.su.domains/ISLP/ISLP_website.pdf.download.html. El enlace utiliza una redirección HTML hacia Google Drive.",
+    "redistribution": "unknown",
+    "relevance": "Regularización, árboles, evaluación y comparación de modelos. Adaptar los esquemas de validación al orden temporal financiero.",
+    "phase": [
+      2,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hastie2009esl",
+    "title": "The Elements of Statistical Learning: Data Mining, Inference, and Prediction",
+    "authors": [
+      "Trevor Hastie",
+      "Robert Tibshirani",
+      "Jerome Friedman"
+    ],
+    "year": 2009,
+    "url": "https://hastie.su.domains/ElemStatLearn/main.html",
+    "pdf_url": "https://drive.google.com/uc?export=download&id=1--Wo5Hcl2y_v3DL-tGgcJHRPdtjiVYjS",
+    "access": "Segunda edición, impresión corregida de enero de 2017. Descarga gratuita enlazada desde download.html y printings/ESLII_print12_toc.pdf.download.html del sitio del autor.",
+    "redistribution": "unknown",
+    "relevance": "Fundamento estadístico para interpretar complejidad, regularización, selección y sesgo-varianza.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "prince2023udl",
+    "title": "Understanding Deep Learning",
+    "authors": [
+      "Simon J. D. Prince"
+    ],
+    "year": 2023,
+    "url": "https://udlbook.github.io/udlbook/",
+    "pdf_url": "https://github.com/udlbook/udlbook/releases/download/v5.0.3/UnderstandingDeepLearning_02_09_26_C.pdf",
+    "access": "PDF completo de la publicación v5.0.3 en el repositorio oficial del libro. Versión de febrero de 2026.",
+    "redistribution": "Consultar licencia y aviso del PDF. El repositorio oficial contiene una licencia Creative Commons con condiciones. No se relicencia como MIT.",
+    "relevance": "Redes, optimización, atención, regularización y evaluación. Base para justificar un modelo compacto antes de optimizarlo.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hernan2020whatif",
+    "title": "Causal Inference: What If",
+    "authors": [
+      "Miguel A. Hernán",
+      "James M. Robins"
+    ],
+    "year": 2020,
+    "url": "https://miguelhernan.org/whatifbook",
+    "pdf_url": "https://miguelhernan.org/s/hernanrobins_WhatIf_19aug26.pdf",
+    "access": "Libro gratuito ofrecido por los autores. Versión de agosto de 2026 enlazada en la web del autor. Se conserva el año bibliográfico recomendado por los autores, 2020.",
+    "redistribution": "unknown",
+    "relevance": "Separar asociación, predicción e identificación causal. Precisar qué no demuestra la memoria llamada causal.",
+    "phase": [
+      2,
+      3,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "zhang2023d2l",
+    "title": "Dive into Deep Learning",
+    "authors": [
+      "Aston Zhang",
+      "Zachary C. Lipton",
+      "Mu Li",
+      "Alexander J. Smola"
+    ],
+    "year": 2023,
+    "url": "https://arxiv.org/abs/2106.11342v5",
+    "pdf_url": "https://arxiv.org/pdf/2106.11342v5",
+    "access": "Libro completo abierto en arXiv v5, 22 de agosto de 2023. Recursos de los autores en https://d2l.ai/.",
+    "redistribution": "CC-BY-SA-4.0 según enlace de licencia de arXiv v5. Se mantiene como material externo y se consulta localmente.",
+    "relevance": "Referencia práctica para tensores, cómputo, secuencias y evaluación reproducible. No ejecutar los notebooks ajenos sin revisar dependencias.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

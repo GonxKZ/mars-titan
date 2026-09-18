@@ -1,0 +1,23 @@
+name: Tarea de investigación
+description: Definir una pregunta o experimento con criterios de cierre verificables.
+title: '[Investigación] '
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Pregunta y objetivo relacionado
+      description: Indicar el objetivo 1–6 y qué incertidumbre se quiere resolver.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia y criterio de aceptación
+      description: Datos, comparación, controles temporales y resultado que permitiría cerrar la tarea.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Recursos, riesgos y fuentes
+      description: Presupuesto, dependencias, bibliografía y requisitos de la rúbrica.

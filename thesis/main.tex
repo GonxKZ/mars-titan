@@ -1,0 +1,98 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{csquotes}
+\usepackage[margin=2.8cm]{geometry}
+\usepackage[backend=biber,style=apa]{biblatex}
+\addbibresource{../docs/references/finance.bib}
+\addbibresource{../docs/references/neural.bib}
+\addbibresource{../docs/references/books.bib}
+\usepackage[hidelinks]{hyperref}
+
+\title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
+\author{Gonzalo García Lama}
+\date{Septiembre de 2026}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+MARS-TITAN plantea una comparación experimental de modelos para predecir
+retornos residuales de activos financieros a partir de información multimodal.
+La pregunta es si una memoria adaptativa de eventos aporta una mejora frente
+a referencias más sencillas cuando se controla la disponibilidad temporal de
+los datos y el presupuesto computacional. Se propone trabajar con un subconjunto
+de FinMultiTime, validación walk-forward, ablaciones y análisis de incertidumbre.
+Este documento es una base de redacción. La implementación y los resultados
+experimentales todavía no se han realizado.
+\end{abstract}
+\tableofcontents
+
+\chapter{Introducción y objetivos}
+El problema de investigación combina predicción financiera, información
+heterogénea y adaptación a cambios de mercado. El valor del estudio reside en
+determinar qué componentes aportan información útil y bajo qué condiciones
+dejan de hacerlo. La modalidad es una comparativa de soluciones.
+
+Los seis objetivos son preparar datos multimodales con disponibilidad verificable,
+definir retornos residuales, diseñar una memoria adaptativa con incertidumbre,
+compararla con referencias y ablaciones, evaluar predicciones y simulaciones
+financieras y analizar críticamente resultados y restricciones. El protocolo y
+sus criterios de aceptación se conservan en la documentación del repositorio.
+
+\chapter{Estado del arte}
+FinMultiTime constituye el punto de partida de los datos
+\parencite{xu2025finmultitime}. Su alineación por periodos no sustituye una auditoría
+de disponibilidad. Titans y los mecanismos de aprendizaje durante inferencia
+aportan referencias para la memoria \parencite{behrouz2025titans,sun2025ttt}.
+La comparación requiere asimismo referencias sencillas y un control del proceso
+de selección \parencite{zeng2023dlinear,bailey2017pbo}.
+
+La revisión detallada se organiza en finanzas, memoria, incertidumbre y fundamentos.
+Antes de cerrar este capítulo se integrarán las lecturas con una discusión que
+relacione los métodos con la pregunta concreta, sin confundir resultados publicados
+con resultados reproducidos.
+
+\chapter{Datos y metodología}
+Cada muestra relacionará un activo con un instante de decisión, las modalidades
+disponibles y una etiqueta que solo podrá utilizarse después de madurar. La
+predicción se construirá con historia conocida y se evaluará mediante ventanas
+cronológicas. Ajuste, selección, calibración y evaluación tendrán tramos separados.
+
+Para la convención principal de apertura a cierre de la siguiente sesión,
+el retorno residual se define como
+\begin{equation}
+y_{i,t} = r^{OC}_{i,t+1} - \hat\alpha_{i,t}
+          - \hat\beta_{i,t} r^{OC}_{m,t+1}.
+\end{equation}
+Los coeficientes se estimarán con retornos ya conocidos en el instante de decisión.
+El retorno futuro del mercado pertenece a la etiqueta, nunca a las entradas.
+La residualización no identifica por sí misma un efecto causal económico.
+
+\chapter{Diseño de la comparativa}
+La comparación incluirá referencias ingenuas, regresión regularizada, boosting y
+una red temporal compacta. El modelo propuesto se contrastará con variantes sin
+memoria, con escritura uniforme y sin los componentes adicionales de sorpresa.
+Los datos, particiones y presupuestos se mantendrán comparables. La memoria se
+reiniciará por fold y las actualizaciones respetarán la maduración de etiquetas.
+
+Se medirán error, dirección, ranking, calibración y recursos. La simulación usará
+retornos de activos y un registro de operaciones con costes de apertura y cierre.
+El protocolo fijará las comparaciones principales antes de abrir el test final.
+
+\chapter{Resultados y discusión}
+No hay resultados experimentales en esta versión. Este capítulo se redactará
+desde predicciones, métricas y artefactos identificados por configuración y commit.
+Se informarán diferencias, incertidumbre, fallos y costes computacionales.
+Las figuras conceptuales no se utilizarán como evidencia de rendimiento.
+
+\chapter{Conclusiones y limitaciones}
+Las conclusiones quedan pendientes de la ejecución. Cada objetivo tendrá una
+respuesta apoyada en evidencia, o una limitación explícita cuando no pueda
+resolverse. El análisis distinguirá mejora observada, resultado inconcluso y
+ausencia de mejora, y justificará el trabajo futuro a partir de los límites medidos.
+
+\printbibliography
+\end{document}

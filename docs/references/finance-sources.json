@@ -1,0 +1,364 @@
+[
+  {
+    "id": "sec_edgar_timestamps",
+    "title": "Webmaster Frequently Asked Questions: EDGAR timestamps and availability",
+    "authors": [
+      "U.S. Securities and Exchange Commission"
+    ],
+    "year": null,
+    "url": "https://www.sec.gov/about/webmaster-frequently-asked-questions",
+    "pdf_url": null,
+    "access": "HTML oficial completo. Recurso vivo sin año de publicación único.",
+    "redistribution": "La SEC permite reutilizar el contenido gubernamental y los filings públicos. Existen excepciones para algunos materiales de terceros indicadas en su política.",
+    "relevance": "Disponibilidad efectiva, aceptación, periodo contable, revisiones y desfases de publicación de informes.",
+    "phase": [
+      1,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "shumway1997delisting",
+    "title": "The Delisting Bias in CRSP Data",
+    "authors": [
+      "Tyler Shumway"
+    ],
+    "year": 1997,
+    "url": "https://doi.org/10.1111/j.1540-6261.1997.tb03818.x",
+    "pdf_url": "https://www.tylergshumway.org/Shumway-DelistingBiasCRSP-1997.pdf",
+    "access": "Ficha editorial y PDF alojado por el autor. HTTP 200 y application/pdf comprobados. El PDF incluye términos de JSTOR.",
+    "redistribution": "unknown",
+    "relevance": "Sesgo al omitir empresas excluidas y sus retornos de exclusión.",
+    "phase": [
+      1,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "fama1993risk",
+    "title": "Common risk factors in the returns on stocks and bonds",
+    "authors": [
+      "Eugene F. Fama",
+      "Kenneth R. French"
+    ],
+    "year": 1993,
+    "url": "https://doi.org/10.1016/0304-405X(93)90023-5",
+    "pdf_url": null,
+    "access": "Ficha y resumen editoriales públicos. No se confirmó PDF completo libre en origen primario.",
+    "redistribution": "Copyright Elsevier. No se verificó autorización de redistribución del texto completo.",
+    "relevance": "Modelo factorial de referencia para distinguir exposición sistemática, alfa y residuo.",
+    "phase": [
+      2,
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "fama2015five",
+    "title": "A five-factor asset pricing model",
+    "authors": [
+      "Eugene F. Fama",
+      "Kenneth R. French"
+    ],
+    "year": 2015,
+    "url": "https://doi.org/10.1016/j.jfineco.2014.10.010",
+    "pdf_url": null,
+    "access": "Ficha editorial pública. Manuscrito de septiembre de 2014 identificado en https://ssrn.com/abstract=2287202, pero descarga directa no confirmada por bloqueo HTTP 403.",
+    "redistribution": "La ficha SSRN indica todos los derechos reservados y reutilización sujeta a permiso.",
+    "relevance": "Añadir rentabilidad operativa e inversión como contraste de robustez del target residual.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "french_data_library",
+    "title": "Kenneth R. French Data Library",
+    "authors": [
+      "Kenneth R. French"
+    ],
+    "year": null,
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+    "pdf_url": null,
+    "access": "Biblioteca oficial pública con series, definiciones y archivos históricos. Recurso vivo sin año único.",
+    "redistribution": "unknown",
+    "relevance": "Factores observados, convenciones de construcción y revisión de datos. Cambio FIZ a CIZ en enero de 2025.",
+    "phase": [
+      1,
+      2,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "gu2020assetpricing",
+    "title": "Empirical Asset Pricing via Machine Learning",
+    "authors": [
+      "Shihao Gu",
+      "Bryan Kelly",
+      "Dacheng Xiu"
+    ],
+    "year": 2020,
+    "url": "https://doi.org/10.1093/rfs/hhaa009",
+    "pdf_url": "https://dachxiu.chicagobooth.edu/download/ML_BKP.pdf",
+    "access": "PDF completo del autor, versión del 13 de septiembre de 2019. Referencia a publicación definitiva de 2020. Ficha institucional: https://www.aqr.com/insights/research/journal-article/empirical-asset-pricing-via-machine-learning.",
+    "redistribution": "unknown",
+    "relevance": "Comparación financiera de regresiones, árboles y redes con evaluación predictiva fuera de muestra.",
+    "phase": [
+      2,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "lo2002sharpe",
+    "title": "The Statistics of Sharpe Ratios",
+    "authors": [
+      "Andrew W. Lo"
+    ],
+    "year": 2002,
+    "url": "https://doi.org/10.2469/faj.v58.n4.2453",
+    "pdf_url": null,
+    "access": "Resumen primario completo en CFA Institute: https://rpc.cfainstitute.org/research/financial-analysts-journal/2002/the-statistics-of-sharpe-ratios. Artículo editorial completo de acceso restringido. PDF libre primario no confirmado.",
+    "redistribution": "unknown",
+    "relevance": "Incertidumbre del Sharpe y efectos de autocorrelación sobre su anualización.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "frazzini2018costs",
+    "title": "Trading Costs",
+    "authors": [
+      "Andrea Frazzini",
+      "Ronen Israel",
+      "Tobias J. Moskowitz"
+    ],
+    "year": 2018,
+    "url": "https://www.aqr.com/insights/research/working-paper/trading-costs",
+    "pdf_url": null,
+    "access": "Ficha primaria de AQR. Manuscrito en https://ssrn.com/abstract=3229719 con descarga no confirmada por HTTP 403. El enlace aqrPDF=1 solo genera un resumen de dos páginas y no es el artículo.",
+    "redistribution": "unknown",
+    "relevance": "Costes de ejecución, impacto, tamaño de operación y sensibilidad de rentabilidad neta.",
+    "phase": [
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bailey2017pbo",
+    "title": "The Probability of Backtest Overfitting",
+    "authors": [
+      "David H. Bailey",
+      "Jonathan M. Borwein",
+      "Marcos López de Prado",
+      "Qiji Jim Zhu"
+    ],
+    "year": 2017,
+    "url": "https://doi.org/10.21314/JCF.2016.322",
+    "pdf_url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+    "access": "PDF completo del autor, manuscrito de febrero de 2015. Publicación en Journal of Computational Finance 20(4), 2017.",
+    "redistribution": "unknown",
+    "relevance": "CSCV y probabilidad de degradación relativa al seleccionar entre múltiples estrategias.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bailey2014dsr",
+    "title": "The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality",
+    "authors": [
+      "David H. Bailey",
+      "Marcos López de Prado"
+    ],
+    "year": 2014,
+    "url": "https://doi.org/10.3905/jpm.2014.40.5.094",
+    "pdf_url": "https://www.davidhbailey.com/dhbpapers/deflated-sharpe.pdf",
+    "access": "PDF completo del autor. Versión del 31 de julio de 2014.",
+    "redistribution": "El propio PDF indica todos los derechos reservados. No hay permiso abierto verificado.",
+    "relevance": "Corrección del Sharpe seleccionado por ensayos múltiples y retornos no normales.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "harvey2016multiple",
+    "title": "… and the Cross-Section of Expected Returns",
+    "authors": [
+      "Campbell R. Harvey",
+      "Yan Liu",
+      "Heqing Zhu"
+    ],
+    "year": 2016,
+    "url": "https://doi.org/10.1093/rfs/hhv059",
+    "pdf_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P118_and_the_cross.PDF",
+    "access": "PDF completo de la publicación alojado en la página universitaria del autor. Volumen de 2016, publicación anticipada en 2015.",
+    "redistribution": "El PDF indica copyright de los autores y todos los derechos reservados. Permisos mediante Oxford University Press.",
+    "relevance": "Sesgo por exploración de factores y necesidad de registrar todas las hipótesis ensayadas.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "gibbs2021aci",
+    "title": "Adaptive Conformal Inference Under Distribution Shift",
+    "authors": [
+      "Isaac Gibbs",
+      "Emmanuel Candès"
+    ],
+    "year": 2021,
+    "url": "https://proceedings.neurips.cc/paper/2021/hash/0d441de75945e5acbc865406fc9a2559-Abstract.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper/2021/file/0d441de75945e5acbc865406fc9a2559-Paper.pdf",
+    "access": "Actas y PDF completos del congreso NeurIPS 2021.",
+    "redistribution": "unknown",
+    "relevance": "Calibración adaptativa online y diferencia entre frecuencia temporal y cobertura condicional.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "barber2023exchangeability",
+    "title": "Conformal prediction beyond exchangeability",
+    "authors": [
+      "Rina Foygel Barber",
+      "Emmanuel J. Candès",
+      "Aaditya Ramdas",
+      "Ryan J. Tibshirani"
+    ],
+    "year": 2023,
+    "url": "https://doi.org/10.1214/23-AOS2276",
+    "pdf_url": "https://arxiv.org/pdf/2202.13415",
+    "access": "Preprint completo de autores en arXiv. Artículo de Annals of Statistics de 2023.",
+    "redistribution": "Licencia no exclusiva de distribución de arXiv 1.0 verificada. No equivale a autorización general de redistribución por terceros.",
+    "relevance": "Ponderación temporal y límites de cobertura al incumplirse intercambiabilidad.",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "xu2021enbpi",
+    "title": "Conformal prediction interval for dynamic time-series",
+    "authors": [
+      "Chen Xu",
+      "Yao Xie"
+    ],
+    "year": 2021,
+    "url": "https://proceedings.mlr.press/v139/xu21h.html",
+    "pdf_url": "https://proceedings.mlr.press/v139/xu21h/xu21h.pdf",
+    "access": "Artículo completo y metadatos de ICML 2021 en PMLR.",
+    "redistribution": "unknown",
+    "relevance": "Intervalos secuenciales EnbPI y cobertura marginal aproximada con errores dependientes.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hyndman2021fpp3",
+    "title": "Forecasting: Principles and Practice",
+    "authors": [
+      "Rob J. Hyndman",
+      "George Athanasopoulos"
+    ],
+    "year": 2021,
+    "url": "https://otexts.com/fpp3/",
+    "pdf_url": null,
+    "access": "Libro completo de lectura gratuita en HTML, tercera edición. Sección 5.10: https://otexts.com/fpp3/tscv.html. La web declara actualización del 16 de septiembre de 2026.",
+    "redistribution": "unknown",
+    "relevance": "Validación con origen móvil, baselines y evaluación por horizonte de predicción.",
+    "phase": [
+      4,
+      5
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "cochrane2005asset",
+    "title": "Asset Pricing",
+    "authors": [
+      "John H. Cochrane"
+    ],
+    "year": 2005,
+    "url": "https://www.johnhcochrane.com/asset-pricing",
+    "pdf_url": null,
+    "access": "Libro comercial, edición revisada de Princeton University Press, ISBN 9780691121376. Página del autor con enlace editorial y capítulo de muestra. No se ha consultado texto completo.",
+    "redistribution": "No se verificó licencia abierta del libro. Los PDFs de su programa docente prohíben redistribución expresamente.",
+    "relevance": "Fundamento económico de prima de riesgo, alfa y evaluación relativa a factores.",
+    "phase": [
+      2,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "lopez2018afml",
+    "title": "Advances in Financial Machine Learning",
+    "authors": [
+      "Marcos López de Prado"
+    ],
+    "year": 2018,
+    "url": "https://www.wiley-vch.de/en?isbn=9781119482086&option=com_eshop&view=product",
+    "pdf_url": null,
+    "access": "Libro comercial de Wiley, ISBN 9781119482086. Ficha editorial e índice públicos, sin descarga del libro.",
+    "redistribution": "No se verificó licencia abierta del libro.",
+    "relevance": "Referencia bibliográfica para solapamiento de etiquetas, validación financiera y backtesting.",
+    "phase": [
+      1,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hamilton2008regimes",
+    "title": "Regime-Switching Models",
+    "authors": [
+      "James D. Hamilton"
+    ],
+    "year": 2008,
+    "url": "https://econweb.ucsd.edu/~jhamilto/pub_metrics",
+    "pdf_url": null,
+    "access": "Capítulo de The New Palgrave Dictionary of Economics verificado en la lista del autor. Manuscrito de 2005 localizado en https://econweb.ucsd.edu/~jhamilton/palgrav1.pdf. Descarga no verificada por error del certificado TLS y timeout.",
+    "redistribution": "unknown",
+    "relevance": "Contexto econométrico para cambios de régimen y separación entre filtrado causal y clasificación retrospectiva.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]
