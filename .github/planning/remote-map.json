@@ -5,8 +5,8 @@
     "number": 4,
     "url": "https://github.com/users/GonxKZ/projects/4"
   },
-  "verified_at": "2026-09-18T20:56:36.944385+00:00",
-  "catalog_sha256": "3d57d995130776989195de6aee183f401375f9114600c865437e7eb9d19e3050",
+  "verified_at": "2026-09-18T21:21:17.433472+00:00",
+  "catalog_sha256": "d51feddff378e19e7bfa20b96e088f65e170ba70b3918ed8625929da67cc691b",
   "fields": {
     "Status": {
       "id": "PVTSSF_lAHOBFgeDs4Bj8Oqzhiuujk",
@@ -80,10 +80,10 @@
     "project_items": 64,
     "assigned_to_gonzalo": 64,
     "pending": 61,
-    "in_progress": 1,
+    "in_progress": 0,
     "in_review": 1,
-    "done": 1,
-    "closed": 1,
+    "done": 2,
+    "closed": 2,
     "repository_issues": 69,
     "retired_issues": 5,
     "retired_closed_not_planned": 5,
@@ -98,7 +98,7 @@
     "mt001_closure_preserved": true,
     "retired_history_preserved": true,
     "linked_repository": "GonxKZ/mars-titan",
-    "changed_bodies_and_metadata": 1
+    "changed_bodies_and_metadata": 2
   },
   "milestones": [
     {
@@ -2754,7 +2754,7 @@
         "rendimiento",
         "opcional"
       ],
-      "status": "En curso",
+      "status": "En revisión",
       "issue_state": "open",
       "state_reason": null,
       "closed_at": null,
@@ -2785,10 +2785,10 @@
         "metodologia",
         "reproducibilidad"
       ],
-      "status": "En revisión",
-      "issue_state": "open",
-      "state_reason": null,
-      "closed_at": null,
+      "status": "Hecho",
+      "issue_state": "closed",
+      "state_reason": "completed",
+      "closed_at": "2026-09-18T21:21:07Z",
       "assignees": [
         "GonxKZ"
       ],

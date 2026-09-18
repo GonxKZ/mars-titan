@@ -8,6 +8,8 @@ Proyecto de investigación de **Gonzalo García Lama** · Máster Universitario 
 
 [Tablero Kanban privado](https://github.com/users/GonxKZ/projects/4) · [Issues](https://github.com/GonxKZ/mars-titan/issues) · [Hitos](https://github.com/GonxKZ/mars-titan/milestones) · [Documentación](docs/README.md)
 
+[Observatorio de experimentos](https://gonxkz.github.io/mars-titan/) · [Uso, contrato y límites](docs/engineering/observatory.md)
+
 ## Qué se quiere investigar
 
 Los mercados cambian, las noticias llegan a distintas horas y una parte de la información financiera se publica después del periodo al que se refiere. En estas condiciones, una buena predicción sobre un histórico no basta para demostrar que un modelo generaliza.
@@ -18,7 +20,7 @@ La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia int
 
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
 
-**Estado actual:** preparación documental, configuración del repositorio y adquisición de fuentes, sin implementación científica iniciada. La arquitectura está propuesta. Los experimentos y sus resultados están pendientes. Las utilidades ejecutables conservan la biblioteca, verifican el repositorio y descargan instantáneas de datos públicos. Los diagramas muestran el diseño del estudio, no rendimiento observado. «Causal» se refiere al orden de disponibilidad de la información. No implica haber identificado causas económicas.
+**Estado actual:** preparación documental, configuración, fuentes y observatorio, sin implementación científica iniciada. La arquitectura está propuesta. Los experimentos y sus resultados están pendientes. Las utilidades conservan la biblioteca, verifican el repositorio, descargan fuentes públicas y exportan resúmenes permitidos. El observatorio muestra inicialmente un registro vacío, no entrenamientos simulados. Los diagramas muestran el diseño del estudio, no rendimiento observado. «Causal» se refiere al orden de disponibilidad de la información. No implica haber identificado causas económicas.
 
 ## Alcance y recursos
 
@@ -90,6 +92,7 @@ native/              C/C++ y CUDA con CMake, optimización guiada por perfilado
 configs/             Configuraciones de datos y experimentos
 tests/               Verificación documental y plan de pruebas científicas
 scripts/             Biblioteca, captura de fuentes y mantenimiento
+site/                Observatorio estático, sin ejecutar modelos en el navegador
 notebooks/           Exploraciones acotadas y reproducibles
 data/                Contratos y manifiestos, derivados locales ignorados
 dataset/             Copia local existente de FinMultiTime, fuera de Git
@@ -151,6 +154,15 @@ uv run python scripts/refresh_public_sources.py --source fed_monetary_rss
 El actualizador necesita `curl`. Sin `--source`, consulta las ocho fuentes renovables validadas. Cada ejecución crea su propio manifiesto y conserva las capturas anteriores. No mezcla actualizaciones con el benchmark ni instala tareas periódicas. Los límites, la selección explícita de documentos PDF y las precauciones temporales se detallan en la [guía de actualización](docs/data/public-source-updates.md).
 
 ## Datos, resultados y licencia
+
+Para generar una instantánea del observatorio desde estados locales:
+
+```bash
+uv run --locked python scripts/export_observatory.py --output site/data/observatory.json
+node --test site/tests/*.test.mjs
+```
+
+El exportador no usa GPU, red ni logs completos. Generar una instantánea no la publica. La web puede consultar el último resumen publicado o importar un JSON local sin enviarlo a un servidor. La [guía del observatorio](docs/engineering/observatory.md) explica la integración futura con los entrenadores, el historial privado y la protección del test.
 
 La copia de FinMultiTime y sus derivados no se suben al repositorio. La selección experimental se fijará tras auditar cobertura, fechas y derechos de uso. No se presentan aquí resultados de rentabilidad ni recomendaciones de inversión.
 

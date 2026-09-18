@@ -15,6 +15,7 @@ La documentación parte de la propuesta presentada y separa las obligaciones aca
 | Consultar y actualizar datos complementarios | [Fuentes públicas y nueve archivos verificados](data/free-data-sources.md) y [capturas manuales con manifiesto](data/public-source-updates.md). |
 | Diseñar y mantener la implementación futura | [Arquitectura](engineering/architecture.md), [entorno reproducible](engineering/reproducibility.md), [decisiones](engineering/decisions.md). |
 | Ejecutar las tareas con herramientas concretas | [Guía de implementación y límites](engineering/implementation-guide.md) y [catálogo del tablero](research/task-board.md). |
+| Consultar el avance de los entrenamientos | [Observatorio](https://gonxkz.github.io/mars-titan/), [contrato de publicación](engineering/observatory.md) y [frontend](../site/README.md). |
 | Comprobar qué está preparado | [Verificación actual](engineering/research-verification.md) y [registro histórico de la base inicial](engineering/verification.md). |
 | Consultar el estado del arte | [Bibliografía y biblioteca](references/README.md), [finanzas](references/finance-review.md), [memoria neural](references/neural-review.md), [libros](references/books-review.md). |
 | Contrastar cerebro, recurrencia y eficiencia | [Aprendizaje y memoria](references/brain-review.md), [antecedentes recientes](references/frontier-review.md), [sistemas](references/systems-review.md) y [DeepSeek](references/deepseek-review.md). |

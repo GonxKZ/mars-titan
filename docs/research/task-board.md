@@ -2,7 +2,7 @@
 
 El [Project](https://github.com/users/GonxKZ/projects/4) organiza tareas revisables, no porcentajes de éxito científico. Cada issue contiene herramientas por función, entradas, pasos, artefactos previstos y comprobaciones. El [catálogo JSON](../../.github/planning/issues.json) conserva sus cuerpos y el [mapa remoto](../../.github/planning/remote-map.json) registra la verificación de GitHub.
 
-Hay **64 tareas canónicas y 183 dependencias nativas**, con 1 en Hecho, 61 Pendiente, 1 En curso y 1 En revisión. Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero. No se han borrado ni recuperado sus tareas.
+Hay **64 tareas canónicas y 183 dependencias nativas**, con 2 en Hecho, 61 Pendiente, 0 En curso y 1 En revisión. Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero. No se han borrado ni recuperado sus tareas.
 
 ## Cómo utilizar una issue
 
@@ -29,7 +29,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-001 · Preparar requisitos, rúbrica y revisión del original](https://github.com/GonxKZ/mars-titan/issues/1) | Apoyo | P0 | Hecho | Ninguna |
 | [MT-002 · Confirmar requisitos y calendario académico](https://github.com/GonxKZ/mars-titan/issues/2) | Apoyo | P0 | Pendiente | MT-001 |
 | [MT-004 · Verificar el entorno con uv y CUDA](https://github.com/GonxKZ/mars-titan/issues/4) | Apoyo | P0 | Pendiente | Ninguna |
-| [MT-069 · Concretar las guías de ejecución y el alcance](https://github.com/GonxKZ/mars-titan/issues/71) | Apoyo | P0 | En revisión | MT-001 |
+| [MT-069 · Concretar las guías de ejecución y el alcance](https://github.com/GonxKZ/mars-titan/issues/71) | Apoyo | P0 | Hecho | MT-001 |
 
 ### O1 · Datos multimodales y disponibilidad temporal
 
@@ -119,7 +119,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-045 · Cerrar predepósito y tramitar la autorización](https://github.com/GonxKZ/mars-titan/issues/45) | Apoyo | P0 | Pendiente | MT-002, MT-043, MT-044 |
 | [MT-046 · Preparar y realizar la defensa](https://github.com/GonxKZ/mars-titan/issues/46) | Apoyo | P0 | Pendiente | MT-040, MT-044, MT-045 |
 | [MT-060 · Medir el piloto y fijar el presupuesto](https://github.com/GonxKZ/mars-titan/issues/62) | Apoyo | P0 | Pendiente | MT-004, MT-023, MT-026, MT-027 |
-| [MT-068 · Publicar el observatorio de experimentos](https://github.com/GonxKZ/mars-titan/issues/70) | Extensión | P1 | En curso | MT-001 |
+| [MT-068 · Publicar el observatorio de experimentos](https://github.com/GonxKZ/mars-titan/issues/70) | Extensión | P1 | En revisión | MT-001 |
 
 ## Cierre temporal y dependencias
 

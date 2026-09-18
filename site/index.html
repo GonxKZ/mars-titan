@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Observatorio de ejecuciones, comparación y método de MARS-TITAN. Registro experimental de Gonzalo García Lama.">
+  <meta name="referrer" content="no-referrer">
+  <title>MARS-TITAN | Observatorio de entrenamiento</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172b46'/%3E%3Cpath d='M7 23V9l9 10 9-10v14' fill='none' stroke='white' stroke-width='2.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar al contenido</a>
+  <header class="masthead page-width">
+    <a class="brand" href="#seguimiento" aria-label="MARS-TITAN, inicio del observatorio">
+      <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><path d="M7 29V11l13 14 13-14v18"/><circle cx="20" cy="25" r="3"/></svg>
+      <span><span class="brand-name">MARS-TITAN</span><span class="brand-detail">Observatorio de entrenamiento</span></span>
+    </a>
+    <div class="header-actions">
+      <button class="button button-quiet" id="refresh-button" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 6a7 7 0 1 0 1 7M16 2v5h-5"/></svg>Actualizar</button>
+      <button class="button button-primary" id="import-button" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 13V3m-4 4 4-4 4 4M3 12v5h14v-5"/></svg>Importar JSON</button>
+      <input id="import-file" type="file" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <div class="navigation-wrap">
+    <nav class="navigation page-width" aria-label="Secciones del observatorio">
+      <div class="section-links">
+        <a href="#seguimiento" aria-current="location">Seguimiento</a>
+        <a href="#comparativa">Comparativa</a>
+        <a href="#metodo">Método</a>
+        <a href="#historial">Historial</a>
+      </div>
+      <span class="connection" id="connection-status" role="status">Leyendo el registro</span>
+    </nav>
+  </div>
+
+  <main id="main" class="page-width" tabindex="-1">
+    <div id="error-message" class="notice notice-error" role="alert" hidden></div>
+    <div id="local-notice" class="notice notice-local" hidden>
+      <p><strong>Archivo local.</strong> <span id="local-file-name"></span> permanece en este navegador. No se envía ni se guarda al cerrar la página.</p>
+      <button class="text-button" id="public-source-button" type="button">Volver al registro público</button>
+    </div>
+    <noscript><p class="notice notice-error">Activa JavaScript para consultar o importar el registro. El método y el catálogo planificado se pueden leer sin ejecutar entrenamientos.</p></noscript>
+
+    <section id="seguimiento" class="section section-first" aria-labelledby="tracking-heading">
+      <div class="section-heading tracking-heading">
+        <div><h1 id="tracking-heading">Seguimiento</h1><p class="section-intro">El estado de cada ejecución, con su evidencia y su momento de actualización.</p></div>
+        <div class="source-meta"><span id="source-label">Registro público</span><span id="snapshot-date">Fecha del resumen pendiente</span></div>
+      </div>
+      <div class="run-heading">
+        <div class="run-title"><span id="run-status" class="status status-empty" role="status">Registro vacío</span><h2 id="run-heading">Sin ejecuciones registradas</h2><p id="run-description">Los modelos están planificados. Todavía no hay resultados de entrenamiento en este registro.</p></div>
+        <div class="control run-picker" id="run-picker" hidden><label for="run-select">Ejecución e intento</label><select id="run-select"></select></div>
+      </div>
+
+      <div class="phase-track" aria-label="Fases de referencia de una ejecución">
+        <ol id="phase-list">
+          <li data-phase="prepare"><span class="phase-mark" aria-hidden="true"></span><span>Preparación</span></li>
+          <li data-phase="train"><span class="phase-mark" aria-hidden="true"></span><span>Entrenamiento</span></li>
+          <li data-phase="validation"><span class="phase-mark" aria-hidden="true"></span><span>Validación</span></li>
+          <li data-phase="calibration"><span class="phase-mark" aria-hidden="true"></span><span>Calibración</span></li>
+          <li data-phase="test"><span class="phase-mark" aria-hidden="true"></span><span>Test final</span></li>
+          <li data-phase="evaluation"><span class="phase-mark" aria-hidden="true"></span><span>Evaluación</span></li>
+        </ol>
+        <p id="phase-description">Secuencia de referencia. Ninguna fase está activa.</p>
+      </div>
+
+      <div id="empty-tracking" class="empty-tracking">
+        <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M10 12v40h44M17 43h34M17 31h34M17 19h34"/><circle cx="34" cy="31" r="8"/><path d="M34 26v10m-5-5h10"/></svg>
+        <div><h3>Aquí aparecerá la primera ejecución</h3><p>Cuando se publique un resumen, aparecerán el avance, las métricas observadas y el último checkpoint. También puedes importar un registro local.</p><a href="#metodo">Consultar el método y los modelos previstos</a></div>
+        <span class="empty-note">Sin datos simulados</span>
+      </div>
+
+      <div id="run-content" hidden>
+        <div id="test-notice" class="notice" hidden>Resultados finales protegidos. Sus métricas y su curva no se muestran hasta su publicación explícita al terminar la ejecución.</div>
+        <div class="progress-row"><div><span id="progress-label">Avance no disponible</span><span id="epoch-label"></span></div><progress id="run-progress" max="100" aria-label="Avance de la ejecución" hidden></progress></div>
+        <dl id="key-metrics" class="metric-strip"></dl>
+        <div class="observation-layout">
+          <div class="curve-panel">
+            <div class="panel-heading"><h3>Curva observada</h3><div class="control control-inline"><label for="curve-metric">Medida</label><select id="curve-metric"><option value="loss">Pérdida</option><option value="mae">MAE residual</option></select></div></div>
+            <div id="curve-content" class="curve-content"></div>
+            <p class="caption">Valores del registro. Los huecos no se interpolan y las fases no son intercambiables.</p>
+          </div>
+          <aside class="run-details" aria-labelledby="details-heading"><h3 id="details-heading">Continuidad y recursos</h3><dl id="run-details"></dl><p class="caption">Un heartbeat antiguo indica falta de información reciente. No confirma una pausa del proceso.</p></aside>
+        </div>
+      </div>
+      <ul id="snapshot-notes" class="snapshot-notes" hidden></ul>
+    </section>
+
+    <section id="comparativa" class="section" aria-labelledby="comparison-heading">
+      <div class="section-heading"><div><h2 id="comparison-heading">Comparativa</h2><p class="section-intro">Mismos datos, objetivo y condiciones de evaluación. Las diferencias necesitan un contexto común.</p></div><span class="section-note">Solo ejecuciones completadas</span></div>
+      <div class="comparison-controls">
+        <div class="control group-control"><label for="comparison-group">Grupo experimental</label><select id="comparison-group" disabled><option value="">Sin grupos disponibles</option></select></div>
+        <div class="control"><label for="comparison-phase">Fase</label><select id="comparison-phase"><option value="validation">Validación</option><option value="calibration">Calibración</option><option value="evaluation">Evaluación</option><option value="test">Test publicado</option><option value="train">Entrenamiento</option></select></div>
+        <div class="control"><label for="comparison-metric">Ordenar por</label><select id="comparison-metric"><option value="mae">Menor MAE residual</option><option value="rank_ic">Mayor Rank IC</option><option value="latency_p95_ms">Menor latencia p95</option><option value="vram_peak_mib">Menor pico de VRAM</option></select></div>
+      </div>
+      <div id="comparison-empty" class="empty-comparison"><span class="empty-rule" aria-hidden="true"></span><h3>Aún no hay resultados comparables</h3><p>Las ejecuciones completadas aparecerán al compartir grupo y fase. Un resultado ausente se mantiene como «Sin dato».</p></div>
+      <div id="comparison-table-wrap" class="table-scroll" role="region" aria-label="Resultados comparables" tabindex="0" hidden>
+        <table><caption id="comparison-caption">Resultados del grupo y fase seleccionados</caption><thead><tr><th scope="col">Modelo y variante</th><th scope="col">Semilla / fold</th><th scope="col" class="numeric">MAE residual</th><th scope="col" class="numeric">Rank IC</th><th scope="col" class="numeric">Cobertura 95 %</th><th scope="col" class="numeric">p95, ms</th><th scope="col" class="numeric">VRAM, MiB</th></tr></thead><tbody id="comparison-body"></tbody></table>
+      </div>
+      <p class="caption">El grupo fija datos, universo, objetivo, cortes y régimen de evaluación. La pantalla muestra las medidas declaradas, no certifica su comparabilidad científica.</p>
+    </section>
+
+    <section id="metodo" class="section" aria-labelledby="method-heading">
+      <div class="section-heading"><div><h2 id="method-heading">Método</h2><p class="section-intro">¿Aporta información una memoria adaptativa frente a modelos sin esa memoria?</p></div><a class="document-link" href="https://github.com/GonxKZ/mars-titan/blob/main/docs/research/protocol.md">Leer el protocolo</a></div>
+      <div class="method-layout">
+        <div class="method-explanation"><h3>Primero predecir. Después actualizar.</h3><p>FinMultiTime reúne precios, noticias, tablas e imágenes. Cada entrada necesita una fecha de disponibilidad defendible. El núcleo comienza con precios y texto.</p><p>La predicción se emite después del cierre. El objetivo es el retorno residual entre la apertura y el cierre de la siguiente sesión. La memoria incorpora el error solo cuando la etiqueta ha madurado.</p><p class="method-boundary">Piloto previsto de hasta 64 activos. Comparación principal propuesta de hasta 128, con 32 GB de RAM y una RTX 4070 de 8 GB. Son límites de planificación, no medidas de una ejecución.</p></div>
+        <figure class="causal-diagram">
+          <figcaption>Orden de la información <span>Esquema conceptual</span></figcaption>
+          <svg viewBox="0 0 600 228" role="img" aria-labelledby="method-svg-title method-svg-desc">
+            <title id="method-svg-title">Predicción anterior a la actualización de memoria</title><desc id="method-svg-desc">La historia disponible conduce a una predicción después del cierre. El retorno de la siguiente sesión produce una etiqueta madura. Solo entonces se escribe memoria para decisiones posteriores.</desc>
+            <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker></defs>
+            <path class="diagram-axis" d="M35 97H561" marker-end="url(#arrow)"/>
+            <path class="diagram-past" d="M40 80v34m10-47v47m10-23v23m10-36v36m10-55v55m10-34v34m10-22v22m10-45v45m10-63v63"/>
+            <circle class="diagram-decision" cx="219" cy="97" r="8"/><circle class="diagram-label" cx="389" cy="97" r="8"/><circle class="diagram-memory" cx="539" cy="97" r="8"/>
+            <text x="38" y="44">Historia disponible</text><text x="219" y="44" text-anchor="middle">Predicción</text><text x="389" y="44" text-anchor="middle">Etiqueta madura</text><text x="539" y="44" text-anchor="middle">Actualización</text>
+            <text x="219" y="133" text-anchor="middle">Cierre de t</text><text x="389" y="133" text-anchor="middle">Cierre de t + 1</text><text x="539" y="133" text-anchor="middle">Para el futuro</text>
+            <path class="diagram-bracket" d="M268 157v7h110v-7"/><text x="323" y="187" text-anchor="middle">Apertura a cierre de t + 1</text>
+            <text class="diagram-small" x="38" y="217">Solo información conocida en cada decisión</text>
+          </svg>
+          <ol class="diagram-steps">
+            <li><strong>Historia disponible</strong><span>Solo observaciones ya conocidas.</span></li>
+            <li><strong>Predicción</strong><span>Después del cierre de la sesión t.</span></li>
+            <li><strong>Etiqueta madura</strong><span>Tras observar la sesión t + 1.</span></li>
+            <li><strong>Actualización de memoria</strong><span>Para las decisiones posteriores.</span></li>
+          </ol>
+        </figure>
+      </div>
+      <div class="target-definition">
+        <div><h3>El objetivo: retorno residual</h3><p>El retorno apertura-cierre es cierre / apertura − 1. Se resta su componente estimada de mercado.</p></div>
+        <div>
+          <math display="block" aria-label="El residual del activo i predicho en t es su retorno apertura-cierre de t más uno, menos alfa estimada en t, menos beta estimada en t por el retorno de mercado de t más uno.">
+            <msub><mi>y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>=</mo>
+            <msubsup><mi>r</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>+</mo><mn>1</mn></mrow><mtext>OC</mtext></msubsup><mo>−</mo>
+            <msub><mover><mi>α</mi><mo>^</mo></mover><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>−</mo>
+            <msub><mover><mi>β</mi><mo>^</mo></mover><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub>
+            <msubsup><mi>r</mi><mrow><mi>m</mi><mo>,</mo><mi>t</mi><mo>+</mo><mn>1</mn></mrow><mtext>OC</mtext></msubsup>
+          </math>
+          <p>α y β se estiman con historia conocida en t. El retorno futuro del mercado pertenece a la etiqueta, no a las entradas de la predicción.</p>
+        </div>
+      </div>
+      <div class="formula-grid">
+        <article><h3>Error residual</h3><math class="formula" display="block" aria-label="MAE es la media de D sesiones. En cada sesión se calcula el error absoluto medio entre retorno residual y predicción para sus n activos evaluables."><mtext>MAE</mtext><mo>=</mo><mfrac><mn>1</mn><mi>D</mi></mfrac><munder><mo>∑</mo><mi>d</mi></munder><mrow><mo>[</mo><mfrac><mn>1</mn><msub><mi>n</mi><mi>d</mi></msub></mfrac><munder><mo>∑</mo><mi>i</mi></munder><mo>|</mo><msub><mi>y</mi><mrow><mi>i</mi><mo>,</mo><mi>d</mi></mrow></msub><mo>−</mo><msub><mover><mi>y</mi><mo>^</mo></mover><mrow><mi>i</mi><mo>,</mo><mi>d</mi></mrow></msub><mo>|</mo><mo>]</mo></mrow></math><p>D es el número de sesiones y n<sub>d</sub> sus activos evaluables. La media interna mide el error absoluto de los activos. La externa da el mismo peso a cada sesión.</p></article>
+        <article><h3>Orden relativo</h3><p class="formula" aria-label="Rank IC es la correlación de Spearman por sesión entre predicción y retorno residual">Rank IC = Spearman(ŷ, y)</p><p>Compara el orden de predicciones y retornos por sesión. Los casos constantes o con pocos activos se registran como no evaluables.</p></article>
+        <article><h3>Incertidumbre</h3><p class="formula" aria-label="Cobertura es el número de valores dentro del intervalo dividido por el número de valores evaluables">Cobertura = dentro / evaluables</p><p>Se observan cobertura y anchura de intervalos del 80 % y 95 %. Más cobertura por sí sola no implica mejor calibración ni intervalos más útiles.</p></article>
+      </div>
+      <div class="model-heading"><h3>Modelos del estudio</h3><p>Catálogo planificado, sin resultados atribuidos a modelos aún no ejecutados.</p></div>
+      <div class="model-catalog" id="model-catalog">
+        <p>El catálogo se cargará con el registro. Las familias previstas son B0, B1, B2, B3, B6 y M0 a M3.</p>
+      </div>
+      <p class="caption">Los fundamentales y gráficos requieren auditoría. Su integración depende de validez temporal y presupuesto. Las extensiones macro y otros mercados se deciden por separado.</p>
+    </section>
+
+    <section id="historial" class="section" aria-labelledby="history-heading">
+      <div class="section-heading"><div><h2 id="history-heading">Historial</h2><p class="section-intro">Ejecuciones e intentos conservados, también cuando terminan con un fallo.</p></div><button class="button button-quiet" id="export-button" type="button" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>Exportar CSV</button></div>
+      <div class="history-controls"><div class="control search-control"><label for="history-search">Buscar ejecución o modelo</label><input id="history-search" type="search" placeholder="Identificador, modelo o variante" autocomplete="off"></div><div class="control"><label for="history-status">Estado</label><select id="history-status"><option value="all">Todos los estados</option><option value="running">En curso</option><option value="stale">Sin actualización</option><option value="queued">En cola</option><option value="paused">Pausada</option><option value="completed">Completada</option><option value="failed">Fallida</option><option value="cancelled">Cancelada</option></select></div><p id="history-count" class="history-count" role="status">Sin ejecuciones registradas</p></div>
+      <div id="history-empty" class="empty-history"><h3>Un registro que todavía está por empezar</h3><p>No hay ejecuciones que mostrar. Los intentos aparecerán con su fecha, fase y estado declarado.</p></div>
+      <div id="history-table-wrap" class="table-scroll" role="region" aria-label="Historial de ejecuciones" tabindex="0" hidden><table><caption>Ejecuciones registradas, más recientes primero</caption><thead><tr><th scope="col">Ejecución e intento</th><th scope="col">Modelo</th><th scope="col">Fase</th><th scope="col">Estado</th><th scope="col">Último registro</th><th scope="col"><span class="visually-hidden">Abrir detalle</span></th></tr></thead><tbody id="history-body"></tbody></table></div>
+    </section>
+  </main>
+  <footer class="footer page-width"><div><strong>MARS-TITAN</strong><span>Gonzalo García Lama</span></div><p>Investigación sobre memoria adaptativa y predicción financiera multimodal.</p><a href="https://github.com/GonxKZ/mars-titan">Repositorio y documentación</a></footer>
+</body>
+</html>

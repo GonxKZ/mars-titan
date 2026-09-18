@@ -1,0 +1,190 @@
+{
+  "scope": "scripts/export_observatory.py",
+  "source_sha256": "70abfa343ac5fcdb3458ba9001a01cface4fcbfc9979d582cd7179680020022e",
+  "tools": {
+    "radon": "6.0.1",
+    "coverage": "7.16.1"
+  },
+  "formula": "CC^2 * (1 - covered_statements / statements)^3 + CC",
+  "coverage_convention": "Cobertura de sentencias por función, no cobertura de caminos base. Es una adaptación diagnóstica explícita de CRAP.",
+  "measurement_limit": "La CLI se ejercita en subprocesos, pero esta captura de cobertura solo instrumenta el proceso de pytest. No mide modelos ni GPU.",
+  "source": "https://testing.googleblog.com/2011/02/this-code-is-crap.html",
+  "summary": {
+    "covered_lines": 270,
+    "num_statements": 309,
+    "percent_covered": 87.00696055684455,
+    "percent_covered_display": "87",
+    "missing_lines": 39,
+    "excluded_lines": 0,
+    "percent_statements_covered": 87.37864077669903,
+    "percent_statements_covered_display": "87",
+    "num_branches": 122,
+    "num_partial_branches": 17,
+    "covered_branches": 105,
+    "missing_branches": 17,
+    "percent_branches_covered": 86.06557377049181,
+    "percent_branches_covered_display": "86"
+  },
+  "functions": [
+    {
+      "function": "export_snapshot",
+      "cyclomatic_complexity": 22,
+      "covered_statements": 26,
+      "statements": 31,
+      "statement_coverage": 0.8387096774193549,
+      "crap_statement_proxy": 24.030814675573158
+    },
+    {
+      "function": "public_run",
+      "cyclomatic_complexity": 22,
+      "covered_statements": 33,
+      "statements": 35,
+      "statement_coverage": 0.9428571428571428,
+      "crap_statement_proxy": 22.090309037900873
+    },
+    {
+      "function": "main",
+      "cyclomatic_complexity": 3,
+      "covered_statements": 0,
+      "statements": 18,
+      "statement_coverage": 0,
+      "crap_statement_proxy": 12
+    },
+    {
+      "function": "number",
+      "cyclomatic_complexity": 11,
+      "covered_statements": 12,
+      "statements": 13,
+      "statement_coverage": 0.9230769230769231,
+      "crap_statement_proxy": 11.055075102412381
+    },
+    {
+      "function": "public_history",
+      "cyclomatic_complexity": 10,
+      "covered_statements": 22,
+      "statements": 24,
+      "statement_coverage": 0.9166666666666666,
+      "crap_statement_proxy": 10.05787037037037
+    },
+    {
+      "function": "read_status",
+      "cyclomatic_complexity": 10,
+      "covered_statements": 20,
+      "statements": 21,
+      "statement_coverage": 0.9523809523809523,
+      "crap_statement_proxy": 10.010797969981644
+    },
+    {
+      "function": "public_checkpoint",
+      "cyclomatic_complexity": 9,
+      "covered_statements": 13,
+      "statements": 13,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 9
+    },
+    {
+      "function": "timestamp",
+      "cyclomatic_complexity": 8,
+      "covered_statements": 11,
+      "statements": 14,
+      "statement_coverage": 0.7857142857142857,
+      "crap_statement_proxy": 8.629737609329446
+    },
+    {
+      "function": "collect_runs",
+      "cyclomatic_complexity": 8,
+      "covered_statements": 24,
+      "statements": 28,
+      "statement_coverage": 0.8571428571428571,
+      "crap_statement_proxy": 8.1865889212828
+    },
+    {
+      "function": "open_directory",
+      "cyclomatic_complexity": 5,
+      "covered_statements": 16,
+      "statements": 17,
+      "statement_coverage": 0.9411764705882353,
+      "crap_statement_proxy": 5.005088540606554
+    },
+    {
+      "function": "identifier",
+      "cyclomatic_complexity": 5,
+      "covered_statements": 5,
+      "statements": 5,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 5
+    },
+    {
+      "function": "comparison_group",
+      "cyclomatic_complexity": 5,
+      "covered_statements": 8,
+      "statements": 8,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 5
+    },
+    {
+      "function": "integer",
+      "cyclomatic_complexity": 4,
+      "covered_statements": 3,
+      "statements": 3,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 4
+    },
+    {
+      "function": "optional_choice",
+      "cyclomatic_complexity": 4,
+      "covered_statements": 3,
+      "statements": 3,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 4
+    },
+    {
+      "function": "check_order",
+      "cyclomatic_complexity": 4,
+      "covered_statements": 2,
+      "statements": 2,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 4
+    },
+    {
+      "function": "unique_object",
+      "cyclomatic_complexity": 3,
+      "covered_statements": 6,
+      "statements": 6,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 3
+    },
+    {
+      "function": "atomic_write",
+      "cyclomatic_complexity": 3,
+      "covered_statements": 20,
+      "statements": 20,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 3
+    },
+    {
+      "function": "object_value",
+      "cyclomatic_complexity": 2,
+      "covered_statements": 2,
+      "statements": 3,
+      "statement_coverage": 0.6666666666666666,
+      "crap_statement_proxy": 2.1481481481481484
+    },
+    {
+      "function": "check_deadline",
+      "cyclomatic_complexity": 2,
+      "covered_statements": 2,
+      "statements": 2,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 2
+    },
+    {
+      "function": "reject_constant",
+      "cyclomatic_complexity": 1,
+      "covered_statements": 1,
+      "statements": 1,
+      "statement_coverage": 1,
+      "crap_statement_proxy": 1
+    }
+  ]
+}
