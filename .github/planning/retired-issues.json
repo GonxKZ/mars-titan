@@ -1,0 +1,160 @@
+{
+  "repository": "GonxKZ/mars-titan",
+  "status": "applied",
+  "prepared_at": "2026-09-18",
+  "applied_at": "2026-09-18T19:20:09.090767+00:00",
+  "issues": [
+    {
+      "id": "MT-047",
+      "number": 49,
+      "url": "https://github.com/GonxKZ/mars-titan/issues/49",
+      "canonical_ids": [
+        "MT-005"
+      ],
+      "reason": "El inventario completo queda en MT-005. La auditoría por modalidad y la muestra mantienen sus tareas específicas.",
+      "closed_reason": "not_planned",
+      "previous_project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7ptmI",
+      "previous_title": "MT-047 · Inventariar toda la fuente y auditar elegibilidad de la muestra principal",
+      "previous_labels": [
+        "datos",
+        "reproducibilidad"
+      ],
+      "previous_dependencies": [
+        "MT-005",
+        "MT-006",
+        "MT-007",
+        "MT-008",
+        "MT-009",
+        "MT-011",
+        "MT-012"
+      ],
+      "previous_body": "## Contexto\n\nLa inspección de ejemplos no describe toda la copia. Se requiere un inventario completo de Estados Unidos y China, mientras la auditoría detallada prioriza los activos y periodos elegidos para la comparación principal.\n\n## Trabajo delimitado\n\n- Recorrer el inventario completo por modalidades y mercados sin modificar la fuente, con estados de procesamiento y recuentos verificables.\n- Validar en profundidad disponibilidad, calidad y exclusiones de la muestra principal. Dejar explícita la cobertura pendiente de las ampliaciones.\n\n## Criterios de aceptación\n\n- [ ] Todos los archivos inventariados tienen estado y recuentos reconciliados. Inventariado, inspeccionado y validado son estados distintos.\n- [ ] La muestra principal cuenta con auditoría temporal completa y exclusiones justificadas, sin selección por rendimiento futuro.\n- [ ] Las limitaciones del resto de la copia y de China permanecen visibles. Esta tarea no exige entrenar todos los activos ni acredita su elegibilidad por haberlos enumerado.\n\n## Evidencia prevista\n\n- `data/manifests/full-source/`\n- `reports/data/full-source-inventory.md`\n- `reports/data/main-sample-audit.md`\n- `docs/data/finmultitime-card.md`\n\nLos documentos de diseño pueden existir antes de ejecutar esta tarea. Su cierre requiere las implementaciones, comprobaciones o decisiones verificadas de sus criterios. Los datos, pesos y artefactos grandes permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-005, MT-006, MT-007, MT-008, MT-009, MT-011, MT-012\n\n## Riesgo y prioridad\n\nP0: Confundir inventario y validación puede ocultar sesgos de cobertura o dar por utilizable información no auditada.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "closed_at": "2026-09-18T19:19:51Z",
+      "project_item_removed": true,
+      "previous_priority": "P0",
+      "previous_size": "L",
+      "previous_milestone": "O1",
+      "previous_status": "Pendiente"
+    },
+    {
+      "id": "MT-049",
+      "number": 51,
+      "url": "https://github.com/GonxKZ/mars-titan/issues/51",
+      "canonical_ids": [
+        "MT-064"
+      ],
+      "reason": "La decisión y ejecución de ampliaciones se concentran en MT-064, reutilizando las referencias de MT-024 y MT-025.",
+      "closed_reason": "not_planned",
+      "previous_project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7ptmg",
+      "previous_title": "MT-049 · Decidir y validar referencias sobre una ampliación del universo",
+      "previous_labels": [
+        "comparativa",
+        "modelos",
+        "rendimiento",
+        "opcional"
+      ],
+      "previous_dependencies": [
+        "MT-024",
+        "MT-025",
+        "MT-048"
+      ],
+      "previous_body": "## Contexto\n\nEl entrenamiento completo de la fuente es una extensión. Se activa solo si el piloto, la cobertura y las horas disponibles permiten terminar la comparación principal y las entregas.\n\n## Trabajo delimitado\n\n- Estimar y decidir el salto a 256 activos o al universo completo, manteniendo la misma ampliación para las familias comparadas.\n- Si se activa, ejecutar Ridge por bloques, un contraste SGD pertinente y XGBoost con memoria externa, con cobertura y recursos auditados.\n\n## Criterios de aceptación\n\n- [ ] La decisión go/no-go usa tiempos medidos y presupuesto declarado antes del test. Una decisión no-go documentada permite cerrar esta extensión.\n- [ ] Las ejecuciones activadas prueban los recuentos del universo ampliado. No hay submuestreo oculto ni equivalencia presumida entre SGD y Ridge.\n- [ ] Se informa coste total, convergencia y predicciones. La ampliación no sustituye las referencias ni las repeticiones del núcleo.\n\n## Evidencia prevista\n\n- `experiments/baselines/expanded/`\n- `reports/baselines/expansion-decision.md`\n- `reports/baselines/linear-solvers.md`\n\nLos documentos de diseño pueden existir antes de ejecutar esta tarea. Su cierre requiere las implementaciones, comprobaciones o decisiones verificadas de sus criterios. Los datos, pesos y artefactos grandes permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C3 · Alcance (10 %)\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n\n## Dependencias\n\nMT-024, MT-025, MT-048\n\n## Riesgo y prioridad\n\nP2: Escalar unas familias y recortar otras puede producir una comparación injusta y agotar el tiempo de evaluación.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "closed_at": "2026-09-18T19:19:54Z",
+      "project_item_removed": true,
+      "previous_priority": "P2",
+      "previous_size": "L",
+      "previous_milestone": "O4",
+      "previous_status": "Pendiente"
+    },
+    {
+      "id": "MT-051",
+      "number": 53,
+      "url": "https://github.com/GonxKZ/mars-titan/issues/53",
+      "canonical_ids": [
+        "MT-019"
+      ],
+      "reason": "La selección por sorpresa, relevancia y diversidad se gestiona en MT-019. La capacidad y recuperación permanecen en MT-018.",
+      "closed_reason": "not_planned",
+      "previous_project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7ptmw",
+      "previous_title": "MT-051 · Verificar memoria episódica acotada y selección con diversidad",
+      "previous_labels": [
+        "memoria",
+        "modelos",
+        "comparativa"
+      ],
+      "previous_dependencies": [
+        "MT-018",
+        "MT-019",
+        "MT-021",
+        "MT-028"
+      ],
+      "previous_body": "## Contexto\n\nLa memoria episódica debe conservar una cantidad controlada de información y justificar la política de escritura frente a controles sencillos.\n\n## Trabajo delimitado\n\n- Implementar límites por bytes, episodios y estratos de mercado o régimen, con registros de admisión, recuperación y expulsión.\n- Contrastar error maduro, diversidad y relevancia publicada frente a selección uniforme y aleatoria con presupuesto comparable.\n\n## Criterios de aceptación\n\n- [ ] La capacidad total incluye claves, valores, índices, metadatos y estado por activo. El límite se verifica bajo ráfagas.\n- [ ] El error de escritura procede de la predicción originalmente emitida y de una etiqueta madura. Las revisiones no reescriben decisiones pasadas.\n- [ ] Las comparaciones igualan escrituras y capacidad, e informan recuperación, error futuro y cobertura por mercado. No se confunde recordar con predecir mejor.\n\n## Evidencia prevista\n\n- `src/mars_titan/memory/episodic.py`\n- `tests/memory/test_episodic_budget.py`\n- `reports/memory/selection-ablation.md`\n\nLos documentos de diseño pueden existir antes de ejecutar esta tarea. Su cierre requiere las implementaciones, comprobaciones o decisiones verificadas de sus criterios. Los datos, pesos y artefactos grandes permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-018, MT-019, MT-021, MT-028\n\n## Riesgo y prioridad\n\nP1: La sorpresa puede priorizar ruido y expulsar episodios útiles. La política debe superar controles con igual presupuesto.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "closed_at": "2026-09-18T19:19:57Z",
+      "project_item_removed": true,
+      "previous_priority": "P1",
+      "previous_size": "L",
+      "previous_milestone": "O3",
+      "previous_status": "Pendiente"
+    },
+    {
+      "id": "MT-061",
+      "number": 63,
+      "url": "https://github.com/GonxKZ/mars-titan/issues/63",
+      "canonical_ids": [
+        "MT-037"
+      ],
+      "reason": "Las perturbaciones de entradas y la abstención forman parte del análisis de robustez de MT-037.",
+      "closed_reason": "not_planned",
+      "previous_project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7ptoU",
+      "previous_title": "MT-061 · Evaluar ruido, contaminación de datos y abstención",
+      "previous_labels": [
+        "evaluacion",
+        "incertidumbre",
+        "datos"
+      ],
+      "previous_dependencies": [
+        "MT-011",
+        "MT-021",
+        "MT-022",
+        "MT-031",
+        "MT-032"
+      ],
+      "previous_body": "## Contexto\n\nLa escritura selectiva puede amplificar eventos corruptos o manipulados. Las pruebas controladas evalúan robustez del sistema, sin modificar la copia original ni prometer seguridad financiera.\n\n## Trabajo delimitado\n\n- Definir perturbaciones reproducibles de duplicación, fechas, valores extremos, relevancia textual y ráfagas sobre copias derivadas de desarrollo.\n- Medir propagación al estado, saturación, recuperación y comportamiento de abstención frente a controles.\n\n## Criterios de aceptación\n\n- [ ] Cada perturbación tiene mecanismo, intensidad y semilla registrados, con una condición limpia comparable.\n- [ ] Las validaciones detectan datos imposibles y límites de escritura. Se informa también de perturbaciones no detectadas y degradación de calibración.\n- [ ] La política de abstención se fija antes del test y se compara a cobertura equivalente. No se confunde robustez parcial con ausencia de pérdidas o resistencia universal.\n\n## Evidencia prevista\n\n- `configs/stress/data-corruption.yaml`\n- `tests/data/test_corruption_guards.py`\n- `reports/robustness/data-contamination.md`\n\nLos documentos de diseño pueden existir antes de ejecutar esta tarea. Su cierre requiere las implementaciones, comprobaciones o decisiones verificadas de sus criterios. Los datos, pesos y artefactos grandes permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n- C8 · Dominio del contenido (20 %)\n\n## Dependencias\n\nMT-011, MT-021, MT-022, MT-031, MT-032\n\n## Riesgo y prioridad\n\nP1: Un selector por sorpresa puede dar prioridad precisamente a los datos menos fiables.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "closed_at": "2026-09-18T19:19:59Z",
+      "project_item_removed": true,
+      "previous_priority": "P1",
+      "previous_size": "L",
+      "previous_milestone": "O5",
+      "previous_status": "Pendiente"
+    },
+    {
+      "id": "MT-062",
+      "number": 64,
+      "url": "https://github.com/GonxKZ/mars-titan/issues/64",
+      "canonical_ids": [
+        "MT-029"
+      ],
+      "reason": "Las falsaciones del candidato se ejecutan con las ablaciones de desarrollo de MT-029, con antecedentes en MT-003 y diseño en MT-028.",
+      "closed_reason": "not_planned",
+      "previous_project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7ptog",
+      "previous_title": "MT-062 · Contrastar antecedentes, aportación y falsaciones del candidato",
+      "previous_labels": [
+        "bibliografia",
+        "metodologia",
+        "comparativa"
+      ],
+      "previous_dependencies": [
+        "MT-003",
+        "MT-023",
+        "MT-028"
+      ],
+      "previous_body": "## Contexto\n\nEl registro documental orienta la comparación. La validación posterior relaciona los mecanismos realmente implementados y las pruebas del piloto con afirmaciones delimitadas, sin exigir implementar todas las ideas del catálogo.\n\n## Trabajo delimitado\n\n- Relacionar código, formulación y fuentes, distinguiendo reproducción, adaptación y combinación.\n- Ejecutar falsaciones de desarrollo de los mecanismos activados y registrar objeciones antes de congelar finalistas.\n\n## Criterios de aceptación\n\n- [ ] Cada afirmación de aportación identifica el antecedente próximo y una diferencia verificable, sin garantizar originalidad por ausencia de coincidencias.\n- [ ] Los controles de los mecanismos activados separan datos, parámetros y cómputo. Una decisión no-go no se presenta como resultado de una variante no ejecutada.\n- [ ] El registro conserva correcciones y resultados negativos. El documento previo no cierra esta validación del candidato implementado.\n\n## Evidencia prevista\n\n- `docs/research/novelty-ledger.md`\n- `docs/research/adversarial-review.md`\n- `reports/research/candidate-falsification.md`\n\nLos documentos de diseño pueden existir antes de ejecutar esta tarea. Su cierre requiere las implementaciones, comprobaciones o decisiones verificadas de sus criterios. Los datos, pesos y artefactos grandes permanecen fuera de Git.\n\n## Relación con la rúbrica\n\n- C4 · Marco teórico y referencias (10 %)\n- C5 · Desarrollo de la contribución (20 %)\n- C6 · Coherencia de objetivos y conclusiones (10 %)\n\n## Dependencias\n\nMT-003, MT-023, MT-028\n\n## Riesgo y prioridad\n\nP1: Un catálogo amplio puede confundirse con una contribución demostrada o imponer una campaña innecesaria.\n\nEsta tarea forma parte de una comparación empírica. No presupone una mejora del modelo ni autoriza a presentar hipótesis como resultados.",
+      "closed_at": "2026-09-18T19:20:02Z",
+      "project_item_removed": true,
+      "previous_priority": "P1",
+      "previous_size": "M",
+      "previous_milestone": "O6",
+      "previous_status": "Pendiente"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ La documentación parte de la propuesta presentada y separa las obligaciones aca
 | Revisar condiciones de entrega | [Requisitos](academic/requirements.md), [rúbrica](academic/rubric-matrix.md) y [defensa](academic/defense.md). |
 | Entender la pregunta y cómo contrastarla | [Protocolo](research/protocol.md), [matriz de experimentos](research/experiment-matrix.md), [riesgos](research/risks.md). |
 | Consultar la ampliación y su aportación candidata | [Alcance ampliado](research/research-expansion.md), [arquitectura candidata](research/candidate-architecture.md), [registro de hipótesis](research/novelty-ledger.md) y [crítica adversarial](research/adversarial-review.md). |
-| Organizar el trabajo | [Objetivos y hitos](research/roadmap.md) y [tablero de tareas](research/task-board.md). |
+| Organizar el trabajo | [Objetivos y hitos](research/roadmap.md), [tablero de tareas](research/task-board.md) y [auditoría de redundancias y etiquetas](research/backlog-review.md). |
 | Corregir la propuesta técnica inicial | [Revisión crítica del original](research/original-review.md). |
 | Trabajar con los datos | [Ficha de FinMultiTime](data/finmultitime-card.md) y [contrato temporal](data/data-contract.md). |
 | Estudiar variables macroeconómicas | [Catálogo de 140 candidatos](data/macro-catalog.md) y [mecanismos financieros](references/macro-review.md). |

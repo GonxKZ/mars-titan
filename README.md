@@ -54,7 +54,7 @@ Una predicción solo puede usar datos disponibles en su instante de decisión. L
 | 5. Evaluación | Walk-forward, métricas predictivas y financieras, costes y estimación de incertidumbre de las diferencias. |
 | 6. Análisis crítico | Interpretación por periodo, modalidad y régimen. Resultados negativos, limitaciones y trabajo futuro. |
 
-Los objetivos se gestionan como seis hitos, con tareas que tienen prioridad, tamaño, dependencias y criterios de aceptación. El código y la documentación se organizan por su función, no por fase. El [plan de trabajo](docs/research/roadmap.md) y el [catálogo del tablero](docs/research/task-board.md) explican cómo avanzar y qué evidencia permite cerrar cada tarea.
+Los objetivos se gestionan como seis hitos y 62 tareas canónicas, con prioridad, tamaño, dependencias y criterios de aceptación. Cinco tareas redundantes se han consolidado conservando su historial. El código y la documentación se organizan por su función, no por fase. El [plan de trabajo](docs/research/roadmap.md), el [catálogo del tablero](docs/research/task-board.md) y la [revisión de tareas](docs/research/backlog-review.md) explican cómo avanzar y qué evidencia permite cerrar cada tarea.
 
 ## Documentación
 
