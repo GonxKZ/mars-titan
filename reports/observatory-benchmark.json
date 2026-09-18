@@ -1,0 +1,56 @@
+{
+  "commit": "ce4cee89756f4b74ff4ae98db38f18364ab3cad8",
+  "measured_sources_clean": true,
+  "environment": {
+    "python": "3.12.14",
+    "system": "Linux",
+    "release": "7.0.0-31-generic",
+    "machine": "x86_64",
+    "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics"
+  },
+  "sha256": {
+    "exporter": "70abfa343ac5fcdb3458ba9001a01cface4fcbfc9979d582cd7179680020022e",
+    "generator": "c162d398b96d74b9f3b7aaf4072f120d57aa610cf032fbfb79314352ce610458",
+    "fixture": "c812412d2d85013985c78fb60089a774f348ced0417b2c155ed6dc91fad366a1"
+  },
+  "repetitions": 5,
+  "elapsed_seconds": [
+    0.11390329799905885,
+    0.11398419000033755,
+    0.1140162900010182,
+    0.11388544299916248,
+    0.11404205899816588
+  ],
+  "median_seconds": 0.11398419000033755,
+  "children_rss_before_kib": 0,
+  "max_child_rss_kib": 32000,
+  "output_bytes": 1319283,
+  "failed_attempts": [],
+  "measurement": "synthetic_cpu_export_not_training",
+  "recorded_at": "2026-09-18T22:01:36.398599+00:00",
+  "command": "uv run --locked python scripts/benchmark_observatory.py",
+  "fixture": {
+    "runs": 32,
+    "history_points_per_run": 500,
+    "input_bytes": 1305536,
+    "sha256": "c812412d2d85013985c78fb60089a774f348ced0417b2c155ed6dc91fad366a1"
+  },
+  "limits": {
+    "max_runs": 128,
+    "max_file_bytes": 262144,
+    "max_output_bytes": 8388608,
+    "timeout_seconds": 5,
+    "subprocess_timeout_seconds": 15
+  },
+  "timing_scope": "CLI con arranque Python, sin comprobación posterior del JSON",
+  "rss_scope": "Máximo RUSAGE_CHILDREN en KiB antes de consultar metadatos",
+  "fixture_hash_scope": "SHA-256: ruta relativa UTF-8, NUL y bytes JSON, por run_id",
+  "fixture_generation": {
+    "entry_point": "scripts/benchmark_observatory.py:build_fixture",
+    "deterministic": true,
+    "random_seed": null,
+    "fixed_timestamp": "2020-01-02T12:00:00Z",
+    "procedure": "32 directorios synthetic-run-000 a synthetic-run-031. Cada status.json contiene 500 puntos con pasos 0 a 499, pérdida 0.03 y MAE 0.02, fecha fija y campos definidos en el generador versionado. JSON con claves ordenadas y salto final. No usa RNG ni datos financieros."
+  },
+  "qualification": "Medición del exportador en CPU sobre una fixture sintética. No mide modelos, GPU ni entrenamiento. No se fijó el gobernador de CPU ni se controló carga concurrente o temperatura. No se purga la caché entre repeticiones."
+}
