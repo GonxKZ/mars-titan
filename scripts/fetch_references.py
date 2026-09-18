@@ -17,11 +17,9 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("docs/references/library"))
     parser.add_argument("--manifest", type=Path, default=Path("docs/references/download-log.json"))
     args = parser.parse_args()
-    catalogs = args.catalog or [
-        Path("docs/references/finance-sources.json"),
-        Path("docs/references/neural-sources.json"),
-        Path("docs/references/book-sources.json"),
-    ]
+    reference_dir = Path("docs/references")
+    registry = json.loads((reference_dir / "catalogs.json").read_text(encoding="utf-8"))
+    catalogs = args.catalog or [reference_dir / entry["sources"] for entry in registry]
     entries = read_catalogs(catalogs)
     with ThreadPoolExecutor(max_workers=3) as executor:
         records = list(executor.map(lambda entry: download_reference(entry, args.output), entries))

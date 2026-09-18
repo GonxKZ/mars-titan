@@ -1,6 +1,6 @@
 # Protocolo de investigación
 
-Autor: Gonzalo García Lama. Versión de trabajo: 18 de septiembre de 2026.
+Autor: Gonzalo García Lama. Versión de trabajo ampliada: 18 de septiembre de 2026. La [ampliación de investigación](research-expansion.md) concreta memoria, recurrencia, datos macro y presupuesto.
 
 ## Pregunta y alcance
 
@@ -23,7 +23,7 @@ Métrica primaria propuesta: **MAE del retorno residual**. Rank IC medio por ses
 
 ## Universo y selección del subconjunto
 
-El piloto documental propone hasta 64 activos estadounidenses, frecuencia diaria y un único horizonte principal de una sesión. El número final y las fechas se fijarán con la auditoría de cobertura, sin seleccionar por rentabilidad futura ni por disponibilidad durante todo el test. La selección se basará en información del periodo inicial y una regla determinista registrada. Conservará altas, bajas, cambios de símbolo y fechas de exclusión cuando existan.
+El piloto propone hasta 64 activos estadounidenses y la comparación principal hasta 128, con frecuencia diaria y un único horizonte principal de una sesión. El número final y las fechas se fijarán con la auditoría de cobertura y el tiempo medido, sin seleccionar por rentabilidad futura ni por disponibilidad durante todo el test. La selección se basará en información del periodo inicial y una regla determinista registrada. Conservará altas, bajas, cambios de símbolo y fechas de exclusión cuando existan. Se inventaría toda la copia y se prepara el recorrido por bloques. Ampliar a 256 activos, al universo completo o a China requiere una decisión de presupuesto registrada.
 
 El universo de FinMultiTime no equivale a una lista de constituyentes históricos del S&P 500. Si no se reconstruye la pertenencia temporal, las conclusiones se limitarán explícitamente al universo retrospectivo disponible. No se impondrá como requisito que un activo sobreviva hasta el último día. Un manifiesto recogerá la versión, los archivos utilizados, los hashes, la regla de selección y cada motivo de exclusión. Véase la [ficha inicial](../data/finmultitime-card.md).
 
@@ -49,6 +49,8 @@ Se propone comenzar con precios y texto de disponibilidad defendible. Cuando una
 
 Las tablas usarán cada hecho y su versión de publicación. Ni el fin del trimestre ni un filing exterior justifican retrospectivamente todas sus cifras. Los gráficos se regenerarán con una ventana que termine en t, evitando usar imágenes semestrales para predecir días interiores. Embeddings, normalizadores, selección de variables y diccionarios se registrarán por versión y corte de entrenamiento. Un codificador preentrenado publicado después del periodo evaluado puede introducir conocimiento retrospectivo: debe declararse y no presentarse como una simulación histórica estricta de disponibilidad del modelo.
 
+El [catálogo macroeconómico](../data/macro-catalog.md) amplía los candidatos por familias. Ninguna fila se admite por aparecer en el catálogo. Se requieren observaciones, versiones y disponibilidad histórica verificables. Una revisión conocida hoy es un evento nuevo y no reemplaza retroactivamente las entradas pasadas. El modelo con macro se compara con la misma arquitectura sin macro sobre muestras comunes.
+
 ## Memoria y orden de actualización
 
 La memoria es un estado mutable, distinto de los parámetros compartidos del codificador. Los retornos futuros no pueden entrar en el estado en el momento de producir una predicción. La sorpresa económica se tratará como una puntuación operativa, no como una estimación de un efecto causal identificado.
@@ -64,6 +66,8 @@ En cada instante de decisión se procesarán los eventos en este orden:
 Esta convención es conservadora: una etiqueta conocida en t puede influir a partir de la siguiente decisión. Para las escrituras simultáneas se fija un orden canónico por `(label_available_at, event_id, asset_id)`, independiente del orden de carga. La permutación de activos debe conservar tanto las predicciones actuales como el estado final y las predicciones posteriores. Una agregación conjunta sería una variante distinta que exigiría especificar su reducción. Las actualizaciones autosupervisadas de entradas observadas, si se incluyen, tendrán una variante y un registro separados de la adaptación supervisada por etiquetas maduras.
 
 Cada fold reinicia memoria y optimizador interno. El calentamiento solo puede usar historia previa al comienzo de evaluación y etiquetas maduras. No se hereda el estado del final de otro fold. Se comparará memoria congelada con adaptación online predeterminada. Los hiperparámetros y reglas de actualización permanecerán fijados durante la evaluación.
+
+La [arquitectura candidata](candidate-architecture.md) distingue ese estado persistente de hasta cuatro pasos internos de lectura sobre una instantánea fija. Los pasos internos no escriben nuevos recuerdos ni consultan etiquetas futuras. La política de K se calibra como parte del predictor. Los errores de escritura proceden de predicciones conservadas, no recalculadas posteriormente. La consolidación de parámetros se limita inicialmente al entrenamiento y a reajustes programados anteriores al corte. Cambiar el codificador requiere reconstruir o migrar de forma comprobada los episodios.
 
 ## Particiones, ajuste y calibración
 
@@ -82,6 +86,8 @@ flowchart LR
 ```
 
 La búsqueda se limita inicialmente a diez configuraciones por familia principal y tres semillas de evaluación (`17`, `42`, `123`). Se registrarán todos los intentos, incluidos errores, descartes y cambios manuales. El límite se revisará con el piloto antes del test final. Cualquier reducción se aplicará de forma explicable a todas las familias.
+
+Diez configuraciones es un techo y no una obligación. El [plan de cómputo](../engineering/compute-plan.md) comienza con un cribado menor y reserva recursos para confirmación y análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
 
 ## Métricas e interpretación
 

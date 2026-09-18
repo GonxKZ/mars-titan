@@ -1,0 +1,175 @@
+[
+  {
+    "id": "deepseek2024v2",
+    "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2405.04434v5",
+    "pdf_url": "https://arxiv.org/pdf/2405.04434v5",
+    "access": "Preprint v5 del 19 de junio de 2024. Ficha, resumen y sección 2, páginas 6-10, consultados. PDF primario accesible. Se usa la autoría corporativa presente en la fuente. Lectura completa pendiente.",
+    "redistribution": "Licencia arXiv nonexclusive-distrib/1.0. El acceso abierto de lectura no acredita permiso general de redistribución. Código y pesos tienen condiciones separadas.",
+    "relevance": "MLA comprime la caché KV y DeepSeekMoE activa una parte de sus expertos. Distinguir cómputo activo, parámetros residentes y coste de enrutamiento en un modelo financiero pequeño.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "deepseek2024v3",
+    "title": "DeepSeek-V3 Technical Report",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2412.19437v2",
+    "pdf_url": "https://arxiv.org/pdf/2412.19437v2",
+    "access": "Publicado inicialmente el 27 de diciembre de 2024. Versión v2 del 18 de febrero de 2025. Consultados resumen, balance de expertos, sección 2.2 sobre MTP y secciones 3.1-3.3 sobre infraestructura y FP8. Lectura completa pendiente.",
+    "redistribution": "Licencia arXiv nonexclusive-distrib/1.0. No se verificó autorización general de redistribución del artículo. Código, pesos y artículo no comparten necesariamente licencia.",
+    "relevance": "FP8 con control numérico, predicción de varios tokens, recomputación y DualPipe. Sus resultados de clúster no se trasladan directamente a una RTX 4070 Max-Q.",
+    "phase": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "deepseek2025v32",
+    "title": "DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2512.02556v1",
+    "pdf_url": "https://arxiv.org/pdf/2512.02556v1",
+    "access": "Preprint v1 del 2 de diciembre de 2025. Resumen y sección 2 sobre DSA, entrenamiento del indexador y costes consultados. PDF primario accesible. Lectura completa pendiente.",
+    "redistribution": "Licencia arXiv nonexclusive-distrib/1.0. No se verificó permiso general de redistribución del artículo.",
+    "relevance": "DSA selecciona entradas de atención, pero mantiene un indexador cuadrático. Sus ahorros en contexto largo necesitan contrastarse frente a atención densa eficiente en las longitudes reales del proyecto.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "cheng2026engram",
+    "title": "Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models",
+    "authors": [
+      "Xin Cheng",
+      "Rui Tian",
+      "Wangding Zeng",
+      "Damai Dai",
+      "Qinyu Chen",
+      "Bingxuan Wang",
+      "Zhenda Xie",
+      "Kezhao Huang",
+      "Xingkai Yu",
+      "Chengqi Deng",
+      "Shangyan Zhou",
+      "Chenggang Zhao",
+      "Zhewen Hao",
+      "Yukun Li",
+      "Han Zhang",
+      "Zhengyan Zhang",
+      "Yixu Wei",
+      "M. Y. Xu",
+      "Huishuai Zhang",
+      "Dongyan Zhao",
+      "Wenfeng Liang"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2601.07372v2",
+    "pdf_url": "https://arxiv.org/pdf/2601.07372v2",
+    "access": "Preprint v2 del 12 de julio de 2026, con autores según la ficha arXiv. Consultados resumen y secciones 2 y 3.1. La extracción del PDF emitió avisos de sintaxis, pero permitió leer portada y contenido. README oficial contrastado en https://github.com/deepseek-ai/Engram/tree/fb7f84a21f91223715394a33a1dc24bbfb7f788e. Su código se describe como demostración con componentes simulados. Lectura completa pendiente.",
+    "redistribution": "La ficha arXiv v2 declara CC BY 4.0. El repositorio oficial declara Apache-2.0. Respetar atribución y comprobar separadamente la licencia de cualquier peso o recurso incorporado.",
+    "relevance": "Consulta determinista de tablas entrenadas de n-gramas, integración contextual y transferencia desde RAM. No equivale a una memoria episódica actualizada online ni hace ilimitados los 32 GB de RAM del equipo.",
+    "phase": [
+      1,
+      3,
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "deepseek2026v4",
+    "title": "DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2606.19348v1",
+    "pdf_url": "https://arxiv.org/pdf/2606.19348v1",
+    "access": "Informe enlazado por la publicación oficial https://www.deepseek.com/en/news/v4-preview/. Consultados resumen y apartados 2.3.1-2.3.2 sobre CSA y HCA. La ficha y portada muestran 26 de abril de 2026 pese al prefijo 2606 del identificador, discrepancia bibliográfica pendiente de aclarar. Se conserva el enlace oficial y no se inventa una fecha corregida. Lectura completa pendiente.",
+    "redistribution": "Licencia arXiv nonexclusive-distrib/1.0. No se verificó permiso general de redistribución del artículo. Las condiciones de pesos y código son independientes.",
+    "relevance": "Compresión por bloques y atención dispersa para contextos muy largos. Referencia para estudiar el coste de resumir el pasado, sin trasladar sus proporciones de ahorro a secuencias financieras cortas.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "deepseek2026v41flash",
+    "title": "DeepSeek-V4.1-Flash: Pushing the Limits of KV Cache Compression",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": 2026,
+    "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/DeepSeek_V41_Tech_Report.pdf",
+    "pdf_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/resolve/main/DeepSeek_V41_Tech_Report.pdf",
+    "access": "Informe técnico enlazado por https://www.deepseek.com/en/news/deepseek-v4-1-flash/, anuncio del 10 de septiembre de 2026. Consultados resumen, introducción y apartados 2.4.2-2.4.4. El PDF confirma CED, CSA2, integración de Engram y distinción entre almacenamiento FP4 y cómputo. No se verificó identificador arXiv. Lectura completa pendiente.",
+    "redistribution": "No se verificó una licencia abierta específica para el PDF. La licencia de los pesos o del repositorio no se extiende automáticamente al documento.",
+    "relevance": "Versión más reciente verificada en esta revisión. Reutiliza KV entre capas e incorpora Engram con cambios. Su escala y almacenamiento distribuido impiden proponer una reproducción local con 8 GB de VRAM y 32 GB de RAM.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "deepseek_deepgemm",
+    "title": "DeepGEMM: clean and efficient BLAS kernel library on GPU",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": null,
+    "url": "https://github.com/deepseek-ai/DeepGEMM/tree/78b69000794d0937b47ae3387eff7663410264d1",
+    "pdf_url": null,
+    "access": "README y requisitos del repositorio oficial consultados. Snapshot 78b69000794d0937b47ae3387eff7663410264d1 del 14 de septiembre de 2026. Declara NVIDIA SM90 o SM100 y requisitos de compilación. No se ha instalado ni ejecutado.",
+    "redistribution": "Licencia MIT del código del repositorio, conservando aviso y licencia. Comprobar por separado dependencias e insumos de terceros.",
+    "relevance": "Distinguir kernels soportados en Hopper/Blackwell de soporte del formato FP8 en Ada. La versión consultada no declara soporte SM89 para la RTX 4070.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "deepseek_dualpipe",
+    "title": "DualPipe: bidirectional pipeline parallelism for computation-communication overlap",
+    "authors": [
+      "DeepSeek-AI"
+    ],
+    "year": null,
+    "url": "https://github.com/deepseek-ai/DualPipe/tree/030ce4325f4ebeb437da4ebc6d00a70469dd58ae",
+    "pdf_url": null,
+    "access": "README y licencia oficiales consultados. Snapshot 030ce4325f4ebeb437da4ebc6d00a70469dd58ae del 14 de enero de 2026. Describe DualPipe y DualPipeV, planificación entre rangos y costes de memoria. No se ha instalado ni ejecutado.",
+    "redistribution": "Licencia MIT del repositorio. Mantener los avisos de copyright y licencia si se reutiliza código.",
+    "relevance": "Solapamiento de cálculo y comunicación en entrenamiento distribuido. No es una optimización aplicable al entrenamiento en una sola GPU del proyecto.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

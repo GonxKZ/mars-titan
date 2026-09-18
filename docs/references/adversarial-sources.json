@@ -1,0 +1,83 @@
+[
+  {
+    "id": "rolnick2019replay",
+    "title": "Experience Replay for Continual Learning",
+    "authors": [
+      "David Rolnick",
+      "Arun Ahuja",
+      "Jonathan Schwarz",
+      "Timothy P. Lillicrap",
+      "Greg Wayne"
+    ],
+    "year": 2019,
+    "url": "https://arxiv.org/abs/1811.11682v2",
+    "pdf_url": "https://arxiv.org/pdf/1811.11682v2",
+    "access": "Resumen de los autores y ficha de NeurIPS 2019 contrastados. PDF de arXiv v2 disponible con HTTP 200 y application/pdf comprobados. La primera versión es de 2018 y la versión fijada es del 26 de noviembre de 2019. No se declara lectura integral.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente de replay con buffers limitados para reducir olvido. Sus resultados en aprendizaje por refuerzo no demuestran utilidad financiera ni retención perfecta.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "mclean2016predictability",
+    "title": "Does Academic Research Destroy Stock Return Predictability?",
+    "authors": [
+      "R. David McLean",
+      "Jeffrey Pontiff"
+    ],
+    "year": 2016,
+    "url": "https://doi.org/10.1111/jofi.12365",
+    "pdf_url": null,
+    "access": "Ficha y resumen de The Journal of Finance consultados. El volumen publicado es de 2016 y la ficha registra publicación electrónica del manuscrito aceptado en octubre de 2015. No se confirmó un PDF completo libre de origen primario ni se declara lectura integral.",
+    "redistribution": "unknown",
+    "relevance": "Deterioro fuera de muestra y tras publicación de predictores de retornos. Delimita la interpretación de resultados retrospectivos sin negar toda posibilidad de mejora predictiva.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "pearl2009causaloverview",
+    "title": "Causal Inference in Statistics: An Overview",
+    "authors": [
+      "Judea Pearl"
+    ],
+    "year": 2009,
+    "url": "https://doi.org/10.1214/09-SS057",
+    "pdf_url": "https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf",
+    "access": "Artículo de Statistics Surveys alojado en el sitio del autor en UCLA. PDF de 51 páginas identificado, con HTTP 200 y application/pdf comprobados. Consulta centrada en la distinción entre asociación e inferencia causal y sus supuestos, sin declarar lectura integral.",
+    "redistribution": "unknown",
+    "relevance": "Diferenciar validez temporal y contribución predictiva de identificación de causas o efectos de intervenciones. La residualización no aporta por sí sola un diseño causal.",
+    "phase": [
+      2,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  },
+  {
+    "id": "white2000realitycheck",
+    "title": "A Reality Check for Data Snooping",
+    "authors": [
+      "Halbert White"
+    ],
+    "year": 2000,
+    "url": "https://doi.org/10.1111/1468-0262.00152",
+    "pdf_url": null,
+    "access": "Ficha y resumen de Econometrica consultados. El artículo corresponde al volumen de septiembre de 2000, aunque la ficha electrónica muestra una fecha posterior de publicación online. No se confirmó un PDF completo libre de origen primario ni se declara lectura integral.",
+    "redistribution": "unknown",
+    "relevance": "Control del sesgo producido por búsqueda y reutilización de datos para seleccionar modelos. Motiva registrar todos los intentos y delimitar comparaciones confirmatorias.",
+    "phase": [
+      4,
+      5,
+      6
+    ],
+    "verification_date": "2026-09-18"
+  }
+]

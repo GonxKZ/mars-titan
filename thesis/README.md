@@ -1,6 +1,6 @@
 # Memoria de trabajo de MARS-TITAN
 
-`main.tex` es una base de redacción con la pregunta, el alcance y la organización del estudio. Mantiene explícito que aún no hay resultados. La fuente bibliográfica son los tres archivos BibTeX de `docs/references/`.
+`main.tex` es una base de redacción con la pregunta, el alcance y la organización del estudio. Mantiene explícito que aún no hay resultados. Las colecciones BibTeX de `docs/references/` se enumeran en el registro `catalogs.json` y están incluidas en la fuente LaTeX.
 
 La guía exige usar la plantilla del aula, que no se ha aportado. Esta base no se presenta como plantilla oficial ni como documento listo para depósito. Antes de una entrega habrá que trasladar el contenido, revisar formato y confirmar las instrucciones de citación.
 
