@@ -19,8 +19,8 @@ Español académico natural. Autor Gonzalo García Lama. Seis objetivos sin carp
 - [x] Preparar estructura futura de Python, configuración uv y herramientas de biblioteca. Probar rechazo de catálogos ambiguos, errores de acceso y falsos PDF antes de uso. No implementar modelos ni pipeline científico.
 - [x] Preparar CMake, controles de calidad, instrucciones Git y plantillas de contribución. Ejecutar configuración C/C++ y CUDA cuando el entorno lo permita.
 - [x] Escribir protocolo, arquitectura, plan de experimentos, riesgos, memoria inicial y README con diagramas explicados.
-- [ ] Revisar enlaces locales, bibliografía, licencias, secretos y archivos grandes. Crear commits atómicos y publicar en `GonxKZ/mars-titan` privado.
-- [ ] Comprobar el repositorio remoto y el resultado de GitHub Actions. Registrar límites pendientes de ejecución científica.
+- [x] Revisar enlaces locales, bibliografía, licencias, secretos y archivos grandes. Crear commits atómicos y publicar en `GonxKZ/mars-titan` privado.
+- [x] Comprobar el repositorio remoto y el resultado de GitHub Actions. Registrar límites pendientes de ejecución científica en el informe de verificación.
 
 ## Estado científico
 

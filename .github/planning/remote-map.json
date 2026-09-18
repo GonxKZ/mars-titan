@@ -1,0 +1,1789 @@
+{
+  "repository": "GonxKZ/mars-titan",
+  "project": {
+    "id": "PVT_kwHOBFgeDs4Bj8Oq",
+    "number": 4,
+    "url": "https://github.com/users/GonxKZ/projects/4"
+  },
+  "verified_at": "2026-09-18T17:50:43.627508+00:00",
+  "verification": {
+    "issues": 46,
+    "project_items": 46,
+    "assigned_to_gonzalo": 46,
+    "pending": 45,
+    "in_progress": 0,
+    "done": 1,
+    "closed": 1,
+    "native_dependencies": true,
+    "dependency_edges": 124,
+    "dependency_limitation": null,
+    "linked_repository": "GonxKZ/mars-titan"
+  },
+  "milestones": [
+    {
+      "key": "O1",
+      "number": 1,
+      "title": "O1 · Datos multimodales y disponibilidad temporal",
+      "url": "https://github.com/GonxKZ/mars-titan/milestone/1"
+    },
+    {
+      "key": "O2",
+      "number": 2,
+      "title": "O2 · Retornos residuales y etiquetas",
+      "url": "https://github.com/GonxKZ/mars-titan/milestone/2"
+    },
+    {
+      "key": "O3",
+      "number": 3,
+      "title": "O3 · Memoria de eventos e incertidumbre",
+      "url": "https://github.com/GonxKZ/mars-titan/milestone/3"
+    },
+    {
+      "key": "O4",
+      "number": 4,
+      "title": "O4 · Referencias y ablaciones",
+      "url": "https://github.com/GonxKZ/mars-titan/milestone/4"
+    },
+    {
+      "key": "O5",
+      "number": 5,
+      "title": "O5 · Evaluación temporal y económica",
+      "url": "https://github.com/GonxKZ/mars-titan/milestone/5"
+    },
+    {
+      "key": "O6",
+      "number": 6,
+      "title": "O6 · Análisis, memoria y defensa",
+      "url": "https://github.com/GonxKZ/mars-titan/milestone/6"
+    }
+  ],
+  "labels": [
+    {
+      "name": "transversal",
+      "color": "5319E7",
+      "description": "Trabajo compartido entre objetivos."
+    },
+    {
+      "name": "datos",
+      "color": "0E8A16",
+      "description": "Procedencia, calidad y disponibilidad de datos."
+    },
+    {
+      "name": "metodologia",
+      "color": "1D76DB",
+      "description": "Definiciones y protocolo de investigación."
+    },
+    {
+      "name": "modelos",
+      "color": "0052CC",
+      "description": "Implementación futura de predictores."
+    },
+    {
+      "name": "memoria",
+      "color": "7057FF",
+      "description": "Lectura, escritura, sorpresa y estado de memoria."
+    },
+    {
+      "name": "incertidumbre",
+      "color": "006B75",
+      "description": "Distribuciones, calibración y abstención."
+    },
+    {
+      "name": "comparativa",
+      "color": "BFDADC",
+      "description": "Referencias y ablaciones comparables."
+    },
+    {
+      "name": "evaluacion",
+      "color": "0075CA",
+      "description": "Resultados temporales, económicos y estadísticos."
+    },
+    {
+      "name": "redaccion",
+      "color": "D4C5F9",
+      "description": "Memoria, figuras y entregas académicas."
+    },
+    {
+      "name": "defensa",
+      "color": "E99695",
+      "description": "Preparación y realización de la defensa oral."
+    },
+    {
+      "name": "bibliografia",
+      "color": "C5DEF5",
+      "description": "Fuentes primarias, citas y biblioteca local."
+    },
+    {
+      "name": "reproducibilidad",
+      "color": "BFD4F2",
+      "description": "Entorno, configuraciones y artefactos reproducibles."
+    },
+    {
+      "name": "rendimiento",
+      "color": "FBCA04",
+      "description": "Medición de recursos y cuellos de botella."
+    },
+    {
+      "name": "opcional",
+      "color": "E4E669",
+      "description": "Extensión prescindible para completar el estudio."
+    },
+    {
+      "name": "integridad-academica",
+      "color": "D93F0B",
+      "description": "Autoría, normativa, permisos y trazabilidad."
+    },
+    {
+      "name": "bloqueado",
+      "color": "B60205",
+      "description": "Impedimento concreto documentado. No indica avance."
+    }
+  ],
+  "issues": [
+    {
+      "id": "MT-001",
+      "number": 1,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qelA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/1",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_xU",
+      "milestone": null,
+      "milestone_number": null,
+      "labels": [
+        "transversal",
+        "redaccion",
+        "integridad-academica"
+      ],
+      "status": "Hecho",
+      "issue_state": "closed",
+      "state_reason": "completed",
+      "closed_at": "2026-09-18T17:50:39Z",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": []
+    },
+    {
+      "id": "MT-002",
+      "number": 2,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qfmg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/2",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_xY",
+      "milestone": null,
+      "milestone_number": null,
+      "labels": [
+        "transversal",
+        "integridad-academica",
+        "redaccion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "S",
+      "dependencies": [
+        {
+          "id": "MT-001",
+          "number": 1,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/1"
+        }
+      ]
+    },
+    {
+      "id": "MT-003",
+      "number": 3,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qgtg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/3",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_xg",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "bibliografia",
+        "redaccion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-001",
+          "number": 1,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/1"
+        }
+      ]
+    },
+    {
+      "id": "MT-004",
+      "number": 4,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qh2Q",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/4",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_xo",
+      "milestone": null,
+      "milestone_number": null,
+      "labels": [
+        "transversal",
+        "reproducibilidad",
+        "rendimiento"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": []
+    },
+    {
+      "id": "MT-005",
+      "number": 5,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qiZw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/5",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_xw",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "reproducibilidad",
+        "integridad-academica"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": []
+    },
+    {
+      "id": "MT-006",
+      "number": 6,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qjng",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/6",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_x0",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-005",
+          "number": 5,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/5"
+        }
+      ]
+    },
+    {
+      "id": "MT-007",
+      "number": 7,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qkWQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/7",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_x8",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-005",
+          "number": 5,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/5"
+        }
+      ]
+    },
+    {
+      "id": "MT-008",
+      "number": 8,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qlhg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/8",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_yA",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-005",
+          "number": 5,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/5"
+        }
+      ]
+    },
+    {
+      "id": "MT-009",
+      "number": 9,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qmUA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/9",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zA",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "modelos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-006",
+          "number": 6,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/6"
+        }
+      ]
+    },
+    {
+      "id": "MT-010",
+      "number": 10,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qm6A",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/10",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zI",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "modelos",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-007",
+          "number": 7,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/7"
+        },
+        {
+          "id": "MT-009",
+          "number": 9,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/9"
+        },
+        {
+          "id": "MT-004",
+          "number": 4,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/4"
+        }
+      ]
+    },
+    {
+      "id": "MT-011",
+      "number": 11,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qnnQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/11",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zM",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-006",
+          "number": 6,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/6"
+        },
+        {
+          "id": "MT-007",
+          "number": 7,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/7"
+        },
+        {
+          "id": "MT-008",
+          "number": 8,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/8"
+        }
+      ]
+    },
+    {
+      "id": "MT-012",
+      "number": 12,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qo2w",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/12",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zU",
+      "milestone": "O1",
+      "milestone_number": 1,
+      "labels": [
+        "datos",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-005",
+          "number": 5,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/5"
+        },
+        {
+          "id": "MT-006",
+          "number": 6,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/6"
+        },
+        {
+          "id": "MT-007",
+          "number": 7,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/7"
+        },
+        {
+          "id": "MT-008",
+          "number": 8,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/8"
+        },
+        {
+          "id": "MT-011",
+          "number": 11,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/11"
+        }
+      ]
+    },
+    {
+      "id": "MT-013",
+      "number": 13,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qqcw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/13",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zY",
+      "milestone": "O2",
+      "milestone_number": 2,
+      "labels": [
+        "metodologia",
+        "datos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-001",
+          "number": 1,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/1"
+        }
+      ]
+    },
+    {
+      "id": "MT-014",
+      "number": 14,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qrew",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/14",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zg",
+      "milestone": "O2",
+      "milestone_number": 2,
+      "labels": [
+        "datos",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-005",
+          "number": 5,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/5"
+        },
+        {
+          "id": "MT-006",
+          "number": 6,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/6"
+        },
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        }
+      ]
+    },
+    {
+      "id": "MT-015",
+      "number": 15,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qsjQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/15",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zs",
+      "milestone": "O2",
+      "milestone_number": 2,
+      "labels": [
+        "datos",
+        "metodologia",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-011",
+          "number": 11,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/11"
+        },
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        },
+        {
+          "id": "MT-014",
+          "number": 14,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/14"
+        }
+      ]
+    },
+    {
+      "id": "MT-016",
+      "number": 16,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qt8Q",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/16",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_zw",
+      "milestone": "O2",
+      "milestone_number": 2,
+      "labels": [
+        "evaluacion",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-012",
+          "number": 12,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/12"
+        },
+        {
+          "id": "MT-015",
+          "number": 15,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/15"
+        }
+      ]
+    },
+    {
+      "id": "MT-017",
+      "number": 17,
+      "node_id": "I_kwDOUgbuHs8AAAABR_quug",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/17",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_0I",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "modelos",
+        "datos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-004",
+          "number": 4,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/4"
+        },
+        {
+          "id": "MT-011",
+          "number": 11,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/11"
+        },
+        {
+          "id": "MT-012",
+          "number": 12,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/12"
+        }
+      ]
+    },
+    {
+      "id": "MT-018",
+      "number": 18,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qvaQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/18",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_0Q",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "memoria",
+        "modelos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-017",
+          "number": 17,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/17"
+        }
+      ]
+    },
+    {
+      "id": "MT-019",
+      "number": 19,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qwKA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/19",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_0U",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "memoria",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-015",
+          "number": 15,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/15"
+        },
+        {
+          "id": "MT-018",
+          "number": 18,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/18"
+        }
+      ]
+    },
+    {
+      "id": "MT-020",
+      "number": 20,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qxRw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/20",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_0g",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "memoria",
+        "modelos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-018",
+          "number": 18,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/18"
+        },
+        {
+          "id": "MT-019",
+          "number": 19,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/19"
+        }
+      ]
+    },
+    {
+      "id": "MT-021",
+      "number": 21,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qx4g",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/21",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_0s",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "memoria",
+        "reproducibilidad",
+        "evaluacion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-015",
+          "number": 15,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/15"
+        },
+        {
+          "id": "MT-018",
+          "number": 18,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/18"
+        }
+      ]
+    },
+    {
+      "id": "MT-022",
+      "number": 22,
+      "node_id": "I_kwDOUgbuHs8AAAABR_qyfg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/22",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_0w",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "incertidumbre",
+        "modelos",
+        "evaluacion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        },
+        {
+          "id": "MT-017",
+          "number": 17,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/17"
+        },
+        {
+          "id": "MT-021",
+          "number": 21,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/21"
+        }
+      ]
+    },
+    {
+      "id": "MT-023",
+      "number": 23,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q0XA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/23",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_1A",
+      "milestone": "O3",
+      "milestone_number": 3,
+      "labels": [
+        "modelos",
+        "memoria",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-004",
+          "number": 4,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/4"
+        },
+        {
+          "id": "MT-017",
+          "number": 17,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/17"
+        },
+        {
+          "id": "MT-018",
+          "number": 18,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/18"
+        },
+        {
+          "id": "MT-019",
+          "number": 19,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/19"
+        },
+        {
+          "id": "MT-020",
+          "number": 20,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/20"
+        },
+        {
+          "id": "MT-021",
+          "number": 21,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/21"
+        },
+        {
+          "id": "MT-022",
+          "number": 22,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/22"
+        }
+      ]
+    },
+    {
+      "id": "MT-024",
+      "number": 24,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q08w",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/24",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_1I",
+      "milestone": "O4",
+      "milestone_number": 4,
+      "labels": [
+        "comparativa",
+        "modelos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-015",
+          "number": 15,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/15"
+        },
+        {
+          "id": "MT-031",
+          "number": 31,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/31"
+        },
+        {
+          "id": "MT-032",
+          "number": 32,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/32"
+        }
+      ]
+    },
+    {
+      "id": "MT-025",
+      "number": 25,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q2Fg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/25",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_1g",
+      "milestone": "O4",
+      "milestone_number": 4,
+      "labels": [
+        "comparativa",
+        "modelos"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-024",
+          "number": 24,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/24"
+        }
+      ]
+    },
+    {
+      "id": "MT-026",
+      "number": 26,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q3Ag",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/26",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_1o",
+      "milestone": "O4",
+      "milestone_number": 4,
+      "labels": [
+        "comparativa",
+        "modelos",
+        "rendimiento"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-004",
+          "number": 4,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/4"
+        },
+        {
+          "id": "MT-024",
+          "number": 24,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/24"
+        }
+      ]
+    },
+    {
+      "id": "MT-027",
+      "number": 27,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q4Pg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/27",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_1w",
+      "milestone": "O4",
+      "milestone_number": 4,
+      "labels": [
+        "comparativa",
+        "memoria",
+        "bibliografia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-003",
+          "number": 3,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/3"
+        },
+        {
+          "id": "MT-018",
+          "number": 18,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/18"
+        },
+        {
+          "id": "MT-021",
+          "number": 21,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/21"
+        },
+        {
+          "id": "MT-031",
+          "number": 31,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/31"
+        },
+        {
+          "id": "MT-032",
+          "number": 32,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/32"
+        }
+      ]
+    },
+    {
+      "id": "MT-028",
+      "number": 28,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q45Q",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/28",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_10",
+      "milestone": "O4",
+      "milestone_number": 4,
+      "labels": [
+        "comparativa",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        },
+        {
+          "id": "MT-017",
+          "number": 17,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/17"
+        },
+        {
+          "id": "MT-030",
+          "number": 30,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/30"
+        }
+      ]
+    },
+    {
+      "id": "MT-029",
+      "number": 29,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q5rQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/29",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_2A",
+      "milestone": "O4",
+      "milestone_number": 4,
+      "labels": [
+        "comparativa",
+        "evaluacion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-010",
+          "number": 10,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/10"
+        },
+        {
+          "id": "MT-023",
+          "number": 23,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/23"
+        },
+        {
+          "id": "MT-027",
+          "number": 27,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/27"
+        },
+        {
+          "id": "MT-028",
+          "number": 28,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/28"
+        },
+        {
+          "id": "MT-031",
+          "number": 31,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/31"
+        },
+        {
+          "id": "MT-032",
+          "number": 32,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/32"
+        }
+      ]
+    },
+    {
+      "id": "MT-030",
+      "number": 30,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q6qQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/30",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_2M",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "metodologia",
+        "evaluacion",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        }
+      ]
+    },
+    {
+      "id": "MT-031",
+      "number": 31,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q7zw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/31",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_2c",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "evaluacion",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-004",
+          "number": 4,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/4"
+        },
+        {
+          "id": "MT-012",
+          "number": 12,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/12"
+        },
+        {
+          "id": "MT-015",
+          "number": 15,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/15"
+        },
+        {
+          "id": "MT-030",
+          "number": 30,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/30"
+        }
+      ]
+    },
+    {
+      "id": "MT-032",
+      "number": 32,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q8ug",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/32",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_2k",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "evaluacion",
+        "incertidumbre"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        },
+        {
+          "id": "MT-030",
+          "number": 30,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/30"
+        }
+      ]
+    },
+    {
+      "id": "MT-033",
+      "number": 33,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q-CQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/33",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_2s",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "evaluacion",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-006",
+          "number": 6,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/6"
+        },
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        },
+        {
+          "id": "MT-030",
+          "number": 30,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/30"
+        }
+      ]
+    },
+    {
+      "id": "MT-034",
+      "number": 34,
+      "node_id": "I_kwDOUgbuHs8AAAABR_q_Xw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/34",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_20",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "comparativa",
+        "evaluacion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-023",
+          "number": 23,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/23"
+        },
+        {
+          "id": "MT-024",
+          "number": 24,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/24"
+        },
+        {
+          "id": "MT-025",
+          "number": 25,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/25"
+        },
+        {
+          "id": "MT-026",
+          "number": 26,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/26"
+        },
+        {
+          "id": "MT-027",
+          "number": 27,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/27"
+        },
+        {
+          "id": "MT-028",
+          "number": 28,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/28"
+        },
+        {
+          "id": "MT-031",
+          "number": 31,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/31"
+        },
+        {
+          "id": "MT-032",
+          "number": 32,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/32"
+        },
+        {
+          "id": "MT-033",
+          "number": 33,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/33"
+        }
+      ]
+    },
+    {
+      "id": "MT-035",
+      "number": 35,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rAAw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/35",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_28",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "evaluacion",
+        "comparativa",
+        "reproducibilidad"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-029",
+          "number": 29,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/29"
+        },
+        {
+          "id": "MT-034",
+          "number": 34,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/34"
+        }
+      ]
+    },
+    {
+      "id": "MT-036",
+      "number": 36,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rBPg",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/36",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_3E",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "evaluacion",
+        "metodologia"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-035",
+          "number": 35,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/35"
+        }
+      ]
+    },
+    {
+      "id": "MT-037",
+      "number": 37,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rB0A",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/37",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_3Q",
+      "milestone": "O5",
+      "milestone_number": 5,
+      "labels": [
+        "evaluacion",
+        "comparativa"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-035",
+          "number": 35,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/35"
+        }
+      ]
+    },
+    {
+      "id": "MT-038",
+      "number": 38,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rCuQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/38",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_3k",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "rendimiento",
+        "evaluacion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-023",
+          "number": 23,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/23"
+        },
+        {
+          "id": "MT-026",
+          "number": 26,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/26"
+        },
+        {
+          "id": "MT-027",
+          "number": 27,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/27"
+        },
+        {
+          "id": "MT-035",
+          "number": 35,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/35"
+        }
+      ]
+    },
+    {
+      "id": "MT-039",
+      "number": 39,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rDZA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/39",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_3o",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "opcional",
+        "rendimiento"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P2",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-038",
+          "number": 38,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/38"
+        }
+      ]
+    },
+    {
+      "id": "MT-040",
+      "number": 40,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rEpA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/40",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_3s",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "redaccion",
+        "evaluacion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-016",
+          "number": 16,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/16"
+        },
+        {
+          "id": "MT-029",
+          "number": 29,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/29"
+        },
+        {
+          "id": "MT-036",
+          "number": 36,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/36"
+        },
+        {
+          "id": "MT-037",
+          "number": 37,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/37"
+        },
+        {
+          "id": "MT-038",
+          "number": 38,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/38"
+        }
+      ]
+    },
+    {
+      "id": "MT-041",
+      "number": 41,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rFMQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/41",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_4I",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "redaccion",
+        "integridad-academica"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-001",
+          "number": 1,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/1"
+        },
+        {
+          "id": "MT-002",
+          "number": 2,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/2"
+        },
+        {
+          "id": "MT-003",
+          "number": 3,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/3"
+        },
+        {
+          "id": "MT-013",
+          "number": 13,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/13"
+        },
+        {
+          "id": "MT-030",
+          "number": 30,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/30"
+        }
+      ]
+    },
+    {
+      "id": "MT-042",
+      "number": 42,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rF8Q",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/42",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_4c",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "redaccion",
+        "integridad-academica"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-041",
+          "number": 41,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/41"
+        },
+        {
+          "id": "MT-012",
+          "number": 12,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/12"
+        },
+        {
+          "id": "MT-015",
+          "number": 15,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/15"
+        },
+        {
+          "id": "MT-024",
+          "number": 24,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/24"
+        },
+        {
+          "id": "MT-023",
+          "number": 23,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/23"
+        },
+        {
+          "id": "MT-028",
+          "number": 28,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/28"
+        }
+      ]
+    },
+    {
+      "id": "MT-043",
+      "number": 43,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rHTA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/43",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_4w",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "redaccion",
+        "integridad-academica"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-042",
+          "number": 42,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/42"
+        },
+        {
+          "id": "MT-040",
+          "number": 40,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/40"
+        }
+      ]
+    },
+    {
+      "id": "MT-044",
+      "number": 44,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rI_g",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/44",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_48",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "reproducibilidad",
+        "redaccion"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-003",
+          "number": 3,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/3"
+        },
+        {
+          "id": "MT-035",
+          "number": 35,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/35"
+        },
+        {
+          "id": "MT-036",
+          "number": 36,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/36"
+        },
+        {
+          "id": "MT-037",
+          "number": 37,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/37"
+        },
+        {
+          "id": "MT-038",
+          "number": 38,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/38"
+        },
+        {
+          "id": "MT-043",
+          "number": 43,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/43"
+        }
+      ]
+    },
+    {
+      "id": "MT-045",
+      "number": 45,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rJmw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/45",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_5A",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "redaccion",
+        "integridad-academica"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "M",
+      "dependencies": [
+        {
+          "id": "MT-002",
+          "number": 2,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/2"
+        },
+        {
+          "id": "MT-043",
+          "number": 43,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/43"
+        },
+        {
+          "id": "MT-044",
+          "number": 44,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/44"
+        }
+      ]
+    },
+    {
+      "id": "MT-046",
+      "number": 46,
+      "node_id": "I_kwDOUgbuHs8AAAABR_rKQw",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/46",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7o_5M",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "defensa",
+        "integridad-academica"
+      ],
+      "status": "Pendiente",
+      "issue_state": "open",
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "dependencies": [
+        {
+          "id": "MT-040",
+          "number": 40,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/40"
+        },
+        {
+          "id": "MT-044",
+          "number": 44,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/44"
+        },
+        {
+          "id": "MT-045",
+          "number": 45,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/45"
+        }
+      ]
+    }
+  ],
+  "catalog_sha256": "869ab37338f7c72a342497f4a07ab5510aee8287e7911f401c181a1de6a5c120"
+}
