@@ -12,12 +12,17 @@ Estado: diseño previo a la implementación. Ninguna celda representa un resulta
 | B3 | GRU compacta | Referencia neural secuencial con presupuesto comparable. | Obligatoria |
 | B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada al target. | Deseable tras el piloto |
 | B5 | TCN o PatchTST reducido | Contraste adicional si aporta una pregunta distinta. | Extensión |
+| B6 | Memoria asociativa compacta con regla delta | Referencia neural adaptativa identificable, separada del banco episódico. | Obligatoria |
 | M0 | Codificador y cabeza de MARS-TITAN sin memoria | Aísla el efecto de introducir memoria. | Obligatoria |
 | M1 | Memoria global con escritura uniforme | Aísla la selección de eventos. | Obligatoria |
 | M2 | Memoria global y escritura por error maduro | Contrasta sorpresa predictiva frente a combinación económica. | Obligatoria |
 | M3 | Propuesta compacta con sorpresa, régimen e incertidumbre | Modelo principal de investigación. | Obligatoria |
 
 La elección de boosting aprovecha una dependencia ya prevista y evita incorporar dos librerías equivalentes al inicio. XGBoost o LightGBM pueden sustituirla mediante una decisión registrada. No se ejecutarán todos solo para ampliar la tabla de resultados.
+
+HistGradientBoosting no debe reservar aleatoriamente una parte del panel para parada temprana. Se utilizará `early_stopping=False` con selección externa cronológica, o un conjunto de validación explícito cuando la versión fijada lo admita. La [documentación de scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html) describe la activación automática de parada y la reserva interna. Leer el dataset por bloques no convierte ese estimador en un algoritmo incremental.
+
+El núcleo usa una sola lectura, K = 1. La comparación K = 2 o 4 y una eventual puerta adaptativa pertenecen a MT-054. No bloquearán la comparación principal si no aportan una pregunta viable bajo el presupuesto. El estudio con macro, replay paramétrico, destilación, universo completo y otro mercado se declara por separado.
 
 ## Ablaciones emparejadas
 
