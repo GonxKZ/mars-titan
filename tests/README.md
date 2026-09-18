@@ -1,6 +1,6 @@
 # Comprobaciones del repositorio
 
-Las pruebas actuales de `tests/tooling/` comprueban utilidades de gestión de la biblioteca de referencias. Incluyen validación de identificadores, metadatos, integridad de archivos y tratamiento de accesos fallidos. No evalúan modelos, kernels, rentabilidad ni hipótesis científicas.
+Las pruebas actuales de `tests/tooling/` comprueban la biblioteca de referencias y las capturas de fuentes públicas. Incluyen validación de identificadores, metadatos, integridad de archivos, formatos, límites de descarga y tratamiento de accesos fallidos. Se ejecutan sin red y verifican que una actualización no sobrescriba capturas anteriores ni habilite datos para el benchmark. No evalúan modelos, kernels, rentabilidad ni hipótesis científicas.
 
 Desde la raíz del repositorio:
 

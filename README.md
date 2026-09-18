@@ -2,7 +2,7 @@
 
 **Memoria causal adaptativa para predicción bursátil multimodal**
 
-Trabajo Fin de Máster de **Gonzalo García Lama** · Máster Universitario en Inteligencia Artificial · UNIR · Trabajo individual de **Tipo 3: comparativa de soluciones**.
+Proyecto de investigación de **Gonzalo García Lama** · Máster Universitario en Inteligencia Artificial · UNIR · Trabajo individual de **Tipo 3: comparativa de soluciones**.
 
 [![Calidad](https://github.com/GonxKZ/mars-titan/actions/workflows/quality.yml/badge.svg)](https://github.com/GonxKZ/mars-titan/actions/workflows/quality.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
@@ -19,7 +19,7 @@ La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia int
 
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
 
-**Estado actual:** preparación documental y configuración del repositorio, sin implementación científica iniciada. La arquitectura está propuesta. Los experimentos y sus resultados están pendientes. Las únicas utilidades ejecutables mantienen y verifican la documentación. Los diagramas muestran el diseño del estudio, no rendimiento observado. «Causal» se refiere al orden de disponibilidad de la información. No implica haber identificado causas económicas.
+**Estado actual:** preparación documental, configuración del repositorio y adquisición de fuentes, sin implementación científica iniciada. La arquitectura está propuesta. Los experimentos y sus resultados están pendientes. Las utilidades ejecutables conservan la biblioteca, verifican el repositorio y descargan instantáneas de datos públicos. Los diagramas muestran el diseño del estudio, no rendimiento observado. «Causal» se refiere al orden de disponibilidad de la información. No implica haber identificado causas económicas.
 
 ## Alcance y recursos
 
@@ -64,7 +64,7 @@ Los objetivos se gestionan como seis hitos y 62 tareas canónicas, con prioridad
 - [Arquitectura candidata](docs/research/candidate-architecture.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
 - [Contrato de datos](docs/data/data-contract.md), [inspección inicial de FinMultiTime](docs/data/finmultitime-card.md) y [arquitectura](docs/engineering/architecture.md).
 - [140 indicadores macroeconómicos candidatos](docs/data/macro-catalog.md), con fuentes, fórmulas y reglas de disponibilidad. Los valores no están calculados ni validados como entradas de entrenamiento.
-- [Fuentes gratuitas y nueve archivos complementarios obtenidos](docs/data/free-data-sources.md), conservados en instantáneas locales separadas del benchmark.
+- [Fuentes gratuitas y nueve archivos complementarios obtenidos](docs/data/free-data-sources.md), conservados en instantáneas locales separadas del benchmark, y [actualización manual](docs/data/public-source-updates.md).
 - [Biblioteca y revisión bibliográfica](docs/references/README.md): publicaciones primarias, libros, fuentes financieras, BibTeX y descargas locales con huella de integridad.
 - [Memoria y aprendizaje](docs/references/brain-review.md), [eficiencia de DeepSeek](docs/references/deepseek-review.md), [recorrido completo del dataset](docs/engineering/full-dataset-training.md) y [presupuesto de latencia](docs/engineering/latency-budget.md).
 - [Contraste de los ocho posts aportados](docs/references/social-followup.md): recursos aprovechables, límites de acceso y afirmaciones que no se pueden verificar.
@@ -89,7 +89,7 @@ src/mars_titan/       Espacio reservado para los futuros módulos científicos
 native/              C/C++ y CUDA con CMake, optimización guiada por perfilado
 configs/             Configuraciones de datos y experimentos
 tests/               Verificación documental y plan de pruebas científicas
-scripts/             Biblioteca, comprobaciones y mantenimiento
+scripts/             Biblioteca, captura de fuentes y mantenimiento
 notebooks/           Exploraciones acotadas y reproducibles
 data/                Contratos y manifiestos, derivados locales ignorados
 dataset/             Copia local existente de FinMultiTime, fuera de Git
@@ -138,6 +138,15 @@ uv run python scripts/fetch_references.py
 ```
 
 Los fallos de acceso quedan registrados. El catálogo no autoriza redistribuir publicaciones. Los PDF de terceros se conservan en `docs/references/library/`, fuera de Git. Un clon contiene las referencias y el procedimiento de descarga.
+
+Para consultar las fuentes públicas habilitadas y obtener una captura nueva del RSS monetario oficial:
+
+```bash
+uv run python scripts/refresh_public_sources.py --list
+uv run python scripts/refresh_public_sources.py --source fed_monetary_rss
+```
+
+El actualizador necesita `curl`. Sin `--source`, consulta las ocho fuentes renovables validadas. Cada ejecución crea su propio manifiesto y conserva las capturas anteriores. No mezcla actualizaciones con el benchmark ni instala tareas periódicas. Los límites, la selección explícita de documentos PDF y las precauciones temporales se detallan en la [guía de actualización](docs/data/public-source-updates.md).
 
 ## Datos, resultados y licencia
 
