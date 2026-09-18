@@ -33,6 +33,8 @@ El estado del arte será un conjunto de referencias con tarea, datos y recursos 
 
 ## Condición de avance
 
+La [guía de implementación](../engineering/implementation-guide.md) concreta el papel de cada tecnología y el orden de cierre. El catálogo separa núcleo, apoyo y extensiones. Ni el número de referencias, ni la página de seguimiento, ni añadir otro lenguaje cambian la pregunta principal. La comparación conserva los seis objetivos y la propuesta presentada como criterio de alcance.
+
 Antes de ampliar el modelo se debe completar el recorrido temporal básico, una referencia cero y lineal, la estimación de tiempo y la prueba de recuperación. La comparación principal probará una hipótesis de memoria. Recurrencia, replay paramétrico, destilación, atención dispersa y transferencia entre mercados entrarán mediante decisiones explícitas de continuidad o descarte.
 
 El catálogo de lectura es amplio. La cuadrícula de entrenamiento será deliberadamente más pequeña, para que haya recursos para verificar datos, repetir comparaciones y analizar fallos. Las nuevas tareas se integran en el [tablero](task-board.md) sin dar por realizados modelos o experimentos.

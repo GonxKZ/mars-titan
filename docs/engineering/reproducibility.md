@@ -13,7 +13,7 @@ sudo apt-get update
 sudo apt-get install -y --no-install-recommends git ripgrep cmake build-essential
 ```
 
-Las herramientas de sistema se comprueban en el equipo local. uv gestiona las dependencias de Python por separado. No se configura integración continua en GitHub.
+Las herramientas de sistema se comprueban en el equipo local. uv gestiona las dependencias de Python por separado. No se configura integración continua científica en GitHub. Actions se limita a la publicación de GitHub Pages autorizada por el responsable del proyecto.
 
 La captura de [fuentes públicas](../data/public-source-updates.md) utiliza `curl`. La inspección de documentos PDF utiliza `pdfinfo`, incluido en `poppler-utils` en Debian y Ubuntu. Son requisitos adicionales de esas operaciones, no del entrenamiento ni de las pruebas sin red. El actualizador no instala programas, crea cuentas o activa tareas periódicas.
 
@@ -48,7 +48,7 @@ uv run --locked pytest
 uv run --locked python scripts/check_repository.py
 ```
 
-Estas herramientas de mantenimiento se ejecutan localmente con CPU. No ejecutan entrenamientos ni sustituyen las comprobaciones de CUDA. GitHub Actions está desactivado.
+Estas herramientas de mantenimiento se ejecutan localmente con CPU. No ejecutan entrenamientos ni sustituyen las comprobaciones de CUDA. La publicación de la web no las ejecuta automáticamente.
 
 ## Equipo y entorno compartido
 

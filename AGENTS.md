@@ -15,6 +15,7 @@
 ## Investigación
 
 - Trabajo individual de **Tipo 3: comparativa de soluciones**. Los seis objetivos son hitos de investigación. Las carpetas se organizan por responsabilidad.
+- La propuesta presentada gobierna el alcance. Cada ampliación debe indicar qué objetivo ayuda a contrastar y qué comparación permitiría descartarla. No sustituir el estudio sobre FinMultiTime por un agente de negociación, una reproducción del cerebro o una plataforma de servicios.
 - La preparación inicial comprende repositorio, configuración, documentos e investigación. No iniciar implementaciones científicas ni entrenamientos sin que esa fase de trabajo se solicite.
 - Antes de cambiar alcance, consultar `docs/research/protocol.md`, `docs/research/roadmap.md` y `docs/academic/rubric-matrix.md`.
 - Registrar decisiones, configuraciones, semillas, versiones y fallos. Un resultado negativo bien evaluado también es una aportación.
@@ -28,6 +29,10 @@
 
 ## Desarrollo
 
+- Aplicar SOLID, DRY, KISS, YAGNI, Open/Closed, Dependency Inversion, composición, separación de responsabilidades, Fail Fast y Measure First. Los nombres de módulos deben mostrar el dominio y su función, siguiendo screaming architecture. No añadir interfaces, capas o servicios sin una necesidad concreta.
+- Buscar la implementación completa más pequeña y clara. Menos líneas no justifica compactar en exceso, ocultar errores o sacrificar pruebas. Mantener límites explícitos y módulos cohesionados para escalar sin sobreingeniería.
+- Usar pruebas unitarias e integración que detecten fallos reales y mutación dirigida para la lógica relevante. Cobertura y CRAP ayudan a localizar complejidad poco comprobada. Registrar herramienta y convención, sin tratar una puntuación como garantía de calidad.
+- Medir latencia, caudal y memoria antes de optimizar. Acotar concurrencia, colas, cachés y telemetría. Una optimización debe conservar la referencia numérica y mostrar beneficio medido, incluido su coste total.
 - Usar **uv** para paquetes, entornos y ejecución de Python. No usar pip, Poetry o Conda directamente.
 - Para cargas de aprendizaje profundo, comprobar `nvidia-smi` y `torch.cuda.is_available()`, seleccionar `cuda:0` y registrar memoria y versiones. Nunca pasar silenciosamente a CPU.
 - En tareas independientes compatibles, preferir `/home/gonzalo/.venvs/pytorch-cuda`. El proyecto mantiene un entorno local reproducible con `uv.lock`.
@@ -35,16 +40,19 @@
 - Mantener lógica reutilizable en `src/mars_titan/`, exploración en `notebooks/`, configuración en `configs/` y optimización nativa en `native/`.
 - C++/CUDA solo tras perfilado y con comparación numérica frente a una referencia Python. No añadir kernels sin evidencia de necesidad.
 - Comprobar calidad con `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest` y `uv run python scripts/check_repository.py`.
-- Ejecutar las comprobaciones localmente. No configurar ni activar GitHub Actions. Mantener las pruebas y la revisión previa a cada publicación sin automatizaciones en GitHub.
+- Ejecutar las comprobaciones y entrenamientos localmente. La única excepción autorizada de GitHub Actions es desplegar GitHub Pages, sin pruebas ni cargas científicas en GitHub.
 - No versionar datasets, secretos, pesos, cachés, resultados voluminosos ni PDF de terceros sin permiso de redistribución.
 
 ## Git y GitHub
 
 - Todos los commits siguen **Conventional Commits**, en inglés: `type(scope): short description`.
+- Antes de cambiar el repositorio, revisar la issue y el Project asociados. Reutilizar la tarea adecuada o crear una si no existe, sin duplicar objetivos. Pasarla a En curso y crear una rama vinculada, por ejemplo `feat/mt-068-observatory`.
+- Mantener issue, rama, commits, revisión y Kanban sincronizados. Pasar a En revisión cuando la evidencia esté preparada y a Hecho solo al cumplir sus criterios. No cerrar una tarea científica por completar su documentación. Si falta acceso, registrar el impedimento sin aparentar una actualización.
 - Usar ramas breves en inglés acordes al trabajo: `feat/...`, `fix/...`, `docs/...`, `refactor/...`, `test/...`, `chore/...`.
 - Crear commits atómicos y significativos. Revisar el diff y los archivos incluidos antes de cada commit.
 - Durante trabajo prolongado, procurar bloques revisados de unos cuatro a siete minutos cuando encaje con la tarea. Mantener las fechas reales y no dividir artificialmente un cambio solo para aparentar actividad.
 - Revisar las issues y el Kanban antes de crear nuevas tareas. Unir solapes por resultado esperado, conservar dependencias y enlazar cualquier consolidación. Aplicar etiquetas por contenido y etapa con un vocabulario coherente.
+- Cada issue debe especificar herramientas para funciones concretas, entradas, pasos, artefactos previstos y comprobaciones. Diferenciar rutas futuras de archivos existentes. Python y PyTorch son la base científica. C++/CUDA requieren perfilado y una referencia numérica. Go solo se considerará para un componente auxiliar justificado, nunca como requisito añadido al núcleo.
 - Escribir las issues con contexto, trabajo delimitado, criterios comprobables y evidencia, usando el tono natural de un estudiante de máster que investiga aprendizaje automático. No usar punto y coma en la prosa.
 - No reescribir historia compartida ni borrar datos. Conservar cambios previos del usuario.
 - Al cerrar un objetivo, enlazar evidencia real con la matriz de rúbrica. No marcarlo completado por haber redactado su plan.

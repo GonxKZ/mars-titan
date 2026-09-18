@@ -103,7 +103,7 @@ Ninguna fórmula contiene ventanas centradas, datos futuros o una normalización
 
 ## Acceso, cobertura histórica y condiciones
 
-La comprobación empleó páginas oficiales y descargas públicas, sin claves aportadas por el usuario, suscripciones ni servicios de pago. La [página FRED-MD/FRED-QD](https://www.stlouisfed.org/research/economists/mccracken/fred-databases) ofrece CSV y archivos mensuales históricos. Constituyen una vía pública para investigar paneles y revisiones, no sustituyen el calendario de cada comunicado. No se ha descargado ni incorporado aquí su panel. La API ordinaria de FRED requiere una clave gratuita y no se ha usado. Una futura ingesta elegirá una interfaz documentada y respetará sus límites de acceso.
+La comprobación empleó páginas oficiales y descargas públicas, sin claves aportadas por el usuario, suscripciones ni servicios de pago. La [página FRED-MD/FRED-QD](https://www.stlouisfed.org/research/economists/mccracken/fred-databases) ofrece CSV y archivos mensuales históricos. Se conservaron capturas corrientes de ambos paneles en la [adquisición complementaria](free-data-sources.md). No se han integrado como entradas del benchmark ni reconstruido como observaciones disponibles históricamente. Tampoco equivalen al cálculo de las 140 variables del catálogo. La API ordinaria de FRED requiere una clave gratuita y no se ha usado. La [actualización manual](public-source-updates.md) reutiliza los enlaces públicos verificados y respeta sus límites.
 
 | Proveedor | Acceso contrastado o ruta primaria | Restricción pendiente |
 | --- | --- | --- |

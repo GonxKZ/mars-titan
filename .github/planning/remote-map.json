@@ -5,8 +5,8 @@
     "number": 4,
     "url": "https://github.com/users/GonxKZ/projects/4"
   },
-  "verified_at": "2026-09-18T19:20:09.090767+00:00",
-  "catalog_sha256": "daa5f102df65893ca1251302d06911cfc333da6519a72aceed599d4c46d96e6d",
+  "verified_at": "2026-09-18T20:56:36.944385+00:00",
+  "catalog_sha256": "3d57d995130776989195de6aee183f401375f9114600c865437e7eb9d19e3050",
   "fields": {
     "Status": {
       "id": "PVTSSF_lAHOBFgeDs4Bj8Oqzhiuujk",
@@ -76,52 +76,29 @@
   },
   "retired_registry": ".github/planning/retired-issues.json",
   "verification": {
-    "issues": 62,
-    "project_items": 62,
-    "assigned_to_gonzalo": 62,
+    "issues": 64,
+    "project_items": 64,
+    "assigned_to_gonzalo": 64,
     "pending": 61,
-    "in_progress": 0,
+    "in_progress": 1,
+    "in_review": 1,
     "done": 1,
     "closed": 1,
-    "repository_issues": 67,
-    "repository_closed": 6,
+    "repository_issues": 69,
     "retired_issues": 5,
     "retired_closed_not_planned": 5,
     "native_dependencies": true,
-    "dependency_edges": 177,
-    "dependency_limitation": null,
-    "dependency_edges_added": 10,
-    "dependency_edges_removed": 28,
-    "project_items_removed": 5,
-    "mt001_preserved": true,
-    "linked_repository": "GonxKZ/mars-titan",
-    "rendered_issue_samples": [
-      {
-        "id": "MT-005",
-        "number": 5,
-        "url": "https://github.com/GonxKZ/mars-titan/issues/5",
-        "checked": [
-          "section_structure",
-          "unchecked_task_lists",
-          "issue_dependency_links"
-        ]
-      },
-      {
-        "id": "MT-019",
-        "number": 19,
-        "url": "https://github.com/GonxKZ/mars-titan/issues/19",
-        "checked": [
-          "section_structure",
-          "unchecked_task_lists",
-          "issue_dependency_links"
-        ]
-      }
-    ],
+    "dependency_edges": 183,
     "labels_in_catalog": 20,
     "canonical_label_counts": {
       "min": 2,
-      "max": 4
-    }
+      "max": 5
+    },
+    "execution_guides": 64,
+    "mt001_closure_preserved": true,
+    "retired_history_preserved": true,
+    "linked_repository": "GonxKZ/mars-titan",
+    "changed_bodies_and_metadata": 1
   },
   "milestones": [
     {
@@ -286,6 +263,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "support",
       "dependencies": []
     },
     {
@@ -310,6 +288,7 @@
       ],
       "priority": "P0",
       "size": "S",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-001",
@@ -339,6 +318,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-001",
@@ -369,6 +349,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "support",
       "dependencies": []
     },
     {
@@ -393,6 +374,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": []
     },
     {
@@ -416,6 +398,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-005",
@@ -445,6 +428,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-005",
@@ -474,6 +458,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-005",
@@ -503,6 +488,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-006",
@@ -533,6 +519,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-007",
@@ -573,6 +560,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-006",
@@ -613,6 +601,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-005",
@@ -662,6 +651,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-001",
@@ -691,6 +681,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-005",
@@ -731,6 +722,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-011",
@@ -770,6 +762,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-012",
@@ -804,6 +797,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-004",
@@ -844,6 +838,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-017",
@@ -874,6 +869,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-015",
@@ -918,6 +914,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-018",
@@ -953,6 +950,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-015",
@@ -988,6 +986,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-013",
@@ -1003,6 +1002,11 @@
           "id": "MT-021",
           "number": 21,
           "url": "https://github.com/GonxKZ/mars-titan/issues/21"
+        },
+        {
+          "id": "MT-030",
+          "number": 30,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/30"
         }
       ]
     },
@@ -1028,6 +1032,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-004",
@@ -1087,6 +1092,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-015",
@@ -1127,6 +1133,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-024",
@@ -1157,6 +1164,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-004",
@@ -1192,6 +1200,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-003",
@@ -1241,6 +1250,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-013",
@@ -1286,6 +1296,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-010",
@@ -1341,6 +1352,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-013",
@@ -1371,6 +1383,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-004",
@@ -1396,6 +1409,11 @@
           "id": "MT-065",
           "number": 67,
           "url": "https://github.com/GonxKZ/mars-titan/issues/67"
+        },
+        {
+          "id": "MT-048",
+          "number": 50,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/50"
         }
       ]
     },
@@ -1420,6 +1438,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-013",
@@ -1454,6 +1473,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-006",
@@ -1469,6 +1489,11 @@
           "id": "MT-030",
           "number": 30,
           "url": "https://github.com/GonxKZ/mars-titan/issues/30"
+        },
+        {
+          "id": "MT-058",
+          "number": 60,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/60"
         }
       ]
     },
@@ -1493,6 +1518,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-023",
@@ -1578,6 +1604,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-029",
@@ -1612,6 +1639,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-035",
@@ -1642,6 +1670,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-035",
@@ -1672,6 +1701,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-023",
@@ -1721,6 +1751,7 @@
       ],
       "priority": "P2",
       "size": "M",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-038",
@@ -1750,6 +1781,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-016",
@@ -1775,6 +1807,11 @@
           "id": "MT-038",
           "number": 38,
           "url": "https://github.com/GonxKZ/mars-titan/issues/38"
+        },
+        {
+          "id": "MT-052",
+          "number": 54,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/54"
         }
       ]
     },
@@ -1799,6 +1836,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-001",
@@ -1848,6 +1886,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-041",
@@ -1902,6 +1941,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-042",
@@ -1936,6 +1976,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-003",
@@ -1990,6 +2031,7 @@
       ],
       "priority": "P0",
       "size": "M",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-002",
@@ -2029,6 +2071,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-040",
@@ -2069,6 +2112,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-004",
@@ -2114,6 +2158,7 @@
       ],
       "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-026",
@@ -2155,6 +2200,7 @@
       ],
       "priority": "P1",
       "size": "M",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-024",
@@ -2196,6 +2242,7 @@
       ],
       "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-019",
@@ -2225,7 +2272,8 @@
       "labels": [
         "comparativa",
         "modelos",
-        "rendimiento"
+        "rendimiento",
+        "opcional"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2234,8 +2282,9 @@
       "assignees": [
         "GonxKZ"
       ],
-      "priority": "P1",
+      "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-023",
@@ -2276,6 +2325,7 @@
       ],
       "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-030",
@@ -2306,7 +2356,8 @@
         "datos",
         "macroeconomia",
         "bibliografia",
-        "reproducibilidad"
+        "reproducibilidad",
+        "opcional"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2315,8 +2366,9 @@
       "assignees": [
         "GonxKZ"
       ],
-      "priority": "P1",
+      "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-003",
@@ -2342,7 +2394,8 @@
         "datos",
         "macroeconomia",
         "metodologia",
-        "reproducibilidad"
+        "reproducibilidad",
+        "opcional"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2351,8 +2404,9 @@
       "assignees": [
         "GonxKZ"
       ],
-      "priority": "P1",
+      "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-011",
@@ -2388,6 +2442,7 @@
       ],
       "priority": "P1",
       "size": "L",
+      "execution_role": "core",
       "dependencies": [
         {
           "id": "MT-005",
@@ -2423,6 +2478,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-010",
@@ -2463,6 +2519,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-004",
@@ -2508,6 +2565,7 @@
       ],
       "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-053",
@@ -2548,6 +2606,7 @@
       ],
       "priority": "P2",
       "size": "L",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-030",
@@ -2599,6 +2658,7 @@
       ],
       "priority": "P0",
       "size": "L",
+      "execution_role": "support",
       "dependencies": [
         {
           "id": "MT-004",
@@ -2623,7 +2683,8 @@
       "labels": [
         "datos",
         "fuentes-externas",
-        "integridad-academica"
+        "integridad-academica",
+        "opcional"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2632,8 +2693,9 @@
       "assignees": [
         "GonxKZ"
       ],
-      "priority": "P1",
+      "priority": "P2",
       "size": "M",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-005",
@@ -2665,6 +2727,7 @@
       ],
       "priority": "P2",
       "size": "M",
+      "execution_role": "extension",
       "dependencies": [
         {
           "id": "MT-011",
@@ -2677,6 +2740,69 @@
           "url": "https://github.com/GonxKZ/mars-titan/issues/68"
         }
       ]
+    },
+    {
+      "id": "MT-068",
+      "number": 70,
+      "node_id": "I_kwDOUgbuHs8AAAABSBW-eA",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/70",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7qag8",
+      "milestone": "O6",
+      "milestone_number": 6,
+      "labels": [
+        "reproducibilidad",
+        "rendimiento",
+        "opcional"
+      ],
+      "status": "En curso",
+      "issue_state": "open",
+      "state_reason": null,
+      "closed_at": null,
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P1",
+      "size": "L",
+      "execution_role": "extension",
+      "dependencies": [
+        {
+          "id": "MT-001",
+          "number": 1,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/1"
+        }
+      ]
+    },
+    {
+      "id": "MT-069",
+      "number": 71,
+      "node_id": "I_kwDOUgbuHs8AAAABSBXCxQ",
+      "url": "https://github.com/GonxKZ/mars-titan/issues/71",
+      "project_item_id": "PVTI_lAHOBFgeDs4Bj8Oqzg7qakM",
+      "milestone": null,
+      "milestone_number": null,
+      "labels": [
+        "transversal",
+        "metodologia",
+        "reproducibilidad"
+      ],
+      "status": "En revisión",
+      "issue_state": "open",
+      "state_reason": null,
+      "closed_at": null,
+      "assignees": [
+        "GonxKZ"
+      ],
+      "priority": "P0",
+      "size": "L",
+      "execution_role": "support",
+      "dependencies": [
+        {
+          "id": "MT-001",
+          "number": 1,
+          "url": "https://github.com/GonxKZ/mars-titan/issues/1"
+        }
+      ]
     }
-  ]
+  ],
+  "repository_visibility": "public"
 }

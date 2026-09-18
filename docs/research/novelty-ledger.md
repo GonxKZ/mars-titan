@@ -6,7 +6,7 @@ Estado: propuestas contrastables. No hay una mejora experimental demostrada ni u
 
 | ID | Pregunta concreta | Antecedentes próximos | Diferencia propuesta | Qué la refutaría |
 | --- | --- | --- | --- | --- |
-| N1 | ¿La retención por diversidad y error maduro mejora la recuperación útil frente a un buffer uniforme del mismo tamaño? | CLS, replay, DER, Latent Replay, Titans, MIRAS y memoria financiera. | Selección sobre predicciones realmente emitidas, errores maduros, disponibilidad de eventos y revisitas de régimen, con igual número de bytes y escrituras. | El buffer aleatorio o uniforme iguala o mejora el error y la adaptación, o el efecto desaparece al igualar cómputo. |
+| N1 | ¿La retención por sorpresa (error maduro, anomalía y relevancia económica), con diversidad adicional, mejora la predicción frente a un buffer uniforme del mismo tamaño? | CLS, replay, DER, Latent Replay, Titans, MIRAS y memoria financiera, incluido TRA para el uso de errores históricos. | Selección sobre predicciones realmente emitidas, anomalías calculadas con pasado y eventos publicados, con ablaciones de cada componente e igual presupuesto de bytes y escrituras. La diversidad no sustituye la anomalía. | El buffer aleatorio o uniforme iguala o mejora el error y la adaptación, o el efecto desaparece al igualar cómputo. Mejorar solo la recuperación no confirma utilidad predictiva. |
 | N2 | ¿Asignar hasta cuatro pasos de lectura según información observable mejora la frontera de error y latencia? | ACT, PonderNet, Universal Transformer, recurrencia latente, RD-VLA y TTC. | Política pequeña condicionada por eventos financieros disponibles, evaluada con calibración de la política completa. | K fijo o una puerta sencilla domina en error, cobertura y p99. La convergencia latente no cuenta como confirmación. |
 | N3 | ¿La selección de recuerdos y la política de recurrencia se complementan? | Combinaciones de memoria y cómputo adaptativo ya publicadas, incluido TIEM como antecedente financiero cercano. | Contraste factorial de retención básica/propuesta y puerta básica/propuesta sobre retorno residual bajo presupuesto. | La interacción no es estable entre ventanas o se explica por más actualizaciones, datos o capacidad. |
 | N4 | ¿Un alumno de un paso conserva una mejora del profesor recurrente con menor latencia? | Destilación, DER y refinamiento recurrente. | Transferencia de una política numérica financiera con cortes verificables, coste total del profesor y recalibración independiente. | K = 1 directo es igual o mejor, o la ventaja de tiempo desaparece al contabilizar preparación y recuperación de memoria. |
@@ -15,7 +15,7 @@ N1 constituye la opción principal. N2 puede entrar con una decisión temprana d
 
 ## Diseño mínimo para N1 y N2
 
-Se conservarán el mismo codificador, entradas, objetivo residual, particiones y presupuesto de búsqueda. Para N1 se comparan ausencia de memoria, memoria uniforme y memoria selectiva. Para N2 se comparan K = 1, 2 y 4, además de puertas solo si los pasos adicionales muestran valor durante desarrollo.
+Se conservarán el mismo codificador, entradas, objetivo residual, particiones y presupuesto de búsqueda. Para N1 se comparan ausencia de memoria, memoria uniforme, selección solo por error y selección por sorpresa completa. Esta última conserva error maduro, anomalía y relevancia económica conforme a O3. La diversidad se estudia por separado como criterio adicional, con escalas y pesos fijados en desarrollo. Para N2 se comparan K = 1, 2 y 4, además de puertas solo si los pasos adicionales muestran valor durante desarrollo.
 
 La especificación selectiva utiliza tres índices y un almacén único de episodios. Su puntuación de admisión se conserva, de modo que no se interpreta como una optimización continua de diversidad global. La capacidad se iguala en bytes, contabilizando claves, valores y referencias. Las claves fijas y los valores proyectados al leer evitan mezclar representaciones entrenables antiguas en el núcleo. Estas decisiones también deben declararse al compararlo con una memoria de claves aprendidas.
 
@@ -41,7 +41,9 @@ Estas deducciones ayudan a construir pruebas de invariancia y de consumo. El con
 
 ## Cómo se controla la afirmación de novedad
 
-Para cada comparación final se conservarán el artículo más cercano, su versión, objetivo, datos, política de memoria, regla de adaptación, calibración y coste. Se comprobarán especialmente SFM, DoubleAdapt, FinMem, FinAgent, FinCon, MacroHFT y TIEM, además de los trabajos de memoria y recurrencia general.
+Para cada comparación final se conservarán el artículo más cercano, su versión, objetivo, datos, política de memoria, regla de adaptación, calibración y coste. Se comprobarán especialmente SFM, DoubleAdapt, TRA, FinMem, FinAgent, FinCon, MacroHFT y TIEM, además de los trabajos de memoria y recurrencia general.
+
+[TRA](https://arxiv.org/html/2106.12950v2) impide presentar el uso de errores históricos para enrutar predicciones como una novedad general. Para O3 y O4 se distinguirá el efecto del régimen del efecto de recuperar errores, si esa entrada se incorpora. La incorporación bibliográfica no exige reproducir TRA ni ampliar el núcleo. El diseño seguirá contrastando retornos residuales con disponibilidad temporal y recursos comunes.
 
 Un componente basado en código ajeno se identifica y conserva su licencia. Una adaptación se describe mediante sus cambios verificables. La frase «no se ha probado antes» solo se sustituiría por una afirmación limitada al alcance y fecha de una búsqueda documentada, nunca por una garantía universal.
 

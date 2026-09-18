@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **111 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **80 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **112 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **81 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -40,7 +40,7 @@ Familias de consulta utilizadas:
 - Sistemas complementarios de aprendizaje, replay, separación de patrones, estabilidad, plasticidad y olvido adaptativo.
 - Profundidad recurrente, parada adaptativa, modelos de equilibrio y destilación.
 - Mamba, reglas delta, xLSTM, atención eficiente, MLA, MoE, Engram y restricciones de hardware.
-- FinMem, FinAgent, FinCon, MacroHFT y TIEM como antecedentes de memoria financiera.
+- TRA, FinMem, FinAgent, FinCon, MacroHFT y TIEM como antecedentes de memoria financiera y enrutamiento.
 
 Se priorizan fuentes primarias con autoría y versión verificables. Se distinguen artículos revisados por pares, preprints, documentación institucional, libros y divulgación. Se excluyen promesas de rentabilidad no comprobadas, copias sin procedencia, bibliografías automáticas con enlaces erróneos y material cuya descarga exige eludir controles.
 
@@ -55,14 +55,16 @@ uv run python scripts/fetch_references.py
 
 Los PDF se guardan en `docs/references/library/`, con nombres basados en identificadores bibliográficos. Esa carpeta está ignorada por Git. El script conserva archivos existentes, comprueba cabecera y marcador final, contrasta la longitud declarada y calcula SHA-256. Junto al PDF guarda un recibo de procedencia con URL, fecha y hash. Si cambia la URL o el archivo, la discrepancia se comunica y no se sobrescribe. Un archivo previo sin recibo se marca como `cached_unverified`, sin atribuirle la URL actual. Un límite de 128 MiB por documento evita descargas inesperadamente grandes.
 
-El [manifiesto de esta preparación](download-manifest.json) registra los 111 resultados, incluidos documentos disponibles solo como referencia. `cached` indica que el PDF ya estaba descargado al repetir la comprobación. La inspección con `pdfinfo` comprueba además que los archivos se pueden interpretar como PDF. Un hash acredita identidad de bytes, no la validez científica ni la licencia de un documento.
+El [manifiesto de esta preparación](download-manifest.json) registra los 112 resultados, incluidos documentos disponibles solo como referencia. La ampliación de TRA conserva los registros anteriores y añade su descarga con fecha, URL y hash propios. `cached` indica que el PDF ya estaba descargado al repetir la comprobación. La inspección con `pdfinfo` comprueba además que los archivos se pueden interpretar como PDF. Un hash acredita identidad de bytes, no la validez científica ni la licencia de un documento.
 
-El [registro de validación de archivos](../../reports/reference-validation.json) recoge la comprobación de los 80 PDF y las muestras visuales. La copia de Engram genera avisos de sintaxis al leer algunos metadatos, aunque el lector reconoce sus 35 páginas y la portada inspeccionada es legible. Se conserva el original y su hash, sin corregir silenciosamente el documento del autor.
+El [registro de validación de archivos](../../reports/reference-validation.json) conserva la comprobación inicial de 80 PDF y añade una revisión incremental de TRA, de 10 páginas, para un total local de 81 PDF. La ampliación comprueba el archivo nuevo y su portada, sin presentar la revisión anterior como repetida. La copia de Engram genera avisos de sintaxis al leer algunos metadatos, aunque el lector reconoce sus 35 páginas y la portada inspeccionada es legible. Se conserva el original y su hash, sin corregir silenciosamente el documento del autor.
 
 El historial de acceso distingue la versión consultada de la publicada. Por ejemplo, DLinear se cita como artículo AAAI de 2023, pero el PDF de consulta es el preprint arXiv v3 de 2022 porque la descarga editorial cerró la conexión. Los catálogos conservan esa diferencia.
 
 ## Derechos y uso académico
 
 El acceso gratuito no implica permiso para redistribuir. Los libros comerciales y artículos restringidos permanecen como fichas con su enlace oficial. Los PDF no se suben al repositorio y mantienen sus derechos originales. La bibliografía está preparada para su integración en la memoria, pero cada cita final debe corresponder a una lectura pertinente y a una afirmación que la fuente sostenga.
+
+TRA conserva una discrepancia de avisos: el [HTML arXiv v2](https://arxiv.org/html/2106.12950v2) indica CC BY 4.0, mientras la primera página del [PDF](https://arxiv.org/pdf/2106.12950v2) mantiene condiciones ACM para copia personal o docente y restricciones de republicación. Se documentan ambas fuentes y el estado de redistribución permanece sin resolver. La copia local no se incorpora al repositorio.
 
 Para cada lectura detallada, usar la [ficha de literatura](../../reports/literature-note.md). Registrar páginas, tarea original, datos, validación, resultados realmente publicados, límites y decisión que cambia en MARS-TITAN. No trasladar rendimientos de un paper al proyecto como si se hubieran reproducido.
