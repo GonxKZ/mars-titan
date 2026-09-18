@@ -13,7 +13,7 @@ sudo apt-get update
 sudo apt-get install -y --no-install-recommends git ripgrep cmake build-essential
 ```
 
-La integración continua instala explícitamente sus herramientas de sistema para no depender de que la imagen del ejecutor ya incluya ripgrep. uv gestiona las dependencias de Python por separado.
+Las herramientas de sistema se comprueban en el equipo local. uv gestiona las dependencias de Python por separado. No se configura integración continua en GitHub.
 
 La captura de [fuentes públicas](../data/public-source-updates.md) utiliza `curl`. La inspección de documentos PDF utiliza `pdfinfo`, incluido en `poppler-utils` en Debian y Ubuntu. Son requisitos adicionales de esas operaciones, no del entrenamiento ni de las pruebas sin red. El actualizador no instala programas, crea cuentas o activa tareas periódicas.
 
@@ -48,7 +48,7 @@ uv run --locked pytest
 uv run --locked python scripts/check_repository.py
 ```
 
-La integración continua con CPU se limita a estas herramientas y a la documentación. No ejecuta entrenamientos ni sustituye las comprobaciones de CUDA.
+Estas herramientas de mantenimiento se ejecutan localmente con CPU. No ejecutan entrenamientos ni sustituyen las comprobaciones de CUDA. GitHub Actions está desactivado.
 
 ## Equipo y entorno compartido
 

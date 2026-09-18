@@ -4,7 +4,6 @@
 
 Proyecto de investigación de **Gonzalo García Lama** · Máster Universitario en Inteligencia Artificial · UNIR · Trabajo individual de **Tipo 3: comparativa de soluciones**.
 
-[![Calidad](https://github.com/GonxKZ/mars-titan/actions/workflows/quality.yml/badge.svg)](https://github.com/GonxKZ/mars-titan/actions/workflows/quality.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
 
 [Tablero Kanban](https://github.com/users/GonxKZ/projects/4) · [Issues](https://github.com/GonxKZ/mars-titan/issues) · [Hitos](https://github.com/GonxKZ/mars-titan/milestones) · [Documentación](docs/README.md)
@@ -97,7 +96,7 @@ dataset/             Copia local existente de FinMultiTime, fuera de Git
 docs/                Investigación, ingeniería, normativa y bibliografía
 thesis/              Memoria de trabajo en LaTeX
 reports/             Plantillas de resultados y fichas de experimentos
-.github/             Integración continua y plantillas de revisión
+.github/             Planificación y plantillas de revisión
 ```
 
 ## Empezar
@@ -113,6 +112,8 @@ uv run ruff check .
 uv run ruff format --check .
 uv run python scripts/check_repository.py
 ```
+
+Las comprobaciones se ejecutan localmente antes de publicar cambios. GitHub Actions está desactivado y no hay flujos automáticos en el repositorio.
 
 Para preparar análisis y entrenamiento en Linux x86-64 con NVIDIA:
 

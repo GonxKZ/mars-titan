@@ -35,6 +35,7 @@
 - Mantener lógica reutilizable en `src/mars_titan/`, exploración en `notebooks/`, configuración en `configs/` y optimización nativa en `native/`.
 - C++/CUDA solo tras perfilado y con comparación numérica frente a una referencia Python. No añadir kernels sin evidencia de necesidad.
 - Comprobar calidad con `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest` y `uv run python scripts/check_repository.py`.
+- Ejecutar las comprobaciones localmente. No configurar ni activar GitHub Actions. Mantener las pruebas y la revisión previa a cada publicación sin automatizaciones en GitHub.
 - No versionar datasets, secretos, pesos, cachés, resultados voluminosos ni PDF de terceros sin permiso de redistribución.
 
 ## Git y GitHub
