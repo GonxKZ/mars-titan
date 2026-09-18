@@ -58,7 +58,7 @@ Se retiraron el flujo de calidad y su actualización automática por decisión d
 La comprobación del catálogo final y del Project confirma:
 
 - 64 tareas canónicas y 64 elementos en el tablero.
-- 61 tareas Pendiente y tres entregas de preparación en Hecho, MT-001, MT-068 y MT-069.
+- 61 tareas Pendiente y dos entregas de preparación en Hecho, MT-001 y MT-069. MT-068 está Bloqueado por la decisión sobre los automatismos internos de GitHub, aunque su web ya está publicada y verificada.
 - 183 dependencias nativas coincidentes con el grafo local, sin ciclos.
 - 20 etiquetas del catálogo aplicadas por contenido, seis hitos y 64 asignaciones a Gonzalo.
 - Cinco duplicadas cerradas como `not_planned`, con historial conservado y fuera del tablero activo.
@@ -73,4 +73,4 @@ La memoria LaTeX no se ha compilado y no sustituye la plantilla oficial del aula
 
 El repositorio se hizo público posteriormente por autorización expresa, tras revisar archivos versionados e historial. El tablero conserva su acceso privado. El rechazo anterior de protección de `main` correspondía al repositorio privado y al plan disponible entonces. No se ha contratado ningún servicio. Los datos, pesos y PDF de terceros siguen fuera de Git.
 
-Tras el cambio de visibilidad se activó la protección de `main`, incluida para administradores. Exige PR, historial lineal y conversaciones resueltas, y bloquea force-push y borrado de la rama. No exige comprobaciones de Actions ni aprobaciones de otro colaborador en este trabajo individual. Las pruebas siguen siendo locales y el único workflow configurado publica Pages.
+Tras el cambio de visibilidad se activó la protección de `main`, incluida para administradores. Exige PR, historial lineal y conversaciones resueltas, y bloquea force-push y borrado de la rama. No exige comprobaciones de Actions ni aprobaciones de otro colaborador en este trabajo individual. Las pruebas siguen siendo locales y el único workflow versionado publica Pages. La [verificación posterior de los automatismos internos](observatory.md#límite-de-los-automatismos-de-github) identifica una limitación pendiente de decisión. No se confunde la ausencia de otros YAML propios con la desactivación de todos los trabajos gestionados por GitHub.
