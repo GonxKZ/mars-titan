@@ -12,13 +12,14 @@ La documentación parte de la propuesta presentada y separa las obligaciones aca
 | Corregir la propuesta técnica inicial | [Revisión crítica del original](research/original-review.md). |
 | Trabajar con los datos | [Ficha de FinMultiTime](data/finmultitime-card.md) y [contrato temporal](data/data-contract.md). |
 | Estudiar variables macroeconómicas | [Catálogo de 140 candidatos](data/macro-catalog.md) y [mecanismos financieros](references/macro-review.md). |
+| Consultar datos complementarios adquiridos | [Fuentes públicas y nueve archivos verificados](data/free-data-sources.md). |
 | Diseñar y mantener la implementación futura | [Arquitectura](engineering/architecture.md), [entorno reproducible](engineering/reproducibility.md), [decisiones](engineering/decisions.md). |
 | Comprobar qué está preparado | [Verificación de la preparación](engineering/verification.md). |
 | Consultar el estado del arte | [Bibliografía y biblioteca](references/README.md), [finanzas](references/finance-review.md), [memoria neural](references/neural-review.md), [libros](references/books-review.md). |
 | Contrastar cerebro, recurrencia y eficiencia | [Aprendizaje y memoria](references/brain-review.md), [antecedentes recientes](references/frontier-review.md), [sistemas](references/systems-review.md) y [DeepSeek](references/deepseek-review.md). |
 | Dimensionar y retomar el trabajo | [Dataset por bloques](engineering/full-dataset-training.md), [latencia](engineering/latency-budget.md), [plan de cómputo](engineering/compute-plan.md) y [checkpoints](engineering/checkpoint-recovery.md). |
 | Evaluar ruido y fiabilidad | [Controles y límites](research/noise-and-reliability.md). |
-| Revisar los enlaces de redes sociales | [Posts financieros](references/social-finance.md) y [posts de arquitectura y rendimiento](references/social-neural.md). |
+| Revisar los enlaces de redes sociales | [Revisión inicial financiera](references/social-finance.md), [arquitectura y rendimiento](references/social-neural.md) y [ampliación de los ocho posts](references/social-followup.md). |
 | Preparar evidencias y redacción | [Plantillas de informes](../reports/README.md) y [memoria de trabajo](../thesis/README.md). |
 
 Cada cambio metodológico debe señalar qué decisión modifica y por qué. Las evidencias de ejecución tendrán un identificador y remitirán a datos, configuración y commit. Los archivos originales no se corrigen: sus revisiones se escriben por separado para conservar la trazabilidad.
