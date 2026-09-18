@@ -47,7 +47,7 @@ uv run --locked python scripts/check_repository.py
 cmake -S native -B native/build -DMARS_TITAN_ENABLE_CUDA=OFF
 ```
 
-El flujo [Quality del actualizador](https://github.com/GonxKZ/mars-titan/actions/runs/35388152845) terminó correctamente sobre el commit `06b960eb9eb4efa8fa46984c353acd52db4adf1e`. Los resultados posteriores se conservan en [GitHub Actions](https://github.com/GonxKZ/mars-titan/actions/workflows/quality.yml). Debe consultarse el commit de cada ejecución, ya que una comprobación correcta no valida cambios posteriores.
+Por decisión del proyecto, GitHub Actions está desactivado y se ha retirado su configuración, junto con la actualización automática de esas acciones. No había ejecuciones en curso ni en cola al desactivarlo. La validación se mantiene local y se repite antes de publicar. Los registros históricos de comprobaciones remotas no se eliminan ni se presentan como automatizaciones vigentes.
 
 ## Seguimiento contrastado en GitHub
 
@@ -67,4 +67,4 @@ No se ha entrenado ni comparado ningún modelo. No hay cifras propias de precisi
 
 La memoria LaTeX no se ha compilado y no sustituye la plantilla oficial del aula. Falta concretar esa plantilla y el calendario con la dirección. La cobertura máxima de la rúbrica dependerá de las evidencias científicas y de la defensa, no del volumen de documentación.
 
-El repositorio y el tablero permanecen privados. La protección de `main` no está activa porque GitHub la rechazó con el plan actual. Se conservan el flujo de calidad, las convenciones y la limitación documentada, sin cambiar la visibilidad ni contratar servicios.
+El repositorio y el tablero permanecen privados. La protección de `main` no está activa porque GitHub la rechazó con el plan actual. Se conservan los controles locales, las convenciones y la limitación documentada, sin cambiar la visibilidad ni contratar servicios.

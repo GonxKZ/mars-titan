@@ -28,13 +28,13 @@ Los estados del tablero son Pendiente, En curso, En revisión, Bloqueado y Hecho
 | GPU | RTX 4070 Laptop, 8.188 MiB, PyTorch compartido `2.14.0+cu130` y operación mínima en `cuda:0` comprobados. No se entrenó ningún modelo. |
 | Exclusiones de Git | Dataset, PDF locales, entorno virtual, pesos y resultados grandes excluidos. |
 
-La ejecución de [Quality sobre la base publicada](https://github.com/GonxKZ/mars-titan/actions/runs/35376345437) terminó correctamente en el commit `b3fb31d8e8fe2f8b6096e2d08a8141833248b914`. Las siguientes revisiones documentales vuelven a ejecutar ese mismo flujo. El trabajo puede consultarse en [GitHub Actions](https://github.com/GonxKZ/mars-titan/actions/workflows/quality.yml).
+La ejecución histórica de [Quality sobre la base publicada](https://github.com/GonxKZ/mars-titan/actions/runs/35376345437) terminó correctamente en el commit `b3fb31d8e8fe2f8b6096e2d08a8141833248b914`. Posteriormente se desactivó GitHub Actions por decisión del proyecto y se retiró su configuración. Este enlace conserva una evidencia anterior, no una automatización vigente. Las revisiones posteriores se realizan localmente.
 
 ## Configuración de GitHub y límites pendientes
 
-Se habilitaron las alertas de dependencias. Las acciones están fijadas por SHA y el mantenimiento de sus versiones queda configurado con Dependabot. El repositorio permite squash merge y solicita borrar ramas después de la integración. Los cambios se organizan en ramas convencionales.
+Se habilitaron las alertas de dependencias. La configuración inicial fijaba las acciones por SHA y programaba su mantenimiento. Esa automatización se ha retirado junto con GitHub Actions. El repositorio permite squash merge y solicita borrar ramas después de la integración. Los cambios se organizan en ramas convencionales.
 
-GitHub rechazó la activación de protección de `main` con HTTP 403 porque el plan actual no la permite en repositorios privados. La respuesta exige GitHub Pro o visibilidad pública. El repositorio conserva su visibilidad privada y no se afirma que la protección esté activa. El flujo de calidad y las reglas documentadas sí están disponibles.
+GitHub rechazó la activación de protección de `main` con HTTP 403 porque el plan actual no la permite en repositorios privados. La respuesta exige GitHub Pro o visibilidad pública. El repositorio conserva su visibilidad privada y no se afirma que la protección esté activa. Los controles locales y las reglas documentadas sí están disponibles.
 
 La plantilla del aula, las instrucciones específicas de formato y el calendario académico siguen pendientes de aportación y revisión con la dirección. La fuente LaTeX es una base de trabajo y no una plantilla oficial. No se ha comprobado su compilación porque no hay una distribución LaTeX instalada. Sus cinco claves de cita se han contrastado con la bibliografía.
 

@@ -4,7 +4,7 @@
 
 **Arquitectura:** monorrepositorio por responsabilidades. Datos y biblioteca local fuera de Git. Bibliografía, protocolos y código versionados.
 
-**Tecnologías:** Python con uv, CMake C/C++/CUDA, pytest, Ruff, Markdown, BibTeX, LaTeX y GitHub Actions.
+**Tecnologías:** Python con uv, CMake C/C++/CUDA, pytest, Ruff, Markdown, BibTeX y LaTeX. Comprobaciones locales, sin GitHub Actions.
 
 **Diseño:** [foundation-design.md](foundation-design.md).
 
@@ -20,7 +20,7 @@ Español académico natural. Autor Gonzalo García Lama. Seis objetivos sin carp
 - [x] Preparar CMake, controles de calidad, instrucciones Git y plantillas de contribución. Ejecutar configuración C/C++ y CUDA cuando el entorno lo permita.
 - [x] Escribir protocolo, arquitectura, plan de experimentos, riesgos, memoria inicial y README con diagramas explicados.
 - [x] Revisar enlaces locales, bibliografía, licencias, secretos y archivos grandes. Crear commits atómicos y publicar en `GonxKZ/mars-titan` privado.
-- [x] Comprobar el repositorio remoto y el resultado de GitHub Actions. Registrar límites pendientes de ejecución científica en el informe de verificación.
+- [x] Comprobar el repositorio remoto y los controles locales. Registrar límites pendientes de ejecución científica en el informe de verificación.
 
 ## Estado científico
 
