@@ -1,12 +1,12 @@
 # Verificación de la ampliación de investigación
 
-Autor: Gonzalo García Lama. Fecha: 18 de septiembre de 2026.
+Autor: Gonzalo García Lama. Revisión final: 19 de septiembre de 2026, Europe/Madrid.
 
-Esta revisión recoge la ampliación posterior a la [preparación inicial](verification.md). Distingue los documentos y herramientas comprobados de los modelos y experimentos que siguen pendientes. Las cifras anteriores se conservan como historial, no como inventario actual.
+Esta revisión recoge el estado de preparación de esta entrega. Distingue documentos y herramientas comprobados de modelos y experimentos pendientes. La [verificación inicial](verification.md) conserva el historial de la primera base publicada.
 
-La revisión operativa posterior está reflejada en la [guía de implementación](implementation-guide.md) y en el [tablero actual](../research/task-board.md). Incorpora 64 guías, 183 dependencias y TRA como antecedente adicional, con 112 referencias y 81 PDF locales. Las cifras de las tablas siguientes conservan la instantánea de la primera ampliación. No acreditan ejecución científica.
+La [guía de implementación](implementation-guide.md) y el [tablero](../research/task-board.md) recogen 64 guías y 183 dependencias. La biblioteca incorpora TRA como antecedente adicional y reúne 112 referencias y 81 PDF locales. Estos recuentos describen preparación, no ejecución científica.
 
-El [observatorio](https://gonxkz.github.io/mars-titan/) también está publicado y verificado. Su [informe](observatory.md) distingue 109 pruebas Python, 21 JavaScript y comprobaciones de navegador de cualquier resultado científico. La conexión del futuro entrenador, el historial completo y las ejecuciones reales siguen en sus tareas, no se dan por realizados por publicar una interfaz.
+El [observatorio](https://gonxkz.github.io/mars-titan/) también está publicado y verificado. Su [informe](observatory.md) distingue 112 pruebas Python, 21 JavaScript y comprobaciones de navegador de cualquier resultado científico. La conexión del futuro entrenador, el historial completo y las ejecuciones reales siguen en sus tareas, no se dan por realizados por publicar una interfaz.
 
 ## Investigación y alcance
 
@@ -22,9 +22,9 @@ La política de [recuperación](checkpoint-recovery.md) incluye optimizador, RNG
 
 | Elemento | Evidencia disponible | Límite |
 | --- | --- | --- |
-| Bibliografía | 111 identificadores concordantes entre nueve catálogos y sus BibTeX. | Revisión dirigida con fecha de corte, no lectura íntegra de todas las publicaciones. |
-| Biblioteca local | 80 PDF descargados, incluidos cinco libros, y 31 referencias sin PDF. | Los originales no se redistribuyen. Descarga no equivale a validación científica. |
-| Integridad de PDF | Los 80 archivos son interpretables por `pdfinfo`. Se inspeccionaron muestras visuales. | Engram conserva avisos de sintaxis en metadatos. El [registro](../../reports/reference-validation.json) los documenta. |
+| Bibliografía | 112 identificadores concordantes entre nueve catálogos y sus BibTeX. | Revisión dirigida con fecha de corte, no lectura íntegra de todas las publicaciones. |
+| Biblioteca local | 81 PDF descargados, incluidos cinco libros, y 31 referencias sin PDF. | Los originales no se redistribuyen. Descarga no equivale a validación científica. |
+| Integridad de PDF | 80 comprobaciones iniciales con `pdfinfo` y la verificación incremental de TRA, con muestras visuales. | Engram conserva avisos de sintaxis en metadatos. El [registro](../../reports/reference-validation.json) diferencia ambas revisiones. |
 | Contexto macro | 140 candidatos con dependencias válidas, de los que 64 tienen metadatos de serie contrastados, 70 son fórmulas derivadas y seis siguen pendientes de identificación completa. | No se ha calculado ni habilitado un panel de 140 entradas de entrenamiento. |
 | Primera captura pública | Nueve archivos válidos de ocho proveedores, 5.149.883 bytes y hashes registrados. | Ninguno es admisible automáticamente en el benchmark. La disponibilidad histórica sigue pendiente de auditoría. |
 | Posts aportados | [Ocho enlaces revisados](../references/social-followup.md), con acceso, recursos y límites documentados. | Las promesas de ganancias y las demostraciones sin operaciones reproducibles no son evidencia de rendimiento. |
@@ -33,7 +33,7 @@ El [catálogo público](../../data/catalogs/public-sources.json) conserva catorc
 
 ## Herramientas y comprobaciones
 
-Las utilidades ejecutables se limitan a biblioteca, verificación y adquisición de fuentes. No implementan muestras científicas, modelos, entrenamiento o evaluación de rentabilidad.
+Las utilidades ejecutables cubren biblioteca, verificación, adquisición de fuentes y seguimiento del observatorio. No implementan muestras científicas, modelos, entrenamiento o evaluación de rentabilidad.
 
 El [actualizador público](../data/public-source-updates.md) ofrece ocho fuentes renovables por defecto y selección explícita del PDF fijo de Apple. Conserva versiones, hashes y fallos, limita tiempo y bytes, valida formatos y suspende el host tras HTTP 403 o 429. No instala tareas programadas ni mezcla capturas nuevas con FinMultiTime. La prueba real se limita al RSS monetario oficial, además de las nueve adquisiciones iniciales ya registradas.
 
@@ -55,12 +55,12 @@ Se retiraron el flujo de calidad y su actualización automática por decisión d
 
 ## Seguimiento contrastado en GitHub
 
-La comprobación independiente del repositorio y del Project confirma:
+La comprobación del catálogo final y del Project confirma:
 
-- 62 tareas canónicas y 62 elementos en el tablero.
-- 61 tareas Pendiente y MT-001 en Hecho por la preparación original.
-- 177 dependencias nativas coincidentes con el grafo local, sin ciclos.
-- 20 etiquetas del catálogo aplicadas por contenido, seis hitos y 62 asignaciones a Gonzalo.
+- 64 tareas canónicas y 64 elementos en el tablero.
+- 61 tareas Pendiente y tres entregas de preparación en Hecho, MT-001, MT-068 y MT-069.
+- 183 dependencias nativas coincidentes con el grafo local, sin ciclos.
+- 20 etiquetas del catálogo aplicadas por contenido, seis hitos y 64 asignaciones a Gonzalo.
 - Cinco duplicadas cerradas como `not_planned`, con historial conservado y fuera del tablero activo.
 
 La [revisión del catálogo](../research/backlog-review.md) explica las consolidaciones. El [mapa remoto](../../.github/planning/remote-map.json) conserva identificadores y enlaces. Cerrar una duplicada no significa haber ejecutado su experimento. La existencia de un capturador tampoco completa por sí sola la tarea de integrar datos actualizados con control temporal.

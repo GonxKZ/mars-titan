@@ -127,7 +127,7 @@ No se introduce un segundo formato de checkpoint. `checkpoint` solo informa del 
 
 ## Verificación realizada
 
-La revisión final pasó 109 pruebas Python del repositorio, incluidas 55 del exportador, y 21 pruebas JavaScript. La prueba real de navegador ejercitó importación, filtros, CSV, teclado, móvil, impresión, recuperación de errores, caducidad y límites. Las correcciones de contrato se contrastaron mediante CLI real a Node y a navegador, no solo con fixtures independientes.
+La publicación pasó 109 pruebas Python del repositorio, incluidas 55 del exportador, y 21 pruebas JavaScript. El reproductor del benchmark añade tres pruebas de determinismo, integración y registro de fallos, para un total de 112 pruebas Python. La prueba real de navegador ejercitó importación, filtros, CSV, teclado, móvil, impresión, recuperación de errores, caducidad y límites. Las correcciones de contrato se contrastaron mediante CLI real a Node y a navegador, no solo con fixtures independientes.
 
 El [diagnóstico de complejidad y cobertura](../../reports/observatory-quality.json) registra la huella del exportador, Radon 6.0.1 y coverage.py 7.16.1. La cobertura de sentencias observada es del 87,38 % y la de ramas del 86,07 %. La estimación CRAP usa cobertura de sentencias por función, no cobertura de caminos base. El máximo observado de esa variante es 24,03. Es una señal para orientar revisión, no una garantía de corrección ni una medición de rendimiento. Las invocaciones de CLI se prueban en subprocesos, pero no están instrumentadas en esa captura de cobertura del proceso principal.
 
@@ -139,6 +139,18 @@ uv run --locked pytest tests/tooling/test_observatory.py
 
 Se probaron tres mutaciones dirigidas sobre copias temporales del módulo. Desactivar el sellado provocó tres fallos, copiar el diccionario privado produjo un fallo de filtración y omitir la validación de estados y fases provocó dos fallos. La implementación original permaneció intacta. Esta comprobación fue dirigida y no equivale a ejecutar una campaña con mutmut.
 
-El 18 de septiembre de 2026 se midió la utilidad en CPU con Python 3.12.14 y una fixture sintética de 32 estados, cada uno con 500 puntos. Cinco invocaciones reales de la CLI, incluyendo el arranque de Python, tardaron entre 0,1009 y 0,1033 segundos, con mediana de 0,1014 segundos. El máximo RSS de los procesos hijos fue de 26.828 KiB y la salida ocupó 1.430.395 bytes. La fixture se creó fuera del repositorio y se eliminó al terminar. Estos datos miden una exportación local acotada. No representan coste de entrenamiento, latencia de MARS-TITAN ni rendimiento de la GPU.
+## Benchmark reproducible del exportador
 
-La [repetición sobre la versión final](../../reports/observatory-benchmark.json), con el mismo tamaño de muestra sintética y cinco invocaciones, observó una mediana de 0,1026 segundos, máximo RSS hijo de 26.956 KiB y salida de 1.435.027 bytes. La diferencia de tamaño responde a la versión del catálogo y del contrato, no a datos financieros. Tampoco mide el efecto de ejecutar la utilidad a la vez que un entrenamiento. Esa comparación pertenece a la integración de MT-031.
+La medida de referencia está en [observatory-benchmark.json](../../reports/observatory-benchmark.json). Identifica comando, commit, versiones de Python y sistema, CPU, hashes del exportador, generador y fixture, límites e intentos fallidos. Sustituye las medidas preliminares basadas en ficheros temporales no reconstruibles, que permanecen en el historial de Git.
+
+Para repetir el procedimiento desde la revisión registrada:
+
+```bash
+uv run --locked python scripts/benchmark_observatory.py
+```
+
+El [reproductor](../../scripts/benchmark_observatory.py) genera 32 estados con 500 puntos cada uno. La generación es determinista, con fecha fija y sin RNG ni semilla aleatoria. Ejecuta cinco CLI reales, captura el RSS de esos hijos antes de consultar metadatos mediante otros procesos y elimina la fixture temporal. Un intento fallido se registra y no se convierte en tiempo de una exportación válida.
+
+La ejecución registrada sobre `ce4cee89756f4b74ff4ae98db38f18364ab3cad8`, con fuentes medidas sin cambios, observó una mediana de 0,1140 segundos, máximo RSS hijo de 32.000 KiB y salida de 1.319.283 bytes. No hubo intentos fallidos en esa medida. Se usaron CPython 3.12.14, Linux x86-64 con kernel 7.0.0-31-generic y AMD Ryzen 9 8945HS. Los tiempos incluyen arranque Python y exportación, no la comprobación posterior del JSON.
+
+No se fija el gobernador de CPU ni se controla temperatura o carga concurrente, y no se purga la caché entre repeticiones. Por ello no se promete repetir exactamente los tiempos ni se comparan como mejora frente a fixtures anteriores distintas. La medida no representa entrenamiento, latencia del predictor o rendimiento de GPU. El efecto de la telemetría durante un entrenamiento corresponde a MT-031.
