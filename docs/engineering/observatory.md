@@ -105,6 +105,8 @@ La interfaz debe separar estado declarado y salud observada. Un `running` con `h
 
 ## Límites y publicación íntegra
 
+La instantánea no es el archivo maestro. El exportador conserva el intento actual de cada ejecución seleccionada. MT-031 deberá guardar todos los intentos y eventos en el registro privado, aunque el resumen visible cambie. Si la campaña supera el límite de ejecuciones, se preparará un directorio de estados seleccionados para `--input-dir`, por ejemplo por campaña o periodo, sin borrar ni mover los originales para satisfacer el límite. La utilidad falla ante exceso en vez de ocultar filas silenciosamente. El frontend puede mostrar varios intentos de un resumen agregado válido, pero esta primera utilidad no reconstruye ese archivo desde los logs completos.
+
 Los límites predeterminados son 128 ejecuciones, 256 KiB por estado, 500 puntos públicos por historial, 8 MiB de salida y cinco segundos de presupuesto de procesamiento. La profundidad máxima del JSON es 16 y se inspeccionan como máximo cuatro veces el límite de ejecuciones en entradas directas del directorio. Se rechazan claves JSON duplicadas, archivos especiales y enlaces simbólicos. No se leen los logs completos.
 
 `--max-runs`, `--max-file-bytes` y `--max-output-bytes` permiten reducir los límites. `--timeout-seconds` admite un valor positivo de hasta 30 segundos. El presupuesto se comprueba durante el procesamiento y antes del reemplazo. No constituye una garantía de respuesta ante un sistema de archivos bloqueado por el sistema operativo.

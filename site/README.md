@@ -50,6 +50,8 @@ La importación local detiene la consulta pública y conserva el archivo solo en
 
 ## Organización
 
+El historial visible corresponde a los resúmenes de la instantánea seleccionada. No representa todo el archivo científico. El exportador inicial mantiene el intento actual por ejecución. Los intentos anteriores y eventos completos se conservan en el registro privado que gestionará MT-031, sin cargarlos todos en el navegador.
+
 - `state.mjs` contiene validación y funciones puras de estado, comparación y CSV.
 - `app.js` conecta controles, lectura del resumen y actualización del DOM.
 - `index.html` y `styles.css` definen contenido accesible, diseño adaptable e impresión.
