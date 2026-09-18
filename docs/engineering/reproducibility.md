@@ -15,6 +15,8 @@ sudo apt-get install -y --no-install-recommends git ripgrep cmake build-essentia
 
 La integración continua instala explícitamente sus herramientas de sistema para no depender de que la imagen del ejecutor ya incluya ripgrep. uv gestiona las dependencias de Python por separado.
 
+La captura de [fuentes públicas](../data/public-source-updates.md) utiliza `curl`. La inspección de documentos PDF utiliza `pdfinfo`, incluido en `poppler-utils` en Debian y Ubuntu. Son requisitos adicionales de esas operaciones, no del entrenamiento ni de las pruebas sin red. El actualizador no instala programas, crea cuentas o activa tareas periódicas.
+
 Python se gestiona con uv. El entorno local será `.venv/`, con Python 3.12 como versión de trabajo. `pyproject.toml` declara los grupos de dependencias y `uv.lock` conserva la resolución. La opción `package = false` indica que el repositorio aún no se construye ni se instala como un paquete Python.
 
 Para preparar las herramientas de documentación y calidad:
