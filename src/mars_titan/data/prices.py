@@ -12,7 +12,7 @@ def read_prices(path: Path, clock: MarketClock) -> tuple[pd.DataFrame, dict]:
     frame = pd.read_csv(path, dtype={"Date": str})
     required = ["Open", "High", "Low", "Close", "Volume"]
     if not {"Date", *required} <= set(frame.columns):
-        raise ValueError(f"Missing OHLCV columns in {path.name}")
+        raise ValueError(f"Faltan columnas OHLCV en {path.name}")
     frame["session"] = frame["Date"].str[:10]
     values = frame[required].apply(pd.to_numeric, errors="coerce")
     duplicates = frame["session"].duplicated(keep=False)

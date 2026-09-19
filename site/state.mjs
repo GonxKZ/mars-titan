@@ -5,7 +5,7 @@ export const STATUS_LABELS = Object.freeze({
 
 export const PHASE_LABELS = Object.freeze({
   prepare: "Preparación", train: "Entrenamiento", validation: "Validación",
-  calibration: "Calibración", test: "Test final", evaluation: "Evaluación",
+  calibration: "Calibración", test: "Prueba final", evaluation: "Evaluación",
 });
 
 export const METRIC_KEYS = Object.freeze([

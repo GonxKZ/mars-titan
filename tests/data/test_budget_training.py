@@ -12,14 +12,14 @@ def training_module():
     try:
         return importlib.import_module("mars_titan.budget_training")
     except ModuleNotFoundError:
-        pytest.fail("Missing supervised budget training")
+        pytest.fail("Falta el entrenamiento supervisado de medición")
 
 
 @pytest.mark.parametrize("kind", ["mlp", "gru"])
 def test_real_labels_update_all_modalities_and_resume_exactly(tmp_path, kind):
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
-        pytest.skip("CUDA unavailable, no CPU fallback")
+        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
     from mars_titan.profiling import CostProbe
 
     module = training_module()
@@ -48,7 +48,7 @@ def test_real_labels_update_all_modalities_and_resume_exactly(tmp_path, kind):
     assert torch.equal(torch.rand(2, device="cuda:0"), expected_random[2])
     module.train_step(model, optimizer, batch, torch.device("cuda:0"))
     assert all(torch.equal(expected[name], p) for name, p in model.named_parameters())
-    with pytest.raises(ValueError, match="inputs|configuration"):
+    with pytest.raises(ValueError, match="entradas|configuración"):
         module.load_checkpoint(path, model, optimizer, config={"seed": 43}, hashes={"input": "abc"})
 
 
@@ -83,7 +83,7 @@ def test_partition_requires_target_maturity_before_training_cutoff():
 def test_validation_counts_partial_batches_without_updating_weights():
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
-        pytest.skip("CUDA unavailable, no CPU fallback")
+        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
     from mars_titan.profiling import CostProbe
 
     module = training_module()
@@ -101,7 +101,7 @@ def test_validation_counts_partial_batches_without_updating_weights():
     assert result["samples"] == 4 and result["steps"] == 2
     assert result["elapsed_seconds"] > 0 and result["step_p99_ms"] > 0
     assert all(torch.equal(before[name], p) for name, p in model.named_parameters())
-    with pytest.raises(ValueError, match="No usable"):
+    with pytest.raises(ValueError, match="No hay muestras supervisadas"):
         module.run_epoch(model, None, [], torch.device("cuda:0"))
 
 
@@ -131,7 +131,7 @@ def test_labeled_records_exclude_missing_targets_and_other_partition():
 
 @pytest.mark.parametrize("options", [{"epochs": 0}, {"panel_sizes": [3]}, {"kinds": ["unknown"]}])
 def test_budget_run_rejects_invalid_workload_before_touching_data(tmp_path, options):
-    with pytest.raises(ValueError, match="workload"):
+    with pytest.raises(ValueError, match="carga"):
         training_module().train_budget_grid(
             tmp_path / "missing", tmp_path / "report.json", tmp_path / "out", **options
         )

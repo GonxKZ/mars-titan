@@ -85,7 +85,7 @@ def test_preparation_refuses_source_path_escape(tmp_path):
     source = tmp_path / "dataset"
     source.mkdir()
     entry = {"symbol": "A", "paths": {"prices": ["../other.csv"]}}
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         module.prepare_asset(
             source, tmp_path / "prepared", entry, MarketClock("US", "2024-01-01", "2024-12-31")
         )
@@ -93,7 +93,7 @@ def test_preparation_refuses_source_path_escape(tmp_path):
 
 def test_preparation_refuses_output_inside_source(tmp_path):
     module = preparation_module()
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         module.prepare_asset(
             tmp_path,
             tmp_path / "prepared",

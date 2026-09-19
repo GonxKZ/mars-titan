@@ -97,7 +97,7 @@ def main() -> int:
         clock = MarketClock(panel["market"], start, args.end)
         assets = panel["assets"][: args.limit] if args.limit is not None else panel["assets"]
         if args.limit is not None and args.limit < 1:
-            raise ValueError("limit must be positive")
+            raise ValueError("limit debe ser positivo")
         summaries = []
         for asset in assets:
             item = prepare_asset(args.source, args.output, asset, clock)

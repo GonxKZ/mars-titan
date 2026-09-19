@@ -11,7 +11,7 @@ from .temporal import MarketClock
 def _aligned_returns(frame, sessions, cutoff):
     frame = frame.loc[frame.session <= cutoff].copy()
     if frame.session.duplicated().any():
-        raise ValueError("Duplicate target price session")
+        raise ValueError("Hay una sesión de precios duplicada en las etiquetas")
     frame = frame.set_index("session").reindex(sessions)
     values = frame[["open", "close"]].to_numpy(dtype=float)
     valid = np.isfinite(values).all(axis=1) & (values > 0).all(axis=1)
@@ -32,7 +32,7 @@ def residual_targets(
 ) -> pd.DataFrame:
     """OLS con intercepto, ventana de sesiones y maduración anterior al corte."""
     if not 2 <= minimum <= history:
-        raise ValueError("Invalid residual history")
+        raise ValueError("El historial para calcular el residual no es válido")
     end = date.fromisoformat(cutoff)
     sessions = [d.isoformat() for d in clock.days if d <= end]
     stock, stock_at = _aligned_returns(asset, sessions, cutoff)

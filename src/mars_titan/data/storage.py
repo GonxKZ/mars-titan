@@ -9,7 +9,7 @@ from pathlib import Path
 
 def outside_source(source: Path, destination: Path) -> None:
     if destination.resolve().is_relative_to(source.resolve()):
-        raise ValueError("Output must be outside the source directory")
+        raise ValueError("La salida debe estar fuera del directorio de origen")
 
 
 def sha256(path: Path) -> str:

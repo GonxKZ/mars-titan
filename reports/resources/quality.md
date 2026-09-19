@@ -5,6 +5,9 @@ El 19 de septiembre de 2026 pasaron 317 pruebas locales, sin omisiones, en
 El [registro estructurado](quality.json) conserva herramientas, cobertura,
 complejidad, hashes de código y las variantes de fallo comprobadas.
 
+Esta captura corresponde a la revisión `7d2e21d324104491db8c1d6589d08b799c7653cc`.
+Los hashes y porcentajes describen ese código, no las traducciones posteriores.
+
 ## Comportamiento comprobado
 
 La suite cubre inventario reanudable, integridad de originales, calendarios,

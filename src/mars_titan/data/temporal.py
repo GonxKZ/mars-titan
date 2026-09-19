@@ -10,7 +10,7 @@ REQUIRED_INPUTS = ("prices", "news", "fundamentals", "charts", "macro")
 
 def aware(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError("Timestamp must have an explicit timezone")
+        raise ValueError("La fecha debe incluir una zona horaria explícita")
     return value.astimezone(UTC)
 
 
@@ -19,7 +19,7 @@ class MarketClock:
 
     def __init__(self, market: str, start: str, end: str):
         if market not in {"US", "CN"}:
-            raise ValueError(f"Unsupported market: {market}")
+            raise ValueError(f"Mercado no admitido: {market}")
         self.market = market
         calendar = xcals.get_calendar("XNYS" if market == "US" else "XSHG", start=start, end=end)
         self.days = [label.date() for label in calendar.sessions]
@@ -34,14 +34,16 @@ class MarketClock:
         try:
             return self._by_day[key]
         except KeyError as error:
-            raise ValueError(f"Not a supported {self.market} session: {key}") from error
+            raise ValueError(
+                f"La fecha {key} no es una sesión admitida de {self.market}"
+            ) from error
 
     def date_available(self, day: str, lag: int = 1) -> datetime:
         if lag < 1:
-            raise ValueError("Date-only lag must be at least one session")
+            raise ValueError("El retardo de una fecha sin hora debe ser de al menos una sesión")
         index = bisect_right(self.days, date.fromisoformat(day)) + lag - 1
         if index >= len(self.days):
-            raise ValueError(f"Publication {day} falls outside calendar coverage")
+            raise ValueError(f"La publicación {day} queda fuera de la cobertura del calendario")
         return self.decisions[index]
 
 

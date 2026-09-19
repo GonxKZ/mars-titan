@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "date": "2026-09-19",
-  "scope": "src/mars_titan measured by the full local test suite, excluding separate timed real-data runs",
+  "scope": "src/mars_titan medido con la suite local completa, sin incluir las ejecuciones temporizadas independientes con datos reales",
   "tests": {
     "passed": 317,
     "skipped": 0,
@@ -27,7 +27,7 @@
     "percent_branches_covered": 71.78841309823677,
     "percent_branches_covered_display": "72"
   },
-  "crap_convention": "C = Radon function or method cyclomatic complexity. c = coverage.py statement coverage for that named function. CRAP = C^2*(1-c)^3+C. Class aggregates and nested closures are not separately scored.",
+  "crap_convention": "C es la complejidad ciclomática de cada función o método según Radon. c es su cobertura de sentencias según coverage.py. CRAP = C^2*(1-c)^3+C. No se puntúan por separado los agregados de clases ni las funciones anidadas.",
   "files": {
     "src/mars_titan/__init__.py": {
       "sha256": "a415fcbfb61c32b5008c05ce3a368fbadb67e515caf0c1b510aa375bc3313fe0",
@@ -1284,7 +1284,7 @@
   "targeted_mutations": [
     {
       "scope": "data-guard-mutants",
-      "method": "Manual source mutation in memory, one isolated subprocess per mutant. No production file changed. Two cases intentionally disable redundant guards together.",
+      "method": "Mutación manual del código en memoria, con un subproceso aislado por variante. Las pruebas no modificaron archivos de producción. Dos casos desactivan varias guardas redundantes a la vez.",
       "mutants": 11,
       "killed": 11,
       "results": [
@@ -1380,7 +1380,7 @@
     },
     {
       "scope": "budget-integration-mutants",
-      "method": "Source mutation in memory, isolated subprocess per mutant, real CUDA and synthetic files in pytest tmp_path. The optimizer case changes both uninterrupted and resumed training calls.",
+      "method": "Mutación del código en memoria, con un subproceso aislado por variante, CUDA real y archivos sintéticos en tmp_path de pytest. El caso del optimizador modifica las llamadas de entrenamiento continuo y reanudado.",
       "mutants": 4,
       "killed": 4,
       "results": [

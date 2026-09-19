@@ -102,7 +102,7 @@ def test_materialization_reuses_only_the_same_preparation_calendar(tmp_path, enc
         assert reused["assets"][0]["reused"] is True
         changed = MarketClock("US", "2024-01-01", "2024-12-31")
         changed.decisions = [value + timedelta(minutes=1) for value in changed.decisions]
-        with pytest.raises(ValueError, match="calendar"):
+        with pytest.raises(ValueError, match="calendario"):
             materialize_samples(*args, changed, FixtureEncoders(), cache)
     finally:
         cache.close()
@@ -175,10 +175,12 @@ def test_cli_validates_encoding_inputs_before_initializing_dependencies(
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        embeddings, "FrozenEncoders", lambda: pytest.fail("encoders initialized before validation")
+        embeddings,
+        "FrozenEncoders",
+        lambda: pytest.fail("Los codificadores se inicializaron antes de validar"),
     )
     monkeypatch.setattr(
-        embeddings, "EmbeddingCache", lambda path: pytest.fail("cache opened before validation")
+        embeddings, "EmbeddingCache", lambda path: pytest.fail("La caché se abrió antes de validar")
     )
     source, asset = write_inputs(tmp_path)
     prepared = tmp_path / "prepared"
@@ -213,7 +215,7 @@ def test_cli_validates_encoding_inputs_before_initializing_dependencies(
             "2024-12-31",
         ],
     )
-    with pytest.raises(ValueError, match="source|overwrite|calendar"):
+    with pytest.raises(ValueError, match="origen|sobrescribir|calendario"):
         cli.main()
     assert not cache.exists()
     assert manifest.read_bytes() == previous
@@ -247,7 +249,7 @@ def test_materialization_protects_prepared_manifests_through_output_symlinks(
     write_macro(macro_path, clock)
     cache = EmbeddingCache(tmp_path / "cache.sqlite")
     try:
-        with pytest.raises(ValueError, match="source"):
+        with pytest.raises(ValueError, match="origen"):
             materialize_samples(
                 prepared, macro_path, output, {"assets": [asset]}, clock, FixtureEncoders(), cache
             )

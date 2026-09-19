@@ -44,7 +44,7 @@ def select_verification_pilot(
 ) -> dict:
     outside_source(source, output)
     if size < 1 or minimum_samples < 1:
-        raise ValueError("Pilot size and minimum history must be positive")
+        raise ValueError("El tamaño del piloto y su historial mínimo deben ser positivos")
     cutoff = datetime.fromisoformat(selection_date).replace(tzinfo=UTC, hour=23, minute=59)
     grouped = {}
     for row in entries(database):
@@ -95,7 +95,9 @@ def select_verification_pilot(
         if len(selected) == size:
             break
     if len(selected) != size:
-        raise ValueError("Insufficient original four-modality coverage for requested pilot")
+        raise ValueError(
+            "La cobertura original de las cuatro modalidades no basta para el piloto solicitado"
+        )
     result = {
         "market": "US",
         "purpose": "verification_pilot_not_confirmatory_universe",

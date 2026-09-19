@@ -105,7 +105,7 @@ test("acota el registro a 128 ejecuciones y 500 puntos por curva", () => {
   assert.throws(() => validateSnapshot(snapshot([run({ total_steps: 600, completed_steps: 600, history })])), /history/);
 });
 
-test("valida avance, checkpoint y orden de historia para evitar progreso engañoso", () => {
+test("valida avance, punto de control y orden de historia para evitar progreso engañoso", () => {
   assert.throws(() => validateSnapshot(snapshot([run({ completed_steps: 101 })])), /completed_steps/);
   assert.throws(() => validateSnapshot(snapshot([run({ checkpoint: { step: 26, saved_at: "2026-09-18T19:30:00Z", resumable: true } })])), /checkpoint/);
   assert.throws(() => validateSnapshot(snapshot([run({ history: [
@@ -139,7 +139,7 @@ test("rechaza puntos de historia que pertenezcan a otro intento o fase", () => {
   }
 });
 
-test("un heartbeat antiguo, ausente o futuro no equivale a una ejecución pausada", () => {
+test("una señal de actividad antigua, ausente o futura no equivale a una ejecución pausada", () => {
   assert.equal(displayStatus(run(), NOW, 180), "running");
   assert.equal(displayStatus(run({ heartbeat_at: "2026-09-18T19:50:00Z" }), NOW, 180), "stale");
   assert.equal(displayStatus(run({ heartbeat_at: null }), NOW, 180), "stale");
@@ -155,7 +155,7 @@ test("el progreso desconocido no se representa como cero ni divide por cero", ()
   assert.equal(progressPercent(run({ completed_steps: 0 })), 0);
 });
 
-test("el test cerrado oculta métricas y curva incluso si el archivo incluye valores", () => {
+test("la prueba final cerrada oculta métricas y curva aunque el archivo incluya valores", () => {
   const hidden = run({ phase: "test", metrics: metrics({ mae: 0.001, loss: 0.002 }),
     history: [{ step: 1, recorded_at: "2026-09-18T19:00:00Z", loss: 0.2, mae: 0.01 }] });
   assert.equal(publicMetrics(hidden).mae, null);

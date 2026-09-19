@@ -21,10 +21,10 @@ def _step(model, optimizer, batch, device):
     batch = {key: value.to(device, non_blocking=True) for key, value in batch.items()}
     optimizer.zero_grad(set_to_none=True)
     output = model(batch)
-    # Synthetic zero targets measure backward cost, never predictive accuracy.
+    # Las etiquetas sintéticas nulas miden retropropagación, no precisión predictiva.
     loss = output.square().mean()
     if not torch.isfinite(loss):
-        raise ValueError("Nonfinite cost-probe loss")
+        raise ValueError("La pérdida de la sonda de coste no es finita")
     loss.backward()
     optimizer.step()
 
@@ -35,7 +35,7 @@ class CostProbe(nn.Module):
     def __init__(self, kind: str, dimensions: dict[str, int], context: int = 64):
         super().__init__()
         if kind not in {"mlp", "gru"} or set(dimensions) != set(MODALITIES):
-            raise ValueError("Invalid cost probe or modalities")
+            raise ValueError("La sonda de coste o sus modalidades no son válidas")
         self.kind = kind
         self.price_encoder = (
             nn.GRU(dimensions["prices"], 32, batch_first=True)
@@ -55,7 +55,7 @@ class CostProbe(nn.Module):
 
     def forward(self, inputs: dict[str, torch.Tensor]) -> torch.Tensor:
         if set(inputs) != set(MODALITIES):
-            raise ValueError("All four modalities and macro are required")
+            raise ValueError("Se requieren las cuatro modalidades y el contexto macro")
         if self.kind == "gru":
             _, hidden = self.price_encoder(inputs["prices"])
             price = hidden[-1]
@@ -85,7 +85,7 @@ def project_cost(
     *, samples: int, seconds_per_sample: float, epochs: int, folds: int, seeds: int, models: int
 ) -> dict:
     if min(samples, seconds_per_sample, epochs, folds, seeds, models) <= 0:
-        raise ValueError("Projection inputs must be positive")
+        raise ValueError("Las entradas de la proyección deben ser positivas")
     return {
         "training_seconds": samples * seconds_per_sample * epochs * folds * seeds * models,
         "architecture_scope": "measured_cost_probes_only",
@@ -110,7 +110,7 @@ def profile_case(
     repeat: int = 0,
 ) -> dict:
     if not paths or min(batch_size, steps) < 1 or workers not in {0, 2, 4}:
-        raise ValueError("Invalid profiling workload")
+        raise ValueError("La carga de perfilado no es válida")
     device = require_cuda()
     torch.manual_seed(42 + repeat)
     torch.set_num_threads(4)
@@ -125,7 +125,7 @@ def profile_case(
     iterator = iter(loader)
     first = next(iterator, None)
     if first is None:
-        raise ValueError("No complete multimodal samples before profiling cutoff")
+        raise ValueError("No hay muestras multimodales completas antes del corte de perfilado")
     dimensions = {key: value.shape[-1] for key, value in first.items()}
     model = CostProbe(kind, dimensions).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
@@ -146,7 +146,7 @@ def profile_case(
         latencies.append(time.perf_counter() - started)
         samples += batch["prices"].shape[0]
     if not samples:
-        raise ValueError("Too few samples for a measured step after warmup")
+        raise ValueError("Faltan muestras para medir un paso tras el calentamiento")
     elapsed = sum(latencies)
     ordered = sorted(latencies)
     result = {
@@ -177,7 +177,7 @@ def profile_case(
         "torch": torch.__version__,
         "cuda": torch.version.cuda,
     }
-    # Finish file readers naturally before worker processes shut down.
+    # Agotar los lectores antes de terminar los procesos trabajadores.
     for _ in iterator:
         pass
     del iterator, loader, optimizer, model, first, batch

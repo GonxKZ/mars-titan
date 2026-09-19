@@ -71,16 +71,16 @@ def macro_vector(rows: list[dict], cutoff: datetime) -> tuple[list[float], datet
     cutoff = aware(cutoff)
     known = [r for r in rows if r["value"] is not None]
     if not known:
-        raise ValueError("No observed macro context at this decision")
+        raise ValueError("No hay contexto macro observado en esta decisión")
     if any(not math.isfinite(r["value"]) for r in known):
-        raise ValueError("Macro context must contain finite observations")
+        raise ValueError("El contexto macro debe contener observaciones finitas")
     if any(r.get("available_at") is None for r in known):
-        raise ValueError("Observed macro value without availability")
+        raise ValueError("Hay un valor macro observado sin fecha de disponibilidad")
     if any(aware(r["available_at"]) > cutoff for r in known):
-        raise ValueError("Macro context contains future information")
+        raise ValueError("El contexto macro contiene información futura")
     rows = sorted(rows, key=lambda r: r["indicator_id"])
     if len({r["indicator_id"] for r in rows}) != len(rows):
-        raise ValueError("Duplicate macro indicator at decision")
+        raise ValueError("Hay un indicador macro duplicado en la decisión")
     ages = [
         (cutoff - aware(r["available_at"])).total_seconds() / 86400
         if r.get("available_at")
@@ -100,7 +100,7 @@ def eligible_samples(
     news_lookback_sessions: int = 5,
 ):
     if context < 2 or news_lookback_sessions < 1:
-        raise ValueError("Invalid context or news lookback")
+        raise ValueError("El contexto o la ventana retrospectiva de noticias no es válido")
     if not facts or not news:
         return
     news = sorted(news, key=lambda n: (n["available_at"], n["content_hash"]))
@@ -132,7 +132,7 @@ def eligible_samples(
             "charts": cutoff,
         }
         if any(aware(value) > cutoff for value in availability.values()):
-            raise ValueError("Future information in candidate modalities")
+            raise ValueError("Las modalidades candidatas contienen información futura")
         values = [r["value"] if r else None for r in selected]
         ages = [
             (cutoff - r["available_at"]).total_seconds() / 86400 if r else 0.0 for r in selected
@@ -156,7 +156,7 @@ def validate_sample_inputs(
     """Comprueba destinos y calendarios antes de inicializar recursos o escribir."""
     outside_source(Path("dataset"), destination)
     if prepared.resolve() == destination.resolve():
-        raise ValueError("Sample output must not overwrite prepared modality manifests")
+        raise ValueError("La salida de muestras no puede sobrescribir los manifiestos preparados")
     calendar_fingerprint = hashlib.sha256(
         "|".join(value.isoformat() for value in clock.decisions).encode()
     ).hexdigest()
@@ -169,7 +169,9 @@ def validate_sample_inputs(
             outside_source(prepared / market, target)
         manifest = json.loads((prepared / clock.market / symbol / "manifest.json").read_text())
         if manifest.get("policy", {}).get("calendar") != calendar_fingerprint:
-            raise ValueError(f"Prepared calendar differs from the sample calendar: {symbol}")
+            raise ValueError(
+                f"El calendario preparado difiere del calendario de las muestras: {symbol}"
+            )
         manifests[symbol] = manifest
     return calendar_fingerprint, manifests
 
@@ -193,7 +195,7 @@ def materialize_samples(
         macro_by_time[row["prediction_at"]].append(row)
     macro_schema = sorted({r["indicator_id"] for r in macro_rows})
     if not macro_schema:
-        raise ValueError("Empty macro panel")
+        raise ValueError("El panel macro está vacío")
     macro_hash = sha256(macro_path)
     encoder_fingerprint = hashlib.sha256(
         json.dumps(encoders.spec, sort_keys=True).encode()
@@ -205,7 +207,7 @@ def materialize_samples(
         manifest = manifests[symbol]
         for name, digest in manifest["artifacts"].items():
             if sha256(source / name) != digest:
-                raise ValueError(f"Prepared artifact changed: {symbol}/{name}")
+                raise ValueError(f"Ha cambiado un artefacto preparado: {symbol}/{name}")
         target = destination / clock.market / symbol
         fingerprint = hashlib.sha256(
             json.dumps(
@@ -253,7 +255,7 @@ def materialize_samples(
                 {**sample["input_availability"], "macro": macro_available}, sample["prediction_at"]
             )
             if errors:
-                raise ValueError(f"Sample is not admissible for training: {errors}")
+                raise ValueError(f"La muestra no es admisible para entrenamiento: {errors}")
             texts = []
             for index in sample["news_indices"]:
                 article = news[index]
@@ -277,7 +279,7 @@ def materialize_samples(
                 cache.put(identity, image)
             text = np.mean(texts, axis=0)
             if not np.isfinite(text).all() or not np.isfinite(image).all():
-                raise ValueError("Nonfinite multimodal representation")
+                raise ValueError("La representación multimodal contiene valores no finitos")
             samples.append(
                 {
                     **sample,
@@ -293,7 +295,9 @@ def materialize_samples(
                 }
             )
             if len(samples) % 128 == 0:
-                print(f"encode: {symbol} {len(samples)} samples", file=sys.stderr, flush=True)
+                print(
+                    f"Codificación: {symbol}, {len(samples)} muestras", file=sys.stderr, flush=True
+                )
         atomic_parquet(target / "samples.parquet", sample_table(samples))
         result = {
             "schema_version": 1,

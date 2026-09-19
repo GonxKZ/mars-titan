@@ -50,7 +50,7 @@ def train_step(model, optimizer, batch, device):
     prediction = model(inputs)
     loss = torch.nn.functional.mse_loss(prediction, target)
     if not torch.isfinite(loss):
-        raise ValueError("Nonfinite supervised cost loss")
+        raise ValueError("La pérdida supervisada no es finita")
     loss.backward()
     optimizer.step()
     return float(loss.detach())
@@ -94,7 +94,7 @@ def save_checkpoint(path, model, optimizer, *, next_epoch, config, hashes):
 def load_checkpoint(path, model, optimizer, *, config, hashes):
     state = torch.load(path, map_location="cpu", weights_only=True)
     if state["config"] != config or state["input_hashes"] != hashes:
-        raise ValueError("Checkpoint inputs or configuration changed")
+        raise ValueError("Han cambiado las entradas o la configuración del punto de control")
     model.load_state_dict(state["model"])
     optimizer.load_state_dict(state["optimizer"])
     random.setstate(state["rng_python"])
@@ -126,7 +126,7 @@ def process_memory():
                 elif line.startswith("Pss:"):
                     pss += int(line.split()[1])
         except FileNotFoundError:
-            continue  # A child can finish between enumerating and reading it.
+            continue  # Un proceso hijo puede finalizar entre su enumeración y su lectura.
     return {"rss_mib": rss / 1024, "pss_mib": pss / 1024, "processes": len(seen)}
 
 
@@ -157,7 +157,7 @@ def run_epoch(model, optimizer, loader, device):
                     prediction = model({key: value.to(device) for key, value in inputs.items()})
                     loss = float(torch.nn.functional.mse_loss(prediction, target.to(device)))
                     if not np.isfinite(loss):
-                        raise ValueError("Nonfinite validation cost loss")
+                        raise ValueError("La pérdida de validación no es finita")
             torch.cuda.synchronize()
             latencies.append(time.perf_counter() - step_started)
             count = len(batch[1])
@@ -169,7 +169,7 @@ def run_epoch(model, optimizer, loader, device):
         stopped.set()
         monitor.join()
     if not samples:
-        raise ValueError("No usable supervised samples")
+        raise ValueError("No hay muestras supervisadas utilizables")
     return {
         "samples": samples,
         "steps": len(latencies),
@@ -303,18 +303,18 @@ def train_budget_grid(
         or not set(panel_sizes) <= {4, 11, 22}
         or not set(kinds) <= {"mlp", "gru"}
     ):
-        raise ValueError("Invalid bounded budget workload")
+        raise ValueError("La carga acotada de medición no es válida")
     for target in (output, report_path):
         outside_source(Path("dataset"), target)
         outside_source(prepared, target)
     if output.exists():
-        raise ValueError("Use a fresh output directory to preserve existing checkpoints")
+        raise ValueError("Usa un directorio nuevo para conservar los puntos de control existentes")
     started = time.perf_counter()
     started_at = datetime.now(UTC).isoformat()
     device = require_cuda()
     paths = sorted((prepared / "samples/US").glob("*/samples.parquet"))
     if len(paths) != 22:
-        raise ValueError("This bounded budget experiment requires the 22 prepared assets")
+        raise ValueError("Este ensayo acotado requiere los 22 activos preparados")
     targets, audit, hashes = prepare_targets(paths, prepared, output / "targets")
     paths.sort(key=lambda path: (audit["assets"][path.parent.name]["train"] == 0, path.parent.name))
     report = {
@@ -459,7 +459,9 @@ def train_budget_grid(
                     torch.equal(expected[key], value) for key, value in model.state_dict().items()
                 )
                 if not exact:
-                    raise ValueError("Resumed weights differ from uninterrupted training")
+                    raise ValueError(
+                        "Los pesos recuperados difieren del entrenamiento sin interrupciones"
+                    )
                 case["resume_check"] = {
                     "exact_weights": exact,
                     "from_epoch": 1,

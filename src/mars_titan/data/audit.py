@@ -35,7 +35,7 @@ def audit_prices(source: Path, database: Path, state_path: Path) -> dict:
             continue
         path = source / entry["path"]
         if sha256(path) != entry["sha256"]:
-            raise ValueError(f"Inventoried source changed: {entry['path']}")
+            raise ValueError(f"Ha cambiado una fuente inventariada: {entry['path']}")
         if entry["path"] in done and done[entry["path"]]["source_sha256"] == entry["sha256"]:
             audit = done[entry["path"]]
         else:
@@ -61,7 +61,7 @@ def audit_prices(source: Path, database: Path, state_path: Path) -> dict:
             totals[key] += audit[key]
         if len(current) % 64 == 0:
             atomic_json(state_path, {"policy": policy, "files": {**done, **current}})
-            print(f"price-audit: {len(current)} files", file=sys.stderr, flush=True)
+            print(f"Auditoría de precios: {len(current)} archivos", file=sys.stderr, flush=True)
     atomic_json(state_path, {"policy": policy, "files": current})
     return {
         "markets": dict(markets),
@@ -83,7 +83,7 @@ def audit_china_publication(source: Path, database: Path) -> dict:
             continue
         path = source / entry["path"]
         if sha256(path) != entry["sha256"]:
-            raise ValueError(f"Inventoried source changed: {entry['path']}")
+            raise ValueError(f"Ha cambiado una fuente inventariada: {entry['path']}")
         _, audit = read_fundamentals([path], "CN", clock)
         totals.update(audit)
         totals["files"] += 1

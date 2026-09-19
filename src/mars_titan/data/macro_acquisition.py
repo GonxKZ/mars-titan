@@ -61,22 +61,22 @@ class _VintagePageParser(HTMLParser):
 
 def _iso_day(value: date | str, name: str) -> str:
     if isinstance(value, datetime):
-        raise TypeError(f"{name} must be a date, not datetime")
+        raise TypeError(f"{name} debe ser una fecha, no un objeto datetime")
     if isinstance(value, date):
         return value.isoformat()
     if isinstance(value, str):
         return date.fromisoformat(value).isoformat()
-    raise TypeError(f"{name} must be a date or ISO date string")
+    raise TypeError(f"{name} debe ser una fecha o una cadena de fecha ISO")
 
 
 def _official_url(url: str) -> None:
     parsed = urlsplit(url)
     if parsed.scheme != "https" or parsed.hostname != _ALFRED_HOST:
-        raise ValueError("ALFRED requests must use the official HTTPS host")
+        raise ValueError("Las peticiones a ALFRED deben usar su servidor HTTPS oficial")
 
 
 def _request(url: str, *, fields: dict[str, str | list[str]] | None = None):
-    """Return body, content type, effective URL and HTTP status using bounded curl."""
+    """Devuelve cuerpo, tipo, URL efectiva y estado HTTP con una petición curl acotada."""
     _official_url(url)
     with tempfile.TemporaryDirectory(prefix="mars-titan-alfred-") as temporary:
         output = Path(temporary) / "response"
@@ -109,13 +109,13 @@ def _request(url: str, *, fields: dict[str, str | list[str]] | None = None):
                 raise OSError(result.stderr.decode("utf-8", errors="replace").strip())
             metadata = result.stdout.decode("utf-8", errors="strict").splitlines()
             if len(metadata) != 3:
-                raise ValueError("Unexpected curl metadata")
+                raise ValueError("Los metadatos de curl no tienen el formato esperado")
             status = int(metadata[0])
             content_type, effective_url = metadata[1], metadata[2]
             _official_url(effective_url)
             body = output.read_bytes()
             if len(body) > _MAX_COMPRESSED_BYTES:
-                raise ValueError("ALFRED response exceeds the compressed size limit")
+                raise ValueError("La respuesta de ALFRED supera el límite de tamaño comprimido")
             if status != 429 and not 500 <= status <= 599:
                 return body, content_type, effective_url, status
             if attempt < _HTTP_RETRIES:
@@ -127,16 +127,16 @@ def _vintage_metadata(page: bytes) -> tuple[list[str], str | None, str | None]:
     try:
         text = page.decode("utf-8")
     except UnicodeDecodeError as error:
-        raise ValueError("ALFRED vintage page is not UTF-8") from error
+        raise ValueError("La página de versiones de ALFRED no está codificada en UTF-8") from error
     parser = _VintagePageParser()
     parser.feed(text)
     if not parser.dates:
-        raise ValueError("ALFRED vintage page has no selectable vintage dates")
+        raise ValueError("La página de ALFRED no contiene fechas de versión seleccionables")
     dates = []
     for value in parser.dates:
         dates.append(date.fromisoformat(value).isoformat())
     if dates != sorted(set(dates)):
-        raise ValueError("ALFRED vintage dates are duplicated or unordered")
+        raise ValueError("Las fechas de versión de ALFRED están duplicadas o desordenadas")
     observation_start = (
         date.fromisoformat(parser.observation_start).isoformat()
         if parser.observation_start
@@ -174,7 +174,7 @@ def _atomic_bytes(path: Path, content: bytes) -> None:
 def _readme_dates(readme: str) -> set[str]:
     marker = "Vintage Dates Specified:"
     if marker not in readme:
-        raise ValueError("ALFRED README does not record requested vintage dates")
+        raise ValueError("El README de ALFRED no recoge las fechas de versión solicitadas")
     values = set()
     for line in readme.split(marker, 1)[1].splitlines():
         candidate = line.strip()
@@ -187,35 +187,35 @@ def _readme_dates(readme: str) -> set[str]:
 
 def _archive_text(content: bytes) -> tuple[str, str]:
     if len(content) > _MAX_COMPRESSED_BYTES:
-        raise ValueError("ALFRED ZIP exceeds the compressed size limit")
+        raise ValueError("El ZIP de ALFRED supera el límite de tamaño comprimido")
     try:
         archive = zipfile.ZipFile(io.BytesIO(content))
     except zipfile.BadZipFile as error:
-        raise ValueError("ALFRED response is not a valid ZIP archive") from error
+        raise ValueError("La respuesta de ALFRED no es un archivo ZIP válido") from error
     with archive:
         members = archive.infolist()
         if not 1 < len(members) <= _MAX_MEMBERS:
-            raise ValueError("ALFRED ZIP has an unexpected number of members")
+            raise ValueError("El ZIP de ALFRED contiene un número de entradas inesperado")
         if sum(member.file_size for member in members) > _MAX_UNCOMPRESSED_BYTES:
-            raise ValueError("ALFRED ZIP exceeds the uncompressed size limit")
+            raise ValueError("El ZIP de ALFRED supera el límite de tamaño descomprimido")
         for member in members:
             path = PurePosixPath(member.filename)
             if path.is_absolute() or ".." in path.parts or len(path.parts) != 1:
-                raise ValueError("ALFRED ZIP contains an unsafe member path")
+                raise ValueError("El ZIP de ALFRED contiene una ruta no segura")
         names = {member.filename for member in members}
         csv_names = sorted(name for name in names if name.lower().endswith(".csv"))
         if "README.txt" not in names or len(csv_names) != 1:
-            raise ValueError("ALFRED ZIP must contain one CSV and README.txt")
+            raise ValueError("El ZIP de ALFRED debe contener un CSV y README.txt")
         try:
             readme = archive.read("README.txt").decode("utf-8")
             csv_text = archive.read(csv_names[0]).decode("utf-8-sig")
         except UnicodeDecodeError as error:
-            raise ValueError("ALFRED ZIP text is not UTF-8") from error
+            raise ValueError("El texto del ZIP de ALFRED no está codificado en UTF-8") from error
     return readme, csv_text
 
 
 def _readme_metadata(readme: str) -> list[dict]:
-    """Keep literal descriptions and their inclusive ALFRED real-time intervals."""
+    """Conserva las descripciones literales y los intervalos inclusivos de vigencia de ALFRED."""
     headings = {"Title", "Source", "Release", "Units", "Frequency", "Seasonal Adjustment", "Notes"}
     fields = {"Units": "native_unit", "Seasonal Adjustment": "seasonal_adjustment"}
     section, current = None, None
@@ -235,13 +235,13 @@ def _readme_metadata(readme: str) -> list[dict]:
             start = date.fromisoformat(start).isoformat()
             end = "9999-12-31" if end == "Current" else date.fromisoformat(end).isoformat()
             if start > end:
-                raise ValueError("Invalid ALFRED metadata interval")
+                raise ValueError("El intervalo de metadatos de ALFRED no es válido")
             current = {"field": section, "start": start, "end": end, "description": description}
             records.append(current)
         elif current is not None:
             current["description"] += " " + text
         else:
-            raise ValueError(f"ALFRED {section} has a continuation without an interval")
+            raise ValueError(f"La sección {section} de ALFRED continúa sin indicar un intervalo")
     return records
 
 
@@ -249,7 +249,7 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
     readme, csv_text = _archive_text(content)
     recorded_dates = _readme_dates(readme)
     if recorded_dates != requested_dates:
-        raise ValueError("ALFRED README vintage dates do not match the request")
+        raise ValueError("Las fechas de versión del README de ALFRED no coinciden con la petición")
     reader = csv.DictReader(io.StringIO(csv_text, newline=""))
     expected = [
         "period_start_date",
@@ -258,7 +258,7 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
         "realtime_end_date",
     ]
     if reader.fieldnames != expected:
-        raise ValueError("ALFRED CSV has an unexpected header")
+        raise ValueError("El CSV de ALFRED tiene una cabecera inesperada")
     result: list[dict] = []
     seen: dict[tuple[str, str], tuple[str, float | None]] = {}
     for row in reader:
@@ -269,19 +269,19 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
             "9999-12-31" if raw_end in {"", "."} else date.fromisoformat(raw_end).isoformat()
         )
         if realtime_end < realtime_start or period > realtime_start:
-            raise ValueError("ALFRED CSV contains an invalid temporal interval")
+            raise ValueError("El CSV de ALFRED contiene un intervalo temporal no válido")
         raw_value = row[series_id].strip()
         if raw_value in {"", "."}:
             value = None
         else:
             value = float(raw_value)
             if not math.isfinite(value):
-                raise ValueError("ALFRED CSV contains a non-finite value")
+                raise ValueError("El CSV de ALFRED contiene un valor no finito")
         key = period, realtime_start
         payload = realtime_end, value
         if key in seen:
             if seen[key] != payload:
-                raise ValueError("ALFRED CSV contains conflicting vintages")
+                raise ValueError("El CSV de ALFRED contiene versiones en conflicto")
             continue
         seen[key] = payload
         result.append(
@@ -368,7 +368,7 @@ def _initialize(destination: Path, configuration: str) -> None:
             "SELECT value FROM configuration WHERE key='acquisition'"
         ).fetchone()
         if previous and previous[0] != configuration:
-            raise ValueError("Destination contains a different macro acquisition")
+            raise ValueError("El destino contiene una adquisición macro distinta")
         connection.execute(
             "INSERT OR IGNORE INTO configuration VALUES ('acquisition', ?)", (configuration,)
         )
@@ -469,7 +469,7 @@ def _store_batch(
             payload = row["realtime_end"], row["value"]
             if previous is not None and previous != payload:
                 raise ValueError(
-                    "Conflicting macro vintage: "
+                    "Versión macro en conflicto: "
                     f"{entry['id']}/{row['period_start']}/{row['realtime_start']}"
                 )
             connection.execute(
@@ -521,19 +521,21 @@ def _acquire_series(
     page, content_type, effective_url, status = _request(url)
     _official_url(effective_url)
     if status != 200 or "html" not in content_type.lower():
-        raise ValueError(f"ALFRED vintage page returned HTTP {status} as {content_type}")
+        raise ValueError(
+            f"La página de versiones de ALFRED devolvió HTTP {status} con tipo {content_type}"
+        )
     dates, source_observation_start, source_observation_end = _vintage_metadata(page)
     page_digest = _sha256(page)
     _atomic_bytes(destination / "raw" / entry["id"] / f"vintage-list-{page_digest}.html", page)
     if realtime_end < dates[0]:
-        raise ValueError("ALFRED series starts after the requested real-time interval")
+        raise ValueError("La serie de ALFRED empieza después del intervalo de vigencia solicitado")
     effective_realtime_start = max(realtime_start, dates[0])
     effective_observation_start = max(
         observation_start, source_observation_start or observation_start
     )
     effective_observation_end = min(observation_end, source_observation_end or observation_end)
     if effective_observation_start > effective_observation_end:
-        raise ValueError("ALFRED series has no observations in the requested interval")
+        raise ValueError("La serie de ALFRED no tiene observaciones en el intervalo solicitado")
     selected = [value for value in dates if realtime_start <= value <= realtime_end]
     batches = _batches(selected)
     source_hashes: list[str] = []
@@ -572,7 +574,7 @@ def _acquire_series(
         _official_url(response_url)
         if response_status != 200 or "zip" not in response_type.lower():
             detail = "html_error" if b"<html" in content[:4096].lower() else response_type
-            raise ValueError(f"ALFRED download returned HTTP {response_status}: {detail}")
+            raise ValueError(f"La descarga de ALFRED devolvió HTTP {response_status}: {detail}")
         parsed = _parse_zip(content, entry["series_id"], requested_dates)
         query = {
             "query_version": _QUERY_VERSION,
@@ -599,7 +601,7 @@ def _acquire_series(
         source_hashes.append(digest)
         rows += count
     if rows == 0:
-        raise ValueError("ALFRED series returned no rows in the requested intervals")
+        raise ValueError("La serie de ALFRED no devolvió filas en los intervalos solicitados")
     updated_at = datetime.now(UTC).isoformat()
     with _connect(destination) as connection:
         connection.execute(
@@ -640,9 +642,9 @@ def acquire_catalog(
     realtime_end,
     workers=2,
 ) -> dict:
-    """Audit a catalog and acquire every admissible ALFRED raw series."""
+    """Audita el catálogo y adquiere las series originales admisibles de ALFRED."""
     if type(workers) is not int or not 1 <= workers <= 2:
-        raise ValueError("workers must be one or two")
+        raise ValueError("workers debe ser uno o dos")
     destination = Path(destination)
     outside_source(Path("dataset"), destination)
     outside_source(Path("dataset"), destination / _DATABASE)
@@ -656,7 +658,7 @@ def acquire_catalog(
     realtime_start = _iso_day(realtime_start, "realtime_start")
     realtime_end = _iso_day(realtime_end, "realtime_end")
     if observation_start > observation_end or realtime_start > realtime_end:
-        raise ValueError("Acquisition date ranges must be ordered")
+        raise ValueError("Los intervalos de fechas de adquisición deben estar ordenados")
     configuration = _configuration(observation_start, observation_end, realtime_start, realtime_end)
     _initialize(destination, configuration)
     excluded = []
@@ -741,7 +743,7 @@ def acquire_catalog(
 
 
 def execution_catalog(catalog, destination: Path) -> list[dict]:
-    """Copy design entries and attach actual acquisition status to every raw source."""
+    """Copia el catálogo y añade el estado real de adquisición de cada fuente original."""
     database = Path(destination) / _DATABASE
     if not database.is_file():
         raise FileNotFoundError(database)
@@ -763,7 +765,7 @@ def execution_catalog(catalog, destination: Path) -> list[dict]:
 
 
 def rebuild_metadata(destination: Path, *, backup_path: Path) -> dict:
-    """Rebuild metadata from verified local ZIPs, preserving a SQLite binary backup."""
+    """Reconstruye metadatos desde ZIP locales verificados y conserva una copia binaria SQLite."""
     destination, backup_path = Path(destination), Path(backup_path)
     database = destination / _DATABASE
     if not database.is_file():
@@ -780,12 +782,12 @@ def rebuild_metadata(destination: Path, *, backup_path: Path) -> dict:
         for relative, digest in batches:
             path = destination / relative
             if not path.resolve().is_relative_to(destination.resolve()):
-                raise ValueError("Unsafe macro archive path")
+                raise ValueError("La ruta del archivo macro no es segura")
             if path.stat().st_size > _MAX_COMPRESSED_BYTES:
-                raise ValueError("ALFRED ZIP exceeds the compressed size limit")
+                raise ValueError("El ZIP de ALFRED supera el límite de tamaño comprimido")
             content = path.read_bytes()
             if _sha256(content) != digest:
-                raise ValueError(f"Macro archive hash mismatch: {relative}")
+                raise ValueError(f"La huella del archivo macro no coincide: {relative}")
             metadata = _readme_metadata(_archive_text(content)[0])
             connection.execute(
                 "INSERT OR REPLACE INTO archive_metadata VALUES (?,?)",
@@ -836,16 +838,16 @@ def _metadata_segments(row: dict, metadata: list[dict]):
 
 
 def iter_vintages(destination: Path):
-    """Yield complete series in native historical units, with explicit metadata gaps."""
+    """Emite series completas en sus unidades históricas e identifica los metadatos ausentes."""
     database = Path(destination) / _DATABASE
     if not database.is_file():
-        raise FileNotFoundError(f"Macro acquisition database not found: {database}")
+        raise FileNotFoundError(f"No se encuentra la base de adquisición macro: {database}")
     with sqlite3.connect(database) as connection:
         if not connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='archive_metadata'"
         ).fetchone():
             raise ValueError(
-                "Historical metadata absent. Run rebuild_metadata before iter_vintages"
+                "Faltan metadatos históricos. Ejecuta rebuild_metadata antes de iter_vintages"
             )
         metadata = {
             digest: json.loads(intervals)
@@ -863,7 +865,7 @@ def iter_vintages(destination: Path):
             for row in rows:
                 if row[5] not in metadata:
                     raise ValueError(
-                        f"Historical metadata absent for {row[0]}. Run rebuild_metadata"
+                        f"Faltan metadatos históricos de {row[0]}. Ejecuta rebuild_metadata"
                     )
                 vintage = {
                     "indicator_id": row[0],

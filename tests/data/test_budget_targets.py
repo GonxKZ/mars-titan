@@ -11,7 +11,7 @@ def target_module():
     try:
         return importlib.import_module("mars_titan.data.budget_targets")
     except ModuleNotFoundError:
-        pytest.fail("Missing causal budget targets")
+        pytest.fail("Faltan las etiquetas causales para medir el coste")
 
 
 def fixture_prices():

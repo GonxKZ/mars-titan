@@ -61,7 +61,7 @@
           <li data-phase="train"><span class="phase-mark" aria-hidden="true"></span><span>Entrenamiento</span></li>
           <li data-phase="validation"><span class="phase-mark" aria-hidden="true"></span><span>Validación</span></li>
           <li data-phase="calibration"><span class="phase-mark" aria-hidden="true"></span><span>Calibración</span></li>
-          <li data-phase="test"><span class="phase-mark" aria-hidden="true"></span><span>Test final</span></li>
+          <li data-phase="test"><span class="phase-mark" aria-hidden="true"></span><span>Prueba final</span></li>
           <li data-phase="evaluation"><span class="phase-mark" aria-hidden="true"></span><span>Evaluación</span></li>
         </ol>
         <p id="phase-description">Secuencia de referencia. Ninguna fase está activa.</p>
@@ -69,7 +69,7 @@
 
       <div id="empty-tracking" class="empty-tracking">
         <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M10 12v40h44M17 43h34M17 31h34M17 19h34"/><circle cx="34" cy="31" r="8"/><path d="M34 26v10m-5-5h10"/></svg>
-        <div><h3>Aquí aparecerá la primera ejecución</h3><p>Cuando se publique un resumen, aparecerán el avance, las métricas observadas y el último checkpoint. También puedes importar un registro local.</p><a href="#metodo">Consultar el método y los modelos previstos</a></div>
+        <div><h3>Aquí aparecerá la primera ejecución</h3><p>Cuando se publique un resumen, aparecerán el avance, las métricas observadas y el último punto de control. También puedes importar un registro local.</p><a href="#metodo">Consultar el método y los modelos previstos</a></div>
         <span class="empty-note">Sin datos simulados</span>
       </div>
 
@@ -83,7 +83,7 @@
             <div id="curve-content" class="curve-content"></div>
             <p class="caption">Valores del registro. Los huecos no se interpolan y las fases no son intercambiables.</p>
           </div>
-          <aside class="run-details" aria-labelledby="details-heading"><h3 id="details-heading">Continuidad y recursos</h3><dl id="run-details"></dl><p class="caption">Un heartbeat antiguo indica falta de información reciente. No confirma una pausa del proceso.</p></aside>
+          <aside class="run-details" aria-labelledby="details-heading"><h3 id="details-heading">Continuidad y recursos</h3><dl id="run-details"></dl><p class="caption">Una señal de actividad antigua indica falta de información reciente. No confirma una pausa del proceso.</p></aside>
         </div>
       </div>
       <ul id="snapshot-notes" class="snapshot-notes" hidden></ul>
@@ -93,12 +93,12 @@
       <div class="section-heading"><div><h2 id="comparison-heading">Comparativa</h2><p class="section-intro">Mismos datos, objetivo y condiciones de evaluación. Las diferencias necesitan un contexto común.</p></div><span class="section-note">Solo ejecuciones completadas</span></div>
       <div class="comparison-controls">
         <div class="control group-control"><label for="comparison-group">Grupo experimental</label><select id="comparison-group" disabled><option value="">Sin grupos disponibles</option></select></div>
-        <div class="control"><label for="comparison-phase">Fase</label><select id="comparison-phase"><option value="validation">Validación</option><option value="calibration">Calibración</option><option value="evaluation">Evaluación</option><option value="test">Test publicado</option><option value="train">Entrenamiento</option></select></div>
+        <div class="control"><label for="comparison-phase">Fase</label><select id="comparison-phase"><option value="validation">Validación</option><option value="calibration">Calibración</option><option value="evaluation">Evaluación</option><option value="test">Prueba final publicada</option><option value="train">Entrenamiento</option></select></div>
         <div class="control"><label for="comparison-metric">Ordenar por</label><select id="comparison-metric"><option value="mae">Menor MAE residual</option><option value="rank_ic">Mayor Rank IC</option><option value="latency_p95_ms">Menor latencia p95</option><option value="vram_peak_mib">Menor pico de VRAM</option></select></div>
       </div>
       <div id="comparison-empty" class="empty-comparison"><span class="empty-rule" aria-hidden="true"></span><h3>Aún no hay resultados comparables</h3><p>Las ejecuciones completadas aparecerán al compartir grupo y fase. Un resultado ausente se mantiene como «Sin dato».</p></div>
       <div id="comparison-table-wrap" class="table-scroll" role="region" aria-label="Resultados comparables" tabindex="0" hidden>
-        <table><caption id="comparison-caption">Resultados del grupo y fase seleccionados</caption><thead><tr><th scope="col">Modelo y variante</th><th scope="col">Semilla / fold</th><th scope="col" class="numeric">MAE residual</th><th scope="col" class="numeric">Rank IC</th><th scope="col" class="numeric">Cobertura 95 %</th><th scope="col" class="numeric">p95, ms</th><th scope="col" class="numeric">VRAM, MiB</th></tr></thead><tbody id="comparison-body"></tbody></table>
+        <table><caption id="comparison-caption">Resultados del grupo y fase seleccionados</caption><thead><tr><th scope="col">Modelo y variante</th><th scope="col">Semilla / partición</th><th scope="col" class="numeric">MAE residual</th><th scope="col" class="numeric">Rank IC</th><th scope="col" class="numeric">Cobertura 95 %</th><th scope="col" class="numeric">p95, ms</th><th scope="col" class="numeric">VRAM, MiB</th></tr></thead><tbody id="comparison-body"></tbody></table>
       </div>
       <p class="caption">El grupo fija datos, universo, objetivo, cortes y régimen de evaluación. La pantalla muestra las medidas declaradas, no certifica su comparabilidad científica.</p>
     </section>
@@ -106,7 +106,7 @@
     <section id="metodo" class="section" aria-labelledby="method-heading">
       <div class="section-heading"><div><h2 id="method-heading">Método</h2><p class="section-intro">¿Aporta información una memoria adaptativa frente a modelos sin esa memoria?</p></div><a class="document-link" href="https://github.com/GonxKZ/mars-titan/blob/main/docs/research/protocol.md">Leer el protocolo</a></div>
       <div class="method-layout">
-        <div class="method-explanation"><h3>Primero predecir. Después actualizar.</h3><p>FinMultiTime reúne precios, noticias, tablas e imágenes. Cada entrada necesita una fecha de disponibilidad defendible. El núcleo comienza con precios y texto.</p><p>La predicción se emite después del cierre. El objetivo es el retorno residual entre la apertura y el cierre de la siguiente sesión. La memoria incorpora el error solo cuando la etiqueta ha madurado.</p><p class="method-boundary">Piloto previsto de hasta 64 activos. Comparación principal propuesta de hasta 128, con 32 GB de RAM y una RTX 4070 de 8 GB. Son límites de planificación, no medidas de una ejecución.</p></div>
+        <div class="method-explanation"><h3>Primero predecir. Después actualizar.</h3><p>FinMultiTime reúne precios, noticias, tablas e imágenes. Cada entrada necesita una fecha de disponibilidad defendible. El núcleo requiere precios, noticias, fundamentales y gráficos, junto con contexto macro.</p><p>La predicción se emite después del cierre. El objetivo es el retorno residual entre la apertura y el cierre de la siguiente sesión. La memoria incorpora el error solo cuando la etiqueta ha madurado.</p><p class="method-boundary">Piloto previsto de hasta 64 activos. Comparación principal propuesta de hasta 128, con 32 GB de RAM y una RTX 4070 de 8 GB. Son límites de planificación, no medidas de una ejecución.</p></div>
         <figure class="causal-diagram">
           <figcaption>Orden de la información <span>Esquema conceptual</span></figcaption>
           <svg viewBox="0 0 600 228" role="img" aria-labelledby="method-svg-title method-svg-desc">
@@ -150,7 +150,7 @@
       <div class="model-catalog" id="model-catalog">
         <p>El catálogo se cargará con el registro. Las familias previstas son B0, B1, B2, B3, B6 y M0 a M3.</p>
       </div>
-      <p class="caption">Los fundamentales y gráficos requieren auditoría. Su integración depende de validez temporal y presupuesto. Las extensiones macro y otros mercados se deciden por separado.</p>
+      <p class="caption">Las cuatro modalidades y el contexto macro requieren disponibilidad temporal verificable. Una muestra sin alguna modalidad queda excluida. La ampliación a otros mercados se decide por separado.</p>
     </section>
 
     <section id="historial" class="section" aria-labelledby="history-heading">

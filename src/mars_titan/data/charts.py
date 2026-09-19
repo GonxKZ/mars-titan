@@ -8,10 +8,10 @@ from PIL import Image, ImageDraw
 
 def chart_png(prices: np.ndarray, *, end_index: int, context: int = 64) -> bytes:
     if context < 2 or end_index < context - 1 or end_index >= len(prices):
-        raise ValueError("Insufficient past observations for chart")
+        raise ValueError("No hay suficientes observaciones pasadas para el gráfico")
     window = np.asarray(prices[end_index - context + 1 : end_index + 1], dtype=np.float64)
     if window.shape != (context, 4) or not np.isfinite(window).all() or (window <= 0).any():
-        raise ValueError("Chart needs positive finite OHLC values")
+        raise ValueError("El gráfico necesita valores OHLC positivos y finitos")
     low, high = window[:, 2].min(), window[:, 1].max()
     span = max(high - low, high * 1e-9)
     image = Image.new("RGB", (224, 224), "#fafafa")
@@ -19,7 +19,7 @@ def chart_png(prices: np.ndarray, *, end_index: int, context: int = 64) -> bytes
     width = max(1, min(4, int(200 / context / 2)))
     for i, (opening, upper, lower, close) in enumerate(window):
         if lower > min(opening, close) or upper < max(opening, close):
-            raise ValueError("Inconsistent OHLC values")
+            raise ValueError("Los valores OHLC son incoherentes")
         x = round(12 + i * 200 / (context - 1))
         y = [round(212 - (price - low) * 200 / span) for price in (opening, upper, lower, close)]
         color = "#176552" if close >= opening else "#b84143"

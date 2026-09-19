@@ -64,7 +64,7 @@ def candidates(source: Path, database: Path, market: str) -> list[dict]:
 
 def select_panel(assets: list[dict], *, per_sector: int = 2, seed: int = 42) -> list[dict]:
     if per_sector < 1:
-        raise ValueError("per_sector must be positive")
+        raise ValueError("per_sector debe ser positivo")
     groups = defaultdict(list)
     for asset in assets:
         groups[asset["sector"]].append(asset)
@@ -102,17 +102,19 @@ def prepare_asset(source: Path, destination: Path, asset: dict, clock: MarketClo
     outside_source(source, destination)
     symbol = asset["symbol"]
     if not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol) or symbol in {".", ".."}:
-        raise ValueError("Unsafe asset symbol")
+        raise ValueError("El símbolo del activo no es seguro")
     sources = {}
     for paths in asset["paths"].values():
         for relative in paths:
             path = source / relative
             if not path.resolve().is_relative_to(source.resolve()) or path.is_symlink():
-                raise ValueError("Input path escapes source")
+                raise ValueError("La ruta de entrada sale del directorio de origen")
     for modality in ("prices", "news", "fundamentals"):
         paths = sorted(asset["paths"].get(modality, []))
         if not paths or (modality == "prices" and len(paths) != 1):
-            raise ValueError(f"Missing or ambiguous {modality} files for {symbol}")
+            raise ValueError(
+                f"Faltan archivos de {modality} para {symbol} o su selección es ambigua"
+            )
         for relative in paths:
             sources[relative] = sha256(source / relative)
     started = time.perf_counter()
@@ -156,7 +158,7 @@ def prepare_asset(source: Path, destination: Path, asset: dict, clock: MarketClo
         artifacts[path.name] = sha256(path)
     for relative, digest in sources.items():
         if sha256(source / relative) != digest:
-            raise ValueError(f"Source changed while preparing {symbol}")
+            raise ValueError(f"La fuente ha cambiado durante la preparación de {symbol}")
     result = {
         "schema_version": 1,
         "market": clock.market,

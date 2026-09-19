@@ -28,11 +28,11 @@ def cuda_runtime(monkeypatch):
             check=False,
         )
     except FileNotFoundError:
-        pytest.skip("nvidia-smi unavailable, no CPU fallback")
+        pytest.skip("nvidia-smi no está disponible, no se sustituye CUDA por CPU")
     if result.returncode:
-        pytest.skip(f"nvidia-smi failed, no CPU fallback: {result.stderr.strip()}")
+        pytest.skip(f"nvidia-smi ha fallado, no se sustituye CUDA por CPU: {result.stderr.strip()}")
     if not torch.cuda.is_available():
-        pytest.skip("CUDA unavailable, no CPU fallback")
+        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
     torch.cuda.set_device("cuda:0")
     yield torch
     torch.cuda.empty_cache()
@@ -279,6 +279,6 @@ def test_budget_grid_generates_labels_trains_and_resumes_without_opening_2024(
         assert torch.equal(torch.get_rng_state(), second["rng_torch"])
     assert all(sha256(path) == digest for path, digest in fixture["input_hashes"].items())
     confirmed_report = report_path.read_bytes()
-    with pytest.raises(ValueError, match="fresh output"):
+    with pytest.raises(ValueError, match="directorio nuevo"):
         budget_training.train_budget_grid(prepared, report_path, output, epochs=2, panel_sizes=(4,))
     assert report_path.read_bytes() == confirmed_report

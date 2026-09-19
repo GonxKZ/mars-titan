@@ -106,10 +106,10 @@ function renderTracking() {
     return group;
   }));
   const details = [
-    ["Último heartbeat", dateText(run.heartbeat_at)],
-    ["Último checkpoint", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
+    ["Última señal de actividad", dateText(run.heartbeat_at)],
+    ["Último punto de control", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
     ["Recuperación", run.checkpoint.resumable === null ? "No informada" : run.checkpoint.resumable ? "Disponible según el registro" : "No recuperable según el registro"],
-    ["Semilla y fold", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`],
+    ["Semilla y partición", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`],
     ["RAM máxima, MiB", formatValue(metrics.ram_peak_mib, { digits: 0 })],
     ["Latencia p50 / p95 / p99, ms", [metrics.latency_p50_ms, metrics.latency_p95_ms, metrics.latency_p99_ms].map(value => formatValue(value, { digits: 1 })).join(" / ")],
     ["Tiempo observado, segundos", formatValue(metrics.elapsed_seconds, { digits: 0 })],
