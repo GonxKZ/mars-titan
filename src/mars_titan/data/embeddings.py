@@ -16,6 +16,19 @@ TEXT_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 TEXT_REVISION = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"
 
 
+def text_artifact_fingerprints(snapshot: Path) -> dict[str, str]:
+    """Identifica la configuración y todos los archivos del tokenizador fijado."""
+    return {
+        name: sha256(snapshot / name)
+        for name in (
+            "config.json",
+            "tokenizer.json",
+            "tokenizer_config.json",
+            "special_tokens_map.json",
+        )
+    }
+
+
 def token_chunks(tokens: list[int], size: int = 126):
     if size < 1:
         raise ValueError("El tamaño del fragmento debe ser positivo")
@@ -97,6 +110,7 @@ class FrozenEncoders:
     """MiniLM por fragmentos completos y ResNet18 sin recortar los extremos del gráfico."""
 
     def __init__(self):
+        import tokenizers
         import torch
         import torchvision
         import transformers
@@ -149,6 +163,12 @@ class FrozenEncoders:
             "text_model": TEXT_MODEL,
             "text_revision": TEXT_REVISION,
             "text_weights_sha256": sha256(text_weights),
+            "text_artifacts_sha256": text_artifact_fingerprints(text_weights.parent),
+            "tokenizer_backend_sha256": hashlib.sha256(
+                self.tokenizer.backend_tokenizer.to_str().encode()
+            ).hexdigest(),
+            "tokenizers_version": tokenizers.__version__,
+            "tokenizer_class": type(self.tokenizer).__name__,
             "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
             "image_model": "resnet18.IMAGENET1K_V1",
             "image_url": weights.url,
