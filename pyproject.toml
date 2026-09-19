@@ -6,7 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"
 authors = [{name = "Gonzalo García Lama"}]
-dependencies = []
+dependencies = ["numpy>=2,<3", "pyarrow>=18,<30", "exchange-calendars>=4.8,<5", "ijson>=3.3,<4", "pillow>=11,<13"]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+mars-data = "mars_titan.data.cli:main"
 
 [project.optional-dependencies]
 data = ["numpy>=2.0,<3", "pandas>=2.2,<4", "polars>=1,<2", "pyarrow>=18,<30", "duckdb>=1.2,<2"]
@@ -21,7 +28,7 @@ Repository = "https://github.com/GonxKZ/mars-titan"
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "pyyaml>=6,<7", "bibtexparser>=1.4,<2"]
 
 [tool.uv]
-package = false
+package = true
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
@@ -33,7 +40,7 @@ torch = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platfor
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "src"]
 addopts = "-ra"
 
 [tool.ruff]
