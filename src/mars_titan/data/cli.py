@@ -43,6 +43,7 @@ def main() -> int:
     )
     prices.add_argument("--state", type=Path, default=Path("data/interim/price-audit-state.json"))
     prices.add_argument("--report", type=Path, default=Path("reports/data/price-audit.json"))
+    prices.add_argument("--details", type=Path, help="Parquet por activo en un directorio separado")
     macro = commands.add_parser("macro", help="Calcular macro con unidades y versiones históricas")
     macro.add_argument("--source", type=Path, default=Path("data/external/phase1-macro"))
     macro.add_argument("--catalog", type=Path, default=Path("data/catalogs/macro-indicators.csv"))
@@ -109,7 +110,11 @@ def main() -> int:
         from .audit import audit_prices
 
         outside_source(args.source, args.report)
-        result = audit_prices(args.source, args.database, args.state)
+        if args.report.resolve() in {args.database.resolve(), args.state.resolve()}:
+            raise ValueError("El informe no puede sobrescribir el inventario ni el estado")
+        if args.details is not None:
+            outside_source(args.details, args.report)
+        result = audit_prices(args.source, args.database, args.state, details_root=args.details)
         atomic_json(args.report, result)
     elif args.command == "macro":
         from .macro_preparation import prepare_macro
