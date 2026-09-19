@@ -7,6 +7,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
 | Revisar la admisión de noticias | [Fechas, procedencia y problemas de contenido](data/news-policy.md), con auditorías separadas del piloto y del panel técnico. |
 | Revisar precios y su universo | [Auditoría de los 5.023 CSV](../reports/data/price-audit.md), con exclusiones, acciones corporativas y límites de identidad. |
+| Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |
 | Consultar entrenamientos medidos | [Presupuesto experimental](../reports/resources/campaign-budget.md), con MLP y GRU, cuatro modalidades y macro. |
 | Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
