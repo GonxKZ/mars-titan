@@ -1,0 +1,37 @@
+{
+  "markets": {
+    "CN": {
+      "files": 810,
+      "rows": 3139412,
+      "accepted": 3133858,
+      "excluded": 5554,
+      "invalid_ohlc": 4043,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 1534,
+      "invalid_date_rows": 0
+    },
+    "US": {
+      "files": 4213,
+      "rows": 17448737,
+      "accepted": 17385328,
+      "excluded": 63409,
+      "invalid_ohlc": 63409,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 0,
+      "invalid_date_rows": 0
+    }
+  },
+  "files": 5023,
+  "reused_files": 5023,
+  "artifacts": 20092,
+  "derived_bytes": 885496734,
+  "corporate_action_rows": 223934,
+  "coverage_rows": 87793,
+  "source_snapshot": "d1c72657d8aa34f84733a15285e4405dd5f4c3c5cada55e36fac6b17cd0e22bf",
+  "state_sha256": "b065c8edc3a099dc1f0c8f4ee5e21f3bdf3d897f45f919dbdbd59a2b2e40b42c",
+  "policy": "0ce4c4a9c25e691c84016d0aaef1f464c175595f15a29be8d32da7a8a25caff7",
+  "elapsed_seconds": 11.543205586000113,
+  "peak_rss_mib": 161.05859375,
+  "identity_scope": "instrument_in_original_archive_not_verified_historical_constituents",
+  "adjustment_limit": "original_retrospectively_adjusted_series_retained_without_repair"
+}

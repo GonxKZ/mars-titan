@@ -2,6 +2,12 @@
 
 Esta ficha conserva la inspección inicial del 18 de septiembre de 2026. El inventario completo, las auditorías y los paneles preparados posteriormente se describen en [preparación multimodal](preparation.md). No debe confundirse el estado inicial con la cobertura ya comprobada.
 
+La [auditoría de precios e identidad](../../reports/data/price-audit.md) concreta
+el tratamiento de exclusiones, acciones corporativas y ausencias. El universo
+sigue siendo el archivo retrospectivo distribuido, no una reconstrucción de
+constituyentes históricos. El identificador de archivo no resuelve cambios o
+reutilizaciones de símbolos. No se corrige por suposición ese sesgo de supervivencia.
+
 ## Procedencia y versión
 
 Referencia principal: Xu et al., [FinMultiTime: A Four-Modal Bilingual Dataset for Financial Time-Series Analysis](https://arxiv.org/abs/2506.05019v2). El artículo describe precios, texto, tablas e imágenes. Su [revisión crítica](../references/neural-review.md) distingue lo descrito por los autores de lo comprobado en esta copia.
