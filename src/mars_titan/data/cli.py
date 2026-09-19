@@ -36,6 +36,32 @@ def main() -> int:
     prepare.add_argument("--limit", type=int)
     prepare.add_argument("--start")
     prepare.add_argument("--end", default="2026-01-01")
+    prices = commands.add_parser("audit-prices", help="Auditar todos los precios inventariados")
+    prices.add_argument("--source", type=Path, default=Path("dataset"))
+    prices.add_argument(
+        "--database", type=Path, default=Path("data/interim/source-inventory.sqlite")
+    )
+    prices.add_argument("--state", type=Path, default=Path("data/interim/price-audit-state.json"))
+    prices.add_argument("--report", type=Path, default=Path("reports/data/price-audit.json"))
+    macro = commands.add_parser("macro", help="Calcular macro con unidades y versiones históricas")
+    macro.add_argument("--source", type=Path, default=Path("data/external/phase1-macro"))
+    macro.add_argument("--catalog", type=Path, default=Path("data/catalogs/macro-indicators.csv"))
+    macro.add_argument("--market", choices=["US", "CN"], required=True)
+    macro.add_argument("--start", default="2000-01-01")
+    macro.add_argument("--end", default="2025-03-31")
+    encode = commands.add_parser("encode", help="Materializar cuatro modalidades y macro en CUDA")
+    encode.add_argument("--panel", type=Path, required=True)
+    encode.add_argument("--prepared", type=Path, default=Path("data/processed/phase1"))
+    encode.add_argument("--output", type=Path, default=Path("data/processed/phase1/samples"))
+    encode.add_argument(
+        "--cache", type=Path, default=Path("data/embeddings/phase1/representations.sqlite")
+    )
+    profile = commands.add_parser("profile", help="Medir sondas de coste, sin evaluar predicciones")
+    profile.add_argument("--samples", type=Path, default=Path("data/processed/phase1/samples/US"))
+    profile.add_argument("--prepared", type=Path, default=Path("data/processed/phase1"))
+    profile.add_argument("--report", type=Path, default=Path("reports/data/cost-profile.json"))
+    profile.add_argument("--steps", type=int, default=50)
+    profile.add_argument("--repeats", type=int, default=3)
     args = parser.parse_args()
     from .storage import outside_source
 
@@ -60,7 +86,7 @@ def main() -> int:
             "source_database_sha256": sha256(args.database),
         }
         atomic_json(args.output, result)
-    else:
+    elif args.command == "prepare":
         from .preparation import prepare_asset
         from .temporal import MarketClock
 
@@ -77,6 +103,71 @@ def main() -> int:
             summaries.append(brief)
             print(json.dumps(brief), file=sys.stderr, flush=True)
         result = {"market": panel["market"], "prepared": summaries, "training_ready": False}
+    elif args.command == "audit-prices":
+        from .audit import audit_prices
+
+        outside_source(args.source, args.report)
+        result = audit_prices(args.source, args.database, args.state)
+        atomic_json(args.report, result)
+    elif args.command == "macro":
+        from .macro_preparation import prepare_macro
+
+        result = prepare_macro(
+            args.source,
+            args.catalog,
+            Path(f"data/processed/phase1/macro-{args.market}.parquet"),
+            Path(f"reports/data/macro-{args.market}-calculation.json"),
+            market=args.market,
+            start=args.start,
+            end=args.end,
+        )
+    elif args.command == "encode":
+        from .embeddings import EmbeddingCache, FrozenEncoders
+        from .samples import materialize_samples
+        from .temporal import MarketClock
+
+        outside_source(Path("dataset"), args.cache)
+        panel = json.loads(args.panel.read_text())
+        clock = MarketClock(panel["market"], "2000-01-01", "2026-01-01")
+        encoders = FrozenEncoders()
+        cache = EmbeddingCache(args.cache)
+        try:
+            result = materialize_samples(
+                args.prepared,
+                args.prepared / f"macro-{panel['market']}.parquet",
+                args.output,
+                panel,
+                clock,
+                encoders,
+                cache,
+            )
+            atomic_json(Path(f"reports/data/encoded-panel-{panel['market'].lower()}.json"), result)
+        finally:
+            cache.close()
+    else:
+        import subprocess
+
+        import pyarrow.parquet as pq
+
+        from mars_titan.profiling import profile_grid
+
+        outside_source(Path("dataset"), args.report)
+        listing = subprocess.run(
+            ["rg", "--files", "--no-ignore", str(args.samples), "-g", "samples.parquet"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if listing.returncode not in (0, 1):
+            raise ValueError(listing.stderr)
+        paths = [
+            Path(name)
+            for name in listing.stdout.splitlines()
+            if pq.ParquetFile(name).metadata.num_rows
+        ]
+        result = profile_grid(
+            paths, args.prepared, args.report, steps=args.steps, repeats=args.repeats
+        )
     print(json.dumps(result, ensure_ascii=True, indent=2))
     return 2 if result.get("errors") else 0
 
