@@ -262,7 +262,8 @@ def prepare_targets(paths, prepared, output):
         Path(__file__).parent / "data/streaming.py",
         Path(__file__).parent / "profiling.py",
     ]:
-        hashes[str(source)] = sha256(source)
+        logical_path = Path("src/mars_titan") / source.relative_to(Path(__file__).parent)
+        hashes[logical_path.as_posix()] = sha256(source)
     atomic_json(output / "targets-audit.json", audit)
     return targets, audit, hashes
 
