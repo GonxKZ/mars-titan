@@ -1,6 +1,6 @@
 # Ficha inicial de FinMultiTime
 
-Estado: inspección documental y estructural, **no auditoría completa de los 109 GiB**. Fecha de revisión: 18 de septiembre de 2026.
+Esta ficha conserva la inspección inicial del 18 de septiembre de 2026. El inventario completo, las auditorías y los paneles preparados posteriormente se describen en [preparación multimodal](preparation.md). No debe confundirse el estado inicial con la cobertura ya comprobada.
 
 ## Procedencia y versión
 
@@ -39,4 +39,4 @@ Las cifras del artículo, de la ficha pública y de los catálogos locales no so
 
 ## Estado y uso permitido en esta preparación
 
-No se han normalizado datos, creado muestras de entrenamiento, seleccionado activos por rendimiento ni entrenado modelos. La copia existente permanece intacta y fuera de Git. El siguiente paso científico será auditarla siguiendo el [contrato temporal](data-contract.md), con resultados de calidad separados de las suposiciones.
+En la inspección inicial todavía no se habían normalizado datos ni entrenado modelos. La preparación posterior mantiene intacta la copia y separa sus auditorías de las suposiciones. Los [ensayos de coste](../../reports/resources/campaign-budget.md) no constituyen una comparación confirmatoria ni una selección por rentabilidad.

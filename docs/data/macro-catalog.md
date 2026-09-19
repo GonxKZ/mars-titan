@@ -2,11 +2,45 @@
 
 Autor: Gonzalo García Lama. Verificación documental: 18 de septiembre de 2026.
 
-El [catálogo CSV](../../data/catalogs/macro-indicators.csv) contiene 140 indicadores candidatos. Son 64 series de proveedores oficiales con identificador, nombre, frecuencia y unidad contrastados, 70 transformaciones especificadas y seis candidatos del NBS/PBOC con proveedor confirmado pero identificador estable pendiente. Las 64 series incluyen 63 fichas FRED y el GSCPI del New York Fed. No se ha incorporado un panel de observaciones, reconstruido sus vintages ni ejecutado una comparación predictiva.
+El [catálogo CSV](../../data/catalogs/macro-indicators.csv) contiene 140 indicadores candidatos. Sus estados documentan la revisión inicial, no el estado de cada ejecución. Son 64 series de proveedores oficiales con metadatos contrastados, 70 transformaciones y seis candidatos del NBS/PBOC sin identificador estable verificado. Las 64 series incluyen 63 fichas FRED y el GSCPI del New York Fed.
+
+La preparación posterior adquirió 59 series completas y calculó valores para 125 indicadores en al menos una fecha. Los paneles conservan también las ausencias y sus causas. La unidad del catálogo es una referencia de diseño, no sustituye las unidades históricas de cada versión. No se ha ejecutado una comparación confirmatoria predictiva. Véanse [preparación](preparation.md) y los informes de cálculo [US](../../reports/data/macro-US-calculation.json) y [CN](../../reports/data/macro-CN-calculation.json).
 
 El catálogo sirve para seleccionar familias macro con un contrato temporal común. No propone introducir 140 columnas de forma automática ni afirma que una mayor cantidad de indicadores mejore la predicción. La selección pertenece al periodo de desarrollo. La cobertura estadounidense es más amplia que la china y no debe presentarse como simétrica.
 
 ## Contenido y estado
+
+La descarga histórica no requiere una clave en la vía pública de ALFRED utilizada
+en esta preparación. Se seleccionan todas las fechas de vintage del intervalo y
+se valida el archivo devuelto. El formulario web puede cambiar. Un cambio de
+estructura produce un error, no una descarga aparentemente correcta.
+
+```bash
+uv run python - <<'PY'
+import csv
+from pathlib import Path
+from mars_titan.data.macro_acquisition import acquire_catalog
+from mars_titan.data.storage import atomic_json
+
+with Path("data/catalogs/macro-indicators.csv").open() as stream:
+    catalog = list(csv.DictReader(stream))
+report = acquire_catalog(
+    catalog, Path("data/external/phase1-macro"),
+    observation_start="1988-01-01", observation_end="2025-03-31",
+    realtime_start="1990-01-01", realtime_end="2025-03-31", workers=2,
+)
+report["destination"] = "data/external/phase1-macro"
+atomic_json(Path("reports/data/macro-acquisition.json"), report)
+print(report["completed_series"], report["failed_series"])
+PY
+uv run mars-data macro --market US
+uv run mars-data macro --market CN
+```
+
+La captura ejecutada conserva 59 series completas y dos errores pendientes, WTI
+y Brent. No se presentan las 61 adquisiciones como correctas. Los errores y las
+exclusiones se trasladan al cálculo mediante `execution_catalog`. Las series que
+fallan después de algún lote no exponen sus filas parciales al motor.
 
 | Familia | Series del proveedor y candidatos | Transformaciones |
 | --- | ---: | ---: |

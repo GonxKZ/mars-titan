@@ -1,0 +1,954 @@
+{
+  "schema_version": 1,
+  "measured_at_utc": "2026-09-19T18:14:43.715909+00:00",
+  "finished_at_utc": "2026-09-19T18:14:50.355999+00:00",
+  "purpose": "Presupuesto local de almacenamiento y cargas numéricas para los paneles preparados.",
+  "measurement": {
+    "logical_bytes": "Suma de stat.st_size de archivos regulares.",
+    "allocated_bytes": "Suma de stat.st_blocks * 512 de archivos regulares, sin bloques de directorios ni metadatos del sistema de archivos.",
+    "enumeration": "rg --files --hidden --no-ignore --null",
+    "source_validation": "Conjunto completo de rutas y size, mtime_ns y ctime_ns contrastados con SQLite. El digest del inventario coincide con el informe original.",
+    "source_content_rehashed_now": false,
+    "parquet_method": "Solo metadatos de ParquetFile y esquema Arrow. No se han leído las filas del corpus.",
+    "pyarrow_version": "25.0.1",
+    "training_or_benchmark_executed": false
+  },
+  "originals": {
+    "files": 216453,
+    "logical_bytes": 116185016265,
+    "allocated_bytes": 116631822336,
+    "inventory_report": "reports/data/full-source-inventory.json",
+    "inventory_database": "data/interim/source-inventory.sqlite",
+    "snapshot_sha256": "f206a659be9e19f2cd6913488843c480c06808ce089c19cef95cd62d672c1619",
+    "snapshot_content_verified_at_utc": "2026-09-19T15:17:32.254401+00:00",
+    "current_stat_mismatches": 0,
+    "paths_with_multiple_links": 0,
+    "groups": [
+      {
+        "market": "CN",
+        "category": "charts",
+        "files": 52914,
+        "logical_bytes": 2614638569,
+        "allocated_bytes": 2722635776
+      },
+      {
+        "market": "CN",
+        "category": "fundamentals",
+        "files": 2430,
+        "logical_bytes": 595799355,
+        "allocated_bytes": 600694784
+      },
+      {
+        "market": "CN",
+        "category": "news",
+        "files": 892,
+        "logical_bytes": 433628563,
+        "allocated_bytes": 435470336
+      },
+      {
+        "market": "CN",
+        "category": "prices",
+        "files": 810,
+        "logical_bytes": 362623012,
+        "allocated_bytes": 364314624
+      },
+      {
+        "market": "US",
+        "category": "charts",
+        "files": 142468,
+        "logical_bytes": 6026569527,
+        "allocated_bytes": 6319890432
+      },
+      {
+        "market": "US",
+        "category": "fundamentals",
+        "files": 8028,
+        "logical_bytes": 90235785721,
+        "allocated_bytes": 90254630912
+      },
+      {
+        "market": "US",
+        "category": "news",
+        "files": 4694,
+        "logical_bytes": 13948476648,
+        "allocated_bytes": 13958025216
+      },
+      {
+        "market": "US",
+        "category": "prices",
+        "files": 4213,
+        "logical_bytes": 1967347946,
+        "allocated_bytes": 1976004608
+      },
+      {
+        "market": "catalog",
+        "category": "metadata",
+        "files": 4,
+        "logical_bytes": 146924,
+        "allocated_bytes": 155648
+      }
+    ]
+  },
+  "largest_original_assets_excluding_charts": [
+    {
+      "market": "US",
+      "symbol": "HURC",
+      "files": 5,
+      "logical_bytes": 132199783,
+      "allocated_bytes": 132210688,
+      "modality_logical_bytes": {
+        "fundamentals": 131248632,
+        "news": 228956,
+        "prices": 722195
+      }
+    },
+    {
+      "market": "US",
+      "symbol": "VIRC",
+      "files": 5,
+      "logical_bytes": 128032404,
+      "allocated_bytes": 128040960,
+      "modality_logical_bytes": {
+        "fundamentals": 126218007,
+        "news": 1101412,
+        "prices": 712985
+      }
+    },
+    {
+      "market": "US",
+      "symbol": "HTLD",
+      "files": 5,
+      "logical_bytes": 126727174,
+      "allocated_bytes": 126738432,
+      "modality_logical_bytes": {
+        "fundamentals": 125046415,
+        "news": 948258,
+        "prices": 732501
+      }
+    },
+    {
+      "market": "US",
+      "symbol": "LNN",
+      "files": 5,
+      "logical_bytes": 126640715,
+      "allocated_bytes": 126648320,
+      "modality_logical_bytes": {
+        "fundamentals": 123703356,
+        "news": 2215717,
+        "prices": 721642
+      }
+    },
+    {
+      "market": "US",
+      "symbol": "HOFT",
+      "files": 5,
+      "logical_bytes": 118739330,
+      "allocated_bytes": 118751232,
+      "modality_logical_bytes": {
+        "fundamentals": 116838383,
+        "news": 1248868,
+        "prices": 652079
+      }
+    }
+  ],
+  "prepared_original_inputs": {
+    "groups": [
+      {
+        "stage": "phase1",
+        "market": "CN",
+        "files": 310,
+        "logical_bytes": 116402900
+      },
+      {
+        "stage": "phase1",
+        "market": "US",
+        "files": 110,
+        "logical_bytes": 1210430324
+      },
+      {
+        "stage": "pilot",
+        "market": "US",
+        "files": 60,
+        "logical_bytes": 407511323
+      }
+    ],
+    "total_files": 480,
+    "total_logical_bytes": 1734344547,
+    "all_originals_converted": false
+  },
+  "coverage": [
+    {
+      "stage": "phase1",
+      "market": "CN",
+      "prepared_assets": 62,
+      "prepared_symbols": [
+        "000063.SZ",
+        "000157.SZ",
+        "000333.SZ",
+        "000401.SZ",
+        "000568.SZ",
+        "000598.SZ",
+        "000625.SZ",
+        "000652.SZ",
+        "000659.SZ",
+        "000727.SZ",
+        "000761.SZ",
+        "000767.SZ",
+        "000783.SZ",
+        "000800.SZ",
+        "000826.SZ",
+        "000932.SZ",
+        "000960.SZ",
+        "002027.SZ",
+        "002032.SZ",
+        "002049.SZ",
+        "002074.SZ",
+        "002078.SZ",
+        "002179.SZ",
+        "002271.SZ",
+        "002415.SZ",
+        "002468.SZ",
+        "002607.SZ",
+        "002714.SZ",
+        "600009.SS",
+        "600015.SS",
+        "600027.SS",
+        "600028.SS",
+        "600037.SS",
+        "600079.SS",
+        "600096.SS",
+        "600118.SS",
+        "600132.SS",
+        "600177.SS",
+        "600188.SS",
+        "600216.SS",
+        "600251.SS",
+        "600266.SS",
+        "600312.SS",
+        "600315.SS",
+        "600320.SS",
+        "600340.SS",
+        "600348.SS",
+        "600352.SS",
+        "600398.SS",
+        "600522.SS",
+        "600655.SS",
+        "600682.SS",
+        "600754.SS",
+        "600871.SS",
+        "600970.SS",
+        "601318.SS",
+        "601398.SS",
+        "601600.SS",
+        "601668.SS",
+        "601888.SS",
+        "603019.SS",
+        "688363.SS"
+      ],
+      "sample_assets": 0,
+      "sample_symbols": [],
+      "sample_rows": 0,
+      "price_rows": 272391,
+      "news_rows": 68136,
+      "fundamentals_rows": 0,
+      "empty_fundamentals_assets": 62,
+      "training_ready_true": 0
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "prepared_assets": 22,
+      "prepared_symbols": [
+        "AAOI",
+        "AGNCM",
+        "AMGN",
+        "BGS",
+        "CENX",
+        "CMG",
+        "ESGRO",
+        "EVC",
+        "FIX",
+        "GNE",
+        "LBRDK",
+        "LYB",
+        "MWA",
+        "NEN",
+        "PAR",
+        "POR",
+        "PZZA",
+        "RF",
+        "RRC",
+        "SYY",
+        "UTHR",
+        "WES"
+      ],
+      "sample_assets": 22,
+      "sample_symbols": [
+        "AAOI",
+        "AGNCM",
+        "AMGN",
+        "BGS",
+        "CENX",
+        "CMG",
+        "ESGRO",
+        "EVC",
+        "FIX",
+        "GNE",
+        "LBRDK",
+        "LYB",
+        "MWA",
+        "NEN",
+        "PAR",
+        "POR",
+        "PZZA",
+        "RF",
+        "RRC",
+        "SYY",
+        "UTHR",
+        "WES"
+      ],
+      "sample_rows": 25856,
+      "price_rows": 106983,
+      "news_rows": 29890,
+      "fundamentals_rows": 38407,
+      "empty_fundamentals_assets": 0,
+      "training_ready_true": 0
+    },
+    {
+      "stage": "pilot",
+      "market": "US",
+      "prepared_assets": 12,
+      "prepared_symbols": [
+        "ABM",
+        "ASX",
+        "CSGS",
+        "DECK",
+        "DHT",
+        "GMED",
+        "HONE",
+        "HURC",
+        "HUYA",
+        "IAG",
+        "MNST",
+        "WIMI"
+      ],
+      "sample_assets": 4,
+      "sample_symbols": [
+        "ABM",
+        "CSGS",
+        "DECK",
+        "MNST"
+      ],
+      "sample_rows": 7001,
+      "price_rows": 56499,
+      "news_rows": 6498,
+      "fundamentals_rows": 12693,
+      "empty_fundamentals_assets": 5,
+      "training_ready_true": 0
+    }
+  ],
+  "storage_totals": {
+    "prepared_modality_parquet": {
+      "files": 288,
+      "logical_bytes": 79174964,
+      "allocated_bytes": 79896576
+    },
+    "sample_feature_parquet": {
+      "files": 26,
+      "logical_bytes": 121376995,
+      "allocated_bytes": 121417728
+    },
+    "macro_parquet": {
+      "files": 2,
+      "logical_bytes": 4141105,
+      "allocated_bytes": 4145152
+    },
+    "all_prepared_parquet": {
+      "files": 316,
+      "logical_bytes": 204693064,
+      "allocated_bytes": 205459456
+    },
+    "prepared_manifests": {
+      "files": 122,
+      "logical_bytes": 3342294,
+      "allocated_bytes": 3575808
+    },
+    "embedding_cache": {
+      "files": 1,
+      "logical_bytes": 228376576,
+      "allocated_bytes": 228380672
+    },
+    "budget_checkpoints": {
+      "files": 56,
+      "logical_bytes": 39078838,
+      "allocated_bytes": 39247872
+    },
+    "source_inventory_database": {
+      "files": 1,
+      "logical_bytes": 160100352,
+      "allocated_bytes": 160104448
+    },
+    "selected_derived_artifacts_and_inventory": {
+      "logical_bytes": 635591124,
+      "allocated_bytes": 636768256
+    }
+  },
+  "prepared_parquet_groups": [
+    {
+      "stage": "phase1",
+      "market": "CN",
+      "category": "fundamentals",
+      "files": 62,
+      "logical_bytes": 10912,
+      "allocated_bytes": 253952,
+      "rows": 0
+    },
+    {
+      "stage": "phase1",
+      "market": "CN",
+      "category": "macro",
+      "files": 1,
+      "logical_bytes": 1978585,
+      "allocated_bytes": 1982464,
+      "rows": 856100
+    },
+    {
+      "stage": "phase1",
+      "market": "CN",
+      "category": "news",
+      "files": 62,
+      "logical_bytes": 8648102,
+      "allocated_bytes": 8765440,
+      "rows": 68136
+    },
+    {
+      "stage": "phase1",
+      "market": "CN",
+      "category": "prices",
+      "files": 62,
+      "logical_bytes": 12425926,
+      "allocated_bytes": 12562432,
+      "rows": 272391
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "category": "fundamentals",
+      "files": 22,
+      "logical_bytes": 288294,
+      "allocated_bytes": 339968,
+      "rows": 38407
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "category": "macro",
+      "files": 1,
+      "logical_bytes": 2162520,
+      "allocated_bytes": 2162688,
+      "rows": 888860
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "category": "news",
+      "files": 22,
+      "logical_bytes": 41988063,
+      "allocated_bytes": 42033152,
+      "rows": 29890
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "category": "prices",
+      "files": 22,
+      "logical_bytes": 4547812,
+      "allocated_bytes": 4591616,
+      "rows": 106983
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "category": "samples",
+      "files": 22,
+      "logical_bytes": 96179425,
+      "allocated_bytes": 96215040,
+      "rows": 25856
+    },
+    {
+      "stage": "pilot",
+      "market": "US",
+      "category": "fundamentals",
+      "files": 12,
+      "logical_bytes": 93774,
+      "allocated_bytes": 126976,
+      "rows": 12693
+    },
+    {
+      "stage": "pilot",
+      "market": "US",
+      "category": "news",
+      "files": 12,
+      "logical_bytes": 8833898,
+      "allocated_bytes": 8859648,
+      "rows": 6498
+    },
+    {
+      "stage": "pilot",
+      "market": "US",
+      "category": "prices",
+      "files": 12,
+      "logical_bytes": 2338183,
+      "allocated_bytes": 2363392,
+      "rows": 56499
+    },
+    {
+      "stage": "pilot",
+      "market": "US",
+      "category": "samples",
+      "files": 4,
+      "logical_bytes": 25197570,
+      "allocated_bytes": 25202688,
+      "rows": 7001
+    }
+  ],
+  "prepared_manifest_groups": [
+    {
+      "stage": "phase1",
+      "market": "CN",
+      "files": 62,
+      "logical_bytes": 3105066,
+      "allocated_bytes": 3223552
+    },
+    {
+      "stage": "phase1",
+      "market": "US",
+      "files": 44,
+      "logical_bytes": 182007,
+      "allocated_bytes": 270336
+    },
+    {
+      "stage": "pilot",
+      "market": "US",
+      "files": 16,
+      "logical_bytes": 55221,
+      "allocated_bytes": 81920
+    }
+  ],
+  "parquet_layout": {
+    "compression": "ZSTD en todas las columnas con datos. Los archivos vacíos sin columnas no tienen un códec que inspeccionar.",
+    "maximum_row_group_rows": 8192,
+    "sample_vector_dtype": "float32",
+    "sample_vector_dimensions": {
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 24,
+      "macro": 420
+    },
+    "sample_vector_type": "fixed_size_list",
+    "price_windows_materialized": false,
+    "context_sessions": 64,
+    "iterator_batch_rows": 256,
+    "iterator_price_columns": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume"
+    ],
+    "worker_policy": "El lector mantiene una historia de precios por activo y trabajador activo. Los ensayos supervisados registrados usan workers=0."
+  },
+  "largest_prepared_modality_partitions": [
+    {
+      "path": "data/processed/phase1/US/ESGRO",
+      "files": 3,
+      "logical_bytes": 12933907,
+      "allocated_bytes": 12939264,
+      "rows": {
+        "fundamentals": 812,
+        "news": 8575,
+        "prices": 1600
+      }
+    },
+    {
+      "path": "data/processed/phase1/US/CMG",
+      "files": 3,
+      "logical_bytes": 8785212,
+      "allocated_bytes": 8794112,
+      "rows": {
+        "fundamentals": 2013,
+        "news": 4796,
+        "prices": 4824
+      }
+    },
+    {
+      "path": "data/processed/phase1/US/AMGN",
+      "files": 3,
+      "logical_bytes": 7934907,
+      "allocated_bytes": 7938048,
+      "rows": {
+        "fundamentals": 2252,
+        "news": 5575,
+        "prices": 6347
+      }
+    },
+    {
+      "path": "data/processed/pilot/US/DECK",
+      "files": 3,
+      "logical_bytes": 2498100,
+      "allocated_bytes": 2502656,
+      "rows": {
+        "fundamentals": 1941,
+        "news": 1725,
+        "prices": 6348
+      }
+    },
+    {
+      "path": "data/processed/phase1/US/SYY",
+      "files": 3,
+      "logical_bytes": 2469093,
+      "allocated_bytes": 2473984,
+      "rows": {
+        "fundamentals": 2167,
+        "news": 1733,
+        "prices": 6335
+      }
+    }
+  ],
+  "largest_feature_partitions": [
+    {
+      "path": "data/processed/phase1/samples/US/AMGN/samples.parquet",
+      "logical_bytes": 11976151,
+      "allocated_bytes": 11976704,
+      "rows": 3090,
+      "row_groups": 1,
+      "largest_row_group_rows": 3090,
+      "parquet_uncompressed_column_bytes": 15506523,
+      "compression": [
+        "ZSTD"
+      ],
+      "vector_dimensions": {
+        "fundamentals": 24,
+        "news": 384,
+        "charts": 512,
+        "macro": 420
+      },
+      "vector_dtypes": {
+        "fundamentals": "float",
+        "news": "float",
+        "charts": "float",
+        "macro": "float"
+      },
+      "stage": "phase1",
+      "market": "US",
+      "category": "samples"
+    },
+    {
+      "path": "data/processed/phase1/samples/US/CMG/samples.parquet",
+      "logical_bytes": 11356492,
+      "allocated_bytes": 11358208,
+      "rows": 2988,
+      "row_groups": 1,
+      "largest_row_group_rows": 2988,
+      "parquet_uncompressed_column_bytes": 14939520,
+      "compression": [
+        "ZSTD"
+      ],
+      "vector_dimensions": {
+        "fundamentals": 24,
+        "news": 384,
+        "charts": 512,
+        "macro": 420
+      },
+      "vector_dtypes": {
+        "fundamentals": "float",
+        "news": "float",
+        "charts": "float",
+        "macro": "float"
+      },
+      "stage": "phase1",
+      "market": "US",
+      "category": "samples"
+    },
+    {
+      "path": "data/processed/phase1/samples/US/SYY/samples.parquet",
+      "logical_bytes": 8935059,
+      "allocated_bytes": 8937472,
+      "rows": 2540,
+      "row_groups": 1,
+      "largest_row_group_rows": 2540,
+      "parquet_uncompressed_column_bytes": 12469433,
+      "compression": [
+        "ZSTD"
+      ],
+      "vector_dimensions": {
+        "fundamentals": 24,
+        "news": 384,
+        "charts": 512,
+        "macro": 420
+      },
+      "vector_dtypes": {
+        "fundamentals": "float",
+        "news": "float",
+        "charts": "float",
+        "macro": "float"
+      },
+      "stage": "phase1",
+      "market": "US",
+      "category": "samples"
+    },
+    {
+      "path": "data/processed/pilot/samples/US/MNST/samples.parquet",
+      "logical_bytes": 8047144,
+      "allocated_bytes": 8048640,
+      "rows": 2241,
+      "row_groups": 1,
+      "largest_row_group_rows": 2241,
+      "parquet_uncompressed_column_bytes": 11173489,
+      "compression": [
+        "ZSTD"
+      ],
+      "vector_dimensions": {
+        "fundamentals": 24,
+        "news": 384,
+        "charts": 512,
+        "macro": 420
+      },
+      "vector_dtypes": {
+        "fundamentals": "float",
+        "news": "float",
+        "charts": "float",
+        "macro": "float"
+      },
+      "stage": "pilot",
+      "market": "US",
+      "category": "samples"
+    },
+    {
+      "path": "data/processed/phase1/samples/US/RRC/samples.parquet",
+      "logical_bytes": 7891536,
+      "allocated_bytes": 7892992,
+      "rows": 2237,
+      "row_groups": 1,
+      "largest_row_group_rows": 2237,
+      "parquet_uncompressed_column_bytes": 11088461,
+      "compression": [
+        "ZSTD"
+      ],
+      "vector_dimensions": {
+        "fundamentals": 24,
+        "news": 384,
+        "charts": 512,
+        "macro": 420
+      },
+      "vector_dtypes": {
+        "fundamentals": "float",
+        "news": "float",
+        "charts": "float",
+        "macro": "float"
+      },
+      "stage": "phase1",
+      "market": "US",
+      "category": "samples"
+    }
+  ],
+  "largest_news_partition": {
+    "path": "data/processed/phase1/US/ESGRO/news.parquet",
+    "logical_bytes": 12856172,
+    "allocated_bytes": 12857344,
+    "rows": 8575,
+    "row_groups": 2,
+    "largest_row_group_rows": 8192,
+    "parquet_uncompressed_column_bytes": 41151044,
+    "compression": [
+      "ZSTD"
+    ],
+    "stage": "phase1",
+    "market": "US",
+    "category": "news"
+  },
+  "macro_partitions": [
+    {
+      "path": "data/processed/phase1/macro-CN.parquet",
+      "logical_bytes": 1978585,
+      "allocated_bytes": 1982464,
+      "rows": 856100,
+      "row_groups": 105,
+      "largest_row_group_rows": 8192,
+      "parquet_uncompressed_column_bytes": 6000169,
+      "compression": [
+        "ZSTD"
+      ],
+      "stage": "phase1",
+      "market": "CN",
+      "category": "macro"
+    },
+    {
+      "path": "data/processed/phase1/macro-US.parquet",
+      "logical_bytes": 2162520,
+      "allocated_bytes": 2162688,
+      "rows": 888860,
+      "row_groups": 109,
+      "largest_row_group_rows": 8192,
+      "parquet_uncompressed_column_bytes": 6341260,
+      "compression": [
+        "ZSTD"
+      ],
+      "stage": "phase1",
+      "market": "US",
+      "category": "macro"
+    }
+  ],
+  "largest_price_history": {
+    "path": "data/processed/phase1/US/CENX/prices.parquet",
+    "logical_bytes": 194245,
+    "allocated_bytes": 196608,
+    "rows": 6348,
+    "row_groups": 1,
+    "largest_row_group_rows": 6348,
+    "parquet_uncompressed_column_bytes": 357217,
+    "compression": [
+      "ZSTD"
+    ],
+    "price_dtypes": {
+      "open": "double",
+      "high": "double",
+      "low": "double",
+      "close": "double",
+      "volume": "int64"
+    },
+    "stage": "phase1",
+    "market": "US",
+    "category": "prices",
+    "numpy_dtype": "float64",
+    "numeric_array_bytes": 253920
+  },
+  "embedding_cache": {
+    "files": 1,
+    "logical_bytes": 228376576,
+    "allocated_bytes": 228380672,
+    "files_detail": [
+      {
+        "path": "data/embeddings/phase1/representations.sqlite",
+        "logical_bytes": 228376576,
+        "allocated_bytes": 228380672
+      }
+    ],
+    "vectors": [
+      {
+        "kind": "chart",
+        "vectors": 32857,
+        "payload_bytes": 67291136,
+        "minimum_vector_bytes": 2048,
+        "maximum_vector_bytes": 2048
+      },
+      {
+        "kind": "news",
+        "vectors": 32648,
+        "payload_bytes": 50147328,
+        "minimum_vector_bytes": 1536,
+        "maximum_vector_bytes": 1536
+      }
+    ]
+  },
+  "budget_checkpoints": {
+    "files": 56,
+    "logical_bytes": 39078838,
+    "allocated_bytes": 39247872,
+    "groups": [
+      {
+        "run": "run-20260919-1533",
+        "files": 18,
+        "logical_bytes": 12805629,
+        "allocated_bytes": 12865536
+      },
+      {
+        "run": "run-20260919-1538-20epochs",
+        "files": 20,
+        "logical_bytes": 13467580,
+        "allocated_bytes": 13516800
+      },
+      {
+        "run": "run-20260919-1541",
+        "files": 18,
+        "logical_bytes": 12805629,
+        "allocated_bytes": 12865536
+      }
+    ],
+    "minimum_file_bytes": 672931,
+    "maximum_file_bytes": 749938,
+    "caveat": "Incluye los 56 checkpoints existentes de tres directorios de ensayos, sin atribuirlos a una sola campaña."
+  },
+  "exact_numeric_payload": {
+    "kind": "Cálculo exacto por dimensiones y dtype, no medición de RSS, PSS o VRAM total.",
+    "modalities": [
+      {
+        "modality": "news",
+        "dtype": "float32",
+        "shape_per_sample": [
+          384
+        ],
+        "bytes_per_sample": 1536,
+        "bytes_batch_64": 98304
+      },
+      {
+        "modality": "charts",
+        "dtype": "float32",
+        "shape_per_sample": [
+          512
+        ],
+        "bytes_per_sample": 2048,
+        "bytes_batch_64": 131072
+      },
+      {
+        "modality": "fundamentals",
+        "dtype": "float32",
+        "shape_per_sample": [
+          24
+        ],
+        "bytes_per_sample": 96,
+        "bytes_batch_64": 6144
+      },
+      {
+        "modality": "macro",
+        "dtype": "float32",
+        "shape_per_sample": [
+          420
+        ],
+        "bytes_per_sample": 1680,
+        "bytes_batch_64": 107520
+      },
+      {
+        "modality": "prices",
+        "dtype": "float32",
+        "shape_per_sample": [
+          64,
+          5
+        ],
+        "bytes_per_sample": 1280,
+        "bytes_batch_64": 81920
+      }
+    ],
+    "model_input_bytes_per_sample": 6640,
+    "model_input_bytes_batch_64": 424960,
+    "float32_target_bytes_batch_64": 256,
+    "model_inputs_and_target_bytes_batch_64": 425216,
+    "projected_vector_bytes_batch_256": 1372160,
+    "projected_price_index_and_timestamp_bytes_batch_256": 4096,
+    "projected_numeric_values_bytes_batch_256": 1376256,
+    "exclusion": "No incluye bitmaps, objetos de Python, buffers Arrow, copias temporales, activaciones, pesos, gradientes, optimizador ni reservas del asignador."
+  },
+  "limitations": [
+    "Hay 96 activos con modalidades preparadas y 26 con muestras. El corpus completo no está convertido.",
+    "Los 62 activos CN tienen cero fundamentales admitidos y cero muestras multimodales. Las fechas de publicación de sus tablas siguen sin evidencia admisible.",
+    "La caché de representaciones es compartida por fase 1 y piloto. Se cuenta una vez y no debe añadirse otra vez al sumar ambos paneles.",
+    "Las muestras contienen contexto macro y vectores derivados también representados en otras capas. Son archivos distintos que se cuentan por separado, no observaciones independientes.",
+    "La conversión acumula noticias, rechazos y hechos deduplicados por activo. La materialización acumula las muestras del activo y lee el panel macro completo. No se ha demostrado un límite universal de RAM para convertir todo el corpus.",
+    "El tamaño original o el tamaño Parquet descomprimido no equivale a la memoria de los objetos de Python. Escalar exige límites por activo y lectura y escritura incremental o partición de los casos que los superen.",
+    "Los bytes asignados describen la contabilidad del sistema de archivos para estas rutas, no el espacio físico único de todo el dispositivo.",
+    "El total de artefactos seleccionados excluye pesos de codificadores en cachés de usuario, entornos, descargas macro, etiquetas temporales y otros resultados fuera de las categorías enumeradas.",
+    "Los manifiestos conservan training_ready=false. El uso en ensayos técnicos de coste no congela una cohorte ni una evaluación final.",
+    "No se ha repetido ningún entrenamiento ni benchmark. La auditoría no establece una tasa de lectura máxima, una aceleración ni el pico exacto de memoria."
+  ],
+  "reproduction": "Comandos incluidos en storage-budget.md."
+}

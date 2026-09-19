@@ -1,11 +1,13 @@
 # Documentación de MARS-TITAN
 
-La documentación parte de la propuesta presentada y separa las obligaciones académicas, el diseño de la investigación y las decisiones de ingeniería. Está preparada para comenzar el trabajo experimental. No acredita que los objetivos ya estén alcanzados.
+La documentación reúne el diseño de investigación, las decisiones de ingeniería y sus comprobaciones. La preparación de datos y los ensayos de coste ya tienen evidencia ejecutada. La arquitectura candidata y la comparación confirmatoria siguen pendientes.
 
 | Para qué | Documento |
 | --- | --- |
-| Conservar lo presentado | [Propuesta del proyecto](academic/proposal.md) y [registro del documento inicial](research/source/README.md). |
-| Revisar condiciones de entrega | [Requisitos](academic/requirements.md), [rúbrica](academic/rubric-matrix.md) y [defensa](academic/defense.md). |
+| Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
+| Consultar entrenamientos medidos | [Presupuesto experimental](../reports/resources/campaign-budget.md), con MLP y GRU, cuatro modalidades y macro. |
+| Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
+| Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
 | Entender la pregunta y cómo contrastarla | [Protocolo](research/protocol.md), [matriz de experimentos](research/experiment-matrix.md), [riesgos](research/risks.md). |
 | Consultar la ampliación y su aportación candidata | [Alcance ampliado](research/research-expansion.md), [arquitectura candidata](research/candidate-architecture.md), [registro de hipótesis](research/novelty-ledger.md) y [crítica adversarial](research/adversarial-review.md). |
 | Organizar el trabajo | [Objetivos y hitos](research/roadmap.md), [tablero de tareas](research/task-board.md) y [auditoría de redundancias y etiquetas](research/backlog-review.md). |

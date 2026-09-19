@@ -1,0 +1,329 @@
+"""Intersección temporal de cuatro modalidades y contexto macro obligatorio."""
+
+import hashlib
+import json
+import math
+import resource
+import sys
+import time
+from bisect import bisect_left, bisect_right
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from .charts import chart_png
+from .fundamentals import snapshot
+from .preparation import atomic_parquet
+from .storage import atomic_json, outside_source, sha256
+from .temporal import MarketClock, admission_errors, aware
+
+FUNDAMENTAL_CONCEPTS = tuple(
+    f"us-gaap:{tag}:USD"
+    for tag in (
+        "Assets",
+        "AssetsCurrent",
+        "Liabilities",
+        "LiabilitiesCurrent",
+        "StockholdersEquity",
+        "CashAndCashEquivalentsAtCarryingValue",
+        "AccountsPayableCurrent",
+        "AccountsReceivableNetCurrent",
+    )
+)
+
+
+def sample_table(rows: list[dict]) -> pa.Table:
+    if not rows:
+        return pa.Table.from_pylist([])
+    widths = {"news": 384, "charts": 512, "fundamentals": 24, "macro": len(rows[0]["macro"])}
+    schema = pa.Table.from_pylist(rows[:1]).schema
+    schema = pa.schema(
+        [
+            pa.field(field.name, pa.list_(pa.float32(), widths[field.name]))
+            if field.name in widths
+            else field
+            for field in schema
+        ]
+    )
+    return pa.Table.from_pylist(rows, schema=schema)
+
+
+def numeric_context(values: list[float | None], ages: list[float]) -> list[float]:
+    """Transformación fija, sin ajustar estadísticas con otras muestras."""
+    observed = [v is not None and math.isfinite(v) for v in values]
+    levels = [
+        math.copysign(math.log1p(abs(v)), v) if ok else 0.0
+        for v, ok in zip(values, observed, strict=True)
+    ]
+    return (
+        levels
+        + [float(x) for x in observed]
+        + [math.log1p(age) if ok else 0.0 for age, ok in zip(ages, observed, strict=True)]
+    )
+
+
+def macro_vector(rows: list[dict], cutoff: datetime) -> tuple[list[float], datetime]:
+    cutoff = aware(cutoff)
+    known = [r for r in rows if r["value"] is not None]
+    if not known:
+        raise ValueError("No observed macro context at this decision")
+    if any(not math.isfinite(r["value"]) for r in known):
+        raise ValueError("Macro context must contain finite observations")
+    if any(r.get("available_at") is None for r in known):
+        raise ValueError("Observed macro value without availability")
+    if any(aware(r["available_at"]) > cutoff for r in known):
+        raise ValueError("Macro context contains future information")
+    rows = sorted(rows, key=lambda r: r["indicator_id"])
+    if len({r["indicator_id"] for r in rows}) != len(rows):
+        raise ValueError("Duplicate macro indicator at decision")
+    ages = [
+        (cutoff - aware(r["available_at"])).total_seconds() / 86400
+        if r.get("available_at")
+        else 0.0
+        for r in rows
+    ]
+    return numeric_context([r["value"] for r in rows], ages), max(r["available_at"] for r in known)
+
+
+def eligible_samples(
+    prices: pd.DataFrame,
+    news: list[dict],
+    facts: list[dict],
+    clock: MarketClock,
+    *,
+    context: int = 64,
+    news_lookback_sessions: int = 5,
+):
+    if context < 2 or news_lookback_sessions < 1:
+        raise ValueError("Invalid context or news lookback")
+    if not facts or not news:
+        return
+    news = sorted(news, key=lambda n: (n["available_at"], n["content_hash"]))
+    times = [r["available_at"] for r in news]
+    session_positions = {d.isoformat(): i for i, d in enumerate(clock.days)}
+    sessions = list(prices["session"])
+    for index in range(context - 1, len(prices)):
+        day = sessions[index]
+        position = session_positions[day]
+        if position < context - 1:
+            continue
+        expected = [d.isoformat() for d in clock.days[position - context + 1 : position + 1]]
+        if sessions[index - context + 1 : index + 1] != expected:
+            continue
+        cutoff = clock.decisions[position]
+        beginning = clock.decisions[max(0, position - news_lookback_sessions + 1)]
+        first, last = bisect_left(times, beginning), bisect_right(times, cutoff)
+        if first == last:
+            continue
+        known = snapshot(facts, cutoff)
+        selected = [known.get(concept) for concept in FUNDAMENTAL_CONCEPTS]
+        if not any(selected):
+            continue
+        available = max(r["available_at"] for r in selected if r)
+        availability = {
+            "prices": prices.iloc[index]["available_at"],
+            "news": news[last - 1]["available_at"],
+            "fundamentals": available,
+            "charts": cutoff,
+        }
+        if any(aware(value) > cutoff for value in availability.values()):
+            raise ValueError("Future information in candidate modalities")
+        values = [r["value"] if r else None for r in selected]
+        ages = [
+            (cutoff - r["available_at"]).total_seconds() / 86400 if r else 0.0 for r in selected
+        ]
+        yield {
+            "prediction_at": cutoff,
+            "session": day,
+            "price_end_index": index,
+            "news_indices": list(range(first, last)),
+            "fundamentals": numeric_context(values, ages),
+            "fundamentals_available_at": available,
+            "fundamental_accessions": sorted({r["accession"] for r in selected if r}),
+            "news_available_at": news[last - 1]["available_at"],
+            "input_availability": availability,
+        }
+
+
+def validate_sample_inputs(
+    prepared: Path, destination: Path, panel: dict, clock: MarketClock
+) -> tuple[str, dict[str, dict]]:
+    """Comprueba destinos y calendarios antes de inicializar recursos o escribir."""
+    outside_source(Path("dataset"), destination)
+    if prepared.resolve() == destination.resolve():
+        raise ValueError("Sample output must not overwrite prepared modality manifests")
+    calendar_fingerprint = hashlib.sha256(
+        "|".join(value.isoformat() for value in clock.decisions).encode()
+    ).hexdigest()
+    manifests = {}
+    for asset in panel["assets"]:
+        symbol = asset["symbol"]
+        target = destination / clock.market / symbol
+        outside_source(Path("dataset"), target)
+        for market in ("US", "CN"):
+            outside_source(prepared / market, target)
+        manifest = json.loads((prepared / clock.market / symbol / "manifest.json").read_text())
+        if manifest.get("policy", {}).get("calendar") != calendar_fingerprint:
+            raise ValueError(f"Prepared calendar differs from the sample calendar: {symbol}")
+        manifests[symbol] = manifest
+    return calendar_fingerprint, manifests
+
+
+def materialize_samples(
+    prepared: Path,
+    macro_path: Path,
+    destination: Path,
+    panel: dict,
+    clock: MarketClock,
+    encoders,
+    cache,
+) -> dict:
+    """Guarda vectores por activo. Las ventanas de precios se obtienen bajo demanda."""
+    calendar_fingerprint, manifests = validate_sample_inputs(prepared, destination, panel, clock)
+    import torch
+
+    macro_rows = pq.read_table(macro_path).to_pylist()
+    macro_by_time = defaultdict(list)
+    for row in macro_rows:
+        macro_by_time[row["prediction_at"]].append(row)
+    macro_schema = sorted({r["indicator_id"] for r in macro_rows})
+    if not macro_schema:
+        raise ValueError("Empty macro panel")
+    macro_hash = sha256(macro_path)
+    encoder_fingerprint = hashlib.sha256(
+        json.dumps(encoders.spec, sort_keys=True).encode()
+    ).hexdigest()
+    reports = []
+    for asset in panel["assets"]:
+        symbol = asset["symbol"]
+        source = prepared / clock.market / symbol
+        manifest = manifests[symbol]
+        for name, digest in manifest["artifacts"].items():
+            if sha256(source / name) != digest:
+                raise ValueError(f"Prepared artifact changed: {symbol}/{name}")
+        target = destination / clock.market / symbol
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                {
+                    "prepared": manifest["fingerprint"],
+                    "calendar": calendar_fingerprint,
+                    "macro": macro_hash,
+                    "encoders": encoder_fingerprint,
+                    "sample_code": sha256(Path(__file__)),
+                    "renderer": sha256(Path(__file__).with_name("charts.py")),
+                    "context": 64,
+                    "news_lookback_sessions": 5,
+                },
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+        receipt_path = target / "manifest.json"
+        if receipt_path.exists():
+            old = json.loads(receipt_path.read_text())
+            if old["fingerprint"] == fingerprint and (target / "samples.parquet").exists():
+                if sha256(target / "samples.parquet") == old["samples_sha256"]:
+                    reports.append({**old, "reused": True})
+                    continue
+        started = time.perf_counter()
+        torch.cuda.reset_peak_memory_stats()
+        prices = pq.read_table(source / "prices.parquet").to_pandas()
+        news = sorted(
+            pq.read_table(source / "news.parquet").to_pylist(),
+            key=lambda r: (r["available_at"], r["content_hash"]),
+        )
+        facts = pq.read_table(source / "fundamentals.parquet").to_pylist()
+        ohlc = prices[["open", "high", "low", "close"]].to_numpy()
+        samples, no_macro = [], 0
+        for sample in eligible_samples(prices, news, facts, clock):
+            context = macro_by_time.get(sample["prediction_at"], [])
+            if (
+                not context
+                or sorted(r["indicator_id"] for r in context) != macro_schema
+                or not any(r["value"] is not None for r in context)
+            ):
+                no_macro += 1
+                continue
+            macro, macro_available = macro_vector(context, sample["prediction_at"])
+            errors = admission_errors(
+                {**sample["input_availability"], "macro": macro_available}, sample["prediction_at"]
+            )
+            if errors:
+                raise ValueError(f"Sample is not admissible for training: {errors}")
+            texts = []
+            for index in sample["news_indices"]:
+                article = news[index]
+                identity = {
+                    "encoder": encoder_fingerprint,
+                    "kind": "news",
+                    "content": article["content_hash"],
+                    "policy": article["availability_rule"],
+                }
+                vector = cache.get(identity)
+                if vector is None:
+                    vector = encoders.text(article["text"])
+                    cache.put(identity, vector)
+                texts.append(vector)
+            png = chart_png(ohlc, end_index=sample["price_end_index"])
+            chart_hash = hashlib.sha256(png).hexdigest()
+            identity = {"encoder": encoder_fingerprint, "kind": "chart", "content": chart_hash}
+            image = cache.get(identity)
+            if image is None:
+                image = encoders.images([png])[0]
+                cache.put(identity, image)
+            text = np.mean(texts, axis=0)
+            if not np.isfinite(text).all() or not np.isfinite(image).all():
+                raise ValueError("Nonfinite multimodal representation")
+            samples.append(
+                {
+                    **sample,
+                    "news": text.tolist(),
+                    "charts": image.tolist(),
+                    "macro": macro,
+                    "macro_available_at": macro_available,
+                    "chart_hash": chart_hash,
+                    "news_hashes": [news[i]["content_hash"] for i in sample["news_indices"]],
+                    "macro_units": [
+                        r["unit"] for r in sorted(context, key=lambda r: r["indicator_id"])
+                    ],
+                }
+            )
+            if len(samples) % 128 == 0:
+                print(f"encode: {symbol} {len(samples)} samples", file=sys.stderr, flush=True)
+        atomic_parquet(target / "samples.parquet", sample_table(samples))
+        result = {
+            "schema_version": 1,
+            "symbol": symbol,
+            "market": clock.market,
+            "fingerprint": fingerprint,
+            "samples": len(samples),
+            "excluded_no_macro": no_macro,
+            "samples_sha256": sha256(target / "samples.parquet"),
+            "macro_sha256": macro_hash,
+            "macro_indicators": macro_schema,
+            "encoders": encoders.spec,
+            "prepared_fingerprint": manifest["fingerprint"],
+            "calendar": calendar_fingerprint,
+            "context_sessions": 64,
+            "news_lookback_sessions": 5,
+            "elapsed_seconds": time.perf_counter() - started,
+            "cost_profile_ready": bool(samples),
+            "training_ready": False,
+            "pending_for_scientific_training": ["targets", "frozen_scientific_cohort_and_splits"],
+            "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
+            "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
+            "peak_vram_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
+            "peak_vram_reserved_mib": torch.cuda.max_memory_reserved() / 1024**2,
+            "purpose": "engineering_profile_only",
+        }
+        atomic_json(receipt_path, result)
+        reports.append(result)
+    return {
+        "market": clock.market,
+        "assets": reports,
+        "samples": sum(r["samples"] for r in reports),
+    }

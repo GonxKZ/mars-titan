@@ -1,0 +1,163 @@
+{
+  "market": "US",
+  "purpose": "verification_pilot_not_confirmatory_universe",
+  "selection_cutoff": "2018-12-31T23:59:00+00:00",
+  "minimum_samples": 252,
+  "seed": 42,
+  "size": 4,
+  "order": "sha256(seed:symbol)",
+  "sector_used": false,
+  "future_survival_required": false,
+  "universe_scope": "retrospective_original_archive_not_historical_index_membership",
+  "candidate_assets": 2639,
+  "assets": [
+    {
+      "symbol": "MNST",
+      "paths": {
+        "fundamentals": [
+          "table/financial_reports/mnst/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/mnst/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/mnst/condensed_consolidated_statement_of_equity.json"
+        ],
+        "news": [
+          "text/sp500_news/MNST.jsonl"
+        ],
+        "prices": [
+          "time_series/S&P500_time_series/mnst.csv"
+        ]
+      },
+      "eligible_before_cutoff": 1225,
+      "prepared_fingerprint": "d58341087cad39a40eadcac18c6a7422e0a646e20e6b32b15b016e9aa41a3f9c"
+    },
+    {
+      "symbol": "ABM",
+      "paths": {
+        "fundamentals": [
+          "table/financial_reports/abm/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/abm/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/abm/condensed_consolidated_statement_of_equity.json"
+        ],
+        "news": [
+          "text/sp500_news/ABM.jsonl"
+        ],
+        "prices": [
+          "time_series/S&P500_time_series/abm.csv"
+        ]
+      },
+      "eligible_before_cutoff": 802,
+      "prepared_fingerprint": "dc8597d3e3599806a9c52d696f6a2463d7f9b5c8b5fea9799ed1cdc86333c34c"
+    },
+    {
+      "symbol": "DECK",
+      "paths": {
+        "fundamentals": [
+          "table/financial_reports/deck/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/deck/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/deck/condensed_consolidated_statement_of_equity.json"
+        ],
+        "news": [
+          "text/sp500_news/DECK.jsonl"
+        ],
+        "prices": [
+          "time_series/S&P500_time_series/deck.csv"
+        ]
+      },
+      "eligible_before_cutoff": 1179,
+      "prepared_fingerprint": "f2af1532d03272c94dee7dec9a0287b37d26fc353bb787d4c1751eca9920de45"
+    },
+    {
+      "symbol": "CSGS",
+      "paths": {
+        "fundamentals": [
+          "table/financial_reports/csgs/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/csgs/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/csgs/condensed_consolidated_statement_of_equity.json"
+        ],
+        "news": [
+          "text/sp500_news/CSGS.jsonl"
+        ],
+        "prices": [
+          "time_series/S&P500_time_series/csgs.csv"
+        ]
+      },
+      "eligible_before_cutoff": 338,
+      "prepared_fingerprint": "baed4da039f8dcd3605873cd6baf0ce6a26a3fa96ef81f97ea89aa4cab1acbe7"
+    }
+  ],
+  "inspected": [
+    {
+      "symbol": "HURC",
+      "eligible_before_cutoff": 115,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "MNST",
+      "eligible_before_cutoff": 1225,
+      "admitted": true,
+      "reason": null
+    },
+    {
+      "symbol": "GMED",
+      "eligible_before_cutoff": 10,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "ABM",
+      "eligible_before_cutoff": 802,
+      "admitted": true,
+      "reason": null
+    },
+    {
+      "symbol": "DHT",
+      "eligible_before_cutoff": 0,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "HUYA",
+      "eligible_before_cutoff": 0,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "HONE",
+      "eligible_before_cutoff": 0,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "ASX",
+      "eligible_before_cutoff": 0,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "DECK",
+      "eligible_before_cutoff": 1179,
+      "admitted": true,
+      "reason": null
+    },
+    {
+      "symbol": "WIMI",
+      "eligible_before_cutoff": 0,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "IAG",
+      "eligible_before_cutoff": 0,
+      "admitted": false,
+      "reason": "insufficient_past_coverage"
+    },
+    {
+      "symbol": "CSGS",
+      "eligible_before_cutoff": 338,
+      "admitted": true,
+      "reason": null
+    }
+  ],
+  "macro_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+  "implementation_sha256": "7302046a57c9e2178b1c3d974b670d4d36d08da18487bd93377b2f19aa0a2de7"
+}

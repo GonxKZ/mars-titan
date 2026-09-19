@@ -1,0 +1,1426 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-19",
+  "scope": "src/mars_titan measured by the full local test suite, excluding separate timed real-data runs",
+  "tests": {
+    "passed": 317,
+    "skipped": 0,
+    "seconds": 24.89
+  },
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1"
+  },
+  "coverage": {
+    "covered_lines": 1819,
+    "num_statements": 2217,
+    "percent_covered": 79.34241115908335,
+    "percent_covered_display": "79",
+    "missing_lines": 398,
+    "excluded_lines": 0,
+    "percent_statements_covered": 82.04781235904375,
+    "percent_statements_covered_display": "82",
+    "num_branches": 794,
+    "num_partial_branches": 130,
+    "covered_branches": 570,
+    "missing_branches": 224,
+    "percent_branches_covered": 71.78841309823677,
+    "percent_branches_covered_display": "72"
+  },
+  "crap_convention": "C = Radon function or method cyclomatic complexity. c = coverage.py statement coverage for that named function. CRAP = C^2*(1-c)^3+C. Class aggregates and nested closures are not separately scored.",
+  "files": {
+    "src/mars_titan/__init__.py": {
+      "sha256": "a415fcbfb61c32b5008c05ce3a368fbadb67e515caf0c1b510aa375bc3313fe0",
+      "coverage": {
+        "covered_lines": 0,
+        "num_statements": 0,
+        "percent_covered": 100,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100,
+        "percent_statements_covered_display": "100",
+        "num_branches": 0,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 0,
+        "percent_branches_covered": 100,
+        "percent_branches_covered_display": "100"
+      }
+    },
+    "src/mars_titan/budget_training.py": {
+      "sha256": "a41653d1c4f2233b1ddeb12ae83e04110c6404635946d86447fabf94398c0618",
+      "coverage": {
+        "covered_lines": 235,
+        "num_statements": 246,
+        "percent_covered": 93.31210191082802,
+        "percent_covered_display": "93",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 95.52845528455285,
+        "percent_statements_covered_display": "96",
+        "num_branches": 68,
+        "num_partial_branches": 8,
+        "covered_branches": 58,
+        "missing_branches": 10,
+        "percent_branches_covered": 85.29411764705883,
+        "percent_branches_covered_display": "85"
+      }
+    },
+    "src/mars_titan/data/__init__.py": {
+      "sha256": "9ecf78be33118881acc3906f82fb01aab711685d3de909c5e6958e757cd456cb",
+      "coverage": {
+        "covered_lines": 0,
+        "num_statements": 0,
+        "percent_covered": 100,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100,
+        "percent_statements_covered_display": "100",
+        "num_branches": 0,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 0,
+        "percent_branches_covered": 100,
+        "percent_branches_covered_display": "100"
+      }
+    },
+    "src/mars_titan/data/audit.py": {
+      "sha256": "58d3e3a4c4bfc8a11486892674fddd19d82339c7d7154ea55a4ebd702fb4c2bd",
+      "coverage": {
+        "covered_lines": 39,
+        "num_statements": 56,
+        "percent_covered": 64.86486486486487,
+        "percent_covered_display": "65",
+        "missing_lines": 17,
+        "excluded_lines": 0,
+        "percent_statements_covered": 69.64285714285714,
+        "percent_statements_covered_display": "70",
+        "num_branches": 18,
+        "num_partial_branches": 3,
+        "covered_branches": 9,
+        "missing_branches": 9,
+        "percent_branches_covered": 50,
+        "percent_branches_covered_display": "50"
+      }
+    },
+    "src/mars_titan/data/budget_targets.py": {
+      "sha256": "5cdc504bfe387b6d835c806493a7a67ffe6472e4a37b90b01ed516c8a99211fe",
+      "coverage": {
+        "covered_lines": 46,
+        "num_statements": 48,
+        "percent_covered": 93.75,
+        "percent_covered_display": "94",
+        "missing_lines": 2,
+        "excluded_lines": 0,
+        "percent_statements_covered": 95.83333333333333,
+        "percent_statements_covered_display": "96",
+        "num_branches": 16,
+        "num_partial_branches": 2,
+        "covered_branches": 14,
+        "missing_branches": 2,
+        "percent_branches_covered": 87.5,
+        "percent_branches_covered_display": "88"
+      }
+    },
+    "src/mars_titan/data/charts.py": {
+      "sha256": "dbf83f0fcb9735c142fbce69a1683506a021c3e86c739fabb33705575377700d",
+      "coverage": {
+        "covered_lines": 24,
+        "num_statements": 25,
+        "percent_covered": 93.93939393939394,
+        "percent_covered_display": "94",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 96,
+        "percent_statements_covered_display": "96",
+        "num_branches": 8,
+        "num_partial_branches": 1,
+        "covered_branches": 7,
+        "missing_branches": 1,
+        "percent_branches_covered": 87.5,
+        "percent_branches_covered_display": "88"
+      }
+    },
+    "src/mars_titan/data/cli.py": {
+      "sha256": "5172e524a4fb84c8b0ec88e3527c354b16efa4534a53db72be9c74168bf07a94",
+      "coverage": {
+        "covered_lines": 90,
+        "num_statements": 117,
+        "percent_covered": 72.66187050359713,
+        "percent_covered_display": "73",
+        "missing_lines": 27,
+        "excluded_lines": 0,
+        "percent_statements_covered": 76.92307692307692,
+        "percent_statements_covered_display": "77",
+        "num_branches": 22,
+        "num_partial_branches": 7,
+        "covered_branches": 11,
+        "missing_branches": 11,
+        "percent_branches_covered": 50,
+        "percent_branches_covered_display": "50"
+      }
+    },
+    "src/mars_titan/data/embeddings.py": {
+      "sha256": "8d2fc775d46d58e401e854cbbd86fccf9ba4d3a53d37415ddc47c8936be88136",
+      "coverage": {
+        "covered_lines": 62,
+        "num_statements": 118,
+        "percent_covered": 51.351351351351354,
+        "percent_covered_display": "51",
+        "missing_lines": 56,
+        "excluded_lines": 0,
+        "percent_statements_covered": 52.54237288135593,
+        "percent_statements_covered_display": "53",
+        "num_branches": 30,
+        "num_partial_branches": 2,
+        "covered_branches": 14,
+        "missing_branches": 16,
+        "percent_branches_covered": 46.666666666666664,
+        "percent_branches_covered_display": "47"
+      }
+    },
+    "src/mars_titan/data/fundamentals.py": {
+      "sha256": "0c34e78e7a706ce4247d5b9c10bfb554448e6b0a1772c67e9fc4c682724f9f57",
+      "coverage": {
+        "covered_lines": 72,
+        "num_statements": 78,
+        "percent_covered": 91.52542372881356,
+        "percent_covered_display": "92",
+        "missing_lines": 6,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.3076923076923,
+        "percent_statements_covered_display": "92",
+        "num_branches": 40,
+        "num_partial_branches": 4,
+        "covered_branches": 36,
+        "missing_branches": 4,
+        "percent_branches_covered": 90,
+        "percent_branches_covered_display": "90"
+      }
+    },
+    "src/mars_titan/data/inventory.py": {
+      "sha256": "44bd25cb0e82e96d3f7606dbcf0263be89bf5367b5bdb10947dd1a5a29bb591d",
+      "coverage": {
+        "covered_lines": 87,
+        "num_statements": 101,
+        "percent_covered": 82.94573643410853,
+        "percent_covered_display": "83",
+        "missing_lines": 14,
+        "excluded_lines": 0,
+        "percent_statements_covered": 86.13861386138613,
+        "percent_statements_covered_display": "86",
+        "num_branches": 28,
+        "num_partial_branches": 8,
+        "covered_branches": 20,
+        "missing_branches": 8,
+        "percent_branches_covered": 71.42857142857143,
+        "percent_branches_covered_display": "71"
+      }
+    },
+    "src/mars_titan/data/macro.py": {
+      "sha256": "d81bf9cbb7658e7ad0f0570d4f09ddd9cdaa917ae9801acb3d7ce294382c61b5",
+      "coverage": {
+        "covered_lines": 193,
+        "num_statements": 201,
+        "percent_covered": 94.19795221843003,
+        "percent_covered_display": "94",
+        "missing_lines": 8,
+        "excluded_lines": 0,
+        "percent_statements_covered": 96.01990049751244,
+        "percent_statements_covered_display": "96",
+        "num_branches": 92,
+        "num_partial_branches": 9,
+        "covered_branches": 83,
+        "missing_branches": 9,
+        "percent_branches_covered": 90.21739130434783,
+        "percent_branches_covered_display": "90"
+      }
+    },
+    "src/mars_titan/data/macro_acquisition.py": {
+      "sha256": "00f074c1355433d35bb1a9be4e794480f010be8b2ddae019a081c7feec1330df",
+      "coverage": {
+        "covered_lines": 398,
+        "num_statements": 465,
+        "percent_covered": 81.20184899845917,
+        "percent_covered_display": "81",
+        "missing_lines": 67,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.59139784946237,
+        "percent_statements_covered_display": "86",
+        "num_branches": 184,
+        "num_partial_branches": 37,
+        "covered_branches": 129,
+        "missing_branches": 55,
+        "percent_branches_covered": 70.1086956521739,
+        "percent_branches_covered_display": "70"
+      }
+    },
+    "src/mars_titan/data/macro_formulas.py": {
+      "sha256": "5fb829faf7785088f31886e28bb25715d649b7abd5d0d90efca459e7b61bf8b6",
+      "coverage": {
+        "covered_lines": 79,
+        "num_statements": 91,
+        "percent_covered": 85.31468531468532,
+        "percent_covered_display": "85",
+        "missing_lines": 12,
+        "excluded_lines": 0,
+        "percent_statements_covered": 86.81318681318682,
+        "percent_statements_covered_display": "87",
+        "num_branches": 52,
+        "num_partial_branches": 9,
+        "covered_branches": 43,
+        "missing_branches": 9,
+        "percent_branches_covered": 82.6923076923077,
+        "percent_branches_covered_display": "83"
+      }
+    },
+    "src/mars_titan/data/macro_preparation.py": {
+      "sha256": "d881232c0d00f0c882cdd35d82eedb4d4e32d09cb469f576b440719730ccba2c",
+      "coverage": {
+        "covered_lines": 0,
+        "num_statements": 25,
+        "percent_covered": 0,
+        "percent_covered_display": "0",
+        "missing_lines": 25,
+        "excluded_lines": 0,
+        "percent_statements_covered": 0,
+        "percent_statements_covered_display": "0",
+        "num_branches": 2,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 2,
+        "percent_branches_covered": 0,
+        "percent_branches_covered_display": "0"
+      }
+    },
+    "src/mars_titan/data/news.py": {
+      "sha256": "c31ddde6fa819600db9ae8dbc90f4634158e4456ba0804d45d5d0a12ad863c16",
+      "coverage": {
+        "covered_lines": 43,
+        "num_statements": 50,
+        "percent_covered": 84.84848484848484,
+        "percent_covered_display": "85",
+        "missing_lines": 7,
+        "excluded_lines": 0,
+        "percent_statements_covered": 86,
+        "percent_statements_covered_display": "86",
+        "num_branches": 16,
+        "num_partial_branches": 3,
+        "covered_branches": 13,
+        "missing_branches": 3,
+        "percent_branches_covered": 81.25,
+        "percent_branches_covered_display": "81"
+      }
+    },
+    "src/mars_titan/data/preparation.py": {
+      "sha256": "1bfae65d59f6158f7d1e82830a76c90ec36267f617022bfdaed47f03b6f9f7b9",
+      "coverage": {
+        "covered_lines": 90,
+        "num_statements": 109,
+        "percent_covered": 79.47019867549669,
+        "percent_covered_display": "79",
+        "missing_lines": 19,
+        "excluded_lines": 0,
+        "percent_statements_covered": 82.56880733944953,
+        "percent_statements_covered_display": "83",
+        "num_branches": 42,
+        "num_partial_branches": 6,
+        "covered_branches": 30,
+        "missing_branches": 12,
+        "percent_branches_covered": 71.42857142857143,
+        "percent_branches_covered_display": "71"
+      }
+    },
+    "src/mars_titan/data/prices.py": {
+      "sha256": "d1d078aacfc83992307a88478b96fc9efbd43dd2d223f0f303b4403801b6a57a",
+      "coverage": {
+        "covered_lines": 23,
+        "num_statements": 24,
+        "percent_covered": 92.3076923076923,
+        "percent_covered_display": "92",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 95.83333333333333,
+        "percent_statements_covered_display": "96",
+        "num_branches": 2,
+        "num_partial_branches": 1,
+        "covered_branches": 1,
+        "missing_branches": 1,
+        "percent_branches_covered": 50,
+        "percent_branches_covered_display": "50"
+      }
+    },
+    "src/mars_titan/data/samples.py": {
+      "sha256": "0961b1cf717e04d04b8bf094bbd0d41d3816cff976e32d4a1f9983895db62249",
+      "coverage": {
+        "covered_lines": 155,
+        "num_statements": 169,
+        "percent_covered": 87.76371308016877,
+        "percent_covered_display": "88",
+        "missing_lines": 14,
+        "excluded_lines": 0,
+        "percent_statements_covered": 91.71597633136095,
+        "percent_statements_covered_display": "92",
+        "num_branches": 68,
+        "num_partial_branches": 15,
+        "covered_branches": 53,
+        "missing_branches": 15,
+        "percent_branches_covered": 77.94117647058823,
+        "percent_branches_covered_display": "78"
+      }
+    },
+    "src/mars_titan/data/storage.py": {
+      "sha256": "1c3e8fe3e61aeca9b5b30d9d1386bfc562c0855ea933b846d17a25ccf0db0845",
+      "coverage": {
+        "covered_lines": 29,
+        "num_statements": 30,
+        "percent_covered": 94.44444444444444,
+        "percent_covered_display": "94",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 96.66666666666667,
+        "percent_statements_covered_display": "97",
+        "num_branches": 6,
+        "num_partial_branches": 1,
+        "covered_branches": 5,
+        "missing_branches": 1,
+        "percent_branches_covered": 83.33333333333333,
+        "percent_branches_covered_display": "83"
+      }
+    },
+    "src/mars_titan/data/streaming.py": {
+      "sha256": "954fbfafd26a44b03e09a42d3555cfe46622aaee37fcea704464cf9c3994d993",
+      "coverage": {
+        "covered_lines": 61,
+        "num_statements": 70,
+        "percent_covered": 82.6923076923077,
+        "percent_covered_display": "83",
+        "missing_lines": 9,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.14285714285714,
+        "percent_statements_covered_display": "87",
+        "num_branches": 34,
+        "num_partial_branches": 9,
+        "covered_branches": 25,
+        "missing_branches": 9,
+        "percent_branches_covered": 73.52941176470588,
+        "percent_branches_covered_display": "74"
+      }
+    },
+    "src/mars_titan/data/temporal.py": {
+      "sha256": "021deb2af91f2402add636b842274af6d33fc90a79dc8e9cbb0b2e7647658f4a",
+      "coverage": {
+        "covered_lines": 36,
+        "num_statements": 40,
+        "percent_covered": 88.88888888888889,
+        "percent_covered_display": "89",
+        "missing_lines": 4,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90,
+        "percent_statements_covered_display": "90",
+        "num_branches": 14,
+        "num_partial_branches": 2,
+        "covered_branches": 12,
+        "missing_branches": 2,
+        "percent_branches_covered": 85.71428571428571,
+        "percent_branches_covered_display": "86"
+      }
+    },
+    "src/mars_titan/data/universe.py": {
+      "sha256": "7302046a57c9e2178b1c3d974b670d4d36d08da18487bd93377b2f19aa0a2de7",
+      "coverage": {
+        "covered_lines": 19,
+        "num_statements": 53,
+        "percent_covered": 28.169014084507044,
+        "percent_covered_display": "28",
+        "missing_lines": 34,
+        "excluded_lines": 0,
+        "percent_statements_covered": 35.84905660377358,
+        "percent_statements_covered_display": "36",
+        "num_branches": 18,
+        "num_partial_branches": 1,
+        "covered_branches": 1,
+        "missing_branches": 17,
+        "percent_branches_covered": 5.555555555555555,
+        "percent_branches_covered_display": "6"
+      }
+    },
+    "src/mars_titan/profiling.py": {
+      "sha256": "b28454b1df2ca5d61d15c52db578f9e1f891579a51464edefc77fad8dd5d63fd",
+      "coverage": {
+        "covered_lines": 38,
+        "num_statements": 101,
+        "percent_covered": 32.592592592592595,
+        "percent_covered_display": "33",
+        "missing_lines": 63,
+        "excluded_lines": 0,
+        "percent_statements_covered": 37.62376237623762,
+        "percent_statements_covered_display": "38",
+        "num_branches": 34,
+        "num_partial_branches": 2,
+        "covered_branches": 6,
+        "missing_branches": 28,
+        "percent_branches_covered": 17.647058823529413,
+        "percent_branches_covered_display": "18"
+      }
+    }
+  },
+  "functions": [
+    {
+      "file": "src/mars_titan/data/universe.py",
+      "function": "select_verification_pilot",
+      "complexity": 17,
+      "statement_coverage": 0,
+      "crap": 306
+    },
+    {
+      "file": "src/mars_titan/data/preparation.py",
+      "function": "candidates",
+      "complexity": 14,
+      "statement_coverage": 0,
+      "crap": 210
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "profile_case",
+      "complexity": 13,
+      "statement_coverage": 0,
+      "crap": 182
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_request",
+      "complexity": 12,
+      "statement_coverage": 0,
+      "crap": 156
+    },
+    {
+      "file": "src/mars_titan/data/macro_preparation.py",
+      "function": "prepare_macro",
+      "complexity": 7,
+      "statement_coverage": 0,
+      "crap": 56
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "FrozenEncoders.text",
+      "complexity": 7,
+      "statement_coverage": 0,
+      "crap": 56
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "profile_grid",
+      "complexity": 6,
+      "statement_coverage": 0,
+      "crap": 42
+    },
+    {
+      "file": "src/mars_titan/data/streaming.py",
+      "function": "iter_windows",
+      "complexity": 28,
+      "statement_coverage": 0.857143,
+      "crap": 30.286
+    },
+    {
+      "file": "src/mars_titan/data/audit.py",
+      "function": "audit_china_publication",
+      "complexity": 5,
+      "statement_coverage": 0,
+      "crap": 30
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "FrozenEncoders.images",
+      "complexity": 5,
+      "statement_coverage": 0,
+      "crap": 30
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_events",
+      "complexity": 29,
+      "statement_coverage": 0.959184,
+      "crap": 29.057
+    },
+    {
+      "file": "src/mars_titan/data/samples.py",
+      "function": "materialize_samples",
+      "complexity": 27,
+      "statement_coverage": 0.901408,
+      "crap": 27.699
+    },
+    {
+      "file": "src/mars_titan/data/cli.py",
+      "function": "main",
+      "complexity": 21,
+      "statement_coverage": 0.759259,
+      "crap": 27.153
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "train_budget_grid",
+      "complexity": 26,
+      "statement_coverage": 0.968254,
+      "crap": 26.022
+    },
+    {
+      "file": "src/mars_titan/data/preparation.py",
+      "function": "prepare_asset",
+      "complexity": 25,
+      "statement_coverage": 0.93617,
+      "crap": 25.163
+    },
+    {
+      "file": "src/mars_titan/data/samples.py",
+      "function": "eligible_samples",
+      "complexity": 24,
+      "statement_coverage": 0.875,
+      "crap": 25.125
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_archive_text",
+      "complexity": 16,
+      "statement_coverage": 0.692308,
+      "crap": 23.457
+    },
+    {
+      "file": "src/mars_titan/data/inventory.py",
+      "function": "inventory",
+      "complexity": 21,
+      "statement_coverage": 0.847458,
+      "crap": 22.565
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_acquire_series",
+      "complexity": 21,
+      "statement_coverage": 0.943396,
+      "crap": 21.08
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "WindowWorkload.__iter__",
+      "complexity": 4,
+      "statement_coverage": 0,
+      "crap": 20
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_Snapshot._derived",
+      "complexity": 19,
+      "statement_coverage": 1,
+      "crap": 19
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_metadata_segments",
+      "complexity": 17,
+      "statement_coverage": 1,
+      "crap": 17
+    },
+    {
+      "file": "src/mars_titan/data/fundamentals.py",
+      "function": "read_fundamentals",
+      "complexity": 16,
+      "statement_coverage": 0.85,
+      "crap": 16.864
+    },
+    {
+      "file": "src/mars_titan/data/samples.py",
+      "function": "macro_vector",
+      "complexity": 16,
+      "statement_coverage": 0.866667,
+      "crap": 16.607
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "calculate_macro",
+      "complexity": 15,
+      "statement_coverage": 1,
+      "crap": 15
+    },
+    {
+      "file": "src/mars_titan/data/news.py",
+      "function": "read_news",
+      "complexity": 14,
+      "statement_coverage": 0.829268,
+      "crap": 14.975
+    },
+    {
+      "file": "src/mars_titan/data/audit.py",
+      "function": "audit_prices",
+      "complexity": 14,
+      "statement_coverage": 0.862069,
+      "crap": 14.514
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_exclusion",
+      "complexity": 12,
+      "statement_coverage": 0.789474,
+      "crap": 13.344
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "acquire_catalog",
+      "complexity": 13,
+      "statement_coverage": 0.953488,
+      "crap": 13.017
+    },
+    {
+      "file": "src/mars_titan/data/budget_targets.py",
+      "function": "residual_targets",
+      "complexity": 13,
+      "statement_coverage": 0.96875,
+      "crap": 13.005
+    },
+    {
+      "file": "src/mars_titan/data/macro_formulas.py",
+      "function": "Formula.parse",
+      "complexity": 9,
+      "statement_coverage": 0.642857,
+      "crap": 12.69
+    },
+    {
+      "file": "src/mars_titan/data/charts.py",
+      "function": "chart_png",
+      "complexity": 12,
+      "statement_coverage": 0.952381,
+      "crap": 12.016
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "_step",
+      "complexity": 3,
+      "statement_coverage": 0,
+      "crap": 12
+    },
+    {
+      "file": "src/mars_titan/data/fundamentals.py",
+      "function": "_us_facts",
+      "complexity": 12,
+      "statement_coverage": 1,
+      "crap": 12
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_catalog",
+      "complexity": 11,
+      "statement_coverage": 0.809524,
+      "crap": 11.836
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_parse_zip",
+      "complexity": 11,
+      "statement_coverage": 0.90625,
+      "crap": 11.1
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_readme_metadata",
+      "complexity": 11,
+      "statement_coverage": 0.923077,
+      "crap": 11.055
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "prepare_targets",
+      "complexity": 10,
+      "statement_coverage": 1,
+      "crap": 10
+    },
+    {
+      "file": "src/mars_titan/data/fundamentals.py",
+      "function": "snapshot",
+      "complexity": 10,
+      "statement_coverage": 1,
+      "crap": 10
+    },
+    {
+      "file": "src/mars_titan/data/macro_formulas.py",
+      "function": "_offset",
+      "complexity": 10,
+      "statement_coverage": 1,
+      "crap": 10
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_VintagePageParser.handle_starttag",
+      "complexity": 10,
+      "statement_coverage": 1,
+      "crap": 10
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "process_memory",
+      "complexity": 8,
+      "statement_coverage": 0.823529,
+      "crap": 8.352
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_exclusion",
+      "complexity": 8,
+      "statement_coverage": 0.909091,
+      "crap": 8.048
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_lag",
+      "complexity": 8,
+      "statement_coverage": 0.909091,
+      "crap": 8.048
+    },
+    {
+      "file": "src/mars_titan/data/samples.py",
+      "function": "numeric_context",
+      "complexity": 8,
+      "statement_coverage": 1,
+      "crap": 8
+    },
+    {
+      "file": "src/mars_titan/data/macro_formulas.py",
+      "function": "_reference",
+      "complexity": 7,
+      "statement_coverage": 0.727273,
+      "crap": 7.994
+    },
+    {
+      "file": "src/mars_titan/data/streaming.py",
+      "function": "price_features",
+      "complexity": 7,
+      "statement_coverage": 0.75,
+      "crap": 7.766
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_vintage_metadata",
+      "complexity": 7,
+      "statement_coverage": 0.75,
+      "crap": 7.766
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "iter_vintages",
+      "complexity": 7,
+      "statement_coverage": 0.857143,
+      "crap": 7.143
+    },
+    {
+      "file": "src/mars_titan/data/preparation.py",
+      "function": "select_panel",
+      "complexity": 7,
+      "statement_coverage": 0.9375,
+      "crap": 7.012
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_store_batch",
+      "complexity": 7,
+      "statement_coverage": 0.941176,
+      "crap": 7.01
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "run_epoch",
+      "complexity": 7,
+      "statement_coverage": 0.96875,
+      "crap": 7.001
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "CostProbe.__init__",
+      "complexity": 6,
+      "statement_coverage": 0.857143,
+      "crap": 6.105
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "rebuild_metadata",
+      "complexity": 6,
+      "statement_coverage": 0.875,
+      "crap": 6.07
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "EmbeddingCache.get",
+      "complexity": 6,
+      "statement_coverage": 0.9,
+      "crap": 6.036
+    },
+    {
+      "file": "src/mars_titan/data/prices.py",
+      "function": "read_prices",
+      "complexity": 6,
+      "statement_coverage": 0.947368,
+      "crap": 6.005
+    },
+    {
+      "file": "src/mars_titan/data/samples.py",
+      "function": "validate_sample_inputs",
+      "complexity": 6,
+      "statement_coverage": 1,
+      "crap": 6
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "FrozenEncoders.__init__",
+      "complexity": 2,
+      "statement_coverage": 0,
+      "crap": 6
+    },
+    {
+      "file": "src/mars_titan/data/inventory.py",
+      "function": "inspect_header",
+      "complexity": 5,
+      "statement_coverage": 0.692308,
+      "crap": 5.728
+    },
+    {
+      "file": "src/mars_titan/data/temporal.py",
+      "function": "MarketClock.__init__",
+      "complexity": 5,
+      "statement_coverage": 0.857143,
+      "crap": 5.073
+    },
+    {
+      "file": "src/mars_titan/data/inventory.py",
+      "function": "classify",
+      "complexity": 5,
+      "statement_coverage": 0.888889,
+      "crap": 5.034
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "execution_catalog",
+      "complexity": 5,
+      "statement_coverage": 0.923077,
+      "crap": 5.011
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "target_partition",
+      "complexity": 5,
+      "statement_coverage": 1,
+      "crap": 5
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_iso_day",
+      "complexity": 4,
+      "statement_coverage": 0.714286,
+      "crap": 4.373
+    },
+    {
+      "file": "src/mars_titan/data/samples.py",
+      "function": "sample_table",
+      "complexity": 4,
+      "statement_coverage": 0.833333,
+      "crap": 4.074
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_readme_dates",
+      "complexity": 4,
+      "statement_coverage": 0.909091,
+      "crap": 4.012
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "CostProbe.forward",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "labeled_records",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_Snapshot.__init__",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_Snapshot.value",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_Snapshot.latest",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/temporal.py",
+      "function": "admission_errors",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/universe.py",
+      "function": "training_coverage",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "EmbeddingCache.put",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_completed_batch",
+      "complexity": 4,
+      "statement_coverage": 1,
+      "crap": 4
+    },
+    {
+      "file": "src/mars_titan/data/temporal.py",
+      "function": "MarketClock.decision",
+      "complexity": 3,
+      "statement_coverage": 0.6,
+      "crap": 3.576
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_official_url",
+      "complexity": 3,
+      "statement_coverage": 0.666667,
+      "crap": 3.333
+    },
+    {
+      "file": "src/mars_titan/data/macro_formulas.py",
+      "function": "Formula.calculate",
+      "complexity": 3,
+      "statement_coverage": 0.75,
+      "crap": 3.141
+    },
+    {
+      "file": "src/mars_titan/data/temporal.py",
+      "function": "MarketClock.date_available",
+      "complexity": 3,
+      "statement_coverage": 0.833333,
+      "crap": 3.042
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_initialize",
+      "complexity": 3,
+      "statement_coverage": 0.833333,
+      "crap": 3.042
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "train_step",
+      "complexity": 3,
+      "statement_coverage": 0.909091,
+      "crap": 3.007
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "load_checkpoint",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_period",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/macro.py",
+      "function": "_available",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/temporal.py",
+      "function": "aware",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/streaming.py",
+      "function": "assigned",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "token_chunks",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "add_special_tokens",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_batches",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_VintagePageParser.handle_endtag",
+      "complexity": 3,
+      "statement_coverage": 1,
+      "crap": 3
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "project_cost",
+      "complexity": 2,
+      "statement_coverage": 0.666667,
+      "crap": 2.148
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "require_cuda",
+      "complexity": 2,
+      "statement_coverage": 0.875,
+      "crap": 2.008
+    },
+    {
+      "file": "src/mars_titan/data/preparation.py",
+      "function": "atomic_parquet",
+      "complexity": 2,
+      "statement_coverage": 0.9,
+      "crap": 2.004
+    },
+    {
+      "file": "src/mars_titan/data/budget_targets.py",
+      "function": "_aligned_returns",
+      "complexity": 2,
+      "statement_coverage": 0.9,
+      "crap": 2.004
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_atomic_bytes",
+      "complexity": 2,
+      "statement_coverage": 0.909091,
+      "crap": 2.003
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "save_checkpoint",
+      "complexity": 2,
+      "statement_coverage": 0.941176,
+      "crap": 2.001
+    },
+    {
+      "file": "src/mars_titan/data/storage.py",
+      "function": "atomic_json",
+      "complexity": 2,
+      "statement_coverage": 0.933333,
+      "crap": 2.001
+    },
+    {
+      "file": "src/mars_titan/profiling.py",
+      "function": "WindowWorkload.__init__",
+      "complexity": 1,
+      "statement_coverage": 0,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "gpu_sensors",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "SupervisedWorkload.__iter__",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/data/storage.py",
+      "function": "outside_source",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/data/storage.py",
+      "function": "sha256",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/data/inventory.py",
+      "function": "entries",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_vintage_dates",
+      "complexity": 1,
+      "statement_coverage": 0,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/data/news.py",
+      "function": "_text",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "seed_run",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/budget_training.py",
+      "function": "SupervisedWorkload.__init__",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/universe.py",
+      "function": "selection_order",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "EmbeddingCache.__init__",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "EmbeddingCache.identity",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/embeddings.py",
+      "function": "EmbeddingCache.close",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_sha256",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_connect",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_configuration",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_batch_key",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    },
+    {
+      "file": "src/mars_titan/data/macro_acquisition.py",
+      "function": "_VintagePageParser.__init__",
+      "complexity": 1,
+      "statement_coverage": 1,
+      "crap": 1
+    }
+  ],
+  "targeted_mutations": [
+    {
+      "scope": "data-guard-mutants",
+      "method": "Manual source mutation in memory, one isolated subprocess per mutant. No production file changed. Two cases intentionally disable redundant guards together.",
+      "mutants": 11,
+      "killed": 11,
+      "results": [
+        {
+          "name": "calendar_validation_removed",
+          "description": "No rechazar un calendario distinto al preparado.",
+          "edits": 1,
+          "test": "tests/data/test_materialization_integration.py::test_materialization_reuses_only_the_same_preparation_calendar",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "prepared_output_guards_removed",
+          "description": "Omitir la protección de los destinos finales frente a entradas preparadas.",
+          "edits": 1,
+          "test": "tests/data/test_materialization_integration.py::test_materialization_protects_prepared_manifests_through_output_symlinks",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "other_market_protection_removed",
+          "description": "Proteger solo el mercado actual y permitir solapes con el otro mercado.",
+          "edits": 1,
+          "test": "tests/data/test_materialization_integration.py::test_materialization_protects_prepared_manifests_through_output_symlinks[CN-US/A]",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "cli_preflight_removed",
+          "description": "Inicializar codificadores y caché antes de validar rutas y calendario.",
+          "edits": 1,
+          "test": "tests/data/test_materialization_integration.py::test_cli_validates_encoding_inputs_before_initializing_dependencies",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "cli_calendar_regressed_to_2000",
+          "description": "Restaurar 2000 como inicio fijo del calendario de codificación.",
+          "edits": 1,
+          "test": "tests/data/test_materialization_integration.py::test_cli_prepares_and_encodes_prices_before_2000[False]",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "training_run_guard_removed",
+          "description": "Validar solo el informe y omitir el directorio de ejecución.",
+          "edits": 1,
+          "test": "tests/data/test_output_protection.py::test_training_rejects_writes_inside_originals[run]",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "training_report_guard_removed",
+          "description": "Validar solo el directorio de ejecución y omitir el informe.",
+          "edits": 1,
+          "test": "tests/data/test_output_protection.py::test_training_rejects_writes_inside_originals[report]",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "training_prepared_guard_removed",
+          "description": "Permitir salidas de entrenamiento dentro de las entradas preparadas.",
+          "edits": 1,
+          "test": "tests/data/test_output_protection.py::test_training_rejects_writes_inside_prepared_inputs",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "macro_originals_preflight_removed",
+          "description": "Desactivar conjuntamente las guardas previas de directorio, base de datos y raw.",
+          "edits": 3,
+          "test": "tests/data/test_output_protection.py::test_macro_acquisition_rejects_destination_inside_originals",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "macro_database_protection_removed",
+          "description": "Desactivar las dos comprobaciones de la ruta SQLite, en preflight y conexión.",
+          "edits": 2,
+          "test": "tests/data/test_output_protection.py::test_macro_acquisition_protects_original_database_through_symlink",
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "macro_indicator_path_guard_removed",
+          "description": "Omitir la comprobación del subdirectorio raw de cada indicador antes de la red.",
+          "edits": 1,
+          "test": "tests/data/test_output_protection.py::test_macro_acquisition_rejects_archive_symlinks_before_writes_or_network[raw/us_cpi]",
+          "killed": true,
+          "returncode": 1
+        }
+      ]
+    },
+    {
+      "scope": "budget-integration-mutants",
+      "method": "Source mutation in memory, isolated subprocess per mutant, real CUDA and synthetic files in pytest tmp_path. The optimizer case changes both uninterrupted and resumed training calls.",
+      "mutants": 4,
+      "killed": 4,
+      "results": [
+        {
+          "name": "optimizer_removed_from_training",
+          "function": "mars_titan.budget_training.train_budget_grid",
+          "old": "run_epoch(model, optimizer, loaders[\"train\"], device)",
+          "new": "run_epoch(model, None, loaders[\"train\"], device)",
+          "occurrences": 2,
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "checkpoint_cursor_advanced_one_epoch",
+          "function": "mars_titan.budget_training.train_budget_grid",
+          "old": "next_epoch=epoch + 1",
+          "new": "next_epoch=epoch + 2",
+          "occurrences": 1,
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "final_test_cutoff_removed",
+          "function": "mars_titan.data.streaming.iter_windows",
+          "old": "cutoff = date.fromisoformat(decision_cutoff) if decision_cutoff else None",
+          "new": "cutoff = None",
+          "occurrences": 1,
+          "killed": true,
+          "returncode": 1
+        },
+        {
+          "name": "absolute_source_hash_keys_restored",
+          "function": "mars_titan.budget_training.prepare_targets",
+          "old": "hashes[logical_path.as_posix()] = sha256(source)",
+          "new": "hashes[str(source)] = sha256(source)",
+          "occurrences": 1,
+          "killed": true,
+          "returncode": 1
+        }
+      ]
+    }
+  ]
+}

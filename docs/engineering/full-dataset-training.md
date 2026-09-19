@@ -6,6 +6,8 @@ MARS-TITAN se prepara para recorrer toda la copia de FinMultiTime por bloques. L
 
 ## Lo que se ha comprobado en el equipo
 
+La [preparación ejecutada](../data/preparation.md) y el [presupuesto de almacenamiento](../../reports/resources/storage-budget.md) actualizan esta planificación. Se han generado Parquet de los paneles técnicos y del piloto de verificación, no de todo el corpus. El lector usa lotes de 256 filas y construye las ventanas al consumirlas. Las cifras ilustrativas siguientes no deben sustituir las mediciones de esos informes.
+
 El [registro de recursos](../../reports/resource-inventory.json) contiene las observaciones y las órdenes de comprobación. El equipo tiene 32 GB de RAM según su configuración declarada, de los que el sistema informa 30,09 GiB utilizables. Dispone de ocho núcleos físicos, 16 hilos lógicos y una RTX 4070 Max-Q de 8 GB, identificada por NVIDIA como Laptop GPU con 8.188 MiB. El volumen dispone de unos 396 GiB libres en el momento de la inspección.
 
 La copia tiene 108,21 GiB de tamaño aparente. El valor anterior de unos 109 GiB corresponde al espacio ocupado redondeado. Las tablas concentran aproximadamente 84,59 GiB, frente a 2,17 GiB de series. Se han contado 4.213 CSV de precios estadounidenses y 810 chinos, con 20.593.172 líneas físicas entre todos. Si cada archivo contiene una cabecera, resultan 20.588.149 filas potenciales. Esa resta no sustituye la auditoría de filas, duplicados y disponibilidad.

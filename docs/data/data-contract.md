@@ -1,6 +1,6 @@
 # Contrato de datos y disponibilidad temporal
 
-Versión de diseño: 0.1. Este contrato define la futura tabla experimental. Todavía no hay un pipeline implementado.
+Versión de preparación: 0.2. El pipeline implementa las reglas descritas en la [guía de preparación](preparation.md). Las muestras conservan cuatro modalidades obligatorias y contexto macro, con [archivos y dimensiones](schema.md) verificables. La cohorte y las etiquetas de la comparación confirmatoria siguen pendientes de fijar.
 
 ## Unidad de observación
 

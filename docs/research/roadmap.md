@@ -29,7 +29,7 @@ Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) de
 
 ## Alcance mínimo y extensiones
 
-El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, precios y texto de disponibilidad justificable, referencias de varias familias y una memoria compacta con ablaciones. Los fundamentales y gráficos deben auditarse y evaluarse cuando sean válidos. Excluirlos requiere evidencia y discusión, no omisión silenciosa del primer objetivo.
+El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, las cuatro modalidades de disponibilidad justificable, contexto macro, referencias de varias familias y una memoria compacta con ablaciones de componentes. Una muestra sin alguna modalidad se excluye. No se sustituye por entrenamiento de dos modalidades.
 
 La residualización sectorial, un Transformer adicional, HS300, memorias jerárquicas completas y kernels C++/CUDA son extensiones. Su activación exige que los controles temporales y las referencias funcionen, que exista presupuesto medido y que la comparación principal no quede comprometida.
 
@@ -37,4 +37,4 @@ La [ampliación](research-expansion.md) añade estudio cerebral, macroeconomía,
 
 ## Cierre de una tarea
 
-Una tarea se cierra con el artefacto enlazado, su comprobación y las limitaciones que permanecen. Un documento de diseño puede cerrar la tarea de diseño. No cierra implementación, experimento ni validación del objetivo. La matriz de rúbrica mantendrá esa diferencia durante todo el proyecto.
+Una tarea se cierra con el artefacto enlazado, su comprobación y las limitaciones que permanecen. Un documento de diseño puede cerrar la tarea de diseño. No cierra implementación, experimento ni validación del objetivo. El tablero y los informes deben mantener esa diferencia.

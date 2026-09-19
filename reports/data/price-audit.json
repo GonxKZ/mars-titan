@@ -1,0 +1,28 @@
+{
+  "markets": {
+    "CN": {
+      "files": 810,
+      "rows": 3139412,
+      "accepted": 3133858,
+      "excluded": 5554,
+      "invalid_ohlc": 4043,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 1534
+    },
+    "US": {
+      "files": 4213,
+      "rows": 17448737,
+      "accepted": 17385328,
+      "excluded": 63409,
+      "invalid_ohlc": 63409,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 0
+    }
+  },
+  "files": 5023,
+  "policy": "4de62074df9bee0272813a591a6551604c42f17b17e4096b390380f4f5f3173a",
+  "elapsed_seconds": 164.66163389299982,
+  "peak_rss_mib": 175.12109375,
+  "identity_scope": "instrument_in_original_archive_not_verified_historical_constituents",
+  "adjustment_limit": "original_retrospectively_adjusted_series_retained_without_repair"
+}
