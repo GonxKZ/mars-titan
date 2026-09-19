@@ -133,3 +133,21 @@ def test_conflicting_fact_with_same_identity_is_not_arbitrarily_selected(tmp_pat
     rows, audit = module("fundamentals").read_fundamentals([path], "US", clock)
     assert rows == []
     assert audit["ambiguous_facts"] == 1
+
+
+def test_snapshot_quarantines_conflicting_same_day_filings_without_losing_other_concepts(clock):
+    rows = [
+        {
+            "concept": "us-gaap:Assets:USD",
+            "period_start": None,
+            "period_end": "2024-03-31",
+            "available_at": clock.decision("2024-05-03"),
+            "value": value,
+            "accession": str(index),
+        }
+        for index, value in enumerate([100, 101])
+    ]
+    rows.append({**rows[0], "concept": "us-gaap:Liabilities:USD", "value": 20})
+    snapshot = module("fundamentals").snapshot(rows, clock.decision("2024-05-06"))
+    assert "us-gaap:Assets:USD" not in snapshot
+    assert snapshot["us-gaap:Liabilities:USD"]["value"] == 20

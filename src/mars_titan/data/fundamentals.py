@@ -99,20 +99,17 @@ def read_fundamentals(
 def snapshot(rows: list[dict], cutoff: datetime) -> dict[str, dict]:
     """Conservar el periodo más reciente conocido y su última revisión no ambigua."""
     cutoff = aware(cutoff)
-    result = {}
+    result, ranks, ambiguous = {}, {}, set()
     for row in rows:
         if row["available_at"] > cutoff:
             continue
-        current = result.get(row["concept"])
-        rank = (row["period_end"], row["available_at"])
-        if current is None or rank > (current["period_end"], current["available_at"]):
-            result[row["concept"]] = row
-        elif rank == (current["period_end"], current["available_at"]):
-            # Do not compare YTD with quarterly flows as if they had the same period.
-            if row["period_start"] != current["period_start"]:
-                starts = (row["period_start"] or "", current["period_start"] or "")
-                if starts[0] > starts[1]:
-                    result[row["concept"]] = row
-            elif row["value"] != current["value"]:
-                raise ValueError(f"Ambiguous contemporaneous fact: {row['concept']}")
-    return result
+        concept = row["concept"]
+        # At a common end and publication, prefer the shortest reported flow period.
+        # The prepared training vector uses balance-sheet stocks, not mixed-duration flows.
+        rank = (row["period_end"], row["available_at"], row["period_start"] or "")
+        if concept not in ranks or rank > ranks[concept]:
+            result[concept], ranks[concept] = row, rank
+            ambiguous.discard(concept)
+        elif rank == ranks[concept] and row["value"] != result[concept]["value"]:
+            ambiguous.add(concept)
+    return {concept: row for concept, row in result.items() if concept not in ambiguous}
