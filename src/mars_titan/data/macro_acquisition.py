@@ -8,6 +8,7 @@ import io
 import json
 import math
 import os
+import re
 import sqlite3
 import subprocess
 import tempfile
@@ -181,7 +182,7 @@ def _readme_dates(readme: str) -> set[str]:
     return values
 
 
-def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> list[dict]:
+def _archive_text(content: bytes) -> tuple[str, str]:
     if len(content) > _MAX_COMPRESSED_BYTES:
         raise ValueError("ALFRED ZIP exceeds the compressed size limit")
     try:
@@ -207,6 +208,42 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
             csv_text = archive.read(csv_names[0]).decode("utf-8-sig")
         except UnicodeDecodeError as error:
             raise ValueError("ALFRED ZIP text is not UTF-8") from error
+    return readme, csv_text
+
+
+def _readme_metadata(readme: str) -> list[dict]:
+    """Keep literal descriptions and their inclusive ALFRED real-time intervals."""
+    headings = {"Title", "Source", "Release", "Units", "Frequency", "Seasonal Adjustment", "Notes"}
+    fields = {"Units": "native_unit", "Seasonal Adjustment": "seasonal_adjustment"}
+    section, current = None, None
+    records = []
+    for line in readme.splitlines():
+        text = line.strip()
+        if text == "Vintage Dates Specified:":
+            break
+        if text in headings:
+            section, current = fields.get(text), None
+            continue
+        if not section or not text or set(text) <= {"-", " "}:
+            continue
+        match = re.fullmatch(r"(.+?)\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2}|Current)", text)
+        if match:
+            description, start, end = match.groups()
+            start = date.fromisoformat(start).isoformat()
+            end = "9999-12-31" if end == "Current" else date.fromisoformat(end).isoformat()
+            if start > end:
+                raise ValueError("Invalid ALFRED metadata interval")
+            current = {"field": section, "start": start, "end": end, "description": description}
+            records.append(current)
+        elif current is not None:
+            current["description"] += " " + text
+        else:
+            raise ValueError(f"ALFRED {section} has a continuation without an interval")
+    return records
+
+
+def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> list[dict]:
+    readme, csv_text = _archive_text(content)
     recorded_dates = _readme_dates(readme)
     if recorded_dates != requested_dates:
         raise ValueError("ALFRED README vintage dates do not match the request")
@@ -294,6 +331,10 @@ def _connect(destination: Path) -> sqlite3.Connection:
             source_hash TEXT NOT NULL,
             source_timezone TEXT NOT NULL,
             PRIMARY KEY (indicator_id, period_start, realtime_start)
+        );
+        CREATE TABLE IF NOT EXISTS archive_metadata (
+            source_hash TEXT PRIMARY KEY,
+            intervals_json TEXT NOT NULL
         );
         """
     )
@@ -400,6 +441,7 @@ def _store_batch(
     realtime_end: str,
 ) -> tuple[str, int]:
     digest = _sha256(content)
+    metadata = _readme_metadata(_archive_text(content)[0])
     relative = Path("raw") / entry["id"] / f"{key}.zip"
     _atomic_bytes(destination / relative, content)
     admitted = [
@@ -410,6 +452,10 @@ def _store_batch(
     retrieved_at = datetime.now(UTC).isoformat()
     with _connect(destination) as connection:
         connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "INSERT OR REPLACE INTO archive_metadata VALUES (?,?)",
+            (digest, json.dumps(metadata, sort_keys=True)),
+        )
         for row in admitted:
             previous = connection.execute(
                 "SELECT realtime_end,value FROM vintages "
@@ -462,6 +508,11 @@ def _acquire_series(
     realtime_end: str,
     configuration: str,
 ) -> dict:
+    with _connect(destination) as connection:
+        connection.execute(
+            "INSERT OR REPLACE INTO series VALUES (?,?,?,?,?)",
+            (entry["id"], entry["series_id"], "in_progress", None, datetime.now(UTC).isoformat()),
+        )
     url = _FORM_URL.format(series_id=quote(entry["series_id"], safe=""))
     page, content_type, effective_url, status = _request(url)
     _official_url(effective_url)
@@ -679,20 +730,132 @@ def acquire_catalog(
     }
 
 
+def execution_catalog(catalog, destination: Path) -> list[dict]:
+    """Copy design entries and attach actual acquisition status to every raw source."""
+    database = Path(destination) / _DATABASE
+    if not database.is_file():
+        raise FileNotFoundError(database)
+    with sqlite3.connect(database) as connection:
+        status = {
+            identifier: (state, reason)
+            for identifier, state, reason in connection.execute(
+                "SELECT indicator_id,status,reason FROM series"
+            )
+        }
+    result = []
+    for entry in catalog:
+        item = dict(entry)
+        if item["kind"] == "raw":
+            state, reason = status.get(item["id"], ("not_acquired", "no_acquisition_record"))
+            item.update(acquisition_status=state, acquisition_reason=reason)
+        result.append(item)
+    return result
+
+
+def rebuild_metadata(destination: Path, *, backup_path: Path) -> dict:
+    """Rebuild metadata from verified local ZIPs, preserving a SQLite binary backup."""
+    destination, backup_path = Path(destination), Path(backup_path)
+    database = destination / _DATABASE
+    if not database.is_file():
+        raise FileNotFoundError(database)
+    with backup_path.open("xb"):
+        pass
+    with sqlite3.connect(database) as source, sqlite3.connect(backup_path) as backup:
+        source.backup(backup)
+    count = 0
+    with _connect(destination) as connection:
+        batches = connection.execute(
+            "SELECT raw_path,source_hash FROM batches WHERE status='complete'"
+        ).fetchall()
+        for relative, digest in batches:
+            path = destination / relative
+            if not path.resolve().is_relative_to(destination.resolve()):
+                raise ValueError("Unsafe macro archive path")
+            if path.stat().st_size > _MAX_COMPRESSED_BYTES:
+                raise ValueError("ALFRED ZIP exceeds the compressed size limit")
+            content = path.read_bytes()
+            if _sha256(content) != digest:
+                raise ValueError(f"Macro archive hash mismatch: {relative}")
+            metadata = _readme_metadata(_archive_text(content)[0])
+            connection.execute(
+                "INSERT OR REPLACE INTO archive_metadata VALUES (?,?)",
+                (digest, json.dumps(metadata, sort_keys=True)),
+            )
+            count += 1
+    return {"archives": count, "backup_path": str(backup_path)}
+
+
+def _metadata_segments(row: dict, metadata: list[dict]):
+    start = date.fromisoformat(row["realtime_start"]).toordinal()
+    stop = date.fromisoformat(row["realtime_end"]).toordinal() + 1
+    boundaries = {start, stop}
+    intervals = []
+    for record in metadata:
+        first = date.fromisoformat(record["start"]).toordinal()
+        last = date.fromisoformat(record["end"]).toordinal() + 1
+        if first < stop and last > start:
+            boundaries.update((max(start, first), min(stop, last)))
+            intervals.append((first, last, record))
+    ordered = sorted(boundaries)
+    for first, last in zip(ordered[:-1], ordered[1:], strict=True):
+        active = [record for begin, end, record in intervals if begin <= first < end]
+        selected = {
+            field: {record["description"] for record in active if record["field"] == field}
+            for field in ("native_unit", "seasonal_adjustment")
+        }
+        reason = None
+        if any(len(values) > 1 for values in selected.values()):
+            reason = "ambiguous_historical_metadata"
+        elif any(not values for values in selected.values()):
+            reason = "missing_historical_metadata"
+        yield {
+            **row,
+            "original_realtime_start": row["realtime_start"],
+            "original_realtime_end": row["realtime_end"],
+            "original_value": row["value"],
+            "realtime_start": date.fromordinal(first).isoformat(),
+            "realtime_end": date.fromordinal(last - 1).isoformat(),
+            "value": None if reason else row["value"],
+            "missing_reason": reason,
+            "metadata_intervals": active,
+            **{
+                field: next(iter(values)) if len(values) == 1 else None
+                for field, values in selected.items()
+            },
+        }
+
+
 def iter_vintages(destination: Path):
-    """Yield normalized vintages from SQLite without loading the full panel."""
+    """Yield complete series in native historical units, with explicit metadata gaps."""
     database = Path(destination) / _DATABASE
     if not database.is_file():
         raise FileNotFoundError(f"Macro acquisition database not found: {database}")
     with sqlite3.connect(database) as connection:
+        if not connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='archive_metadata'"
+        ).fetchone():
+            raise ValueError(
+                "Historical metadata absent. Run rebuild_metadata before iter_vintages"
+            )
+        metadata = {
+            digest: json.loads(intervals)
+            for digest, intervals in connection.execute(
+                "SELECT source_hash,intervals_json FROM archive_metadata"
+            )
+        }
         cursor = connection.execute(
-            "SELECT indicator_id,period_start,realtime_start,realtime_end,value,"
-            "source_hash,source_timezone FROM vintages "
-            "ORDER BY indicator_id,period_start,realtime_start"
+            "SELECT v.indicator_id,v.period_start,v.realtime_start,v.realtime_end,v.value,"
+            "v.source_hash,v.source_timezone FROM vintages v "
+            "JOIN series s ON s.indicator_id=v.indicator_id WHERE s.status='complete' "
+            "ORDER BY v.indicator_id,v.period_start,v.realtime_start"
         )
         while rows := cursor.fetchmany(1000):
             for row in rows:
-                yield {
+                if row[5] not in metadata:
+                    raise ValueError(
+                        f"Historical metadata absent for {row[0]}. Run rebuild_metadata"
+                    )
+                vintage = {
                     "indicator_id": row[0],
                     "period_start": row[1],
                     "realtime_start": row[2],
@@ -701,3 +864,4 @@ def iter_vintages(destination: Path):
                     "source_hash": row[5],
                     "source_timezone": row[6],
                 }
+                yield from _metadata_segments(vintage, metadata[row[5]])

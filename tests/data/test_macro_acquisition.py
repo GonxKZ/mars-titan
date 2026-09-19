@@ -5,11 +5,21 @@ import io
 import zipfile
 from datetime import date, timedelta
 
+import pytest
+
 
 def _alfred_zip(
-    series_id: str, vintages: list[str], rows: list[str], *, comment: bytes = b""
+    series_id: str,
+    vintages: list[str],
+    rows: list[str],
+    *,
+    comment: bytes = b"",
+    metadata: str = (
+        "Units\nIndex 1982-1984=100  1900-01-01  Current\n"
+        "Seasonal Adjustment\nSeasonally Adjusted  1900-01-01  Current\n"
+    ),
 ) -> bytes:
-    readme = "Series ID: " + series_id + "\n\nVintage Dates Specified:\n\n"
+    readme = "Series ID: " + series_id + "\n" + metadata + "\nVintage Dates Specified:\n\n"
     readme += "\n".join(f"----------\n{vintage}\n----------" for vintage in vintages)
     header = f"period_start_date,{series_id},realtime_start_date,realtime_end_date\n"
     stream = io.BytesIO()
@@ -71,7 +81,24 @@ def test_acquire_catalog_preserves_real_intervals_carry_in_and_na(tmp_path, monk
 
     assert report["complete"] is True
     assert report["completed_series"] == 1
-    assert list(macro_acquisition.iter_vintages(tmp_path)) == [
+    actual = list(macro_acquisition.iter_vintages(tmp_path))
+    assert all(item["native_unit"] == "Index 1982-1984=100" for item in actual)
+    assert all(item["seasonal_adjustment"] == "Seasonally Adjusted" for item in actual)
+    assert [
+        {
+            key: item[key]
+            for key in (
+                "indicator_id",
+                "period_start",
+                "realtime_start",
+                "realtime_end",
+                "value",
+                "source_hash",
+                "source_timezone",
+            )
+        }
+        for item in actual
+    ] == [
         {
             "indicator_id": "us_cpi",
             "period_start": "2018-01-01",
@@ -336,6 +363,179 @@ def test_all_discovered_vintages_are_batched_with_interval_boundaries(tmp_path, 
     assert [len(payload["form[selected_vintage_dates][]"]) for payload in payloads] == [350, 50]
     assert payloads[0]["form[entered_vintage_dates]"].split() == [vintages[0], vintages[-1]]
     assert payloads[1]["form[entered_vintage_dates]"] == ""
+
+
+def test_late_batch_failure_hides_partial_series_until_successful_resume(tmp_path, monkeypatch):
+    from mars_titan.data import macro_acquisition as acquisition
+
+    monkeypatch.setattr(acquisition, "_BATCH_SIZE", 1)
+    page = (
+        b'<select id="form_selected_vintage_dates">'
+        b'<option value="2020-02-13"/><option value="2020-03-13"/></select>'
+    )
+    failed = True
+    downloads = []
+
+    def request(url, *, fields=None):
+        if fields is None:
+            return page, "text/html", url, 200
+        vintage = fields["form[selected_vintage_dates][]"][0]
+        downloads.append(vintage)
+        if vintage == "2020-03-13" and failed:
+            return b"<html>source failure</html>", "text/html", url, 500
+        requested = sorted(
+            set(fields["form[selected_vintage_dates][]"])
+            | set(fields["form[entered_vintage_dates]"].split())
+        )
+        return (
+            _alfred_zip("CPIAUCSL", requested, [f"2020-01-01,100,{vintage},"]),
+            "application/zip",
+            url,
+            200,
+        )
+
+    monkeypatch.setattr(acquisition, "_request", request)
+    catalog = [
+        {
+            "id": "us_cpi",
+            "kind": "raw",
+            "provider": "BLS via FRED",
+            "series_id": "CPIAUCSL",
+            "source_url": "https://fred.stlouisfed.org/series/CPIAUCSL",
+            "vintage_policy": "ALFRED_OR_RELEASE_ARCHIVE",
+            "verification_status": "verified_metadata_not_ingested",
+        }
+    ]
+    arguments = dict(
+        observation_start="2020-01-01",
+        observation_end="2020-01-01",
+        realtime_start="2020-02-13",
+        realtime_end="2020-03-13",
+        workers=1,
+    )
+    report = acquisition.acquire_catalog(catalog, tmp_path, **arguments)
+    assert report["failed_series"] == 1
+    assert list(acquisition.iter_vintages(tmp_path)) == []
+    failed = False
+    report = acquisition.acquire_catalog(catalog, tmp_path, **arguments)
+    assert report["series"][0]["resumed_batches"] == 1
+    assert downloads == ["2020-02-13", "2020-03-13", "2020-03-13"]
+    assert len(list(acquisition.iter_vintages(tmp_path))) == 2
+
+
+def _store_metadata_fixture(tmp_path, metadata):
+    from mars_titan.data import macro_acquisition as acquisition
+
+    acquisition._initialize(tmp_path, "fixture")
+    content = _alfred_zip(
+        "GDPC1", ["2024-01-05"], ["2023-10-01,100,2024-01-05,2024-01-12"], metadata=metadata
+    )
+    acquisition._store_batch(
+        tmp_path,
+        {"id": "us_real_gdp"},
+        "fixture",
+        content,
+        {"2024-01-05"},
+        {},
+        acquisition._parse_zip(content, "GDPC1", {"2024-01-05"}),
+        "2024-01-01",
+        "2024-01-12",
+    )
+    with acquisition._connect(tmp_path) as connection:
+        connection.execute(
+            "INSERT INTO series VALUES (?,?,?,?,?)",
+            ("us_real_gdp", "GDPC1", "complete", None, "fixture"),
+        )
+    return acquisition
+
+
+def test_metadata_intersections_keep_native_units_continuations_and_original_interval(tmp_path):
+    acquisition = _store_metadata_fixture(
+        tmp_path,
+        "Units\nBillions of Chained  2000-01-01  2024-01-08\n2012 Dollars\n"
+        "Billions of Chained 2017 Dollars     2024-01-09 Current\n"
+        "Frequency\nQuarterly  2000-01-01 Current\n"
+        "Seasonal Adjustment\nSeasonally Adjusted Annual Rate  2000-01-01 Current\n",
+    )
+    rows = list(acquisition.iter_vintages(tmp_path))
+    assert [(r["realtime_start"], r["realtime_end"], r["native_unit"]) for r in rows] == [
+        ("2024-01-05", "2024-01-08", "Billions of Chained 2012 Dollars"),
+        ("2024-01-09", "2024-01-12", "Billions of Chained 2017 Dollars"),
+    ]
+    assert all(r["original_realtime_start"] == "2024-01-05" for r in rows)
+    assert all(r["original_realtime_end"] == "2024-01-12" for r in rows)
+    assert all(r["value"] == 100 for r in rows)
+
+
+@pytest.mark.parametrize(
+    ("units", "reason"),
+    [
+        ("", "missing_historical_metadata"),
+        (
+            "Index 2000=100  2000-01-01 Current\nIndex 2017=100  2024-01-05 Current\n",
+            "ambiguous_historical_metadata",
+        ),
+    ],
+)
+def test_absent_or_ambiguous_metadata_never_inherits_catalog_units(tmp_path, units, reason):
+    acquisition = _store_metadata_fixture(
+        tmp_path,
+        "Units\n" + units + "Seasonal Adjustment\nSeasonally Adjusted 2000-01-01 Current\n",
+    )
+    rows = list(acquisition.iter_vintages(tmp_path))
+    assert len(rows) == 1
+    assert rows[0]["value"] is None
+    assert rows[0]["missing_reason"] == reason
+    assert rows[0]["original_value"] == 100
+
+
+def test_metadata_rebuild_verifies_archives_and_preserves_a_binary_backup(tmp_path):
+    acquisition = _store_metadata_fixture(
+        tmp_path,
+        "Units\nIndex 2017=100 2000-01-01 Current\n"
+        "Seasonal Adjustment\nSeasonally Adjusted 2000-01-01 Current\n",
+    )
+    with acquisition._connect(tmp_path) as connection:
+        connection.execute("DROP TABLE archive_metadata")
+    with pytest.raises(ValueError, match="rebuild_metadata"):
+        list(acquisition.iter_vintages(tmp_path))
+    backup = tmp_path / "before-metadata.sqlite3"
+    result = acquisition.rebuild_metadata(tmp_path, backup_path=backup)
+    assert backup.is_file()
+    assert result["archives"] == 1
+    assert next(acquisition.iter_vintages(tmp_path))["native_unit"] == "Index 2017=100"
+    (tmp_path / "raw/us_real_gdp/fixture.zip").write_bytes(b"corrupt")
+    with pytest.raises(ValueError, match="hash"):
+        acquisition.rebuild_metadata(tmp_path, backup_path=tmp_path / "before-retry.sqlite3")
+
+
+def test_metadata_availability_does_not_fill_an_earlier_gap(tmp_path):
+    from mars_titan.data.macro import calculate_macro
+    from mars_titan.data.temporal import MarketClock
+
+    acquisition = _store_metadata_fixture(
+        tmp_path,
+        "Units\nBillions of Chained 2012 Dollars 2024-01-09 Current\n"
+        "Seasonal Adjustment\nSeasonally Adjusted Annual Rate 2000-01-01 Current\n",
+    )
+    catalog = [
+        {
+            "id": "us_real_gdp",
+            "kind": "raw",
+            "frequency": "Q",
+            "series_id": "GDPC1",
+            "vintage_policy": "ALFRED_OR_RELEASE_ARCHIVE",
+            "unit": "catalog_current_unit",
+        }
+    ]
+    clock = MarketClock("US", "2024-01-05", "2024-01-12")
+    output = calculate_macro(acquisition.iter_vintages(tmp_path), catalog, clock)
+    by_date = {r["prediction_at"].date().isoformat(): r for r in output}
+    assert by_date["2024-01-08"]["missing_reason"] == "missing_historical_metadata"
+    assert by_date["2024-01-09"]["value"] is None
+    assert by_date["2024-01-10"]["value"] == 100
+    assert by_date["2024-01-10"]["available_at"] == clock.decision("2024-01-10")
+    assert by_date["2024-01-10"]["unit"] == "Billions of Chained 2012 Dollars"
 
 
 def test_series_without_any_admitted_rows_is_not_complete(tmp_path, monkeypatch):

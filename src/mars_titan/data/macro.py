@@ -1,6 +1,6 @@
 """Reconstrucción por eventos de indicadores macro y sus versiones históricas.
 
-Las unidades de entrada deben estar normalizadas al catálogo. Una fecha ALFRED
+Las entradas conservan sus unidades históricas nativas. Una fecha ALFRED
 es evidencia de disponibilidad, nunca la fecha del periodo observado. Las fechas
 sin hora se llevan al final del día de origen y a la siguiente sesión estricta
 del mercado objetivo. Esta regla sacrifica inmediatez al cruzar zonas horarias.
@@ -25,9 +25,14 @@ class _Value:
     available_at: datetime | None = None
     hashes: frozenset[str] = frozenset()
     reason: str | None = None
+    unit: str | None = None
+    seasonal_adjustment: str | None = None
 
 
 def _exclusion(entry: dict) -> str | None:
+    status = entry.get("acquisition_status")
+    if status is not None and status != "complete":
+        return f"source_{status}:{entry.get('acquisition_reason') or 'source_not_complete'}"
     if not entry.get("series_id") or entry["series_id"] == "no identifier verified":
         return "unverified_identifier"
     policy = entry.get("vintage_policy")
@@ -98,27 +103,49 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
         if identifier not in entries or entries[identifier]["kind"] != "raw":
             raise ValueError(f"Input is not a catalog raw indicator: {identifier}")
         start = date.fromisoformat(row["realtime_start"])
+        original_start = date.fromisoformat(
+            row.get("original_realtime_start", row["realtime_start"])
+        )
         end = date.fromisoformat(row["realtime_end"])
         period = _period(date.fromisoformat(row["period_start"]), entries[identifier]["frequency"])
         timezone = row.get("source_timezone", "America/New_York")
         ZoneInfo(timezone)
         value = row["value"]
+        reason = row.get("missing_reason")
+        unit, adjustment = row.get("native_unit"), row.get("seasonal_adjustment")
+        metadata_absence = reason in {
+            "missing_historical_metadata",
+            "ambiguous_historical_metadata",
+        }
+        if (
+            not isinstance(unit, str)
+            or not unit.strip()
+            or not isinstance(adjustment, str)
+            or not adjustment.strip()
+        ) and not metadata_absence:
+            raise ValueError(f"Historical metadata evidence required: {identifier}")
+        if metadata_absence and value is not None:
+            raise ValueError(
+                "A macro observation with absent metadata cannot have an admitted value"
+            )
         if value is not None and (type(value) not in {int, float} or not math.isfinite(value)):
             raise ValueError("Macro values must be finite numbers or None")
         source_hash = row["source_hash"]
         if not isinstance(source_hash, str) or not re.fullmatch("[0-9a-fA-F]{64}", source_hash):
             raise ValueError("Macro source_hash must be a SHA256 digest")
-        if end < start or period > start:
+        if end < start or period > original_start or original_start > start:
             raise ValueError("Invalid macro realtime interval or future reference period")
-        key = identifier, period, start
-        payload = end, timezone, value
+        key = identifier, period, original_start, start
+        payload = end, timezone, value, unit, adjustment, reason
         if key in vintages and vintages[key][0] != payload:
             raise ValueError(f"Conflicting macro vintage: {key}")
         if key not in vintages:
             vintages[key] = payload, set()
         vintages[key][1].add(source_hash.lower())
     events = []
-    for (identifier, period, start), ((end, timezone, value), hashes) in vintages.items():
+    for (identifier, period, original_start, start), (payload, hashes) in vintages.items():
+        end, timezone, value, unit, adjustment, reason = payload
+        version = original_start, start
         if _exclusion(entries[identifier]):
             continue
         available = _available(start, timezone, clock)
@@ -127,20 +154,24 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
                 value,
                 available,
                 frozenset(hashes),
-                "missing_source_value" if value is None else None,
+                reason or ("missing_source_value" if value is None else None),
+                unit,
+                adjustment,
             )
-            events.append((available, start, 1, identifier, period, observation))
+            events.append((available, version, 1, identifier, period, observation))
         if end < date.max:
             expired = _available(end + timedelta(days=1), timezone, clock)
             if expired is not None:
                 events.append(
                     (
                         expired,
-                        start,
+                        version,
                         0,
                         identifier,
                         period,
-                        _Value(None, expired, frozenset(hashes), "expired_vintage"),
+                        _Value(
+                            None, expired, frozenset(hashes), "expired_vintage", unit, adjustment
+                        ),
                     )
                 )
     # Si ambos eventos llegan al mismo corte, la retirada prevalece sobre el alta.
@@ -197,12 +228,18 @@ class _Snapshot:
         timestamps = [v.available_at for v in observations.values() if v.available_at is not None]
         available = max(timestamps, default=None)
         hashes = frozenset().union(*(v.hashes for v in observations.values()))
-        reason = next((v.reason for v in observations.values() if v.value is None), None)
+        reasons = [v.reason for v in observations.values() if v.value is None and v.reason]
+        reason = next((reason for reason in reasons if reason.startswith("source_")), None)
+        reason = reason or next(iter(reasons), None)
         if reason:
             return _Value(None, available, hashes, reason)
+        if len({v.unit for v in observations.values()}) != 1:
+            return _Value(None, available, hashes, "incompatible_historical_units")
+        if len({v.seasonal_adjustment for v in observations.values()}) != 1:
+            return _Value(None, available, hashes, "incompatible_seasonal_adjustment")
         try:
             value = formula.calculate({key: v.value for key, v in observations.items()})
-            return _Value(value, available, hashes)
+            return _Value(value, available, hashes, unit=self.entries[identifier]["unit"])
         except MissingCalculation as error:
             return _Value(None, available, hashes, str(error))
 
@@ -257,7 +294,8 @@ def calculate_macro(rows: Iterable[dict], catalog: list[dict], clock: MarketCloc
                     "period_start": period.isoformat() if period else None,
                     "missing_reason": value.reason,
                     "source_hashes": sorted(value.hashes),
-                    "unit": entries[identifier]["unit"],
+                    "unit": entries[identifier]["unit"] if identifier in formulas else value.unit,
+                    "seasonal_adjustment": value.seasonal_adjustment,
                 }
             )
     return output

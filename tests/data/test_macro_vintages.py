@@ -42,6 +42,8 @@ def row(indicator, period, value, vintage="2024-01-05", **kwargs):
         "realtime_start": vintage,
         "realtime_end": "9999-12-31",
         "source_hash": HASH_A,
+        "native_unit": next(entry["unit"] for entry in CATALOG if entry["id"] == indicator),
+        "seasonal_adjustment": "explicit_synthetic_fixture",
         **kwargs,
     }
 
@@ -70,6 +72,120 @@ def test_revisions_only_change_later_decisions_and_inherit_provenance():
     assert revised["source_hashes"] == [HASH_A, HASH_B]
     assert revised["unit"] == "percent_change"
     assert result == calculate(reversed(rows), catalog_for("us_cpi_mom"), clock)
+
+
+def test_raw_output_preserves_historical_unit_and_adjustment():
+    result = latest(
+        [
+            row(
+                "us_real_gdp",
+                "2023-10-01",
+                100,
+                native_unit="Billions of Chained 2012 Dollars",
+                seasonal_adjustment="Seasonally Adjusted Annual Rate",
+            )
+        ],
+        "us_real_gdp",
+    )
+    assert result["unit"] == "Billions of Chained 2012 Dollars"
+    assert result["seasonal_adjustment"] == "Seasonally Adjusted Annual Rate"
+
+
+@pytest.mark.parametrize(
+    ("new_unit", "new_adjustment", "expected", "reason"),
+    [
+        ("Index 2000=100", "Seasonally Adjusted", 10, None),
+        ("Index 2017=100", "Seasonally Adjusted", None, "incompatible_historical_units"),
+        ("Index 2000=100", "Not Seasonally Adjusted", None, "incompatible_seasonal_adjustment"),
+    ],
+)
+def test_growth_requires_matching_historical_basis_and_adjustment(
+    new_unit,
+    new_adjustment,
+    expected,
+    reason,
+):
+    rows = [
+        row(
+            "us_pce_price",
+            "2023-11-01",
+            100,
+            native_unit="Index 2000=100",
+            seasonal_adjustment="Seasonally Adjusted",
+        ),
+        row(
+            "us_pce_price",
+            "2023-12-01",
+            110,
+            native_unit=new_unit,
+            seasonal_adjustment=new_adjustment,
+        ),
+    ]
+    result = latest(rows, "us_pce_price_mom")
+    assert result["value"] == (pytest.approx(expected) if expected is not None else None)
+    assert result["missing_reason"] == reason
+    assert result["unit"] == "percent_change"
+
+
+def test_macro_input_requires_explicit_metadata_evidence():
+    item = row("us_cpi", "2023-12-01", 100)
+    del item["native_unit"]
+    with pytest.raises(ValueError, match="metadata"):
+        latest([item], "us_cpi")
+
+
+def test_metadata_gap_is_an_explicit_absence_with_original_provenance():
+    result = latest(
+        [
+            row(
+                "us_cpi",
+                "2023-12-01",
+                None,
+                native_unit=None,
+                missing_reason="missing_historical_metadata",
+            )
+        ],
+        "us_cpi",
+    )
+    assert result["value"] is None
+    assert result["missing_reason"] == "missing_historical_metadata"
+    assert result["source_hashes"] == [HASH_A]
+
+
+def test_metadata_segment_does_not_supersede_newer_observation_vintage():
+    rows = [
+        row(
+            "us_cpi",
+            "2023-12-01",
+            100,
+            realtime_end="2024-01-08",
+            original_realtime_start="2024-01-05",
+        ),
+        row("us_cpi", "2023-12-01", 100, "2024-01-09", original_realtime_start="2024-01-05"),
+        row("us_cpi", "2023-12-01", 120, "2024-01-08"),
+    ]
+    assert latest(rows, "us_cpi")["value"] == 120
+
+
+def test_source_error_propagates_to_derived_absence_without_altering_design_catalog(tmp_path):
+    from mars_titan.data import macro_acquisition as acquisition
+
+    design = catalog_for("brent_wti_spread")
+    acquisition._initialize(tmp_path, "fixture")
+    with acquisition._connect(tmp_path) as connection:
+        connection.execute(
+            "INSERT INTO series VALUES (?,?,?,?,?)",
+            ("wti_spot", "DCOILWTICO", "error", "invalid temporal interval", "fixture"),
+        )
+        connection.execute(
+            "INSERT INTO series VALUES (?,?,?,?,?)",
+            ("brent_spot", "DCOILBRENTEU", "complete", None, "fixture"),
+        )
+    runtime = acquisition.execution_catalog(design, tmp_path)
+    result = latest([], "brent_wti_spread", runtime)
+    assert result["missing_reason"] == "source_error:invalid temporal interval"
+    assert all("acquisition_status" not in entry for entry in design)
+    assert latest([], "wti_spot", runtime)["missing_reason"] == result["missing_reason"]
 
 
 def test_latest_common_period_is_used_through_derived_dependencies():
