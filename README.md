@@ -2,7 +2,7 @@
 
 **Memoria causal adaptativa para predicción bursátil multimodal**
 
-Proyecto de investigación de **Gonzalo García Lama** · Máster Universitario en Inteligencia Artificial · UNIR · Trabajo individual de **Tipo 3: comparativa de soluciones**.
+Proyecto de investigación y desarrollo de **Gonzalo García Lama** sobre memoria neural y predicción financiera multimodal.
 
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
 
@@ -26,7 +26,7 @@ La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predic
 
 El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. Se propone un piloto de hasta 64 activos y una comparación principal de hasta 128, seleccionados con información del periodo de desarrollo. La lectura por bloques permite preparar el recorrido de toda la copia, que ocupa unos 109 GiB. Ampliar el entrenamiento a más activos o a China dependerá del coste medido y del calendario.
 
-Los entrenamientos prolongados deberán guardar y restaurar optimizador, semillas, cursor de datos y memoria adaptativa. La política de [checkpoints](docs/engineering/checkpoint-recovery.md) está especificada, pero no existen todavía pesos entrenados. La disponibilidad 24/7 se incorpora al [plan de cómputo](docs/engineering/compute-plan.md), sin inventar fechas de entrega.
+Los entrenamientos prolongados deberán guardar y restaurar optimizador, semillas, cursor de datos y memoria adaptativa. La política de [checkpoints](docs/engineering/checkpoint-recovery.md) está especificada, pero no existen todavía pesos entrenados. El [plan de cómputo](docs/engineering/compute-plan.md) contempla la disponibilidad del equipo durante las 24 horas.
 
 ## Diseño del estudio
 
@@ -59,8 +59,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 
 ## Documentación
 
-- [Mapa de documentación](docs/README.md) y [propuesta presentada](docs/academic/proposal.md).
-- [Requisitos académicos](docs/academic/requirements.md) y [matriz completa de la rúbrica](docs/academic/rubric-matrix.md).
+- [Mapa de documentación](docs/README.md).
 - [Protocolo de investigación](docs/research/protocol.md), [experimentos](docs/research/experiment-matrix.md) y [revisión del documento inicial](docs/research/original-review.md).
 - [Arquitectura candidata](docs/research/candidate-architecture.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
 - [Contrato de datos](docs/data/data-contract.md), [inspección inicial de FinMultiTime](docs/data/finmultitime-card.md) y [arquitectura](docs/engineering/architecture.md).
@@ -69,20 +68,8 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 - [Biblioteca y revisión bibliográfica](docs/references/README.md): publicaciones primarias, libros, fuentes financieras, BibTeX y descargas locales con huella de integridad.
 - [Memoria y aprendizaje](docs/references/brain-review.md), [eficiencia de DeepSeek](docs/references/deepseek-review.md), [recorrido completo del dataset](docs/engineering/full-dataset-training.md) y [presupuesto de latencia](docs/engineering/latency-budget.md).
 - [Contraste de los ocho posts aportados](docs/references/social-followup.md): recursos aprovechables, límites de acceso y afirmaciones que no se pueden verificar.
-- [Entorno y reproducción](docs/engineering/reproducibility.md), [riesgos](docs/research/risks.md) y [preparación de la defensa](docs/academic/defense.md).
+- [Entorno y reproducción](docs/engineering/reproducibility.md) y [riesgos](docs/research/risks.md).
 - [Verificación de esta entrega](docs/engineering/research-verification.md), con comprobaciones realizadas y límites pendientes.
-
-La rúbrica orienta el trabajo completo, incluida la exposición oral:
-
-```mermaid
-pie showData
-    title Peso de los bloques de evaluación UNIR
-    "Estructura" : 20
-    "Contenido" : 50
-    "Exposición" : 30
-```
-
-Fuente: rúbrica aportada para el proyecto, página 1. Estos porcentajes son pesos de evaluación. No representan avance ni calificaciones obtenidas.
 
 ## Estructura del repositorio
 
@@ -96,8 +83,8 @@ site/                Observatorio estático, sin ejecutar modelos en el navegado
 notebooks/           Exploraciones acotadas y reproducibles
 data/                Contratos y manifiestos, derivados locales ignorados
 dataset/             Copia local existente de FinMultiTime, fuera de Git
-docs/                Investigación, ingeniería, normativa y bibliografía
-thesis/              Memoria de trabajo en LaTeX
+docs/                Investigación, ingeniería y bibliografía
+thesis/              Documento de investigación en LaTeX
 reports/             Plantillas de resultados y fichas de experimentos
 .github/             Planificación y plantillas de revisión
 ```
@@ -166,6 +153,6 @@ El exportador no usa GPU, red ni logs completos. Generar una instantánea no la 
 
 La copia de FinMultiTime y sus derivados no se suben al repositorio. La selección experimental se fijará tras auditar cobertura, fechas y derechos de uso. No se presentan aquí resultados de rentabilidad ni recomendaciones de inversión.
 
-El código y la documentación originales se distribuyen bajo [MIT](LICENSE), una licencia gratuita y permisiva. Los documentos de UNIR, los datos, los artículos y los libros mantienen sus condiciones originales: [avisos de terceros](THIRD_PARTY_NOTICES.md). La publicación de la memoria académica requiere revisar las condiciones de depósito con el director.
+El código y la documentación originales se distribuyen bajo [MIT](LICENSE), una licencia gratuita y permisiva. Los documentos de terceros, los datos, los artículos y los libros mantienen sus condiciones originales: [avisos de terceros](THIRD_PARTY_NOTICES.md).
 
 Para citar el proyecto, utilizar [CITATION.cff](CITATION.cff). Las normas de desarrollo están en [CONTRIBUTING.md](CONTRIBUTING.md).
