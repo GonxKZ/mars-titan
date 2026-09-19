@@ -146,3 +146,22 @@ def test_timestamp_without_seconds_is_not_promoted_to_exact_seconds(tmp_path, cl
     accepted, rejected = read_news(path, "AAPL", clock)
     assert accepted == []
     assert rejected[0]["reason"] == "unsupported_timestamp_precision"
+
+
+@pytest.mark.parametrize("offset", ["+00:60", "-00:99", "+23:60", "+24:00"])
+def test_malformed_offset_is_not_normalized_into_exact_availability(tmp_path, clock, offset):
+    path = write_news(tmp_path, [row(f"2024-07-05T20:05:00{offset}")])
+    accepted, rejected = read_news(path, "AAPL", clock)
+    assert accepted == []
+    assert rejected[0]["reason"] == "unverified_timezone"
+
+
+@pytest.mark.parametrize("date", ["0001-01-01T00:00:00+01:00", "9999-12-31T23:59:59-01:00"])
+def test_utc_overflow_is_excluded_without_losing_the_next_record(tmp_path, clock, date):
+    path = write_news(tmp_path, [row(date), row()])
+    accepted, rejected = read_news(path, "AAPL", clock)
+    assert len(accepted) == 1
+    assert accepted[0]["line"] == 2
+    assert len(rejected) == 1
+    assert rejected[0]["line"] == 1
+    assert rejected[0]["reason"] == "invalid_record"

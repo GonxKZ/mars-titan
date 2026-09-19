@@ -19,6 +19,9 @@ def _publication(value: str, clock: MarketClock, lag: int):
     fractions = re.finditer(r"\d{2}:\d{2}:\d{2}[.,](\d+)", value)
     if any(len(part[1]) > 6 for part in fractions):
         return None, None, "unsupported_timestamp_precision"
+    offset = re.search(r"[+-](\d{2}):(\d{2})$", value)
+    if offset and (int(offset[1]) > 23 or int(offset[2]) > 59):
+        return None, None, "unverified_timezone"
     event = datetime.fromisoformat(value)
     if (
         event.tzinfo is None
@@ -104,6 +107,6 @@ def read_news(
                         "association_evidence": "source_field",
                     }
                 )
-            except (ValueError, TypeError) as error:
+            except (ValueError, TypeError, OverflowError) as error:
                 rejected.append({**provenance, "reason": "invalid_record", "detail": str(error)})
     return sorted(accepted, key=lambda r: (r["available_at"], r["content_hash"])), rejected
