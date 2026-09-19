@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, IterableDataset
 from mars_titan.data.budget_targets import residual_targets
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.prices import read_prices
-from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.streaming import iter_windows
 from mars_titan.data.temporal import MarketClock
 from mars_titan.profiling import CostProbe
@@ -303,6 +303,9 @@ def train_budget_grid(
         or not set(kinds) <= {"mlp", "gru"}
     ):
         raise ValueError("Invalid bounded budget workload")
+    for target in (output, report_path):
+        outside_source(Path("dataset"), target)
+        outside_source(prepared, target)
     if output.exists():
         raise ValueError("Use a fresh output directory to preserve existing checkpoints")
     started = time.perf_counter()

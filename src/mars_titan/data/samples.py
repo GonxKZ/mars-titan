@@ -150,6 +150,30 @@ def eligible_samples(
         }
 
 
+def validate_sample_inputs(
+    prepared: Path, destination: Path, panel: dict, clock: MarketClock
+) -> tuple[str, dict[str, dict]]:
+    """Comprueba destinos y calendarios antes de inicializar recursos o escribir."""
+    outside_source(Path("dataset"), destination)
+    if prepared.resolve() == destination.resolve():
+        raise ValueError("Sample output must not overwrite prepared modality manifests")
+    calendar_fingerprint = hashlib.sha256(
+        "|".join(value.isoformat() for value in clock.decisions).encode()
+    ).hexdigest()
+    manifests = {}
+    for asset in panel["assets"]:
+        symbol = asset["symbol"]
+        target = destination / clock.market / symbol
+        outside_source(Path("dataset"), target)
+        for market in ("US", "CN"):
+            outside_source(prepared / market, target)
+        manifest = json.loads((prepared / clock.market / symbol / "manifest.json").read_text())
+        if manifest.get("policy", {}).get("calendar") != calendar_fingerprint:
+            raise ValueError(f"Prepared calendar differs from the sample calendar: {symbol}")
+        manifests[symbol] = manifest
+    return calendar_fingerprint, manifests
+
+
 def materialize_samples(
     prepared: Path,
     macro_path: Path,
@@ -160,11 +184,9 @@ def materialize_samples(
     cache,
 ) -> dict:
     """Guarda vectores por activo. Las ventanas de precios se obtienen bajo demanda."""
+    calendar_fingerprint, manifests = validate_sample_inputs(prepared, destination, panel, clock)
     import torch
 
-    outside_source(Path("dataset"), destination)
-    if prepared.resolve() == destination.resolve():
-        raise ValueError("Sample output must not overwrite prepared modality manifests")
     macro_rows = pq.read_table(macro_path).to_pylist()
     macro_by_time = defaultdict(list)
     for row in macro_rows:
@@ -180,7 +202,7 @@ def materialize_samples(
     for asset in panel["assets"]:
         symbol = asset["symbol"]
         source = prepared / clock.market / symbol
-        manifest = json.loads((source / "manifest.json").read_text())
+        manifest = manifests[symbol]
         for name, digest in manifest["artifacts"].items():
             if sha256(source / name) != digest:
                 raise ValueError(f"Prepared artifact changed: {symbol}/{name}")
@@ -189,6 +211,7 @@ def materialize_samples(
             json.dumps(
                 {
                     "prepared": manifest["fingerprint"],
+                    "calendar": calendar_fingerprint,
                     "macro": macro_hash,
                     "encoders": encoder_fingerprint,
                     "sample_code": sha256(Path(__file__)),
@@ -284,6 +307,7 @@ def materialize_samples(
             "macro_indicators": macro_schema,
             "encoders": encoders.spec,
             "prepared_fingerprint": manifest["fingerprint"],
+            "calendar": calendar_fingerprint,
             "context_sessions": 64,
             "news_lookback_sessions": 5,
             "elapsed_seconds": time.perf_counter() - started,

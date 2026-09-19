@@ -20,6 +20,8 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote, urlsplit
 
+from .storage import outside_source
+
 _ALFRED_HOST = "alfred.stlouisfed.org"
 _FORM_URL = f"https://{_ALFRED_HOST}/series/downloaddata?seid={{series_id}}"
 _QUERY_VERSION = "alfred-real-time-period-v1"
@@ -155,6 +157,7 @@ def _sha256(content: bytes) -> str:
 
 
 def _atomic_bytes(path: Path, content: bytes) -> None:
+    outside_source(Path("dataset"), path)
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
@@ -294,6 +297,7 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
 
 def _connect(destination: Path) -> sqlite3.Connection:
     database = destination / _DATABASE
+    outside_source(Path("dataset"), database)
     connection = sqlite3.connect(database, timeout=30)
     connection.execute("PRAGMA journal_mode=WAL")
     connection.execute("PRAGMA busy_timeout=30000")
@@ -640,6 +644,13 @@ def acquire_catalog(
     if type(workers) is not int or not 1 <= workers <= 2:
         raise ValueError("workers must be one or two")
     destination = Path(destination)
+    outside_source(Path("dataset"), destination)
+    outside_source(Path("dataset"), destination / _DATABASE)
+    outside_source(Path("dataset"), destination / "raw")
+    entries = list(catalog)
+    for entry in entries:
+        if _exclusion(entry) is None:
+            outside_source(Path("dataset"), destination / "raw" / entry["id"])
     observation_start = _iso_day(observation_start, "observation_start")
     observation_end = _iso_day(observation_end, "observation_end")
     realtime_start = _iso_day(realtime_start, "realtime_start")
@@ -648,7 +659,6 @@ def acquire_catalog(
         raise ValueError("Acquisition date ranges must be ordered")
     configuration = _configuration(observation_start, observation_end, realtime_start, realtime_end)
     _initialize(destination, configuration)
-    entries = list(catalog)
     excluded = []
     eligible = []
     for entry in entries:

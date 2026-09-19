@@ -53,6 +53,8 @@ def main() -> int:
     encode.add_argument("--panel", type=Path, required=True)
     encode.add_argument("--prepared", type=Path, default=Path("data/processed/phase1"))
     encode.add_argument("--output", type=Path, default=Path("data/processed/phase1/samples"))
+    encode.add_argument("--start")
+    encode.add_argument("--end", default="2026-01-01")
     encode.add_argument(
         "--cache", type=Path, default=Path("data/embeddings/phase1/representations.sqlite")
     )
@@ -123,12 +125,14 @@ def main() -> int:
         )
     elif args.command == "encode":
         from .embeddings import EmbeddingCache, FrozenEncoders
-        from .samples import materialize_samples
+        from .samples import materialize_samples, validate_sample_inputs
         from .temporal import MarketClock
 
         outside_source(Path("dataset"), args.cache)
         panel = json.loads(args.panel.read_text())
-        clock = MarketClock(panel["market"], "2000-01-01", "2026-01-01")
+        start = args.start or ("1990-01-01" if panel["market"] == "US" else "2000-01-01")
+        clock = MarketClock(panel["market"], start, args.end)
+        validate_sample_inputs(args.prepared, args.output, panel, clock)
         encoders = FrozenEncoders()
         cache = EmbeddingCache(args.cache)
         try:
