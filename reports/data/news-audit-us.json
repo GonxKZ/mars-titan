@@ -1,0 +1,422 @@
+{
+  "schema_version": 1,
+  "audited_at_utc": "2026-09-19T22:53:51.216100+00:00",
+  "market": "US",
+  "calendar": {
+    "first_session": "1990-01-02",
+    "last_session": "2025-12-31",
+    "decisions_sha256": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687"
+  },
+  "grain": "asset_source_record",
+  "admission_scope": "source_binding_and_publication_fields",
+  "semantic_validation_complete": false,
+  "historical_body_version_verified": false,
+  "raw_records": 29957,
+  "accepted": 29890,
+  "excluded": 67,
+  "reasons": {
+    "duplicate": 67
+  },
+  "assets": [
+    {
+      "symbol": "LYB",
+      "raw_records": 7,
+      "accepted": 7,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 7,
+      "language_unknown": 7,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2023-12-12T21:05:00+00:00",
+      "last_available_at": "2023-12-18T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "1adf89fb6f330d0c57899466fa1f0eb55fd142e3adebbf9f607bb017b396b14c",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "CENX",
+      "raw_records": 669,
+      "accepted": 669,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 669,
+      "language_unknown": 669,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-06-22T20:05:00+00:00",
+      "last_available_at": "2025-04-21T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "52501cec2ddf23e27770c2d240d31e6dbf35237e0383d421789c0cbe5e17fbc4",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "LBRDK",
+      "raw_records": 173,
+      "accepted": 167,
+      "excluded": 6,
+      "reasons": {
+        "duplicate": 6
+      },
+      "date_only": 167,
+      "language_unknown": 167,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2014-11-06T21:05:00+00:00",
+      "last_available_at": "2025-03-28T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "c22f44ac6392759373e416466d8e24a77b69a42cd689ac9f61c99dbceb0f20cd",
+        "exclusions.parquet": "4c92d5a33a2d85616b9a55e77cd88cd10189ca695ec6b553cda62eefc49f5d5c"
+      }
+    },
+    {
+      "symbol": "EVC",
+      "raw_records": 139,
+      "accepted": 139,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 139,
+      "language_unknown": 139,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2011-12-09T21:05:00+00:00",
+      "last_available_at": "2023-11-16T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "1fb884d9c2a3ea17d19c1faf17711a4ae7585e33e65e1a829841520d47080eaf",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "PZZA",
+      "raw_records": 1080,
+      "accepted": 1080,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 1080,
+      "language_unknown": 1080,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-10-13T20:05:00+00:00",
+      "last_available_at": "2023-12-15T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "3b9ffa0639b2ffd48dc818d3e680a9621ff08adcb6593f118dced6cca94e6dd6",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "CMG",
+      "raw_records": 4796,
+      "accepted": 4796,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 4796,
+      "language_unknown": 4796,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2009-10-19T20:05:00+00:00",
+      "last_available_at": "2023-12-18T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "8ed42be8a503c2a2b1a45ea54d1e82c5cd360e7f99fc41dddd68d726334726c8",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "SYY",
+      "raw_records": 1733,
+      "accepted": 1733,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 1733,
+      "language_unknown": 1733,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-02-26T21:05:00+00:00",
+      "last_available_at": "2025-04-22T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "2d3889f10db346675aafa80db27db3b9300b53aa908581a66149fe654ff69366",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "BGS",
+      "raw_records": 1004,
+      "accepted": 996,
+      "excluded": 8,
+      "reasons": {
+        "duplicate": 8
+      },
+      "date_only": 996,
+      "language_unknown": 996,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2012-09-21T20:05:00+00:00",
+      "last_available_at": "2025-04-15T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "a1c81323de3d4e29617de9b76053ca6f1ea49b4fab4588d28315f8670c2095b1",
+        "exclusions.parquet": "b04182b1c445c1ff1e924e6f0fbef4a4866de336894425a511ba026cb04edaea"
+      }
+    },
+    {
+      "symbol": "WES",
+      "raw_records": 847,
+      "accepted": 831,
+      "excluded": 16,
+      "reasons": {
+        "duplicate": 16
+      },
+      "date_only": 831,
+      "language_unknown": 831,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-08-03T20:05:00+00:00",
+      "last_available_at": "2025-04-21T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "b56d9b31555edbb9fa3ed511c3fc5699bb3db1e9dfea58163e49fa4a283e833e",
+        "exclusions.parquet": "8e60812f55febaba35577aeb674a70b6ba2ec105594c632d45be40addf1b1e84"
+      }
+    },
+    {
+      "symbol": "RRC",
+      "raw_records": 1512,
+      "accepted": 1512,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 1512,
+      "language_unknown": 1512,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-06-08T20:05:00+00:00",
+      "last_available_at": "2023-12-18T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "ba2feefd173641bf9a4639a588a606d084baf55d85e9e4809b90060bbf676fed",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "RF",
+      "raw_records": 101,
+      "accepted": 101,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 101,
+      "language_unknown": 101,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2023-07-19T20:05:00+00:00",
+      "last_available_at": "2023-12-15T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "70603a8a86b5bda1ab48efe3015d1ecf402e08ad578b2adb5f60a9c6399ea903",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "ESGRO",
+      "raw_records": 8575,
+      "accepted": 8575,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 8575,
+      "language_unknown": 8575,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2023-12-04T21:05:00+00:00",
+      "last_available_at": "2023-12-18T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "bc80302517e8abfc05775c97a05cfcb76eab2463853372dcd8502761094c24c4",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "UTHR",
+      "raw_records": 639,
+      "accepted": 639,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 639,
+      "language_unknown": 639,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-04-21T20:05:00+00:00",
+      "last_available_at": "2023-12-15T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "82c4d1b91ee5934fbf54a18de540fabc6bf588fb35d60bdcd05e51ae5e783c82",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "AMGN",
+      "raw_records": 5585,
+      "accepted": 5575,
+      "excluded": 10,
+      "reasons": {
+        "duplicate": 10
+      },
+      "date_only": 5575,
+      "language_unknown": 5575,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-02-10T21:05:00+00:00",
+      "last_available_at": "2025-04-22T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "e5cf7b936376c451fe90cb740c42a4ce643932e346de8a7bb472f4dee68b0fa7",
+        "exclusions.parquet": "5d2775f3d299dcdb9cef38cb9071c7fb5642f256fd63ac6770bf361a45f99fc9"
+      }
+    },
+    {
+      "symbol": "MWA",
+      "raw_records": 253,
+      "accepted": 253,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 253,
+      "language_unknown": 253,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2011-07-15T20:05:00+00:00",
+      "last_available_at": "2023-12-15T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "bf861c4724ef6a647ff62959d00cee54dd61f19004efb9ea4041e3aa6ad0a6c0",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "FIX",
+      "raw_records": 776,
+      "accepted": 773,
+      "excluded": 3,
+      "reasons": {
+        "duplicate": 3
+      },
+      "date_only": 773,
+      "language_unknown": 773,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2012-02-01T21:05:00+00:00",
+      "last_available_at": "2025-04-25T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "fdbcf1b66855774ae55fc25f840e6bc53ba17ac0e25fb33e9d92cd4834039f06",
+        "exclusions.parquet": "2ecbc366a1637f68d7ea72622492512efacf0d244fb7f3f1e23e709bf376cf96"
+      }
+    },
+    {
+      "symbol": "NEN",
+      "raw_records": 26,
+      "accepted": 26,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 26,
+      "language_unknown": 26,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2012-12-11T21:05:00+00:00",
+      "last_available_at": "2023-05-12T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "3d5e933e3de54efc0f5fc53c9b380389db7d43000ecd689c48114572e6947701",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "AGNCM",
+      "raw_records": 500,
+      "accepted": 500,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 500,
+      "language_unknown": 500,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2023-03-01T21:05:00+00:00",
+      "last_available_at": "2025-04-22T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "f9b4be5a67d13c48d247f21600c68ced63205fd6df03b9157d98d053f8955ce9",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "AAOI",
+      "raw_records": 927,
+      "accepted": 907,
+      "excluded": 20,
+      "reasons": {
+        "duplicate": 20
+      },
+      "date_only": 907,
+      "language_unknown": 907,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2013-09-12T20:05:00+00:00",
+      "last_available_at": "2025-04-21T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "e53d8a412fdf240575efab6549b2c01fb9a67ef48f6b2b80fb7febbc731cb7ac",
+        "exclusions.parquet": "723a5cd86e2f9a63b3834971b8fb1ca3124e0530091d96e23b44d6f515f47964"
+      }
+    },
+    {
+      "symbol": "PAR",
+      "raw_records": 138,
+      "accepted": 138,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 138,
+      "language_unknown": 138,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-08-17T20:05:00+00:00",
+      "last_available_at": "2023-12-14T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "59a996dc149d2ce46aa38e14165ed8aaa8232b7c11e3db48ef5fc66d4537acb1",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "GNE",
+      "raw_records": 104,
+      "accepted": 100,
+      "excluded": 4,
+      "reasons": {
+        "duplicate": 4
+      },
+      "date_only": 100,
+      "language_unknown": 100,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2011-12-15T21:05:00+00:00",
+      "last_available_at": "2025-04-11T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "7acdc9a2aa160af16ec81c01aa52bd0145258484f9247aac8ef4977eb4e167c1",
+        "exclusions.parquet": "1293b56fb0bcdeee48228c46b9b47a9fe0b965eda34a6f788a47da270ae923e9"
+      }
+    },
+    {
+      "symbol": "POR",
+      "raw_records": 373,
+      "accepted": 373,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 373,
+      "language_unknown": 373,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-02-26T21:05:00+00:00",
+      "last_available_at": "2023-12-13T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "fa55a57b19b48aba23e88c7371faef9d3e6cc359c2747f9be00ae76d79f1c5c9",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    }
+  ],
+  "source_hashes": {
+    "text/sp500_news/LYB.jsonl": "632ed43e9d2533db0af1fcb375df6d0f248a118ff958a2cb6a207e3c82e67a2c",
+    "text/sp500_news/CENX.jsonl": "22b9046cfee3b9af936468f8a05f115820b9e9ccb07a6a454f000d12642e851a",
+    "text/sp500_news/LBRDK.jsonl": "a7a0d6c99d60a9465f76174af2fb63fc1f5cd53b9313c170e6418c8d277856cd",
+    "text/sp500_news/EVC.jsonl": "b1399e5ffaeae9d01302bad179b5ef937725c6900968c22144221fd884d9b7a5",
+    "text/sp500_news/PZZA.jsonl": "11024f397a21bcfd85e24f4a92b82d7ebcd65dc7010dafe0070c0060b67a2bde",
+    "text/sp500_news/CMG.jsonl": "e383d2df656f39272388cca2abc58dbe156b2fc42b9c9cb81bf864998c930d1c",
+    "text/sp500_news/SYY.jsonl": "907b962fed3e4f1cb8ea3eab31d0e08354b3f9a397b0a818d8807a81c8194be9",
+    "text/sp500_news/BGS.jsonl": "1b04fab507c13bfd507a6f4befeb4e83c2326f803ad1e9770c4bc142df5f79c7",
+    "text/sp500_news/WES.jsonl": "37239f81e13cdf32e05f642d5c01d58c90d7e04188e343f64dc1ede0c19a9822",
+    "text/sp500_news/RRC.jsonl": "ba4be53aee3e2ab08517b50c34b39460e67ec2731141dac5ba86d8f4c86ac2b6",
+    "text/sp500_news/RF.jsonl": "f2d5799717fd871280956e97278567d7f6604036f1164ae504ae0f77936cacaa",
+    "text/sp500_news/ESGRO.jsonl": "c19174021064bc9d7adb66888bd76169a797cf0ee9f595a2344e5b59a6851370",
+    "text/sp500_news/UTHR.jsonl": "c1198726e78912c76ceb7a804dfe8827ea9b1775f4e9315d53bfb2ee208aa73a",
+    "text/sp500_news/AMGN.jsonl": "f6731773a79ca5fe0960136a612e8bb0e1b4831c242d9700845827b29545f9c1",
+    "text/sp500_news/MWA.jsonl": "e59257ed3339ffaa90b8919efdc9bae657a8db47d9d7b71ccad4750591d011fe",
+    "text/sp500_news/FIX.jsonl": "b6de5d92839d8b1e46f3520bfc3cd74bc8587e4ab185c95588cd61368cfe148a",
+    "text/sp500_news/NEN.jsonl": "74ef969737ba108c1333849fe620bc7ecaf95a214eb8b57a879e7b7ebe9ee36c",
+    "text/sp500_news/AGNCM.jsonl": "34fa3a20d93d82c086d76aabc1c75847e1f55b168a23c1f74526aa1fe7ff70f6",
+    "text/sp500_news/AAOI.jsonl": "456b469cddca3fee6e765657da2065d50e283885183427e83dc7bf5538d2d12a",
+    "text/sp500_news/PAR.jsonl": "02ee86502196ed0ac690b6712877b8725f811edfd409367f0cdeca75eda8f60b",
+    "text/sp500_news/GNE.jsonl": "0aad69470baf0dbf8e8ae8ced04683bf80534618abceb99c6f4dddbec5086d3f",
+    "text/sp500_news/POR.jsonl": "e24485d9ff95a2e824f218b7522d340018c195c318d41193cbacc6a6376e0fed"
+  },
+  "implementation_sha256": {
+    "news.py": "db88a46a0a9a199f220d86d16c10e4944f01fe1bdc2a4bf593e13ac5f4f560e5",
+    "news_audit.py": "875dfa094b739ad3c0efb4969243bd3c0b730efaa193e842719b9e84ddc88b49"
+  },
+  "lag2_shift_hours": {
+    "min": 21.0,
+    "max": 120.0
+  },
+  "elapsed_seconds": 1.4952134499981184,
+  "peak_rss_mib": 349.8984375
+}
