@@ -1,6 +1,8 @@
 """Inventario completo con lectura acotada y recuperación por archivo."""
 
+import codecs
 import csv
+import hashlib
 import json
 import os
 import resource
@@ -42,7 +44,7 @@ def inspect_header(path: Path) -> dict:
         }
     encoding = "utf-8-sig"
     try:
-        text = prefix.decode(encoding)
+        text = codecs.getincrementaldecoder(encoding)().decode(prefix, final=False)
     except UnicodeDecodeError:
         encoding = "gb18030"
         text = prefix.decode(encoding, errors="replace")
@@ -110,6 +112,7 @@ def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
                 and not verify
                 and not path.is_symlink()
                 and json.loads(previous[3])["state"] != "error"
+                and json.loads(previous[3]).get("inspection_version") == 2
             ):
                 db.execute("UPDATE files SET present=1 WHERE path=?", (path_key,))
                 continue
@@ -123,6 +126,7 @@ def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
                 "sha256": None,
                 "inspected_at": inspected_at,
                 "state": "inspected",
+                "inspection_version": 2,
                 "acquisition_revision": "unknown",
                 "redistribution": "not_granted",
             }
@@ -159,10 +163,22 @@ def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
             "SELECT count(DISTINCT json_extract(record,'$.sha256')) FROM files WHERE present=1"
         ).fetchone()[0]
         count = sum(group["files"] for group in groups)
+        snapshot = hashlib.sha256()
+        for (record,) in db.execute("SELECT record FROM files WHERE present=1 ORDER BY path"):
+            item = json.loads(record)
+            snapshot.update(
+                json.dumps(
+                    [item["path"], item["sha256"], item["bytes"]],
+                    ensure_ascii=True,
+                    separators=(",", ":"),
+                ).encode("ascii")
+            )
+            snapshot.update(b"\n")
     return {
         "schema_version": 1,
         "inspected_at": inspected_at,
         "files": count,
+        "snapshot_sha256": snapshot.hexdigest(),
         "bytes": sum(group["bytes"] for group in groups),
         "groups": groups,
         "hashed_files": hashed,

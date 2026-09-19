@@ -103,3 +103,24 @@ def test_inventory_supports_original_filenames_with_non_utf8_bytes(tmp_path):
     assert module.inventory(source, db)["files"] == 1
     assert next(module.entries(db))["path"] == name
     assert module.inventory(source, db)["hashed_files"] == 0
+
+
+def test_bounded_inspection_does_not_mistake_split_utf8_for_another_encoding(tmp_path):
+    path = tmp_path / "news.json"
+    path.write_bytes(b'{"t":"' + b"a" * 65529 + 'é"}'.encode())
+    assert inventory_module().inspect_header(path)["encoding"] == "utf-8-sig"
+
+
+def test_snapshot_digest_depends_on_content_not_inspection_time(tmp_path):
+    source = tmp_path / "dataset"
+    source.mkdir()
+    path = source / "a.csv"
+    path.write_text("a\n1\n")
+    module = inventory_module()
+    one = module.inventory(source, tmp_path / "inventory.sqlite")
+    os.utime(path, None)
+    two = module.inventory(source, tmp_path / "inventory.sqlite", verify=True)
+    assert one["snapshot_sha256"] == two["snapshot_sha256"]
+    path.write_text("a\n2\n")
+    three = module.inventory(source, tmp_path / "inventory.sqlite")
+    assert three["snapshot_sha256"] != one["snapshot_sha256"]
