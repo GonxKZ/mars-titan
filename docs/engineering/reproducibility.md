@@ -1,8 +1,8 @@
 # Reproducibilidad de MARS-TITAN
 
-Autor: Gonzalo García Lama. Estado comprobado el 18 de septiembre de 2026.
+Autor: Gonzalo García Lama. Estado actualizado el 19 de septiembre de 2026.
 
-El repositorio prepara la documentación, el entorno y las herramientas necesarias para iniciar la comparación. No contiene todavía una implementación científica ni resultados de entrenamiento. Las comprobaciones descritas aquí deben distinguirse de la reproducción de un experimento.
+El repositorio contiene preparación temporal de datos y sondas MLP y GRU para medir coste. La arquitectura MARS-TITAN y la comparación confirmatoria siguen pendientes. La [preparación ejecutada](../data/preparation.md) y el [presupuesto experimental](../../reports/resources/campaign-budget.md) distinguen implementación, datos admitidos y entrenamientos observados.
 
 ## Entorno del proyecto
 
@@ -17,7 +17,7 @@ Las herramientas de sistema se comprueban en el equipo local. uv gestiona las de
 
 La captura de [fuentes públicas](../data/public-source-updates.md) utiliza `curl`. La inspección de documentos PDF utiliza `pdfinfo`, incluido en `poppler-utils` en Debian y Ubuntu. Son requisitos adicionales de esas operaciones, no del entrenamiento ni de las pruebas sin red. El actualizador no instala programas, crea cuentas o activa tareas periódicas.
 
-Python se gestiona con uv. El entorno local será `.venv/`, con Python 3.12 como versión de trabajo. `pyproject.toml` declara los grupos de dependencias y `uv.lock` conserva la resolución. La opción `package = false` indica que el repositorio aún no se construye ni se instala como un paquete Python.
+Python se gestiona con uv. El entorno local es `.venv/`, con Python 3.12 como versión de trabajo. `pyproject.toml` declara las dependencias y `uv.lock` conserva la resolución. El paquete se construye con Hatchling y se instala en modo editable durante el desarrollo. La orden `mars-data` expone las operaciones de preparación.
 
 Para preparar las herramientas de documentación y calidad:
 
@@ -25,30 +25,28 @@ Para preparar las herramientas de documentación y calidad:
 uv sync --locked
 ```
 
-El grupo `dev` contiene las utilidades de comprobación. Los extras `data`, `research`, `cuda` y `notebooks` quedan disponibles para el trabajo posterior. No hace falta instalar PyTorch en el entorno local para revisar documentos, comprobar la biblioteca de referencias o configurar CMake.
+El grupo `dev` contiene las utilidades de comprobación. Los extras `data`, `research` y `notebooks` añaden herramientas opcionales. `cuda` y `encoders` se han usado en la preparación multimodal y las mediciones locales. No hace falta PyTorch para revisar documentación o validar formatos. Las pruebas que lo necesitan se omiten de forma explícita si no está instalado.
 
-Cuando se inicie la implementación científica, la instalación de sus dependencias se hará explícitamente:
+Para reproducir la preparación y sus comprobaciones con GPU:
 
 ```bash
 uv sync --locked \
-  --extra data \
-  --extra research \
   --extra cuda \
-  --extra notebooks
+  --extra encoders
 ```
 
-El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64. No se ha instalado ese conjunto completo en esta preparación. La resolución del lockfile no sustituye una comprobación de importación y funcionamiento en el entorno donde se vaya a ejecutar.
+El extra `cuda` obtiene PyTorch desde el índice CUDA 13.0 declarado en `pyproject.toml`, para Linux x86-64. Se han comprobado importación, operación en `cuda:0`, extracción de representaciones y entrenamiento supervisado. La resolución del lockfile no sustituye estas comprobaciones al cambiar de equipo.
 
 Las herramientas actuales se ejecutan desde la raíz:
 
 ```bash
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-uv run --locked pytest
-uv run --locked python scripts/check_repository.py
+uv run --locked --extra cuda --extra encoders ruff check .
+uv run --locked --extra cuda --extra encoders ruff format --check .
+uv run --locked --extra cuda --extra encoders pytest
+uv run --locked --extra cuda --extra encoders python scripts/check_repository.py
 ```
 
-Estas herramientas de mantenimiento se ejecutan localmente con CPU. No ejecutan entrenamientos ni sustituyen las comprobaciones de CUDA. La publicación de la web no las ejecuta automáticamente.
+Las comprobaciones se ejecutan localmente. La suite incluye una integración breve en CUDA con datos sintéticos, independiente de los ensayos temporizados con datos reales. Si no hay GPU, esa prueba se omite con una explicación, no se transforma en un entrenamiento CPU. La publicación de la web no ejecuta estas pruebas ni los experimentos.
 
 ## Equipo y entorno compartido
 
@@ -70,6 +68,8 @@ La comprobación local ha observado:
 | `torch.cuda.is_available()` | `True` |
 
 Los valores corresponden a esta máquina y fecha. La memoria libre depende de otros procesos. Detectar el dispositivo no acredita que un modelo concreto quepa en memoria ni que sus operaciones sean deterministas.
+
+El [registro del entorno local](../../reports/resources/environment.json) conserva la comprobación del 19 de septiembre, con Python 3.12.14, las versiones efectivamente importadas, una operación en CUDA y la huella de `uv.lock`. La tabla anterior describe también herramientas del entorno compartido, no afirma que su intérprete sea el utilizado por el proyecto.
 
 El entorno compartido puede servir para tareas independientes compatibles. No reproduce automáticamente la resolución de `uv.lock` ni la versión de trabajo Python 3.12 del proyecto. Se consulta sin modificar sus dependencias:
 

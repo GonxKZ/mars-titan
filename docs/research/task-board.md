@@ -2,7 +2,7 @@
 
 El [Project](https://github.com/users/GonxKZ/projects/4) organiza tareas revisables, no porcentajes de éxito científico. Cada issue contiene herramientas por función, entradas, pasos, artefactos previstos y comprobaciones. El [catálogo JSON](../../.github/planning/issues.json) conserva sus cuerpos y el [mapa remoto](../../.github/planning/remote-map.json) registra la verificación de GitHub.
 
-Hay **64 tareas canónicas y 183 dependencias nativas**, con 2 en Hecho, 61 Pendiente, 0 En curso, 0 En revisión y 1 Bloqueado. Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero. No se han borrado ni recuperado sus tareas.
+El catálogo conserva **64 tareas canónicas y 183 dependencias**. Los estados de sus tablas son la instantánea de planificación inicial, no un contador en directo. El estado operativo se consulta en el Project y la evidencia posterior en [preparación](../data/preparation.md) y [mediciones](../../reports/resources/campaign-budget.md). Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero.
 
 ## Cómo utilizar una issue
 
@@ -14,9 +14,9 @@ La [guía de implementación](../engineering/implementation-guide.md) explica la
 
 | Función | Tareas | Criterio |
 | --- | ---: | --- |
-| Núcleo científico | 37 | Produce la evidencia de los seis objetivos. |
+| Núcleo científico | 39 | Produce la evidencia de los seis objetivos, incluido el contexto macro obligatorio. |
 | Apoyo | 15 | Entorno, ejecución, trazabilidad y entrega. |
-| Extensión | 12 | Se activa con pregunta, datos y presupuesto. No bloquea el mínimo científico. |
+| Extensión | 10 | Se activa con pregunta, datos y presupuesto. No bloquea el mínimo científico. |
 
 Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extensiones. Las tareas del observatorio y de estas guías son resultados de preparación distintos de los modelos y sus experimentos. La auditoría original de duplicados se conserva en [revisión del catálogo](backlog-review.md).
 
@@ -44,8 +44,8 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-011 · Construir el contrato temporal de datos](https://github.com/GonxKZ/mars-titan/issues/11) | Núcleo | P0 | Pendiente | MT-006, MT-007, MT-008 |
 | [MT-012 · Definir la selección y publicar el piloto](https://github.com/GonxKZ/mars-titan/issues/12) | Núcleo | P0 | Pendiente | MT-005, MT-006, MT-007, MT-008, MT-011 |
 | [MT-048 · Preparar datos por bloques y ventanas bajo demanda](https://github.com/GonxKZ/mars-titan/issues/50) | Apoyo | P1 | Pendiente | MT-004, MT-005, MT-011, MT-012 |
-| [MT-056 · Auditar indicadores macro y sus versiones](https://github.com/GonxKZ/mars-titan/issues/58) | Extensión | P2 | Pendiente | MT-003, MT-005 |
-| [MT-057 · Integrar macro con versiones y disponibilidad](https://github.com/GonxKZ/mars-titan/issues/59) | Extensión | P2 | Pendiente | MT-011, MT-056 |
+| [MT-056 · Auditar indicadores macro y sus versiones](https://github.com/GonxKZ/mars-titan/issues/58) | Núcleo | P0 | Pendiente | MT-003, MT-005 |
+| [MT-057 · Integrar macro con versiones y disponibilidad](https://github.com/GonxKZ/mars-titan/issues/59) | Núcleo | P0 | Pendiente | MT-011, MT-056 |
 | [MT-066 · Verificar fuentes públicas complementarias](https://github.com/GonxKZ/mars-titan/issues/68) | Extensión | P2 | Pendiente | MT-005 |
 | [MT-067 · Implementar actualizaciones con instantáneas inmutables](https://github.com/GonxKZ/mars-titan/issues/69) | Extensión | P2 | Pendiente | MT-011, MT-066 |
 

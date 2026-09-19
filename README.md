@@ -14,19 +14,21 @@ Proyecto de investigación y desarrollo de **Gonzalo García Lama** sobre memori
 
 Los mercados cambian, las noticias llegan a distintas horas y una parte de la información financiera se publica después del periodo al que se refiere. En estas condiciones, una buena predicción sobre un histórico no basta para demostrar que un modelo generaliza.
 
-MARS-TITAN estudia si una memoria neural adaptativa, que selecciona eventos financieros relevantes y conserva información útil de distintos contextos de mercado, aporta valor frente a modelos más sencillos. El trabajo combina precios, noticias y, cuando su disponibilidad temporal pueda justificarse, información fundamental y representaciones de gráficos de **FinMultiTime**.
+MARS-TITAN estudia si una memoria neural adaptativa, que selecciona eventos financieros relevantes y conserva información útil de distintos contextos de mercado, aporta valor frente a modelos más sencillos. Los entrenamientos combinan siempre cuatro modalidades de **FinMultiTime**: precios, noticias, fundamentales y gráficos. Cada muestra debe justificar la disponibilidad de las cuatro. El contexto macroeconómico las complementa, no sustituye ninguna de ellas.
 
 La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia interna de pocos pasos y contexto macroeconómico. La inspiración biológica se traduce en hipótesis sobre retención, adaptación y reaprendizaje. Los antecedentes recientes, incluidos DeepSeek y modelos financieros con memoria, sirven para decidir qué comparar y qué técnicas pueden ser útiles en una GPU pequeña.
 
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
 
-**Estado actual:** preparación documental, configuración, fuentes y observatorio, sin implementación científica iniciada. La arquitectura está propuesta. Los experimentos y sus resultados están pendientes. Las utilidades conservan la biblioteca, verifican el repositorio, descargan fuentes públicas y exportan resúmenes permitidos. El observatorio muestra inicialmente un registro vacío, no entrenamientos simulados. Los diagramas muestran el diseño del estudio, no rendimiento observado. «Causal» se refiere al orden de disponibilidad de la información. No implica haber identificado causas económicas.
+**Estado actual:** preparación multimodal implementada y entrenamientos breves de MLP y GRU ejecutados para medir recursos. El panel técnico estadounidense contiene 25.856 muestras completas. El inventario cubre toda la copia y los datos macro conservan publicaciones, revisiones y unidades históricas. La arquitectura MARS-TITAN y la comparación confirmatoria siguen pendientes. Los tiempos medidos no acreditan precisión predictiva ni rentabilidad. «Causal» se refiere al orden de disponibilidad de la información, no a la identificación de causas económicas.
+
+La [preparación y sus límites](docs/data/preparation.md) detallan la cobertura real. El [presupuesto experimental](reports/resources/campaign-budget.md) recoge entrenamientos con las cuatro modalidades y retorno residual, incluida una comprobación de 20 épocas. El observatorio conserva su último estado publicado, no constituye un monitor automático de estos ensayos locales.
 
 ## Alcance y recursos
 
-El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. Se propone un piloto de hasta 64 activos y una comparación principal de hasta 128, seleccionados con información del periodo de desarrollo. La lectura por bloques permite preparar el recorrido de toda la copia, que ocupa unos 109 GiB. Ampliar el entrenamiento a más activos o a China dependerá del coste medido y del calendario.
+El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. Se propone un piloto de hasta 64 activos y una comparación principal de hasta 128, seleccionados con información del periodo de desarrollo. La copia original contiene 108,2 GiB. Los paneles ya preparados se guardan en Parquet y se leen por lotes, sin duplicar todas las ventanas en memoria. El [presupuesto de almacenamiento](reports/resources/storage-budget.md) distingue bytes de disco, tensores y memoria del proceso. Ampliar el entrenamiento a más activos o a China dependerá del coste medido y de la disponibilidad real de las cuatro modalidades.
 
-Los entrenamientos prolongados deberán guardar y restaurar optimizador, semillas, cursor de datos y memoria adaptativa. La política de [checkpoints](docs/engineering/checkpoint-recovery.md) está especificada, pero no existen todavía pesos entrenados. El [plan de cómputo](docs/engineering/compute-plan.md) contempla la disponibilidad del equipo durante las 24 horas.
+La preparación y las representaciones son reanudables. Los ensayos breves guardan checkpoints por época y se ha comprobado recuperación exacta de MLP y GRU. La [política de recuperación](docs/engineering/checkpoint-recovery.md) de la futura memoria adaptativa sigue pendiente de implementar con esa arquitectura. El [plan de cómputo](docs/engineering/compute-plan.md) contempla la disponibilidad del equipo durante las 24 horas, sin confundirla con rendimiento máximo sostenido.
 
 ## Diseño del estudio
 
@@ -36,7 +38,7 @@ flowchart LR
     P --> X[Representaciones<br/>y objetivo residual]
     X --> B[Modelos base<br/>cero · Ridge · árboles · GRU]
     X --> M[MARS-TITAN<br/>memoria · sorpresa · régimen]
-    M --> A[Ablaciones<br/>componentes y modalidades]
+    M --> A[Ablaciones de componentes<br/>cuatro modalidades conservadas]
     B --> E[Evaluación walk-forward<br/>predicción · incertidumbre · costes]
     A --> E
     E --> C[Análisis crítico<br/>mejoras, fallos y límites]
@@ -63,7 +65,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 - [Protocolo de investigación](docs/research/protocol.md), [experimentos](docs/research/experiment-matrix.md) y [revisión del documento inicial](docs/research/original-review.md).
 - [Arquitectura candidata](docs/research/candidate-architecture.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
 - [Contrato de datos](docs/data/data-contract.md), [inspección inicial de FinMultiTime](docs/data/finmultitime-card.md) y [arquitectura](docs/engineering/architecture.md).
-- [140 indicadores macroeconómicos candidatos](docs/data/macro-catalog.md), con fuentes, fórmulas y reglas de disponibilidad. Los valores no están calculados ni validados como entradas de entrenamiento.
+- [140 indicadores macroeconómicos candidatos](docs/data/macro-catalog.md), con fuentes, fórmulas y reglas de disponibilidad. Se han calculado las 70 fórmulas y 125 indicadores tienen algún valor admisible en el intervalo preparado. Cada ausencia conserva su motivo.
 - [Fuentes gratuitas y nueve archivos complementarios obtenidos](docs/data/free-data-sources.md), conservados en instantáneas locales separadas del benchmark, y [actualización manual](docs/data/public-source-updates.md).
 - [Biblioteca y revisión bibliográfica](docs/references/README.md): publicaciones primarias, libros, fuentes financieras, BibTeX y descargas locales con huella de integridad.
 - [Memoria y aprendizaje](docs/references/brain-review.md), [eficiencia de DeepSeek](docs/references/deepseek-review.md), [recorrido completo del dataset](docs/engineering/full-dataset-training.md) y [presupuesto de latencia](docs/engineering/latency-budget.md).
@@ -74,10 +76,10 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 ## Estructura del repositorio
 
 ```text
-src/mars_titan/       Espacio reservado para los futuros módulos científicos
+src/mars_titan/       Preparación temporal, macro y ensayos de coste
 native/              C/C++ y CUDA con CMake, optimización guiada por perfilado
 configs/             Configuraciones de datos y experimentos
-tests/               Verificación documental y plan de pruebas científicas
+tests/               Pruebas de datos, cálculos, recuperación y herramientas
 scripts/             Biblioteca, captura de fuentes y mantenimiento
 site/                Observatorio estático, sin ejecutar modelos en el navegador
 notebooks/           Exploraciones acotadas y reproducibles
@@ -85,7 +87,7 @@ data/                Contratos y manifiestos, derivados locales ignorados
 dataset/             Copia local existente de FinMultiTime, fuera de Git
 docs/                Investigación, ingeniería y bibliografía
 thesis/              Documento de investigación en LaTeX
-reports/             Plantillas de resultados y fichas de experimentos
+reports/             Auditorías, mediciones y fichas de experimentos
 .github/             Planificación y plantillas de revisión
 ```
 
@@ -108,7 +110,7 @@ Las comprobaciones se ejecutan localmente antes de publicar cambios. La única e
 Para preparar análisis y entrenamiento en Linux x86-64 con NVIDIA:
 
 ```bash
-uv sync --locked --extra data --extra research --extra cuda
+uv sync --locked --extra data --extra research --extra cuda --extra encoders
 nvidia-smi
 uv run python - <<'PY'
 import torch
