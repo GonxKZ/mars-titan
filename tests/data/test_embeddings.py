@@ -1,3 +1,4 @@
+import hashlib
 import importlib
 import sqlite3
 
@@ -47,3 +48,35 @@ def test_cache_detects_corruption_and_rejects_nonfinite_values(tmp_path):
     with pytest.raises(ValueError, match="corrupt"):
         cache.get(identity)
     cache.close()
+
+
+@pytest.mark.parametrize(
+    "changed", ["config.json", "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]
+)
+def test_text_artifact_changes_invalidate_cache_identity(tmp_path, changed):
+    names = ["config.json", "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]
+    for name in names:
+        (tmp_path / name).write_text('{"version":1}')
+    fingerprints = getattr(module(), "text_artifact_fingerprints", None)
+    assert callable(fingerprints), (
+        "Falta identificar los artefactos de tokenización y configuración"
+    )
+    first = fingerprints(tmp_path)
+    assert set(first) == set(names)
+    assert first[changed] == hashlib.sha256((tmp_path / changed).read_bytes()).hexdigest()
+    cache = module().EmbeddingCache(tmp_path / "cache.sqlite")
+    try:
+        cache.put({"artifacts": first, "content": "ejemplo"}, np.ones(384))
+        (tmp_path / changed).write_text('{"version":2}')
+        second = fingerprints(tmp_path)
+        assert cache.get({"artifacts": second, "content": "ejemplo"}) is None
+        assert cache.get({"artifacts": first, "content": "ejemplo"}) is not None
+    finally:
+        cache.close()
+
+
+def test_missing_text_artifact_is_not_given_a_placeholder_hash(tmp_path):
+    fingerprints = getattr(module(), "text_artifact_fingerprints", None)
+    assert callable(fingerprints), "Falta la comprobación de artefactos completos"
+    with pytest.raises(FileNotFoundError):
+        fingerprints(tmp_path)
