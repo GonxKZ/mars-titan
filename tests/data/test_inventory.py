@@ -55,7 +55,7 @@ def test_changed_and_removed_sources_are_not_silently_reused(tmp_path):
 
 def test_inventory_refuses_to_write_inside_originals(tmp_path):
     module = inventory_module()
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         module.inventory(tmp_path, tmp_path / "manifest.sqlite")
 
 

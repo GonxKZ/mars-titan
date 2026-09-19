@@ -26,7 +26,7 @@ def test_cost_probes_use_every_modality_and_macro(kind):
     assert tuple(output.shape) == (2,)
     output.sum().backward()
     assert all(v.grad is not None and torch.count_nonzero(v.grad) > 0 for v in batch.values())
-    with pytest.raises(ValueError, match="modalities"):
+    with pytest.raises(ValueError, match="modalidades"):
         model({k: v for k, v in batch.items() if k != "charts"})
 
 

@@ -60,9 +60,9 @@ def _catalog(catalog):
     for entry in catalog:
         identifier = entry["id"]
         if identifier in entries:
-            raise ValueError(f"Duplicate catalog identifier: {identifier}")
+            raise ValueError(f"Identificador duplicado en el catálogo: {identifier}")
         if entry["frequency"] not in frequencies or entry["kind"] not in {"raw", "derived"}:
-            raise ValueError(f"Invalid catalog frequency or kind: {identifier}")
+            raise ValueError(f"Frecuencia o tipo de catálogo no válido: {identifier}")
         entries[identifier] = entry
         dependencies[identifier] = set(filter(None, entry.get("input_ids", "").split("|")))
         if entry["kind"] == "derived":
@@ -70,13 +70,13 @@ def _catalog(catalog):
                 entry["formula"], dependencies[identifier], entry["unit"]
             )
         elif dependencies[identifier]:
-            raise ValueError(f"Raw indicator has dependencies: {identifier}")
+            raise ValueError(f"Un indicador original contiene dependencias: {identifier}")
     if any(dep not in entries for deps in dependencies.values() for dep in deps):
-        raise ValueError("Catalog contains an unknown dependency")
+        raise ValueError("El catálogo contiene una dependencia desconocida")
     try:
         order = list(TopologicalSorter(dependencies).static_order())
     except CycleError as error:
-        raise ValueError("Cycle in macro catalog dependencies") from error
+        raise ValueError("Ciclo en las dependencias del catálogo macro") from error
     return entries, dependencies, formulas, order
 
 
@@ -101,7 +101,7 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
     for row in rows:
         identifier = row["indicator_id"]
         if identifier not in entries or entries[identifier]["kind"] != "raw":
-            raise ValueError(f"Input is not a catalog raw indicator: {identifier}")
+            raise ValueError(f"La entrada no es un indicador original del catálogo: {identifier}")
         start = date.fromisoformat(row["realtime_start"])
         original_start = date.fromisoformat(
             row.get("original_realtime_start", row["realtime_start"])
@@ -123,22 +123,20 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
             or not isinstance(adjustment, str)
             or not adjustment.strip()
         ) and not metadata_absence:
-            raise ValueError(f"Historical metadata evidence required: {identifier}")
+            raise ValueError(f"Se necesita evidencia de los metadatos históricos: {identifier}")
         if metadata_absence and value is not None:
-            raise ValueError(
-                "A macro observation with absent metadata cannot have an admitted value"
-            )
+            raise ValueError("Una observación macro sin metadatos no puede tener un valor admitido")
         if value is not None and (type(value) not in {int, float} or not math.isfinite(value)):
-            raise ValueError("Macro values must be finite numbers or None")
+            raise ValueError("Los valores macro deben ser números finitos o None")
         source_hash = row["source_hash"]
         if not isinstance(source_hash, str) or not re.fullmatch("[0-9a-fA-F]{64}", source_hash):
-            raise ValueError("Macro source_hash must be a SHA256 digest")
+            raise ValueError("source_hash debe contener una huella SHA-256")
         if end < start or period > original_start or original_start > start:
-            raise ValueError("Invalid macro realtime interval or future reference period")
+            raise ValueError("Intervalo macro no válido o periodo de referencia futuro")
         key = identifier, period, original_start, start
         payload = end, timezone, value, unit, adjustment, reason
         if key in vintages and vintages[key][0] != payload:
-            raise ValueError(f"Conflicting macro vintage: {key}")
+            raise ValueError(f"Versión macro en conflicto: {key}")
         if key not in vintages:
             vintages[key] = payload, set()
         vintages[key][1].add(source_hash.lower())

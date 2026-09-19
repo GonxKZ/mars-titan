@@ -505,7 +505,7 @@ def test_metadata_rebuild_verifies_archives_and_preserves_a_binary_backup(tmp_pa
     assert result["archives"] == 1
     assert next(acquisition.iter_vintages(tmp_path))["native_unit"] == "Index 2017=100"
     (tmp_path / "raw/us_real_gdp/fixture.zip").write_bytes(b"corrupt")
-    with pytest.raises(ValueError, match="hash"):
+    with pytest.raises(ValueError, match="huella"):
         acquisition.rebuild_metadata(tmp_path, backup_path=tmp_path / "before-retry.sqlite3")
 
 
@@ -582,7 +582,7 @@ def test_series_without_any_admitted_rows_is_not_complete(tmp_path, monkeypatch)
     assert report["complete"] is False
     assert report["failed_series"] == 1
     assert report["series"][0]["status"] == "error"
-    assert "no rows" in report["series"][0]["error"].lower()
+    assert "no devolvió filas" in report["series"][0]["error"].lower()
 
 
 def test_identical_duplicate_vintage_is_counted_once(tmp_path, monkeypatch):
@@ -679,7 +679,7 @@ def test_conflicting_duplicate_vintage_marks_series_as_error(tmp_path, monkeypat
     )
 
     assert report["complete"] is False
-    assert "conflicting vintages" in report["series"][0]["error"].lower()
+    assert "versiones en conflicto" in report["series"][0]["error"].lower()
     assert list(macro_acquisition.iter_vintages(tmp_path)) == []
 
 
@@ -728,7 +728,7 @@ def test_observation_after_realtime_start_is_rejected(tmp_path, monkeypatch):
     )
 
     assert report["complete"] is False
-    assert "invalid temporal interval" in report["series"][0]["error"]
+    assert "intervalo temporal no válido" in report["series"][0]["error"]
     assert list(macro_acquisition.iter_vintages(tmp_path)) == []
 
 
@@ -808,7 +808,7 @@ def test_zip_member_with_parent_path_is_rejected(tmp_path, monkeypatch):
     )
 
     assert report["complete"] is False
-    assert "unsafe member path" in report["series"][0]["error"]
+    assert "ruta no segura" in report["series"][0]["error"]
 
 
 def test_non_downloadable_catalog_entries_keep_specific_exclusion_reasons(tmp_path):

@@ -81,7 +81,7 @@ def test_windows_resume_without_overlap_and_preserve_all_inputs(tmp_path):
     )
     assert len(historical) == 2
     pq.write_table(pa.Table.from_pandas(prices.assign(close=999.0)), prepared / "prices.parquet")
-    with pytest.raises(ValueError, match="changed"):
+    with pytest.raises(ValueError, match="cambiado"):
         list(stream.iter_windows([path], tmp_path / "prepared", context=2))
 
 

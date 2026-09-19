@@ -75,7 +75,7 @@ def test_macro_context_cannot_be_empty_or_from_future():
     cutoff = datetime(2024, 7, 8, 20, 5, tzinfo=UTC)
     with pytest.raises(ValueError, match="macro"):
         module().macro_vector([], cutoff)
-    with pytest.raises(ValueError, match="future"):
+    with pytest.raises(ValueError, match="futura"):
         module().macro_vector(
             [
                 {
@@ -90,7 +90,7 @@ def test_macro_context_cannot_be_empty_or_from_future():
 
 def test_nonfinite_macro_is_not_disguised_as_a_missing_observation():
     cutoff = datetime(2024, 7, 8, 20, 5, tzinfo=UTC)
-    with pytest.raises(ValueError, match="finite"):
+    with pytest.raises(ValueError, match="finit"):
         module().macro_vector(
             [{"indicator_id": "us_cpi", "value": float("nan"), "available_at": cutoff}], cutoff
         )

@@ -21,7 +21,7 @@ def read_news(path: Path, symbol: str, clock: MarketClock) -> tuple[list[dict], 
             try:
                 raw = json.loads(line, parse_constant=lambda _: None)
                 if not isinstance(raw, dict):
-                    raise ValueError("News row must be an object")
+                    raise ValueError("Cada registro de noticias debe ser un objeto")
                 title = _text(raw.get("Article_title", raw.get("title")))
                 body = _text(raw.get("Article", raw.get("summary")))
                 text = "\n".join(filter(None, [title, body]))
@@ -43,7 +43,7 @@ def read_news(path: Path, symbol: str, clock: MarketClock) -> tuple[list[dict], 
                     published = None
                 else:
                     zone = "America/New_York" if clock.market == "US" else "Asia/Shanghai"
-                    # A naive source timestamp retains the documented source timezone.
+                    # Una fecha sin zona horaria conserva la zona documentada para la fuente.
                     published = aware(
                         event.replace(tzinfo=ZoneInfo(zone)) if event.tzinfo is None else event
                     )

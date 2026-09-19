@@ -130,7 +130,7 @@ def test_growth_requires_matching_historical_basis_and_adjustment(
 def test_macro_input_requires_explicit_metadata_evidence():
     item = row("us_cpi", "2023-12-01", 100)
     del item["native_unit"]
-    with pytest.raises(ValueError, match="metadata"):
+    with pytest.raises(ValueError, match="metadatos"):
         latest([item], "us_cpi")
 
 
@@ -326,7 +326,7 @@ def test_unverified_model_or_identifier_is_never_automatically_admitted(indicato
 def test_unsafe_or_unbounded_formulas_are_rejected(formula):
     catalog = catalog_for("us_cpi_mom")
     catalog[-1]["formula"] = formula
-    with pytest.raises(ValueError, match="[Ff]ormula"):
+    with pytest.raises(ValueError, match="[Ff]órmula"):
         latest([], "us_cpi_mom", catalog)
 
 
@@ -346,7 +346,7 @@ def test_dependency_cycle_is_rejected_before_evaluation():
     catalog = catalog_for("us_cpi_mom")
     catalog[-1]["input_ids"] = "us_cpi_mom"
     catalog[-1]["formula"] = "us_cpi_mom[p]"
-    with pytest.raises(ValueError, match="[Cc]ycle"):
+    with pytest.raises(ValueError, match="[Cc]iclo"):
         latest([], "us_cpi_mom", catalog)
 
 

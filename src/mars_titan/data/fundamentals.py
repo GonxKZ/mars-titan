@@ -46,7 +46,7 @@ def read_fundamentals(
             with path.open("rb") as stream:
                 for raw in ijson.items(stream, "item", use_float=True):
                     counts["rows"] += 1
-                    # Original tables lack a verified release date. Never use end_date.
+                    # Sin publicación verificada, end_date no acredita disponibilidad.
                     if not raw.get("ann_date") and not raw.get("f_ann_date"):
                         counts["missing_publication"] += 1
                     else:
@@ -61,10 +61,12 @@ def read_fundamentals(
             try:
                 value = float(fact["val"])
                 if not math.isfinite(value) or not fact.get("accn"):
-                    raise ValueError("Nonfinite value or missing accession")
+                    raise ValueError(
+                        "El valor no es finito o falta el identificador de presentación"
+                    )
                 end = datetime.fromisoformat(fact["end"]).date()
                 if end > datetime.fromisoformat(filed).date():
-                    raise ValueError("Period ends after filing date")
+                    raise ValueError("El periodo termina después de la fecha de presentación")
                 available = clock.date_available(filed)
             except (ValueError, KeyError, TypeError):
                 counts["invalid"] += 1
@@ -104,8 +106,8 @@ def snapshot(rows: list[dict], cutoff: datetime) -> dict[str, dict]:
         if row["available_at"] > cutoff:
             continue
         concept = row["concept"]
-        # At a common end and publication, prefer the shortest reported flow period.
-        # The prepared training vector uses balance-sheet stocks, not mixed-duration flows.
+        # A igual cierre y publicación, se prefiere el flujo del periodo más corto.
+        # El vector preparado usa saldos de balance, no flujos de distinta duración.
         rank = (row["period_end"], row["available_at"], row["period_start"] or "")
         if concept not in ranks or rank > ranks[concept]:
             result[concept], ranks[concept] = row, rank

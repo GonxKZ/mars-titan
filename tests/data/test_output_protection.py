@@ -16,11 +16,13 @@ def test_training_rejects_writes_inside_originals(tmp_path, monkeypatch, target)
     sentinel = original / "README.md"
     sentinel.write_text("original")
     monkeypatch.setattr(
-        budget_training, "require_cuda", lambda: pytest.fail("CUDA before path guard")
+        budget_training,
+        "require_cuda",
+        lambda: pytest.fail("Se ha accedido a CUDA antes de validar las rutas"),
     )
     report = sentinel if target == "report" else tmp_path / "report.json"
     output = original / "new-run" if target == "run" else tmp_path / "run"
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         budget_training.train_budget_grid(tmp_path / "prepared", report, output)
     assert sentinel.read_text() == "original"
     assert not output.exists()
@@ -36,11 +38,13 @@ def test_training_rejects_writes_inside_prepared_inputs(tmp_path, monkeypatch, t
     sentinel = prepared / "manifest.json"
     sentinel.write_text("prepared input")
     monkeypatch.setattr(
-        budget_training, "require_cuda", lambda: pytest.fail("CUDA before path guard")
+        budget_training,
+        "require_cuda",
+        lambda: pytest.fail("Se ha accedido a CUDA antes de validar las rutas"),
     )
     report = sentinel if target == "report" else tmp_path / "report.json"
     output = prepared / "new-run" if target == "run" else tmp_path / "run"
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         budget_training.train_budget_grid(prepared, report, output)
     assert sentinel.read_text() == "prepared input"
     assert not output.exists()
@@ -53,9 +57,11 @@ def test_macro_acquisition_rejects_destination_inside_originals(tmp_path, monkey
     original = tmp_path / "dataset"
     original.mkdir()
     monkeypatch.setattr(
-        macro_acquisition, "_initialize", lambda *a: pytest.fail("write before guard")
+        macro_acquisition,
+        "_initialize",
+        lambda *a: pytest.fail("Se ha escrito antes de validar la ruta"),
     )
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         macro_acquisition.acquire_catalog(
             [],
             original / "macro",
@@ -80,7 +86,7 @@ def test_macro_acquisition_protects_original_database_through_symlink(tmp_path, 
     output = tmp_path / "macro"
     output.mkdir()
     (output / "macro.sqlite3").symlink_to(original)
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         macro_acquisition.acquire_catalog(
             [],
             output,
@@ -106,7 +112,9 @@ def test_macro_acquisition_rejects_archive_symlinks_before_writes_or_network(
     link.parent.mkdir(parents=True)
     link.symlink_to(original, target_is_directory=True)
     monkeypatch.setattr(
-        macro_acquisition, "_request", lambda *args, **kwargs: pytest.fail("network before guard")
+        macro_acquisition,
+        "_request",
+        lambda *args, **kwargs: pytest.fail("Se ha accedido a la red antes de validar la ruta"),
     )
     catalog = [
         {
@@ -119,7 +127,7 @@ def test_macro_acquisition_rejects_archive_symlinks_before_writes_or_network(
             "verification_status": "verified_metadata_not_ingested",
         }
     ]
-    with pytest.raises(ValueError, match="source"):
+    with pytest.raises(ValueError, match="origen"):
         macro_acquisition.acquire_catalog(
             catalog,
             output,

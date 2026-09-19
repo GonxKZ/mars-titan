@@ -175,7 +175,7 @@ def public_checkpoint(raw, run, now):
         raise ValueError("La recuperación necesita un paso y una fecha de checkpoint observados.")
     if saved_step is not None and run["completed_steps"] is not None:
         if saved_step > run["completed_steps"]:
-            raise ValueError("Checkpoint posterior al progreso confirmado.")
+            raise ValueError("Punto de control posterior al progreso confirmado.")
     check_order(result["saved_at"], run["updated_at"])
     return result
 
@@ -415,7 +415,9 @@ def main(argv=None):
     parser.add_argument("--input-dir", type=Path, default=Path("artifacts/runs"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
-        "--release-test", action="store_true", help="Liberar test de runs terminados."
+        "--release-test",
+        action="store_true",
+        help="Publicar las métricas de la prueba final de ejecuciones terminadas.",
     )
     parser.add_argument("--max-runs", type=int, default=128)
     parser.add_argument("--max-file-bytes", type=int, default=262144)

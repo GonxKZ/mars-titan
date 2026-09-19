@@ -70,7 +70,7 @@ def entries(database: Path):
 def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
     source, database = source.resolve(), database.resolve()
     if not source.is_dir():
-        raise ValueError(f"Source directory does not exist: {source}")
+        raise ValueError(f"El directorio de origen no existe: {source}")
     outside_source(source, database)
     database.parent.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
@@ -93,7 +93,7 @@ def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
         )
         previous_root = db.execute("SELECT value FROM metadata WHERE key='root'").fetchone()
         if previous_root and previous_root[0] != str(source):
-            raise ValueError("Inventory belongs to a different source root")
+            raise ValueError("El inventario pertenece a otro directorio de origen")
         db.execute("INSERT OR IGNORE INTO metadata VALUES ('root', ?)", (str(source),))
         db.execute("UPDATE files SET path=CAST(path AS BLOB) WHERE typeof(path)='text'")
         db.execute("UPDATE files SET present=0")
@@ -132,12 +132,12 @@ def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
             }
             try:
                 if path.is_symlink() or not path.resolve().is_relative_to(source):
-                    raise ValueError("Symbolic links are not admitted as source files")
+                    raise ValueError("No se admiten enlaces simbólicos como archivos de origen")
                 record["sha256"] = sha256(path)
                 record["schema"] = inspect_header(path)
                 after = path.stat()
                 if signature != (after.st_size, after.st_mtime_ns, after.st_ctime_ns):
-                    raise ValueError("Source changed during inspection")
+                    raise ValueError("La fuente ha cambiado durante la inspección")
                 hashed += 1
             except (OSError, ValueError) as error:
                 record.update(state="error", error=str(error), sha256=None)
@@ -147,7 +147,7 @@ def inventory(source: Path, database: Path, *, verify: bool = False) -> dict:
             )
             if index % 250 == 0:
                 db.commit()
-                print(f"inventory: {index}/{len(names) - 1} files", file=sys.stderr, flush=True)
+                print(f"Inventario: {index}/{len(names) - 1} archivos", file=sys.stderr, flush=True)
         db.commit()
         groups = [
             dict(market=market, modality=modality, files=count, bytes=size)

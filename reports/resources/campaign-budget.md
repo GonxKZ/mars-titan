@@ -4,6 +4,11 @@ Medición del 19 de septiembre de 2026 en la RTX 4070 Laptop de 8 GB. Se entrena
 MLP y GRU con precios, noticias, fundamentales, gráficos y contexto macro. Los
 codificadores estaban congelados y sus representaciones ya calculadas.
 
+Los registros corresponden al código de la revisión
+`7d2e21d324104491db8c1d6589d08b799c7653cc`. Sus huellas se verifican contra esa
+revisión. Las posteriores traducciones de mensajes no actualizan ni sustituyen
+las mediciones históricas.
+
 Se usó retorno residual apertura a cierre de la siguiente sesión, ajustado por SPY
 mediante OLS con intercepto. Cada ajuste utilizó como máximo las 252 sesiones
 anteriores, con un mínimo de 126 pares válidos. Las etiquetas futuras solo entraron

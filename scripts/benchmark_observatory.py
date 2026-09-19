@@ -86,7 +86,7 @@ def measure_exports(source, output):
                 document = json.loads(output.read_bytes())
                 runs = document["runs"]
                 if len(runs) != 32 or any(len(run["history"]) != 500 for run in runs):
-                    raise ValueError("Unexpected fixture output")
+                    raise ValueError("La salida del caso de prueba no es la esperada")
                 output_bytes = output.stat().st_size
                 elapsed.append(duration)
         except subprocess.TimeoutExpired:

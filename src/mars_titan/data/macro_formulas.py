@@ -22,19 +22,19 @@ def _offset(node: ast.AST) -> int:
         and 1 <= node.right.value <= 52
     ):
         return node.right.value
-    raise ValueError("Formula contains an invalid or unbounded period offset")
+    raise ValueError("La fórmula contiene un desplazamiento temporal no válido o sin acotar")
 
 
 def _reference(node: ast.Subscript) -> tuple[str, tuple[int, ...]]:
     if not isinstance(node.value, ast.Name):
-        raise ValueError("Formula reference must name a catalog indicator")
+        raise ValueError("La referencia de la fórmula debe identificar un indicador del catálogo")
     index = node.slice
     if isinstance(index, ast.Slice):
         if index.step is not None or index.lower is None or index.upper is None:
-            raise ValueError("Formula contains an invalid period window")
+            raise ValueError("La fórmula contiene una ventana temporal no válida")
         first, last = _offset(index.lower), _offset(index.upper)
         if first < last:
-            raise ValueError("Formula window is reversed")
+            raise ValueError("La ventana de la fórmula está invertida")
         return node.value.id, tuple(range(last, first + 1))
     return node.value.id, (_offset(index),)
 
@@ -50,22 +50,24 @@ class Formula:
     @classmethod
     def parse(cls, expression: str, dependencies: set[str], unit: str) -> "Formula":
         if not expression or len(expression) > 1024:
-            raise ValueError("Formula is empty or too long")
+            raise ValueError("La fórmula está vacía o es demasiado larga")
         try:
             tree = ast.parse(expression.replace("^", "**"), mode="eval").body
         except (SyntaxError, RecursionError) as error:
-            raise ValueError("Formula syntax is invalid") from error
+            raise ValueError("La sintaxis de la fórmula no es válida") from error
         if sum(1 for _ in ast.walk(tree)) > 128:
-            raise ValueError("Formula is too complex")
+            raise ValueError("La fórmula es demasiado compleja")
         references = set()
 
         def validate(node):
             if isinstance(node, ast.Constant):
                 if type(node.value) not in {int, float} or not 0 <= node.value <= 100:
-                    raise ValueError("Formula constant is outside the allowed range")
+                    raise ValueError(
+                        "La constante de la fórmula está fuera del intervalo permitido"
+                    )
             elif isinstance(node, ast.Subscript):
                 if isinstance(node.slice, ast.Slice):
-                    raise ValueError("Formula windows require mean")
+                    raise ValueError("Las ventanas de la fórmula requieren mean")
                 name, offsets = _reference(node)
                 references.update((name, offset) for offset in offsets)
             elif isinstance(node, ast.BinOp) and isinstance(
@@ -76,7 +78,9 @@ class Formula:
                     or type(node.right.value) is not int
                     or not 1 <= node.right.value <= 4
                 ):
-                    raise ValueError("Formula power is outside the allowed range")
+                    raise ValueError(
+                        "El exponente de la fórmula está fuera del intervalo permitido"
+                    )
                 validate(node.left)
                 validate(node.right)
             elif (
@@ -91,11 +95,11 @@ class Formula:
                 name, offsets = _reference(node.args[0])
                 references.update((name, offset) for offset in offsets)
             else:
-                raise ValueError("Formula uses a forbidden expression")
+                raise ValueError("La fórmula usa una expresión no permitida")
 
         validate(tree)
         if {name for name, _ in references} != dependencies or not references:
-            raise ValueError("Formula references do not match input_ids")
+            raise ValueError("Las referencias de la fórmula no coinciden con input_ids")
         return cls(
             tree, tuple(sorted(references)), unit in {"percent_change", "percent_annualized"}
         )

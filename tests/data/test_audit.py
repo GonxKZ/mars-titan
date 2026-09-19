@@ -25,7 +25,7 @@ def test_price_audit_reconciles_files_and_rejects_modified_source(tmp_path):
     assert result["markets"]["US"]["rows"] == 1
     assert result["markets"]["US"]["accepted"] == 1
     path.write_text("Date,Open,High,Low,Close,Volume\n2024-01-02,10,12,9,12,1\n")
-    with pytest.raises(ValueError, match="changed"):
+    with pytest.raises(ValueError, match="cambiado"):
         module().audit_prices(root, db, tmp_path / "state.json")
     path.write_text("Date,Open,High,Low,Close,Volume\n2024-01-02,10,12,9,20,1\n")
     inventory(root, db)

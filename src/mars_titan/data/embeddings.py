@@ -18,14 +18,14 @@ TEXT_REVISION = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"
 
 def token_chunks(tokens: list[int], size: int = 126):
     if size < 1:
-        raise ValueError("Chunk size must be positive")
+        raise ValueError("El tamaño del fragmento debe ser positivo")
     for start in range(0, len(tokens), size):
         yield tokens[start : start + size]
 
 
 def add_special_tokens(tokens: list[int], cls_id: int, sep_id: int) -> list[int]:
     if type(cls_id) is not int or type(sep_id) is not int:
-        raise ValueError("The pinned encoder requires explicit CLS and SEP tokens")
+        raise ValueError("El codificador fijado requiere tokens CLS y SEP explícitos")
     return [cls_id, *tokens, sep_id]
 
 
@@ -54,16 +54,16 @@ class EmbeddingCache:
         if row is None:
             return None
         if row[0] != description or hashlib.sha256(row[1]).hexdigest() != row[2]:
-            raise ValueError("Embedding cache is corrupt")
+            raise ValueError("La caché de representaciones está corrupta")
         result = np.frombuffer(row[1], dtype="<f4").copy()
         if not np.isfinite(result).all() or not result.size:
-            raise ValueError("Embedding cache contains corrupt values")
+            raise ValueError("La caché de representaciones contiene valores corruptos")
         return result
 
     def put(self, identity: dict, vector: np.ndarray) -> None:
         vector = np.asarray(vector, dtype="<f4")
         if vector.ndim != 1 or not vector.size or not np.isfinite(vector).all():
-            raise ValueError("Embedding must be a nonempty finite vector")
+            raise ValueError("La representación debe ser un vector no vacío de valores finitos")
         key, description = self.identity(identity)
         payload = vector.tobytes()
         with self.db:
@@ -86,7 +86,7 @@ def require_cuda():
         text=True,
     )
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is unavailable. CPU fallback is disabled.")
+        raise RuntimeError("CUDA no está disponible. La sustitución por CPU está desactivada.")
     torch.cuda.set_device("cuda:0")
     total = torch.cuda.get_device_properties(0).total_memory
     torch.cuda.set_per_process_memory_fraction(min(1.0, 6 * 1024**3 / total), 0)
@@ -111,7 +111,9 @@ class FrozenEncoders:
         if self.tokenizer("", add_special_tokens=True)["input_ids"] != add_special_tokens(
             [], self.tokenizer.cls_token_id, self.tokenizer.sep_token_id
         ):
-            raise ValueError("Pinned tokenizer special-token layout changed")
+            raise ValueError(
+                "La disposición de tokens especiales del tokenizador fijado ha cambiado"
+            )
         self.text_model = (
             AutoModel.from_pretrained(
                 TEXT_MODEL,
@@ -165,7 +167,7 @@ class FrozenEncoders:
         import torch
 
         if not text.strip():
-            raise ValueError("Cannot encode missing text")
+            raise ValueError("No se puede codificar un texto ausente")
         tokens = self.tokenizer(
             text,
             add_special_tokens=False,
@@ -175,7 +177,7 @@ class FrozenEncoders:
             verbose=False,
         )["input_ids"]
         if not tokens:
-            raise ValueError("Tokenizer produced no content")
+            raise ValueError("El tokenizador no ha producido contenido")
         chunks = list(token_chunks(tokens))
         total, count = np.zeros(384, dtype=np.float64), 0
         with torch.inference_mode():
@@ -203,12 +205,12 @@ class FrozenEncoders:
         import torch
 
         if not pngs or len(pngs) > 64:
-            raise ValueError("Image batch must contain between 1 and 64 charts")
+            raise ValueError("El lote de imágenes debe contener entre 1 y 64 gráficos")
         pixels = []
         for png in pngs:
             with Image.open(BytesIO(png)) as image:
                 if image.size != (224, 224):
-                    raise ValueError("Unexpected chart dimensions")
+                    raise ValueError("Las dimensiones del gráfico no son las esperadas")
                 pixels.append(np.asarray(image.convert("RGB"), dtype=np.float32) / 255)
         batch = torch.from_numpy(np.stack(pixels).transpose(0, 3, 1, 2)).to(self.device)
         with torch.inference_mode():

@@ -1,4 +1,4 @@
-name: Publish Pages
+name: Publicar Pages
 
 on:
   push:

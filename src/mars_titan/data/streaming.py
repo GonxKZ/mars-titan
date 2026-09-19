@@ -13,15 +13,15 @@ from .storage import sha256
 
 def assigned(values: list, *, worker: int = 0, workers: int = 1) -> list:
     if workers < 1 or not 0 <= worker < workers:
-        raise ValueError("Invalid worker partition")
+        raise ValueError("El reparto entre trabajadores no es válido")
     return values[worker::workers]
 
 
 def price_features(window: np.ndarray) -> np.ndarray:
     if window.ndim != 2 or window.shape[1] != 5 or not np.isfinite(window).all():
-        raise ValueError("Invalid price window")
+        raise ValueError("La ventana de precios no es válida")
     if (window[:, :4] <= 0).any() or (window[:, 4] < 0).any():
-        raise ValueError("Invalid OHLCV values")
+        raise ValueError("Los valores OHLCV no son válidos")
     prices = np.log(window[:, :4] / window[0, 3])
     volume = window[:, 4]
     relative_volume = np.log1p(volume / volume.mean()) if volume.mean() > 0 else volume
@@ -38,9 +38,9 @@ def iter_windows(
     cursors: dict | None = None,
     decision_cutoff: str | None = None,
 ):
-    """Cursor = siguiente fila confirmada por consumidor, no fila prefetched."""
+    """El cursor señala la siguiente fila confirmada, no la leída por anticipado."""
     if context < 2:
-        raise ValueError("Context must cover at least two sessions")
+        raise ValueError("El contexto debe cubrir al menos dos sesiones")
     cursors = cursors or {}
     cutoff = date.fromisoformat(decision_cutoff) if decision_cutoff else None
     for path in assigned(sorted(sample_paths), worker=worker, workers=workers):
@@ -55,10 +55,12 @@ def iter_windows(
             or sha256(source_folder / "prices.parquet")
             != source_manifest["artifacts"]["prices.parquet"]
         ):
-            raise ValueError("Prepared or sample artifact changed since confirmation")
+            raise ValueError(
+                "Un artefacto preparado o de muestras ha cambiado desde su confirmación"
+            )
         cursor = cursors.get(key, 0)
         if type(cursor) is not int or cursor < 0:
-            raise ValueError("Invalid confirmed cursor")
+            raise ValueError("El cursor confirmado no es válido")
         with pq.ParquetFile(source_folder / "prices.parquet") as price_file:
             prices = price_file.read(
                 columns=["open", "high", "low", "close", "volume"], use_threads=False
@@ -78,9 +80,11 @@ def iter_windows(
                     column = batch.column(name)
                     lengths = pc.list_value_length(column).to_numpy()
                     if column.null_count or not len(lengths) or not (lengths == lengths[0]).all():
-                        raise ValueError("Missing or inconsistent modality dimensions")
+                        raise ValueError("Faltan dimensiones de las modalidades o son incoherentes")
                     if not 1 <= lengths[0] <= 2048:
-                        raise ValueError("Modality dimension exceeds the input contract")
+                        raise ValueError(
+                            "La dimensión de la modalidad supera el contrato de entrada"
+                        )
                     vectors[name] = np.asarray(
                         column.flatten().to_numpy(), dtype=np.float32
                     ).reshape(len(batch), int(lengths[0]))
@@ -91,10 +95,14 @@ def iter_windows(
                     if cutoff and timestamps[index].date() > cutoff:
                         continue
                     if type(end) is not int or end < context - 1 or end >= len(prices):
-                        raise ValueError("Window lies outside prepared price history")
+                        raise ValueError(
+                            "La ventana queda fuera del historial de precios preparado"
+                        )
                     inputs = {name: values[index].copy() for name, values in vectors.items()}
                     if any(not np.isfinite(v).all() for v in inputs.values()):
-                        raise ValueError("Missing or nonfinite modality vector")
+                        raise ValueError(
+                            "Falta un vector de modalidad o contiene valores no finitos"
+                        )
                     inputs["prices"] = price_features(prices[end - context + 1 : end + 1])
                     yield {
                         "inputs": inputs,
@@ -102,4 +110,4 @@ def iter_windows(
                         "prediction_at": timestamps[index],
                     }
         if cursor > offset:
-            raise ValueError("Confirmed cursor exceeds artifact length")
+            raise ValueError("El cursor confirmado supera la longitud del artefacto")

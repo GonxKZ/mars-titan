@@ -15,7 +15,7 @@ def temporal_module():
 
 def test_date_only_uses_next_session_not_calendar_day():
     clock = temporal_module().MarketClock("US", "2024-01-01", "2024-12-31")
-    # Independence Day is followed by Friday, then a weekend.
+    # Al festivo del 4 de julio le siguen un viernes y un fin de semana.
     assert clock.date_available("2024-07-04") == datetime(2024, 7, 5, 20, 5, tzinfo=UTC)
     assert clock.date_available("2024-07-05") == datetime(2024, 7, 8, 20, 5, tzinfo=UTC)
     assert clock.date_available("2024-07-04", lag=2) == datetime(2024, 7, 8, 20, 5, tzinfo=UTC)
@@ -47,7 +47,7 @@ def test_four_real_modalities_and_macro_are_required():
 
 def test_naive_times_and_invalid_lag_fail_fast():
     module = temporal_module()
-    with pytest.raises(ValueError, match="timezone"):
+    with pytest.raises(ValueError, match="zona horaria"):
         module.admission_errors({}, datetime(2024, 1, 1))
-    with pytest.raises(ValueError, match="lag"):
+    with pytest.raises(ValueError, match="retardo"):
         module.MarketClock("US", "2024-01-01", "2024-12-31").date_available("2024-01-01", 0)

@@ -33,7 +33,7 @@ if(MARS_TITAN_ENABLE_CUDA)
     find_package(CUDAToolkit REQUIRED)
     target_compile_features(mars_titan_native_options INTERFACE cuda_std_20)
 
-    message(STATUS "CUDA configurada con toolkit ${CUDAToolkit_VERSION}")
+    message(STATUS "CUDA configurada con las herramientas ${CUDAToolkit_VERSION}")
 endif()
 
-message(STATUS "Configuracion sin fuentes cientificas ni objetivos binarios")
+message(STATUS "Configuración sin fuentes científicas ni objetivos binarios")
