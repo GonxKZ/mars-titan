@@ -36,6 +36,17 @@ def main() -> int:
     prepare.add_argument("--limit", type=int)
     prepare.add_argument("--start")
     prepare.add_argument("--end", default="2026-01-01")
+    prepare.add_argument(
+        "--news-reviews",
+        type=Path,
+        default=Path("data/manifests/news-reviews.json"),
+        help="Manifiesto de noticias completas contrastadas",
+    )
+    prepare.add_argument(
+        "--unreviewed-profile",
+        action="store_true",
+        help="Solo diagnóstico de coste, sin admitir contenido para investigación",
+    )
     prices = commands.add_parser("audit-prices", help="Auditar todos los precios inventariados")
     prices.add_argument("--source", type=Path, default=Path("dataset"))
     prices.add_argument(
@@ -90,10 +101,12 @@ def main() -> int:
         }
         atomic_json(args.output, result)
     elif args.command == "prepare":
+        from .news_reviews import load_reviews
         from .preparation import prepare_asset
         from .temporal import MarketClock
 
         panel = json.loads(args.panel.read_text())
+        reviews = None if args.unreviewed_profile else load_reviews(args.news_reviews)
         start = args.start or ("1990-01-01" if panel["market"] == "US" else "2000-01-01")
         clock = MarketClock(panel["market"], start, args.end)
         assets = panel["assets"][: args.limit] if args.limit is not None else panel["assets"]
@@ -101,7 +114,7 @@ def main() -> int:
             raise ValueError("limit debe ser positivo")
         summaries = []
         for asset in assets:
-            item = prepare_asset(args.source, args.output, asset, clock)
+            item = prepare_asset(args.source, args.output, asset, clock, news_reviews=reviews)
             brief = {k: item[k] for k in ("symbol", "counts", "elapsed_seconds", "reused")}
             summaries.append(brief)
             print(json.dumps(brief), file=sys.stderr, flush=True)

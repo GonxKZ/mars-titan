@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from .news_reviews import reviewed_body
 from .temporal import MarketClock, aware
 
 
@@ -39,7 +40,12 @@ def _publication(value: str, clock: MarketClock, lag: int):
 
 
 def read_news(
-    path: Path, symbol: str, clock: MarketClock, *, date_only_lag: int = 1
+    path: Path,
+    symbol: str,
+    clock: MarketClock,
+    *,
+    date_only_lag: int = 1,
+    reviews: dict[str, dict] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     if type(date_only_lag) is not int or date_only_lag < 1:
         raise ValueError("El retardo debe ser un número entero positivo de sesiones")
@@ -76,6 +82,15 @@ def read_news(
                 if reason:
                     rejected.append({**provenance, "reason": reason})
                     continue
+                review_metadata = {"content_review": "not_reviewed"}
+                if reviews is not None:
+                    body, review_metadata, reason = reviewed_body(
+                        raw, provenance["source_record_hash"], reviews
+                    )
+                    if reason:
+                        rejected.append({**provenance, **review_metadata, "reason": reason})
+                        continue
+                    text = "\n".join(filter(None, [title, body]))
                 published, available, reason = _publication(date_value, clock, date_only_lag)
                 if reason:
                     rejected.append({**provenance, "reason": reason})
@@ -90,6 +105,7 @@ def read_news(
                 accepted.append(
                     {
                         **provenance,
+                        **review_metadata,
                         "event_id": hashlib.sha256(
                             json.dumps([symbol, *identity], separators=(",", ":")).encode()
                         ).hexdigest(),

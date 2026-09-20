@@ -13,6 +13,7 @@ from pathlib import Path
 import pyarrow as pa
 
 from .news import read_news
+from .news_reviews import load_reviews
 from .preparation import atomic_parquet
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock
@@ -32,9 +33,14 @@ NEWS_SCHEMA = pa.schema(
             "availability_rule",
             "symbol",
             "association_evidence",
+            "content_review",
+            "reviewed_body_sha256",
+            "review_evidence_url",
+            "review_checked_at",
         )
     ]
     + [("line", pa.int64())]
+    + [("historical_body_version_verified", pa.bool_())]
     + [
         (name, pa.timestamp("us", tz="UTC"))
         for name in ("event_at", "published_at", "available_at")
@@ -55,7 +61,9 @@ EXCLUSION_SCHEMA = pa.schema(
 )
 
 
-def audit_news_panel(source: Path, panel: dict, output: Path, clock: MarketClock) -> dict:
+def audit_news_panel(
+    source: Path, panel: dict, output: Path, clock: MarketClock, *, reviews: dict | None = None
+) -> dict:
     outside_source(source, output)
     if output.exists():
         raise ValueError("Usa un directorio nuevo para conservar las auditorías anteriores")
@@ -86,7 +94,13 @@ def audit_news_panel(source: Path, panel: dict, output: Path, clock: MarketClock
             ).hexdigest(),
         },
         "grain": "asset_source_record",
-        "admission_scope": "source_binding_and_publication_fields",
+        "admission_scope": "verified_full_editorial_content"
+        if reviews is not None
+        else "source_binding_and_publication_fields",
+        "admitted_content_reviewed": reviews is not None,
+        "reviews_sha256": hashlib.sha256(json.dumps(reviews, sort_keys=True).encode()).hexdigest()
+        if reviews is not None
+        else None,
         "semantic_validation_complete": False,
         "historical_body_version_verified": False,
         "raw_records": 0,
@@ -96,7 +110,8 @@ def audit_news_panel(source: Path, panel: dict, output: Path, clock: MarketClock
         "assets": [],
         "source_hashes": {},
         "implementation_sha256": {
-            name: sha256(Path(__file__).with_name(name)) for name in ("news.py", "news_audit.py")
+            name: sha256(Path(__file__).with_name(name))
+            for name in ("news.py", "news_audit.py", "news_reviews.py")
         },
     }
     shifts = []
@@ -106,7 +121,7 @@ def audit_news_panel(source: Path, panel: dict, output: Path, clock: MarketClock
         for relative in sorted(asset["paths"]["news"]):
             path = source / relative
             before = sha256(path)
-            rows, errors = read_news(path, asset["symbol"], clock)
+            rows, errors = read_news(path, asset["symbol"], clock, reviews=reviews)
             if sha256(path) != before:
                 raise ValueError("La fuente ha cambiado durante la auditoría de noticias")
             report["source_hashes"][relative] = before
@@ -168,15 +183,29 @@ def main():
     parser.add_argument("--panel", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument(
+        "--reviews",
+        type=Path,
+        default=Path("data/manifests/news-reviews.json"),
+        help="Admitir solo cuerpos completos con revisión acreditada",
+    )
+    parser.add_argument(
+        "--fields-only", action="store_true", help="Diagnóstico de campos, sin certificar contenido"
+    )
     args = parser.parse_args()
     outside_source(args.source, args.report)
     outside_source(args.output, args.report)
     if args.report.exists():
         raise ValueError("Usa un informe nuevo para conservar los archivos existentes")
     panel = json.loads(args.panel.read_text())
+    reviews = None if args.fields_only else load_reviews(args.reviews)
     start = "1990-01-01" if panel["market"] == "US" else "2000-01-01"
     result = audit_news_panel(
-        args.source, panel, args.output, MarketClock(panel["market"], start, "2026-01-01")
+        args.source,
+        panel,
+        args.output,
+        MarketClock(panel["market"], start, "2026-01-01"),
+        reviews=reviews,
     )
     atomic_json(args.report, result)
     print(

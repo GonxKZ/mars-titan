@@ -128,6 +128,7 @@ def test_cli_prepares_and_encodes_prices_before_2000(
         [
             "mars-data",
             "prepare",
+            "--unreviewed-profile",
             "--source",
             str(source),
             "--panel",

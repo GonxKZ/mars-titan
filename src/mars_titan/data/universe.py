@@ -10,6 +10,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from .inventory import entries
+from .news_reviews import load_reviews
 from .preparation import prepare_asset
 from .samples import eligible_samples
 from .storage import atomic_json, outside_source, sha256
@@ -41,10 +42,22 @@ def select_verification_pilot(
     size: int = 4,
     selection_date: str = "2018-12-31",
     minimum_samples: int = 252,
+    news_reviews_path: Path = Path("data/manifests/news-reviews.json"),
+    unreviewed_profile: bool = False,
 ) -> dict:
     outside_source(source, output)
     if size < 1 or minimum_samples < 1:
         raise ValueError("El tamaño del piloto y su historial mínimo deben ser positivos")
+    reviews = None if unreviewed_profile else load_reviews(news_reviews_path)
+    verified_symbols = {
+        row["symbol"]
+        for row in (reviews or {}).values()
+        if row["status"] == "verified_full_article"
+    }
+    if reviews is not None and len(verified_symbols) < size:
+        raise ValueError(
+            "El registro de noticias completas verificadas no cubre los activos solicitados"
+        )
     cutoff = datetime.fromisoformat(selection_date).replace(tzinfo=UTC, hour=23, minute=59)
     grouped = {}
     for row in entries(database):
@@ -60,6 +73,7 @@ def select_verification_pilot(
         x
         for x in grouped.values()
         if all(x["paths"].get(m) for m in ("prices", "news", "fundamentals"))
+        and (reviews is None or x["symbol"] in verified_symbols)
     ]
     macro = pq.read_table(macro_path, columns=["prediction_at", "value"])
     known = macro.filter(pc.is_valid(macro["value"]))["prediction_at"].unique().to_pylist()
@@ -67,7 +81,7 @@ def select_verification_pilot(
     clock = MarketClock("US", "1990-01-01", "2026-01-01")
     selected, inspected = [], []
     for asset in selection_order(pool):
-        receipt = prepare_asset(source, prepared, asset, clock)
+        receipt = prepare_asset(source, prepared, asset, clock, news_reviews=reviews)
         folder = prepared / "US" / asset["symbol"]
         rows = eligible_samples(
             pq.read_table(folder / "prices.parquet").to_pandas(),
@@ -109,6 +123,13 @@ def select_verification_pilot(
         "sector_used": False,
         "future_survival_required": False,
         "universe_scope": "retrospective_original_archive_not_historical_index_membership",
+        "news_content_policy": "verified_full_articles" if reviews is not None else "not_reviewed",
+        "news_reviews_sha256": hashlib.sha256(
+            json.dumps(reviews, sort_keys=True).encode()
+        ).hexdigest()
+        if reviews is not None
+        else None,
+        "news_review_selection_is_retrospective": reviews is not None,
         "candidate_assets": len(pool),
         "assets": selected,
         "inspected": inspected,
