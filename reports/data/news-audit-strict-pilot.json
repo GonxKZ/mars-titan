@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "audited_at_utc": "2026-09-19T23:53:50.872283+00:00",
+  "market": "US",
+  "calendar": {
+    "first_session": "1990-01-02",
+    "last_session": "2025-12-31",
+    "decisions_sha256": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687"
+  },
+  "grain": "asset_source_record",
+  "admission_scope": "verified_full_editorial_content",
+  "admitted_content_reviewed": true,
+  "reviews_sha256": "81de31eb3ad72d93783feb347f9d521e7b184b9d5bec0ff0922e2640f6cc8c8d",
+  "semantic_validation_complete": false,
+  "historical_body_version_verified": false,
+  "raw_records": 4367,
+  "accepted": 2,
+  "excluded": 4365,
+  "reasons": {
+    "content_unreviewed": 4359,
+    "content_rejected": 2,
+    "content_unverifiable": 4
+  },
+  "assets": [
+    {
+      "symbol": "MNST",
+      "raw_records": 1456,
+      "accepted": 2,
+      "excluded": 1454,
+      "reasons": {
+        "content_unreviewed": 1454
+      },
+      "date_only": 2,
+      "language_unknown": 2,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2018-11-09T21:05:00+00:00",
+      "last_available_at": "2018-12-11T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "9f88db2a2372239767362e3d0aa28bc681d8ecd9b26bff064816933e5c642937",
+        "exclusions.parquet": "02497176ebaefa358daa06d1b5099ea294563ab0731cb8bfbb6085964cbc65b2"
+      }
+    },
+    {
+      "symbol": "ABM",
+      "raw_records": 907,
+      "accepted": 0,
+      "excluded": 907,
+      "reasons": {
+        "content_unreviewed": 905,
+        "content_rejected": 2
+      },
+      "date_only": 0,
+      "language_unknown": 0,
+      "lag2_outside_calendar": 0,
+      "first_available_at": null,
+      "last_available_at": null,
+      "artifacts": {
+        "news.parquet": "d171e90b848d61c33f24b4247641ad6459e869cf79641d58546fdaf57b935365",
+        "exclusions.parquet": "dc9fa4ae53091e2473a103979141108dc3262dff2738c9c1c7aad77369c707ed"
+      }
+    },
+    {
+      "symbol": "DECK",
+      "raw_records": 1725,
+      "accepted": 0,
+      "excluded": 1725,
+      "reasons": {
+        "content_unreviewed": 1723,
+        "content_unverifiable": 2
+      },
+      "date_only": 0,
+      "language_unknown": 0,
+      "lag2_outside_calendar": 0,
+      "first_available_at": null,
+      "last_available_at": null,
+      "artifacts": {
+        "news.parquet": "d171e90b848d61c33f24b4247641ad6459e869cf79641d58546fdaf57b935365",
+        "exclusions.parquet": "41e1d59cfa01525059f88099a285fbf06893744e4b6487f462c4fba66bfe5a8a"
+      }
+    },
+    {
+      "symbol": "CSGS",
+      "raw_records": 279,
+      "accepted": 0,
+      "excluded": 279,
+      "reasons": {
+        "content_unreviewed": 277,
+        "content_unverifiable": 2
+      },
+      "date_only": 0,
+      "language_unknown": 0,
+      "lag2_outside_calendar": 0,
+      "first_available_at": null,
+      "last_available_at": null,
+      "artifacts": {
+        "news.parquet": "d171e90b848d61c33f24b4247641ad6459e869cf79641d58546fdaf57b935365",
+        "exclusions.parquet": "daeb7243b39c236cab44d865c78a9fa7923bb07c2ad163a6e639df0d1121db0b"
+      }
+    }
+  ],
+  "source_hashes": {
+    "text/sp500_news/MNST.jsonl": "9bc020980952b152553b3e1c2937a8e75c6f1cc1748f53517637970bdbe3cbc0",
+    "text/sp500_news/ABM.jsonl": "93c2113b3c05b2262b16794d25d0e876c1b6b2c1b3c9b1b1c3378c5a1fb3fcdf",
+    "text/sp500_news/DECK.jsonl": "50f7fc49b915b11713fdb044c3899141ea041f6d031483508cade315b353ce10",
+    "text/sp500_news/CSGS.jsonl": "c8cf766401bd3bba460d5beb6e6256997911e3a24d809fc32848805a9bf9b95d"
+  },
+  "implementation_sha256": {
+    "news.py": "0201c15b831c8025b792357b87d185686bef08a433f6dc0acb51000324193e02",
+    "news_audit.py": "734b3885019c652bbf4b9c96764b5d57631c481dd881a160c1abb6fbd8350fd9",
+    "news_reviews.py": "d9d8bdda7b3a79fbcb14498a8a1f802816099eee2ff2c1503befef9ab1e8f854"
+  },
+  "lag2_shift_hours": {
+    "min": 24.0,
+    "max": 72.0
+  },
+  "elapsed_seconds": 0.16060398600166081,
+  "peak_rss_mib": 143.20703125
+}

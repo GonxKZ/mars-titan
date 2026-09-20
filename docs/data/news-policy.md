@@ -51,7 +51,7 @@ Los motivos incluyen `missing_symbol_evidence`, `symbol_mismatch`,
 `unsupported_timestamp_precision`, `invalid_record`, `duplicate` y
 `duplicate_across_files`. Son identificadores estables del contrato.
 
-## Comprobación ejecutada
+## Auditoría anterior de campos y fechas
 
 | Panel | Registros activo-fuente | Admitidos por campos y tiempo | Duplicados excluidos |
 | --- | ---: | ---: | ---: |
@@ -87,12 +87,58 @@ La revisión dirigida de AAPL, línea 1, fecha 2025-04-18, encuentra un artícul
 sobre Shiba Inu que compara su capitalización con Apple. El ticker declarado
 acredita una etiqueta del proveedor, no relevancia económica específica.
 
-Las dos páginas contrastadas mediante consulta pública no estuvieron accesibles.
-No se atribuye a esas consultas una verificación de su contenido histórico. Los
-originales se conservan y no se reconstruye texto por suposición. La decisión de
-usar artículos completos comprobables o estudiar titulares verificables está
-pendiente. Por ese motivo, #7 no se cierra con esta entrega y los informes marcan
-la validación semántica y de versión histórica como incompletas.
+Las primeras consultas de ABM y DECK no permitieron recuperar sus páginas. El
+contraste posterior encontró fuentes editoriales accesibles y otras contradicciones.
+No se atribuye a una consulta fallida la verificación de un texto.
+
+## Admisión estricta de artículos completos
+
+La preparación usa únicamente cuerpos editoriales completos contrastados. No se
+sustituye un cuerpo ausente por el titular o por un resumen. El [registro de
+revisiones](../../data/manifests/news-reviews.json) liga cada decisión a la huella
+de la línea original, el activo, la fecha, la URL y la evidencia consultada.
+
+Se contrastaron ocho registros, una muestra dirigida que no estima la tasa de
+error del corpus. Dos artículos de MNST coinciden con sus originales editoriales
+de [diciembre](https://www.fool.com/investing/2018/12/10/why-monster-beverage-shares-rose-13-last-month.aspx)
+y [noviembre de 2018](https://www.fool.com/investing/2018/11/08/why-monster-beverage-corp-stock-fell-today.aspx).
+Se conservan todos los párrafos editoriales y las declaraciones de posiciones del
+autor y del medio. Los intervalos de caracteres excluyen únicamente promoción y
+avisos del distribuidor. El texto seleccionado mantiene su propio SHA-256 y no
+se reescribe.
+
+En el artículo de noviembre hay una discrepancia AM/PM entre los medios. Se
+conserva la fecha sola del original y el retardo por sesiones. No se promociona
+ninguna de esas horas a una publicación exacta.
+
+Dos registros de ABM son incoherentes. El de 2014 incluye un hito de Acasti que
+figura en un [comunicado de diciembre de 2018](https://www.globenewswire.com/news-release/2018/12/31/1679176/0/en/acasti-pharma-announces-trilogy-phase-3-trials-of-capre-in-patients-with-severe-hypertriglyceridemia-has-now-exceeded-65-randomization-and-more-than-100-patients-20-have-completed-.html).
+El registro 599 de 2018 contiene empresas de cannabis, mientras que su
+[página original](https://www.nasdaq.com/articles/abm-industries-abm-beats-q4-earnings-revenue-estimates-2018-12-19)
+describe resultados de ABM. No se reparan esos cuerpos ni se cambia su fecha.
+Los otros cuatro registros revisados siguen sin contraste completo.
+
+Los motivos estrictos son `content_unreviewed`, `content_unverifiable`,
+`content_rejected`, `content_review_mismatch` y `missing_full_article`. Que una
+noticia no esté revisada no significa que sea falsa. Se mantiene fuera hasta
+que exista evidencia suficiente.
+
+La correspondencia editorial actual no acredita una instantánea histórica
+inmutable. Los informes mantienen ese límite explícito. Además, filtrar por
+páginas que siguen accesibles introduce una selección retrospectiva que no debe
+confundirse con una regla disponible en tiempo real.
+
+## Cobertura estricta observada
+
+La [auditoría estricta](../../reports/data/news-audit-strict-pilot.json) recorre los
+4.367 registros del piloto. Admite dos y excluye 4.365. El [recorrido multimodal](../../reports/data/strict-multimodal-coverage.json)
+produce diez muestras de MNST con las cuatro modalidades y macro. ABM, DECK y
+CSGS no producen muestras estrictas con este registro de revisiones.
+
+No es una cohorte suficiente para comparar modelos. #7 sigue abierta para ampliar
+la verificación y fijar cobertura. Las sondas anteriores se conservan como
+mediciones de coste con su preparación original, sin atribuirles ahora validación
+editorial retroactiva. No se ha entrenado una campaña nueva con estas diez muestras.
 
 ## Reproducción
 
@@ -101,9 +147,14 @@ Usar nombres nuevos para no sustituir otra auditoría:
 ```bash
 uv run --locked python -m mars_titan.data.news_audit \
   --panel data/manifests/pilot.json \
+  --reviews data/manifests/news-reviews.json \
   --output data/interim/news-reproduction \
   --report data/interim/news-reproduction-report.json
-uv run --locked pytest tests/data/test_news_availability.py tests/data/test_news_audit.py
+uv run --locked mars-data prepare --panel data/manifests/pilot.json \
+  --news-reviews data/manifests/news-reviews.json \
+  --output data/interim/strict-preparation-reproduction
+uv run --locked pytest tests/data/test_news_availability.py \
+  tests/data/test_news_audit.py tests/data/test_news_reviews.py
 ```
 
 La auditoría actual procesa un activo cada vez, pero conserva sus registros en
@@ -111,7 +162,43 @@ memoria. No equivale a una conversión incremental del corpus entero. Las prueba
 no certifican relevancia predictiva ni ausencia de revisiones de texto no
 documentadas por el proveedor.
 
-## Verificación de esta entrega
+Los comandos usan el registro estricto por defecto. `--fields-only` en la auditoría
+y `--unreviewed-profile` en la preparación permiten repetir diagnósticos de campos
+o coste, con una etiqueta explícita de contenido no revisado. No habilitan
+entrenamiento científico ni convierten la salida en un conjunto verificado.
+
+El selector del piloto exige la misma política y transmite el registro de
+revisiones a cada activo. Un registro vacío no aporta cobertura. La selección
+estricta actual no reúne cuatro activos ni el mínimo de 252 muestras, por lo
+que se detiene antes de modificar el piloto anterior. #12 vuelve a depender de
+la ampliación de cobertura verificada en #7.
+
+## Verificación de la admisión estricta
+
+La suite completa pasó con 394 pruebas, incluida la extracción real en CUDA.
+Las pruebas recorren la preparación estricta, rechazos, cambios de hash,
+intervalos inválidos, ausencia de cuerpos, configuración incorrecta y selección
+del piloto. Una integración con datos sintéticos reconstruye el mismo piloto
+usando los adaptadores reales y cobertura anterior al corte.
+
+En los cuatro módulos de noticias y selección, coverage.py 7.16.1 registró 290 de
+313 sentencias y 112 de 132 ramas cubiertas, un 90,34 % combinado. Radon 6.0.1
+midió complejidad 12 y CRAP 12 en `reviewed_body`, con cobertura de sentencias
+del 100 %. El selector tiene complejidad 27, cobertura del 89,47 % y CRAP 27,850,
+calculado con `C² × (1 − cobertura)³ + C`. Los casos no cubiertos siguen siendo
+un límite de la verificación.
+
+Cuatro mutaciones dirigidas se detectaron: omitir la huella del cuerpo, admitir
+un recorte vacío, saltarse el registro en el comando de preparación y dejar de
+transmitirlo al selector. No es una campaña exhaustiva.
+
+La segunda comprobación real mantuvo diez muestras y no amplió las doce entradas
+de la caché existente. Los campos `reviews_sha256` de ambos informes identifican
+el índice de revisiones serializado con claves ordenadas. El informe multimodal
+conserva además `reviews_file_sha256` para los bytes del manifiesto. No deben
+confundirse ambas huellas.
+
+## Verificación de la entrega anterior de fechas
 
 La suite local completa pasó con 344 pruebas. En `news.py` y `news_audit.py`,
 coverage.py 7.16.1 midió 155 de 169 sentencias y 57 de 66 ramas cubiertas.

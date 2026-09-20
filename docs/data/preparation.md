@@ -119,8 +119,9 @@ presenta como una cohorte histórica válida para extraer conclusiones. El pilot
 de verificación usa otra regla, con cobertura anterior a un corte fijo y sin
 exigir supervivencia posterior. El universo original sigue siendo retrospectivo.
 
-El [manifiesto del piloto](../../data/manifests/pilot.json) conserva cuatro activos
-de verificación, MNST, ABM, DECK y CSGS. La regla usa un orden por hash con semilla
+El [manifiesto del piloto](../../data/manifests/pilot.json) conserva la selección
+de coste anterior al contraste editorial, con MNST, ABM, DECK y CSGS. No acredita
+la cobertura estricta actual. La regla usa un orden por hash con semilla
 42 y exige al menos 252 muestras completas anteriores al 31 de diciembre de 2018.
 No usa sectores actuales, volumen futuro ni permanencia hasta el final del archivo.
 Se inspeccionaron 12 candidatos en ese orden para reunir los cuatro. No se confunde
@@ -129,3 +130,11 @@ este piloto con el panel técnico de 22 activos ni con la futura muestra confirm
 ```bash
 uv run python -m mars_titan.data.universe
 ```
+
+El selector actual exige el registro de [noticias completas contrastadas](news-policy.md)
+y lo propaga a la preparación. Con las dos noticias verificadas actuales se
+detiene antes de escribir un piloto de cuatro activos. No rebaja el mínimo de
+252 muestras para aparentar una cohorte suficiente ni sobrescribe el manifiesto
+anterior al detectar esa falta de cobertura. La selección no revisada queda
+reservada a un diagnóstico explícito con `unreviewed_profile=True` en la API,
+etiquetado como tal.
