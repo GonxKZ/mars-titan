@@ -98,7 +98,14 @@ def atomic_parquet(path: Path, table: pa.Table) -> None:
             os.unlink(name)
 
 
-def prepare_asset(source: Path, destination: Path, asset: dict, clock: MarketClock) -> dict:
+def prepare_asset(
+    source: Path,
+    destination: Path,
+    asset: dict,
+    clock: MarketClock,
+    *,
+    news_reviews: dict | None = None,
+) -> dict:
     outside_source(source, destination)
     symbol = asset["symbol"]
     if not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol) or symbol in {".", ".."}:
@@ -122,12 +129,24 @@ def prepare_asset(source: Path, destination: Path, asset: dict, clock: MarketClo
     manifest_path = folder / "manifest.json"
     policy = {
         name: sha256(Path(__file__).with_name(name))
-        for name in ("preparation.py", "prices.py", "news.py", "fundamentals.py", "temporal.py")
+        for name in (
+            "preparation.py",
+            "prices.py",
+            "news.py",
+            "news_reviews.py",
+            "fundamentals.py",
+            "temporal.py",
+        )
     }
     policy["calendar"] = hashlib.sha256(
         "|".join(x.isoformat() for x in clock.decisions).encode()
     ).hexdigest()
     policy["pyarrow"] = pa.__version__
+    policy["news_reviews"] = (
+        hashlib.sha256(json.dumps(news_reviews, sort_keys=True).encode()).hexdigest()
+        if news_reviews is not None
+        else None
+    )
     fingerprint = hashlib.sha256(json.dumps([sources, policy], sort_keys=True).encode()).hexdigest()
     if manifest_path.exists():
         old = json.loads(manifest_path.read_text())
@@ -140,7 +159,7 @@ def prepare_asset(source: Path, destination: Path, asset: dict, clock: MarketClo
     prices, price_audit = read_prices(source / asset["paths"]["prices"][0], clock)
     news, rejected_news = [], []
     for relative in sorted(asset["paths"]["news"]):
-        accepted, rejected = read_news(source / relative, symbol, clock)
+        accepted, rejected = read_news(source / relative, symbol, clock, reviews=news_reviews)
         news.extend(accepted)
         rejected_news.extend(rejected)
     facts, fact_audit = read_fundamentals(
@@ -177,6 +196,9 @@ def prepare_asset(source: Path, destination: Path, asset: dict, clock: MarketClo
         "elapsed_seconds": time.perf_counter() - started,
         "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "training_ready": False,
+        "news_content_policy": "verified_full_articles"
+        if news_reviews is not None
+        else "not_reviewed",
     }
     atomic_json(manifest_path, result)
     return result

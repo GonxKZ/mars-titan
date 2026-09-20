@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "body_span_basis": "Article.strip() unicode code points, joined with newline",
+  "reviews": [
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 709,
+      "source_record_hash": "de4807081a157adda087ae2d1315330b0927777e39c246f843339415d57630c0",
+      "symbol": "MNST",
+      "source_date": "2018-12-10",
+      "source_url": "https://www.nasdaq.com/articles/why-monster-beverage-shares-rose-13-last-month-2018-12-10",
+      "status": "verified_full_article",
+      "note": "Cuerpo editorial completo y declaración de posiciones contrastados. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-19T23:36:52.289467+00:00",
+      "evidence_url": "https://www.fool.com/investing/2018/12/10/why-monster-beverage-shares-rose-13-last-month.aspx",
+      "body_spans": [
+        [
+          0,
+          1988
+        ],
+        [
+          2532,
+          2699
+        ]
+      ],
+      "body_sha256": "b60a138c4de31b2f2ecfb8dba931c4c7b9d3830733eff9852e4919c0b5995ed9",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 720,
+      "source_record_hash": "2e2b763bbf1a4e94d1bebb7a46d26edf893b6c4021b5681872a38163e2ce3364",
+      "symbol": "MNST",
+      "source_date": "2018-11-08",
+      "source_url": "https://www.nasdaq.com/articles/why-monster-beverage-corp-stock-fell-today-2018-11-08",
+      "status": "verified_full_article",
+      "note": "Cuerpo editorial completo y declaración de posiciones contrastados. Hay discrepancia AM/PM entre medios, se conserva la fecha sola y su retardo por sesiones.",
+      "checked_at": "2026-09-19T23:36:52.289529+00:00",
+      "evidence_url": "https://www.fool.com/investing/2018/11/08/why-monster-beverage-corp-stock-fell-today.aspx",
+      "body_spans": [
+        [
+          0,
+          1831
+        ],
+        [
+          2372,
+          2539
+        ]
+      ],
+      "body_sha256": "485212b08ea4c4c933dd24b77a21f3ca981b506f6859190ffff6b1cae2d5ca3a",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 185,
+      "source_record_hash": "6d4a00766f2a293693dd7bb55978f95b0aa66db8f6aa6ce89c29d0d1acbdd8dd",
+      "symbol": "CSGS",
+      "source_date": "2018-12-25",
+      "source_url": "https://www.nasdaq.com/articles/is-csg-systems-csgs-a-great-value-stock-right-now-2018-12-25",
+      "status": "unverifiable",
+      "note": "No se recuperó el artículo original específico de Zacks para contrastar el cuerpo completo.",
+      "checked_at": "2026-09-19T23:36:52.291845+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 268,
+      "source_record_hash": "5c1a87ebadd5da814a352b34a42bc8e832a21a05791f84a16684c05994ce7f6f",
+      "symbol": "CSGS",
+      "source_date": "2014-06-06",
+      "source_url": "https://www.nasdaq.com/articles/csg-systems-international-inc-csgs-ex-dividend-date-scheduled-june-09-2014-2014-06-06",
+      "status": "unverifiable",
+      "note": "El comunicado del emisor respalda el dividendo, pero no se recuperó el artículo completo de Nasdaq.",
+      "checked_at": "2026-09-19T23:36:52.292087+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 1208,
+      "source_record_hash": "fff91a6980734a1451e7f7f8b3cac917695cdd0fd92be6a21f0c49ce69de25fe",
+      "symbol": "DECK",
+      "source_date": "2018-08-03",
+      "source_url": "https://www.nasdaq.com/articles/prestige-brands-pbh-beats-on-q1-earnings-plans-name-change-2018-08-03",
+      "status": "unverifiable",
+      "note": "Artículo centrado en Prestige con mención secundaria de Deckers. El comunicado del emisor no verifica el texto completo y difiere el año fiscal de una recompra.",
+      "checked_at": "2026-09-19T23:36:52.298668+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 1230,
+      "source_record_hash": "a1d86b5c2a148ffa3b572ff3a2c1acf164d96d27bfbc11f01e1263d10bf801cc",
+      "symbol": "DECK",
+      "source_date": "2018-06-11",
+      "source_url": "https://www.nasdaq.com/articles/why-deckers-outdoor-corporation-stock-gained-21-may-2018-06-11",
+      "status": "unverifiable",
+      "note": "Título y cuerpo parecen relacionados, pero no se recuperó la fuente editorial completa.",
+      "checked_at": "2026-09-19T23:36:52.298756+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/ABM.jsonl",
+      "source_row": 599,
+      "source_record_hash": "48e4bb121547bc37f2d18f650d301e1abe4ef2082f501a60ac73219c7593486b",
+      "symbol": "ABM",
+      "source_date": "2018-12-19",
+      "source_url": "https://www.nasdaq.com/articles/abm-industries-abm-beats-q4-earnings-revenue-estimates-2018-12-19",
+      "status": "rejected",
+      "note": "La página original describe resultados de ABM. El cuerpo local trata de empresas de cannabis y atribuye otra autoría.",
+      "checked_at": "2026-09-19T23:36:52.301637+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/ABM.jsonl",
+      "source_row": 816,
+      "source_record_hash": "92cbd63fc7ef976b088cea0f87649c4854aa08ce352c0ac359a6c7fa4205343b",
+      "symbol": "ABM",
+      "source_date": "2014-12-09",
+      "source_url": "https://www.nasdaq.com/articles/daily-dividend-report-usb-abm-wdfc-jpm-mon-amat-omc-vmi-bdn-2014-12-09",
+      "status": "rejected",
+      "note": "Título sobre dividendos de ABM y cuerpo sanitario. Un hito de Acasti corresponde a un comunicado de diciembre de 2018, incompatible con la fecha de 2014.",
+      "checked_at": "2026-09-19T23:36:52.302017+00:00"
+    }
+  ]
+}

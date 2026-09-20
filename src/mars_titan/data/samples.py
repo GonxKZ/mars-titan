@@ -317,7 +317,13 @@ def materialize_samples(
             "elapsed_seconds": time.perf_counter() - started,
             "cost_profile_ready": bool(samples),
             "training_ready": False,
-            "pending_for_scientific_training": ["targets", "frozen_scientific_cohort_and_splits"],
+            "news_content_policy": manifest.get("news_content_policy", "not_reviewed"),
+            "pending_for_scientific_training": ["targets", "frozen_scientific_cohort_and_splits"]
+            + (
+                []
+                if manifest.get("news_content_policy") == "verified_full_articles"
+                else ["unverified_news"]
+            ),
             "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
             "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
             "peak_vram_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
