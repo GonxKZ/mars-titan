@@ -130,6 +130,11 @@ confundirse con una regla disponible en tiempo real.
 
 ## Cobertura estricta observada
 
+La comprobación inicial de este apartado se conserva como antecedente. La
+[ampliación posterior](../../reports/data/news-coverage-expansion.md) alcanza 13
+artículos contrastados y 65 muestras de dos activos. La limitación de cobertura
+para la comparación principal sigue vigente.
+
 La [auditoría estricta](../../reports/data/news-audit-strict-pilot.json) recorre los
 4.367 registros del piloto. Admite dos y excluye 4.365. El [recorrido multimodal](../../reports/data/strict-multimodal-coverage.json)
 produce diez muestras de MNST con las cuatro modalidades y macro. ABM, DECK y

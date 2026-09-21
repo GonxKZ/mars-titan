@@ -115,6 +115,498 @@
       "status": "rejected",
       "note": "Título sobre dividendos de ABM y cuerpo sanitario. Un hito de Acasti corresponde a un comunicado de diciembre de 2018, incompatible con la fecha de 2014.",
       "checked_at": "2026-09-19T23:36:52.302017+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 741,
+      "source_record_hash": "908b52dca9f18ce34f50b41ba83d76fc4f296c4f7c167285c83e8265dea3b47d",
+      "selection_key": "09bc4b9287a90c20c5b79dbd170148a37794870726027c7d9d268ed1889f36b6",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "MNST",
+      "source_date": "2018-09-11",
+      "source_url": "https://www.nasdaq.com/articles/coca-cola-may-have-new-target-its-race-global-beverage-dominance-2018-09-11",
+      "status": "rejected",
+      "note": "El artículo se centra en la posible compra de Horlicks por Coca-Cola. Monster Beverage solo aparece en una mención secundaria a una asociación comercial y en la declaración de posiciones, sin información económica sustantiva sobre MNST.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2018/09/11/coca-cola-may-have-a-new-target-in-its-race-for-gl.aspx"
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 694,
+      "source_record_hash": "8e7750a083a8143f414186473d8a9171bc7ff0654f89a7d94209b7c218a74a9e",
+      "selection_key": "1573e26305509987e79d1c2e939a0a14bf0554a10a33ced36f88e8f290dfe9e7",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "MNST",
+      "source_date": "2019-01-08",
+      "source_url": "https://www.nasdaq.com/articles/why-monster-beverage-shares-jumped-6-higher-today-2019-01-08",
+      "status": "unverifiable",
+      "note": "La página pública actual de The Motley Fool coincide con el cuerpo local, pero indica una actualización del 15 de abril de 2019 posterior a la fecha de origen del 8 de enero. Sin una versión anterior no se puede atribuir este cuerpo a la fecha local.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2019/01/08/why-monster-beverage-shares-jumped-6-higher-today.aspx"
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 505,
+      "source_record_hash": "ff9aea4d46864a46877f73ccee9c2fec0391f1610d8172882ac739e4a0fde212",
+      "selection_key": "09ef2ecc82de7b9b16b44ab2d1aa193e89f619946d127db1a1d22c47044d94c0",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "MNST",
+      "source_date": "2020-08-05",
+      "source_url": "https://www.nasdaq.com/articles/monster-beverage-takes-an-energizing-swig-of-stock-gains-after-beating-q2-estimates-2020",
+      "status": "verified_full_article",
+      "note": "Monster Beverage es la empresa protagonista. Todos los párrafos editoriales y la declaración de posiciones coinciden con la fuente pública de The Motley Fool. Se excluyen el bloque promocional y el descargo genérico de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2020/08/05/monster-beverage-takes-an-energizing-swig-of-stock.aspx",
+      "body_spans": [
+        [
+          0,
+          1735
+        ],
+        [
+          2252,
+          2416
+        ]
+      ],
+      "body_sha256": "e60a58da6c7e1ef09feb8a91fa81abca26d9e1a3932e8538f89593620cf590db",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 476,
+      "source_record_hash": "d74c062a8e071304cf3c25c0ed7c28c6a167da2a8107c33bbf7ea39a9e958e4b",
+      "selection_key": "109f7667ae657aa79b6f41434907a19ad2c0e8f0e0d26bfa9766ca546d4af9cf",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "MNST",
+      "source_date": "2021-01-30",
+      "source_url": "https://www.nasdaq.com/articles/dont-waste-money-on-penny-stocks-these-3-companies-are-better-buys-2021-01-30",
+      "status": "verified_full_article",
+      "note": "Monster Beverage es una de las tres empresas analizadas y dispone de una sección propia con historia empresarial, ventas, expansión internacional, deuda, efectivo e ingresos. Todos los párrafos editoriales y la declaración de posiciones coinciden con la fuente pública de The Motley Fool. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2021/01/30/dont-waste-money-on-penny-stocks-3-better-buys/",
+      "body_spans": [
+        [
+          0,
+          6873
+        ],
+        [
+          7373,
+          7554
+        ]
+      ],
+      "body_sha256": "f81c5352a36ae7af2d66ca74df2c53985df65379b1fb91d1b58f925d247006ac",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 285,
+      "source_record_hash": "c257d7f583394df03ba3b48214b160c1d51420dfbab70ca78ea8dc59d9af6446",
+      "selection_key": "0232f9e75c521c0997944d9dea4f5e477dcdb1cc439692678defa7964bfec31a",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "MNST",
+      "source_date": "2022-10-26",
+      "source_url": "https://www.nasdaq.com/articles/3-unstoppable-growth-stocks-to-buy-and-hold-forever",
+      "status": "verified_full_article",
+      "note": "Monster Beverage es una de las tres empresas analizadas y dispone de una sección propia con ventas, beneficio, flujo de caja, costes y adquisición. Todos los párrafos editoriales y la declaración de posiciones coinciden con la fuente pública de The Motley Fool. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/10/26/3-unstoppable-growth-stocks-to-buy-and-hold-foreve/",
+      "body_spans": [
+        [
+          0,
+          5434
+        ],
+        [
+          5925,
+          6120
+        ]
+      ],
+      "body_sha256": "50532c41a703b1a96a9655d53dc20303b1463dc7f777590e0b909b5db4c29556",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 321,
+      "source_record_hash": "e8151fe2a0afa03693d9d6bae7c84f841c5c3d33a1b2731aeb129a09b2ea6ff4",
+      "selection_key": "07b3ec386817bc78c3c3a2bfb5c95fef03d3aa841beb3a57478b6724a72e8457",
+      "selection_rank_within_symbol_year": 2,
+      "symbol": "MNST",
+      "source_date": "2022-07-30",
+      "source_url": "https://www.nasdaq.com/articles/1-green-flag-for-celsius-holdings-and-1-red-flag",
+      "status": "rejected",
+      "note": "El artículo se centra en Celsius Holdings. Monster Beverage solo aparece como comparación breve de rentabilidad histórica y en la declaración de posiciones, sin una sección ni información económica sustantiva sobre MNST.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/07/30/1-green-flag-for-celsius-holdings-and-1-red-flag/"
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 153,
+      "source_record_hash": "e777ebffd4ee363ccd754e4fe50f56f342038cefa179adef5b20633182420e49",
+      "selection_key": "04bcc713f4309e6f5716a8adeeab5e4183c62421016644c386e1a0b33eecf4b3",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "MNST",
+      "source_date": "2023-06-22",
+      "source_url": "https://www.nasdaq.com/articles/this-unstoppable-stock-is-up-2900-over-the-past-5-years%3A-time-to-buy",
+      "status": "verified_full_article",
+      "note": "Celsius Holdings es la empresa protagonista, pero Monster Beverage se usa como comparador económico sustantivo en dos párrafos. Se describen su valoración, evolución bursátil, asociación de distribución con Coca-Cola y crecimiento de ventas entre 2015 y 2022. Todos los párrafos editoriales y la declaración de posiciones coinciden con la fuente pública de The Motley Fool. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2023/06/22/this-unstoppable-stock-up-2900-past-5-years/",
+      "body_spans": [
+        [
+          0,
+          4794
+        ],
+        [
+          5258,
+          5664
+        ]
+      ],
+      "body_sha256": "590c157a4c71a2ba2e6df16eca70de98287d4b585db8a1141661da27067557cc",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MNST.jsonl",
+      "source_row": 88,
+      "source_record_hash": "c1c408d0adc42562882044c69069bf3d72f77c5a28d2878e9de8a0e5e94ff20c",
+      "selection_key": "05285babea98d093704b269ff617336fda55fc4f6d5a83636c1284f26e30ac67",
+      "selection_rank_within_symbol_year": 2,
+      "symbol": "MNST",
+      "source_date": "2023-08-31",
+      "source_url": "https://www.nasdaq.com/articles/2-stock-split-ai-growth-stocks-to-buy-before-they-soar-53-and-135-according-to-wall-street",
+      "status": "rejected",
+      "note": "El análisis se centra en Nvidia y Alphabet. Monster Beverage solo aparece en una lista de operaciones de desdoblamiento y en la declaración de posiciones, sin análisis económico sustantivo sobre MNST.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.fool.com/investing/2023/08/31/2-stock-split-growth-stocks-to-buy-before-soar-135/"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 198,
+      "source_record_hash": "eb69c5b0b86d188f2042f8561fc749071f61d112593ee2fb5881ea1b94a3255a",
+      "selection_key": "02925bc1264cb8627bbad4846ebe237471569ebd90d21c78434547985bf893b5",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "CSGS",
+      "source_date": "2018-05-03",
+      "source_url": "https://www.nasdaq.com/articles/csg-systems-international-oversold-2018-05-03",
+      "status": "unverifiable",
+      "note": "El cuerpo identifica a Dividend Channel, pero no se recuperó la página original concreta y la URL pública de Nasdaq no fue accesible. No se aprueba el texto a partir de coincidencias parciales o páginas actuales de la misma plantilla.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 173,
+      "source_record_hash": "5a6543b24f16352b10d187580bc9abda3d6029ae7654a58f2c6a7bf91cecb0e8",
+      "selection_key": "087baa733dda2db498bb4eee1677fb54071cf989afdc63000ca5abc257c7c02e",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "CSGS",
+      "source_date": "2019-03-15",
+      "source_url": "https://www.nasdaq.com/articles/is-csg-systems-csgs-stock-undervalued-right-now-2019-03-15",
+      "status": "unverifiable",
+      "note": "Una republicación pública atribuida a Zacks coincide con los seis párrafos editoriales locales. El enlace original de Zacks bloqueó la consulta automatizada, por lo que la republicación no basta para aprobar el cuerpo como fuente primaria.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00",
+      "evidence_url": "https://www.investing.com/analysis/is-csg-systems-csgs-stock-undervalued-right-now-200398108",
+      "origin_url": "https://www.zacks.com/stock/news/359710/is-csg-systems-csgs-stock-undervalued-right-now"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 158,
+      "source_record_hash": "2af6d42cc4011649414c4316ed2c4c1c6287a31f91abe7a309558a99b6cb9f69",
+      "selection_key": "03870d4e30e19dafd5c4237230132ba763c4b3d3476c799ee66635fe960fbdf9",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "CSGS",
+      "source_date": "2020-04-29",
+      "source_url": "https://www.nasdaq.com/articles/csgs-crosses-above-key-moving-average-level-2020-04-29",
+      "status": "unverifiable",
+      "note": "El cuerpo parece proceder de Dividend Channel o Market News Video, pero no se recuperó la página original concreta y la URL pública de Nasdaq no fue accesible. No se aprueba mediante una plantilla similar de otro valor.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 131,
+      "source_record_hash": "3916e562ba15c637f58ea3a1dda76791f3673a73e88b3e4f3c503c59ddff6aa7",
+      "selection_key": "065261f9273eb2b577bfaab3d09ddd8b2eb654107b318c6f0feee6cdbd9916ad",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "CSGS",
+      "source_date": "2021-08-27",
+      "source_url": "https://www.nasdaq.com/articles/those-who-invested-in-csg-systems-international-nasdaq%3Acsgs-three-years-ago-are-up-34-2021",
+      "status": "unverifiable",
+      "note": "El cuerpo atribuye el artículo a Simply Wall St, pero no se localizó la página original concreta y la URL pública de Nasdaq no fue accesible. No se aprueba con páginas de archivo o artículos actuales del mismo proveedor.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 119,
+      "source_record_hash": "0a3a0163bb88e7bf6df7cf00f4f02fe0d95cd50d31b99df5f6aeaacf2f094de6",
+      "selection_key": "0122395ca09c67e98eaf0d78e3ff99327e30ae7c767850d09411b67a8a19f54d",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "CSGS",
+      "source_date": "2022-03-09",
+      "source_url": "https://www.nasdaq.com/articles/3-stocks-to-watch-from-the-challenging-computer-services-industry",
+      "status": "unverifiable",
+      "note": "El cuerpo atribuye el artículo a Zacks, pero la búsqueda devolvió versiones posteriores con el mismo título y la URL de Nasdaq no fue accesible. No se usa una versión de otro año para validar este cuerpo.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 110,
+      "source_record_hash": "8fd76e90860442f4dfd8baf99e4d4e90c4702dd52a57c4273030c4c9670e0f25",
+      "selection_key": "11cc3d01ed953c4ef8fd629e0c57f0e841592442a5706412106bd253de45fd88",
+      "selection_rank_within_symbol_year": 2,
+      "symbol": "CSGS",
+      "source_date": "2022-09-13",
+      "source_url": "https://www.nasdaq.com/articles/ex-dividend-reminder%3A-hanover-insurance-group-retail-opportunity-investments-and-csg",
+      "status": "unverifiable",
+      "note": "El cuerpo identifica a Dividend Channel, pero no se recuperó la página original concreta y la URL pública de Nasdaq no fue accesible. No se aprueba a partir de calendarios de dividendos actuales.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 85,
+      "source_record_hash": "30b66335e0a76c3750f158b17ed5651757a9acd0fbce8d7b8e2f9eb8a2c84db5",
+      "selection_key": "0ca51b352ef67f8719a2fa9bb8d830f0bd4227099918dc201e63713cb5fbbc5e",
+      "selection_rank_within_symbol_year": 1,
+      "symbol": "CSGS",
+      "source_date": "2023-08-02",
+      "source_url": "https://www.nasdaq.com/articles/csg-systems-csgs-q2-earnings-beat-estimates",
+      "status": "unverifiable",
+      "note": "El cuerpo atribuye el artículo a Zacks, pero no se recuperó la página original concreta y la URL pública de Nasdaq no fue accesible. Sin la fuente primaria completa no se aprueban los párrafos editoriales ni el bloque de autoría.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/CSGS.jsonl",
+      "source_row": 96,
+      "source_record_hash": "83e33d4b76792962910b74113435e0e89a9065b808eae0b8ee1cd00be9ba5a4f",
+      "selection_key": "0fad22b3114e9cfb43138d1ee4a360cc8e7ba49f4ca4d35c48c2754d5c054e99",
+      "selection_rank_within_symbol_year": 2,
+      "symbol": "CSGS",
+      "source_date": "2023-04-11",
+      "source_url": "https://www.nasdaq.com/articles/moves-macquarie-group-hires-credit-suisses-top-australian-dealmaker-memo",
+      "status": "rejected",
+      "note": "El título y el cuerpo son una noticia de Reuters sobre Credit Suisse Group, cuyo ticker CSGS.N provocó una colisión con el símbolo CSGS. No trata sobre CSG Systems International y la URL pública actual devuelve 404.",
+      "checked_at": "2026-09-21T01:45:34.452452+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/ABM.jsonl",
+      "source_row": 598,
+      "source_record_hash": "e98ac9bb36a6aad9f07959d0d81352c0bcc111abbaf91ecc588f703da02ce707",
+      "symbol": "ABM",
+      "source_date": "2018-12-19",
+      "source_url": "https://www.nasdaq.com/articles/mid-afternoon-market-update-us-stocks-turn-negative-after-fed-hikes-interest-rates-dow",
+      "status": "rejected",
+      "note": "El título describe una actualización de mercado. El cuerpo local analiza empresas de cannabis y atribuye la declaración de posiciones a Sean Williams. La página actual de Nasdaq no se pudo recuperar.",
+      "checked_at": "2026-09-21T01:46:40+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/ABM.jsonl",
+      "source_row": 569,
+      "source_record_hash": "4ad4e5af953696bbe699447bd53fb4f1fa58144c3699988cd076723fc9964eff",
+      "symbol": "ABM",
+      "source_date": "2019-09-22",
+      "source_url": "https://www.nasdaq.com/articles/5-top-dividend-kings-to-buy-and-hold-forever-2019-09-22",
+      "status": "rejected",
+      "note": "El título promete cinco Dividend Kings. El cuerpo local trata de Teladoc, iQiyi y Aurora Cannabis y atribuye la declaración de posiciones a Todd Campbell. La página actual de Nasdaq no se pudo recuperar.",
+      "checked_at": "2026-09-21T01:46:40+00:00"
+    },
+    {
+      "source_file": "text/sp500_news/ABM.jsonl",
+      "source_row": 415,
+      "source_record_hash": "3763e015c6d4ede26763dc8b6b9ca68cfad9d9582f1d38344a335388b53d3f7e",
+      "symbol": "ABM",
+      "source_date": "2022-08-04",
+      "source_url": "https://www.nasdaq.com/articles/a-number-of-insiders-bought-abm-industries-incorporated-nyse%3Aabm-stock-last-year-which-is",
+      "status": "rejected",
+      "note": "La fuente visible contiene el análisis de operaciones de directivos de ABM firmado por Simply Wall St. El cuerpo local analiza empresas de cannabis y atribuye la declaración de posiciones a Sean Williams.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.nasdaq.com/articles/a-number-of-insiders-bought-abm-industries-incorporated-nyse%3Aabm-stock-last-year-which-is"
+    },
+    {
+      "source_file": "text/sp500_news/ABM.jsonl",
+      "source_row": 329,
+      "source_record_hash": "b818bf75f8c4c5eb624c7d7a99de10f0b7e3c10699aa948187d76aa6f7a5aa95",
+      "symbol": "ABM",
+      "source_date": "2023-07-06",
+      "source_url": "https://www.nasdaq.com/articles/why-is-abm-industries-abm-down-12.5-since-last-earnings-report",
+      "status": "rejected",
+      "note": "La fuente visible identifica un artículo de Zacks sobre ABM. El cuerpo local trata de resultados de American Airlines y atribuye la declaración de posiciones a Daniel Miller.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.nasdaq.com/articles/why-is-abm-industries-abm-down-12.5-since-last-earnings-report"
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 1245,
+      "source_record_hash": "cc6bc49b2c6f3dc85ceee98af1954dc87d5f8346cff58fd3a69d5c7ac654a418",
+      "symbol": "DECK",
+      "source_date": "2018-04-28",
+      "source_url": "https://www.nasdaq.com/articles/netease-chases-alibaba-and-jdcom-knockoff-marketplace-2018-04-28",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración de posiciones de Leo Sun coinciden con la fuente primaria visible. Se excluyen la promoción y los avisos de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2018/04/28/netease-chases-alibaba-and-jdcom-with-a-knockoff-m.aspx",
+      "body_spans": [
+        [
+          0,
+          4425
+        ],
+        [
+          4947,
+          5129
+        ]
+      ],
+      "body_sha256": "eb2f1234179394a5d1771867512099e36a0ec2a1c6f58b61b370fe2a5e6eaa93",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 1270,
+      "source_record_hash": "8dd91bb7c7205142bb645cb19908d54cc4d7dc7b109e6db2fa8081b9add9fe5e",
+      "symbol": "DECK",
+      "source_date": "2018-02-02",
+      "source_url": "https://www.nasdaq.com/articles/deckers-surprises-big-profit-bump-2018-02-02",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración de posiciones de Dan Caplinger coinciden con la fuente primaria visible. Se excluyen la promoción y los avisos de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2018/02/02/deckers-surprises-with-a-big-profit-bump.aspx",
+      "body_spans": [
+        [
+          0,
+          4383
+        ],
+        [
+          4920,
+          5067
+        ]
+      ],
+      "body_sha256": "a11040be678d024fbec33af59e4d992ae24bb3c07efd4ed1122f69777fddd1ee",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 1114,
+      "source_record_hash": "88665da37b96fc0c46cb44bba22785686d4cba18753f887f11dee0d9be6dd61a",
+      "symbol": "DECK",
+      "source_date": "2019-02-01",
+      "source_url": "https://www.nasdaq.com/articles/why-deckers-outdoor-stock-popped-today-2019-02-01",
+      "status": "rejected",
+      "note": "El cuerpo local omite la cita editorial completa de Dave Powers que aparece después de la introducción CEO Dave Powers said. No es un artículo completo.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2019/02/01/why-deckers-outdoor-stock-popped-today.aspx"
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 1057,
+      "source_record_hash": "6c12e9424858c11ba683b437422bf7716b1b3e193951cf58cac82ff6eeab764c",
+      "symbol": "DECK",
+      "source_date": "2020-01-31",
+      "source_url": "https://www.nasdaq.com/articles/why-deckers-outdoor-stock-popped-today-2020-01-31",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración de posiciones de Jeremy Bowman coinciden con la fuente primaria visible. Se excluyen la promoción y el aviso de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2020/01/31/why-deckers-outdoor-stock-popped-today.aspx",
+      "body_spans": [
+        [
+          0,
+          2220
+        ],
+        [
+          2739,
+          2910
+        ]
+      ],
+      "body_sha256": "cc195ddcfd231682765f09f864888a6df010bf8582616aeb36af60a3cc374bd9",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 981,
+      "source_record_hash": "7880450e60b681989e7bd91cb32f3aea09224037dea6994c8a8898d05cf26dfe",
+      "symbol": "DECK",
+      "source_date": "2021-07-23",
+      "source_url": "https://www.nasdaq.com/articles/does-this-under-the-radar-footwear-stock-belong-in-your-portfolio-2021-07-23",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración completa de posiciones coinciden con la fuente primaria visible. Se excluyen la promoción y el aviso de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2021/07/23/does-this-under-the-radar-outdoor-brand-belong-in/",
+      "body_spans": [
+        [
+          0,
+          3936
+        ],
+        [
+          4429,
+          4850
+        ]
+      ],
+      "body_sha256": "1b4b1916eee487a8e0f2424622c18ac977df1a28b3051528d4b634b803c1d9da",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 877,
+      "source_record_hash": "5954ac3897a15cdb3a64bcce84a8040e4337dbf649710d3fdf9e48c5598d524d",
+      "symbol": "DECK",
+      "source_date": "2022-11-02",
+      "source_url": "https://www.nasdaq.com/articles/better-buy%3A-nike-vs.-deckers-outdoor",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración de posiciones de John Ballard coinciden con la fuente primaria visible. Se excluyen la promoción y el aviso de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/11/02/better-buy-nike-vs-deckers-outdoor/",
+      "body_spans": [
+        [
+          0,
+          4419
+        ],
+        [
+          4896,
+          5051
+        ]
+      ],
+      "body_sha256": "17b50292163ac070959134b1211712e6c12b82b56c2bb263935bc898c6e3def4",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 795,
+      "source_record_hash": "260726f718bde12ed04fdde19f699405bee255297e3b34b2ba5b82005d444eb0",
+      "symbol": "DECK",
+      "source_date": "2023-03-16",
+      "source_url": "https://www.nasdaq.com/articles/2-undervalued-apparel-stocks-id-buy-in-a-heartbeat",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración de posiciones de John Ballard coinciden con la fuente primaria visible. Se excluyen la promoción y el aviso de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2023/03/16/2-undervalued-apparel-stocks-id-buy-in-a-heartbeat/",
+      "body_spans": [
+        [
+          0,
+          4372
+        ],
+        [
+          4874,
+          5143
+        ]
+      ],
+      "body_sha256": "86449b76ca03745f27771a81bf8dd092100418e990f7953b02246db412391848",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/DECK.jsonl",
+      "source_row": 817,
+      "source_record_hash": "acb86309e23628c939b4158416de3fc0d06faf2d04f4e23ddf2a146311c4bbdc",
+      "symbol": "DECK",
+      "source_date": "2023-02-27",
+      "source_url": "https://www.nasdaq.com/articles/these-2-under-the-radar-stocks-have-incredibly-bright-futures-5",
+      "status": "verified_full_article",
+      "note": "Todos los párrafos editoriales y la declaración completa de posiciones coinciden con la fuente primaria visible. Se excluyen la promoción y el aviso de Nasdaq. La correspondencia actual no acredita una instantánea histórica inmutable.",
+      "checked_at": "2026-09-21T01:46:40+00:00",
+      "evidence_url": "https://www.fool.com/investing/2023/02/27/these-under-radar-stocks-bright-futures/",
+      "body_spans": [
+        [
+          0,
+          4228
+        ],
+        [
+          4709,
+          5082
+        ]
+      ],
+      "body_sha256": "2e133cf8dd7f9ba02243cb3f3ed315f1377deab8f6fba1338cfc1b37a1fae06e",
+      "historical_version_verified": false
     }
   ]
 }
