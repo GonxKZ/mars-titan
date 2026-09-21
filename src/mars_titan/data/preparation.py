@@ -105,8 +105,11 @@ def prepare_asset(
     clock: MarketClock,
     *,
     news_reviews: dict | None = None,
+    max_source_bytes: int = 256 * 1024**2,
 ) -> dict:
     outside_source(source, destination)
+    if type(max_source_bytes) is not int or max_source_bytes < 1:
+        raise ValueError("El presupuesto de fuentes debe ser positivo")
     symbol = asset["symbol"]
     if not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol) or symbol in {".", ".."}:
         raise ValueError("El símbolo del activo no es seguro")
@@ -116,6 +119,13 @@ def prepare_asset(
             path = source / relative
             if not path.resolve().is_relative_to(source.resolve()) or path.is_symlink():
                 raise ValueError("La ruta de entrada sale del directorio de origen")
+    unique_sources = {
+        relative
+        for modality in ("prices", "news", "fundamentals")
+        for relative in asset["paths"].get(modality, [])
+    }
+    if sum((source / relative).stat().st_size for relative in unique_sources) > max_source_bytes:
+        raise ValueError("Las fuentes del activo superan el presupuesto de preparación")
     for modality in ("prices", "news", "fundamentals"):
         paths = sorted(asset["paths"].get(modality, []))
         if not paths or (modality == "prices" and len(paths) != 1):
@@ -142,6 +152,7 @@ def prepare_asset(
         "|".join(x.isoformat() for x in clock.decisions).encode()
     ).hexdigest()
     policy["pyarrow"] = pa.__version__
+    policy["max_source_bytes"] = max_source_bytes
     policy["news_reviews"] = (
         hashlib.sha256(json.dumps(news_reviews, sort_keys=True).encode()).hexdigest()
         if news_reviews is not None

@@ -122,6 +122,19 @@ def test_china_period_end_never_becomes_publication(tmp_path):
     assert audit["missing_publication"] == 1
 
 
+def test_unique_fundamental_budget_is_enforced_before_unbounded_deduplication(tmp_path, clock):
+    path = tmp_path / "facts.json"
+    records = [
+        {"end": "2024-03-31", "filed": "2024-05-02", "val": 100 + i, "accn": str(i)}
+        for i in range(2)
+    ]
+    path.write_text(
+        json.dumps({"filings": [{"facts": {"us-gaap": {"Assets": {"units": {"USD": records}}}}}]})
+    )
+    with pytest.raises(ValueError, match="presupuesto"):
+        module("fundamentals").read_fundamentals([path], "US", clock, max_unique_facts=1)
+
+
 def test_conflicting_fact_with_same_identity_is_not_arbitrarily_selected(tmp_path, clock):
     facts = [
         {"end": "2024-03-31", "val": v, "filed": "2024-05-02", "accn": "same"} for v in [100, 101]

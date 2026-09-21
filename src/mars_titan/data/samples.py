@@ -4,21 +4,18 @@ import hashlib
 import json
 import math
 import resource
-import sys
 import time
 from bisect import bisect_left, bisect_right
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-import pyarrow.parquet as pq
 
+from .batches import MacroContexts, atomic_parquet_batches, read_bounded_table
 from .charts import chart_png
 from .fundamentals import snapshot
-from .preparation import atomic_parquet
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, admission_errors, aware
 
@@ -184,156 +181,194 @@ def materialize_samples(
     clock: MarketClock,
     encoders,
     cache,
+    *,
+    batch_rows: int = 256,
+    max_partition_bytes: int = 64 * 1024**2,
+    max_partition_rows: int = 100_000,
 ) -> dict:
     """Guarda vectores por activo. Las ventanas de precios se obtienen bajo demanda."""
+    if type(batch_rows) is not int or not 1 <= batch_rows <= 1024:
+        raise ValueError("El tamaño del bloque de muestras no es válido")
+    limits = {
+        "sample_batch_rows": batch_rows,
+        "partition_bytes": max_partition_bytes,
+        "partition_rows": max_partition_rows,
+    }
     calendar_fingerprint, manifests = validate_sample_inputs(prepared, destination, panel, clock)
     import torch
 
-    macro_rows = pq.read_table(macro_path).to_pylist()
-    macro_by_time = defaultdict(list)
-    for row in macro_rows:
-        macro_by_time[row["prediction_at"]].append(row)
-    macro_schema = sorted({r["indicator_id"] for r in macro_rows})
-    if not macro_schema:
-        raise ValueError("El panel macro está vacío")
-    macro_hash = sha256(macro_path)
-    encoder_fingerprint = hashlib.sha256(
-        json.dumps(encoders.spec, sort_keys=True).encode()
-    ).hexdigest()
-    reports = []
-    for asset in panel["assets"]:
-        symbol = asset["symbol"]
-        source = prepared / clock.market / symbol
-        manifest = manifests[symbol]
-        for name, digest in manifest["artifacts"].items():
-            if sha256(source / name) != digest:
-                raise ValueError(f"Ha cambiado un artefacto preparado: {symbol}/{name}")
-        target = destination / clock.market / symbol
-        fingerprint = hashlib.sha256(
-            json.dumps(
-                {
-                    "prepared": manifest["fingerprint"],
-                    "calendar": calendar_fingerprint,
-                    "macro": macro_hash,
-                    "encoders": encoder_fingerprint,
-                    "sample_code": sha256(Path(__file__)),
-                    "renderer": sha256(Path(__file__).with_name("charts.py")),
-                    "context": 64,
-                    "news_lookback_sessions": 5,
-                },
-                sort_keys=True,
-            ).encode()
+    with MacroContexts(macro_path) as macro_contexts:
+        macro_schema = macro_contexts.indicators
+        macro_hash = sha256(macro_path)
+        encoder_fingerprint = hashlib.sha256(
+            json.dumps(encoders.spec, sort_keys=True).encode()
         ).hexdigest()
-        receipt_path = target / "manifest.json"
-        if receipt_path.exists():
-            old = json.loads(receipt_path.read_text())
-            if old["fingerprint"] == fingerprint and (target / "samples.parquet").exists():
-                if sha256(target / "samples.parquet") == old["samples_sha256"]:
-                    reports.append({**old, "reused": True})
-                    continue
-        started = time.perf_counter()
-        torch.cuda.reset_peak_memory_stats()
-        prices = pq.read_table(source / "prices.parquet").to_pandas()
-        news = sorted(
-            pq.read_table(source / "news.parquet").to_pylist(),
-            key=lambda r: (r["available_at"], r["content_hash"]),
-        )
-        facts = pq.read_table(source / "fundamentals.parquet").to_pylist()
-        ohlc = prices[["open", "high", "low", "close"]].to_numpy()
-        samples, no_macro = [], 0
-        for sample in eligible_samples(prices, news, facts, clock):
-            context = macro_by_time.get(sample["prediction_at"], [])
-            if (
-                not context
-                or sorted(r["indicator_id"] for r in context) != macro_schema
-                or not any(r["value"] is not None for r in context)
-            ):
-                no_macro += 1
-                continue
-            macro, macro_available = macro_vector(context, sample["prediction_at"])
-            errors = admission_errors(
-                {**sample["input_availability"], "macro": macro_available}, sample["prediction_at"]
+        reports = []
+        for asset in panel["assets"]:
+            symbol = asset["symbol"]
+            source = prepared / clock.market / symbol
+            manifest = manifests[symbol]
+            for name, digest in manifest["artifacts"].items():
+                if sha256(source / name) != digest:
+                    raise ValueError(f"Ha cambiado un artefacto preparado: {symbol}/{name}")
+            target = destination / clock.market / symbol
+            fingerprint = hashlib.sha256(
+                json.dumps(
+                    {
+                        "prepared": manifest["fingerprint"],
+                        "calendar": calendar_fingerprint,
+                        "macro": macro_hash,
+                        "encoders": encoder_fingerprint,
+                        "sample_code": sha256(Path(__file__)),
+                        "batch_code": sha256(Path(__file__).with_name("batches.py")),
+                        "limits": limits,
+                        "renderer": sha256(Path(__file__).with_name("charts.py")),
+                        "context": 64,
+                        "news_lookback_sessions": 5,
+                    },
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+            receipt_path = target / "manifest.json"
+            if receipt_path.exists():
+                old = json.loads(receipt_path.read_text())
+                if old["fingerprint"] == fingerprint and (target / "samples.parquet").exists():
+                    if sha256(target / "samples.parquet") == old["samples_sha256"]:
+                        reports.append({**old, "reused": True})
+                        continue
+            started = time.perf_counter()
+            torch.cuda.reset_peak_memory_stats()
+            prices = read_bounded_table(
+                source / "prices.parquet",
+                max_rows=max_partition_rows,
+                max_bytes=max_partition_bytes,
+            ).to_pandas()
+            news = sorted(
+                read_bounded_table(
+                    source / "news.parquet",
+                    max_rows=max_partition_rows,
+                    max_bytes=max_partition_bytes,
+                ).to_pylist(),
+                key=lambda r: (r["available_at"], r["content_hash"]),
             )
-            if errors:
-                raise ValueError(f"La muestra no es admisible para entrenamiento: {errors}")
-            texts = []
-            for index in sample["news_indices"]:
-                article = news[index]
-                identity = {
-                    "encoder": encoder_fingerprint,
-                    "kind": "news",
-                    "content": article["content_hash"],
-                    "policy": article["availability_rule"],
-                }
-                vector = cache.get(identity)
-                if vector is None:
-                    vector = encoders.text(article["text"])
-                    cache.put(identity, vector)
-                texts.append(vector)
-            png = chart_png(ohlc, end_index=sample["price_end_index"])
-            chart_hash = hashlib.sha256(png).hexdigest()
-            identity = {"encoder": encoder_fingerprint, "kind": "chart", "content": chart_hash}
-            image = cache.get(identity)
-            if image is None:
-                image = encoders.images([png])[0]
-                cache.put(identity, image)
-            text = np.mean(texts, axis=0)
-            if not np.isfinite(text).all() or not np.isfinite(image).all():
-                raise ValueError("La representación multimodal contiene valores no finitos")
-            samples.append(
-                {
-                    **sample,
-                    "news": text.tolist(),
-                    "charts": image.tolist(),
-                    "macro": macro,
-                    "macro_available_at": macro_available,
-                    "chart_hash": chart_hash,
-                    "news_hashes": [news[i]["content_hash"] for i in sample["news_indices"]],
-                    "macro_units": [
-                        r["unit"] for r in sorted(context, key=lambda r: r["indicator_id"])
-                    ],
-                }
-            )
-            if len(samples) % 128 == 0:
-                print(
-                    f"Codificación: {symbol}, {len(samples)} muestras", file=sys.stderr, flush=True
-                )
-        atomic_parquet(target / "samples.parquet", sample_table(samples))
-        result = {
-            "schema_version": 1,
-            "symbol": symbol,
+            facts = read_bounded_table(
+                source / "fundamentals.parquet",
+                max_rows=max_partition_rows,
+                max_bytes=max_partition_bytes,
+            ).to_pylist()
+            ohlc = prices[["open", "high", "low", "close"]].to_numpy()
+            no_macro = 0
+
+            def encoded_batches(prices=prices, news=news, facts=facts, ohlc=ohlc):
+                nonlocal no_macro
+                samples = []
+                for sample in eligible_samples(prices, news, facts, clock):
+                    context = macro_contexts.at(sample["prediction_at"])
+                    if (
+                        not context
+                        or sorted(r["indicator_id"] for r in context) != macro_schema
+                        or not any(r["value"] is not None for r in context)
+                    ):
+                        no_macro += 1
+                        continue
+                    macro, macro_available = macro_vector(context, sample["prediction_at"])
+                    errors = admission_errors(
+                        {**sample["input_availability"], "macro": macro_available},
+                        sample["prediction_at"],
+                    )
+                    if errors:
+                        raise ValueError(f"La muestra no es admisible para entrenamiento: {errors}")
+                    texts = []
+                    for index in sample["news_indices"]:
+                        article = news[index]
+                        identity = {
+                            "encoder": encoder_fingerprint,
+                            "kind": "news",
+                            "content": article["content_hash"],
+                            "policy": article["availability_rule"],
+                        }
+                        vector = cache.get(identity)
+                        if vector is None:
+                            vector = encoders.text(article["text"])
+                            cache.put(identity, vector)
+                        texts.append(vector)
+                    png = chart_png(ohlc, end_index=sample["price_end_index"])
+                    chart_hash = hashlib.sha256(png).hexdigest()
+                    identity = {
+                        "encoder": encoder_fingerprint,
+                        "kind": "chart",
+                        "content": chart_hash,
+                    }
+                    image = cache.get(identity)
+                    if image is None:
+                        image = encoders.images([png])[0]
+                        cache.put(identity, image)
+                    text = np.mean(texts, axis=0)
+                    if not np.isfinite(text).all() or not np.isfinite(image).all():
+                        raise ValueError("La representación multimodal contiene valores no finitos")
+                    samples.append(
+                        {
+                            **sample,
+                            "news": text.tolist(),
+                            "charts": image.tolist(),
+                            "macro": macro,
+                            "macro_available_at": macro_available,
+                            "chart_hash": chart_hash,
+                            "news_hashes": [
+                                news[i]["content_hash"] for i in sample["news_indices"]
+                            ],
+                            "macro_units": [
+                                r["unit"] for r in sorted(context, key=lambda r: r["indicator_id"])
+                            ],
+                        }
+                    )
+                    if len(samples) == batch_rows:
+                        yield sample_table(samples)
+                        samples = []
+
+                if samples:
+                    yield sample_table(samples)
+
+            count = atomic_parquet_batches(target / "samples.parquet", encoded_batches())
+            result = {
+                "schema_version": 1,
+                "symbol": symbol,
+                "market": clock.market,
+                "fingerprint": fingerprint,
+                "samples": count,
+                "limits": limits,
+                "excluded_no_macro": no_macro,
+                "samples_sha256": sha256(target / "samples.parquet"),
+                "macro_sha256": macro_hash,
+                "macro_indicators": macro_schema,
+                "encoders": encoders.spec,
+                "prepared_fingerprint": manifest["fingerprint"],
+                "calendar": calendar_fingerprint,
+                "context_sessions": 64,
+                "news_lookback_sessions": 5,
+                "elapsed_seconds": time.perf_counter() - started,
+                "cost_profile_ready": bool(count),
+                "training_ready": False,
+                "news_content_policy": manifest.get("news_content_policy", "not_reviewed"),
+                "pending_for_scientific_training": [
+                    "targets",
+                    "frozen_scientific_cohort_and_splits",
+                ]
+                + (
+                    []
+                    if manifest.get("news_content_policy") == "verified_full_articles"
+                    else ["unverified_news"]
+                ),
+                "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
+                "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
+                "peak_vram_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
+                "peak_vram_reserved_mib": torch.cuda.max_memory_reserved() / 1024**2,
+                "purpose": "engineering_profile_only",
+            }
+            atomic_json(receipt_path, result)
+            reports.append(result)
+        return {
             "market": clock.market,
-            "fingerprint": fingerprint,
-            "samples": len(samples),
-            "excluded_no_macro": no_macro,
-            "samples_sha256": sha256(target / "samples.parquet"),
-            "macro_sha256": macro_hash,
-            "macro_indicators": macro_schema,
-            "encoders": encoders.spec,
-            "prepared_fingerprint": manifest["fingerprint"],
-            "calendar": calendar_fingerprint,
-            "context_sessions": 64,
-            "news_lookback_sessions": 5,
-            "elapsed_seconds": time.perf_counter() - started,
-            "cost_profile_ready": bool(samples),
-            "training_ready": False,
-            "news_content_policy": manifest.get("news_content_policy", "not_reviewed"),
-            "pending_for_scientific_training": ["targets", "frozen_scientific_cohort_and_splits"]
-            + (
-                []
-                if manifest.get("news_content_policy") == "verified_full_articles"
-                else ["unverified_news"]
-            ),
-            "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
-            "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
-            "peak_vram_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
-            "peak_vram_reserved_mib": torch.cuda.max_memory_reserved() / 1024**2,
-            "purpose": "engineering_profile_only",
+            "assets": reports,
+            "samples": sum(r["samples"] for r in reports),
         }
-        atomic_json(receipt_path, result)
-        reports.append(result)
-    return {
-        "market": clock.market,
-        "assets": reports,
-        "samples": sum(r["samples"] for r in reports),
-    }

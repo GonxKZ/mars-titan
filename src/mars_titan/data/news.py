@@ -46,7 +46,15 @@ def read_news(
     *,
     date_only_lag: int = 1,
     reviews: dict[str, dict] | None = None,
+    max_records: int = 100_000,
+    max_line_chars: int = 1024 * 1024,
 ) -> tuple[list[dict], list[dict]]:
+    if (
+        type(max_records) is not int
+        or type(max_line_chars) is not int
+        or min(max_records, max_line_chars) < 1
+    ):
+        raise ValueError("El presupuesto de noticias debe ser positivo")
     if type(date_only_lag) is not int or date_only_lag < 1:
         raise ValueError("El retardo debe ser un número entero positivo de sesiones")
     symbol = _text(symbol).upper().replace(".SH", ".SS")
@@ -54,7 +62,11 @@ def read_news(
         raise ValueError("El símbolo del activo no puede estar vacío")
     accepted, rejected, seen = [], [], set()
     with path.open(encoding="utf-8-sig") as stream:
-        for line_number, line in enumerate(stream, 1):
+        for line_number, line in enumerate(
+            iter(lambda: stream.readline(max_line_chars + 1), ""), 1
+        ):
+            if line_number > max_records or len(line) > max_line_chars:
+                raise ValueError("Las noticias superan el presupuesto por archivo o registro")
             provenance = {
                 "source_file": path.as_posix(),
                 "line": line_number,
