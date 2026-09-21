@@ -3,10 +3,12 @@
 import hashlib
 import json
 import re
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from .storage import sha256
 from .temporal import aware
 
 
@@ -102,3 +104,62 @@ def reviewed_body(raw: dict, record_hash: str, reviews: dict) -> tuple[str, dict
         },
         None,
     )
+
+
+def check_review_sources(source: Path, reviews: dict[str, dict]) -> dict:
+    """Contrasta localizadores, huellas y cuerpos sin alterar las fuentes."""
+    grouped = defaultdict(dict)
+    for key, review in reviews.items():
+        _validate_review(review)
+        relative, number = review["source_file"], review["source_row"]
+        path = source / relative
+        if (
+            Path(relative).is_absolute()
+            or path.is_symlink()
+            or not path.resolve().is_relative_to(source.resolve())
+        ):
+            raise ValueError("La revisión sale del directorio de origen")
+        if key != review["source_record_hash"] or type(number) is not int or number < 1:
+            raise ValueError("El localizador de la revisión no es válido")
+        if number in grouped[relative]:
+            raise ValueError("Hay dos revisiones para el mismo registro")
+        grouped[relative][number] = key
+    source_hashes, counts = {}, Counter()
+    for relative, locations in grouped.items():
+        path = source / relative
+        digest = sha256(path)
+        found = set()
+        with path.open(encoding="utf-8-sig") as stream:
+            for number, line in enumerate(stream, 1):
+                if number not in locations:
+                    continue
+                key = locations[number]
+                if hashlib.sha256(line.rstrip("\r\n").encode()).hexdigest() != key:
+                    raise ValueError("El registro original difiere de la revisión")
+                raw, review = json.loads(line), reviews[key]
+                if (
+                    str(raw.get("Stock_symbol", "")).strip().upper().replace(".SH", ".SS")
+                    != review["symbol"]
+                    or raw.get("Date") != review["source_date"]
+                    or raw.get("Url") != review["source_url"]
+                ):
+                    raise ValueError("La procedencia original difiere de la revisión")
+                if (
+                    review["status"] == "verified_full_article"
+                    and reviewed_body(raw, key, reviews)[2]
+                ):
+                    raise ValueError("El cuerpo revisado no corresponde al original")
+                counts[(review["symbol"], int(review["source_date"][:4]), review["status"])] += 1
+                found.add(number)
+        if found != set(locations) or sha256(path) != digest:
+            raise ValueError("Falta un registro o la fuente cambió durante la comprobación")
+        source_hashes[relative] = digest
+    return {
+        "reviews": len(reviews),
+        "statuses": dict(Counter(review["status"] for review in reviews.values())),
+        "by_asset_year": [
+            dict(symbol=s, year=y, status=status, records=n)
+            for (s, y, status), n in sorted(counts.items())
+        ],
+        "source_hashes": source_hashes,
+    }
