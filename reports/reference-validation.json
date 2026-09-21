@@ -35,6 +35,30 @@
   "scope": "Validación de archivos y muestras visuales. No acredita lectura integral ni corrección científica de las publicaciones. Los originales no se han alterado.",
   "incremental_checks": [
     {
+      "recorded_at": "2026-09-21",
+      "reference_id": "jurafsky2026hmm",
+      "path": "docs/references/library/jurafsky2026hmm.pdf",
+      "sha256": "73cfc92bd12dfd269a29e51cba99ceec48270dccbdaf49b9e6add4693af79253",
+      "bytes": 574091,
+      "pages": 17,
+      "pdfinfo_exit_code": 0,
+      "visual_inspection": {"pages_checked": [7], "result": "Recurrencia y pseudocódigo forward legibles. Texto completo del apéndice leído."},
+      "rights_note": "Todos los derechos reservados. Copia exclusivamente local.",
+      "scope": "Comprobación incremental. No repite la validación anterior."
+    },
+    {
+      "recorded_at": "2026-09-21",
+      "reference_id": "adams2007bocpd",
+      "path": "docs/references/library/adams2007bocpd.pdf",
+      "sha256": "f7ea09e5b7b1e92d4dba8c67aea19ea17d1aaee6a34ace977c7fba821d06657c",
+      "bytes": 478625,
+      "pages": 7,
+      "pdfinfo_exit_code": 0,
+      "catalog_reference_count": 122,
+      "library_pdf_count": 83,
+      "scope": "Metadatos, resumen y formulación inicial consultados. No acredita lectura integral."
+    },
+    {
       "recorded_at": "2026-09-18T20:26:27+00:00",
       "reference_id": "lin2021tra",
       "path": "docs/references/library/lin2021tra.pdf",

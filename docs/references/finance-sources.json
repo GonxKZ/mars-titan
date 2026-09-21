@@ -360,5 +360,24 @@
       6
     ],
     "verification_date": "2026-09-18"
+  },
+  {
+    "id": "bouma2026financedatabase",
+    "title": "FinanceDatabase",
+    "authors": [
+      "Jer Bouma",
+      "FinanceDatabase contributors"
+    ],
+    "year": 2026,
+    "url": "https://github.com/JerBouma/FinanceDatabase/tree/d0b95bd51f9c594c81bac0b20c7ab6cbd084c51e",
+    "pdf_url": null,
+    "access": "README, licencia, configuración y código de consulta revisados. Muestras CSV acotadas. No se descargó el corpus completo.",
+    "redistribution": "Repositorio bajo MIT. Conservar aviso original y comprobar procedencia de atributos antes de redistribuir extracciones.",
+    "relevance": "Catálogo auxiliar actual de símbolos e identidades. No aporta modalidades históricas ni fechas efectivas de cambios.",
+    "phase": [
+      1
+    ],
+    "verification_date": "2026-09-21",
+    "revision": "d0b95bd51f9c594c81bac0b20c7ab6cbd084c51e"
   }
 ]

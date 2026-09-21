@@ -1,8 +1,12 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **112 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **81 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **122 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **83 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
+
+La actualización del 21 de septiembre incorpora diez referencias sobre Markov,
+detección de cambios y FinanceDatabase. Añade dos PDF locales, sin volver a
+atribuir lectura o validación a las colecciones anteriores.
 
 ## Contenido
 
@@ -17,6 +21,8 @@ La revisión tiene alcance documentado y fecha de corte del 18 de septiembre de 
 | Antecedentes recientes y financieros | [Actualización de referencias](frontier-review.md) | [frontier-sources.json](frontier-sources.json) | [frontier.bib](frontier.bib) |
 | DeepSeek y transferencia al equipo local | [Qué técnicas pueden servir](deepseek-review.md) | [deepseek-sources.json](deepseek-sources.json) | [deepseek.bib](deepseek.bib) |
 | Falsación y límites | [Revisión adversarial](../research/adversarial-review.md) | [adversarial-sources.json](adversarial-sources.json) | [adversarial.bib](adversarial.bib) |
+| Regímenes de mercado | [Markov](../research/markov-regimes.md) | [markov-sources.json](markov-sources.json) | [markov.bib](markov.bib) |
+| Catálogo auxiliar de símbolos | [FinanceDatabase](../data/finance-database-review.md) | [finance-sources.json](finance-sources.json) | [finance.bib](finance.bib) |
 | Posts aportados | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
 
 Las reseñas de memoria incluyen ACI y EnbPI, cuyas fichas canónicas están en el catálogo financiero. Hyndman también tiene su entrada canónica en finanzas. Se evita duplicar identificadores al descargar o citar.
@@ -55,7 +61,7 @@ uv run python scripts/fetch_references.py
 
 Los PDF se guardan en `docs/references/library/`, con nombres basados en identificadores bibliográficos. Esa carpeta está ignorada por Git. El script conserva archivos existentes, comprueba cabecera y marcador final, contrasta la longitud declarada y calcula SHA-256. Junto al PDF guarda un recibo de procedencia con URL, fecha y hash. Si cambia la URL o el archivo, la discrepancia se comunica y no se sobrescribe. Un archivo previo sin recibo se marca como `cached_unverified`, sin atribuirle la URL actual. Un límite de 128 MiB por documento evita descargas inesperadamente grandes.
 
-El [manifiesto de esta preparación](download-manifest.json) registra los 112 resultados, incluidos documentos disponibles solo como referencia. La ampliación de TRA conserva los registros anteriores y añade su descarga con fecha, URL y hash propios. `cached` indica que el PDF ya estaba descargado al repetir la comprobación. La inspección con `pdfinfo` comprueba además que los archivos se pueden interpretar como PDF. Un hash acredita identidad de bytes, no la validez científica ni la licencia de un documento.
+El [manifiesto de esta preparación](download-manifest.json) registra los 122 resultados, incluidos documentos disponibles solo como referencia. La ampliación de TRA conserva los registros anteriores y añade su descarga con fecha, URL y hash propios. `cached` indica que el PDF ya estaba descargado al repetir la comprobación. La inspección con `pdfinfo` comprueba además que los archivos se pueden interpretar como PDF. Un hash acredita identidad de bytes, no la validez científica ni la licencia de un documento.
 
 El [registro de validación de archivos](../../reports/reference-validation.json) conserva la comprobación inicial de 80 PDF y añade una revisión incremental de TRA, de 10 páginas, para un total local de 81 PDF. La ampliación comprueba el archivo nuevo y su portada, sin presentar la revisión anterior como repetida. La copia de Engram genera avisos de sintaxis al leer algunos metadatos, aunque el lector reconoce sus 35 páginas y la portada inspeccionada es legible. Se conserva el original y su hash, sin corregir silenciosamente el documento del autor.
 
