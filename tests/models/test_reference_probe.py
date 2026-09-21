@@ -33,6 +33,29 @@ def test_reference_probe_does_not_replace_an_existing_run(tmp_path):
         )
 
 
+@pytest.mark.parametrize("unverified", ["prepared", "samples"])
+def test_strict_preflight_requires_both_verified_manifests(tmp_path, monkeypatch, unverified):
+    import json
+
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    unit = module()
+    roots = {name: tmp_path / name for name in ("prepared", "samples")}
+    for name, root in roots.items():
+        path = root / "US/A"
+        path.mkdir(parents=True)
+        policy = "technical" if name == unverified else "verified_full_articles"
+        (path / "manifest.json").write_text(json.dumps({"news_content_policy": policy}))
+    pq.write_table(pa.table({"row": [1]}), roots["samples"] / "US/A/samples.parquet")
+    monkeypatch.setattr(unit, "prepare_targets", lambda *args: pytest.fail("Se llegó a etiquetas"))
+    with pytest.raises(ValueError, match="noticias completas verificadas"):
+        unit.prepare_probe(
+            roots["prepared"], roots["samples"], tmp_path / "run", tmp_path / "report"
+        )
+    assert not (tmp_path / "run").exists()
+
+
 @pytest.mark.parametrize(
     "artifact", ["ridge.npz", "predictions.parquet", "targets/A-targets.parquet"]
 )

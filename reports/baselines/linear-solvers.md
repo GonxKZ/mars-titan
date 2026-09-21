@@ -72,6 +72,12 @@ VRAM en el codificador, mientras otra aplicación ocupaba 6,53 GiB. Ese fallo se
 conserva como límite de la verificación, no como prueba superada ni como alternativa
 en CPU. Las pruebas numéricas de Ridge y su ensayo real sí ejecutaron CUDA.
 
+El reintento del 21 de septiembre pasó la integración real de codificadores y la
+suite completa, con 452 pruebas sin omisiones. La GPU seguía compartida, aunque
+en ese momento hubo memoria suficiente. Esta comprobación posterior no altera
+el fallo ni los tiempos del ensayo anterior. Su alcance está registrado en la
+[verificación de la sonda GRU](../resources/strict-gru-quality.json).
+
 La revisión independiente detectó colisiones de rutas, un problema de centrado
 con valores grandes y desbordamientos. Los tres casos se reprodujeron con pruebas
 fallidas antes de corregirlos. Una mutación que omite el hash entre pasadas se detectó.
