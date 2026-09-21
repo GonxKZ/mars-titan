@@ -7,5 +7,6 @@
   {"sources": "systems-sources.json", "bibliography": "systems.bib"},
   {"sources": "frontier-sources.json", "bibliography": "frontier.bib"},
   {"sources": "deepseek-sources.json", "bibliography": "deepseek.bib"},
-  {"sources": "adversarial-sources.json", "bibliography": "adversarial.bib"}
+  {"sources": "adversarial-sources.json", "bibliography": "adversarial.bib"},
+  {"sources": "markov-sources.json", "bibliography": "markov.bib"}
 ]

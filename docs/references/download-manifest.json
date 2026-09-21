@@ -1,7 +1,75 @@
 {
   "retrieved_at": "2026-09-18T18:59:02.089157+00:00",
-  "updated_at": "2026-09-18T20:26:27+00:00",
+  "updated_at": "2026-09-21T03:05:24+00:00",
   "records": [
+    {
+      "id": "jurafsky2026hmm",
+      "requested_url": "https://web.stanford.edu/~jurafsky/slp3/A.pdf",
+      "url": "https://web.stanford.edu/~jurafsky/slp3/A.pdf",
+      "final_url": "https://web.stanford.edu/~jurafsky/slp3/A.pdf",
+      "status": "cached",
+      "downloaded_at": "2026-09-21T02:46:29.800849+00:00",
+      "sha256": "73cfc92bd12dfd269a29e51cba99ceec48270dccbdaf49b9e6add4693af79253",
+      "bytes": 574091
+    },
+    {
+      "id": "hamilton1989regime",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "turner1989stock",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "hamilton1994swarch",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "kim1994filter_smoother",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "yu2003hsmm",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "filardo1994tvtp",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "adams2007bocpd",
+      "requested_url": "https://www.cs.princeton.edu/~rpa/pubs/adams2007changepoint.pdf",
+      "url": "https://www.cs.princeton.edu/~rpa/pubs/adams2007changepoint.pdf",
+      "final_url": "https://www.cs.princeton.edu/~rpa/pubs/adams2007changepoint.pdf",
+      "status": "downloaded",
+      "downloaded_at": "2026-09-21T03:05:24.252999+00:00",
+      "sha256": "f7ea09e5b7b1e92d4dba8c67aea19ea17d1aaee6a34ace977c7fba821d06657c",
+      "bytes": 478625
+    },
+    {
+      "id": "hansen1992nonstandard",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
+    {
+      "id": "bouma2026financedatabase",
+      "requested_url": null,
+      "url": null,
+      "status": "reference_only"
+    },
     {
       "id": "sec_edgar_timestamps",
       "requested_url": null,

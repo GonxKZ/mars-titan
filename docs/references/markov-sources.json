@@ -1,0 +1,183 @@
+[
+  {
+    "id": "jurafsky2026hmm",
+    "title": "Hidden Markov Models",
+    "authors": [
+      "Daniel Jurafsky",
+      "James H. Martin"
+    ],
+    "year": 2026,
+    "url": "https://web.stanford.edu/~jurafsky/slp3/A.pdf",
+    "pdf_url": "https://web.stanford.edu/~jurafsky/slp3/A.pdf",
+    "access": "Apéndice A completo, 17 páginas. Manuscrito del 19 de agosto de 2026. Texto completo leído y página 7 inspeccionada visualmente.",
+    "redistribution": "El PDF conserva todos los derechos. Copia local excluida de Git.",
+    "relevance": "Base de cadenas de Markov, forward, Viterbi y Baum Welch. No ofrece resultados bursátiles.",
+    "phase": [
+      3
+    ],
+    "verification_date": "2026-09-21"
+  },
+  {
+    "id": "hamilton1989regime",
+    "title": "A New Approach to the Economic Analysis of Nonstationary Time Series and the Business Cycle",
+    "authors": [
+      "J. D. Hamilton"
+    ],
+    "year": 1989,
+    "url": "https://doi.org/10.2307/1912559",
+    "doi": "10.2307/1912559",
+    "pdf_url": null,
+    "access": "Metadatos y resumen verificados. El texto editorial requiere acceso en JSTOR.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Modelar parámetros sujetos a cambios discretos mediante una cadena de Markov no observada. Inferir probabilidades de estado mediante un filtro iterativo y estimar por máxima verosimilitud. La aplicación original es macroeconómica. No demuestra utilidad para retornos residuales multimodales.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21",
+    "metadata_url": "https://api.crossref.org/works/10.2307/1912559"
+  },
+  {
+    "id": "turner1989stock",
+    "title": "A Markov Model of Heteroskedasticity, Risk, and Learning in the Stock Market",
+    "authors": [
+      "C. M. Turner",
+      "R. Startz",
+      "C. R. Nelson"
+    ],
+    "year": 1989,
+    "url": "https://doi.org/10.1016/0304-405X(89)90094-9",
+    "doi": "10.1016/0304-405X(89)90094-9",
+    "pdf_url": null,
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Antecedente directo de varianza de retornos bursátiles dependiente de un estado Markoviano. Distinguir el estado latente de la información disponible para el agente y el econometrista. Los resultados pertenecen a otra cartera, periodo, frecuencia y objetivo. No validan el detector propuesto.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21",
+    "open_version": "https://www.nber.org/papers/w2818"
+  },
+  {
+    "id": "hamilton1994swarch",
+    "title": "Autoregressive Conditional Heteroskedasticity and Changes in Regime",
+    "authors": [
+      "J. D. Hamilton",
+      "R. Susmel"
+    ],
+    "year": 1994,
+    "url": "https://doi.org/10.1016/0304-4076(94)90067-1",
+    "doi": "10.1016/0304-4076(94)90067-1",
+    "pdf_url": null,
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Antecedente de parámetros ARCH sujetos a regímenes Markovianos en retornos bursátiles semanales de Estados Unidos. Necesidad de distinguir observaciones extremas y persistencia de volatilidad. Explora entre dos y cuatro regímenes en su aplicación. Ese rango no autoriza a seleccionar K con el test de MARS-TITAN.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21",
+    "metadata_url": "https://www.sciencedirect.com/science/article/pii/0304407694900671"
+  },
+  {
+    "id": "kim1994filter_smoother",
+    "title": "Dynamic Linear Models with Markov-Switching",
+    "authors": [
+      "C. J. Kim"
+    ],
+    "year": 1994,
+    "url": "https://doi.org/10.1016/0304-4076(94)90036-1",
+    "doi": "10.1016/0304-4076(94)90036-1",
+    "pdf_url": null,
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Separación entre inferencia filtrada y suavizada de estados no observados. Extensión del cambio de régimen a una representación de espacio de estados. El suavizado utiliza la secuencia posterior y no puede convertirse en una característica causal de evaluación.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21",
+    "metadata_url": "https://pure.korea.ac.kr/en/publications/dynamic-linear-models-with-markov-switching/"
+  },
+  {
+    "id": "yu2003hsmm",
+    "title": "A Hidden Semi-Markov Model with Missing Data and Multiple Observation Sequences for Mobility Tracking",
+    "authors": [
+      "S. Z. Yu",
+      "H. Kobayashi"
+    ],
+    "year": 2003,
+    "url": "https://doi.org/10.1016/S0165-1684(02)00378-X",
+    "doi": "10.1016/S0165-1684(02)00378-X",
+    "pdf_url": null,
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Un HMM impone duraciones constantes o geométricas y un HSMM introduce duraciones explícitas. La duración explícita amplía el modelo, pero añade estructura y coste. La aplicación no es financiera. Un HSMM solo se justifica tras diagnosticar un fallo de permanencia en el HMM básico.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21",
+    "metadata_url": "https://www.sciencedirect.com/science/article/pii/S016516840200378X"
+  },
+  {
+    "id": "filardo1994tvtp",
+    "title": "Business-Cycle Phases and Their Transitional Dynamics",
+    "authors": [
+      "A. J. Filardo"
+    ],
+    "year": 1994,
+    "url": "https://doi.org/10.1080/07350015.1994.10524545",
+    "doi": "10.1080/07350015.1994.10524545",
+    "pdf_url": null,
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Extensión de Hamilton con probabilidades de transición variables en el tiempo. Las transiciones constantes son una restricción que puede contrastarse si aparece inestabilidad. Añadir covariables a las transiciones eleva los grados de libertad. No es una primera referencia pequeña.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21",
+    "metadata_url": "https://www.tandfonline.com/doi/abs/10.1080/07350015.1994.10524545"
+  },
+  {
+    "id": "adams2007bocpd",
+    "title": "Bayesian Online Changepoint Detection",
+    "authors": [
+      "R. P. Adams",
+      "D. J. C. MacKay"
+    ],
+    "year": 2007,
+    "url": "https://arxiv.org/abs/0710.3742",
+    "doi": null,
+    "pdf_url": "https://www.cs.princeton.edu/~rpa/pubs/adams2007changepoint.pdf",
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Inferencia online de la longitud desde el último punto de cambio usando solo datos observados. Alternativa cuando la pregunta es detectar rupturas abruptas en vez de estados recurrentes. El soporte de longitudes puede crecer con el tiempo si no se limita. El preprint no prueba superioridad para FinMultiTime.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21"
+  },
+  {
+    "id": "hansen1992nonstandard",
+    "title": "The Likelihood Ratio Test under Nonstandard Conditions: Testing the Markov Switching Model of GNP",
+    "authors": [
+      "B. E. Hansen"
+    ],
+    "year": 1992,
+    "url": "https://doi.org/10.1002/jae.3950070506",
+    "doi": "10.1002/jae.3950070506",
+    "pdf_url": null,
+    "access": "Resumen y metadatos contrastados en fuentes primarias. No se acredita lectura integral del artículo.",
+    "redistribution": "No se ha verificado permiso de redistribución. Copias de lectura solo locales.",
+    "relevance": "Los contrastes de razón de verosimilitud para cambio de régimen incumplen condiciones regulares habituales. Bajo la hipótesis nula aparecen parámetros no identificados y puntuaciones nulas. No ofrece una regla automática para elegir K en este proyecto. Refuerza la selección temporal en desarrollo y la evaluación fuera de muestra.",
+    "phase": [
+      3,
+      5
+    ],
+    "verification_date": "2026-09-21"
+  }
+]
