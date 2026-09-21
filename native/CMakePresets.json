@@ -1,0 +1,39 @@
+{
+  "version": 5,
+  "configurePresets": [
+    {
+      "name": "native-debug",
+      "displayName": "C++ con avisos estrictos",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/../build/native/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MARS_TITAN_WARNINGS_AS_ERRORS": "ON",
+        "MARS_TITAN_ENABLE_CUDA": "OFF"
+      }
+    },
+    {
+      "name": "native-asan",
+      "displayName": "Memoria y comportamiento indefinido",
+      "inherits": "native-debug",
+      "binaryDir": "${sourceDir}/../build/native/${presetName}",
+      "cacheVariables": {"MARS_TITAN_SANITIZER": "address-undefined"}
+    },
+    {
+      "name": "native-profile",
+      "displayName": "Medición sin sanitizadores",
+      "inherits": "native-debug",
+      "binaryDir": "${sourceDir}/../build/native/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "MARS_TITAN_PROFILE": "ON",
+        "MARS_TITAN_SANITIZER": "none"
+      }
+    }
+  ],
+  "buildPresets": [
+    {"name": "native-debug", "configurePreset": "native-debug", "jobs": 2},
+    {"name": "native-asan", "configurePreset": "native-asan", "jobs": 2},
+    {"name": "native-profile", "configurePreset": "native-profile", "jobs": 2}
+  ]
+}
