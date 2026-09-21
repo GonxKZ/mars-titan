@@ -1,0 +1,73 @@
+{
+  "purpose": "cpu_macro_access_comparison_not_training",
+  "decisions": 65,
+  "repetitions": 3,
+  "cache_state": "operating_system_cache_uncontrolled",
+  "background_load": "local_test_suite_partly_overlapped_cpu_trials",
+  "implementation_sha256": {
+    "src/mars_titan/data/batches.py": "2fabe5c9212b99d434c137c0f7099e7a41100b1d0f8e9ea154737dbe815de99f",
+    "src/mars_titan/data/samples.py": "cfb5b057f71caeaba4fc3e9f026254c95ee7c58e52d2738c71d7d2184dc2c88d"
+  },
+  "runs": [
+    {
+      "mode": "reference",
+      "decisions": 65,
+      "elapsed_seconds": 5.036114595000072,
+      "rss_before_mib": 123.55078125,
+      "peak_rss_mib": 1147.7421875,
+      "vector_sha256": "09ac70695a0c625f6604f6b9ada6f8aa56494f3a8cab82854f5a7d4f5da8a20b",
+      "source_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "repeat": 0
+    },
+    {
+      "mode": "bounded",
+      "decisions": 65,
+      "elapsed_seconds": 1.6868425820002813,
+      "rss_before_mib": 123.4921875,
+      "peak_rss_mib": 140.44921875,
+      "vector_sha256": "09ac70695a0c625f6604f6b9ada6f8aa56494f3a8cab82854f5a7d4f5da8a20b",
+      "source_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "repeat": 0
+    },
+    {
+      "mode": "reference",
+      "decisions": 65,
+      "elapsed_seconds": 4.666669989000184,
+      "rss_before_mib": 123.65234375,
+      "peak_rss_mib": 1169.61328125,
+      "vector_sha256": "09ac70695a0c625f6604f6b9ada6f8aa56494f3a8cab82854f5a7d4f5da8a20b",
+      "source_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "repeat": 1
+    },
+    {
+      "mode": "bounded",
+      "decisions": 65,
+      "elapsed_seconds": 1.6775962560000153,
+      "rss_before_mib": 123.43359375,
+      "peak_rss_mib": 140.140625,
+      "vector_sha256": "09ac70695a0c625f6604f6b9ada6f8aa56494f3a8cab82854f5a7d4f5da8a20b",
+      "source_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "repeat": 1
+    },
+    {
+      "mode": "reference",
+      "decisions": 65,
+      "elapsed_seconds": 4.634718310000153,
+      "rss_before_mib": 123.49609375,
+      "peak_rss_mib": 1156.26171875,
+      "vector_sha256": "09ac70695a0c625f6604f6b9ada6f8aa56494f3a8cab82854f5a7d4f5da8a20b",
+      "source_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "repeat": 2
+    },
+    {
+      "mode": "bounded",
+      "decisions": 65,
+      "elapsed_seconds": 1.6833825650001017,
+      "rss_before_mib": 123.6875,
+      "peak_rss_mib": 140.52734375,
+      "vector_sha256": "09ac70695a0c625f6604f6b9ada6f8aa56494f3a8cab82854f5a7d4f5da8a20b",
+      "source_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "repeat": 2
+    }
+  ]
+}
