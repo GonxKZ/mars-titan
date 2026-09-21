@@ -100,3 +100,28 @@ def test_preparation_refuses_output_inside_source(tmp_path):
             {"symbol": "A", "paths": {}},
             MarketClock("US", "2024-01-01", "2024-12-31"),
         )
+
+
+def test_preparation_refuses_source_budget_before_loading_modalities(tmp_path, monkeypatch):
+    module = preparation_module()
+    source = tmp_path / "dataset"
+    source.mkdir()
+    (source / "prices.csv").write_text("0123456789")
+    asset = {
+        "symbol": "A",
+        "paths": {"prices": ["prices.csv"], "news": ["prices.csv"], "fundamentals": ["prices.csv"]},
+    }
+    monkeypatch.setattr(
+        module,
+        "read_prices",
+        lambda *args: pytest.fail("Se decodificó antes de comprobar el presupuesto"),
+    )
+    with pytest.raises(ValueError, match="presupuesto"):
+        module.prepare_asset(
+            source,
+            tmp_path / "out",
+            asset,
+            MarketClock("US", "2024-01-01", "2025-01-01"),
+            max_source_bytes=9,
+        )
+    assert not (tmp_path / "out").exists()

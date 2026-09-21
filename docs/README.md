@@ -10,6 +10,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |
 | Consultar entrenamientos medidos | [Presupuesto experimental](../reports/resources/campaign-budget.md), con MLP y GRU, cuatro modalidades y macro. |
 | Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
+| Consultar la preparación por bloques | [Límites, paridad y medición macro](../reports/data/streaming-validation.md), con recuperación por activo. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
 | Entender la pregunta y cómo contrastarla | [Protocolo](research/protocol.md), [matriz de experimentos](research/experiment-matrix.md), [riesgos](research/risks.md). |
 | Consultar la ampliación y su aportación candidata | [Alcance ampliado](research/research-expansion.md), [arquitectura candidata](research/candidate-architecture.md), [registro de hipótesis](research/novelty-ledger.md) y [crítica adversarial](research/adversarial-review.md). |

@@ -37,8 +37,10 @@ def _us_facts(path: Path):
 
 
 def read_fundamentals(
-    paths: list[Path], market: str, clock: MarketClock
+    paths: list[Path], market: str, clock: MarketClock, *, max_unique_facts: int = 100_000
 ) -> tuple[list[dict], dict]:
+    if type(max_unique_facts) is not int or max_unique_facts < 1:
+        raise ValueError("El presupuesto de hechos contables debe ser positivo")
     unique, ambiguous = {}, set()
     counts = Counter(rows=0, missing_publication=0, duplicates=0, invalid=0, ambiguous_facts=0)
     for path in paths:
@@ -90,6 +92,8 @@ def read_fundamentals(
                 else:
                     counts["duplicates"] += 1
             else:
+                if len(unique) >= max_unique_facts:
+                    raise ValueError("Los hechos contables únicos superan el presupuesto")
                 unique[key] = row
     counts["ambiguous_facts"] = len(ambiguous)
     rows = [row for key, row in unique.items() if key not in ambiguous]

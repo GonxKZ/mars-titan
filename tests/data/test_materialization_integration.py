@@ -108,6 +108,93 @@ def test_materialization_reuses_only_the_same_preparation_calendar(tmp_path, enc
         cache.close()
 
 
+def test_materialization_writes_bounded_groups_with_identical_rows(tmp_path, encoder_runtime):
+    clock = MarketClock("US", "2024-01-01", "2024-12-31")
+    source, asset = write_inputs(tmp_path)
+    prepared = tmp_path / "prepared"
+    prepare_asset(source, prepared, asset, clock)
+    macro_path = tmp_path / "macro.parquet"
+    write_macro(macro_path, clock)
+    cache = EmbeddingCache(tmp_path / "cache.sqlite")
+    try:
+        common = (prepared, macro_path)
+        first = materialize_samples(
+            *common,
+            tmp_path / "small",
+            {"assets": [asset]},
+            clock,
+            FixtureEncoders(),
+            cache,
+            batch_rows=2,
+        )
+        second = materialize_samples(
+            *common,
+            tmp_path / "large",
+            {"assets": [asset]},
+            clock,
+            FixtureEncoders(),
+            cache,
+            batch_rows=4,
+        )
+        small = pq.read_table(tmp_path / "small/US/A/samples.parquet")
+        large = pq.read_table(tmp_path / "large/US/A/samples.parquet")
+        assert first["samples"] == second["samples"] == 5
+        assert small.equals(large)
+        assert pq.ParquetFile(tmp_path / "small/US/A/samples.parquet").metadata.num_row_groups == 3
+        assert first["assets"][0]["limits"]["sample_batch_rows"] == 2
+    finally:
+        cache.close()
+
+
+def test_materialization_failure_does_not_publish_partial_samples(tmp_path, encoder_runtime):
+    clock = MarketClock("US", "2024-01-01", "2024-12-31")
+    source, asset = write_inputs(tmp_path)
+    prepared = tmp_path / "prepared"
+    prepare_asset(source, prepared, asset, clock)
+    macro_path = tmp_path / "macro.parquet"
+    write_macro(macro_path, clock)
+
+    class FailingEncoder(FixtureEncoders):
+        calls = 0
+
+        def images(self, pngs):
+            self.calls += 1
+            if self.calls == 3:
+                raise ValueError("fallo controlado de codificación")
+            return super().images(pngs) + self.calls
+
+    cache = EmbeddingCache(tmp_path / "cache.sqlite")
+    try:
+        # Gráficos distintos para que la caché no oculte el tercer cálculo.
+        import pandas as pd
+
+        prices_path = prepared / "US/A/prices.parquet"
+        prices = pd.read_parquet(prices_path)
+        prices.loc[64:, "high"] = range(103, 109)
+        prices.to_parquet(prices_path, index=False)
+        from mars_titan.data.storage import sha256
+
+        manifest_path = prepared / "US/A/manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["artifacts"]["prices.parquet"] = sha256(prices_path)
+        manifest_path.write_text(json.dumps(manifest))
+        with pytest.raises(ValueError, match="controlado"):
+            materialize_samples(
+                prepared,
+                macro_path,
+                tmp_path / "failed",
+                {"assets": [asset]},
+                clock,
+                FailingEncoder(),
+                cache,
+                batch_rows=1,
+            )
+        assert not (tmp_path / "failed/US/A/samples.parquet").exists()
+        assert not (tmp_path / "failed/US/A/manifest.json").exists()
+    finally:
+        cache.close()
+
+
 @pytest.mark.parametrize("custom_calendar", [False, True])
 def test_cli_prepares_and_encodes_prices_before_2000(
     tmp_path, monkeypatch, encoder_runtime, custom_calendar

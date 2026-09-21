@@ -165,3 +165,15 @@ def test_utc_overflow_is_excluded_without_losing_the_next_record(tmp_path, clock
     assert len(rejected) == 1
     assert rejected[0]["line"] == 1
     assert rejected[0]["reason"] == "invalid_record"
+
+
+def test_news_record_budget_limits_rejected_rows_too(tmp_path, clock):
+    path = write_news(tmp_path, [row(), row(Stock_symbol="B")])
+    with pytest.raises(ValueError, match="presupuesto"):
+        read_news(path, "AAPL", clock, max_records=1)
+
+
+def test_news_line_budget_fails_without_loading_an_unbounded_record(tmp_path, clock):
+    path = write_news(tmp_path, [row(Article="a" * 1000)])
+    with pytest.raises(ValueError, match="presupuesto"):
+        read_news(path, "AAPL", clock, max_line_chars=100)
