@@ -21,17 +21,8 @@ from mars_titan.models.baselines.inputs import MODALITIES, feature_vector, tabul
 from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
 
 
-def run_reference_probe(
-    prepared: Path,
-    samples: Path,
-    output: Path,
-    report_path: Path,
-    *,
-    alpha: float = 1.0,
-    kind: str = "ridge",
-):
-    if kind not in {"ridge", "boosting"}:
-        raise ValueError("La referencia solicitada no está implementada")
+def prepare_probe(prepared: Path, samples: Path, output: Path, report_path: Path):
+    """Validar el mismo conjunto estricto y las etiquetas para todas las sondas."""
     outside_source(output, report_path)
     for target in (output, report_path):
         for protected in (Path("dataset"), prepared, samples):
@@ -62,7 +53,6 @@ def run_reference_probe(
         paths.append(path)
     if not 1 <= len(paths) <= 64:
         raise ValueError("La sonda necesita entre uno y 64 activos con muestras estrictas")
-    started = time.perf_counter()
     targets, audit, hashes = prepare_targets(paths, prepared, output / "targets")
     counts = {
         partition: sum(asset[partition] for asset in audit["assets"].values())
@@ -72,6 +62,22 @@ def run_reference_probe(
         raise ValueError("No hay cobertura suficiente en entrenamiento y validación")
     if sum(counts.values()) > 100_000:
         raise ValueError("La muestra supera el presupuesto de esta sonda")
+    return paths, targets, audit, hashes, counts
+
+
+def run_reference_probe(
+    prepared: Path,
+    samples: Path,
+    output: Path,
+    report_path: Path,
+    *,
+    alpha: float = 1.0,
+    kind: str = "ridge",
+):
+    if kind not in {"ridge", "boosting"}:
+        raise ValueError("La referencia solicitada no está implementada")
+    started = time.perf_counter()
+    paths, targets, audit, hashes, counts = prepare_probe(prepared, samples, output, report_path)
     for path in (
         Path(__file__),
         Path(__file__).parent / "models/baselines/ridge.py",
@@ -163,6 +169,7 @@ def run_reference_probe(
         "fit_seconds": fit_seconds,
         "validation_and_restore_check_seconds": predict_seconds,
         "total_seconds": time.perf_counter() - started,
+        "timing_scope": "runner_including_input_validation_excluding_imports_and_process_start",
         "device": str(device),
         "gpu": torch.cuda.get_device_name(0) if accelerated else None,
         "torch": str(torch.__version__),
