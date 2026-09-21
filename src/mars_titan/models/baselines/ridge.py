@@ -10,24 +10,7 @@ import numpy as np
 
 from mars_titan.data.embeddings import require_cuda
 
-
-def _blocks(factory):
-    dimensions = None
-    for x, y in factory():
-        x, y = np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
-        if (
-            x.ndim != 2
-            or not 1 <= x.shape[0] <= 4096
-            or not 1 <= x.shape[1] <= 4096
-            or y.shape != (len(x),)
-            or not np.isfinite(x).all()
-            or not np.isfinite(y).all()
-        ):
-            raise ValueError("El bloque de regresión no es finito o supera sus límites")
-        dimensions = dimensions or x.shape[1]
-        if x.shape[1] != dimensions:
-            raise ValueError("Las dimensiones cambian entre bloques")
-        yield x, y
+from .inputs import validated_blocks
 
 
 @dataclass
@@ -92,7 +75,7 @@ def fit_ridge_blocks(factory, *, alpha: float = 1.0, device: str = "cuda:0") -> 
     require_cuda()
     count, mean, m2, target_mean = 0, None, None, 0.0
     first = hashlib.sha256()
-    for x, y in _blocks(factory):
+    for x, y in validated_blocks(factory):
         first.update(x.tobytes())
         first.update(y.tobytes())
         n = len(x)
@@ -121,7 +104,7 @@ def fit_ridge_blocks(factory, *, alpha: float = 1.0, device: str = "cuda:0") -> 
     sum_x = torch.zeros_like(rhs)
     sum_y = torch.zeros((), dtype=torch.float64, device=device)
     second = hashlib.sha256()
-    for x, y in _blocks(factory):
+    for x, y in validated_blocks(factory):
         second.update(x.tobytes())
         second.update(y.tobytes())
         if x.shape[1] != len(mean):

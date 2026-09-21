@@ -5,6 +5,26 @@ import numpy as np
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
 
 
+def validated_blocks(factory):
+    dimensions = None
+    for x, y in factory():
+        x, y = np.asarray(x), np.asarray(y)
+        if (
+            x.ndim != 2
+            or not 1 <= x.shape[0] <= 4096
+            or not 1 <= x.shape[1] <= 4096
+            or y.shape != (len(x),)
+        ):
+            raise ValueError("El bloque de regresión no es válido o supera sus límites")
+        x, y = x.astype(np.float64, copy=False), y.astype(np.float64, copy=False)
+        if not np.isfinite(x).all() or not np.isfinite(y).all():
+            raise ValueError("El bloque de regresión contiene valores no finitos")
+        dimensions = dimensions or x.shape[1]
+        if x.shape[1] != dimensions:
+            raise ValueError("Las dimensiones cambian entre bloques")
+        yield x, y
+
+
 def feature_vector(inputs: dict) -> np.ndarray:
     if set(inputs) != set(MODALITIES):
         raise ValueError("Se requieren las cuatro modalidades y el contexto macro")
