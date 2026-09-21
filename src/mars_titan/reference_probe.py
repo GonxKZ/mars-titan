@@ -22,8 +22,16 @@ from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
 
 
 def run_reference_probe(
-    prepared: Path, samples: Path, output: Path, report_path: Path, *, alpha: float = 1.0
+    prepared: Path,
+    samples: Path,
+    output: Path,
+    report_path: Path,
+    *,
+    alpha: float = 1.0,
+    kind: str = "ridge",
 ):
+    if kind not in {"ridge", "boosting"}:
+        raise ValueError("La referencia solicitada no está implementada")
     outside_source(output, report_path)
     for target in (output, report_path):
         for protected in (Path("dataset"), prepared, samples):
@@ -68,16 +76,21 @@ def run_reference_probe(
         Path(__file__),
         Path(__file__).parent / "models/baselines/ridge.py",
         Path(__file__).parent / "models/baselines/inputs.py",
+        Path(__file__).parent / "models/baselines/boosting.py",
     ):
         hashes["src/mars_titan/" + path.relative_to(Path(__file__).parent).as_posix()] = sha256(
             path
         )
     import torch
 
-    device = require_cuda()
-    sensors_before = gpu_sensors()
-    torch.cuda.synchronize()
-    torch.cuda.reset_peak_memory_stats()
+    accelerated = kind == "ridge"
+    device = require_cuda() if accelerated else torch.device("cpu")
+    sensors_before = (
+        gpu_sensors() if accelerated else {"available": False, "reason": "explicit_cpu_estimator"}
+    )
+    if accelerated:
+        torch.cuda.synchronize()
+        torch.cuda.reset_peak_memory_stats()
     fit_started = time.perf_counter()
 
     def training():
@@ -85,12 +98,21 @@ def run_reference_probe(
             iter_windows(paths, prepared, decision_cutoff="2022-12-31"), targets, "train"
         )
 
-    model = fit_ridge_blocks(training, alpha=alpha, device=str(device))
-    torch.cuda.synchronize()
+    if accelerated:
+        model = fit_ridge_blocks(training, alpha=alpha, device=str(device))
+        torch.cuda.synchronize()
+    else:
+        from mars_titan.models.baselines.boosting import BoostingModel, fit_boosting_batches
+
+        model = fit_boosting_batches(training)
     fit_seconds = time.perf_counter() - fit_started
-    checkpoint = output / "ridge.npz"
+    checkpoint = output / ("ridge.npz" if accelerated else "boosting.joblib")
     model.save(checkpoint)
-    restored = RidgeModel.load(checkpoint)
+    restored = (
+        RidgeModel.load(checkpoint)
+        if accelerated
+        else BoostingModel.load_local(checkpoint, sha256(checkpoint))
+    )
     predictions = []
     predict_started = time.perf_counter()
     for row in iter_windows(paths, prepared, decision_cutoff="2023-12-31"):
@@ -107,11 +129,12 @@ def run_reference_probe(
                 "asset_id": row["cursor"][0],
                 "prediction_at": row["prediction_at"],
                 "target": label[0],
-                "ridge": value,
+                kind: value,
                 "zero": 0.0,
             }
         )
-    torch.cuda.synchronize()
+    if accelerated:
+        torch.cuda.synchronize()
     predict_seconds = time.perf_counter() - predict_started
     atomic_parquet(output / "predictions.parquet", pa.Table.from_pylist(predictions))
     target = np.array([row["target"] for row in predictions])
@@ -120,19 +143,20 @@ def run_reference_probe(
             "mae": float(np.abs(np.array([row[name] for row in predictions]) - target).mean()),
             "mse": float(np.square(np.array([row[name] for row in predictions]) - target).mean()),
         }
-        for name in ("ridge", "zero")
+        for name in (kind, "zero")
     }
     report = {
         "purpose": "strict_supervised_execution_probe_not_confirmatory_comparison",
         "measured_at_utc": datetime.now(UTC).isoformat(),
-        "model": "ridge",
-        "alpha": alpha,
+        "model": kind,
+        "alpha": alpha if accelerated else None,
+        "parameters": {"alpha": alpha} if accelerated else model.estimator.get_params(),
         "samples": counts,
-        "features": len(model.mean),
+        "features": len(model.mean) if accelerated else model.estimator.n_features_in_,
         "feature_order": list(MODALITIES),
-        "scaling": "train_only_population_variance",
-        "intercept": "unpenalized_with_residual_centering_correction",
-        "loss": "sum_squared_error_plus_alpha_l2",
+        "scaling": "train_only_population_variance" if accelerated else "none",
+        "intercept": "unpenalized_with_residual_centering_correction" if accelerated else None,
+        "loss": "sum_squared_error_plus_alpha_l2" if accelerated else "squared_error",
         "training_cutoff": "2022-12-31",
         "validation_year": 2023,
         "final_test_opened": False,
@@ -140,13 +164,13 @@ def run_reference_probe(
         "validation_and_restore_check_seconds": predict_seconds,
         "total_seconds": time.perf_counter() - started,
         "device": str(device),
-        "gpu": torch.cuda.get_device_name(0),
+        "gpu": torch.cuda.get_device_name(0) if accelerated else None,
         "torch": str(torch.__version__),
         "cuda": torch.version.cuda,
         "sensors_before": sensors_before,
-        "sensors_after": gpu_sensors(),
-        "peak_vram_allocated_bytes": torch.cuda.max_memory_allocated(0),
-        "peak_vram_reserved_bytes": torch.cuda.max_memory_reserved(0),
+        "sensors_after": gpu_sensors() if accelerated else None,
+        "peak_vram_allocated_bytes": torch.cuda.max_memory_allocated(0) if accelerated else None,
+        "peak_vram_reserved_bytes": torch.cuda.max_memory_reserved(0) if accelerated else None,
         "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "process_memory_at_end": process_memory(),
         "diagnostic_row_metrics": metrics,
@@ -172,10 +196,14 @@ def main():
     parser.add_argument("--samples", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--kind", choices=["ridge", "boosting"], default="ridge")
     args = parser.parse_args()
     print(
         json.dumps(
-            run_reference_probe(args.prepared, args.samples, args.output, args.report), indent=2
+            run_reference_probe(
+                args.prepared, args.samples, args.output, args.report, kind=args.kind
+            ),
+            indent=2,
         )
     )
 

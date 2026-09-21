@@ -43,3 +43,54 @@ def test_reference_report_cannot_overwrite_run_artifacts(tmp_path, artifact):
             tmp_path / "prepared", tmp_path / "samples", output, output / artifact
         )
     assert not output.exists()
+
+
+def test_boosting_probe_is_explicitly_cpu_and_never_calls_cuda(tmp_path, monkeypatch):
+    import json
+    from datetime import UTC, datetime
+
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    unit = module()
+    prepared, samples = tmp_path / "prepared", tmp_path / "samples"
+    source = prepared / "US/A"
+    sample = samples / "US/A"
+    source.mkdir(parents=True)
+    sample.mkdir(parents=True)
+    for path in (source / "manifest.json", sample / "manifest.json"):
+        path.write_text(json.dumps({"news_content_policy": "verified_full_articles"}))
+    pq.write_table(pa.table({"example": [1]}), sample / "samples.parquet")
+    train, validation = datetime(2022, 1, 3, tzinfo=UTC), datetime(2023, 1, 3, tzinfo=UTC)
+    targets = {
+        "US/A": {train.isoformat(): (0.1, "train"), validation.isoformat(): (0.2, "validation")}
+    }
+
+    def labels(paths, prepared, output):
+        output.mkdir(parents=True)
+        return targets, {"assets": {"A": {"train": 20, "validation": 1}}}, {}
+
+    def records(*args, **kwargs):
+        for i, day in enumerate([train] * 20 + [validation]):
+            yield {
+                "cursor": ("US/A", i),
+                "prediction_at": day,
+                "inputs": {
+                    name: np.array([i])
+                    for name in ("prices", "news", "charts", "fundamentals", "macro")
+                },
+            }
+
+    monkeypatch.setattr(unit, "prepare_targets", labels)
+    monkeypatch.setattr(unit, "iter_windows", records)
+    monkeypatch.setattr(
+        unit, "require_cuda", lambda: pytest.fail("La referencia CPU ha pedido CUDA")
+    )
+    result = unit.run_reference_probe(
+        prepared, samples, tmp_path / "run", tmp_path / "report.json", kind="boosting"
+    )
+    assert result["device"] == "cpu"
+    assert result["samples"] == {"train": 20, "validation": 1}
+    assert result["restored_predictions_equal"] is True
+    assert result["peak_vram_allocated_bytes"] is None
