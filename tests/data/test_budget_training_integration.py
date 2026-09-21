@@ -151,6 +151,37 @@ def synthetic_budget_inputs(tmp_path, monkeypatch, cuda_runtime):
     }
 
 
+def test_ridge_reference_probe_reconciles_partitions_and_restores_model(
+    tmp_path, synthetic_budget_inputs
+):
+    from mars_titan.reference_probe import run_reference_probe
+
+    fixture = synthetic_budget_inputs
+    sample = fixture["sample_paths"][0]
+    prepared = fixture["prepared"]
+    # Esta etiqueta prueba el contrato con datos sintéticos, no acredita una noticia real.
+    for path in (
+        sample.parent / "manifest.json",
+        prepared / "US" / sample.parent.name / "manifest.json",
+    ):
+        manifest = json.loads(path.read_text())
+        manifest["news_content_policy"] = "verified_full_articles"
+        path.write_text(json.dumps(manifest))
+    result = run_reference_probe(
+        prepared, sample.parent, tmp_path / "linear-run", tmp_path / "linear-report.json"
+    )
+    assert result["samples"] == {
+        "train": len(fixture["train_days"]),
+        "validation": len(fixture["validation_days"]),
+    }
+    assert result["restored_predictions_equal"] is True
+    assert result["final_test_opened"] is False
+    rows = pq.read_table(tmp_path / "linear-run/predictions.parquet").to_pylist()
+    assert len(rows) == len(fixture["validation_days"])
+    assert all(row["prediction_at"].year == 2023 for row in rows)
+    assert all(np.isfinite(row["ridge"]) and row["zero"] == 0 for row in rows)
+
+
 def test_budget_grid_generates_labels_trains_and_resumes_without_opening_2024(
     tmp_path, synthetic_budget_inputs, cuda_runtime
 ):
