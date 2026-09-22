@@ -30,6 +30,22 @@ def main() -> int:
     corpus.add_argument("--report", type=Path)
     state = commands.add_parser("corpus-status", help="Consultar el avance confirmado del índice")
     state.add_argument("--database", type=Path, required=True)
+    queue = commands.add_parser("news-queue", help="Crear la cola editorial de todo el índice")
+    queue.add_argument("--catalog", type=Path, required=True)
+    queue.add_argument("--database", type=Path, required=True)
+    queue.add_argument("--manual-reviews", type=Path)
+    news_state = commands.add_parser("news-status", help="Consultar verificaciones y pendientes")
+    news_state.add_argument("--database", type=Path, required=True)
+    news_verify = commands.add_parser(
+        "news-verify", help="Contrastar cuerpos sin abrir el test final"
+    )
+    news_verify.add_argument("--database", type=Path, required=True)
+    news_verify.add_argument("--evidence", type=Path, required=True)
+    news_verify.add_argument("--stop-after", type=int, help="Corte operativo, no límite del corpus")
+    news_verify.add_argument(
+        "--network", action="store_true", help="Consultar el editor autorizado"
+    )
+    news_verify.add_argument("--quota-bytes", type=int, default=2 * 1024**3)
     panels = commands.add_parser("select", help="Seleccionar un panel técnico por sector y volumen")
     panels.add_argument("--source", type=Path, default=Path("dataset"))
     panels.add_argument(
@@ -99,7 +115,27 @@ def main() -> int:
     args = parser.parse_args()
     from .storage import outside_source
 
-    if args.command == "corpus-status":
+    if args.command == "news-queue":
+        from .news_registry import initialize_verification
+
+        result = initialize_verification(
+            args.catalog, args.database, manual_reviews=args.manual_reviews
+        )
+    elif args.command == "news-status":
+        from .news_registry import verification_status
+
+        result = verification_status(args.database)
+    elif args.command == "news-verify":
+        from .news_registry import verify_pending
+
+        result = verify_pending(
+            args.database,
+            args.evidence,
+            stop_after=args.stop_after,
+            network=args.network,
+            quota_bytes=args.quota_bytes,
+        )
+    elif args.command == "corpus-status":
         from .corpus_catalog import corpus_status
 
         result = corpus_status(args.database)
