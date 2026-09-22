@@ -489,8 +489,8 @@
   "process_time_receipt": "reports/resources/recurrent-campaign-process-time.txt",
   "process_time_receipt_sha256": "1611f6aa882e5c7fcfb1a9cca8a8634fdad514a95a0dcfc0e475a2369a45e7b2",
   "analysis_sha256": "62a7fa0cbe68ddafa31612be6c04fa2820d958407604855d123dc8093c2ae909",
-  "plot_script_sha256": "27806bbe1488c7246f407f32795828be1cd6d3db11d0acee9629c2c6b8593455",
-  "figure_sha256": "5aacf057c4465aeda0e3e346bc6e5781155649e359ed22c311731e8ca8786d42",
+  "plot_script_sha256": "c650d91e5b86747ca4aaa403fedc9f818a6b3883ceeb14a764378ad0a8c8ec18",
+  "figure_sha256": "06c03aac700fc58e1afd5f69d004965a7a23f33f9d1884a892869578ac91251e",
   "figure_verification": "PNG inspeccionado, 36 puntos base visibles, escala com\u00fan desde cero, semillas y control identificados.",
   "limits": [
     "La cobertura y las mutaciones no demuestran ausencia de errores.",
