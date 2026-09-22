@@ -7,13 +7,15 @@ ni sustituye las evidencias de las sondas anteriores. Fecha: 22 de septiembre de
 
 La campaña recorrerá la copia completa de FinMultiTime y entrenará las referencias
 sobre todas las muestras admisibles del universo declarado, sin el límite anterior
-de 64 o 128 activos. Se mantendrán separados Estados Unidos y China. MARS-TITAN y
-sus ablaciones M0 a M3 quedan fuera de esta campaña previa.
+de 64 o 128 activos. Se ejecutarán tres brazos: Estados Unidos, China y la unión
+de ambos mercados. Su procedencia, monedas y calendarios seguirán identificados
+cuando un modelo comparta parámetros. MARS-TITAN y sus ablaciones M0 a M3 quedan
+fuera de esta campaña previa.
 
 Completo describe la cobertura de las particiones asignadas a cada modelo, no el
 uso indiscriminado de cualquier archivo. Se conservarán originales, duplicados
 identificados, exclusiones, registros pendientes y procedencia. No se declarará
-completo un entrenamiento sobre las 65 muestras conocidas antes de terminar la
+completo un entrenamiento sobre un piloto pequeño antes de terminar la
 auditoría del resto del universo.
 
 Los codificadores de texto e imagen permanecerán congelados al principio. Las
@@ -35,19 +37,46 @@ como simulación histórica estricta de la disponibilidad del modelo.
 El inventario registra 216.453 archivos y 116.185.016.265 bytes. La revisión de
 rutas identifica 2.639 instrumentos estadounidenses y 810 chinos con las cuatro
 fuentes originales. Estas cifras son presencia de archivos, no cohortes listas
-para entrenar. Los [resultados de preparación existentes](../../reports/data/news-coverage-expansion.md)
-solo acreditan 65 muestras estrictas de dos activos.
+para entrenar. La [última cohorte verificada](../../reports/data/verified-news-cohort-20260922.md)
+contiene 105 muestras. El [índice textual completo](../../reports/data/corpus-index-20260922.md)
+recorre ya ambos mercados, pero no sustituye su contraste editorial.
 
-La revisión detectó que el inventario interpreta algunas carpetas de imágenes
-como símbolos por asumir una profundidad fija. La corrección debe contrastar
-carpeta del activo y nombre del PNG, mantener los hashes de los originales y
-generar una revisión nueva del inventario. La huella de un archivo no valida su
-clasificación semántica.
+La revisión inicial detectó que el inventario interpretaba algunas carpetas de
+imágenes como símbolos por asumir una profundidad fija. La [corrección de
+identidades](../../reports/data/chart-identity-repair.md) contrasta carpeta del
+activo y nombre del PNG, conservando los originales. La huella de un archivo
+no valida por sí sola su clasificación semántica.
 
 El selector técnico también filtra por sector actual. Esa condición no gobernará
 la campaña completa. La ausencia de sector no elimina una empresa si las entradas
 requeridas son admisibles. El sector actual se conserva como metadato descriptivo,
 no como clasificación histórica acreditada.
+
+## Comparaciones US, CN y US+CN
+
+Cada brazo utiliza todas sus muestras admisibles. El conjunto mixto conserva la
+unión, no solo los días en los que ambas bolsas tienen sesión. Sus resultados
+se desglosan por mercado sobre exactamente las mismas observaciones que evalúa
+la referencia local correspondiente.
+
+Las uniones de contexto se realizan por disponibilidad en UTC. Un cierre
+estadounidense posterior a la decisión china no se incorpora por compartir
+fecha natural. Los calendarios, monedas, unidades y factores siguen identificados
+por mercado. Los normalizadores se ajustan con el pasado autorizado y no se
+interpretan importes CNY como USD. Cada etiqueta conserva el factor y el
+intervalo apertura-cierre de su propio mercado.
+
+Compartir parámetros y más observaciones permite estudiar transferencia
+predictiva. El aporte del contexto extranjero necesita además un contraste
+con y sin esa información ya disponible, conservando población y capacidad.
+Una mejora del modelo mixto no demuestra causalidad económica. Se informarán
+también diferencias de volumen de datos y número de actualizaciones.
+
+Los sectores actuales de los dos catálogos utilizan clasificaciones distintas.
+Hasta disponer de correspondencias históricas defendibles, sus desgloses serán
+descriptivos y no determinarán admisión ni selección de empresas. Los indicadores
+macro conservarán sus 140 posiciones, versiones, máscaras y antigüedad en los
+tres brazos, sin presentar valores ausentes como observaciones.
 
 ## Regla de admisión y reserva temporal
 

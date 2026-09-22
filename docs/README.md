@@ -5,6 +5,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Para qué | Documento |
 | --- | --- |
 | Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
+| Consultar el recorrido completo de noticias | [Índice de ambos mercados](../reports/data/corpus-index-20260922.md) y [contrato del catálogo](data/corpus-catalog.md), con fuentes pendientes separadas de muestras entrenables. |
 | Revisar la admisión de noticias | [Fechas, procedencia y problemas de contenido](data/news-policy.md), con auditorías separadas del piloto y del panel técnico. |
 | Revisar precios y su universo | [Auditoría de los 5.023 CSV](../reports/data/price-audit.md), con exclusiones, acciones corporativas y límites de identidad. |
 | Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |

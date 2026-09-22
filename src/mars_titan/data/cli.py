@@ -19,6 +19,17 @@ def main() -> int:
     )
     audit.add_argument("--report", type=Path)
     audit.add_argument("--verify", action="store_true", help="Recalcular todas las huellas")
+    corpus = commands.add_parser(
+        "corpus-index", help="Indexar todas las fuentes textuales por bloques"
+    )
+    corpus.add_argument("--source", type=Path, default=Path("dataset"))
+    corpus.add_argument("--inventory", type=Path, required=True)
+    corpus.add_argument("--database", type=Path, required=True)
+    corpus.add_argument("--market", choices=["US", "CN", "all"], default="all")
+    corpus.add_argument("--cutoff", default="2023-12-31")
+    corpus.add_argument("--report", type=Path)
+    state = commands.add_parser("corpus-status", help="Consultar el avance confirmado del índice")
+    state.add_argument("--database", type=Path, required=True)
     panels = commands.add_parser("select", help="Seleccionar un panel técnico por sector y volumen")
     panels.add_argument("--source", type=Path, default=Path("dataset"))
     panels.add_argument(
@@ -88,7 +99,32 @@ def main() -> int:
     args = parser.parse_args()
     from .storage import outside_source
 
-    if args.command == "inventory":
+    if args.command == "corpus-status":
+        from .corpus_catalog import corpus_status
+
+        result = corpus_status(args.database)
+    elif args.command == "corpus-index":
+        from .corpus_catalog import corpus_candidates, index_news
+
+        if args.database.resolve() == args.inventory.resolve():
+            raise ValueError("El índice no puede sobrescribir el inventario")
+        if args.report:
+            outside_source(args.source, args.report)
+            if args.report.exists() or args.report.resolve() in {
+                args.database.resolve(),
+                args.inventory.resolve(),
+            }:
+                raise ValueError("El informe necesita una ruta nueva y separada de las bases")
+        markets = ("US", "CN") if args.market == "all" else (args.market,)
+        assets = [
+            asset
+            for market in markets
+            for asset in corpus_candidates(args.source, args.inventory, market)
+        ]
+        result = index_news(args.source, assets, args.database, cutoff=args.cutoff)
+        if args.report:
+            atomic_json(args.report, result)
+    elif args.command == "inventory":
         result = inventory(args.source, args.database, verify=args.verify)
         if args.report:
             outside_source(args.source, args.report)
