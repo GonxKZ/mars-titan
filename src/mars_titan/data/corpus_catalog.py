@@ -23,6 +23,10 @@ CREATE TABLE assets (
     asset_id TEXT PRIMARY KEY, market TEXT NOT NULL, symbol TEXT NOT NULL,
     has_all_sources INTEGER NOT NULL, missing_modalities TEXT NOT NULL
 );
+CREATE TABLE source_errors (
+    asset_id TEXT NOT NULL REFERENCES assets(asset_id), path BLOB PRIMARY KEY,
+    modality TEXT NOT NULL, reason TEXT NOT NULL
+);
 CREATE TABLE source_files (
     id INTEGER PRIMARY KEY, asset_id TEXT NOT NULL REFERENCES assets(asset_id),
     path BLOB UNIQUE NOT NULL, expected_sha256 TEXT NOT NULL,
@@ -98,7 +102,13 @@ def corpus_candidates(source: Path, inventory: Path, market: str) -> list[dict]:
                 },
             )
             if row.get("state") == "error":
-                asset["source_errors"].append(relative)
+                asset["source_errors"].append(
+                    dict(
+                        path=relative,
+                        modality=modality,
+                        reason=str(row.get("error") or "No se pudo inspeccionar la fuente"),
+                    )
+                )
                 continue
             _source_path(source, relative)
             if not re.fullmatch(r"[0-9a-f]{64}", row.get("sha256", "")):
@@ -136,6 +146,20 @@ def _catalog(source, assets):
                     raise ValueError("La fuente no tiene una huella válida")
                 hashes[relative] = digest
         missing = [name for name in MODALITIES if not sources[name]]
+        errors = sorted(asset.get("source_errors", []), key=lambda row: row["path"])
+        for error in errors:
+            relative = error["path"]
+            if (
+                Path(relative).is_absolute()
+                or ".." in Path(relative).parts
+                or relative in paths
+                or error["modality"] not in MODALITIES
+                or classify(Path(relative)) != (market, error["modality"], symbol)
+                or not isinstance(error["reason"], str)
+                or not error["reason"].strip()
+            ):
+                raise ValueError("La fuente fallida no tiene una identidad y un motivo válidos")
+            paths.add(relative)
         normalized.append(
             dict(
                 asset_id=key,
@@ -145,6 +169,7 @@ def _catalog(source, assets):
                 hashes=hashes,
                 missing_modalities=missing,
                 has_all_sources=not missing,
+                source_errors=errors,
             )
         )
     return normalized
@@ -153,7 +178,7 @@ def _catalog(source, assets):
 def _initialize(db, config, assets):
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     if tables:
-        if tables != {"metadata", "assets", "source_files", "records"}:
+        if tables != {"metadata", "assets", "source_files", "records", "source_errors"}:
             raise ValueError("La base de datos contiene otro formato y se conserva sin cambios")
         existing = dict(db.execute("SELECT key,value FROM metadata"))
         if existing != config:
@@ -171,6 +196,18 @@ def _initialize(db, config, assets):
                     asset["symbol"],
                     asset["has_all_sources"],
                     json.dumps(asset["missing_modalities"]),
+                ),
+            )
+            db.executemany(
+                "INSERT INTO source_errors VALUES (?,?,?,?)",
+                (
+                    (
+                        asset["asset_id"],
+                        os.fsencode(error["path"]),
+                        error["modality"],
+                        error["reason"],
+                    )
+                    for error in asset["source_errors"]
                 ),
             )
             db.executemany(
@@ -389,6 +426,7 @@ def index_news(
 def corpus_status(database: Path) -> dict:
     """Leer recibos confirmados, sin recorrer todos los registros ni admitir noticias."""
     markets, states, files, completed, records, size = {}, Counter(), 0, 0, 0, 0
+    source_errors = Counter()
     with closing(_readonly(database)) as db:
         config = dict(db.execute("SELECT key,value FROM metadata"))
         if config.get("schema_version") != "1":
@@ -410,6 +448,11 @@ def corpus_status(database: Path) -> dict:
             states.update(json.loads(counts))
             markets[market]["records"] += count
             markets[market]["candidate_records"] += count if eligible else 0
+        for modality, count in db.execute(
+            "SELECT modality,count(*) FROM source_errors GROUP BY modality"
+        ):
+            source_errors[modality] = count
+        files += source_errors["news"]
     return {
         "schema_version": 1,
         "scope": "source_index_not_training_admission",
@@ -420,8 +463,11 @@ def corpus_status(database: Path) -> dict:
         "records": records,
         "confirmed_source_bytes": size,
         "records_by_state": dict(states),
+        "errors": sum(source_errors.values()),
+        "source_errors_by_modality": dict(source_errors),
         "markets": markets,
         "catalog_sha256": config["catalog_sha256"],
+        "indexer_sha256": config["indexer_sha256"],
         "cutoff": config["cutoff"],
         "database_bytes": database.stat().st_size,
     }

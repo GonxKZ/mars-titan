@@ -421,3 +421,47 @@ def test_non_utf8_source_filename_keeps_its_exact_identity(tmp_path):
         recorded = db.execute("SELECT path FROM source_files").fetchone()[0]
     assert recorded == os.fsencode(renamed.relative_to(source))
     assert len(rows(destination)) == 1
+
+
+@pytest.mark.parametrize("failed_modality", ["news", "fundamentals"])
+def test_inventory_errors_remain_visible_in_persistent_status(tmp_path, failed_modality):
+    source, catalog, _ = source_fixture(tmp_path)
+    with sqlite3.connect(catalog) as db:
+        for key, payload in db.execute("SELECT path,record FROM files").fetchall():
+            entry = json.loads(payload)
+            if entry["modality"] == failed_modality:
+                entry.update(state="error", sha256=None, error="No se pudo leer la fuente")
+                db.execute("UPDATE files SET record=? WHERE path=?", (json.dumps(entry), key))
+    destination = tmp_path / "news.sqlite"
+    result = module().index_news(
+        source,
+        module().corpus_candidates(source, catalog, "US"),
+        destination,
+        cutoff="2023-12-31",
+    )
+    assert result["errors"] == 1
+    assert result["source_errors_by_modality"] == {failed_modality: 1}
+    assert result["source_files"] == 1
+    assert result["completed_files"] == (0 if failed_modality == "news" else 1)
+    assert result["index_complete"] is (failed_modality != "news")
+    assert result["training_ready"] is False
+    with sqlite3.connect(destination) as db:
+        stored = db.execute("SELECT modality,reason FROM source_errors").fetchone()
+    assert stored == (failed_modality, "No se pudo leer la fuente")
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mars_titan.data.cli",
+            "corpus-status",
+            "--database",
+            str(destination),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2
+    assert json.loads(result.stdout)["errors"] == 1

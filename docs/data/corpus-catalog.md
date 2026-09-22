@@ -47,6 +47,12 @@ inválidos, demasiado grandes o con símbolo contradictorio tienen otro motivo
 explícito. Un JSON con claves repetidas no se interpreta escogiendo el último
 valor.
 
+Los errores del inventario se conservan en `source_errors`, con archivo,
+modalidad y motivo. Una fuente textual fallida sigue contando entre los archivos
+esperados y evita declarar completo el índice. Los errores de otras modalidades
+no borran las noticias ya indexadas. Las órdenes devuelven código 2 cuando existen
+errores de fuentes, aunque el recorrido textual haya terminado.
+
 El corte del índice se aplica a la fecha declarada. No acredita hora, zona ni
 disponibilidad. Esas comprobaciones siguen siendo necesarias para admitir una
 muestra. El índice no genera etiquetas ni abre la reserva de evaluación.
