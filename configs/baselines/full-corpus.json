@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "scope": "full_corpus",
+  "arms": ["US", "CN", "US+CN"],
+  "recipe": "expanded-reference-variants.json",
+  "batch_size": 16,
+  "checkpoint_seconds": 900,
+  "pooled_weightings": ["natural", "balanced_markets"],
+  "final_test_opened": false
+}
