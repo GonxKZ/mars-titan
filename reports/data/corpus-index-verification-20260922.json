@@ -1,0 +1,16 @@
+{
+  "checks": {
+    "files": 5586,
+    "records": 4469917,
+    "bytes": 14382105211,
+    "sampled_records": 11151
+  },
+  "offsets_contiguous_for_every_record": true,
+  "sqlite_integrity": "ok",
+  "foreign_keys_valid": true,
+  "training_ready": false,
+  "limits": [
+    "Las posiciones se comprueban en todos los registros. Se releen y contrastan hashes del primero y del \u00faltimo de cada archivo no vac\u00edo.",
+    "La integridad del \u00edndice no verifica el contenido editorial ni la disponibilidad temporal."
+  ]
+}

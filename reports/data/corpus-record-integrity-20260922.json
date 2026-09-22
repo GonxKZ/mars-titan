@@ -1,0 +1,12 @@
+{
+  "records_checked": 4469917,
+  "raw_record_hashes_checked": 4469917,
+  "legacy_record_hashes_checked": 4469917,
+  "bytes_read": 14382105211,
+  "elapsed_seconds": 33.46616454499599,
+  "all_offsets_contiguous": true,
+  "training_ready": false,
+  "limits": [
+    "La coincidencia de bytes y huellas no acredita contenido editorial ni disponibilidad temporal."
+  ]
+}
