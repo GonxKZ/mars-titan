@@ -1,4 +1,4 @@
-"""Medir una GRU multimodal con noticias verificadas y recuperación exacta."""
+"""Medir referencias temporales multimodales con recuperación exacta."""
 
 import argparse
 import json
@@ -30,10 +30,12 @@ from mars_titan.profiling import MODALITIES, CostProbe
 from mars_titan.reference_probe import prepare_probe
 
 
-def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
+def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind="gru"):
     """Ejecutar una configuración de coste, sin selección sobre el test final."""
     if not isinstance(epochs, int) or not 2 <= epochs <= 10:
         raise ValueError("La medición requiere entre 2 y 10 épocas")
+    if kind not in {"gru", "dlinear"}:
+        raise ValueError("La referencia temporal solicitada no está implementada")
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
         raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
     started = time.perf_counter()
@@ -41,6 +43,9 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
     paths, targets, audit, hashes, counts = prepare_probe(prepared, samples, output, report_path)
     for relative in ("gru_probe.py", "reference_probe.py"):
         hashes[f"src/mars_titan/{relative}"] = sha256(Path(__file__).with_name(relative))
+    if kind == "dlinear":
+        source = Path(__file__).parent / "models/baselines/dlinear.py"
+        hashes["src/mars_titan/models/baselines/dlinear.py"] = sha256(source)
     device = require_cuda()
     seed_run(42)
     loaders = {
@@ -54,10 +59,10 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
     }
     first, _ = next(iter(loaders["train"]))
     dimensions = {name: value.shape[-1] for name, value in first.items()}
-    model = CostProbe("gru", dimensions).to(device)
+    model = CostProbe(kind, dimensions).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     config = {
-        "kind": "gru",
+        "kind": kind,
         "dimensions": dimensions,
         "context": 64,
         "hidden_size": 32,
@@ -72,12 +77,14 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
         "eps": 1e-8,
         "weight_decay": 0.01,
         "state_policy": "reset_each_window",
+        "moving_average_kernel": 25 if kind == "dlinear" else None,
+        "price_output_horizon": 1 if kind == "dlinear" else None,
         "cublas_workspace_config": os.environ["CUBLAS_WORKSPACE_CONFIG"],
     }
     report = {
         "purpose": "strict_supervised_execution_probe_not_confirmatory_comparison",
         "started_at_utc": started_at,
-        "model": "gru",
+        "model": kind,
         "config": config,
         "samples": counts,
         "modalities": list(MODALITIES),
@@ -140,7 +147,7 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
         "exact_weights": exact,
         "elapsed_seconds": time.perf_counter() - resume_started,
     }
-    restored = CostProbe("gru", dimensions).to(device)
+    restored = CostProbe(kind, dimensions).to(device)
     restored_optimizer = torch.optim.AdamW(restored.parameters(), lr=1e-4)
     load_checkpoint(checkpoint, restored, restored_optimizer, config=config, hashes=hashes)
     model.eval()
@@ -163,7 +170,7 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
                     "asset_id": row["cursor"][0],
                     "prediction_at": row["prediction_at"],
                     "target": label[0],
-                    "gru": float(predicted.item()),
+                    kind: float(predicted.item()),
                     "zero": 0.0,
                 }
             )
@@ -176,7 +183,7 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
             "mae": float(np.abs(np.array([row[name] for row in predictions]) - target).mean()),
             "mse": float(np.square(np.array([row[name] for row in predictions]) - target).mean()),
         }
-        for name in ("gru", "zero")
+        for name in (kind, "zero")
     }
     report.update(
         status="completed",
@@ -192,16 +199,27 @@ def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
     return report
 
 
+def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
+    """Conservar la entrada anterior de la sonda GRU."""
+    return run_temporal_probe(prepared, samples, output, report_path, epochs=epochs, kind="gru")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ("prepared", "samples", "output", "report"):
         parser.add_argument(f"--{option}", type=Path, required=True)
     parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--kind", choices=["gru", "dlinear"], default="gru")
     args = parser.parse_args()
     print(
         json.dumps(
-            run_gru_probe(
-                args.prepared, args.samples, args.output, args.report, epochs=args.epochs
+            run_temporal_probe(
+                args.prepared,
+                args.samples,
+                args.output,
+                args.report,
+                epochs=args.epochs,
+                kind=args.kind,
             ),
             indent=2,
         )

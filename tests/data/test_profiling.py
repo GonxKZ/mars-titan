@@ -10,16 +10,19 @@ def module():
         pytest.fail("Las referencias de coste multimodal todavía no existen")
 
 
-@pytest.mark.parametrize("kind", ["mlp", "gru"])
+@pytest.mark.parametrize("kind", ["mlp", "gru", "dlinear"])
 def test_cost_probes_use_every_modality_and_macro(kind):
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
         pytest.skip("La prueba de aceleración requiere CUDA, no se sustituye por CPU")
     torch.manual_seed(42)
     dimensions = {"prices": 5, "news": 4, "charts": 3, "fundamentals": 2, "macro": 2}
-    model = module().CostProbe(kind, dimensions, context=4).to("cuda:0")
+    context = 64 if kind == "dlinear" else 4
+    model = module().CostProbe(kind, dimensions, context=context).to("cuda:0")
     batch = {
-        k: torch.ones((2, 4, d) if k == "prices" else (2, d), device="cuda:0", requires_grad=True)
+        k: torch.ones(
+            (2, context, d) if k == "prices" else (2, d), device="cuda:0", requires_grad=True
+        )
         for k, d in dimensions.items()
     }
     output = model(batch)
