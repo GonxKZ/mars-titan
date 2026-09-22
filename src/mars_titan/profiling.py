@@ -16,6 +16,7 @@ from mars_titan.data.streaming import iter_windows
 from mars_titan.models.baselines.dlinear import DLinear
 
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
+RECURRENT_ENCODERS = {"gru": nn.GRU, "rnn": nn.RNN, "lstm": nn.LSTM}
 
 
 def _step(model, optimizer, batch, device):
@@ -35,11 +36,15 @@ class CostProbe(nn.Module):
 
     def __init__(self, kind: str, dimensions: dict[str, int], context: int = 64):
         super().__init__()
-        if kind not in {"mlp", "gru", "dlinear"} or set(dimensions) != set(MODALITIES):
+        if kind not in {*RECURRENT_ENCODERS, "mlp", "dlinear"} or set(dimensions) != set(
+            MODALITIES
+        ):
             raise ValueError("La sonda de coste o sus modalidades no son válidas")
         self.kind = kind
-        if kind == "gru":
-            self.price_encoder = nn.GRU(dimensions["prices"], 32, batch_first=True)
+        if kind in RECURRENT_ENCODERS:
+            self.price_encoder = RECURRENT_ENCODERS[kind](
+                dimensions["prices"], 32, batch_first=True
+            )
         elif kind == "dlinear":
             self.price_encoder = nn.Sequential(
                 DLinear(context), nn.Linear(dimensions["prices"], 32), nn.SiLU()
@@ -60,9 +65,9 @@ class CostProbe(nn.Module):
     def forward(self, inputs: dict[str, torch.Tensor]) -> torch.Tensor:
         if set(inputs) != set(MODALITIES):
             raise ValueError("Se requieren las cuatro modalidades y el contexto macro")
-        if self.kind == "gru":
+        if self.kind in RECURRENT_ENCODERS:
             _, hidden = self.price_encoder(inputs["prices"])
-            price = hidden[-1]
+            price = (hidden[0] if self.kind == "lstm" else hidden)[-1]
         else:
             price = self.price_encoder(inputs["prices"])
         representations = [price] + [self.encoders[name](inputs[name]) for name in self.encoders]

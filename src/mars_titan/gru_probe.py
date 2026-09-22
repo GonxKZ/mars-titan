@@ -28,7 +28,7 @@ from mars_titan.data.preparation import atomic_parquet
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.data.streaming import iter_windows
 from mars_titan.models.baselines.initialization import initialize_weights
-from mars_titan.profiling import MODALITIES, CostProbe
+from mars_titan.profiling import MODALITIES, RECURRENT_ENCODERS, CostProbe
 from mars_titan.reference_probe import prepare_probe
 
 
@@ -58,7 +58,7 @@ def run_temporal_probe(
     ):
         raise ValueError("La tasa de aprendizaje debe ser finita y positiva")
     validate_loss(loss, huber_delta)
-    if kind not in {"gru", "dlinear"}:
+    if kind not in {*RECURRENT_ENCODERS, "dlinear"}:
         raise ValueError("La referencia temporal solicitada no está implementada")
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
         raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
@@ -130,6 +130,14 @@ def run_temporal_probe(
         "gpu": torch.cuda.get_device_name(0),
         "torch": str(torch.__version__),
         "cuda": torch.version.cuda,
+        "numerics": {
+            "deterministic_algorithms": torch.are_deterministic_algorithms_enabled(),
+            "float32_matmul_precision": torch.get_float32_matmul_precision(),
+            "cuda_matmul_allow_tf32": torch.backends.cuda.matmul.allow_tf32,
+            "cudnn_allow_tf32": torch.backends.cudnn.allow_tf32,
+            "cudnn_benchmark": torch.backends.cudnn.benchmark,
+            "cudnn_version": torch.backends.cudnn.version(),
+        },
         "parameters": sum(value.numel() for value in model.parameters()),
         "sensors_before": gpu_sensors(),
         "preparation_seconds": time.perf_counter() - started,
@@ -189,11 +197,11 @@ def run_temporal_probe(
     load_checkpoint(checkpoint, restored, restored_optimizer, config=config, hashes=hashes)
     model.eval()
     restored.eval()
-    predictions = []
+    predictions = {"train": [], "validation": []}
     with torch.inference_mode():
         for row in iter_windows(paths, prepared, decision_cutoff="2023-12-31"):
             label = targets.get(row["cursor"][0], {}).get(row["prediction_at"].isoformat())
-            if label is None or label[1] != "validation":
+            if label is None:
                 continue
             inputs = {
                 name: torch.from_numpy(value).unsqueeze(0).to(device)
@@ -202,7 +210,7 @@ def run_temporal_probe(
             predicted = model(inputs)
             if not torch.isfinite(predicted).all() or not torch.equal(predicted, restored(inputs)):
                 raise ValueError("La predicción no es finita o cambia tras restaurar")
-            predictions.append(
+            predictions[label[1]].append(
                 {
                     "asset_id": row["cursor"][0],
                     "prediction_at": row["prediction_at"],
@@ -211,21 +219,27 @@ def run_temporal_probe(
                     "zero": 0.0,
                 }
             )
-    if len(predictions) != counts["validation"]:
-        raise ValueError("Las predicciones no reconcilian con las etiquetas de validación")
-    atomic_parquet(output / "predictions.parquet", pa.Table.from_pylist(predictions))
-    target = np.array([row["target"] for row in predictions])
-    report["diagnostic_row_metrics"] = {
-        name: {
-            "mae": float(np.abs(np.array([row[name] for row in predictions]) - target).mean()),
-            "mse": float(np.square(np.array([row[name] for row in predictions]) - target).mean()),
+    for partition, rows in predictions.items():
+        if len(rows) != counts[partition]:
+            raise ValueError(f"Las predicciones no reconcilian con las etiquetas de {partition}")
+        filename = "training-predictions.parquet" if partition == "train" else "predictions.parquet"
+        atomic_parquet(output / filename, pa.Table.from_pylist(rows))
+        target = np.array([row["target"] for row in rows])
+        metric_key = (
+            "final_training_row_metrics" if partition == "train" else "diagnostic_row_metrics"
+        )
+        report[metric_key] = {
+            name: {
+                "mae": float(np.abs(np.array([row[name] for row in rows]) - target).mean()),
+                "mse": float(np.square(np.array([row[name] for row in rows]) - target).mean()),
+            }
+            for name in (kind, "zero")
         }
-        for name in (kind, "zero")
-    }
     report.update(
         status="completed",
         restored_predictions_equal=True,
         predictions_sha256=sha256(output / "predictions.parquet"),
+        training_predictions_sha256=sha256(output / "training-predictions.parquet"),
         sensors_after=gpu_sensors(),
         total_seconds=time.perf_counter() - started,
         peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
@@ -248,7 +262,7 @@ def main():
     for option in ("prepared", "samples", "output", "report"):
         parser.add_argument(f"--{option}", type=Path, required=True)
     parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--kind", choices=["gru", "dlinear"], default="gru")
+    parser.add_argument("--kind", choices=[*RECURRENT_ENCODERS, "dlinear"], default="gru")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
     parser.add_argument("--loss", choices=["mse", "mae", "huber"], default="mse")
