@@ -47,3 +47,40 @@ Se compararán una ejecución continua y otra interrumpida y restaurada en la mi
 También se comprobará reanudación con etiquetas aún pendientes y con una publicación macro en cola. Ningún reinicio puede hacer que un evento se conozca antes de su disponibilidad. La recuperación de un fold no reutiliza el estado futuro de otro.
 
 Un checkpoint se considera utilizable cuando pasa una carga de prueba y permite continuar. La mera existencia del archivo no acredita esa propiedad.
+
+## Implementación para las referencias
+
+`training/checkpoints.py` implementa persistencia en Linux para los modelos de
+referencia. Guarda un estado de tensores y tipos simples, junto con una identidad
+de datos y configuración. El entrenador debe incluir pesos, optimizador, RNG,
+época y cursor confirmado después de la actualización. La API no inventa memorias
+adaptativas ni colas que estos modelos no utilizan.
+
+La escritura mantiene un bloqueo exclusivo, sincroniza el archivo y publica
+`latest.json` después del estado. Conserva dos estados recientes, el mejor marcado
+por el consumidor y hasta 64 referencias fijadas explícitamente. El consumidor
+debe fijar un estado antes de usarlo como origen de una continuación independiente.
+La limpieza afecta únicamente a los archivos de estado identificados de esa
+ejecución. El límite serializado y descomprimido es de 512 MiB.
+
+La carga verifica huella, tamaño, esquema e identidad antes de usar
+`torch.load(weights_only=True)`. Si el último archivo está truncado o cambia su
+huella, intenta el anterior confirmado y emite un aviso. No busca archivos
+huérfanos para convertirlos en estados válidos. Una identidad distinta impide
+la carga y el guardado. La reserva de espacio previa no garantiza que otro
+proceso no agote el disco durante la escritura.
+
+El guardado comprueba también una carga restringida antes de publicar el
+manifiesto. Un objeto serializable que el cargador no admita no reemplaza un
+estado válido.
+
+`StopRequest` convierte SIGINT y SIGTERM en una solicitud. La integración con
+el entrenador debe atenderla en la siguiente barrera segura. No interrumpe una
+actualización a medias ni promete recuperarse de SIGKILL guardando después de
+recibirlo.
+
+Las pruebas cubren un proceso terminado durante una escritura, errores de disco,
+retención, corrupción y restauración de una GRU con su optimizador y generadores.
+La siguiente actualización reproduce exactamente pesos y pérdida en CPU y en
+`cuda:0`. Esto no acredita recuperación frente a un corte eléctrico ni persistencia
+de los futuros módulos de memoria de MARS-TITAN.
