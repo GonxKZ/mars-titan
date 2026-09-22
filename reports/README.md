@@ -1,6 +1,6 @@
 # Evidencias e informes
 
-Esta carpeta contiene plantillas, no resultados. Los informes breves y revisados podrán versionarse aquí. Predicciones completas, checkpoints, curvas intermedias y trazas grandes se guardarán en `artifacts/`, fuera de Git.
+Esta carpeta contiene plantillas e informes breves revisados. Las predicciones completas, los checkpoints, las curvas intermedias y las trazas grandes se guardan en `artifacts/`, fuera de Git.
 
 - [Ficha de experimento](experiment-record.md): pregunta, configuración, comprobaciones, resultados y límites.
 - [Ficha de literatura](literature-note.md): lectura verificable y decisión que fundamenta.

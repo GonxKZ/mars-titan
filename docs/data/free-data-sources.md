@@ -61,7 +61,7 @@ China continúa con una brecha específica. El componente global de GSCPI puede 
 
 ## Separación temporal y derechos
 
-Cada snapshot pertenece a una adquisición exploratoria de 2026. No reemplaza archivos existentes de FinMultiTime ni modifica su manifiesto congelado. Si una fuente llega a utilizarse en un experimento, se deberá seleccionar una copia concreta, registrar su hash, construir su disponibilidad histórica y cerrar la selección antes del test final. La actualización de fuentes y la evaluación de modelos son procesos separados.
+Cada instantánea pertenece a una adquisición exploratoria de 2026. No reemplaza archivos existentes de FinMultiTime ni modifica su manifiesto congelado. Si una fuente llega a utilizarse en un experimento, se deberá seleccionar una copia concreta, registrar su hash, construir su disponibilidad histórica y cerrar la selección antes del test final. La actualización de fuentes y la evaluación de modelos son procesos separados.
 
 Los archivos válidos se distinguen por su madurez:
 

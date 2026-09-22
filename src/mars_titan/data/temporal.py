@@ -15,7 +15,7 @@ def aware(value: datetime) -> datetime:
 
 
 class MarketClock:
-    """Decisión cinco minutos después del cierre real de cada sesión."""
+    """Sitúa la decisión cinco minutos después del cierre real de cada sesión."""
 
     def __init__(self, market: str, start: str, end: str):
         if market not in {"US", "CN"}:

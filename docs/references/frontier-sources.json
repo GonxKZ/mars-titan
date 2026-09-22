@@ -6,7 +6,7 @@
     "year": 2026,
     "url": "https://github.com/yifanzhang-pro/KLPO/tree/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696",
     "pdf_url": "https://raw.githubusercontent.com/yifanzhang-pro/KLPO/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/KLPO.pdf",
-    "access": "Informe técnico del 18 de septiembre de 2026, revisado el 20. La portada indica Yifan Zhang et al. sin enumerar los demás autores. Sin revisión por pares confirmada. El README declara no validados el entrenamiento GPU ni los benchmarks a escala del informe.",
+    "access": "Informe técnico del 18 de septiembre de 2026, revisado el 20. La portada indica Yifan Zhang et al. sin enumerar los demás autores. Sin revisión por pares confirmada. El README declara no validados el entrenamiento GPU ni las pruebas de rendimiento a escala del informe.",
     "redistribution": "unknown",
     "relevance": "Opción de postentrenamiento de políticas. No se aplica directamente a regresores escalares ni demuestra mejoras de precisión financiera. Requiere controles supervisados y recompensas disponibles temporalmente.",
     "phase": [4, 5, 6],
@@ -282,7 +282,7 @@
     "access": "KDD 2021, revisado por pares. Autoría, congreso y DOI comprobados en la copia de autores arXiv v2, 25-06-2021. Se han consultado la ficha y las secciones 5.1, 5.3 y 6.1, sin declarar lectura integral.",
     "redistribution": "unknown",
     "rights_note": "El HTML arXiv v2 muestra CC BY 4.0, mientras el PDF conserva el aviso ACM con condiciones para copias personales o docentes y restricciones de republicación. Se registra la discrepancia sin extender una licencia a todos los archivos. El PDF se conserva solo en la biblioteca local ignorada por Git.",
-    "relevance": "Antecedente financiero de enrutamiento mediante representaciones y errores históricos almacenados. Obliga a distinguir ese mecanismo de la selección por sorpresa y de los pesos rápidos de MARS-TITAN. Su ranking mensual en CSI800 difiere del retorno residual diario.",
+    "relevance": "Antecedente financiero de enrutamiento mediante representaciones y errores históricos almacenados. Obliga a distinguir ese mecanismo de la selección por sorpresa y de los pesos rápidos de MARS-TITAN. Su ordenación mensual en CSI800 difiere del retorno residual diario.",
     "phase": [
       3,
       4,

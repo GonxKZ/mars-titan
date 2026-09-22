@@ -21,7 +21,7 @@ def _canonical_hashes(hashes):
 def initialize_weights(model, path, *, config, hashes, max_bytes=64 * 1024**2):
     path = Path(path)
     if not 0 < path.stat().st_size <= max_bytes:
-        raise ValueError("El checkpoint supera el presupuesto de lectura")
+        raise ValueError("El punto de control supera el presupuesto de lectura")
     try:
         with ZipFile(path) as archive:
             entries = archive.infolist()
@@ -30,7 +30,7 @@ def initialize_weights(model, path, *, config, hashes, max_bytes=64 * 1024**2):
                 or sum(entry.file_size for entry in entries) > max_bytes
                 or any(entry.compress_type != ZIP_STORED for entry in entries)
             ):
-                raise ValueError("El checkpoint contiene compresión o supera el presupuesto")
+                raise ValueError("El punto de control contiene compresión o supera el presupuesto")
     except BadZipFile as error:
         raise ValueError(
             "La inicialización requiere el formato ZIP sin compresión del proyecto"
@@ -38,7 +38,7 @@ def initialize_weights(model, path, *, config, hashes, max_bytes=64 * 1024**2):
     digest = sha256(path)
     state = torch.load(path, map_location="cpu", weights_only=True, mmap=True)
     if sha256(path) != digest:
-        raise ValueError("El checkpoint ha cambiado durante la lectura")
+        raise ValueError("El punto de control ha cambiado durante la lectura")
     fields = (
         "kind",
         "dimensions",

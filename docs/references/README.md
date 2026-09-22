@@ -5,7 +5,7 @@ La biblioteca reúne **123 referencias bibliográficas** sobre finanzas, aprendi
 La revisión tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
 La actualización del 21 de septiembre incorpora diez referencias sobre Markov,
-detección de cambios y FinanceDatabase. Añade dos PDF locales, sin volver a
+detección de cambios y FinanceDatabase. Añade dos PDF locales sin volver a
 atribuir lectura o validación a las colecciones anteriores.
 
 ## Contenido
@@ -23,17 +23,17 @@ atribuir lectura o validación a las colecciones anteriores.
 | Falsación y límites | [Revisión adversarial](../research/adversarial-review.md) | [adversarial-sources.json](adversarial-sources.json) | [adversarial.bib](adversarial.bib) |
 | Regímenes de mercado | [Markov](../research/markov-regimes.md) | [markov-sources.json](markov-sources.json) | [markov.bib](markov.bib) |
 | Catálogo auxiliar de símbolos | [FinanceDatabase](../data/finance-database-review.md) | [finance-sources.json](finance-sources.json) | [finance.bib](finance.bib) |
-| Posts aportados | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
+| Publicaciones aportadas | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
 
 Las reseñas de memoria incluyen ACI y EnbPI, cuyas fichas canónicas están en el catálogo financiero. Hyndman también tiene su entrada canónica en finanzas. Se evita duplicar identificadores al descargar o citar.
 
-La [revisión ampliada de los ocho posts](social-followup.md) incorpora las imágenes, las doce bibliotecas de datos, los enlaces nuevos y sus condiciones. Distingue conceptos aprovechables de ganancias o sistemas cuya reproducción no puede comprobarse. Las descargas de datos complementarios se describen en [fuentes públicas](../data/free-data-sources.md).
+La [revisión ampliada de las ocho publicaciones](social-followup.md) incorpora las imágenes, las doce bibliotecas de datos, los enlaces nuevos y sus condiciones. Distingue conceptos aprovechables de ganancias o sistemas cuya reproducción no puede comprobarse. Las descargas de datos complementarios se describen en [fuentes públicas](../data/free-data-sources.md).
 
 El [registro de catálogos](catalogs.json) es la entrada común del descargador y del verificador. Añadir una colección exige registrar su JSON y su BibTeX, sin modificar listas de nombres en varios programas. La [ampliación de investigación](../research/research-expansion.md) conecta estas fuentes con decisiones y experimentos propuestos.
 
 ## Búsqueda y selección
 
-Se partió del documento inicial, de FinMultiTime y de los conceptos necesarios para evaluar una memoria financiera. Se siguieron citas hacia autores, actas de congresos, arXiv, revistas, SEC, la biblioteca de Kenneth French y publicaciones de AQR. Los libros se localizaron en las webs de sus autores y editoriales. Los ocho posts aportados se contrastaron por separado, incorporando los dos últimos a la revisión ampliada.
+Se partió del documento inicial, de FinMultiTime y de los conceptos necesarios para evaluar una memoria financiera. Se siguieron citas hacia autores, actas de congresos, arXiv, revistas, SEC, la biblioteca de Kenneth French y publicaciones de AQR. Los libros se localizaron en las webs de sus autores y editoriales. Las ocho publicaciones aportadas se contrastaron por separado, incorporando las dos últimas a la revisión ampliada.
 
 Familias de consulta utilizadas:
 
@@ -50,7 +50,7 @@ Familias de consulta utilizadas:
 
 Se priorizan fuentes primarias con autoría y versión verificables. Se distinguen artículos revisados por pares, preprints, documentación institucional, libros y divulgación. Se excluyen promesas de rentabilidad no comprobadas, copias sin procedencia, bibliografías automáticas con enlaces erróneos y material cuya descarga exige eludir controles.
 
-La selección debe actualizarse antes de cerrar el marco teórico y antes del test final. Cada nueva referencia debe cubrir una decisión, un método o una limitación concreta. Para convertir esta revisión dirigida en una revisión sistemática formal harían falta bases, ecuaciones de búsqueda, resultados por consulta y cribado completo registrados con otro protocolo.
+La selección debe actualizarse antes de cerrar el marco teórico y antes de consultar el conjunto final. Cada nueva referencia debe cubrir una decisión, un método o una limitación concreta. Para convertir esta revisión dirigida en una revisión sistemática formal harían falta bases, ecuaciones de búsqueda, resultados por consulta y cribado completo registrados con otro protocolo.
 
 ## Descargas y conservación
 
@@ -71,10 +71,10 @@ El [registro de validación de archivos](../../reports/reference-validation.json
 
 El historial de acceso distingue la versión consultada de la publicada. Por ejemplo, DLinear se cita como artículo AAAI de 2023, pero el PDF de consulta es el preprint arXiv v3 de 2022 porque la descarga editorial cerró la conexión. Los catálogos conservan esa diferencia.
 
-## Derechos y uso académico
+## Derechos y conservación
 
-El acceso gratuito no implica permiso para redistribuir. Los libros comerciales y artículos restringidos permanecen como fichas con su enlace oficial. Los PDF no se suben al repositorio y mantienen sus derechos originales. La bibliografía está preparada para su integración en la memoria, pero cada cita final debe corresponder a una lectura pertinente y a una afirmación que la fuente sostenga.
+El acceso gratuito no implica permiso para redistribuir. Los libros comerciales y artículos restringidos permanecen como fichas con su enlace oficial. Los PDF no se suben al repositorio y mantienen sus derechos originales. La bibliografía está preparada para su integración en el informe técnico, pero cada cita final debe corresponder a una lectura pertinente y a una afirmación que la fuente sostenga.
 
 TRA conserva una discrepancia de avisos: el [HTML arXiv v2](https://arxiv.org/html/2106.12950v2) indica CC BY 4.0, mientras la primera página del [PDF](https://arxiv.org/pdf/2106.12950v2) mantiene condiciones ACM para copia personal o docente y restricciones de republicación. Se documentan ambas fuentes y el estado de redistribución permanece sin resolver. La copia local no se incorpora al repositorio.
 
-Para cada lectura detallada, usar la [ficha de literatura](../../reports/literature-note.md). Registrar páginas, tarea original, datos, validación, resultados realmente publicados, límites y decisión que cambia en MARS-TITAN. No trasladar rendimientos de un paper al proyecto como si se hubieran reproducido.
+Para cada lectura detallada, usar la [ficha de literatura](../../reports/literature-note.md). Registrar páginas, tarea original, datos, validación, resultados realmente publicados, límites y decisión que cambia en MARS-TITAN. No trasladar rendimientos de un artículo al proyecto como si se hubieran reproducido.

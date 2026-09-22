@@ -18,7 +18,7 @@
     "pdf_url": "https://arxiv.org/pdf/2506.05019v2",
     "access": "PDF abierto verificado. Preprint v2, 11-09-2025. La ficha indica Under review. Autores ordenados según el PDF.",
     "redistribution": "unknown",
-    "relevance": "Dataset central. Auditar disponibilidad temporal, universo y discrepancias de cobertura antes de cualquier comparativa.",
+    "relevance": "Conjunto de datos central. Auditar disponibilidad temporal, universo y discrepancias de cobertura antes de cualquier comparativa.",
     "phase": [
       1,
       4,
@@ -183,7 +183,7 @@
     "pdf_url": "https://arxiv.org/pdf/2205.13504v3",
     "access": "Artículo AAAI 2023, 37(9):11121-11128, revisado por pares, DOI 10.1609/aaai.v37i9.26317. La descarga editorial cerró la conexión. Se conserva el preprint completo arXiv v3 de agosto de 2022 como versión de consulta, sin afirmar identidad con la publicación definitiva.",
     "redistribution": "unknown",
-    "relevance": "Baseline DLinear de bajo coste. Obliga a justificar la complejidad adicional bajo el mismo objetivo y protocolo.",
+    "relevance": "Referencia DLinear de bajo coste. Obliga a justificar la complejidad adicional bajo el mismo objetivo y protocolo.",
     "phase": [
       4,
       5,
@@ -205,7 +205,7 @@
     "pdf_url": "https://arxiv.org/pdf/2211.14730v2",
     "access": "PDF abierto verificado. ArXiv v2 declara aceptación en ICLR 2023 y el PDF contiene la cabecera de publicación.",
     "redistribution": "unknown",
-    "relevance": "Baseline Transformer con patches. Controlar longitud de contexto y presupuesto de parámetros frente a la memoria adaptativa.",
+    "relevance": "Referencia Transformer con fragmentos temporales. Controlar longitud de contexto y presupuesto de parámetros frente a la memoria adaptativa.",
     "phase": [
       4,
       5
@@ -225,7 +225,7 @@
     "pdf_url": "https://arxiv.org/pdf/1803.01271",
     "access": "Preprint y PDF abiertos verificados. No se atribuye una publicación de conferencia no confirmada.",
     "redistribution": "unknown",
-    "relevance": "Baseline TCN compacto de convoluciones temporales causales. Causal significa aquí ausencia de información futura, no identificación causal económica.",
+    "relevance": "Referencia TCN compacta de convoluciones temporales causales. Causal significa aquí ausencia de información futura, no identificación causal económica.",
     "phase": [
       3,
       4,
@@ -287,7 +287,7 @@
     "pdf_url": "https://aclanthology.org/2024.findings-emnlp.486.pdf",
     "access": "PDF de actas abierto verificado. Findings of EMNLP 2024, revisado por pares. DOI 10.18653/v1/2024.findings-emnlp.486.",
     "redistribution": "unknown",
-    "relevance": "Evidencia financiera multimodal textual y contable con baselines unimodales. Su objetivo trimestral difiere de la rentabilidad residual diaria propuesta.",
+    "relevance": "Evidencia financiera multimodal textual y contable con referencias unimodales. Su objetivo trimestral difiere de la rentabilidad residual diaria propuesta.",
     "phase": [
       1,
       2,

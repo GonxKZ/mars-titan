@@ -30,9 +30,11 @@ retornos residuales de activos financieros a partir de información multimodal.
 La pregunta es si una memoria adaptativa de eventos aporta una mejora frente
 a referencias más sencillas cuando se controla la disponibilidad temporal de
 los datos y el presupuesto computacional. Se propone trabajar con un subconjunto
-de FinMultiTime, validación walk-forward, ablaciones y análisis de incertidumbre.
-Este documento es una base de redacción. La implementación y los resultados
-experimentales todavía no se han realizado.
+de FinMultiTime, validación temporal con avance de ventana, ablaciones y análisis
+de incertidumbre.
+Este documento es una base de redacción. La preparación de datos y los ensayos
+de referencia ya tienen informes separados. La arquitectura MARS-TITAN y la
+comparación confirmatoria siguen pendientes.
 \end{abstract}
 \tableofcontents
 
@@ -40,7 +42,7 @@ experimentales todavía no se han realizado.
 El problema de investigación combina predicción financiera, información
 heterogénea y adaptación a cambios de mercado. El valor del estudio reside en
 determinar qué componentes aportan información útil y bajo qué condiciones
-dejan de hacerlo. La modalidad es una comparativa de soluciones.
+dejan de hacerlo. El estudio plantea una comparación de soluciones.
 
 Los seis objetivos son preparar datos multimodales con disponibilidad verificable,
 definir retornos residuales, diseñar una memoria adaptativa con incertidumbre,
@@ -78,19 +80,23 @@ El retorno futuro del mercado pertenece a la etiqueta, nunca a las entradas.
 La residualización no identifica por sí misma un efecto causal económico.
 
 \chapter{Diseño de la comparativa}
-La comparación incluirá referencias ingenuas, regresión regularizada, boosting y
-una red temporal compacta. El modelo propuesto se contrastará con variantes sin
+La comparación incluirá referencias ingenuas, regresión regularizada, árboles
+potenciados y una red temporal compacta. El modelo propuesto se contrastará con
+variantes sin
 memoria, con escritura uniforme y sin los componentes adicionales de sorpresa.
 Los datos, particiones y presupuestos se mantendrán comparables. La memoria se
-reiniciará por fold y las actualizaciones respetarán la maduración de etiquetas.
+reiniciará en cada partición temporal y las actualizaciones respetarán la
+maduración de etiquetas.
 
-Se medirán error, dirección, ranking, calibración y recursos. La simulación usará
+Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
 retornos de activos y un registro de operaciones con costes de apertura y cierre.
-El protocolo fijará las comparaciones principales antes de abrir el test final.
+El protocolo fijará las comparaciones principales antes de abrir el conjunto final.
 
 \chapter{Resultados y discusión}
-No hay resultados experimentales en esta versión. Este capítulo se redactará
-desde predicciones, métricas y artefactos identificados por configuración y commit.
+Los ensayos de GRU y DLinear están documentados en el informe de variantes del
+repositorio. Sus resultados pertenecen a una muestra dirigida de desarrollo,
+no a la comparación confirmatoria. Este capítulo integrará predicciones,
+métricas y artefactos identificados por configuración y revisión de código.
 Se informarán diferencias, incertidumbre, fallos y costes computacionales.
 Las figuras conceptuales no se utilizarán como evidencia de rendimiento.
 

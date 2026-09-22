@@ -1,15 +1,26 @@
-# Comprobaciones del repositorio
+# Pruebas
 
-Las pruebas actuales de `tests/tooling/` comprueban la biblioteca de referencias y las capturas de fuentes públicas. Incluyen validación de identificadores, metadatos, integridad de archivos, formatos, límites de descarga y tratamiento de accesos fallidos. Se ejecutan sin red y verifican que una actualización no sobrescriba capturas anteriores ni habilite datos para el benchmark. No evalúan modelos, kernels, rentabilidad ni hipótesis científicas.
+Las pruebas se agrupan por la responsabilidad que comprueban:
 
-Desde la raíz del repositorio:
+| Directorio | Alcance |
+| --- | --- |
+| `tests/data/` | Disponibilidad temporal, inventario, preparación y materialización de datos |
+| `tests/models/` | Entradas comunes, referencias predictivas, persistencia y reanudación |
+| `tests/native/` | Configuración de CMake, avisos, análisis estático y sanitizadores |
+| `tests/tooling/` | Biblioteca documental, fuentes públicas, exportador y observatorio |
+
+Las pruebas de herramientas no acceden a la red. Comprueban identificadores, metadatos, integridad, formatos, límites de descarga y conservación de archivos anteriores. Las pruebas científicas usan datos sintéticos o artefactos locales controlados y distinguen las medidas de coste de los resultados predictivos.
+
+Desde la raíz del repositorio se puede ejecutar el conjunto completo:
 
 ```bash
-uv run --locked pytest tests/tooling
+uv run --locked pytest
 ```
 
-Estas comprobaciones pueden ejecutarse en una máquina con CPU. Su resultado no acredita disponibilidad de GPU ni reproducibilidad de un futuro entrenamiento.
+Las pruebas que requieren CUDA comprueban su disponibilidad y no cambian a CPU de forma silenciosa. Para ejecutar solo las comprobaciones compatibles con CPU se deben seleccionar los módulos correspondientes, por ejemplo:
 
-Cuando se implemente la parte científica, cada prueba deberá proteger una propiedad concreta. Entre ellas estarán la disponibilidad de información por fecha, la maduración de las etiquetas, los reinicios de memoria, el cálculo de métricas y la concordancia con referencias numéricas. Las pruebas que necesiten CUDA se distinguirán de las utilidades y no se sustituirán silenciosamente por una ejecución en CPU.
+```bash
+uv run --locked pytest tests/tooling tests/native
+```
 
-No se añaden pruebas científicas vacías ni modelos de ejemplo para aparentar cobertura. Los experimentos y sus resultados se documentarán cuando se hayan ejecutado.
+Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutación ayudan a localizar lógica poco comprobada, pero no sustituyen los casos de comportamiento ni acreditan por sí solas la reproducibilidad de un entrenamiento.

@@ -1,6 +1,6 @@
 # Configuración nativa de MARS-TITAN
 
-Este directorio prepara CMake para C17 y C++20. CUDA es opcional y está desactivada por defecto. El target de interfaz `mars_titan::native_options` agrupa los estándares y los avisos de compilación para futuros objetivos. No genera una biblioteca, un ejecutable ni una extensión de Python.
+Este directorio prepara CMake para C17 y C++20. CUDA es opcional y está desactivada por defecto. El objetivo de interfaz `mars_titan::native_options` agrupa los estándares y los avisos de compilación para futuros objetivos. No genera una biblioteca, un ejecutable ni una extensión de Python.
 
 La configuración requiere CMake 3.24 o posterior y compiladores de C y C++. Desde la raíz del repositorio:
 
@@ -18,7 +18,7 @@ cmake -S native -B build/native-cuda \
   -DCMAKE_CUDA_ARCHITECTURES=89
 ```
 
-`89` corresponde a la capacidad de cómputo 8.9 observada en la RTX 4070 Laptop. En otro equipo se debe comprobar la arquitectura y ajustar las rutas. Al activar CUDA, CMake exige tanto el compilador como el toolkit. Una ausencia o incompatibilidad produce un error visible, sin cambiar automáticamente a una compilación con CPU.
+`89` corresponde a la capacidad de cómputo 8.9 observada en la RTX 4070 Laptop. En otro equipo se debe comprobar la arquitectura y ajustar las rutas. Al activar CUDA, CMake exige tanto el compilador como el conjunto de herramientas. Una ausencia o incompatibilidad produce un error visible, sin cambiar automáticamente a una compilación con CPU.
 
 Conviene usar directorios de configuración distintos para CPU y CUDA. CMake conserva la elección de compilador en su caché. Estos directorios contienen archivos generados y quedan fuera del código fuente.
 
@@ -26,21 +26,15 @@ Conviene usar directorios de configuración distintos para CPU y CUDA. CMake con
 
 Configurar con éxito verifica que CMake reconoce las herramientas y puede realizar sus comprobaciones de compilador. No verifica kernels, resultados numéricos, gradientes, rendimiento o compatibilidad de una futura extensión con PyTorch. No hay fuentes científicas ni binarios del proyecto que compilar o ejecutar.
 
-La estructura reserva [include/](include/README.md) para contratos públicos, [src/](src/README.md) para implementaciones C/C++ y [cuda/](cuda/README.md) para posibles kernels. Su contenido se decidirá después de perfilar una implementación de referencia en Python. No se añaden opciones de cálculo aproximado ni flags de optimización numérica antes de medir su efecto.
+La estructura reserva [include/](include/README.md) para contratos públicos, [src/](src/README.md) para implementaciones C/C++ y [cuda/](cuda/README.md) para posibles kernels. Su contenido se decidirá después de perfilar una implementación de referencia en Python. No se añaden opciones de cálculo aproximado ni opciones de optimización numérica antes de medir su efecto.
 
-El toolkit local y el runtime usado por una distribución de PyTorch pueden tener versiones distintas. Antes de compilar una extensión habrá que comprobar la compatibilidad de PyTorch, toolkit, compilador anfitrión y ABI. Los detalles del entorno están en [reproducibility.md](../docs/engineering/reproducibility.md).
+El conjunto de herramientas local y el entorno de ejecución usado por una distribución de PyTorch pueden tener versiones distintas. Antes de compilar una extensión habrá que comprobar la compatibilidad de PyTorch, el conjunto de herramientas, el compilador anfitrión y la ABI. Los detalles del entorno están en [reproducibility.md](../docs/engineering/reproducibility.md).
 
 ## Diagnóstico por objetivo
 
-Los objetivos C++ propios llaman a `mars_titan_configure_target(nombre)`. La función
-aplica C++20, los avisos del proyecto y la base de comandos de compilación. Las
-opciones de análisis se aplican a ese objetivo, no se reescriben los flags de
-bibliotecas de terceros. C17 se mantiene para fuentes C que se incorporen de forma
-explícita.
+Los objetivos C++ propios llaman a `mars_titan_configure_target(nombre)`. La función aplica C++20, los avisos del proyecto y la base de comandos de compilación. Las opciones de análisis se aplican a ese objetivo y no reescriben las opciones de compilación de bibliotecas de terceros. C17 se mantiene para fuentes C que se incorporen de forma explícita.
 
-C++20 es la base común con CUDA. Una necesidad concreta de C++23 debe justificar
-el cambio de estándar y comprobar el soporte del compilador anfitrión, el toolkit
-y la extensión de PyTorch. No se adopta un estándar superior solo por su fecha.
+C++20 es la base común con CUDA. Una necesidad concreta de C++23 debe justificar el cambio de estándar y comprobar el soporte del compilador anfitrión, el conjunto de herramientas y la extensión de PyTorch. No se adopta un estándar superior solo por su fecha.
 
 ```cmake
 add_library(operacion src/operacion.cpp)
@@ -65,9 +59,7 @@ cmake --preset native-profile
 | `MARS_TITAN_SANITIZER=thread` | Configuración alternativa para comprobar concurrencia CPU. |
 | `MARS_TITAN_PROFILE=ON` | Conserva punteros de pila en un perfil de medición sin sanitizadores. |
 
-Sanitizadores CPU y perfiles de rendimiento no se combinan. Tampoco se activan
-automáticamente sobre CUDA. El coste de instrumentación no se publica como
-rendimiento de una versión optimizada.
+Los sanitizadores de CPU y los perfiles de rendimiento no se combinan. Tampoco se activan automáticamente sobre CUDA. El coste de instrumentación no se publica como rendimiento de una versión optimizada.
 
 clang-tidy y clang-format deben corresponder a herramientas disponibles en el
 entorno. Se puede pasar su ruta sin modificar la configuración del sistema:
@@ -79,17 +71,11 @@ cmake -S native -B build/native/tidy \
 clang-format --dry-run --Werror --style=file:native/.clang-format archivo.cpp
 ```
 
-Una herramienta solicitada que no existe produce un error, no un análisis omitido
-silenciosamente. El archivo `.clang-tidy` selecciona comprobaciones concretas y
-`.clang-format` fija un formato común. No sustituyen las pruebas de comportamiento.
+Una herramienta solicitada que no existe produce un error, no un análisis omitido silenciosamente. El archivo `.clang-tidy` selecciona comprobaciones concretas y `.clang-format` fija un formato común. No sustituyen las pruebas de comportamiento.
 
 ## Medición y depuración
 
-Primero se registra una carga representativa, entradas, precisión, versión y salida
-de referencia. El informe separa lectura, conversiones, transferencia, cálculo,
-sincronización y escritura. Debe medir latencia, caudal y RAM/VRAM máxima, además
-del tiempo completo. El límite teórico del ahorro depende de la fracción del
-recorrido que realmente se acelere.
+Primero se registra una carga representativa, sus entradas, la precisión, la versión y la salida de referencia. El informe separa lectura, conversiones, transferencia, cálculo, sincronización y escritura. Debe medir latencia, caudal, RAM y VRAM máximas, además del tiempo completo. La mejora teórica máxima depende de la fracción del recorrido que realmente se acelere.
 
 El paralelismo también forma parte del experimento. Se comparan cantidades
 acotadas de trabajadores, hilos de BLAS y compilación, tamaño de lote y precarga.

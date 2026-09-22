@@ -26,13 +26,13 @@ La flecha de escritura solo afecta a decisiones posteriores. El gráfico no auto
 
 ## Núcleo que se comparará primero
 
-Un codificador temporal compacto procesa precios y máscaras. Las noticias se representan con un codificador congelado y una proyección pequeña. Se auditan fundamentales y gráficos para incorporarlos cuando su disponibilidad sea defendible. La fusión se mantiene sencilla para poder atribuir el efecto de la memoria. Las variables macro son una ampliación condicionada y, si se activan, usan su última versión disponible y registran antigüedad y ausencias. No son un requisito para iniciar el núcleo multimodal.
+Un codificador temporal compacto procesa precios y máscaras. Las noticias se representan con un codificador congelado y una proyección pequeña. Los fundamentales y los gráficos deben tener disponibilidad verificable. Las cuatro modalidades y el contexto macro son obligatorios, conforme al [contrato de la campaña](../engineering/comparison-campaign.md). Las variables macro usan su última versión disponible y registran antigüedad y ausencias. La fusión se mantiene sencilla para poder atribuir el efecto de la memoria.
 
 La referencia secuencial inicial es una GRU. La memoria asociativa compacta con regla delta, definida más adelante, aporta el contraste neural adaptativo identificable. Una SSM adicional entra solo si una pregunta y el presupuesto justifican su coste. El candidato comparte pesos entre activos y guarda estados pequeños por activo. No replica una red entrenable completa para cada uno de los miles de símbolos.
 
 La memoria episódica tiene capacidad explícita. El punto inicial de dimensionamiento es E = 8.192 referencias de episodios, rasgos base de dimensión 256, claves de dimensión 128 y recuperación de hasta ocho entradas únicas por consulta. Son valores para el piloto, no hiperparámetros ya validados. Cada episodio conserva identificador estable, mercado, corte, origen, revisión de representación y motivo de escritura. Los vectores no sustituyen su procedencia.
 
-En el núcleo, los rasgos base dependen de transformaciones y codificadores congelados dentro del fold. Las claves se obtienen normalizando una proyección fija R, inicializada con una semilla registrada. No se almacenan estados GRU ni proyecciones entrenables antiguas como si siguieran vigentes después de cada paso del optimizador. La consulta aprendida se adapta a ese espacio de claves fijo. Los valores se proyectan al leer, sin conservar proyecciones entrenables entre pasos. Modificar R o los rasgos base exige reconstruir la memoria. Una proyección de claves aprendida es una variante distinta con ese coste incluido.
+En el núcleo, los rasgos base dependen de transformaciones y codificadores congelados dentro de cada ventana de evaluación. Las claves se obtienen normalizando una proyección fija R, inicializada con una semilla registrada. No se almacenan estados GRU ni proyecciones entrenables antiguas como si siguieran vigentes después de cada paso del optimizador. La consulta aprendida se adapta a ese espacio de claves fijo. Los valores se proyectan al leer, sin conservar proyecciones entrenables entre pasos. Modificar R o los rasgos base exige reconstruir la memoria. Una proyección de claves aprendida es una variante distinta con ese coste incluido.
 
 Se utilizará primero una memoria global con etiquetas de contexto. Separar bancos de mercado, sector o régimen será una ablación con la misma capacidad total. Las clasificaciones sectoriales o de régimen deben existir en el corte correspondiente. Un régimen retrospectivo puede servir para describir resultados, pero no entrar como característica de la predicción pasada.
 
@@ -48,7 +48,7 @@ La puntuación candidata conserva los tres componentes de la propuesta: error pr
 
 Una especificación que deberá fijarse en MT-019 es `s_j = w_e · e_j_normalizado + w_a · anomalia_j_normalizada + w_r · relevancia_j_normalizada`. La anomalía puede partir de un cambio observado de retorno o volatilidad de mercado respecto a una escala histórica robusta. Se registrarán ventana, unidad, normalización y momento en que cada término se conoce. Añadir un término de diversidad identifica otra variante. Una puntuación estadística no demuestra causalidad económica ni permite imputar un consenso de analistas inexistente.
 
-Para limitar sesgos del selector se propone una mezcla inicial de cupos: la mitad mediante reservoir sampling uniforme de la historia elegible, un cuarto por puntuación selectiva y otro cuarto para eventos recientes. Cada evento elegible se ofrece a tres índices. El uniforme usa el algoritmo de reservorio con semilla y contador persistidos. El reciente conserva los últimos eventos en el orden temporal canónico. El selectivo conserva las mayores puntuaciones de admisión, con desempate determinista por identificador.
+Para limitar sesgos del selector se propone una mezcla inicial de cupos: la mitad mediante muestreo de reservorio uniforme de la historia elegible, un cuarto por puntuación selectiva y otro cuarto para eventos recientes. Cada evento elegible se ofrece a tres índices. El uniforme usa el algoritmo de reservorio con semilla y contador persistidos. El reciente conserva los últimos eventos en el orden temporal canónico. El selectivo conserva las mayores puntuaciones de admisión, con desempate determinista por identificador.
 
 La puntuación de error, anomalía y relevancia, con diversidad solo en la variante que la incluya, gobierna únicamente el índice selectivo. Se calcula una vez al admitir el candidato y permanece guardada. La novedad al ingresar se mide frente al conjunto selectivo existente y no garantiza diversidad óptima del conjunto futuro. Así se evita recalcular todos los pares de recuerdos en cada escritura. El coste de consultar las claves para puntuar una admisión también debe medirse.
 
@@ -95,7 +95,7 @@ El núcleo mantiene codificador, normalizadores y parámetros congelados dentro 
 
 Se estudiará un replay sencillo antes de EWC, SI, GEM o replay generativo. Mantener generadores, matrices de importancia y proyecciones puede costar más que la mejora que aporten. Los ejemplos retenidos se estratifican con información conocida, no según el régimen que el futuro termine revelando.
 
-Una variante de destilación podrá aprender de un profesor K = 4 y responder con K = 1. El profesor se ajusta solo en el tramo autorizado y su coste se incluye. Sus salidas de entrenamiento no se presentan como predicciones históricas fuera de muestra. Las señales usadas para aprender la puerta o para reconstruir errores de escritura necesitan una generación histórica válida. Se recalibra el estudiante y se compara con K = 1 entrenado directamente.
+Una variante de destilación podrá aprender de un modelo maestro con K = 4 y responder con K = 1. El modelo maestro se ajusta solo en el tramo autorizado y su coste se incluye. Sus salidas de entrenamiento no se presentan como predicciones históricas fuera de muestra. Las señales usadas para aprender la puerta o para reconstruir errores de escritura necesitan una generación histórica válida. Se recalibra el modelo estudiante y se compara con K = 1 entrenado directamente.
 
 ## Instantánea coherente y concurrencia
 
@@ -105,7 +105,7 @@ Las etiquetas maduras se ordenan según la política canónica del protocolo. Un
 
 Un episodio codificado con otra revisión no puede mezclarse silenciosamente con consultas nuevas. Cambiar el codificador obliga a reconstruir o migrar la memoria y a comprobar el resultado. Una revisión macro es un evento nuevo conocido en su publicación. No reescribe la historia de decisiones ya emitidas.
 
-El doble buffer se cuenta dentro de la VRAM. Si compartir GPU entre consolidación e inferencia deteriora p99, se separan temporalmente ambas cargas. La disponibilidad 24/7 permite programar ese trabajo y reanudarlo, no elimina la competencia física por memoria y cómputo.
+El doble búfer se cuenta dentro de la VRAM. Si compartir GPU entre consolidación e inferencia deteriora p99, se separan temporalmente ambas cargas. La disponibilidad 24/7 permite programar ese trabajo y reanudarlo, no elimina la competencia física por memoria y cómputo.
 
 ## Qué constituiría una aportación
 

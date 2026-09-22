@@ -1,4 +1,4 @@
-"""Contratos de adquisición pública sin red ni incorporación al benchmark."""
+"""Contratos de adquisición pública sin red ni incorporación a la referencia."""
 
 import hashlib
 import io

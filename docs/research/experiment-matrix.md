@@ -10,7 +10,7 @@ Estado: diseño de la comparación confirmatoria. Ninguna celda representa un re
 | B1 | Ridge con variables históricas | Referencia lineal regularizada, fácil de interpretar. | Obligatoria |
 | B2 | Boosting tabular compacto | Contraste no lineal. Comenzar con HistGradientBoosting de scikit-learn. | Obligatoria |
 | B3 | GRU compacta | Referencia neural secuencial con presupuesto comparable. | Obligatoria |
-| B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada al target. | Deseable tras el piloto |
+| B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada a la variable objetivo. | Deseable tras el piloto |
 | B5 | TCN o PatchTST reducido | Contraste adicional si aporta una pregunta distinta. | Extensión |
 | B6 | Memoria asociativa compacta con regla delta | Referencia neural adaptativa identificable, separada del banco episódico. | Obligatoria |
 | M0 | Codificador y cabeza de MARS-TITAN sin memoria | Aísla el efecto de introducir memoria. | Obligatoria |
@@ -41,7 +41,7 @@ La memoria por mercado, sector y activo se añade solo después de validar el ca
 
 ## Presupuesto inicial propuesto
 
-Hasta 64 activos, ventanas de 64 sesiones, dimensión latente 64, minibatch inicial 16 y máximo 30 épocas con parada temprana. Estas cifras son **puntos de partida por medir**. El estado de memoria debe preservarse en orden temporal aunque se agrupen activos. No se puede mezclar aleatoriamente el eje temporal de una secuencia adaptativa.
+Hasta 64 activos, ventanas de 64 sesiones, dimensión latente 64, lote inicial de 16 muestras y máximo 30 épocas con parada temprana. Estas cifras son **puntos de partida por medir**. El estado de memoria debe preservarse en orden temporal aunque se agrupen activos. No se puede mezclar aleatoriamente el eje temporal de una secuencia adaptativa.
 
 Como límite de planificación, hasta diez configuraciones por familia y tres semillas en la comparación confirmatoria. Se registrará el tiempo total de búsqueda, no solo el entrenamiento del mejor modelo. Los codificadores de texto se precalcularán con pesos congelados cuando sea apropiado. La primera medición de memoria fijará el margen operativo por debajo de los 8 GB físicos, incluyendo activaciones, optimizadores y actualización interna.
 

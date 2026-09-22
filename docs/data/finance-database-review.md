@@ -2,7 +2,7 @@
 
 Revisión del 21 de septiembre de 2026, fijada en
 [`d0b95bd51f9c594c81bac0b20c7ab6cbd084c51e`](https://github.com/JerBouma/FinanceDatabase/commit/d0b95bd51f9c594c81bac0b20c7ab6cbd084c51e).
-No se instaló el paquete, descargó el corpus completo ni modificó FinMultiTime.
+No se instaló el paquete, no se descargó el corpus completo ni se modificó FinMultiTime.
 
 ## Decisión
 

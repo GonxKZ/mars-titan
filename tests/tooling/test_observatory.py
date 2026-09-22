@@ -168,7 +168,7 @@ def test_public_allowlist_discards_sensitive_fields_everywhere(exporter, tmp_pat
 
 @pytest.mark.parametrize("phase", ["test", "evaluation", None])
 def test_reserved_or_unidentified_phase_hides_all_metrics(exporter, tmp_path, phase):
-    """Detecta que test_released privado o una fase ausente permitan filtrar el test."""
+    """Detecta que test_released privado o una fase ausente revelen la prueba final."""
     write_snapshot(tmp_path, snapshot(phase=phase, status="completed", test_released=True))
 
     run = export(exporter, tmp_path)["runs"][0]
@@ -179,7 +179,7 @@ def test_reserved_or_unidentified_phase_hides_all_metrics(exporter, tmp_path, ph
 
 
 def test_release_requires_explicit_cli_flag_and_terminal_run(tmp_path):
-    """Detecta publicación implícita y liberación del test mientras todavía se ejecuta."""
+    """Detecta la publicación implícita de la prueba final mientras todavía se ejecuta."""
     value = snapshot(phase="test", status="completed", test_released=True)
     write_snapshot(tmp_path, value)
     assert run_cli(tmp_path).returncode == 0
@@ -298,7 +298,7 @@ def test_invalid_source_preserves_previous_snapshot(exporter, tmp_path, field, v
 
 @pytest.mark.parametrize("content", ["{", '{"schema_version":1,"schema_version":2}', "[[[[[[[[["])
 def test_invalid_json_fails_cli_without_overwriting_or_echoing_source(tmp_path, content):
-    """Detecta errores de parser publicados o escritura previa a validar toda la fuente."""
+    """Detecta errores del analizador publicados o escritura previa a validar toda la fuente."""
     path = write_snapshot(tmp_path, snapshot())
     path.write_text(content + "PRIVATE_SECRET")
     destination = tmp_path / "public" / "observatory.json"
@@ -409,7 +409,7 @@ def test_output_parent_cannot_redirect_export_through_symlink(exporter, tmp_path
 
 
 def test_release_parameter_cannot_be_a_truthy_string(exporter, tmp_path):
-    """Detecta que el texto false se interprete como permiso para publicar el test."""
+    """Detecta que el texto `false` se interprete como permiso para publicar la prueba final."""
     write_snapshot(tmp_path, snapshot(phase="test", status="completed"))
 
     with pytest.raises(ValueError):

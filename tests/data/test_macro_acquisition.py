@@ -1,4 +1,4 @@
-"""Adquisición reproducible de vintages macro desde el formulario ALFRED."""
+"""Adquisición reproducible de versiones históricas macro desde el formulario ALFRED."""
 
 import hashlib
 import io

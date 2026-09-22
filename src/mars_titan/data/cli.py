@@ -55,13 +55,17 @@ def main() -> int:
     prices.add_argument("--state", type=Path, default=Path("data/interim/price-audit-state.json"))
     prices.add_argument("--report", type=Path, default=Path("reports/data/price-audit.json"))
     prices.add_argument("--details", type=Path, help="Parquet por activo en un directorio separado")
-    macro = commands.add_parser("macro", help="Calcular macro con unidades y versiones históricas")
+    macro = commands.add_parser(
+        "macro", help="Calcular el contexto macro con unidades y versiones históricas"
+    )
     macro.add_argument("--source", type=Path, default=Path("data/external/phase1-macro"))
     macro.add_argument("--catalog", type=Path, default=Path("data/catalogs/macro-indicators.csv"))
     macro.add_argument("--market", choices=["US", "CN"], required=True)
     macro.add_argument("--start", default="2000-01-01")
     macro.add_argument("--end", default="2025-03-31")
-    encode = commands.add_parser("encode", help="Materializar cuatro modalidades y macro en CUDA")
+    encode = commands.add_parser(
+        "encode", help="Materializar cuatro modalidades y el contexto macro en CUDA"
+    )
     encode.add_argument("--panel", type=Path, required=True)
     encode.add_argument("--prepared", type=Path, default=Path("data/processed/phase1"))
     encode.add_argument("--output", type=Path, default=Path("data/processed/phase1/samples"))
@@ -116,7 +120,7 @@ def main() -> int:
         clock = MarketClock(panel["market"], start, args.end)
         assets = panel["assets"][: args.limit] if args.limit is not None else panel["assets"]
         if args.limit is not None and args.limit < 1:
-            raise ValueError("limit debe ser positivo")
+            raise ValueError("El límite debe ser positivo")
         summaries = []
         for asset in assets:
             item = prepare_asset(args.source, args.output, asset, clock, news_reviews=reviews)

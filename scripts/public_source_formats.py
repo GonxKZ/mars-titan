@@ -167,26 +167,26 @@ def french_csv(content: bytes, as_of: date) -> dict:
     with bounded_zip(content) as zipped:
         members = [n for n in zipped.namelist() if n.lower().endswith(".csv")]
         if len(members) != 1:
-            raise ValueError("ZIP French sin un CSV único")
+            raise ValueError("ZIP de factores de Fama y French sin un CSV único")
         rows = csv_rows(zipped.read(members[0]))
     header = ["", "Mkt-RF", "SMB", "HML", "RF"]
     positions = [i for i, row in enumerate(rows) if [v.strip() for v in row] == header]
     if len(positions) != 1:
-        raise ValueError("Factores French sin cabecera diaria reconocible")
+        raise ValueError("Factores de Fama y French sin cabecera diaria reconocible")
     dates, missing = [], 0
     for row in rows[positions[0] + 1 :]:
         if not row or not row[0].strip().isdigit():
             continue
         if len(row) != 5 or len(row[0].strip()) != 8:
-            raise ValueError("Factores French con esquema diario inesperado")
+            raise ValueError("Factores de Fama y French con esquema diario inesperado")
         observed = reference_date(row[0])
         if observed is None:
-            raise ValueError("Fecha French no reconocible")
+            raise ValueError("Fecha de los factores de Fama y French no reconocible")
         dates.append(observed)
         for value in row[1:]:
             missing += numeric(value) or float(value) in {-99.99, -999.0}
     if not dates:
-        raise ValueError("Factores French sin observaciones")
+        raise ValueError("Factores de Fama y French sin observaciones")
     return {
         "valid": True,
         "validator": "french_zip",
@@ -224,7 +224,10 @@ def spreadsheet(content: bytes) -> dict:
         "sheet_names": sheets,
         "worksheet_nonempty_row_counts": counts,
         "zip_crc": "ok",
-        "scope": "Contenedor y celdas. Sin evaluar fórmulas ni interpretar fechas Excel.",
+        "scope": (
+            "Se validan el contenedor y las celdas, sin evaluar fórmulas ni interpretar "
+            "fechas de Excel."
+        ),
     }
 
 

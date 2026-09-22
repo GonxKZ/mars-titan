@@ -1,4 +1,4 @@
-"""Reproducción del benchmark local con fixture sintética y CLI real."""
+"""Reproducción de la medición local con datos sintéticos y una CLI real."""
 
 import hashlib
 import importlib.util
@@ -22,7 +22,7 @@ def load_benchmark():
 
 
 def test_fixture_is_deterministic_and_accepted_by_real_exporter(tmp_path):
-    """Detecta reloj o contenido variables y una fixture ajena al contrato del exportador."""
+    """Detecta reloj o contenido variables y datos ajenos al contrato del exportador."""
     benchmark = load_benchmark()
     first = tmp_path / "first"
     second = tmp_path / "second"

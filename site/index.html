@@ -90,7 +90,7 @@
     </section>
 
     <section id="comparativa" class="section" aria-labelledby="comparison-heading">
-      <div class="section-heading"><div><h2 id="comparison-heading">Comparativa</h2><p class="section-intro">Mismos datos, objetivo y condiciones de evaluación. Las diferencias necesitan un contexto común.</p></div><span class="section-note">Solo ejecuciones completadas</span></div>
+      <div class="section-heading"><div><h2 id="comparison-heading">Comparativa</h2><p class="section-intro">La comparación requiere los mismos datos, objetivo y condiciones de evaluación.</p></div><span class="section-note">Solo ejecuciones completadas</span></div>
       <div class="comparison-controls">
         <div class="control group-control"><label for="comparison-group">Grupo experimental</label><select id="comparison-group" disabled><option value="">Sin grupos disponibles</option></select></div>
         <div class="control"><label for="comparison-phase">Fase</label><select id="comparison-phase"><option value="validation">Validación</option><option value="calibration">Calibración</option><option value="evaluation">Evaluación</option><option value="test">Prueba final publicada</option><option value="train">Entrenamiento</option></select></div>
@@ -129,9 +129,9 @@
         </figure>
       </div>
       <div class="target-definition">
-        <div><h3>El objetivo: retorno residual</h3><p>El retorno apertura-cierre es cierre / apertura − 1. Se resta su componente estimada de mercado.</p></div>
+        <div><h3>El objetivo: retorno residual</h3><p>El retorno entre apertura y cierre se calcula como cierre / apertura − 1. Se resta su componente estimada de mercado.</p></div>
         <div>
-          <math display="block" aria-label="El residual del activo i predicho en t es su retorno apertura-cierre de t más uno, menos alfa estimada en t, menos beta estimada en t por el retorno de mercado de t más uno.">
+          <math display="block" aria-label="El residual del activo i predicho en t es su retorno entre apertura y cierre de t más uno, menos alfa estimada en t, menos beta estimada en t por el retorno de mercado de t más uno.">
             <msub><mi>y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>=</mo>
             <msubsup><mi>r</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>+</mo><mn>1</mn></mrow><mtext>OC</mtext></msubsup><mo>−</mo>
             <msub><mover><mi>α</mi><mo>^</mo></mover><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>−</mo>
@@ -156,7 +156,7 @@
     <section id="historial" class="section" aria-labelledby="history-heading">
       <div class="section-heading"><div><h2 id="history-heading">Historial</h2><p class="section-intro">Resúmenes incluidos en esta instantánea, también cuando terminan con un fallo.</p></div><button class="button button-quiet" id="export-button" type="button" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>Exportar CSV</button></div>
       <div class="history-controls"><div class="control search-control"><label for="history-search">Buscar ejecución o modelo</label><input id="history-search" type="search" placeholder="Identificador, modelo o variante" autocomplete="off"></div><div class="control"><label for="history-status">Estado</label><select id="history-status"><option value="all">Todos los estados</option><option value="running">En curso</option><option value="stale">Sin actualización</option><option value="queued">En cola</option><option value="paused">Pausada</option><option value="completed">Completada</option><option value="failed">Fallida</option><option value="cancelled">Cancelada</option></select></div><p id="history-count" class="history-count" role="status">Sin ejecuciones registradas</p></div>
-      <div id="history-empty" class="empty-history"><h3>Un registro que todavía está por empezar</h3><p>No hay ejecuciones que mostrar. Los intentos aparecerán con su fecha, fase y estado declarado.</p></div>
+      <div id="history-empty" class="empty-history"><h3>El registro aún no contiene ejecuciones</h3><p>No hay ejecuciones que mostrar. Los intentos aparecerán con su fecha, fase y estado declarado.</p></div>
       <div id="history-table-wrap" class="table-scroll" role="region" aria-label="Historial de ejecuciones" tabindex="0" hidden><table><caption>Ejecuciones registradas, más recientes primero</caption><thead><tr><th scope="col">Ejecución e intento</th><th scope="col">Modelo</th><th scope="col">Fase</th><th scope="col">Estado</th><th scope="col">Último registro</th><th scope="col"><span class="visually-hidden">Abrir detalle</span></th></tr></thead><tbody id="history-body"></tbody></table></div>
     </section>
   </main>

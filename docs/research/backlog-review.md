@@ -2,15 +2,15 @@
 
 Autor del proyecto: Gonzalo García Lama. Fecha: 18 de septiembre de 2026.
 
-Registro de la consolidación inicial. La revisión posterior mantiene las cinco retiradas y añade dos trabajos distintos de preparación, el observatorio MT-068 y las guías MT-069. El [tablero actual](task-board.md) contiene 64 tareas con guías operativas y 183 dependencias. Los recuentos siguientes documentan la consolidación previa, no sustituyen ese estado actual.
+Registro de la consolidación inicial. La revisión posterior mantiene las cinco retiradas y añade dos trabajos distintos de preparación, el observatorio MT-068 y las guías MT-069. El [catálogo del tablero](task-board.md) contiene 64 tareas con guías operativas y 183 dependencias. Los recuentos siguientes documentan la consolidación previa. Los títulos y las etiquetas de este documento utilizan la redacción técnica actual, sin modificar los estados ni los recuentos históricos.
 
-Estado: consolidación aplicada y verificada. Se han auditado las 67 tareas originales, sus criterios, dependencias, prioridades y etiquetas. El [catálogo activo](../../.github/planning/issues.json) contiene 62 tareas y el [registro de retiradas](../../.github/planning/retired-issues.json) conserva las cinco consolidadas.
+Estado de la consolidación inicial: aplicada y verificada. Se auditaron las 67 tareas originales, sus criterios, dependencias, prioridades y etiquetas. El catálogo quedó entonces en 62 tareas y el [registro de retiradas](../../.github/planning/retired-issues.json) conserva las cinco consolidadas.
 
 La comprobación posterior confirma 67 issues conservadas en el repositorio y 62 elementos en el tablero activo. MT-001 permanece cerrada y en Hecho, 61 tareas siguen abiertas y en Pendiente y cinco están cerradas como no planificadas por consolidación. Los números remotos de las nuevas tareas no coinciden con su identificador estable. Por ejemplo, MT-065 es la issue 67. El [mapa remoto](../../.github/planning/remote-map.json) conserva esa correspondencia.
 
 ## Resultado de la revisión
 
-Se han aplicado cinco consolidaciones. Quedan 62 tareas canónicas, de las que 61 siguen pendientes y MT-001 conserva su cierre. No se recomienda reducir el catálogo mediante fusiones que mezclen implementación, evaluación y entrega académica. Tampoco se justifica conservar tareas que repiten la misma decisión y los mismos resultados esperados.
+La consolidación dejó 62 tareas canónicas, de las que 61 seguían pendientes y MT-001 conservaba su cierre. No se recomienda reducir el catálogo mediante fusiones que mezclen implementación, evaluación y documentación de resultados. Tampoco se justifica conservar tareas que repiten la misma decisión y los mismos resultados esperados.
 
 Además de las fusiones, se han delimitado responsabilidades y corregido el circuito lógico entre selección de muestra y presupuesto. El catálogo y el grafo remoto contienen 177 dependencias, sin ciclos. La actualización añadió 10 relaciones y retiró 28, incluidas las relaciones de las tareas consolidadas.
 
@@ -33,7 +33,7 @@ Además de las fusiones, se han delimitado responsabilidades y corregido el circ
 | MT-061 | MT-037 | Ruido, duplicación, entradas corruptas y abstención son sensibilidades del mismo predictor. MT-037 incorpora estas perturbaciones acotadas y su efecto sobre estado, error y cobertura. Los rechazos de datos imposibles se prueban dentro de MT-007, MT-008 y MT-011. No se traslada a robustez la implementación de toda la canalización de datos. |
 | MT-062 | MT-029 | Las falsaciones del candidato implementado forman parte de las ablaciones ejecutadas en desarrollo. MT-029 conserva el registro de objeciones, resultados negativos y correspondencia con mecanismos reales. Los antecedentes se documentan en MT-003 y las pruebas se diseñan antes en MT-028. |
 
-Las cinco issues conservan un encabezado con la tarea canónica y su contenido anterior como historial. Están cerradas con motivo `not_planned` y etiqueta `duplicate`, y sus elementos se han retirado del proyecto activo. No se han borrado ni renumerado issues y el cierre no acredita trabajo científico.
+Las cinco issues conservan un encabezado con la tarea canónica y un resumen técnico del trabajo consolidado. El registro conserva la huella del cuerpo original. Están cerradas con motivo `not_planned` y etiqueta `duplicate`, y sus elementos se han retirado del proyecto activo. No se han borrado ni renumerado issues y el cierre no acredita trabajo científico.
 
 ## Responsabilidades delimitadas
 
@@ -50,7 +50,7 @@ Las cinco issues conservan un encabezado con la tarea canónica y su contenido a
 | MT-060 y MT-038 | MT-060 mide el piloto y fija un presupuesto antes de seleccionar. MT-038 consolida las mediciones de los experimentos finales. Comparten instrumentación. No se escribe un segundo perfilador ni se repite una medición sin cambio de configuración o una duda concreta. |
 | MT-056 y MT-057 | MT-056 valida fuentes macro y sus versiones históricas. MT-057 implementa su uso temporal y prueba revisiones. La adquisición de una muestra para auditar no equivale a una canalización periódica de actualización. |
 | MT-056, MT-066 y MT-067 | La primera estudia el contenido macroeconómico. MT-066 selecciona fuentes complementarias de distintas modalidades y comprueba condiciones de uso. MT-067 implementa su actualización opcional con instantáneas. Las fuentes no macro no deben esperar a terminar toda la auditoría macro. |
-| MT-041, MT-042, MT-043 y MT-045 | Son entregas académicas diferentes, con documentación, devolución y cierre propios. No deben fusionarse en una tarea genérica de redacción. |
+| MT-041, MT-042, MT-043 y MT-045 | Documentan el problema, el método, los resultados y el cierre del informe. Cada tarea tiene entradas y comprobaciones distintas. |
 
 ## Dependencias actualizadas
 
@@ -79,7 +79,7 @@ Se ha resuelto el circuito lógico entre muestra y presupuesto. MT-012 cierra la
 
 Los títulos deben nombrar el resultado concreto, sin acumular tecnologías ni términos genéricos. En los cuerpos basta un contexto breve, el trabajo propio de la tarea y criterios observables. Las cautelas comunes y las rutas del proyecto pueden enlazarse una vez en la documentación común. No hace falta repetir en cada issue varios párrafos idénticos sobre ausencia de resultados o archivos grandes.
 
-Se mantienen términos técnicos útiles como Ridge, CUDA, ETag y checkpoint. En prosa se recomienda «codificador» frente a encoder, «ejecutor» frente a runner, «lote precargado» frente a prefetched batch, «instantánea» frente a snapshot y «mantener o descartar» cuando no sea necesario el término go/no-go. Los nombres de campos y clases conservan su sintaxis. Las listas siguen siendo listas Markdown con guiones y separación en blanco.
+Las etiquetas identifican responsabilidades técnicas, mientras que los nombres de campos, clases y herramientas conservan sus identificadores compatibles.
 
 Se han aplicado entre dos y cinco etiquetas por tarea activa, con al menos una de dominio y otra de función. `opcional` indica una extensión prescindible y `bloqueado` solo un impedimento real, no una dependencia pendiente. No se añaden etiquetas para repetir la prioridad o el hito, que ya son campos del tablero.
 
@@ -98,11 +98,11 @@ Estas cuatro etiquetas se han sumado a las 16 del catálogo. No se propone elimi
 
 | ID | Decisión y unidad de trabajo | Motivo o límite principal | Etiquetas aplicadas |
 | --- | --- | --- | --- |
-| MT-001 | Conservada sin cambios | Preparación documental ya cerrada y verificada. | `transversal`, `redaccion`, `integridad-academica` |
-| MT-002 | Conservada. Confirmar requisitos y calendario académico | Decisiones y documentos externos que no acredita ninguna implementación. | `transversal`, `redaccion`, `integridad-academica` |
+| MT-001 | Conservada. Consolidar requisitos técnicos y revisar la propuesta inicial | Preparación documental ya cerrada y verificada. | `transversal`, `redaccion`, `integridad-investigacion` |
+| MT-002 | Conservada. Concretar restricciones y calendario de trabajo | Restricciones y fechas que deben confirmarse antes de planificar ejecuciones. | `transversal`, `redaccion`, `integridad-investigacion` |
 | MT-003 | Conservada. Completar el estado del arte y las referencias | Justifica antecedentes. Las falsaciones ejecutadas quedan en MT-029. | `bibliografia`, `redaccion` |
 | MT-004 | Conservada. Verificar el entorno con uv y CUDA | Verifica disponibilidad y versiones, sin asumir los perfiles experimentales de MT-060. | `transversal`, `reproducibilidad`, `rendimiento` |
-| MT-005 | Conservada y ampliada con MT-047. Inventariar FinMultiTime | Recorre toda la fuente y registra permisos y estados de auditoría. | `datos`, `reproducibilidad`, `integridad-academica` |
+| MT-005 | Conservada y ampliada con MT-047. Inventariar FinMultiTime | Recorre toda la fuente y registra permisos y estados de auditoría. | `datos`, `reproducibilidad`, `integridad-investigacion` |
 | MT-006 | Conservada. Auditar precios y universo histórico | Ajustes, bajas e identificadores tienen controles propios. | `datos`, `metodologia` |
 | MT-007 | Conservada. Normalizar noticias y su disponibilidad | Fecha, idioma, relevancia y duplicación de texto. | `datos`, `metodologia` |
 | MT-008 | Conservada. Reconstruir fundamentales por publicación | Revisiones contables y fechas de cada hecho. | `datos`, `metodologia` |
@@ -138,12 +138,12 @@ Estas cuatro etiquetas se han sumado a las 16 del catálogo. No se propone elimi
 | MT-038 | Conservada y delimitada. Informar recursos de los experimentos finales | Reutiliza instrumentación de MT-060 con los finalistas efectivamente ejecutados. | `rendimiento`, `evaluacion`, `reproducibilidad` |
 | MT-039 | Conservada. Decidir sobre optimización nativa | Solo después de un perfil y con referencia numérica. | `opcional`, `rendimiento` |
 | MT-040 | Conservada. Redactar conclusiones de los seis objetivos | Integra evidencia, sin crear otra campaña de experimentos. | `redaccion`, `evaluacion` |
-| MT-041 | Conservada. Preparar y entregar el primer borrador | Entrega académica con contenido y devolución propios. | `redaccion`, `integridad-academica` |
-| MT-042 | Conservada. Preparar y entregar el segundo borrador | Avance y respuesta a observaciones anteriores. | `redaccion`, `integridad-academica` |
-| MT-043 | Conservada. Completar y entregar el tercer borrador | Documento completo antes del cierre definitivo. | `redaccion`, `integridad-academica` |
+| MT-041 | Conservada. Documentar el problema, los antecedentes y los objetivos | Define las preguntas y el contexto del estudio. | `redaccion`, `integridad-investigacion` |
+| MT-042 | Conservada. Documentar el método, los datos y los resultados preliminares | Describe las decisiones experimentales y sus primeras evidencias. | `redaccion`, `integridad-investigacion` |
+| MT-043 | Conservada. Integrar resultados, discusión y limitaciones | Reúne el análisis completo antes del cierre definitivo. | `redaccion`, `integridad-investigacion` |
 | MT-044 | Conservada. Reproducir figuras y revisar las evidencias | Comprueba el paquete final y su trazabilidad. | `reproducibilidad`, `redaccion` |
-| MT-045 | Conservada. Cerrar predepósito y tramitar la autorización | Acto académico distinto de redactar un borrador. | `redaccion`, `integridad-academica` |
-| MT-046 | Conservada. Preparar y realizar la defensa | Exige realización y dominio, no solo diapositivas. | `defensa`, `integridad-academica` |
+| MT-045 | Conservada. Cerrar y verificar la versión técnica del informe | Comprueba coherencia y reproducibilidad del documento completo. | `redaccion`, `integridad-investigacion` |
+| MT-046 | Conservada. Preparar la presentación técnica de resultados | Explica decisiones, comparaciones y limitaciones con evidencia. | `presentacion`, `integridad-investigacion` |
 | MT-047 | Consolidada en MT-005 | Duplica inventario. La auditoría de modalidades conserva sus tareas propias. | Históricas y `duplicate` |
 | MT-048 | Conservada. Preparar datos por bloques y ventanas bajo demanda | Implementación de acceso eficiente, distinta de inventariar o validar fechas. | `datos`, `reproducibilidad`, `rendimiento` |
 | MT-049 | Consolidada en MT-064 | Repite decisión y evaluación de ampliación. No desarrolla otros solucionadores. | Históricas y `duplicate` |
@@ -152,7 +152,7 @@ Estas cuatro etiquetas se han sumado a las 16 del catálogo. No se propone elimi
 | MT-052 | Conservada. Medir retención e interferencia | Protocolo propio de memoria y capacidad de reaprendizaje. | `memoria`, `evaluacion`, `comparativa`, `aprendizaje-continuo` |
 | MT-053 | Conservada. Evaluar consolidación y replay | Cambia el aprendizaje paramétrico y requiere comparación propia. | `memoria`, `modelos`, `aprendizaje-continuo`, `opcional` |
 | MT-054 | Conservada. Evaluar pasos recurrentes y parada | Hipótesis de asignación de cómputo, con salida válida en un solo paso. | `comparativa`, `modelos`, `rendimiento` |
-| MT-055 | Conservada. Evaluar destilación temporalmente válida | Transferencia profesor-estudiante y coste total distintos del refinamiento. | `comparativa`, `modelos`, `opcional` |
+| MT-055 | Conservada. Evaluar destilación temporalmente válida | Transferencia entre modelo maestro y modelo alumno, con coste total distinto del refinamiento. | `comparativa`, `modelos`, `opcional` |
 | MT-056 | Conservada y delimitada. Auditar indicadores macro y sus versiones | Semántica y disponibilidad histórica, sin implementar un descargador general. | `datos`, `macroeconomia`, `bibliografia`, `reproducibilidad` |
 | MT-057 | Conservada. Integrar macro con versiones y disponibilidad | Adaptador temporal de una modalidad, sobre el contrato común. | `datos`, `macroeconomia`, `metodologia`, `reproducibilidad` |
 | MT-058 | Conservada. Versionar calendarios y reglas de mercado | Normas históricas y decisión de viabilidad operativa de China. | `datos`, `metodologia`, `evaluacion` |
@@ -160,10 +160,10 @@ Estas cuatro etiquetas se han sumado a las 16 del catálogo. No se propone elimi
 | MT-060 | Conservada y delimitada. Medir el piloto y fijar el presupuesto | Decide alcance antes del test, con tiempos sostenidos y costes de preparación. | `rendimiento`, `reproducibilidad`, `evaluacion` |
 | MT-061 | Consolidada en MT-037 | Es una familia de pruebas de robustez, con guardas en los módulos de datos. | Históricas y `duplicate` |
 | MT-062 | Consolidada en MT-029 | Las falsaciones ejecutadas son ablaciones de desarrollo, justificadas por MT-003/028. | Históricas y `duplicate` |
-| MT-063 | Conservada. Medir concurrencia y antigüedad del estado | Extensión de sistemas que requiere carga, colas y doble buffer reales. | `memoria`, `rendimiento`, `opcional` |
+| MT-063 | Conservada. Medir concurrencia y antigüedad del estado | Extensión de sistemas que requiere carga, colas y doble búfer reales. | `memoria`, `rendimiento`, `opcional` |
 | MT-064 | Conservada y ampliada con MT-049. Evaluar ampliaciones del universo | Una decisión y sus pruebas por ampliación, manteniendo referencias comparables. | `comparativa`, `rendimiento`, `opcional` |
 | MT-065 | Conservada. Verificar checkpoints y reanudación | Recuperación transaccional y equivalencia tras interrupciones. | `reproducibilidad`, `checkpoints`, `memoria`, `rendimiento` |
-| MT-066 | Conservada. Verificar fuentes públicas complementarias | Selección, licencia y utilidad de fuentes externas a la copia original. | `datos`, `fuentes-externas`, `integridad-academica` |
+| MT-066 | Conservada. Verificar fuentes públicas complementarias | Selección, licencia y utilidad de fuentes externas a la copia original. | `datos`, `fuentes-externas`, `integridad-investigacion` |
 | MT-067 | Conservada. Implementar actualizaciones con instantáneas inmutables | Descarga incremental, idempotencia y separación del benchmark congelado. | `datos`, `fuentes-externas`, `reproducibilidad`, `opcional` |
 
 ## Verificación de la consolidación
