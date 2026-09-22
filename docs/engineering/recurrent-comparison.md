@@ -71,6 +71,12 @@ transversal por sesión. Los objetivos constantes, la ausencia de señales
 direccionales y las muestras insuficientes producen valores no estimables con
 un motivo, no ceros que aparenten una medida.
 
+La comparación de signos excluye objetivos exactamente nulos y trata la
+predicción exactamente nula como neutral. Su cobertura cuenta los pares con
+signos evaluables respecto a los objetivos no nulos. No mide operaciones de una
+cartera ni una política de abstención basada en incertidumbre. No se introduce
+un umbral elegido después de observar los resultados.
+
 El rango entre semillas mide sensibilidad a la inicialización. No es un intervalo
 de confianza sobre el mercado. El remuestreo por bloques de fechas es exploratorio
 y mantiene juntas las observaciones de una misma fecha. Con pocas fechas, ventanas

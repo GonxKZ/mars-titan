@@ -1,0 +1,500 @@
+{
+  "tests_passed": 798,
+  "tests_skipped": 0,
+  "pytest_seconds_with_coverage": 80.22,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "files": {
+    "src/mars_titan/profiling.py": {
+      "sha256": "6984b9f70c006d0cdef576d53f0b28a2e5daa736ea31e30cfa286d7f86151f75",
+      "coverage": {
+        "covered_lines": 44,
+        "num_statements": 107,
+        "percent_covered": 37.241379310344826,
+        "percent_covered_display": "37",
+        "missing_lines": 63,
+        "excluded_lines": 0,
+        "percent_statements_covered": 41.12149532710281,
+        "percent_statements_covered_display": "41",
+        "num_branches": 38,
+        "num_partial_branches": 2,
+        "covered_branches": 10,
+        "missing_branches": 28,
+        "percent_branches_covered": 26.31578947368421,
+        "percent_branches_covered_display": "26"
+      },
+      "functions": [
+        {
+          "name": "profile_case",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.0,
+          "crap": 182.0
+        },
+        {
+          "name": "CostProbe.__init__",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.9090909090909091,
+          "crap": 7.036814425244177
+        },
+        {
+          "name": "CostProbe.forward",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "profile_grid",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.0,
+          "crap": 42.0
+        },
+        {
+          "name": "WindowWorkload.__init__",
+          "complexity": 1,
+          "statement_coverage_fraction": 0.0,
+          "crap": 2.0
+        },
+        {
+          "name": "WindowWorkload.__iter__",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.0,
+          "crap": 20.0
+        },
+        {
+          "name": "_step",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.0,
+          "crap": 12.0
+        },
+        {
+          "name": "project_cost",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 2.1481481481481484
+        }
+      ]
+    },
+    "src/mars_titan/gru_probe.py": {
+      "sha256": "8c970fa7eb820f6f11af9d1264ef56b3b10c3ecd902e73b26ba62a24239f6154",
+      "coverage": {
+        "covered_lines": 100,
+        "num_statements": 118,
+        "percent_covered": 83.33333333333333,
+        "percent_covered_display": "83",
+        "missing_lines": 18,
+        "excluded_lines": 0,
+        "percent_statements_covered": 84.7457627118644,
+        "percent_statements_covered_display": "85",
+        "num_branches": 38,
+        "num_partial_branches": 6,
+        "covered_branches": 30,
+        "missing_branches": 8,
+        "percent_branches_covered": 78.94736842105263,
+        "percent_branches_covered_display": "79"
+      },
+      "functions": [
+        {
+          "name": "run_temporal_probe",
+          "complexity": 39,
+          "statement_coverage_fraction": 0.9367088607594937,
+          "crap": 39.38561858189717
+        },
+        {
+          "name": "run_gru_probe",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.0,
+          "crap": 6.0
+        }
+      ]
+    },
+    "src/mars_titan/models/baselines/campaign.py": {
+      "sha256": "3aa9a95939fa59c8d11a43fe692365485f6bdfca51715e4da23c9bc702e28ba8",
+      "coverage": {
+        "covered_lines": 204,
+        "num_statements": 209,
+        "percent_covered": 96.80511182108626,
+        "percent_covered_display": "97",
+        "missing_lines": 5,
+        "excluded_lines": 0,
+        "percent_statements_covered": 97.60765550239235,
+        "percent_statements_covered_display": "98",
+        "num_branches": 104,
+        "num_partial_branches": 5,
+        "covered_branches": 99,
+        "missing_branches": 5,
+        "percent_branches_covered": 95.1923076923077,
+        "percent_branches_covered_display": "95"
+      },
+      "functions": [
+        {
+          "name": "_data_provenance",
+          "complexity": 22,
+          "statement_coverage_fraction": 1.0,
+          "crap": 22.0
+        },
+        {
+          "name": "_load_config",
+          "complexity": 21,
+          "statement_coverage_fraction": 1.0,
+          "crap": 21.0
+        },
+        {
+          "name": "run_campaign",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.9814814814814815,
+          "crap": 19.002292587512066
+        },
+        {
+          "name": "_record_report",
+          "complexity": 18,
+          "statement_coverage_fraction": 0.9705882352941176,
+          "crap": 18.008243435782617
+        },
+        {
+          "name": "_values",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_fixed",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "_case",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "_unique_object",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_positive",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_cases",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_code_commit",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.6,
+          "crap": 3.576
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        }
+      ]
+    },
+    "src/mars_titan/models/baselines/diagnostics.py": {
+      "sha256": "92b44a26a7d36c151037730a36418ab06164c30492ea77d6682dc4736c992389",
+      "coverage": {
+        "covered_lines": 119,
+        "num_statements": 122,
+        "percent_covered": 97.46835443037975,
+        "percent_covered_display": "97",
+        "missing_lines": 3,
+        "excluded_lines": 0,
+        "percent_statements_covered": 97.54098360655738,
+        "percent_statements_covered_display": "98",
+        "num_branches": 36,
+        "num_partial_branches": 1,
+        "covered_branches": 35,
+        "missing_branches": 1,
+        "percent_branches_covered": 97.22222222222223,
+        "percent_branches_covered_display": "97"
+      },
+      "functions": [
+        {
+          "name": "paired_date_bootstrap",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.9117647058823529,
+          "crap": 13.11609505393853
+        },
+        {
+          "name": "_date_groups",
+          "complexity": 9,
+          "statement_coverage_fraction": 1.0,
+          "crap": 9.0
+        },
+        {
+          "name": "point_diagnostics",
+          "complexity": 8,
+          "statement_coverage_fraction": 1.0,
+          "crap": 8.0
+        },
+        {
+          "name": "_vector",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_correlations",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "_direction",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "_aligned_vectors",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "_average_ranks",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_pearson",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    },
+    "src/mars_titan/models/baselines/analysis.py": {
+      "sha256": "f98a6f02bdb3e09f41a070eef772713fe7d766059c13230cc5f70ba2eb2fb89d",
+      "coverage": {
+        "covered_lines": 279,
+        "num_statements": 294,
+        "percent_covered": 93.45794392523365,
+        "percent_covered_display": "93",
+        "missing_lines": 15,
+        "excluded_lines": 0,
+        "percent_statements_covered": 94.89795918367346,
+        "percent_statements_covered_display": "95",
+        "num_branches": 134,
+        "num_partial_branches": 13,
+        "covered_branches": 121,
+        "missing_branches": 13,
+        "percent_branches_covered": 90.29850746268657,
+        "percent_branches_covered_display": "90"
+      },
+      "functions": [
+        {
+          "name": "_check_grid",
+          "complexity": 31,
+          "statement_coverage_fraction": 1.0,
+          "crap": 31.0
+        },
+        {
+          "name": "_verified_report",
+          "complexity": 24,
+          "statement_coverage_fraction": 0.9166666666666666,
+          "crap": 24.333333333333332
+        },
+        {
+          "name": "_predictions",
+          "complexity": 22,
+          "statement_coverage_fraction": 0.88,
+          "crap": 22.836352
+        },
+        {
+          "name": "_resources",
+          "complexity": 22,
+          "statement_coverage_fraction": 1.0,
+          "crap": 22.0
+        },
+        {
+          "name": "_check_run",
+          "complexity": 20,
+          "statement_coverage_fraction": 0.8,
+          "crap": 23.2
+        },
+        {
+          "name": "analyze_campaign",
+          "complexity": 17,
+          "statement_coverage_fraction": 0.9767441860465116,
+          "crap": 17.00363490007169
+        },
+        {
+          "name": "_cross_sectional",
+          "complexity": 8,
+          "statement_coverage_fraction": 1.0,
+          "crap": 8.0
+        },
+        {
+          "name": "_posttraining_pairs",
+          "complexity": 8,
+          "statement_coverage_fraction": 1.0,
+          "crap": 8.0
+        },
+        {
+          "name": "main",
+          "complexity": 8,
+          "statement_coverage_fraction": 0.9333333333333333,
+          "crap": 8.018962962962963
+        },
+        {
+          "name": "_artifact",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 7.06721536351166
+        },
+        {
+          "name": "_check_campaign",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.9,
+          "crap": 7.049
+        },
+        {
+          "name": "_check_metrics",
+          "complexity": 7,
+          "statement_coverage_fraction": 1.0,
+          "crap": 7.0
+        },
+        {
+          "name": "_seed_groups",
+          "complexity": 7,
+          "statement_coverage_fraction": 1.0,
+          "crap": 7.0
+        },
+        {
+          "name": "_data_hashes",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.9230769230769231,
+          "crap": 6.0163859808830225
+        },
+        {
+          "name": "_digest",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_unique_object",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_read_json",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.875,
+          "crap": 3.017578125
+        },
+        {
+          "name": "_matches",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_breakdown",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_describe",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_encoded",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_run_key",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    }
+  },
+  "execution_checks": {
+    "completed_runs": 48,
+    "failed_runs": 0,
+    "all_checkpoints_exact": true,
+    "all_restored_predictions_equal": true,
+    "final_test_opened": false,
+    "common_population": {
+      "train": {
+        "n": 50,
+        "n_dates": 50,
+        "assets": [
+          "US/DECK",
+          "US/MNST"
+        ],
+        "first_date": "2018-02-05",
+        "last_date": "2022-11-09"
+      },
+      "validation": {
+        "n": 15,
+        "n_dates": 15,
+        "assets": [
+          "US/DECK",
+          "US/MNST"
+        ],
+        "first_date": "2023-02-28",
+        "last_date": "2023-06-29"
+      }
+    }
+  },
+  "targeted_mutations": {
+    "lstm_hidden_replaced_by_cell": "detected",
+    "point_diagnostics": {
+      "detected": 10,
+      "total": 10
+    },
+    "campaign_analysis": {
+      "detected": 8,
+      "total": 8
+    },
+    "analysis_grid_budget": {
+      "detected": 3,
+      "total": 3
+    }
+  },
+  "review_fixes": [
+    "reject_changed_data_or_targets_between_cases",
+    "require_explicit_exact_recovery_and_prediction_restore",
+    "bound_grid_before_cartesian_product",
+    "distinguish_process_lifetime_ram_from_sampled_run_ram"
+  ],
+  "process_time_receipt": "reports/resources/recurrent-campaign-process-time.txt",
+  "process_time_receipt_sha256": "1611f6aa882e5c7fcfb1a9cca8a8634fdad514a95a0dcfc0e475a2369a45e7b2",
+  "analysis_sha256": "62a7fa0cbe68ddafa31612be6c04fa2820d958407604855d123dc8093c2ae909",
+  "plot_script_sha256": "27806bbe1488c7246f407f32795828be1cd6d3db11d0acee9629c2c6b8593455",
+  "figure_sha256": "5aacf057c4465aeda0e3e346bc6e5781155649e359ed22c311731e8ca8786d42",
+  "figure_verification": "PNG inspeccionado, 36 puntos base visibles, escala com\u00fan desde cero, semillas y control identificados.",
+  "limits": [
+    "La cobertura y las mutaciones no demuestran ausencia de errores.",
+    "No se ha medido energ\u00eda ni latencia aislada de kernels.",
+    "Los datos de desarrollo no sustituyen la comparaci\u00f3n confirmatoria."
+  ]
+}
