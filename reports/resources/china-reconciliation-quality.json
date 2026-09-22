@@ -1,0 +1,82 @@
+{
+  "tests_passed": 961,
+  "tests_skipped": 0,
+  "specific_tests": 39,
+  "pytest_seconds_with_coverage": 81.34,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "source_file": "src/mars_titan/data/china_sources.py",
+  "source_sha256": "d86428c4b83e114221102846c764b0dca092ef029843eb0534abb7b7a5431728",
+  "coverage": {
+    "covered_lines": 91,
+    "num_statements": 95,
+    "percent_covered": 94.5578231292517,
+    "percent_covered_display": "95",
+    "missing_lines": 4,
+    "excluded_lines": 0,
+    "percent_statements_covered": 95.78947368421052,
+    "percent_statements_covered_display": "96",
+    "num_branches": 52,
+    "num_partial_branches": 4,
+    "covered_branches": 48,
+    "missing_branches": 4,
+    "percent_branches_covered": 92.3076923076923,
+    "percent_branches_covered_display": "92"
+  },
+  "functions": [
+    {
+      "name": "_day",
+      "complexity": 3,
+      "statement_coverage_fraction": 0.6666666666666666,
+      "crap": 3.3333333333333335
+    },
+    {
+      "name": "_symbol",
+      "complexity": 3,
+      "statement_coverage_fraction": 0.6666666666666666,
+      "crap": 3.3333333333333335
+    },
+    {
+      "name": "_number",
+      "complexity": 7,
+      "statement_coverage_fraction": 1.0,
+      "crap": 7.0
+    },
+    {
+      "name": "_publication",
+      "complexity": 7,
+      "statement_coverage_fraction": 1.0,
+      "crap": 7.0
+    },
+    {
+      "name": "_provenance",
+      "complexity": 13,
+      "statement_coverage_fraction": 0.9230769230769231,
+      "crap": 13.076923076923077
+    },
+    {
+      "name": "reconcile_chinese_fact",
+      "complexity": 22,
+      "statement_coverage_fraction": 0.9772727272727273,
+      "crap": 22.005681818181817
+    }
+  ],
+  "directed_mutations": {
+    "executed": 6,
+    "detected": [
+      "precision",
+      "publication",
+      "identity",
+      "value",
+      "scope",
+      "period"
+    ],
+    "not_a_complete_mutation_score": true
+  },
+  "limits": [
+    "La funci\u00f3n contrasta una revisi\u00f3n suministrada, no certifica autom\u00e1ticamente documentos remotos.",
+    "La evidencia real cubre seis cifras concretas, no todo el mercado chino ni su admisi\u00f3n multimodal.",
+    "Cobertura, complejidad y CRAP no demuestran ausencia de errores ni equivalencia entre normas contables."
+  ]
+}
