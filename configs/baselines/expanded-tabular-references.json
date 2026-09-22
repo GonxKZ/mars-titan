@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "purpose": "fixed_tabular_controls_on_expanded_cohort_not_final_test",
+  "ridge_alphas": [0.1, 1.0, 10.0],
+  "boosting": "existing_histogram_reference_fixed_configuration",
+  "training_through": "2022-12-31",
+  "validation_year": 2023,
+  "final_test_opened": false,
+  "selection": "all_declared_cases_reported_without_validation_selection"
+}
