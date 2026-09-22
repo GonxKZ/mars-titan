@@ -607,6 +607,225 @@
       ],
       "body_sha256": "2e133cf8dd7f9ba02243cb3f3ed315f1377deab8f6fba1338cfc1b37a1fae06e",
       "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MSFT.jsonl",
+      "source_row": 8085,
+      "source_record_hash": "34516ae9dad14c447ac4072616af47a8e38c7bbed374127284c1ee700c8e067d",
+      "symbol": "MSFT",
+      "source_date": "2022-08-05",
+      "source_url": "https://www.nasdaq.com/articles/is-microsoft-stock-a-buy",
+      "selection_key": "0060d30e695c4d3140530a8339f80b8c0ab53724843725b15a7845446ed7db3e",
+      "checked_at": "2026-09-22T05:29:57.132146+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/08/05/is-microsoft-stock-a-buy/",
+      "status": "verified_full_article",
+      "note": "Artículo centrado en los resultados por segmento y la valoración de Microsoft. Se contrastaron el cuerpo editorial completo, la tabla de cuatro columnas y tres filas de datos, su rótulo de fuente y la declaración completa de posiciones. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          4339
+        ],
+        [
+          4821,
+          5234
+        ]
+      ],
+      "body_sha256": "1d5f42488ed351f35561d83708858997a91aa0f1e0711550c14a0f4f22a3c375",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/NVDA.jsonl",
+      "source_row": 3145,
+      "source_record_hash": "f7842d9b4ea735752ef01c28c0e242261ca792faaa7cdb82978e95e356e9326f",
+      "symbol": "NVDA",
+      "source_date": "2023-08-18",
+      "source_url": "https://www.nasdaq.com/articles/billionaire-david-tepper-boosts-his-stake-in-nvidia-by-580.-is-buying-the-high-flying-ai",
+      "selection_key": "0002172d13adcd9318e529cc4f454a3468351e2a703457fe2225a1e5702c20b3",
+      "checked_at": "2026-09-22T05:29:57.132160+00:00",
+      "evidence_url": "https://www.fool.com/investing/2023/08/18/billionaire-david-tepper-boosts-stake-in-nvidia/",
+      "status": "verified_full_article",
+      "note": "Artículo centrado en la participación de Appaloosa en Nvidia, la demanda de GPU y la valoración de la empresa. Se contrastaron todos los apartados editoriales y la declaración completa de posiciones. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          3696
+        ],
+        [
+          4160,
+          4521
+        ]
+      ],
+      "body_sha256": "267866545a81ba2c3255b97ccbeeb4c7d638e81d6d38d5d21774813c460b5fd4",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/AMZN.jsonl",
+      "source_row": 4668,
+      "source_record_hash": "ca5a0ebe09a48e6107d3f0b1d5f7b95ce9a845e7be0f310ab24b7214d4cea43d",
+      "symbol": "AMZN",
+      "source_date": "2023-05-03",
+      "source_url": "https://www.nasdaq.com/articles/3-things-smart-investors-learned-from-amazons-q1-earnings-report",
+      "selection_key": "005a79992de5f897e1d782cea2bf9f525f571d36ac738ece6e1f28cd36342363",
+      "checked_at": "2026-09-22T05:29:57.132165+00:00",
+      "evidence_url": "https://www.fool.com/investing/2023/05/03/3-things-smart-investors-learned-amazons-q1-report/",
+      "status": "verified_full_article",
+      "note": "Artículo centrado en los resultados trimestrales de Amazon, con apartados propios sobre rentabilidad, AWS y publicidad. Se contrastaron todos los párrafos editoriales y la declaración completa de posiciones. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          4256
+        ],
+        [
+          4727,
+          5014
+        ]
+      ],
+      "body_sha256": "039d9091254fc8a988a9a72b53815a4f26114d6bee413a6dcc0b1f2eb8ccdc3a",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MSFT.jsonl",
+      "source_row": 7045,
+      "source_record_hash": "cddbb674e67454676271bf6fff4ae662084320204c201803d8aa32950ea37029",
+      "symbol": "MSFT",
+      "source_date": "2022-11-11",
+      "source_url": "https://www.nasdaq.com/articles/activision-blizzard-stock%3A-is-waiting-for-the-microsoft-buyout-too-risky-now",
+      "selection_key": "01b040ef0dd6d283d0edf46d424c84d577c8ebd3becd13ec2073a63e5fd93e8d",
+      "selection_rank_within_symbol": 1,
+      "checked_at": "2026-09-22T05:29:57.132168+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/11/11/activision-blizzard-stock-is-waiting-for-the-micro/",
+      "status": "unverifiable",
+      "note": "La página y la copia local coinciden en la introducción, una nota temporal, el texto de una publicación incrustada y las declaraciones de posiciones. El contenido principal remite a un vídeo sin transcripción textual completa. No se admite un resumen como artículo completo ni se reconstruye el vídeo. La publicación declarada del artículo coincide con la fecha local del 11 de noviembre, mientras que el texto señala el vídeo como publicado el día 10."
+    },
+    {
+      "source_file": "text/sp500_news/MSFT.jsonl",
+      "source_row": 7773,
+      "source_record_hash": "3b8c9a8a3e89965363369c21ce7d4503842b979f8f49b18eae683c15b63fd82d",
+      "symbol": "MSFT",
+      "source_date": "2022-09-13",
+      "source_url": "https://www.nasdaq.com/articles/why-intel-microsoft-and-hp-stocks-flopped-today",
+      "selection_key": "02489e3776b6f6ed67ec8ae2f5778ee55645a8588d55d2079eb3ff5b2a50e729",
+      "selection_rank_within_symbol": 2,
+      "checked_at": "2026-09-22T05:29:57.132171+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/09/13/why-intel-microsoft-and-hp-stocks-flopped-today/",
+      "status": "verified_full_article",
+      "note": "Microsoft es una de las tres empresas analizadas. El texto incluye su variación bursátil y un párrafo propio sobre valoración y crecimiento esperado. Se contrastaron los tres apartados editoriales y la declaración completa de posiciones. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          2688
+        ],
+        [
+          3172,
+          3480
+        ]
+      ],
+      "body_sha256": "58f86f40e962d1628d8916896e19d4fae6edf9511316faa65dfb6d27271ae295",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/MSFT.jsonl",
+      "source_row": 8266,
+      "source_record_hash": "9d89d3fa82189c69e95d8392e62bbffdf8de0d72b90334f1fe5e7832615375fc",
+      "symbol": "MSFT",
+      "source_date": "2022-07-24",
+      "source_url": "https://www.nasdaq.com/articles/is-now-a-good-time-to-buy-microsoft-stock",
+      "selection_key": "046532fa39c0b026fbdee45c4988ebb79a7730af73473bccb2934880744eb676",
+      "selection_rank_within_symbol": 3,
+      "checked_at": "2026-09-22T05:29:57.132176+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/07/24/is-now-a-good-time-to-buy-microsoft-stock/",
+      "status": "verified_full_article",
+      "note": "Se contrastaron la introducción y la transcripción textual completa publicada sobre las ventajas competitivas, Azure, dividendos y valoración de Microsoft, junto con la declaración de posiciones. La grabación indicada es del 13 de julio, pero se mantiene la publicación local del 24 de julio. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          296
+        ],
+        [
+          777,
+          3842
+        ]
+      ],
+      "body_sha256": "e6a53e2ceea99d5ec3682575f68fd15c09b3019535e94085a281b4af471fd0dd",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/NVDA.jsonl",
+      "source_row": 7224,
+      "source_record_hash": "732fa1ae75afe2fb998ffe238d6b579e95f9d9718316419057322137f720dad9",
+      "symbol": "NVDA",
+      "source_date": "2022-06-17",
+      "source_url": "https://www.nasdaq.com/articles/4-compelling-reasons-nvidia-is-my-newest-stock-buy",
+      "selection_key": "00cb6c0f82bd62e7c438d26ee396e208349a01b427ffb5c13c9508e1b04c941c",
+      "selection_rank_within_symbol": 1,
+      "checked_at": "2026-09-22T05:29:57.132179+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/06/17/4-compelling-reasons-nvidia-is-my-newest-stock-buy/",
+      "status": "verified_full_article",
+      "note": "Se contrastaron la introducción y la transcripción textual completa publicada sobre los mercados, resultados y valoración de Nvidia, junto con la declaración de posiciones. La grabación indicada es del 6 de junio, pero se mantiene la publicación local del 17 de junio. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          332
+        ],
+        [
+          807,
+          4472
+        ]
+      ],
+      "body_sha256": "6a8a7131d665f6ba1b37d3b0d3a0904ff4f5939e561e74a847f097775f2e9d87",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/NVDA.jsonl",
+      "source_row": 8269,
+      "source_record_hash": "311424fb59df7a148792cdfef8c5a8ad648fd010f04fcd75ea4abf899b4045bc",
+      "symbol": "NVDA",
+      "source_date": "2022-01-31",
+      "source_url": "https://www.nasdaq.com/articles/if-you-invested-%2410000-in-nvidia-in-1999-this-is-how-much-you-would-have-today",
+      "selection_key": "00e3b800eeffd6f03627660791638d19f32e391bfa514a816209f453fcffc210",
+      "selection_rank_within_symbol": 2,
+      "checked_at": "2026-09-22T05:29:57.132182+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/01/31/if-invested-10000-nvidia-1999-how-much-today/",
+      "status": "verified_full_article",
+      "note": "Artículo centrado en la evolución bursátil, los desdoblamientos, dividendos, negocio y valoración de Nvidia. Se contrastaron los tres apartados editoriales, el crédito de imagen y la declaración completa de posiciones. Se conservan las afirmaciones del editor sin corregirlas ni certificar por separado su exactitud histórica. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          3574
+        ],
+        [
+          4053,
+          4544
+        ]
+      ],
+      "body_sha256": "0b4c6eca6b0baff527183e8d49d9a4bd34dc47e4c512f1721087c259f36deb7b",
+      "historical_version_verified": false
+    },
+    {
+      "source_file": "text/sp500_news/NVDA.jsonl",
+      "source_row": 8362,
+      "source_record_hash": "c0249640e51903a4348a0aa25f2e760f4440cf659cfb3607779cac47059267eb",
+      "symbol": "NVDA",
+      "source_date": "2022-01-20",
+      "source_url": "https://www.nasdaq.com/articles/why-nvidia-could-crush-amd-once-again-in-2022",
+      "selection_key": "00efc3cb6cbf708ae28d7b1d3e0d6b0ba268e47b7f2dc3d6ee55755c41f3f64d",
+      "selection_rank_within_symbol": 3,
+      "checked_at": "2026-09-22T05:29:57.132184+00:00",
+      "evidence_url": "https://www.fool.com/investing/2022/01/20/why-nvidia-could-crush-amd-once-again-in-2022/",
+      "status": "verified_full_article",
+      "note": "Artículo centrado en Nvidia, su cuota de GPU, los productos presentados en CES 2022 y el mercado de portátiles. Se contrastaron todos los párrafos editoriales, el crédito de imagen y la declaración completa de posiciones. Se excluyen únicamente la promoción y el aviso genérico del distribuidor. Se conserva la fecha sola y el retardo por sesiones. La correspondencia con la página actual no acredita una instantánea histórica inmutable.",
+      "body_spans": [
+        [
+          0,
+          5850
+        ],
+        [
+          6329,
+          6502
+        ]
+      ],
+      "body_sha256": "4137e998932c09b944557b7e4ca0e9a82903ea8a1609d08d197983753d0e8c0f",
+      "historical_version_verified": false
     }
   ]
 }
