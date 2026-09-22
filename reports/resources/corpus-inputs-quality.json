@@ -1,0 +1,264 @@
+{
+  "full_suite": {
+    "passed": 989,
+    "skipped": 0,
+    "seconds": 57.43
+  },
+  "focused_suite_with_coverage": {
+    "passed": 28,
+    "seconds": 9.05
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "files": {
+    "src/mars_titan/data/cross_market.py": {
+      "sha256": "a21e39dc28a3babbb7881a7fda78e8f2d069cbb29bfb2b348a8a99f7c1e0f1ba",
+      "coverage": {
+        "covered_lines": 31,
+        "num_statements": 35,
+        "percent_covered": 84.90566037735849,
+        "percent_covered_display": "85",
+        "missing_lines": 4,
+        "excluded_lines": 0,
+        "percent_statements_covered": 88.57142857142857,
+        "percent_statements_covered_display": "89",
+        "num_branches": 18,
+        "num_partial_branches": 4,
+        "covered_branches": 14,
+        "missing_branches": 4,
+        "percent_branches_covered": 77.77777777777777,
+        "percent_branches_covered_display": "78"
+      },
+      "functions": [
+        {
+          "name": "asof_cross_market_context",
+          "complexity": 23,
+          "statement_coverage_fraction": 0.8666666666666667,
+          "crap": 24.253925925925927
+        }
+      ]
+    },
+    "src/mars_titan/training/__init__.py": {
+      "sha256": "bbec50e131537b80ca8b8c23c728430659e78a865529671167375c0cf0e32c8a",
+      "coverage": {
+        "covered_lines": 0,
+        "num_statements": 0,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 0,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      },
+      "functions": []
+    },
+    "src/mars_titan/training/corpus_inputs.py": {
+      "sha256": "b5ad9f264a366150cd3af7a61a9439af306580eef96b43deab4aa77135dad16c",
+      "coverage": {
+        "covered_lines": 183,
+        "num_statements": 214,
+        "percent_covered": 80.43478260869566,
+        "percent_covered_display": "80",
+        "missing_lines": 31,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.51401869158879,
+        "percent_statements_covered_display": "86",
+        "num_branches": 108,
+        "num_partial_branches": 30,
+        "covered_branches": 76,
+        "missing_branches": 32,
+        "percent_branches_covered": 70.37037037037037,
+        "percent_branches_covered_display": "70"
+      },
+      "functions": [
+        {
+          "name": "_unique",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 3.0416666666666665
+        },
+        {
+          "name": "_times",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_random",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_batch",
+          "complexity": 7,
+          "statement_coverage_fraction": 1.0,
+          "crap": 7.0
+        },
+        {
+          "name": "supervised_batches",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "CorpusDataset.__init__",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.875,
+          "crap": 29.53125
+        },
+        {
+          "name": "CorpusDataset._file",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 10.393643388249016
+        },
+        {
+          "name": "CorpusDataset._labels",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.775,
+          "crap": 26.023265625
+        },
+        {
+          "name": "CorpusDataset._rows",
+          "complexity": 41,
+          "statement_coverage_fraction": 0.8378378378378378,
+          "crap": 48.168301976190946
+        },
+        {
+          "name": "CorpusDataset.batches",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 21.60493827160494
+        }
+      ]
+    },
+    "src/mars_titan/training/corpus_targets.py": {
+      "sha256": "b5d08a183b5997a9119d2d9933ebc5c9a83fa8232c41fe8eeaa57d62f8f3f547",
+      "coverage": {
+        "covered_lines": 114,
+        "num_statements": 128,
+        "percent_covered": 84.78260869565217,
+        "percent_covered_display": "85",
+        "missing_lines": 14,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.0625,
+        "percent_statements_covered_display": "89",
+        "num_branches": 56,
+        "num_partial_branches": 14,
+        "covered_branches": 42,
+        "missing_branches": 14,
+        "percent_branches_covered": 75.0,
+        "percent_branches_covered_display": "75"
+      },
+      "functions": [
+        {
+          "name": "_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_path",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.75,
+          "crap": 4.25
+        },
+        {
+          "name": "_asset_sources",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.8235294117647058,
+          "crap": 15.07714227559536
+        },
+        {
+          "name": "_label_batches",
+          "complexity": 16,
+          "statement_coverage_fraction": 0.8846153846153846,
+          "crap": 16.393263541192535
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 42,
+          "statement_coverage_fraction": 0.8947368421052632,
+          "crap": 44.05744277591486
+        }
+      ]
+    }
+  },
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "manifest_identity",
+      "retained_groups",
+      "dependency_identity"
+    ]
+  },
+  "reader_measurement": {
+    "synthetic": [
+      {
+        "assets": 10,
+        "parquet_bytes": 65504580,
+        "rows": 8000,
+        "batches": 63,
+        "total_seconds": 0.4275113050098298,
+        "validation_seconds": 0.05959546100348234,
+        "samples_per_second": 18712.9554382569,
+        "peak_rss_bytes": 154435584,
+        "rusage_maxrss_bytes": 217165824
+      },
+      {
+        "assets": 130,
+        "parquet_bytes": 851559540,
+        "rows": 104000,
+        "batches": 813,
+        "total_seconds": 4.326577297004405,
+        "validation_seconds": 0.7558624450030038,
+        "samples_per_second": 24037.476476383894,
+        "peak_rss_bytes": 162594816,
+        "rusage_maxrss_bytes": 217165824
+      }
+    ],
+    "real": {
+      "rows": 160,
+      "batches": 2,
+      "total_seconds": 0.3040483870136086,
+      "validation_seconds": 0.015185905009275302,
+      "samples_per_second": 526.2320302749665,
+      "peak_rss_bytes": 162254848,
+      "rusage_maxrss_bytes": 217165824
+    },
+    "batch_size": 128,
+    "dimensions": {
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 45,
+      "macro": 420
+    },
+    "synthetic_context_sessions": 2,
+    "real_context_sessions": 64,
+    "concurrency": "Campa\u00f1a neuronal y verificaci\u00f3n editorial activas",
+    "cache": "Cach\u00e9 del sistema sin controlar",
+    "repetitions": 1
+  },
+  "limits": [
+    "La cobertura corresponde a las pruebas espec\u00edficas, no a toda la bater\u00eda.",
+    "VmHWM de procfs mide el m\u00e1ximo RSS del proceso lector. Se conserva tambi\u00e9n getrusage.",
+    "Una repetici\u00f3n con tareas concurrentes y cach\u00e9 sin controlar no acredita aceleraci\u00f3n.",
+    "El volumen sint\u00e9tico verifica memoria y recorrido. No mide calidad predictiva."
+  ]
+}
