@@ -247,6 +247,61 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
     assert all(row["prediction_at"].year == 2023 and np.isfinite(row[kind]) for row in rows)
 
 
+@pytest.mark.parametrize("loss", ["mae", "huber"])
+def test_posttraining_has_its_own_optimizer_reports_and_exact_recovery(
+    tmp_path, synthetic_budget_inputs, loss
+):
+    from mars_titan.gru_probe import run_temporal_probe
+
+    fixture = synthetic_budget_inputs
+    sample, prepared = fixture["sample_paths"][0], fixture["prepared"]
+    for path in (sample.parent / "manifest.json", prepared / "US/S00/manifest.json"):
+        manifest = json.loads(path.read_text())
+        manifest["news_content_policy"] = "verified_full_articles"
+        path.write_text(json.dumps(manifest))
+    base = run_temporal_probe(
+        prepared,
+        sample.parent,
+        tmp_path / "base",
+        tmp_path / "base.json",
+        epochs=2,
+        learning_rate=1e-3,
+        seed=7,
+    )
+    checkpoint = tmp_path / "base/epoch-2.pt"
+    source_hash = sha256(checkpoint)
+    refined = run_temporal_probe(
+        prepared,
+        sample.parent,
+        tmp_path / "refined",
+        tmp_path / "refined.json",
+        epochs=2,
+        loss=loss,
+        huber_delta=0.003,
+        learning_rate=1e-4,
+        seed=7,
+        initialize_from=checkpoint,
+    )
+    assert refined["config"]["initialization"]["sha256"] == source_hash
+    assert refined["config"]["loss"] == loss
+    assert refined["config"]["seed"] == 7
+    assert refined["config"]["lr"] == 1e-4
+    assert refined["epochs"][0]["train"]["loss"] == loss
+    assert refined["resume_check"]["exact_weights"] is True
+    assert refined["samples"] == base["samples"]
+    assert sha256(checkpoint) == source_hash
+    rows = pq.read_table(tmp_path / "refined/predictions.parquet").to_pandas()
+    errors = (rows.gru - rows.target).abs().to_numpy()
+    expected = (
+        errors.mean()
+        if loss == "mae"
+        else np.where(errors < 0.003, errors**2 / 2, 0.003 * (errors - 0.003 / 2)).mean()
+    )
+    assert refined["epochs"][-1]["validation"]["objective_loss"] == pytest.approx(
+        expected, abs=1e-7
+    )
+
+
 def test_budget_grid_generates_labels_trains_and_resumes_without_opening_2024(
     tmp_path, synthetic_budget_inputs, cuda_runtime
 ):

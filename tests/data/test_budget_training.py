@@ -136,3 +136,62 @@ def test_budget_run_rejects_invalid_workload_before_touching_data(tmp_path, opti
             tmp_path / "missing", tmp_path / "report.json", tmp_path / "out", **options
         )
     assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize(
+    "loss,expected_objective,expected_weight",
+    [("mse", 5.0, 0.0), ("mae", 2.0, 0.8), ("huber", 0.875, 0.9)],
+)
+def test_objectives_keep_common_metrics_and_apply_the_expected_gradient(
+    loss, expected_objective, expected_weight
+):
+    torch = pytest.importorskip("torch")
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+
+    class ScalarModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.weight = torch.nn.Parameter(torch.tensor(1.0))
+
+        def forward(self, inputs):
+            return inputs["prices"] * self.weight
+
+    model = ScalarModel().to("cuda:0")
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    batch = ({"prices": torch.tensor([1.0, 3.0])}, torch.zeros(2))
+    result = training_module().run_epoch(
+        model, optimizer, [batch], torch.device("cuda:0"), loss=loss, huber_delta=0.5
+    )
+    assert result["objective_loss"] == pytest.approx(expected_objective)
+    assert result["diagnostic_mse"] == pytest.approx(5.0)
+    assert result["diagnostic_mae"] == pytest.approx(2.0)
+    assert model.weight.item() == pytest.approx(expected_weight, abs=1e-7)
+
+
+@pytest.mark.parametrize("loss,delta", [("other", 0.1), ("huber", 0.0), ("huber", float("nan"))])
+def test_invalid_loss_options_fail_before_touching_a_model(loss, delta):
+    with pytest.raises(ValueError, match="pérdida|Huber"):
+        training_module().run_epoch(None, None, [], None, loss=loss, huber_delta=delta)
+
+
+def test_target_broadcasting_is_rejected_before_updating_weights():
+    torch = pytest.importorskip("torch")
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA no está disponible, no se sustituye por CPU")
+
+    class ColumnModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.linear = torch.nn.Linear(1, 1)
+
+        def forward(self, inputs):
+            return self.linear(inputs["prices"])
+
+    model = ColumnModel().to("cuda:0")
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    before = {name: value.clone() for name, value in model.state_dict().items()}
+    batch = ({"prices": torch.tensor([[1.0], [3.0]])}, torch.zeros(2))
+    with pytest.raises(ValueError, match="forma"):
+        training_module().train_step(model, optimizer, batch, torch.device("cuda:0"))
+    assert all(torch.equal(value, before[name]) for name, value in model.state_dict().items())

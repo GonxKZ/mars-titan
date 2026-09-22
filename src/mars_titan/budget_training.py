@@ -42,18 +42,44 @@ def target_partition(prediction_at, target_available_at):
     return None
 
 
-def train_step(model, optimizer, batch, device):
+def validate_loss(loss: str, huber_delta: float) -> None:
+    if loss not in {"mse", "mae", "huber"}:
+        raise ValueError("La pérdida debe ser mse, mae o huber")
+    if (
+        not isinstance(huber_delta, (int, float))
+        or not np.isfinite(huber_delta)
+        or huber_delta <= 0
+    ):
+        raise ValueError("El umbral de Huber debe ser finito y positivo")
+
+
+def _supervised_step(model, optimizer, batch, device, loss, huber_delta):
     inputs, target = batch
     inputs = {key: value.to(device) for key, value in inputs.items()}
     target = target.to(device)
-    optimizer.zero_grad(set_to_none=True)
-    prediction = model(inputs)
-    loss = torch.nn.functional.mse_loss(prediction, target)
-    if not torch.isfinite(loss):
-        raise ValueError("La pérdida supervisada no es finita")
-    loss.backward()
-    optimizer.step()
-    return float(loss.detach())
+    with torch.set_grad_enabled(optimizer is not None):
+        if optimizer is not None:
+            optimizer.zero_grad(set_to_none=True)
+        prediction = model(inputs)
+        if prediction.shape != target.shape or target.ndim != 1:
+            raise ValueError("Predicción y etiqueta deben tener la misma forma [lote]")
+        mse = torch.nn.functional.mse_loss(prediction, target)
+        mae = torch.nn.functional.l1_loss(prediction, target)
+        objective = mse if loss == "mse" else mae
+        if loss == "huber":
+            objective = torch.nn.functional.huber_loss(prediction, target, delta=huber_delta)
+        metrics = torch.stack([objective.detach(), mse.detach(), mae.detach()])
+        if not torch.isfinite(metrics).all():
+            raise ValueError("La pérdida supervisada o sus métricas no son finitas")
+        if optimizer is not None:
+            objective.backward()
+            optimizer.step()
+    return metrics.tolist()
+
+
+def train_step(model, optimizer, batch, device):
+    """Conservar el paso MSE utilizado por las sondas originales."""
+    return _supervised_step(model, optimizer, batch, device, "mse", 0.01)[0]
 
 
 def save_checkpoint(path, model, optimizer, *, next_epoch, config, hashes):
@@ -130,11 +156,13 @@ def process_memory():
     return {"rss_mib": rss / 1024, "pss_mib": pss / 1024, "processes": len(seen)}
 
 
-def run_epoch(model, optimizer, loader, device):
+def run_epoch(model, optimizer, loader, device, *, loss="mse", huber_delta=0.01):
+    validate_loss(loss, huber_delta)
     model.train(optimizer is not None)
     torch.cuda.synchronize()
     torch.cuda.reset_peak_memory_stats()
-    latencies, losses, samples = [], 0.0, 0
+    latencies, samples = [], 0
+    losses = np.zeros(3, dtype=np.float64)
     peak = process_memory()
     stopped = threading.Event()
 
@@ -149,20 +177,12 @@ def run_epoch(model, optimizer, loader, device):
     started = step_started = time.perf_counter()
     try:
         for batch in loader:
-            if optimizer is not None:
-                loss = train_step(model, optimizer, batch, device)
-            else:
-                with torch.inference_mode():
-                    inputs, target = batch
-                    prediction = model({key: value.to(device) for key, value in inputs.items()})
-                    loss = float(torch.nn.functional.mse_loss(prediction, target.to(device)))
-                    if not np.isfinite(loss):
-                        raise ValueError("La pérdida de validación no es finita")
+            metrics = _supervised_step(model, optimizer, batch, device, loss, huber_delta)
             torch.cuda.synchronize()
             latencies.append(time.perf_counter() - step_started)
             count = len(batch[1])
             samples += count
-            losses += loss * count
+            losses += np.asarray(metrics) * count
             step_started = time.perf_counter()
     finally:
         elapsed = time.perf_counter() - started
@@ -175,7 +195,10 @@ def run_epoch(model, optimizer, loader, device):
         "steps": len(latencies),
         "elapsed_seconds": elapsed,
         "samples_per_second": samples / elapsed,
-        "diagnostic_mse": losses / samples,
+        "loss": loss,
+        "objective_loss": float(losses[0] / samples),
+        "diagnostic_mse": float(losses[1] / samples),
+        "diagnostic_mae": float(losses[2] / samples),
         **{f"step_p{q}_ms": float(np.percentile(latencies, q) * 1000) for q in [50, 95, 99]},
         "peak_vram_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
         "peak_vram_reserved_mib": torch.cuda.max_memory_reserved() / 1024**2,
