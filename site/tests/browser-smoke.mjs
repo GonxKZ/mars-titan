@@ -115,7 +115,7 @@ try {
     await page.locator("#import-file").setInputFiles({ name: "exporter-fixture.json", mimeType: "application/json", buffer: exported });
     await page.waitForFunction(() => document.querySelector("#run-select").options.length === 32);
     assert.equal(await page.locator("#error-message").isVisible(), false);
-    console.log(`Importación real CLI → navegador: ${exported.byteLength} bytes y 32 ejecuciones.`);
+    console.log(`Importación real de la CLI al navegador: ${exported.byteLength} bytes y 32 ejecuciones.`);
   }
   await page.locator("#import-file").setInputFiles({ name: "too-large.json", mimeType: "application/json", buffer: Buffer.alloc(8 * 1024 * 1024 + 1, " ") });
   await page.waitForFunction(() => document.querySelector("#error-message").textContent.includes("8 MiB"));

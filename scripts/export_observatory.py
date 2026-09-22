@@ -172,7 +172,9 @@ def public_checkpoint(raw, run, now):
     }
     saved_step = result["step"]
     if resumable and (saved_step is None or result["saved_at"] is None):
-        raise ValueError("La recuperación necesita un paso y una fecha de checkpoint observados.")
+        raise ValueError(
+            "La recuperación necesita un paso y una fecha de punto de control observados."
+        )
     if saved_step is not None and run["completed_steps"] is not None:
         if saved_step > run["completed_steps"]:
             raise ValueError("Punto de control posterior al progreso confirmado.")
@@ -367,7 +369,9 @@ def export_snapshot(
     if type(max_output_bytes) is not int or not 1 <= max_output_bytes <= 8388608:
         raise ValueError("El límite de salida debe estar entre 1 y 8388608 bytes.")
     if type(release_test) is not bool:
-        raise ValueError("La liberación del test debe ser una decisión booleana explícita.")
+        raise ValueError(
+            "La publicación de la prueba final debe ser una decisión booleana explícita."
+        )
     if type(timeout_seconds) not in (int, float) or not 0 < timeout_seconds <= 30:
         raise ValueError("El presupuesto de tiempo debe ser positivo y no superar 30 segundos.")
     deadline = time.monotonic() + timeout_seconds
@@ -392,7 +396,9 @@ def export_snapshot(
         )
         for run in runs
     ):
-        notes.append("Hay ejecuciones sin latido reciente. Su actividad no está confirmada.")
+        notes.append(
+            "Hay ejecuciones sin una señal de actividad reciente. Su actividad no está confirmada."
+        )
     if any(run["phase"] is None for run in runs):
         notes.append("Hay ejecuciones sin fase identificada. Sus métricas permanecen ocultas.")
     document = {

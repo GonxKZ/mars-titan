@@ -169,7 +169,7 @@ function renderComparison() {
   const rows = comparableRuns(snapshot.runs, group, phase, byId("comparison-metric").value);
   byId("comparison-empty").hidden = rows.length > 0;
   byId("comparison-table-wrap").hidden = rows.length === 0;
-  byId("comparison-caption").textContent = `${rows.length} ejecuciones / ${PHASE_LABELS[phase]} / Grupo ${group}`;
+  byId("comparison-caption").textContent = `${rows.length} ejecuciones en ${PHASE_LABELS[phase]}. Grupo ${group}`;
   byId("comparison-body").replaceChildren(...rows.map(run => {
     const row = element("tr");
     const model = element("td");
@@ -197,7 +197,7 @@ function renderHistory() {
   byId("history-empty").hidden = rows.length > 0;
   byId("history-table-wrap").hidden = rows.length === 0;
   byId("export-button").disabled = rows.length === 0;
-  byId("history-empty").firstElementChild.textContent = snapshot.runs.length ? "No hay coincidencias con estos filtros" : "Un registro que todavía está por empezar";
+  byId("history-empty").firstElementChild.textContent = snapshot.runs.length ? "No hay coincidencias con estos filtros" : "El registro aún no contiene ejecuciones";
   byId("history-empty").lastElementChild.textContent = snapshot.runs.length ? "Prueba otro identificador o selecciona todos los estados." : "No hay ejecuciones que mostrar. Los intentos aparecerán con su fecha, fase y estado declarado.";
   byId("history-body").replaceChildren(...rows.map(run => {
     const row = element("tr");
@@ -329,7 +329,7 @@ async function refreshPublic() {
     snapshotOrigin = "public";
     showError("");
     const active = snapshot.runs.some(run => displayStatus(run, Date.now(), snapshot.stale_after_seconds) === "running");
-    announce(snapshot.runs.length ? "Resumen leído / consulta cada 60 s" : "Sin ejecuciones registradas", active ? "ready" : "idle");
+    announce(snapshot.runs.length ? "Resumen leído. Próxima consulta en 60 s" : "Sin ejecuciones registradas", active ? "ready" : "idle");
     render();
   } catch (error) {
     if (version !== requestVersion || sourceMode !== "public" || (controller.signal.aborted && !timedOut)) return;
@@ -363,7 +363,7 @@ byId("import-file").addEventListener("change", async event => {
     snapshot = next;
     byId("local-file-name").textContent = file.name;
     showError("");
-    announce("Archivo local / consulta pública detenida", "idle");
+    announce("Archivo local. Consulta pública detenida", "idle");
     render();
   } catch (error) {
     showError(`${error instanceof SyntaxError ? "El archivo no contiene JSON válido" : error.message}. El registro anterior se conserva.`);

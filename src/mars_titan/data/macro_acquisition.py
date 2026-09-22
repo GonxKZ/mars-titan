@@ -1,4 +1,4 @@
-"""Adquisición acotada y reanudable de vintages macro desde ALFRED."""
+"""Adquisición acotada y reanudable de versiones históricas macro desde ALFRED."""
 
 from __future__ import annotations
 
@@ -644,7 +644,7 @@ def acquire_catalog(
 ) -> dict:
     """Audita el catálogo y adquiere las series originales admisibles de ALFRED."""
     if type(workers) is not int or not 1 <= workers <= 2:
-        raise ValueError("workers debe ser uno o dos")
+        raise ValueError("El número de trabajadores debe ser uno o dos")
     destination = Path(destination)
     outside_source(Path("dataset"), destination)
     outside_source(Path("dataset"), destination / _DATABASE)

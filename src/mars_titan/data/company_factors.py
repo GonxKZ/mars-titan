@@ -126,7 +126,7 @@ def derive_company_factors(rows, *, max_facts: int = 100_000):
 
 
 def write_company_factors(path, rows, *, batch_rows: int = 256, max_facts: int = 100_000):
-    """Escribe la trazabilidad por bloques y conserva solo el estado usado por snapshot."""
+    """Escribe la trazabilidad por bloques y conserva solo el estado de la instantánea."""
     import pyarrow as pa
 
     from .batches import atomic_parquet_batches

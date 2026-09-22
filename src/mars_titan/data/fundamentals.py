@@ -1,4 +1,4 @@
-"""Hechos contables por publicación. Los envoltorios no fechan las cifras internas."""
+"""Hechos contables por publicación. El contenedor no fecha las cifras internas."""
 
 import math
 from collections import Counter

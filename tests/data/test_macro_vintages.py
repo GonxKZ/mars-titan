@@ -1,4 +1,4 @@
-"""Contratos numéricos y temporales del catálogo macro con vintages sintéticos."""
+"""Contratos numéricos y temporales del catálogo macro con versiones sintéticas."""
 
 import csv
 import importlib

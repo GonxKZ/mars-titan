@@ -1,6 +1,6 @@
 """Reconstrucción por eventos de indicadores macro y sus versiones históricas.
 
-Las entradas conservan sus unidades históricas nativas. Una fecha ALFRED
+Las entradas conservan sus unidades históricas nativas. Una fecha de ALFRED
 es evidencia de disponibilidad, nunca la fecha del periodo observado. Las fechas
 sin hora se llevan al final del día de origen y a la siguiente sesión estricta
 del mercado objetivo. Esta regla sacrifica inmediatez al cruzar zonas horarias.

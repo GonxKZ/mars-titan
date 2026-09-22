@@ -1,6 +1,6 @@
 # Observatorio de entrenamiento de MARS-TITAN
 
-Autor: Gonzalo García Lama. Desarrollo asociado a [MT-068](https://github.com/GonxKZ/mars-titan/issues/70).
+Autor: Gonzalo García Lama. Trabajo registrado en [MT-068](https://github.com/GonxKZ/mars-titan/issues/70).
 
 Esta interfaz estática permite consultar resúmenes de ejecuciones e importar un JSON local sin enviarlo a ningún servidor. El estado inicial no contiene ejecuciones ni resultados. La interfaz no entrena modelos, no controla el ordenador y no sustituye el registro experimental.
 
@@ -40,13 +40,13 @@ La revisión previa al desarrollo ha eliminado indicadores gigantes sin datos, p
 
 `data/observatory.json` usa `schema_version: 1`. Los números desconocidos son `null`. El navegador valida el contenido antes de mostrarlo y conserva el último resumen válido si una actualización falla. El límite de lectura es 8 MiB por resumen, con un máximo de 128 ejecuciones y 500 puntos por curva. La petición tiene un tiempo máximo y no hay solicitudes simultáneas. El gráfico muestra los últimos 240 puntos del registro seleccionado y lo indica en su descripción.
 
-`comparison_group` identifica un contrato experimental compartido de datos, universo, target, cortes, agregación de métricas y evaluación. Solo se comparan ejecuciones completadas de ese mismo grupo y fase. Un grupo no debe mezclar resultados de folds o definiciones de target incompatibles. La interfaz no puede verificar esos supuestos científicos a partir de un nombre.
+`comparison_group` identifica un contrato experimental compartido de datos, universo, objetivo, cortes, agregación de métricas y evaluación. Solo se comparan ejecuciones completadas de ese mismo grupo y fase. Un grupo no debe mezclar resultados de particiones o definiciones de objetivo incompatibles. La interfaz no puede verificar esos supuestos científicos a partir de un nombre.
 
-Una ejecución `running` sin heartbeat reciente se muestra como «Sin actualización», no como pausada. `status` y `phase` pueden ser `null`, que se muestra como información desconocida. El estado vacío significa «Sin ejecuciones registradas», sin inferir si el ordenador está encendido. Las métricas y curvas de `test` y `evaluation` permanecen ocultas mientras `test_released` no sea `true` y la ejecución no haya terminado, también en CSV. El productor del JSON público debe excluir resultados protegidos antes de publicarlos, ya que ocultarlos en una pantalla no protege el archivo fuente.
+Una ejecución `running` sin un `heartbeat_at` reciente se muestra como «Sin actualización», no como pausada. `status` y `phase` pueden ser `null`, que se muestra como información desconocida. El estado vacío significa «Sin ejecuciones registradas», sin inferir si el ordenador está encendido. Las métricas y curvas de `test` y `evaluation` permanecen ocultas mientras `test_released` no sea `true` y la ejecución no haya terminado, también en CSV. El productor del JSON público debe excluir resultados protegidos antes de publicarlos, ya que ocultarlos en una pantalla no protege el archivo fuente.
 
-La consulta pública se actualiza cada 60 segundos cuando la pestaña está visible. Un reloj local revisa cada 15 segundos los indicadores cuyo heartbeat todavía es reciente, sin peticiones ni reconstrucción de filas si no cambia el filtro. Ambos temporizadores se detienen al ocultar o abandonar la página. La salud se vuelve a comprobar al regresar.
+La consulta pública se actualiza cada 60 segundos cuando la pestaña está visible. Un reloj local revisa cada 15 segundos los indicadores cuya señal de actividad todavía es reciente, sin peticiones ni reconstrucción de filas si no cambia el filtro. Ambos temporizadores se detienen al ocultar o abandonar la página. El estado se vuelve a comprobar al regresar.
 
-La importación local detiene la consulta pública y conserva el archivo solo en memoria. Su heartbeat también puede caducar. No se utiliza `localStorage`, no hay telemetría y no se envían archivos importados. Las fechas se contrastan con `generated_at` y con su orden de inicio, actualización, historia y checkpoint, conservando precisión de microsegundos.
+La importación local detiene la consulta pública y conserva el archivo solo en memoria. Su señal de actividad también puede caducar. No se utiliza `localStorage`, no hay telemetría y no se envían archivos importados. Las fechas se contrastan con `generated_at` y con el orden del inicio, la actualización, el historial y el punto de control, conservando precisión de microsegundos.
 
 ## Organización
 
@@ -57,7 +57,7 @@ El historial visible corresponde a los resúmenes de la instantánea seleccionad
 - `index.html` y `styles.css` definen contenido accesible, diseño adaptable e impresión.
 - `tests/state.test.mjs` verifica contratos y casos límite con `node:test`.
 
-La separación por responsabilidad mantiene las funciones pequeñas y favorece composición y comprobación aislada. Se reutilizan las mismas reglas de visibilidad en pantalla y CSV. No hay frameworks, servidor de aplicación ni dependencias de ejecución. Se rechazan entradas inválidas al recibirlas y se mide el tamaño antes de añadir herramientas o capas nuevas.
+La separación por responsabilidad mantiene las funciones pequeñas y favorece la composición y la comprobación aislada. Se reutilizan las mismas reglas de visibilidad en pantalla y CSV. No hay marcos de trabajo, servidor de aplicación ni dependencias de ejecución. Se rechazan las entradas inválidas al recibirlas y se mide el tamaño antes de añadir herramientas o capas nuevas.
 
 ## Comprobación local
 
@@ -85,7 +85,7 @@ El segundo argumento es opcional. Si se aporta, debe ser una salida temporal del
 
 La revisión visual ha comprobado escritorio de 1440 píxeles y móvil de 390. Se han corregido el espacio excesivo del pie de curva y un desbordamiento causado por la etiqueta accesible de una tabla. El diagrama del método pasa a una secuencia textual en móvil para conservar la legibilidad. La cronología mantiene su carácter conceptual cuando el registro está vacío. El indicador general usa gris si no hay actividad confirmada.
 
-Las pruebas puras cubren validación, valores desconocidos, cronología, caducidad, separación de intentos y fases, comparabilidad, resultados protegidos y CSV seguro. La prueba de navegador añade teclado, movimiento reducido, filtros, importación sin red, conservación del último resumen válido, impresión y límites de tamaño. Se ha importado una salida del CLI de 1.435.027 bytes, con 32 ejecuciones y 500 puntos por curva. También se han rechazado archivos y respuestas HTTP de más de 8 MiB, incluso sin `Content-Length`.
+Las pruebas puras cubren validación, valores desconocidos, cronología, caducidad, separación de intentos y fases, comparabilidad, resultados protegidos y CSV seguro. La prueba de navegador añade teclado, movimiento reducido, filtros, importación sin red, conservación del último resumen válido, impresión y límites de tamaño. Se ha importado una salida de la CLI de 1.435.027 bytes, con 32 ejecuciones y 500 puntos por curva. También se han rechazado archivos y respuestas HTTP de más de 8 MiB, incluso sin `Content-Length`.
 
 Los cinco recursos iniciales ocupan aproximadamente 77,5 kB sin compresión y 22,3 kB al comprimirlos individualmente con gzip en esta revisión. Son tamaños de archivos, no tiempos de carga medidos en GitHub Pages. No hay fuentes, bibliotecas o estilos remotos. El registro publicado continúa vacío y las medidas usadas en las pruebas no representan experimentos científicos.
 
