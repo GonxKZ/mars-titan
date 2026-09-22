@@ -1,0 +1,72 @@
+{
+  "tests_passed": 506,
+  "tests_skipped": 0,
+  "pytest_seconds": 45.9,
+  "code_sha256": "3b13629594b4691a5806b1e1f7a9fa525793d0d84de4f701a1933b34741d6f32",
+  "coverage_tool": "coverage.py 7.16.1",
+  "coverage": {
+    "covered_lines": 21,
+    "num_statements": 21,
+    "percent_covered": 100.0,
+    "percent_covered_display": "100",
+    "missing_lines": 0,
+    "excluded_lines": 0,
+    "percent_statements_covered": 100.0,
+    "percent_statements_covered_display": "100",
+    "num_branches": 4,
+    "num_partial_branches": 0,
+    "covered_branches": 4,
+    "missing_branches": 0,
+    "percent_branches_covered": 100.0,
+    "percent_branches_covered_display": "100"
+  },
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "functions": [
+    {
+      "name": "__init__",
+      "complexity": 6,
+      "statement_coverage_fraction": 1.0,
+      "crap": 6
+    },
+    {
+      "name": "decompose",
+      "complexity": 4,
+      "statement_coverage_fraction": 1.0,
+      "crap": 4
+    },
+    {
+      "name": "forward",
+      "complexity": 1,
+      "statement_coverage_fraction": 1.0,
+      "crap": 1
+    }
+  ],
+  "targeted_mutations_detected": 3,
+  "targeted_mutations_total": 3,
+  "review_test_improvements": [
+    "different_seasonal_and_trend_maps",
+    "legacy_gru_wrapper_in_integration"
+  ],
+  "process_time_tool": "GNU time -v",
+  "process_measurements": {
+    "dlinear_3": {
+      "seconds": 4.72,
+      "max_rss_kib": 1431372
+    },
+    "dlinear_10": {
+      "seconds": 5.57,
+      "max_rss_kib": 1439476
+    },
+    "gru_10": {
+      "seconds": 6.09,
+      "max_rss_kib": 1486104
+    }
+  },
+  "plot_source_reports": [
+    "reports/resources/gru-10-probe.json",
+    "reports/resources/dlinear-10-probe.json"
+  ],
+  "plot_script_sha256": "def137694acb1ecae623b698743895b5c1757a39d5fce03bcfdc575b587be518",
+  "plot_visual_check": "rendered_1728x768_png_labels_marks_legends_and_shared_log_scale_checked"
+}

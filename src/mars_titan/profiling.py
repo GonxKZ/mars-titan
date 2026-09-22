@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, IterableDataset, get_worker_info
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json
 from mars_titan.data.streaming import iter_windows
+from mars_titan.models.baselines.dlinear import DLinear
 
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
 
@@ -30,20 +31,23 @@ def _step(model, optimizer, batch, device):
 
 
 class CostProbe(nn.Module):
-    """MLP o GRU pequeña para medir entrenamiento con todas las entradas."""
+    """Referencias compactas con la misma fusión de las entradas multimodales."""
 
     def __init__(self, kind: str, dimensions: dict[str, int], context: int = 64):
         super().__init__()
-        if kind not in {"mlp", "gru"} or set(dimensions) != set(MODALITIES):
+        if kind not in {"mlp", "gru", "dlinear"} or set(dimensions) != set(MODALITIES):
             raise ValueError("La sonda de coste o sus modalidades no son válidas")
         self.kind = kind
-        self.price_encoder = (
-            nn.GRU(dimensions["prices"], 32, batch_first=True)
-            if kind == "gru"
-            else nn.Sequential(
+        if kind == "gru":
+            self.price_encoder = nn.GRU(dimensions["prices"], 32, batch_first=True)
+        elif kind == "dlinear":
+            self.price_encoder = nn.Sequential(
+                DLinear(context), nn.Linear(dimensions["prices"], 32), nn.SiLU()
+            )
+        else:
+            self.price_encoder = nn.Sequential(
                 nn.Flatten(1), nn.Linear(context * dimensions["prices"], 32), nn.SiLU()
             )
-        )
         self.encoders = nn.ModuleDict(
             {
                 name: nn.Sequential(nn.Linear(dimensions[name], 32), nn.SiLU())

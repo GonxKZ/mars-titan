@@ -182,10 +182,13 @@ def test_ridge_reference_probe_reconciles_partitions_and_restores_model(
     assert all(np.isfinite(row["ridge"]) and row["zero"] == 0 for row in rows)
 
 
+@pytest.mark.parametrize("kind", ["gru", "dlinear"])
 def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
-    tmp_path, synthetic_budget_inputs, cuda_runtime
+    tmp_path, synthetic_budget_inputs, cuda_runtime, kind
 ):
-    from mars_titan.gru_probe import run_gru_probe
+    from mars_titan import gru_probe
+
+    assert hasattr(gru_probe, "run_temporal_probe"), "Falta la sonda temporal compartida"
 
     fixture = synthetic_budget_inputs
     sample = fixture["sample_paths"][0]
@@ -197,8 +200,14 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
         manifest = json.loads(path.read_text())
         manifest["news_content_policy"] = "verified_full_articles"
         path.write_text(json.dumps(manifest))
-    report = run_gru_probe(
-        prepared, sample.parent, tmp_path / "gru-run", tmp_path / "gru-report.json", epochs=2
+    runner = gru_probe.run_gru_probe if kind == "gru" else gru_probe.run_temporal_probe
+    report = runner(
+        prepared,
+        sample.parent,
+        tmp_path / "gru-run",
+        tmp_path / "gru-report.json",
+        epochs=2,
+        **({} if kind == "gru" else {"kind": kind}),
     )
     assert report["samples"] == {
         "train": len(fixture["train_days"]),
@@ -208,6 +217,9 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
     assert report["restored_predictions_equal"] is True
     assert report["device"] == "cuda:0"
     assert report["final_test_opened"] is False
+    assert report["model"] == kind
+    if kind == "dlinear":
+        assert "src/mars_titan/models/baselines/dlinear.py" in report["input_hashes"]
     assert len(report["epochs"]) == 2
     torch = cuda_runtime
     states = [
@@ -215,7 +227,14 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
         for epoch in (1, 2)
     ]
     for name in [
-        "price_encoder.weight_ih_l0",
+        *(
+            ["price_encoder.weight_ih_l0"]
+            if kind == "gru"
+            else [
+                "price_encoder.0.seasonal.weight",
+                "price_encoder.0.trend.weight",
+            ]
+        ),
         *[
             f"encoders.{modality}.0.weight"
             for modality in ("news", "charts", "fundamentals", "macro")
@@ -225,7 +244,7 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
         assert not torch.equal(states[0]["model"][name], states[1]["model"][name]), name
     rows = pq.read_table(tmp_path / "gru-run/predictions.parquet").to_pylist()
     assert len(rows) == len(fixture["validation_days"])
-    assert all(row["prediction_at"].year == 2023 and np.isfinite(row["gru"]) for row in rows)
+    assert all(row["prediction_at"].year == 2023 and np.isfinite(row[kind]) for row in rows)
 
 
 def test_budget_grid_generates_labels_trains_and_resumes_without_opening_2024(
