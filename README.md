@@ -20,7 +20,9 @@ La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia int
 
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
 
-**Estado actual:** preparación multimodal implementada y entrenamientos breves de MLP y GRU ejecutados para medir recursos. El panel técnico estadounidense contiene 25.856 muestras completas. El inventario cubre toda la copia y los datos macro conservan publicaciones, revisiones y unidades históricas. La arquitectura MARS-TITAN y la comparación confirmatoria siguen pendientes. Los tiempos medidos no acreditan precisión predictiva ni rentabilidad. «Causal» se refiere al orden de disponibilidad de la información, no a la identificación de causas económicas.
+**Estado actual:** preparación multimodal implementada, referencias tabulares evaluadas y 48 ejecuciones de GRU y DLinear registradas, incluidas variaciones de pérdida, tasa de aprendizaje, semilla y continuación controlada. Estas ejecuciones utilizan 65 muestras con las cuatro modalidades admitidas, 50 de entrenamiento y 15 de validación. Ninguna supera la referencia de predicción cero en MAE de validación. La [comparación de variantes](reports/baselines/reference-variants.md) conserva las medidas y sus límites.
+
+El panel técnico anterior de 25.856 muestras sirvió para preparar y medir el flujo de datos. Ese recuento no acredita la verificación editorial completa de sus noticias. El inventario cubre toda la copia y los datos macro conservan publicaciones, revisiones y unidades históricas. La arquitectura MARS-TITAN y la comparación confirmatoria siguen pendientes. «Causal» se refiere al orden de disponibilidad de la información, no a la identificación de causas económicas.
 
 La [preparación y sus límites](docs/data/preparation.md) detallan la cobertura real. El [presupuesto experimental](reports/resources/campaign-budget.md) recoge entrenamientos con las cuatro modalidades y retorno residual, incluida una comprobación de 20 épocas. El observatorio conserva su último estado publicado, no constituye un monitor automático de estos ensayos locales.
 
@@ -28,7 +30,7 @@ La [preparación y sus límites](docs/data/preparation.md) detallan la cobertura
 
 El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. Se propone un piloto de hasta 64 activos y una comparación principal de hasta 128, seleccionados con información del periodo de desarrollo. La copia original contiene 108,2 GiB. Los paneles ya preparados se guardan en Parquet y se leen por lotes, sin duplicar todas las ventanas en memoria. El [presupuesto de almacenamiento](reports/resources/storage-budget.md) distingue bytes de disco, tensores y memoria del proceso. Ampliar el entrenamiento a más activos o a China dependerá del coste medido y de la disponibilidad real de las cuatro modalidades.
 
-La preparación y las representaciones son reanudables. Los ensayos breves guardan checkpoints por época y se ha comprobado recuperación exacta de MLP y GRU. La [política de recuperación](docs/engineering/checkpoint-recovery.md) de la futura memoria adaptativa sigue pendiente de implementar con esa arquitectura. El [plan de cómputo](docs/engineering/compute-plan.md) contempla la disponibilidad del equipo durante las 24 horas, sin confundirla con rendimiento máximo sostenido.
+La preparación y las representaciones son reanudables. Los ensayos breves guardan checkpoints por época y se ha comprobado recuperación exacta de MLP, GRU y DLinear. La [política de recuperación](docs/engineering/checkpoint-recovery.md) de la futura memoria adaptativa sigue pendiente de implementar con esa arquitectura. El [plan de cómputo](docs/engineering/compute-plan.md) contempla la disponibilidad del equipo durante las 24 horas, sin confundirla con rendimiento máximo sostenido.
 
 ## Diseño del estudio
 
@@ -36,7 +38,7 @@ La preparación y las representaciones son reanudables. Los ensayos breves guard
 flowchart LR
     D[FinMultiTime<br/>precios · noticias · tablas · gráficos] --> P[Disponibilidad temporal<br/>calidad y procedencia]
     P --> X[Representaciones<br/>y objetivo residual]
-    X --> B[Modelos base<br/>cero · Ridge · árboles · GRU]
+    X --> B[Modelos base<br/>cero · Ridge · árboles · GRU · DLinear]
     X --> M[MARS-TITAN<br/>memoria · sorpresa · régimen]
     M --> A[Ablaciones de componentes<br/>cuatro modalidades conservadas]
     B --> E[Evaluación walk-forward<br/>predicción · incertidumbre · costes]

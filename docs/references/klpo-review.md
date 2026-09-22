@@ -33,8 +33,8 @@ el [informe técnico](https://github.com/yifanzhang-pro/KLPO/blob/30c0ae8c3fa8f5
 y la [referencia del algoritmo](https://github.com/yifanzhang-pro/KLPO/blob/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/docs/algorithms.md).
 
 El [README](https://github.com/yifanzhang-pro/KLPO/blob/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/README.md#validation-and-scope)
-declara pruebas CPU y señala que el entrenamiento GPU y los benchmarks a
-escala del informe no están validados. Estas pruebas upstream no se han
+declara pruebas CPU y señala que el entrenamiento GPU y las pruebas de rendimiento a
+escala del informe no están validados. Estas pruebas del proyecto original no se han
 ejecutado localmente. La
 [guía del backend](https://github.com/yifanzhang-pro/KLPO/blob/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/docs/training.md)
 exige actualmente recogida síncrona y una actualización por lote. El coste

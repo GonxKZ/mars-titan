@@ -52,7 +52,7 @@
     "year": 2008,
     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2829853/",
     "pdf_url": null,
-    "access": "Science 319(5870):1640-1642, revisado por pares. DOI 10.1126/science.1152882. Manuscrito de autor en PMC. El endpoint PDF devolvió una verificación HTML y no se confirmó una descarga alternativa del autor o editorial.",
+    "access": "Science 319(5870):1640-1642, revisado por pares. DOI 10.1126/science.1152882. Manuscrito de autor en PMC. El punto de acceso del PDF devolvió una verificación HTML y no se confirmó una descarga alternativa del autor o editorial.",
     "redistribution": "unknown",
     "relevance": "Relaciona discriminación de experiencias parecidas con señal fMRI en CA3/DG. Motiva comparar representaciones separables y comprobar interferencia, no imponer módulos anatómicos.",
     "phase": [
@@ -194,7 +194,7 @@
     "pdf_url": "https://proceedings.mlr.press/v70/zenke17a/zenke17a.pdf",
     "access": "ICML 2017, PMLR 70:3987-3995, revisado por pares. PDF abierto de actas.",
     "redistribution": "unknown",
-    "relevance": "Estima importancia durante la trayectoria de aprendizaje y protege parámetros relevantes. Distinguir acumulación online de importancia y consolidación entre tareas.",
+    "relevance": "Estima importancia durante la trayectoria de aprendizaje y protege parámetros relevantes. Distinguir acumulación en línea de importancia y consolidación entre tareas.",
     "phase": [
       3,
       4,

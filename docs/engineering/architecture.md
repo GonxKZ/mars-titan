@@ -1,6 +1,6 @@
 # Arquitectura propuesta
 
-MARS-TITAN se diseña como una comparación reproducible de componentes. La estructura reserva módulos, pero no contiene una implementación científica en esta entrega.
+MARS-TITAN se diseña como una comparación reproducible de componentes. La estructura separa las responsabilidades necesarias para implementar y comparar cada componente científico.
 
 La [especificación candidata](../research/candidate-architecture.md) desarrolla memoria episódica, retención, recurrencia y actualización coherente. Su [revisión adversarial](../research/adversarial-review.md) recoge objeciones y pruebas pendientes. La comparación principal prioriza una variante compacta sobre 128 activos propuestos, dentro de 32 GB de RAM y 8 GB de VRAM.
 

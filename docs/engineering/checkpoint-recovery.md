@@ -1,6 +1,6 @@
 # Checkpoints y recuperación de ejecuciones largas
 
-El equipo puede permanecer encendido 24 horas al día. Las futuras ejecuciones se diseñan para detenerse y continuar sin reconstruir todo el trabajo. Esta entrega fija la política y las pruebas necesarias. Todavía no hay un entrenador ni checkpoints de pesos generados.
+El equipo puede permanecer encendido 24 horas al día. Las futuras ejecuciones se diseñan para detenerse y continuar sin reconstruir todo el trabajo. Este documento fija la política y las pruebas necesarias. Todavía no hay un entrenador ni checkpoints de pesos de MARS-TITAN.
 
 ## Qué se guarda
 

@@ -131,7 +131,7 @@ registra ese resultado y no se amplía automáticamente el modelo.
 3. Congelar parámetros durante cada tramo de evaluación. Solo evoluciona el
    filtro con nuevas observaciones admitidas. Reajustes únicamente entre cortes
    programados y con historia autorizada.
-4. Reiniciar o reconstruir filtro y memoria dentro de cada fold, sin heredar el
+4. Reiniciar o reconstruir filtro y memoria dentro de cada ventana de evaluación, sin heredar el
    final de otro experimento. Registrar el calentamiento exacto y las huellas.
 5. Conservar el estado filtrado, parámetros, cursor y versión de las entradas en
    los puntos de control. Cambiar el sufijo futuro no puede cambiar el prefijo.

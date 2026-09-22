@@ -28,9 +28,9 @@ El núcleo conserva auditoría de precios, texto, fundamentales y gráficos. Emp
 
 Las referencias mínimas son cero/media histórica, Ridge, boosting, GRU y una memoria neural asociativa identificable. Las ablaciones comparan ausencia de memoria, escritura uniforme, error maduro y sorpresa completa, con régimen e incertidumbre. La sorpresa completa incluye anomalía de mercado y relevancia económica. La diversidad puede añadirse, pero no sustituye esos términos.
 
-La comparación principal usa K = 1. Más pasos de lectura, replay paramétrico, destilación, familias secuenciales adicionales, macro, universo completo, China y optimizaciones nativas se activan con una pregunta, datos adecuados y presupuesto medido. El [plan por familia](full-dataset-training.md) explica cómo recorrer todos los registros elegibles y qué estimadores no ofrecen aprendizaje por bloques. «Todo el dataset» nunca incluye entrenar con el test reservado.
+La comparación principal usa K = 1 e incluye las cuatro modalidades y el contexto macroeconómico. Más pasos de lectura, replay paramétrico, destilación, familias secuenciales adicionales, China y optimizaciones nativas requieren una pregunta, datos adecuados y presupuesto medido. El [plan por familia](full-dataset-training.md) explica cómo recorrer todos los registros elegibles y qué estimadores no ofrecen aprendizaje por bloques. La [campaña de referencias](comparison-campaign.md) concreta la ampliación al corpus admisible. «Todo el dataset» nunca incluye entrenar con el test reservado.
 
-Las tareas de apoyo, como entorno, checkpoints, ejecución, versiones, redacción y defensa, siguen siendo necesarias. Una prioridad P1 no convierte automáticamente una tarea en opcional. La etiqueta `opcional` identifica extensiones prescindibles para responder a los seis objetivos. El observatorio presenta el trabajo y no sustituye sus resultados.
+Las tareas de apoyo, como entorno, checkpoints, ejecución, versiones y redacción técnica, siguen siendo necesarias. Una prioridad P1 no convierte automáticamente una tarea en opcional. La etiqueta `opcional` identifica extensiones prescindibles para responder a los seis objetivos. El observatorio presenta el trabajo y no sustituye sus resultados.
 
 ## Orden de congelación
 

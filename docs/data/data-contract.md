@@ -29,7 +29,7 @@ Una muestra corresponde a un activo estable, un instante de decisión, una versi
 
 **Precios.** Verificar OHLC, sesiones, suspensiones, unidades, dividendos y splits. Una fecha a medianoche en un CSV diario no significa que el cierre estuviera disponible a esa hora. El cierre entra después de finalizar la sesión y del margen de publicación adoptado. Evitar usar precios ajustados retrospectivamente como niveles sin estudiar los efectos de acciones corporativas futuras.
 
-**Noticias.** Conservar URL y evidencia temporal original. Las noticias posteriores al corte pasan a la siguiente decisión. Con fecha sin hora se esperará al cierre de la primera sesión cuya fecha sea estrictamente posterior a la del texto, con sensibilidad a un retardo mayor. Eliminar duplicados usando contenido y origen sin consultar rendimientos futuros. La relación noticia–activo necesita comprobación independiente del nombre del archivo.
+**Noticias.** Conservar URL y evidencia temporal original. Las noticias posteriores al corte pasan a la siguiente decisión. Con fecha sin hora se esperará al cierre de la primera sesión cuya fecha sea estrictamente posterior a la del texto, con sensibilidad a un retardo mayor. Eliminar duplicados usando contenido y origen sin consultar rendimientos futuros. La relación entre la noticia y el activo necesita una comprobación independiente del nombre del archivo.
 
 **Fundamentales.** `period_end` describe el periodo contable, no la disponibilidad. Seleccionar hechos publicados antes del corte y conservar revisiones separadas por presentación. Si existe fecha de filing sin hora, aplicar el margen conservador definido. Si se conoce la aceptación y difusión efectiva, conservar esa evidencia. No rellenar hacia atrás valores de fin de trimestre ni sobrescribir el pasado con la última revisión.
 
@@ -54,6 +54,6 @@ Una muestra corresponde a un activo estable, un instante de decisión, una versi
 
 ## Formatos y almacenamiento
 
-Mantener originales inmutables en `dataset/` o en almacenamiento externo. Usar Parquet para derivados, particiones por mercado/fecha cuando favorezcan las consultas y claves estables. Evitar un archivo diminuto por activo/día y evitar cargar todas las tablas contables en memoria. Los esquemas, manifiestos y recuentos resumidos se versionan. Los datos derivados permanecen fuera de Git.
+Mantener originales inmutables en `dataset/` o en almacenamiento externo. Usar Parquet para derivados, particiones por mercado/fecha cuando favorezcan las consultas y claves estables. Evitar un archivo diminuto por activo/día y la carga de todas las tablas contables en memoria. Los esquemas, manifiestos y recuentos resumidos se versionan. Los datos derivados permanecen fuera de Git.
 
 El manifiesto deberá registrar licencia, ruta lógica, tamaño, hash, versión de esquema, rango temporal observado, columnas y exclusiones. El acceso a una muestra debe poder explicarse desde la fuente hasta la característica final, incluido el tratamiento de faltantes.

@@ -68,7 +68,7 @@
     "pdf_url": null,
     "access": "Ficha editorial pública. Manuscrito de septiembre de 2014 identificado en https://ssrn.com/abstract=2287202, pero descarga directa no confirmada por bloqueo HTTP 403.",
     "redistribution": "La ficha SSRN indica todos los derechos reservados y reutilización sujeta a permiso.",
-    "relevance": "Añadir rentabilidad operativa e inversión como contraste de robustez del target residual.",
+    "relevance": "Añadir rentabilidad operativa e inversión como contraste de robustez de la variable residual.",
     "phase": [
       2,
       4,
@@ -231,7 +231,7 @@
     "pdf_url": "https://proceedings.neurips.cc/paper/2021/file/0d441de75945e5acbc865406fc9a2559-Paper.pdf",
     "access": "Actas y PDF completos del congreso NeurIPS 2021.",
     "redistribution": "unknown",
-    "relevance": "Calibración adaptativa online y diferencia entre frecuencia temporal y cobertura condicional.",
+    "relevance": "Calibración adaptativa en línea y diferencia entre frecuencia temporal y cobertura condicional.",
     "phase": [
       3,
       4,
@@ -295,7 +295,7 @@
     "pdf_url": null,
     "access": "Libro completo de lectura gratuita en HTML, tercera edición. Sección 5.10: https://otexts.com/fpp3/tscv.html. La web declara actualización del 16 de septiembre de 2026.",
     "redistribution": "unknown",
-    "relevance": "Validación con origen móvil, baselines y evaluación por horizonte de predicción.",
+    "relevance": "Validación con origen móvil, referencias y evaluación por horizonte de predicción.",
     "phase": [
       4,
       5

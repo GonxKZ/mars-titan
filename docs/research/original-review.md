@@ -2,11 +2,14 @@
 
 Autor del proyecto: Gonzalo García Lama. Fecha de revisión: 18 de septiembre de 2026.
 
+Esta revisión describe el antecedente técnico. El estado de implementación y los
+experimentos posteriores se recogen en los [informes](../../reports/README.md).
+
 ## Documentos y criterio de revisión
 
 Se revisa íntegramente el [documento inicial conservado localmente](source/README.md), fechado el 8 de mayo de 2026, como antecedente técnico propio del proyecto. Tiene 45 páginas PDF: ocho preliminares y 37 páginas de cuerpo, anexos y bibliografía. En este documento se cita primero la página PDF y, cuando corresponde, la página impresa entre paréntesis.
 
-La referencia de alcance es la [propuesta presentada por el estudiante](../academic/proposal.md), facilitada el 18 de septiembre de 2026. Se toma como compromiso de trabajo, sin atribuirle una aprobación académica no acreditada. La Guía del TFE, p. 13, define el Tipo 3 como una comparación empírica y pormenorizada de alternativas para un problema concreto. Su copia está identificada en el [manifiesto](../academic/source-manifest.json). Los [requisitos académicos](../academic/requirements.md) y la [matriz de rúbrica](../academic/rubric-matrix.md) detallan la evaluación aplicable.
+La revisión toma como referencia los seis objetivos del proyecto, recogidos en la [hoja de ruta](roadmap.md), y el [protocolo de investigación](protocol.md). El alcance es una comparación experimental de alternativas para predecir retornos residuales con las mismas entradas y condiciones de evaluación.
 
 La revisión evalúa la coherencia interna del original y su adecuación al alcance presentado. Las afirmaciones bibliográficas o cifras del dataset que aparecen en él no se consideran verificadas por el mero hecho de estar escritas: su contraste con las fuentes primarias y con los archivos reales forma parte del trabajo posterior.
 
@@ -14,13 +17,13 @@ La revisión evalúa la coherencia interna del original y su adecuación al alca
 
 El original proporciona una base conceptual útil: formula una pregunta contrastable, reconoce que las gráficas representan expectativas, sitúa la disponibilidad temporal de los datos antes que la complejidad del modelo y propone referencias simples, ablaciones, incertidumbre y análisis de fallos. Su portada y resumen declaran expresamente que se trata de una propuesta metodológica y no de resultados empíricos. El anexo A conserva todos sus controles como pendientes (PDF pp. 1-2 y 42. P. impresa 34).
 
-Para convertirse en un proyecto de Tipo 3 necesita una reducción y una operacionalización del alcance. Acumula memoria por regímenes, sorpresa económica, fusión multimodal, adaptación local, protección frente al olvido, abstención, decisiones de cartera y controles de producción sin demostrar aún que puedan implementarse y compararse con el presupuesto disponible. La contribución defendible será el conocimiento obtenido mediante una comparación reproducible, incluyendo los casos en que la arquitectura propuesta no mejore a referencias más sencillas.
+Para ejecutar la comparación necesita acotar el alcance y definir sus componentes con precisión. Acumula memoria por regímenes, sorpresa económica, fusión multimodal, adaptación local, protección frente al olvido, abstención, decisiones de cartera y controles de producción sin demostrar aún que puedan implementarse y compararse con el presupuesto disponible. La contribución será el conocimiento obtenido mediante una comparación reproducible, incluidos los casos en que la arquitectura propuesta no mejore a referencias más sencillas.
 
 No procede tratar el documento original como una memoria final. Tampoco es necesario desecharlo: sus hipótesis, riesgos y mecanismos sirven como antecedentes que deben convertirse en definiciones precisas, experimentos ejecutables y resultados verificables.
 
 ## Correspondencia con la propuesta presentada
 
-| Objetivo de la propuesta | Aportación del original | Ajuste necesario para el Tipo 3 |
+| Objetivo de la propuesta | Aportación del original | Ajuste necesario para la comparación |
 | --- | --- | --- |
 | O1. Auditar precios, noticias, fundamentales y representaciones visuales de FinMultiTime, respetando su disponibilidad temporal | Describe frecuencias heterogéneas, riesgos de fuga y una tupla con tiempo de evento y de disponibilidad. Propone contratos de datos. PDF pp. 11-12, 24 y 35 (impresas 3-4, 16 y 27). | Convertir las reglas generales en un inventario auditado. Documentar cobertura real, procedencia, licencia, zona horaria, calendario, fecha de publicación y exclusiones por modalidad. Las cifras globales del original son afirmaciones de su fuente, no el tamaño ya comprobado del subconjunto experimental. |
 | O2. Formular retornos residuales de mercado y, si es posible, sector | La ecuación 4.10 propone descontar mercado y sector. PDF p. 17 (impresa 9). | Definir horizonte, estimación pasada de coeficientes y momento de disponibilidad de cada etiqueta. Mantener el ajuste sectorial condicionado a la disponibilidad y calidad de los datos, como en la propuesta presentada. |
@@ -97,19 +100,19 @@ Los criterios de validez del estudio deben exigir trazabilidad, comparación jus
 
 La recomendación del original de eliminar cualquier módulo que no mejore debe aplicarse durante el desarrollo o validación, no mediante iteraciones guiadas por el test. En la memoria se conservarán los resultados de ablaciones y los intentos descartados que sean relevantes para comprender la conclusión.
 
-## Adecuación académica y de presentación
+## Bibliografía y presentación
 
-La bibliografía original contiene ocho entradas y utiliza citas numéricas (PDF p. 45. Impresa 37). La rúbrica valora APA para el nivel alto de estilo académico (rúbrica, p. 1). Por tanto, la memoria debe normalizar la citación según las instrucciones del título. No se presupone una edición concreta. Las entradas [5]-[8] aparecen en la bibliografía del texto extraído sin llamadas localizadas en el cuerpo, de modo que deben revisarse su uso y pertinencia.
+La bibliografía original contiene ocho entradas y utiliza citas numéricas (PDF p. 45. Impresa 37). El informe debe mantener un estilo de citación uniforme. Las entradas [5]-[8] aparecen en la bibliografía del texto extraído sin llamadas localizadas en el cuerpo, de modo que deben revisarse su uso y pertinencia.
 
 La cobertura bibliográfica debe ampliarse y verificarse en los aspectos que sostienen el método: evaluación temporal, incertidumbre, aprendizaje con memoria, comparación de predictores y simulación económica. No se fija un número mínimo arbitrario de referencias. Cada fuente debe contribuir a una decisión o argumento, y las diferencias frente al método publicado deben describirse con precisión.
 
-La portada original no identifica nominalmente al estudiante y presenta el trabajo como documento científico en LaTeX (PDF p. 1). El documento final debe adaptarse a la plantilla exigida por la Guía, p. 4, identificando a Gonzalo García Lama y completando los campos que esa plantilla requiera. No se deducen de la guía campos o límites de páginas que no aparecen en los documentos recibidos.
+La portada original no identifica nominalmente al autor y presenta el trabajo como documento científico en LaTeX (PDF p. 1). El informe final debe identificar a Gonzalo García Lama y distinguir la versión del documento y el periodo cubierto por los experimentos.
 
-Los capítulos de premortem y sistema «production-ready» contienen controles útiles de integridad y trazabilidad (PDF pp. 30-36. Impresas 22-28), pero desplazan el foco si se mantienen como promesa de despliegue. Conviene integrarlos en amenazas a la validez, pruebas de robustez y trabajo futuro. La demostración de operación real no forma parte del alcance Tipo 3 presentado.
+Los capítulos de premortem y sistema «production-ready» contienen controles útiles de integridad y trazabilidad (PDF pp. 30-36. Impresas 22-28), pero desplazan el foco si se mantienen como promesa de despliegue. Conviene integrarlos en amenazas a la validez, pruebas de robustez y trabajo futuro. El alcance actual no incluye operar en un mercado real.
 
 Las figuras de presupuestos y mejoras esperadas deben seguir claramente etiquetadas como esquemas o hipótesis. La memoria final sustituirá las figuras de expectativas que no sean necesarias por gráficos generados desde experimentos reales. No deben emplearse valores ilustrativos en tablas de resultados ni narrarse riesgos del premortem como si ya hubieran ocurrido.
 
-En materia de autoría, la Guía, p. 22, exige que el uso de herramientas de IA para elaborar el trabajo sea validado por el director, quede reflejado explícitamente y tenga referencias específicas. El Reglamento, art. 8.4, pp. 4-5, exige autorización para la ayuda de terceros. Estos requisitos se recogen como pendientes de acreditación, sin inventar autorizaciones ni declaraciones personales. El original es un antecedente de trabajo: su incorporación a la memoria debe respetar las exigencias de originalidad e ineditud del Reglamento, arts. 2.2 y 11, pp. 1 y 6-7.
+El original se conserva como antecedente. Sus afirmaciones y figuras no se convierten en resultados observados al incorporarlas al informe. Los métodos y materiales de terceros mantienen su atribución y sus condiciones de uso.
 
 ## Decisión de revisión
 

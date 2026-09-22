@@ -135,7 +135,7 @@
     {
       "key": "O6",
       "number": 6,
-      "title": "O6 · Análisis, memoria y defensa",
+      "title": "O6 · Análisis, documentación y comunicación",
       "url": "https://github.com/GonxKZ/mars-titan/milestone/6"
     }
   ],
@@ -183,12 +183,12 @@
     {
       "name": "redaccion",
       "color": "D4C5F9",
-      "description": "Memoria, figuras y entregas académicas."
+      "description": "Documentación técnica, figuras e informes de resultados."
     },
     {
-      "name": "defensa",
+      "name": "presentacion",
       "color": "E99695",
-      "description": "Preparación y realización de la defensa oral."
+      "description": "Preparación y verificación de la presentación técnica de resultados."
     },
     {
       "name": "bibliografia",
@@ -211,9 +211,9 @@
       "description": "Extensión prescindible para completar el estudio."
     },
     {
-      "name": "integridad-academica",
+      "name": "integridad-investigacion",
       "color": "D93F0B",
-      "description": "Autoría, normativa, permisos y trazabilidad."
+      "description": "Autoría, permisos, procedencia y trazabilidad de la investigación."
     },
     {
       "name": "bloqueado",
@@ -253,7 +253,7 @@
       "labels": [
         "transversal",
         "redaccion",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Hecho",
       "issue_state": "closed",
@@ -278,7 +278,7 @@
       "labels": [
         "transversal",
         "redaccion",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -364,7 +364,7 @@
       "labels": [
         "datos",
         "reproducibilidad",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -1826,7 +1826,7 @@
       "milestone_number": 6,
       "labels": [
         "redaccion",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -1876,7 +1876,7 @@
       "milestone_number": 6,
       "labels": [
         "redaccion",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -1931,7 +1931,7 @@
       "milestone_number": 6,
       "labels": [
         "redaccion",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2021,7 +2021,7 @@
       "milestone_number": 6,
       "labels": [
         "redaccion",
-        "integridad-academica"
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2060,8 +2060,8 @@
       "milestone": "O6",
       "milestone_number": 6,
       "labels": [
-        "defensa",
-        "integridad-academica"
+        "presentacion",
+        "integridad-investigacion"
       ],
       "status": "Pendiente",
       "issue_state": "open",
@@ -2684,7 +2684,7 @@
       "labels": [
         "datos",
         "fuentes-externas",
-        "integridad-academica",
+        "integridad-investigacion",
         "opcional"
       ],
       "status": "Pendiente",
@@ -2805,5 +2805,6 @@
       ]
     }
   ],
-  "repository_visibility": "public"
+  "repository_visibility": "public",
+  "presentation_note": "Los nombres y las descripciones se han revisado para presentar el trabajo como investigación e ingeniería. Las cifras, los hashes, las fechas, los estados y las relaciones conservan la verificación remota original indicada en verified_at. Esta revisión local no constituye una verificación nueva ni una sincronización con GitHub."
 }

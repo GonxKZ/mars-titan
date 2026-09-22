@@ -8,7 +8,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Revisar la admisión de noticias | [Fechas, procedencia y problemas de contenido](data/news-policy.md), con auditorías separadas del piloto y del panel técnico. |
 | Revisar precios y su universo | [Auditoría de los 5.023 CSV](../reports/data/price-audit.md), con exclusiones, acciones corporativas y límites de identidad. |
 | Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |
-| Consultar entrenamientos medidos | [Presupuesto experimental](../reports/resources/campaign-budget.md), con MLP y GRU, cuatro modalidades y macro. |
+| Consultar entrenamientos medidos | [Presupuesto experimental](../reports/resources/campaign-budget.md) y [variantes de GRU y DLinear](../reports/baselines/reference-variants.md), con cuatro modalidades y macro. |
 | Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
 | Consultar la preparación por bloques | [Límites, paridad y medición macro](../reports/data/streaming-validation.md), con recuperación por activo. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
@@ -22,7 +22,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Diseñar y mantener la implementación futura | [Arquitectura](engineering/architecture.md), [entorno reproducible](engineering/reproducibility.md), [decisiones](engineering/decisions.md). |
 | Ejecutar las tareas con herramientas concretas | [Guía de implementación y límites](engineering/implementation-guide.md) y [catálogo del tablero](research/task-board.md). |
 | Consultar el avance de los entrenamientos | [Observatorio](https://gonxkz.github.io/mars-titan/), [contrato de publicación](engineering/observatory.md) y [frontend](../site/README.md). |
-| Comprobar qué está preparado | [Verificación actual](engineering/research-verification.md) y [registro histórico de la base inicial](engineering/verification.md). |
+| Consultar las comprobaciones iniciales | [Verificación de la preparación](engineering/research-verification.md) y [registro de la base inicial](engineering/verification.md), con sus fechas y límites. |
 | Consultar el estado del arte | [Bibliografía y biblioteca](references/README.md), [finanzas](references/finance-review.md), [memoria neural](references/neural-review.md), [libros](references/books-review.md). |
 | Contrastar cerebro, recurrencia y eficiencia | [Aprendizaje y memoria](references/brain-review.md), [antecedentes recientes](references/frontier-review.md), [sistemas](references/systems-review.md) y [DeepSeek](references/deepseek-review.md). |
 | Dimensionar y retomar el trabajo | [Dataset por bloques](engineering/full-dataset-training.md), [latencia](engineering/latency-budget.md), [plan de cómputo](engineering/compute-plan.md) y [checkpoints](engineering/checkpoint-recovery.md). |

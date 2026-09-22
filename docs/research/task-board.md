@@ -2,7 +2,7 @@
 
 El [Project](https://github.com/users/GonxKZ/projects/4) organiza tareas revisables, no porcentajes de éxito científico. Cada issue contiene herramientas por función, entradas, pasos, artefactos previstos y comprobaciones. El [catálogo JSON](../../.github/planning/issues.json) conserva sus cuerpos y el [mapa remoto](../../.github/planning/remote-map.json) registra la verificación de GitHub.
 
-El catálogo conserva **64 tareas canónicas y 183 dependencias**. Los estados de sus tablas son la instantánea de planificación inicial, no un contador en directo. El estado operativo se consulta en el Project y la evidencia posterior en [preparación](../data/preparation.md) y [mediciones](../../reports/resources/campaign-budget.md). Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero.
+El catálogo conserva **64 tareas canónicas y 183 dependencias**. Los estados de sus tablas son la instantánea de planificación inicial, no un contador en directo. Los títulos se han actualizado para describir sus resultados técnicos. El estado operativo se consulta en el Project y la evidencia posterior en [preparación](../data/preparation.md) y [mediciones](../../reports/resources/campaign-budget.md). Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero.
 
 ## Cómo utilizar una issue
 
@@ -26,8 +26,8 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 
 | Tarea | Función | Prioridad | Estado | Dependencias |
 | --- | --- | --- | --- | --- |
-| [MT-001 · Preparar requisitos, rúbrica y revisión del original](https://github.com/GonxKZ/mars-titan/issues/1) | Apoyo | P0 | Hecho | Ninguna |
-| [MT-002 · Confirmar requisitos y calendario académico](https://github.com/GonxKZ/mars-titan/issues/2) | Apoyo | P0 | Pendiente | MT-001 |
+| [MT-001 · Consolidar requisitos técnicos y revisar la propuesta inicial](https://github.com/GonxKZ/mars-titan/issues/1) | Apoyo | P0 | Hecho | Ninguna |
+| [MT-002 · Concretar restricciones y calendario de trabajo](https://github.com/GonxKZ/mars-titan/issues/2) | Apoyo | P0 | Pendiente | MT-001 |
 | [MT-004 · Verificar el entorno con uv y CUDA](https://github.com/GonxKZ/mars-titan/issues/4) | Apoyo | P0 | Pendiente | Ninguna |
 | [MT-069 · Concretar las guías de ejecución y el alcance](https://github.com/GonxKZ/mars-titan/issues/71) | Apoyo | P0 | Hecho | MT-001 |
 
@@ -104,7 +104,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-037 · Evaluar robustez y abstención](https://github.com/GonxKZ/mars-titan/issues/37) | Núcleo | P1 | Pendiente | MT-035 |
 | [MT-065 · Verificar checkpoints y reanudación](https://github.com/GonxKZ/mars-titan/issues/67) | Apoyo | P0 | Pendiente | MT-004, MT-030 |
 
-### O6 · Análisis, memoria y defensa
+### O6 · Análisis, documentación y comunicación
 
 | Tarea | Función | Prioridad | Estado | Dependencias |
 | --- | --- | --- | --- | --- |
@@ -112,12 +112,12 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-038 · Informar recursos de los experimentos finales](https://github.com/GonxKZ/mars-titan/issues/38) | Núcleo | P0 | Pendiente | MT-023, MT-026, MT-027, MT-035, MT-060 |
 | [MT-039 · Decidir sobre optimización nativa](https://github.com/GonxKZ/mars-titan/issues/39) | Extensión | P2 | Pendiente | MT-038 |
 | [MT-040 · Redactar conclusiones de los seis objetivos](https://github.com/GonxKZ/mars-titan/issues/40) | Núcleo | P1 | Pendiente | MT-016, MT-029, MT-036, MT-037, MT-038, MT-052 |
-| [MT-041 · Preparar y entregar el primer borrador](https://github.com/GonxKZ/mars-titan/issues/41) | Apoyo | P1 | Pendiente | MT-001, MT-002, MT-003, MT-013, MT-030 |
-| [MT-042 · Preparar y entregar el segundo borrador](https://github.com/GonxKZ/mars-titan/issues/42) | Apoyo | P1 | Pendiente | MT-041, MT-012, MT-015, MT-024, MT-023, MT-028 |
-| [MT-043 · Completar y entregar el tercer borrador](https://github.com/GonxKZ/mars-titan/issues/43) | Apoyo | P1 | Pendiente | MT-042, MT-040 |
+| [MT-041 · Documentar el problema, los antecedentes y los objetivos](https://github.com/GonxKZ/mars-titan/issues/41) | Apoyo | P1 | Pendiente | MT-001, MT-002, MT-003, MT-013, MT-030 |
+| [MT-042 · Documentar el método, los datos y los resultados preliminares](https://github.com/GonxKZ/mars-titan/issues/42) | Apoyo | P1 | Pendiente | MT-041, MT-012, MT-015, MT-024, MT-023, MT-028 |
+| [MT-043 · Integrar resultados, discusión y limitaciones](https://github.com/GonxKZ/mars-titan/issues/43) | Apoyo | P1 | Pendiente | MT-042, MT-040 |
 | [MT-044 · Reproducir figuras y revisar las evidencias](https://github.com/GonxKZ/mars-titan/issues/44) | Apoyo | P0 | Pendiente | MT-003, MT-035, MT-036, MT-037, MT-038, MT-043 |
-| [MT-045 · Cerrar predepósito y tramitar la autorización](https://github.com/GonxKZ/mars-titan/issues/45) | Apoyo | P0 | Pendiente | MT-002, MT-043, MT-044 |
-| [MT-046 · Preparar y realizar la defensa](https://github.com/GonxKZ/mars-titan/issues/46) | Apoyo | P0 | Pendiente | MT-040, MT-044, MT-045 |
+| [MT-045 · Cerrar y verificar la versión técnica del informe](https://github.com/GonxKZ/mars-titan/issues/45) | Apoyo | P0 | Pendiente | MT-002, MT-043, MT-044 |
+| [MT-046 · Preparar la presentación técnica de resultados](https://github.com/GonxKZ/mars-titan/issues/46) | Apoyo | P0 | Pendiente | MT-040, MT-044, MT-045 |
 | [MT-060 · Medir el piloto y fijar el presupuesto](https://github.com/GonxKZ/mars-titan/issues/62) | Apoyo | P0 | Pendiente | MT-004, MT-023, MT-026, MT-027 |
 | [MT-068 · Publicar el observatorio de experimentos](https://github.com/GonxKZ/mars-titan/issues/70) | Extensión | P1 | Bloqueado | MT-001 |
 

@@ -1,7 +1,7 @@
 # Contrato de archivos preparados
 
-Los originales se leen desde `dataset/`. Los derivados no cambian su formato ni
-sus etiquetas originales, se escriben en almacenamiento separado.
+Los originales se leen desde `dataset/`. Los derivados no cambian el formato ni
+las etiquetas de los originales y se escriben en un almacenamiento separado.
 
 | Artefacto | Unidad | Identificación y control |
 | --- | --- | --- |
