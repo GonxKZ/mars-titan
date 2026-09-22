@@ -1,4 +1,5 @@
 import importlib
+import math
 from datetime import UTC, datetime
 
 import pandas as pd
@@ -111,3 +112,41 @@ def test_sample_vectors_are_stored_as_fixed_width_float32():
     assert table["charts"].to_pylist()[0][0] == 0.5
     with pytest.raises((ValueError, pa.ArrowInvalid)):
         module().sample_table([{**row, "news": [0.0]}])
+
+
+def test_company_representation_has_values_masks_and_ages_without_changing_base():
+    from mars_titan.data.company_factors import FACTOR_CONCEPTS, derive_company_factors
+    from tests.data.test_company_factors import balance
+
+    clock, prices, news, facts = inputs()
+    base = list(module().eligible_samples(prices, news, facts, clock, context=2))[0]
+    company = balance()
+    extended = company + list(derive_company_factors(company))
+    concepts = module().FUNDAMENTAL_CONCEPTS + FACTOR_CONCEPTS
+    rows = list(
+        module().eligible_samples(
+            prices, news, extended, clock, context=2, fundamental_concepts=concepts
+        )
+    )
+    assert len(base["fundamentals"]) == 24
+    assert len(rows[0]["fundamentals"]) == 45
+    assert rows[0]["fundamentals"][8] == pytest.approx(math.log(3))
+    assert rows[0]["fundamentals"][23:30] == [1.0] * 7
+    encoded = {**rows[0], "news": [0.0] * 384, "charts": [0.0] * 512, "macro": [0.0] * 3}
+    table = module().sample_table([encoded], fundamental_concepts=concepts)
+    assert table.schema.field("fundamentals").type.list_size == 45
+
+
+def test_missing_company_factors_do_not_count_as_a_present_modality():
+    from mars_titan.data.company_factors import FACTOR_CONCEPTS
+
+    clock, prices, news, facts = inputs()
+    absent = [{**facts[0], "concept": FACTOR_CONCEPTS[0], "value": None}]
+    assert (
+        list(
+            module().eligible_samples(
+                prices, news, absent, clock, context=2, fundamental_concepts=FACTOR_CONCEPTS
+            )
+        )
+        == []
+    )

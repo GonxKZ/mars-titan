@@ -68,6 +68,11 @@ def main() -> int:
     encode.add_argument("--start")
     encode.add_argument("--end", default="2026-01-01")
     encode.add_argument(
+        "--company-factors",
+        action="store_true",
+        help="Ampliar el contexto contable con siete ratios de balance auditados",
+    )
+    encode.add_argument(
         "--cache", type=Path, default=Path("data/embeddings/phase1/representations.sqlite")
     )
     profile = commands.add_parser("profile", help="Medir sondas de coste, sin evaluar predicciones")
@@ -162,6 +167,7 @@ def main() -> int:
                 clock,
                 encoders,
                 cache,
+                company_factors=args.company_factors,
             )
             atomic_json(Path(f"reports/data/encoded-panel-{panel['market'].lower()}.json"), result)
         finally:

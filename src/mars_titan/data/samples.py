@@ -15,6 +15,7 @@ import pyarrow as pa
 
 from .batches import MacroContexts, atomic_parquet_batches, read_bounded_table
 from .charts import chart_png
+from .company_factors import FACTOR_CONCEPTS, FACTOR_DEFINITIONS, write_company_factors
 from .fundamentals import snapshot
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, admission_errors, aware
@@ -34,10 +35,15 @@ FUNDAMENTAL_CONCEPTS = tuple(
 )
 
 
-def sample_table(rows: list[dict]) -> pa.Table:
+def sample_table(rows: list[dict], *, fundamental_concepts=FUNDAMENTAL_CONCEPTS) -> pa.Table:
     if not rows:
         return pa.Table.from_pylist([])
-    widths = {"news": 384, "charts": 512, "fundamentals": 24, "macro": len(rows[0]["macro"])}
+    widths = {
+        "news": 384,
+        "charts": 512,
+        "fundamentals": 3 * len(fundamental_concepts),
+        "macro": len(rows[0]["macro"]),
+    }
     schema = pa.Table.from_pylist(rows[:1]).schema
     schema = pa.schema(
         [
@@ -95,6 +101,7 @@ def eligible_samples(
     *,
     context: int = 64,
     news_lookback_sessions: int = 5,
+    fundamental_concepts=FUNDAMENTAL_CONCEPTS,
 ):
     if context < 2 or news_lookback_sessions < 1:
         raise ValueError("El contexto o la ventana retrospectiva de noticias no es válido")
@@ -118,8 +125,8 @@ def eligible_samples(
         if first == last:
             continue
         known = snapshot(facts, cutoff)
-        selected = [known.get(concept) for concept in FUNDAMENTAL_CONCEPTS]
-        if not any(selected):
+        selected = [known.get(concept) for concept in fundamental_concepts]
+        if not any(r and r["value"] is not None for r in selected):
             continue
         available = max(r["available_at"] for r in selected if r)
         availability = {
@@ -185,10 +192,14 @@ def materialize_samples(
     batch_rows: int = 256,
     max_partition_bytes: int = 64 * 1024**2,
     max_partition_rows: int = 100_000,
+    company_factors: bool = False,
 ) -> dict:
     """Guarda vectores por activo. Las ventanas de precios se obtienen bajo demanda."""
     if type(batch_rows) is not int or not 1 <= batch_rows <= 1024:
         raise ValueError("El tamaño del bloque de muestras no es válido")
+    if type(company_factors) is not bool:
+        raise ValueError("La selección de factores empresariales debe ser booleana")
+    fundamental_concepts = FUNDAMENTAL_CONCEPTS + (FACTOR_CONCEPTS if company_factors else ())
     limits = {
         "sample_batch_rows": batch_rows,
         "partition_bytes": max_partition_bytes,
@@ -221,6 +232,10 @@ def materialize_samples(
                         "encoders": encoder_fingerprint,
                         "sample_code": sha256(Path(__file__)),
                         "batch_code": sha256(Path(__file__).with_name("batches.py")),
+                        "company_factor_code": sha256(
+                            Path(__file__).with_name("company_factors.py")
+                        ),
+                        "fundamental_concepts": fundamental_concepts,
                         "limits": limits,
                         "renderer": sha256(Path(__file__).with_name("charts.py")),
                         "context": 64,
@@ -233,7 +248,15 @@ def materialize_samples(
             if receipt_path.exists():
                 old = json.loads(receipt_path.read_text())
                 if old["fingerprint"] == fingerprint and (target / "samples.parquet").exists():
-                    if sha256(target / "samples.parquet") == old["samples_sha256"]:
+                    factor_path = target / "company-factors.parquet"
+                    factors_valid = not company_factors or (
+                        factor_path.is_file()
+                        and sha256(factor_path) == old.get("company_factors_sha256")
+                    )
+                    if (
+                        factors_valid
+                        and sha256(target / "samples.parquet") == old["samples_sha256"]
+                    ):
                         reports.append({**old, "reused": True})
                         continue
             started = time.perf_counter()
@@ -256,13 +279,24 @@ def materialize_samples(
                 max_rows=max_partition_rows,
                 max_bytes=max_partition_bytes,
             ).to_pylist()
+            factor_audit = {}
+            if company_factors:
+                derived, factor_audit = write_company_factors(
+                    target / "company-factors.parquet",
+                    facts,
+                    batch_rows=batch_rows,
+                    max_facts=max_partition_rows,
+                )
+                facts.extend(derived)
             ohlc = prices[["open", "high", "low", "close"]].to_numpy()
             no_macro = 0
 
             def encoded_batches(prices=prices, news=news, facts=facts, ohlc=ohlc):
                 nonlocal no_macro
                 samples = []
-                for sample in eligible_samples(prices, news, facts, clock):
+                for sample in eligible_samples(
+                    prices, news, facts, clock, fundamental_concepts=fundamental_concepts
+                ):
                     context = macro_contexts.at(sample["prediction_at"])
                     if (
                         not context
@@ -323,15 +357,29 @@ def materialize_samples(
                         }
                     )
                     if len(samples) == batch_rows:
-                        yield sample_table(samples)
+                        yield sample_table(samples, fundamental_concepts=fundamental_concepts)
                         samples = []
 
                 if samples:
-                    yield sample_table(samples)
+                    yield sample_table(samples, fundamental_concepts=fundamental_concepts)
 
             count = atomic_parquet_batches(target / "samples.parquet", encoded_batches())
             result = {
-                "schema_version": 1,
+                "schema_version": 2 if company_factors else 1,
+                "fundamental_concepts": fundamental_concepts,
+                "company_factors_audit": factor_audit,
+                "company_factor_derivation": {
+                    "definitions": json.loads(json.dumps(FACTOR_DEFINITIONS)),
+                    "code_sha256": sha256(Path(__file__).with_name("company_factors.py")),
+                    "source_unit": "USD",
+                    "positive_denominator_required": True,
+                    "transform": "signed_log1p_then_presence_then_log1p_age_days",
+                }
+                if company_factors
+                else None,
+                "company_factors_sha256": sha256(target / "company-factors.parquet")
+                if company_factors
+                else None,
                 "symbol": symbol,
                 "market": clock.market,
                 "fingerprint": fingerprint,

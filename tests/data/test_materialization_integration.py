@@ -146,6 +146,46 @@ def test_materialization_writes_bounded_groups_with_identical_rows(tmp_path, enc
         cache.close()
 
 
+def test_company_factor_schema_changes_cache_and_keeps_missing_values_explicit(
+    tmp_path, encoder_runtime
+):
+    clock = MarketClock("US", "2024-01-01", "2024-12-31")
+    source, asset = write_inputs(tmp_path)
+    prepared = tmp_path / "prepared"
+    prepare_asset(source, prepared, asset, clock)
+    macro_path = tmp_path / "macro.parquet"
+    write_macro(macro_path, clock)
+    cache = EmbeddingCache(tmp_path / "cache.sqlite")
+    output = tmp_path / "samples"
+    try:
+        args = (prepared, macro_path, output, {"assets": [asset]}, clock, FixtureEncoders(), cache)
+        base = materialize_samples(*args)
+        extended = materialize_samples(*args, company_factors=True)
+        before, after = base["assets"][0], extended["assets"][0]
+        assert before["fingerprint"] != after["fingerprint"]
+        assert before["samples"] == after["samples"] == 5
+        assert after["schema_version"] == 2
+        assert len(after["fundamental_concepts"]) == 15
+        assert after["company_factor_derivation"]["definitions"][0] == [
+            "current_ratio",
+            [["AssetsCurrent", 1]],
+            "LiabilitiesCurrent",
+        ]
+        assert len(after["company_factor_derivation"]["code_sha256"]) == 64
+        table = pq.read_table(output / "US/A/samples.parquet")
+        assert table.schema.field("fundamentals").type.list_size == 45
+        assert table["fundamentals"].to_pylist()[0][23:30] == [0.0] * 7
+        assert (output / "US/A/company-factors.parquet").exists()
+        reused = materialize_samples(*args, company_factors=True)
+        assert reused["assets"][0]["reused"] is True
+        (output / "US/A/company-factors.parquet").write_bytes(b"damaged")
+        repaired = materialize_samples(*args, company_factors=True)
+        assert not repaired["assets"][0].get("reused", False)
+        assert pq.read_table(output / "US/A/company-factors.parquet").num_rows == 7
+    finally:
+        cache.close()
+
+
 def test_materialization_failure_does_not_publish_partial_samples(tmp_path, encoder_runtime):
     clock = MarketClock("US", "2024-01-01", "2024-12-31")
     source, asset = write_inputs(tmp_path)
@@ -196,8 +236,9 @@ def test_materialization_failure_does_not_publish_partial_samples(tmp_path, enco
 
 
 @pytest.mark.parametrize("custom_calendar", [False, True])
+@pytest.mark.parametrize("company_factors", [False, True])
 def test_cli_prepares_and_encodes_prices_before_2000(
-    tmp_path, monkeypatch, encoder_runtime, custom_calendar
+    tmp_path, monkeypatch, encoder_runtime, custom_calendar, company_factors
 ):
     from mars_titan.data import cli, embeddings
 
@@ -247,12 +288,14 @@ def test_cli_prepares_and_encodes_prices_before_2000(
             "--cache",
             str(tmp_path / "cache.sqlite"),
             *calendar_args,
+            *(["--company-factors"] if company_factors else []),
         ],
     )
     assert cli.main() == 0
     rows = pq.read_table(output / "US/A/samples.parquet").to_pylist()
     assert len(rows) == 5
     assert all(row["prediction_at"].year == 1995 for row in rows)
+    assert len(rows[0]["fundamentals"]) == (45 if company_factors else 24)
 
 
 @pytest.mark.parametrize("invalid_input", ["originals", "prepared", "calendar"])
