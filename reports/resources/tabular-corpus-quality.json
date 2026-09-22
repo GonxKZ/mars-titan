@@ -1,0 +1,271 @@
+{
+  "full_suite": {
+    "passed": 1032,
+    "skipped": 0,
+    "seconds": 61.37
+  },
+  "focused_suite": {
+    "passed": 7
+  },
+  "source_sha256": "b4188405cfbfbe28bc908f331c1b5d738e94cdbf7cffa6527e44f32260edcea7",
+  "coverage": {
+    "covered_lines": 96,
+    "num_statements": 117,
+    "percent_covered": 79.47019867549669,
+    "percent_covered_display": "79",
+    "missing_lines": 21,
+    "excluded_lines": 0,
+    "percent_statements_covered": 82.05128205128206,
+    "percent_statements_covered_display": "82",
+    "num_branches": 34,
+    "num_partial_branches": 8,
+    "covered_branches": 24,
+    "missing_branches": 10,
+    "percent_branches_covered": 70.58823529411765,
+    "percent_branches_covered_display": "71"
+  },
+  "functions": [
+    {
+      "name": "_matrix",
+      "complexity": 2,
+      "statement_coverage_fraction": 1.0,
+      "crap": 2.0
+    },
+    {
+      "name": "_predict",
+      "complexity": 3,
+      "statement_coverage_fraction": 0.8333333333333334,
+      "crap": 3.0416666666666665
+    },
+    {
+      "name": "run_tabular_reference",
+      "complexity": 30,
+      "statement_coverage_fraction": 0.8727272727272727,
+      "crap": 31.85544703230654
+    },
+    {
+      "name": "main",
+      "complexity": 2,
+      "statement_coverage_fraction": 0.0,
+      "crap": 6.0
+    }
+  ],
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "modality",
+      "target",
+      "budget"
+    ]
+  },
+  "scope": "development_snapshot",
+  "exact_population_and_targets_match": true,
+  "manifest_sha256": "c40653b0d352701041fa76b6e9d5346e2c54684c82a671e28a37e71bc5b539c6",
+  "neural_summary_sha256": "2605eac4d6b27ebaf8e8ee3544390bac351f70df25b1cd925e516bc3efb7aef2",
+  "cases": [
+    {
+      "id": "ridge-0.1",
+      "report_sha256": "105e6a011066bd4f0943c23d5ccb574a50996ce901183f0351d184ca59a09850",
+      "samples": {
+        "train": 160,
+        "validation": 135
+      },
+      "fitted_rows": 160,
+      "features": 1681,
+      "fit_passes": 2,
+      "device": "cuda:0",
+      "runtime": {
+        "python": "3.12.14",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "machine": "x86_64",
+        "boosting_threads": null
+      },
+      "fit_seconds": 0.49880160100292414,
+      "total_seconds": 1.2730551389977336,
+      "matrix_bytes_estimate": 2152960,
+      "process_lifetime_peak_rss_bytes": 1087623168,
+      "peak_vram_allocated_bytes": 104942080,
+      "checkpoint": {
+        "path": "model.npz",
+        "sha256": "4b0eae901ec4429178f6916f82a262116fcf9f6fa15a59605ff57d2d31d7a3ef"
+      },
+      "metrics": {
+        "train": {
+          "samples": 160,
+          "mse": 2.73344910767135e-10,
+          "mae": 1.2531789929384518e-05,
+          "zero_mse": 0.0004452584295071881,
+          "zero_mae": 0.014661069813631761
+        },
+        "validation": {
+          "samples": 135,
+          "mse": 0.0012383683560928996,
+          "mae": 0.02655639575181338,
+          "zero_mse": 0.0003899872188045185,
+          "zero_mae": 0.014092887449964703
+        }
+      },
+      "predictions_sha256": {
+        "train": "4c43cbaf8c6cca74c10574ac14826c07d8eff25eea1e32763762300636cbcfb4",
+        "validation": "09ec2603664371ca57ff532e44b2a1b6c19d7b6d44910b8076f6342e68a990d9"
+      }
+    },
+    {
+      "id": "ridge-1",
+      "report_sha256": "416c18adce11ccbe5679725d870c54f86aa8ff356bed99c61336bc27e9bf0061",
+      "samples": {
+        "train": 160,
+        "validation": 135
+      },
+      "fitted_rows": 160,
+      "features": 1681,
+      "fit_passes": 2,
+      "device": "cuda:0",
+      "runtime": {
+        "python": "3.12.14",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "machine": "x86_64",
+        "boosting_threads": null
+      },
+      "fit_seconds": 0.3760717620025389,
+      "total_seconds": 0.8989382040017517,
+      "matrix_bytes_estimate": 2152960,
+      "process_lifetime_peak_rss_bytes": 1088892928,
+      "peak_vram_allocated_bytes": 104942080,
+      "checkpoint": {
+        "path": "model.npz",
+        "sha256": "0b768fa1387278a63e8ec401bbc9dcb0bdbbc98b305b9c768cc7dd03365646c4"
+      },
+      "metrics": {
+        "train": {
+          "samples": 160,
+          "mse": 2.6542454509412758e-08,
+          "mae": 0.00012346723943848357,
+          "zero_mse": 0.0004452584295071881,
+          "zero_mae": 0.014661069813631761
+        },
+        "validation": {
+          "samples": 135,
+          "mse": 0.0012265874270708504,
+          "mae": 0.026422447093006247,
+          "zero_mse": 0.0003899872188045185,
+          "zero_mae": 0.014092887449964703
+        }
+      },
+      "predictions_sha256": {
+        "train": "30b5d50549f0aa8c2c436c94225e4b8748489a9d3bdbc73b277de8679b9a1dfc",
+        "validation": "b79b8d9b7bd88e6356ec51a52895cd4784101b640541f667bea84d2d743dc767"
+      }
+    },
+    {
+      "id": "ridge-10",
+      "report_sha256": "3ca18f13237f1a86a69055f84494a7f194d002a192c9c8a4467862c9e4c9e397",
+      "samples": {
+        "train": 160,
+        "validation": 135
+      },
+      "fitted_rows": 160,
+      "features": 1681,
+      "fit_passes": 2,
+      "device": "cuda:0",
+      "runtime": {
+        "python": "3.12.14",
+        "cuda": "13.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "machine": "x86_64",
+        "boosting_threads": null
+      },
+      "fit_seconds": 0.37583433400141075,
+      "total_seconds": 0.8945160750008654,
+      "matrix_bytes_estimate": 2152960,
+      "process_lifetime_peak_rss_bytes": 1088929792,
+      "peak_vram_allocated_bytes": 104942080,
+      "checkpoint": {
+        "path": "model.npz",
+        "sha256": "171e44a77dcbc03982cf1c55e9620c6ecc741e6d657b603c8d061babb685f627"
+      },
+      "metrics": {
+        "train": {
+          "samples": 160,
+          "mse": 2.0435151954255876e-06,
+          "mae": 0.001082286742191645,
+          "zero_mse": 0.0004452584295071881,
+          "zero_mae": 0.014661069813631761
+        },
+        "validation": {
+          "samples": 135,
+          "mse": 0.0011319094877918904,
+          "mae": 0.025319450447848887,
+          "zero_mse": 0.0003899872188045185,
+          "zero_mae": 0.014092887449964703
+        }
+      },
+      "predictions_sha256": {
+        "train": "5866617a7f771d51626187d0643ebf4c18d2defaa1a165e09bc8eab3866ba3d3",
+        "validation": "ba030ec01fa0ed1b6fef9e82b8d80481da549fd8d1a5c255b62138ab72787840"
+      }
+    },
+    {
+      "id": "boosting",
+      "report_sha256": "9daba2d8ec2da40472923653f5510f707641e10946a636387f1a6296ff979253",
+      "samples": {
+        "train": 160,
+        "validation": 135
+      },
+      "fitted_rows": 160,
+      "features": 1681,
+      "fit_passes": 1,
+      "device": "cpu",
+      "runtime": {
+        "python": "3.12.14",
+        "cuda": "13.0",
+        "gpu": null,
+        "machine": "x86_64",
+        "boosting_threads": 4
+      },
+      "fit_seconds": 0.4820462479983689,
+      "total_seconds": 1.0521117169992067,
+      "matrix_bytes_estimate": 2152960,
+      "process_lifetime_peak_rss_bytes": 1136128000,
+      "peak_vram_allocated_bytes": null,
+      "checkpoint": {
+        "path": "model.joblib",
+        "sha256": "0e643359991c0622e09e5a8d29296c5cb99f233918caaa0e9abbedaf534d0b07"
+      },
+      "metrics": {
+        "train": {
+          "samples": 160,
+          "mse": 0.0001284614053459237,
+          "mae": 0.008443720728961745,
+          "zero_mse": 0.0004452584295071881,
+          "zero_mae": 0.014661069813631761
+        },
+        "validation": {
+          "samples": 135,
+          "mse": 0.0004117971223851822,
+          "mae": 0.015172163616924856,
+          "zero_mse": 0.0003899872188045185,
+          "zero_mae": 0.014092887449964703
+        }
+      },
+      "predictions_sha256": {
+        "train": "bbe7d013b8a009bf32a2eb60995c26dafe15cf4af492345b4945942fe367215b",
+        "validation": "62dce59d30c23e146de1f8498ed511e735949d3dfb597aad7a866e96f376e848"
+      }
+    }
+  ],
+  "limits": [
+    "La misma poblaci\u00f3n no convierte una edici\u00f3n reducida en el corpus completo.",
+    "Los cuatro ajustes tabulares tienen m\u00e1s MAE de validaci\u00f3n que la referencia cero.",
+    "La revisi\u00f3n editorial y las comprobaciones locales eran concurrentes.",
+    "RSS es el m\u00e1ximo de vida del proceso. VRAM corresponde a memoria asignada por PyTorch.",
+    "La cobertura corresponde a las siete pruebas espec\u00edficas."
+  ]
+}
