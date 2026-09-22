@@ -4,11 +4,11 @@ Autor: Gonzalo García Lama. Versión de trabajo ampliada: 18 de septiembre de 2
 
 ## Pregunta y alcance
 
-El estudio compara soluciones para predecir retornos residuales de un subconjunto del mercado estadounidense disponible en FinMultiTime. Se quiere determinar si una memoria adaptativa de eventos aporta información útil frente a modelos sin esa memoria, bajo las mismas condiciones de datos y evaluación. El trabajo no depende de demostrar superioridad: una comparación que identifique un efecto nulo o un coste desproporcionado también responde a la pregunta.
+El estudio compara soluciones para predecir retornos residuales de los mercados estadounidense y chino disponibles en FinMultiTime. La campaña de referencias amplía el recorrido a todo el universo admisible, con comparaciones por mercado y conjunta. Se quiere determinar si una memoria adaptativa de eventos aporta información útil frente a modelos sin esa memoria, bajo las mismas condiciones de datos y evaluación. El trabajo no depende de demostrar superioridad: una comparación que identifique un efecto nulo o un coste desproporcionado también responde a la pregunta.
 
 La contribución prevista tiene tres partes: un protocolo temporal verificable, una adaptación compacta de memoria neural y una comparación con ablaciones. La novedad de esa combinación debe justificarse frente al [estado del arte](../references/neural-review.md). El nombre MARS-TITAN no acredita por sí mismo una arquitectura novedosa. La propuesta toma ideas de Titans, pero no se presentará como una reproducción completa de sus resultados.
 
-Quedan fuera del núcleo: operaciones reales, conexión a un bróker, recomendaciones de inversión, generación de estrategias por refuerzo, autoedición de modelos al estilo SEAL y entrenamiento de grandes codificadores multimodales. China/HS300, varias escalas de memoria y kernels propios son extensiones condicionadas a tiempo y evidencia.
+Quedan fuera del núcleo: operaciones reales, conexión a un bróker, recomendaciones de inversión, generación de estrategias por refuerzo, autoedición de modelos al estilo SEAL y entrenamiento de grandes codificadores multimodales. Varias escalas de memoria y kernels propios siguen condicionados a evidencia. La campaña china y la conjunta requieren resolver sus publicaciones, identidad y factor de mercado, sin dar por utilizables las cuatro modalidades solo porque existan sus archivos.
 
 ## Hipótesis registrables
 
