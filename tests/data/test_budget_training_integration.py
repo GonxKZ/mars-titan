@@ -182,7 +182,7 @@ def test_ridge_reference_probe_reconciles_partitions_and_restores_model(
     assert all(np.isfinite(row["ridge"]) and row["zero"] == 0 for row in rows)
 
 
-@pytest.mark.parametrize("kind", ["gru", "dlinear"])
+@pytest.mark.parametrize("kind", ["gru", "dlinear", "rnn", "lstm"])
 def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
     tmp_path, synthetic_budget_inputs, cuda_runtime, kind
 ):
@@ -229,7 +229,7 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
     for name in [
         *(
             ["price_encoder.weight_ih_l0"]
-            if kind == "gru"
+            if kind in {"gru", "rnn", "lstm"}
             else [
                 "price_encoder.0.seasonal.weight",
                 "price_encoder.0.trend.weight",
@@ -245,11 +245,26 @@ def test_strict_gru_probe_reconciles_partitions_and_resumes_exactly(
     rows = pq.read_table(tmp_path / "gru-run/predictions.parquet").to_pylist()
     assert len(rows) == len(fixture["validation_days"])
     assert all(row["prediction_at"].year == 2023 and np.isfinite(row[kind]) for row in rows)
+    fitted_path = tmp_path / "gru-run/training-predictions.parquet"
+    fitted = pq.read_table(fitted_path).to_pylist()
+    assert len(fitted) == len(fixture["train_days"])
+    assert all(row["prediction_at"].year <= 2022 for row in fitted)
+    assert report["training_predictions_sha256"] == sha256(fitted_path)
+    errors = np.array([row[kind] - row["target"] for row in fitted])
+    assert report["final_training_row_metrics"][kind]["mae"] == pytest.approx(
+        np.abs(errors).mean(), abs=1e-12
+    )
+    assert report["final_training_row_metrics"][kind]["mse"] == pytest.approx(
+        np.square(errors).mean(), abs=1e-12
+    )
+    assert report["numerics"]["deterministic_algorithms"] is True
+    assert report["numerics"]["cudnn_version"] == torch.backends.cudnn.version()
 
 
 @pytest.mark.parametrize("loss", ["mae", "huber"])
+@pytest.mark.parametrize("kind", ["gru", "rnn", "lstm"])
 def test_posttraining_has_its_own_optimizer_reports_and_exact_recovery(
-    tmp_path, synthetic_budget_inputs, loss
+    tmp_path, synthetic_budget_inputs, loss, kind
 ):
     from mars_titan.gru_probe import run_temporal_probe
 
@@ -267,6 +282,7 @@ def test_posttraining_has_its_own_optimizer_reports_and_exact_recovery(
         epochs=2,
         learning_rate=1e-3,
         seed=7,
+        kind=kind,
     )
     checkpoint = tmp_path / "base/epoch-2.pt"
     source_hash = sha256(checkpoint)
@@ -280,6 +296,7 @@ def test_posttraining_has_its_own_optimizer_reports_and_exact_recovery(
         huber_delta=0.003,
         learning_rate=1e-4,
         seed=7,
+        kind=kind,
         initialize_from=checkpoint,
     )
     assert refined["config"]["initialization"]["sha256"] == source_hash
@@ -291,7 +308,7 @@ def test_posttraining_has_its_own_optimizer_reports_and_exact_recovery(
     assert refined["samples"] == base["samples"]
     assert sha256(checkpoint) == source_hash
     rows = pq.read_table(tmp_path / "refined/predictions.parquet").to_pandas()
-    errors = (rows.gru - rows.target).abs().to_numpy()
+    errors = (rows[kind] - rows.target).abs().to_numpy()
     expected = (
         errors.mean()
         if loss == "mae"

@@ -10,7 +10,7 @@ def module():
         pytest.fail("Las referencias de coste multimodal todavía no existen")
 
 
-@pytest.mark.parametrize("kind", ["mlp", "gru", "dlinear"])
+@pytest.mark.parametrize("kind", ["mlp", "gru", "dlinear", "rnn", "lstm"])
 def test_cost_probes_use_every_modality_and_macro(kind):
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
