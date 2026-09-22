@@ -1,0 +1,123 @@
+{
+  "market": "US",
+  "purpose": "directed_editorial_expansion_not_confirmatory_universe",
+  "assets": [
+    {
+      "symbol": "ABM",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/abm.csv"
+        ],
+        "news": [
+          "text/sp500_news/ABM.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/abm/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/abm/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/abm/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    },
+    {
+      "symbol": "CSGS",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/csgs.csv"
+        ],
+        "news": [
+          "text/sp500_news/CSGS.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/csgs/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/csgs/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/csgs/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    },
+    {
+      "symbol": "DECK",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/deck.csv"
+        ],
+        "news": [
+          "text/sp500_news/DECK.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/deck/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/deck/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/deck/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    },
+    {
+      "symbol": "MNST",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/mnst.csv"
+        ],
+        "news": [
+          "text/sp500_news/MNST.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/mnst/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/mnst/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/mnst/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    },
+    {
+      "symbol": "MSFT",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/msft.csv"
+        ],
+        "news": [
+          "text/sp500_news/MSFT.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/msft/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/msft/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/msft/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    },
+    {
+      "symbol": "NVDA",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/nvda.csv"
+        ],
+        "news": [
+          "text/sp500_news/NVDA.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/nvda/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/nvda/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/nvda/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    },
+    {
+      "symbol": "AMZN",
+      "paths": {
+        "prices": [
+          "time_series/S&P500_time_series/amzn.csv"
+        ],
+        "news": [
+          "text/sp500_news/AMZN.jsonl"
+        ],
+        "fundamentals": [
+          "table/financial_reports/amzn/condensed_consolidated_balance_sheets.json",
+          "table/financial_reports/amzn/condensed_consolidated_statement_of_cash_flows.json",
+          "table/financial_reports/amzn/condensed_consolidated_statement_of_equity.json"
+        ]
+      }
+    }
+  ],
+  "sector_used": false,
+  "future_survival_required": false,
+  "source_review_sha256": "bb2d5564ddda01a24b6bcd1ee305324e386de97ae268232cb168d0896130612e",
+  "selection_rule": "previous_four_asset_panel_plus_three_companies_with_new_verified_articles",
+  "source_review_file": "data/manifests/news-reviews.json"
+}
