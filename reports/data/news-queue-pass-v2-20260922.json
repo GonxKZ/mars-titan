@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "records": 4469917,
+  "states": {
+    "missing_content": 14,
+    "needs_provenance": 1062814,
+    "pending": 2427035,
+    "rejected": 11,
+    "reserved": 980008,
+    "retry": 1,
+    "unverifiable": 13,
+    "verified_full_article": 21
+  },
+  "reasons": {
+    "http_404": 1,
+    "unresolved_publisher": 999
+  },
+  "markets": {
+    "CN": 1420362,
+    "US": 3049555
+  },
+  "training_ready": false,
+  "processed": 1000,
+  "elapsed_seconds": 6.033420605999709,
+  "peak_rss_mib": 120.90625,
+  "whole_operation_seconds": 6.033467574001406,
+  "database_bytes": 650207232,
+  "manual_manifest_sha256": "bb2d5564ddda01a24b6bcd1ee305324e386de97ae268232cb168d0896130612e",
+  "by_market_state": [
+    {
+      "market": "CN",
+      "state": "needs_provenance",
+      "records": 1053678
+    },
+    {
+      "market": "CN",
+      "state": "reserved",
+      "records": 366684
+    },
+    {
+      "market": "US",
+      "state": "missing_content",
+      "records": 14
+    },
+    {
+      "market": "US",
+      "state": "needs_provenance",
+      "records": 9136
+    },
+    {
+      "market": "US",
+      "state": "pending",
+      "records": 2427035
+    },
+    {
+      "market": "US",
+      "state": "rejected",
+      "records": 11
+    },
+    {
+      "market": "US",
+      "state": "reserved",
+      "records": 613324
+    },
+    {
+      "market": "US",
+      "state": "retry",
+      "records": 1
+    },
+    {
+      "market": "US",
+      "state": "unverifiable",
+      "records": 13
+    },
+    {
+      "market": "US",
+      "state": "verified_full_article",
+      "records": 21
+    }
+  ],
+  "policy_sha256": "6e6bc6470ca72c6d101c7784faaa18baf8928de832fe4ff004215adb8808842c",
+  "manual_reviews_unchanged": 45,
+  "limits": [
+    "No equivale a admisi\u00f3n de muestras multimodales ni a entrenamiento completo.",
+    "Medici\u00f3n concurrente con comprobaciones locales, sin controlar la cach\u00e9 del sistema."
+  ]
+}
