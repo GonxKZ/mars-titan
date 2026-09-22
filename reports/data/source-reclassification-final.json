@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "inspected_at": "2026-09-22T01:12:31.184864+00:00",
+  "files": 216453,
+  "snapshot_sha256": "f206a659be9e19f2cd6913488843c480c06808ce089c19cef95cd62d672c1619",
+  "bytes": 116185016265,
+  "groups": [
+    {
+      "market": "CN",
+      "modality": "charts",
+      "files": 52914,
+      "bytes": 2614638569
+    },
+    {
+      "market": "CN",
+      "modality": "fundamentals",
+      "files": 2430,
+      "bytes": 595799355
+    },
+    {
+      "market": "CN",
+      "modality": "news",
+      "files": 892,
+      "bytes": 433628563
+    },
+    {
+      "market": "CN",
+      "modality": "prices",
+      "files": 810,
+      "bytes": 362623012
+    },
+    {
+      "market": "US",
+      "modality": "charts",
+      "files": 142468,
+      "bytes": 6026569527
+    },
+    {
+      "market": "US",
+      "modality": "fundamentals",
+      "files": 8028,
+      "bytes": 90235785721
+    },
+    {
+      "market": "US",
+      "modality": "news",
+      "files": 4694,
+      "bytes": 13948476648
+    },
+    {
+      "market": "US",
+      "modality": "prices",
+      "files": 4213,
+      "bytes": 1967347946
+    },
+    {
+      "market": "catalog",
+      "modality": "metadata",
+      "files": 4,
+      "bytes": 146924
+    }
+  ],
+  "hashed_files": 0,
+  "reclassified_files": 216453,
+  "changed_identities": 168886,
+  "classification_version": 1,
+  "errors": 0,
+  "duplicate_content_files": 27252,
+  "elapsed_seconds": 9.588826912000059,
+  "peak_rss_mib": 58.83203125,
+  "validation": "inventory_and_bounded_headers_only"
+}

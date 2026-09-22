@@ -4,6 +4,9 @@ Comprobación del 22 de septiembre de 2026. El alcance es presencia de fuentes,
 ventanas de precios y disponibilidad de los derivados existentes. No es una
 validación editorial de todas las noticias ni un entrenamiento.
 
+La [corrección posterior del inventario](chart-identity-repair.md) resuelve la
+asignación de gráficos descrita en esta captura, conservando sus fuentes.
+
 ## Fuentes y ventanas
 
 El [inventario completo](full-source-inventory.json) registra 216.453 archivos,
