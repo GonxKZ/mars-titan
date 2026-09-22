@@ -1,0 +1,179 @@
+{
+  "full_suite": {
+    "passed": 1004,
+    "skipped": 0
+  },
+  "focused_suite": {
+    "passed": 15
+  },
+  "code_sha256": "31e83647d5c5abd05f340228fe3b94f4180b7aa9d5242c225bac419f13d22501",
+  "coverage": {
+    "covered_lines": 159,
+    "num_statements": 177,
+    "percent_covered": 86.66666666666667,
+    "percent_covered_display": "87",
+    "missing_lines": 18,
+    "excluded_lines": 0,
+    "percent_statements_covered": 89.83050847457628,
+    "percent_statements_covered_display": "90",
+    "num_branches": 78,
+    "num_partial_branches": 16,
+    "covered_branches": 62,
+    "missing_branches": 16,
+    "percent_branches_covered": 79.48717948717949,
+    "percent_branches_covered_display": "79"
+  },
+  "functions": [
+    {
+      "name": "_json",
+      "complexity": 5,
+      "statement_coverage_fraction": 0.5,
+      "crap": 8.125
+    },
+    {
+      "name": "_locked",
+      "complexity": 13,
+      "statement_coverage_fraction": 0.92,
+      "crap": 13.086528
+    },
+    {
+      "name": "_record_valid",
+      "complexity": 9,
+      "statement_coverage_fraction": 1.0,
+      "crap": 9.0
+    },
+    {
+      "name": "_index",
+      "complexity": 13,
+      "statement_coverage_fraction": 1.0,
+      "crap": 13.0
+    },
+    {
+      "name": "_intact",
+      "complexity": 4,
+      "statement_coverage_fraction": 1.0,
+      "crap": 4.0
+    },
+    {
+      "name": "_tensor_bytes",
+      "complexity": 10,
+      "statement_coverage_fraction": 1.0,
+      "crap": 10.0
+    },
+    {
+      "name": "_read_payload",
+      "complexity": 10,
+      "statement_coverage_fraction": 0.8181818181818182,
+      "crap": 10.601051840721261
+    },
+    {
+      "name": "save_training_state",
+      "complexity": 26,
+      "statement_coverage_fraction": 0.8666666666666667,
+      "crap": 27.60237037037037
+    },
+    {
+      "name": "load_training_state",
+      "complexity": 4,
+      "statement_coverage_fraction": 0.9090909090909091,
+      "crap": 4.012021036814425
+    },
+    {
+      "name": "capture_rng",
+      "complexity": 5,
+      "statement_coverage_fraction": 0.6666666666666666,
+      "crap": 5.9259259259259265
+    },
+    {
+      "name": "restore_rng",
+      "complexity": 5,
+      "statement_coverage_fraction": 0.8,
+      "crap": 5.2
+    },
+    {
+      "name": "StopRequest.__init__",
+      "complexity": 1,
+      "statement_coverage_fraction": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "StopRequest.request_stop",
+      "complexity": 1,
+      "statement_coverage_fraction": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "StopRequest.__enter__",
+      "complexity": 2,
+      "statement_coverage_fraction": 1.0,
+      "crap": 2.0
+    },
+    {
+      "name": "StopRequest.__exit__",
+      "complexity": 2,
+      "statement_coverage_fraction": 1.0,
+      "crap": 2.0
+    }
+  ],
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "load_before_publish",
+      "identity_budget",
+      "identity_binding"
+    ]
+  },
+  "measurement": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "parameters": 52609,
+    "cold": {
+      "save_seconds": 0.018553424000856467,
+      "load_seconds": 0.0045025069994153455,
+      "file_bytes": 664931
+    },
+    "repeated": [
+      {
+        "save_seconds": 0.014807818006374873,
+        "load_seconds": 0.0040670859889360145,
+        "file_bytes": 664931
+      },
+      {
+        "save_seconds": 0.016760188998887315,
+        "load_seconds": 0.004302795001422055,
+        "file_bytes": 664931
+      },
+      {
+        "save_seconds": 0.015330863010603935,
+        "load_seconds": 0.004159878997597843,
+        "file_bytes": 664931
+      },
+      {
+        "save_seconds": 0.01578447999781929,
+        "load_seconds": 0.004218678004690446,
+        "file_bytes": 664931
+      },
+      {
+        "save_seconds": 0.014822865996393375,
+        "load_seconds": 0.004127388005144894,
+        "file_bytes": 664931
+      }
+    ],
+    "exact_weights": true,
+    "limits": [
+      "Carga local con cach\u00e9 sin controlar y campa\u00f1a neuronal concurrente.",
+      "La medida no incluye la captura RNG ni el arranque de Python.",
+      "Datos sint\u00e9ticos de coste, no calidad predictiva."
+    ]
+  },
+  "limits": [
+    "Cobertura de las pruebas espec\u00edficas. El proceso terminado durante escritura no est\u00e1 instrumentado.",
+    "Persistencia probada en Linux local. No acredita recuperaci\u00f3n de un corte el\u00e9ctrico.",
+    "La integraci\u00f3n con \u00e9pocas, cursor y parada del entrenador se comprueba por separado."
+  ]
+}
