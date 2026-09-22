@@ -1,0 +1,309 @@
+{
+  "coverage": {
+    "completed_assets": 2639,
+    "candidate_assets": 2639,
+    "completed_source_bytes": 88987082255,
+    "candidate_source_bytes": 88987082255,
+    "completed_asset_seconds": 1933.690863464999,
+    "current_process_seconds": 1983.5543665660007,
+    "peak_rss_mib": 129.04296875
+  },
+  "source_files": 7917,
+  "assets_with_any_reader_fact": 2249,
+  "assets_with_any_admissible_fact_before_2024": 2238,
+  "assets_with_only_filed_from_2024": 11,
+  "assets_without_admissible_facts_before_2024": 401,
+  "admissible_concept_unit_pairs_in_development": 92,
+  "admissible_concept_unit_pairs_in_validation": 61,
+  "admissible_pairs_only_observed_in_validation": [
+    {
+      "namespace": "us-gaap",
+      "concept": "AccountsPayableCurrent",
+      "unit": "CNY"
+    }
+  ],
+  "counts": {
+    "raw_rows_all_dates": 176737936,
+    "raw_rows_before_2024": 158623107,
+    "filed_from_2024_ignored": 18114829,
+    "missing_or_invalid_filed": 0,
+    "duplicates": 155632281,
+    "conflicting_rows": 0,
+    "unique_keys": 2982123,
+    "ambiguous_keys": 0,
+    "unique_admissible": 2982123,
+    "no_facts_emitted_by_reader": 390,
+    "invalid_period_or_end_after_filed": 8703
+  },
+  "named_concepts": 27,
+  "concept_unit_pairs": 93,
+  "units": [
+    "CAD",
+    "CHF",
+    "CNY",
+    "EUR",
+    "GBP",
+    "GBP/shares",
+    "HKD/shares",
+    "ILS",
+    "TND",
+    "USD",
+    "USD/shares",
+    "pure",
+    "shares",
+    "shares/USD"
+  ],
+  "by_period": {
+    "development_filed_through_2022": {
+      "raw_rows": 144457794,
+      "unique_keys": 2701781,
+      "unique_admissible": 2701781,
+      "invalid_rows": 7363,
+      "duplicates": 141748650,
+      "ambiguous_keys": 0
+    },
+    "validation_filed_2023": {
+      "raw_rows": 14165313,
+      "unique_keys": 280342,
+      "unique_admissible": 280342,
+      "invalid_rows": 1340,
+      "duplicates": 13883631,
+      "ambiguous_keys": 0
+    }
+  },
+  "assets_with_admissible_facts_by_period": {
+    "development_filed_through_2022": 2225,
+    "validation_filed_2023": 2232
+  },
+  "asset_publications_by_period": {
+    "development_filed_through_2022": 90746,
+    "validation_filed_2023": 9005
+  },
+  "usd_ratios": [
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "current_ratio",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 1673,
+      "groups_total": 291359,
+      "compatible_groups": 137160,
+      "missing_components": 154184,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 15,
+      "publications": 67180
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "equity_to_assets",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 2149,
+      "groups_total": 291359,
+      "compatible_groups": 172887,
+      "missing_components": 118449,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 23,
+      "publications": 83259
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "liabilities_to_assets",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 1890,
+      "groups_total": 291359,
+      "compatible_groups": 141687,
+      "missing_components": 149658,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 14,
+      "publications": 69539
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "liabilities_to_positive_equity",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 1805,
+      "groups_total": 291359,
+      "compatible_groups": 124431,
+      "missing_components": 160314,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 6614,
+      "publications": 62000
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "payables_to_assets",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 1487,
+      "groups_total": 291359,
+      "compatible_groups": 112392,
+      "missing_components": 178960,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 7,
+      "publications": 55114
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "receivables_to_assets",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 1369,
+      "groups_total": 291359,
+      "compatible_groups": 98315,
+      "missing_components": 193044,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 48610
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "ratio_id": "working_capital_to_assets",
+      "assets_with_groups": 2222,
+      "assets_with_compatible_groups": 1668,
+      "groups_total": 291359,
+      "compatible_groups": 136596,
+      "missing_components": 154751,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 12,
+      "publications": 66902
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "current_ratio",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 1651,
+      "groups_total": 37063,
+      "compatible_groups": 13569,
+      "missing_components": 23494,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 6658
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "equity_to_assets",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 2092,
+      "groups_total": 37063,
+      "compatible_groups": 17338,
+      "missing_components": 19725,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 8350
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "liabilities_to_assets",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 1859,
+      "groups_total": 37063,
+      "compatible_groups": 15188,
+      "missing_components": 21875,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 7467
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "liabilities_to_positive_equity",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 1697,
+      "groups_total": 37063,
+      "compatible_groups": 13381,
+      "missing_components": 22928,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 754,
+      "publications": 6658
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "payables_to_assets",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 1424,
+      "groups_total": 37063,
+      "compatible_groups": 11289,
+      "missing_components": 25774,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 5541
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "receivables_to_assets",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 1269,
+      "groups_total": 37063,
+      "compatible_groups": 9812,
+      "missing_components": 27251,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 4851
+    },
+    {
+      "partition": "validation_filed_2023",
+      "ratio_id": "working_capital_to_assets",
+      "assets_with_groups": 2227,
+      "assets_with_compatible_groups": 1651,
+      "groups_total": 37063,
+      "compatible_groups": 13569,
+      "missing_components": 23494,
+      "ambiguous_components": 0,
+      "nonpositive_denominator": 0,
+      "publications": 6658
+    }
+  ],
+  "all_seven_same_presentation": [
+    {
+      "partition": "development_filed_through_2022",
+      "unit": "CAD",
+      "assets": 1,
+      "groups": 22
+    },
+    {
+      "partition": "development_filed_through_2022",
+      "unit": "USD",
+      "assets": 914,
+      "groups": 48408
+    },
+    {
+      "partition": "validation_filed_2023",
+      "unit": "CAD",
+      "assets": 1,
+      "groups": 8
+    },
+    {
+      "partition": "validation_filed_2023",
+      "unit": "CNY",
+      "assets": 1,
+      "groups": 2
+    },
+    {
+      "partition": "validation_filed_2023",
+      "unit": "USD",
+      "assets": 767,
+      "groups": 5579
+    }
+  ],
+  "assets_with_any_compatible_non_usd_ratio_by_unit": {
+    "CAD": 5,
+    "CNY": 1,
+    "ILS": 1
+  },
+  "concepts_with_and_without_start": [
+    "CashAndCashEquivalentsPeriodIncreaseDecrease",
+    "DividendsCommonStockCash",
+    "NetCashProvidedByUsedInFinancingActivities",
+    "PaymentsOfDividends",
+    "PaymentsToAcquirePropertyPlantAndEquipment",
+    "ProceedsFromSaleOfPropertyPlantAndEquipment",
+    "StockIssuedDuringPeriodSharesShareBasedCompensation",
+    "StockIssuedDuringPeriodValueShareBasedCompensation"
+  ],
+  "cash_carrying_value_observed_before_2024": false,
+  "csv_rows": {
+    "concepts_by_asset": 69290,
+    "ratios_by_asset": 31269
+  },
+  "fingerprint": "ba18b9fcdaea7c0bdca2365f722981b7a033d3041892d9a671976b4929232a45",
+  "inventory_sha256": "faabf457d3ce7b308ec6c6887fac4e6ee68847a1b28aeffebba5a8ddf40517e3",
+  "reader_sha256": "46c35cd0f52ef8930eb9a77b7ca8573e1ed3e8bc291dee586a007ddc69ff97b2",
+  "script_sha256": "fc3d33dc6eca20d6595dbebf9a81e31e368618e44876ea0f8a2af431bd7d9a92",
+  "validation": "JSON_and_CSV_counts_reconciled"
+}
