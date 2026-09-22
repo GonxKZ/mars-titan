@@ -171,11 +171,60 @@ def _code_commit():
     return result.stdout.strip() if result.returncode == 0 else None
 
 
+def _data_provenance(report):
+    hashes, counts = report.get("input_hashes"), report.get("samples")
+    if not isinstance(hashes, dict) or not hashes:
+        raise ValueError("El informe necesita un mapa no vacío de huellas de datos y etiquetas")
+    if (
+        not isinstance(counts, dict)
+        or set(counts) != {"train", "validation"}
+        or any(type(value) is not int or value <= 0 for value in counts.values())
+    ):
+        raise ValueError("El informe necesita recuentos enteros positivos por partición")
+    normalized = {}
+    for name, digest in hashes.items():
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Las huellas necesitan una ruta de origen no vacía")
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or set(digest) - set("0123456789abcdef")
+        ):
+            raise ValueError("Las huellas de origen deben tener formato SHA-256")
+        name = Path(name).as_posix()
+        if name.startswith("src/"):
+            continue
+        parts = Path(name).parts
+        if "targets" in parts:
+            target = parts[parts.index("targets") :]
+            if (
+                len(target) != 2
+                or not target[1].endswith("-targets.parquet")
+                or target[1] == "-targets.parquet"
+            ):
+                raise ValueError("La ruta de etiquetas no identifica un archivo de un activo")
+            name = Path(*target).as_posix()
+        if name in normalized:
+            raise ValueError("Las huellas contienen identidades duplicadas al normalizar las rutas")
+        normalized[name] = digest
+    targets = sum(name.startswith("targets/") for name in normalized)
+    if not 0 < targets < len(normalized):
+        raise ValueError("La procedencia debe contener huellas de datos y de etiquetas")
+    return {"input_hashes": normalized, "samples": dict(counts)}
+
+
 def _record_report(item, report, output):
     if report.get("status") != "completed" or report.get("final_test_opened") is not False:
         raise ValueError(
             "El informe no acredita una ejecución completada con el test final cerrado"
         )
+    recovery = report.get("resume_check")
+    if (
+        not isinstance(recovery, dict)
+        or recovery.get("exact_weights") is not True
+        or report.get("restored_predictions_equal") is not True
+    ):
+        raise ValueError("El informe no acredita la recuperación exacta y la restauración")
     last_epoch = report["epochs"][-1]
     if last_epoch["epoch"] != item["epochs"]:
         raise ValueError("El informe no acredita la última época acordada")
@@ -286,6 +335,12 @@ def run_campaign(config: Path, prepared: Path, samples: Path, output: Path) -> d
                     True if report.get("final_test_opened") is True else None
                 )
             _record_report(item, report, output)
+            provenance = _data_provenance(report)
+            if "data_provenance" in summary and provenance != summary["data_provenance"]:
+                raise ValueError(
+                    "La cohorte de datos, etiquetas o muestras ha cambiado entre casos"
+                )
+            summary.setdefault("data_provenance", provenance)
             item["status"] = "completed"
             summary["completed_runs"] += 1
         except BaseException as error:

@@ -64,6 +64,9 @@ def probe_double(monkeypatch):
         predictions.write_bytes(b"test-only-predictions:" + output.name.encode())
         training_predictions = output / "training-predictions.parquet"
         training_predictions.write_bytes(b"test-only-training-predictions:" + output.name.encode())
+        target = output / "targets/A-targets.parquet"
+        target.parent.mkdir()
+        target.write_bytes(b"test-only-targets")
         parent = options.get("initialize_from")
         report = {
             "status": "completed",
@@ -87,6 +90,12 @@ def probe_double(monkeypatch):
             "predictions_sha256": sha256(predictions),
             "training_predictions_sha256": sha256(training_predictions),
             "samples": {"train": 2, "validation": 1},
+            "input_hashes": {
+                "data/samples.parquet": sha256(samples / "source.txt"),
+                "data/prices.parquet": sha256(prepared / "source.txt"),
+                str(target): sha256(target),
+                f"src/{options['kind']}.py": "b" * 64,
+            },
             "parameters": 3,
             "diagnostic_row_metrics": {options["kind"]: {"mae": 0.5, "mse": 0.25}},
             "resume_check": {"exact_weights": True},
@@ -164,6 +173,191 @@ def test_campaign_runs_cartesian_grid_and_both_controls_from_same_final_parent(
         assert source.exists()
     assert (prepared / "source.txt").read_text() == "Conservar el origen"
     assert (samples / "source.txt").read_text() == "Conservar el origen"
+
+
+def test_campaign_pins_data_and_labels_independently_of_architecture_and_run_paths(
+    inputs, probe_double
+):
+    config_path, prepared, samples, output, _ = inputs
+    result = module().run_campaign(config_path, prepared, samples, output)
+    assert result["data_provenance"] == {
+        "input_hashes": {
+            "data/samples.parquet": sha256(samples / "source.txt"),
+            "data/prices.parquet": sha256(prepared / "source.txt"),
+            "targets/A-targets.parquet": sha256(
+                output / "runs/rnn-mse-0.001-s7/targets/A-targets.parquet"
+            ),
+        },
+        "samples": {"train": 2, "validation": 1},
+    }
+    assert result["completed_runs"] == 24
+
+
+@pytest.mark.parametrize("case_number", [2, 17])
+@pytest.mark.parametrize("change", ["rebuilt_samples", "targets", "counts", "added_source"])
+def test_different_cohort_stops_base_or_posttraining_without_replacing_provenance(
+    inputs, probe_double, monkeypatch, case_number, change
+):
+    config_path, prepared, samples, output, _ = inputs
+    calls, run = probe_double
+    initial_hash = sha256(samples / "source.txt")
+
+    def changed_cohort(prepared, samples, output, report_path, **options):
+        if len(calls) == case_number - 1 and change == "rebuilt_samples":
+            (samples / "source.txt").write_text("Otra cohorte en la misma ruta")
+        report = run(prepared, samples, output, report_path, **options)
+        if len(calls) == case_number:
+            if change == "targets":
+                target = output / "targets/A-targets.parquet"
+                target.write_bytes(b"test-only-changed-targets")
+                report["input_hashes"][str(target)] = sha256(target)
+            elif change == "counts":
+                report["samples"]["train"] = 3
+            elif change == "added_source":
+                report["input_hashes"]["data/another-asset.parquet"] = "c" * 64
+        atomic_json(report_path, report)
+        return report
+
+    monkeypatch.setattr(module(), "run_temporal_probe", changed_cohort)
+    with pytest.raises(ValueError, match="cohorte"):
+        module().run_campaign(config_path, prepared, samples, output)
+    summary = json.loads((output / "summary.json").read_text())
+    assert len(calls) == case_number
+    assert summary["status"] == "failed" and summary["failed_runs"] == 1
+    assert summary["completed_runs"] == case_number - 1
+    assert summary["runs"][case_number - 1]["status"] == "failed"
+    assert summary["runs"][case_number]["status"] == "pending"
+    assert summary["data_provenance"]["samples"] == {"train": 2, "validation": 1}
+    assert summary["data_provenance"]["input_hashes"]["data/samples.parquet"] == initial_hash
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "missing_hashes",
+        "hash_list",
+        "empty_hashes",
+        "only_code",
+        "only_data",
+        "only_targets",
+        "empty_name",
+        "empty_digest",
+        "invalid_digest",
+        "non_string_digest",
+        "invalid_target",
+        "duplicate_target",
+        "missing_counts",
+        "counts_list",
+        "missing_partition",
+        "extra_partition",
+        "boolean_count",
+        "float_count",
+        "zero_count",
+    ],
+)
+def test_invalid_provenance_never_completes_a_case(inputs, probe_double, monkeypatch, fault):
+    config_path, prepared, samples, output, _ = inputs
+    calls, run = probe_double
+
+    def invalid_provenance(prepared, samples, output, report_path, **options):
+        report = run(prepared, samples, output, report_path, **options)
+        if fault == "missing_hashes":
+            report.pop("input_hashes")
+        elif fault == "hash_list":
+            report["input_hashes"] = []
+        elif fault == "empty_hashes":
+            report["input_hashes"] = {}
+        elif fault == "only_code":
+            report["input_hashes"] = {"src/model.py": "b" * 64}
+        elif fault == "only_data":
+            report["input_hashes"] = {"data/samples.parquet": "b" * 64}
+        elif fault == "only_targets":
+            report["input_hashes"] = {"targets/A-targets.parquet": "b" * 64}
+        elif fault == "empty_name":
+            report["input_hashes"][" "] = "b" * 64
+        elif fault == "empty_digest":
+            report["input_hashes"]["data/samples.parquet"] = ""
+        elif fault == "invalid_digest":
+            report["input_hashes"]["data/samples.parquet"] = "x" * 64
+        elif fault == "non_string_digest":
+            report["input_hashes"]["data/samples.parquet"] = 42
+        elif fault == "invalid_target":
+            report["input_hashes"]["targets/"] = "b" * 64
+        elif fault == "duplicate_target":
+            target = str(output / "targets/A-targets.parquet")
+            report["input_hashes"]["targets/A-targets.parquet"] = report["input_hashes"][target]
+        elif fault == "missing_counts":
+            report.pop("samples")
+        elif fault == "counts_list":
+            report["samples"] = [2, 1]
+        elif fault == "missing_partition":
+            report["samples"].pop("validation")
+        elif fault == "extra_partition":
+            report["samples"]["test"] = 1
+        else:
+            report["samples"]["train"] = {
+                "boolean_count": True,
+                "float_count": 2.0,
+                "zero_count": 0,
+            }[fault]
+        atomic_json(report_path, report)
+        return report
+
+    monkeypatch.setattr(module(), "run_temporal_probe", invalid_provenance)
+    with pytest.raises(ValueError):
+        module().run_campaign(config_path, prepared, samples, output)
+    summary = json.loads((output / "summary.json").read_text())
+    assert len(calls) == 1
+    assert summary["status"] == "failed"
+    assert summary["completed_runs"] == 0 and summary["failed_runs"] == 1
+    assert "data_provenance" not in summary
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "missing_recovery",
+        "missing_exact",
+        "false_exact",
+        "truthy_exact",
+        "invalid_recovery",
+        "missing_restore",
+        "false_restore",
+        "truthy_restore",
+    ],
+)
+def test_case_completion_requires_explicit_exact_recovery_and_restoration(
+    inputs, probe_double, monkeypatch, fault
+):
+    config_path, prepared, samples, output, _ = inputs
+    calls, run = probe_double
+
+    def unverified_recovery(prepared, samples, output, report_path, **options):
+        report = run(prepared, samples, output, report_path, **options)
+        if fault == "missing_recovery":
+            report.pop("resume_check")
+        elif fault == "missing_exact":
+            report["resume_check"].pop("exact_weights")
+        elif fault == "false_exact":
+            report["resume_check"]["exact_weights"] = False
+        elif fault == "truthy_exact":
+            report["resume_check"]["exact_weights"] = 1
+        elif fault == "invalid_recovery":
+            report["resume_check"] = None
+        elif fault == "missing_restore":
+            report.pop("restored_predictions_equal")
+        else:
+            report["restored_predictions_equal"] = False if fault == "false_restore" else 1
+        atomic_json(report_path, report)
+        return report
+
+    monkeypatch.setattr(module(), "run_temporal_probe", unverified_recovery)
+    with pytest.raises(ValueError, match="recuperación|restauración"):
+        module().run_campaign(config_path, prepared, samples, output)
+    summary = json.loads((output / "summary.json").read_text())
+    assert len(calls) == 1
+    assert summary["status"] == "failed"
+    assert summary["completed_runs"] == 0 and summary["failed_runs"] == 1
 
 
 @pytest.mark.parametrize(
