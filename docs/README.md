@@ -8,7 +8,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Revisar la admisión de noticias | [Fechas, procedencia y problemas de contenido](data/news-policy.md), con auditorías separadas del piloto y del panel técnico. |
 | Revisar precios y su universo | [Auditoría de los 5.023 CSV](../reports/data/price-audit.md), con exclusiones, acciones corporativas y límites de identidad. |
 | Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |
-| Consultar entrenamientos medidos | [Presupuesto experimental](../reports/resources/campaign-budget.md), [variantes de GRU y DLinear](../reports/baselines/reference-variants.md) y [RNN y LSTM](../reports/baselines/recurrent-comparison.md), con cuatro modalidades y macro. |
+| Consultar entrenamientos medidos | [Campaña ampliada sobre 105 muestras](../reports/baselines/expanded-comparison.md), [variantes de GRU y DLinear](../reports/baselines/reference-variants.md) y [RNN y LSTM](../reports/baselines/recurrent-comparison.md), con cuatro modalidades y macro. |
 | Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
 | Consultar la preparación por bloques | [Límites, paridad y medición macro](../reports/data/streaming-validation.md), con recuperación por activo. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |

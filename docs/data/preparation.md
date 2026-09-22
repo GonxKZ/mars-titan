@@ -20,12 +20,18 @@ coincide con otro archivo. Se registran, pero no se eliminan.
 | Precios chinos | 810 archivos, 3.139.412 filas | 3.133.858 filas admitidas. Los motivos de exclusión pueden solaparse. |
 | Publicación de fundamentales chinos | 2.430 archivos, 202.767 registros | Ninguno acredita publicación. No se admite entrenamiento chino. |
 | Normalización detallada por activo | Paneles técnicos de 22 activos estadounidenses y 62 chinos | Derivados locales y manifiestos reanudables. |
-| Intersección multimodal estadounidense | Panel técnico de 22 activos | 25.856 muestras con cuatro modalidades y macro. |
+| Intersección multimodal estadounidense inicial | Panel técnico de 22 activos | 25.856 muestras con cuatro modalidades y macro, sin acreditar el contraste editorial completo. |
+| Intersección con noticias completas contrastadas | Panel de siete candidatos, cinco con muestras | 105 muestras, con 80 etiquetas de entrenamiento y 25 de validación. |
 
 Los recuentos y tiempos están en [los informes de datos](../../reports/data/).
 No se ha normalizado toda la modalidad textual o contable estadounidense. El
 inventario sí cubre el corpus completo. La implementación permite ampliar el
 panel por bloques, conservando las mismas comprobaciones.
+
+La [ampliación verificada del 22 de septiembre](../../reports/data/verified-news-cohort-20260922.md)
+conserva las 65 muestras anteriores y añade 40. Sus resultados no se mezclan con
+el recuento del panel técnico. La [comparativa ampliada](../../reports/baselines/expanded-comparison.md)
+utiliza exclusivamente esa cohorte de 105 observaciones.
 
 ## Reloj y reglas de admisión
 
@@ -131,9 +137,11 @@ este piloto con el panel técnico de 22 activos ni con la futura muestra confirm
 uv run python -m mars_titan.data.universe
 ```
 
-El selector actual exige el registro de [noticias completas contrastadas](news-policy.md)
-y lo propaga a la preparación. Con las dos noticias verificadas actuales se
-detiene antes de escribir un piloto de cuatro activos. No rebaja el mínimo de
+El selector exige el registro de [noticias completas contrastadas](news-policy.md)
+y lo propaga a la preparación. El contraste inicial con dos noticias verificadas
+se detuvo antes de escribir un piloto de cuatro activos. Las ampliaciones posteriores
+llevan el registro a 21 noticias admitidas, pero no cubren el mínimo anterior al
+corte de 2018. El selector no rebaja el mínimo de
 252 muestras para aparentar una cohorte suficiente ni sobrescribe el manifiesto
 anterior al detectar esa falta de cobertura. La selección no revisada queda
 reservada a un diagnóstico explícito con `unreviewed_profile=True` en la API,

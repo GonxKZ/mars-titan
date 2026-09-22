@@ -85,6 +85,17 @@ La preparación y codificación tardaron 17,60 segundos dentro de la medición y
 recibo fue 1.979,41 MiB. Los derivados nuevos se almacenan en Parquet y se leen
 por bloques. Los originales y los conjuntos anteriores permanecen intactos.
 
+Los archivos de origen del panel suman 443.114.244 bytes. Sus tablas de muestras
+ocupan 494.765 bytes, pero no representan una compresión íntegra de esas fuentes.
+Contienen solo la intersección admitida y sus representaciones. Excluyen los
+históricos de precios, hechos contables, contexto macro compartido, cachés y pesos.
+Las ventanas de precios se reconstruyen durante la lectura.
+
+El contenido lógico float32 de una entrada suma 6.724 bytes. Un lote de 16, con
+una etiqueta float32 por muestra, suma 107.648 bytes. Estas cifras no incluyen
+objetos Python, activaciones, gradientes, optimizador, bibliotecas o reservas del
+dispositivo. No se utilizan como sustitución del pico de RAM o VRAM medido.
+
 Esta ampliación no completa la auditoría del corpus ni amplía la cobertura
 anterior al corte de 2018 del selector de piloto. Las fechas, las exclusiones y
 los límites de preentrenamiento de los codificadores siguen siendo relevantes.
