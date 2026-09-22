@@ -98,5 +98,6 @@ y los tiempos de proceso completo medidos por GNU time. Estos resultados no
 demuestran ausencia de errores ni validan la capacidad predictiva.
 
 La [definición del cálculo](../../docs/engineering/company-factors.md) describe
-las fórmulas y sus límites. La auditoría de todos los conceptos del corpus y la
-ampliación de la intersección editorial siguen abiertas en #94 y #66.
+las fórmulas y sus límites. La [auditoría completa del corpus](full-company-audit.md)
+ya cuantifica conceptos y grupos compatibles. La materialización ampliada y la
+intersección editorial siguen abiertas en #94 y #66.

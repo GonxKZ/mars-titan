@@ -7,6 +7,11 @@ validación editorial de todas las noticias ni un entrenamiento.
 La [corrección posterior del inventario](chart-identity-repair.md) resuelve la
 asignación de gráficos descrita en esta captura, conservando sus fuentes.
 
+La [auditoría contable posterior](full-company-audit.md) recorre los archivos de
+los 2.639 candidatos estadounidenses. Su alcance sustituye al recuento del panel
+contable pequeño como evidencia de cobertura del universo, sin convertir esos
+hechos en muestras multimodales admitidas.
+
 ## Fuentes y ventanas
 
 El [inventario completo](full-source-inventory.json) registra 216.453 archivos,
