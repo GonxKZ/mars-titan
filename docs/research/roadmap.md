@@ -29,6 +29,12 @@ Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) de
 
 ## Alcance mínimo y extensiones
 
+La [campaña previa de referencias](../engineering/comparison-campaign.md) pasa a
+recorrer el universo completo admisible. No se limita a las cifras iniciales de
+64 o 128 activos descritas debajo. O1, O2 y las referencias de O4 pueden avanzar
+en paralelo con O5, siempre que cada entrenamiento use una instantánea de datos
+fijada y validada. El desarrollo del candidato no forma parte de esa campaña.
+
 El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, las cuatro modalidades de disponibilidad justificable, contexto macro, referencias de varias familias y una memoria compacta con ablaciones de componentes. Una muestra sin alguna modalidad se excluye. No se sustituye por entrenamiento de dos modalidades.
 
 La residualización sectorial, un Transformer adicional, HS300, memorias jerárquicas completas y kernels C++/CUDA son extensiones. Su activación exige que los controles temporales y las referencias funcionen, que exista presupuesto medido y que la comparación principal no quede comprometida.
