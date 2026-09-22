@@ -23,6 +23,13 @@ Métrica primaria propuesta: **MAE del retorno residual**. Rank IC medio por ses
 
 ## Universo y selección del subconjunto
 
+Actualización de la campaña de referencias: el [contrato del corpus completo](../engineering/comparison-campaign.md)
+amplía el recorrido a todos los instrumentos y muestras admisibles, sin el límite
+de 128 activos. Las cifras de piloto del párrafo siguiente describen la
+planificación inicial. La ampliación conserva las reglas temporales, las cuatro
+modalidades y el test cerrado. El candidato posterior deberá compararse con
+referencias ajustadas sobre los mismos datos de entrenamiento.
+
 El piloto propone hasta 64 activos estadounidenses y la comparación principal hasta 128, con frecuencia diaria y un único horizonte principal de una sesión. El número final y las fechas se fijarán con la auditoría de cobertura y el tiempo medido, sin seleccionar por rentabilidad futura ni por disponibilidad durante todo el test. La selección se basará en información del periodo inicial y una regla determinista registrada. Conservará altas, bajas, cambios de símbolo y fechas de exclusión cuando existan. Se inventaría toda la copia y se prepara el recorrido por bloques. Ampliar a 256 activos, al universo completo o a China requiere una decisión de presupuesto registrada.
 
 El universo de FinMultiTime no equivale a una lista de constituyentes históricos del S&P 500. Si no se reconstruye la pertenencia temporal, las conclusiones se limitarán explícitamente al universo retrospectivo disponible. No se impondrá como requisito que un activo sobreviva hasta el último día. Un manifiesto recogerá la versión, los archivos utilizados, los hashes, la regla de selección y cada motivo de exclusión. Véase la [ficha inicial](../data/finmultitime-card.md).

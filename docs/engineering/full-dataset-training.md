@@ -1,6 +1,6 @@
 # Entrenamiento sobre el conjunto completo con memoria acotada
 
-MARS-TITAN se prepara para recorrer toda la copia de FinMultiTime por bloques. La comparación principal se plantea inicialmente con hasta 128 activos estadounidenses, precedida por un piloto de hasta 64, para equilibrar repetición experimental y tiempo de entrega. El recorrido completo de entrenamiento queda como extensión de escalabilidad cuando el coste medido lo permita. No es una condición para ejecutar cada ablación.
+La [campaña comparativa del corpus completo](comparison-campaign.md) concreta el nuevo alcance: recorrer toda la copia de FinMultiTime y entrenar las referencias sobre todas las muestras admisibles, antes de evaluar MARS-TITAN. El piloto de 64 activos y la selección inicial de 128 se conservan como etapas históricas de preparación, no como límites de esa campaña. El documento de campaña distingue la especificación de las implementaciones y entrenamientos todavía pendientes.
 
 «Todo el dataset» no significa entrenar con el test, aceptar información futura ni cargar todos los archivos en RAM. La cobertura debe informarse mediante un inventario de admisiones y exclusiones. Los datos sin disponibilidad defendible se conservan en el inventario y se excluyen del contraste estricto o se estudian en una variante identificada.
 
@@ -79,4 +79,4 @@ La etiqueta y la simulación deben atender al instrumento y a las reglas que est
 
 Se deberá registrar, por mercado y fold, número de archivos inventariados, registros leídos, aceptados, excluidos y finalmente usados, con motivos de exclusión. Una pasada deberá alcanzar el 100 % de los registros elegibles asignados a ese tramo, sin recurrir al test para completar entrenamiento.
 
-El piloto valida que el recorrido cabe en recursos y conserva el tiempo. Una ejecución que se presente como completa deberá repetirlo sobre toda la cobertura elegible del universo declarado. La campaña principal puede cerrarse sobre la selección de 128 activos, con sus límites explícitos. Si una familia no cabe o no termina dentro del presupuesto fijado, se informa como límite de esa solución. No se oculta mediante una muestra distinta ni se atribuye el fallo a todo el proyecto.
+El piloto valida que el recorrido cabe en recursos y conserva el tiempo. Una ejecución que se presente como completa deberá repetirlo sobre toda la cobertura elegible del universo declarado. La campaña ampliada no se cierra usando solo la selección de 128 activos. Si una familia no cabe o no termina dentro del presupuesto fijado, se informa como límite de esa solución. No se oculta mediante una muestra distinta ni se atribuye el fallo a todo el proyecto.
