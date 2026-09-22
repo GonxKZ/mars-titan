@@ -1,5 +1,18 @@
 [
   {
+    "id": "zhang2026klpo",
+    "title": "KL-Regularized Policy Optimization for Critic-Free Agentic Reinforcement Learning",
+    "authors": ["Yifan Zhang et al."],
+    "year": 2026,
+    "url": "https://github.com/yifanzhang-pro/KLPO/tree/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696",
+    "pdf_url": "https://raw.githubusercontent.com/yifanzhang-pro/KLPO/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/KLPO.pdf",
+    "access": "Informe técnico del 18 de septiembre de 2026, revisado el 20. La portada indica Yifan Zhang et al. sin enumerar los demás autores. Sin revisión por pares confirmada. El README declara no validados el entrenamiento GPU ni los benchmarks a escala del informe.",
+    "redistribution": "unknown",
+    "relevance": "Opción de postentrenamiento de políticas. No se aplica directamente a regresores escalares ni demuestra mejoras de precisión financiera. Requiere controles supervisados y recompensas disponibles temporalmente.",
+    "phase": [4, 5, 6],
+    "verification_date": "2026-09-22"
+  },
+  {
     "id": "lahoti2026mamba3",
     "title": "Mamba-3: Improved Sequence Modeling using State Space Principles",
     "authors": [

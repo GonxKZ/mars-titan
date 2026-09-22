@@ -1,0 +1,206 @@
+{
+  "tests_passed": 535,
+  "tests_skipped": 0,
+  "pytest_seconds": 51.4,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "files": {
+    "src/mars_titan/models/baselines/initialization.py": {
+      "sha256": "0f400eb34709bb6498e34b3b1c52c623d48ef5a9540567a6e26b9693880dc1f1",
+      "coverage": {
+        "covered_lines": 36,
+        "num_statements": 39,
+        "percent_covered": 91.2280701754386,
+        "percent_covered_display": "91",
+        "missing_lines": 3,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.3076923076923,
+        "percent_statements_covered_display": "92",
+        "num_branches": 18,
+        "num_partial_branches": 2,
+        "covered_branches": 16,
+        "missing_branches": 2,
+        "percent_branches_covered": 88.88888888888889,
+        "percent_branches_covered_display": "89"
+      },
+      "functions": [
+        {
+          "name": "initialize_weights",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.9230769230769231,
+          "crap": 21.200728265817023
+        },
+        {
+          "name": "_canonical_hashes",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 4.0466472303206995
+        }
+      ]
+    },
+    "src/mars_titan/budget_training.py": {
+      "sha256": "83258c5c18b57fc22a02abd1a5d546122194590a013ad888895a3477af1ca1e7",
+      "coverage": {
+        "covered_lines": 248,
+        "num_statements": 258,
+        "percent_covered": 94.31137724550898,
+        "percent_covered_display": "94",
+        "missing_lines": 10,
+        "excluded_lines": 0,
+        "percent_statements_covered": 96.12403100775194,
+        "percent_statements_covered_display": "96",
+        "num_branches": 76,
+        "num_partial_branches": 7,
+        "covered_branches": 67,
+        "missing_branches": 9,
+        "percent_branches_covered": 88.15789473684211,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "train_budget_grid",
+          "complexity": 26,
+          "statement_coverage_fraction": 0.9682539682539683,
+          "crap": 26.021627933948416
+        },
+        {
+          "name": "prepare_targets",
+          "complexity": 10,
+          "statement_coverage_fraction": 1.0,
+          "crap": 10.0
+        },
+        {
+          "name": "_supervised_step",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.9523809523809523,
+          "crap": 9.008746355685131
+        },
+        {
+          "name": "process_memory",
+          "complexity": 8,
+          "statement_coverage_fraction": 0.8235294117647058,
+          "crap": 8.351719926725016
+        },
+        {
+          "name": "target_partition",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "validate_loss",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "run_epoch",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "labeled_records",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "load_checkpoint",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "save_checkpoint",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.9411764705882353,
+          "crap": 2.0008141664970487
+        },
+        {
+          "name": "gpu_sensors",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "seed_run",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "train_step",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    },
+    "src/mars_titan/gru_probe.py": {
+      "sha256": "2f06d36d1ca958113c1a9765f5574932b8c089cfc5ec6ff5dc1052ee02d6f0d9",
+      "coverage": {
+        "covered_lines": 97,
+        "num_statements": 115,
+        "percent_covered": 82.78145695364239,
+        "percent_covered_display": "83",
+        "missing_lines": 18,
+        "excluded_lines": 0,
+        "percent_statements_covered": 84.34782608695652,
+        "percent_statements_covered_display": "84",
+        "num_branches": 36,
+        "num_partial_branches": 6,
+        "covered_branches": 28,
+        "missing_branches": 8,
+        "percent_branches_covered": 77.77777777777777,
+        "percent_branches_covered_display": "78"
+      },
+      "functions": [
+        {
+          "name": "run_temporal_probe",
+          "complexity": 37,
+          "statement_coverage_fraction": 0.9342105263157895,
+          "crap": 37.389827689896485
+        },
+        {
+          "name": "run_gru_probe",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.0,
+          "crap": 6.0
+        }
+      ]
+    }
+  },
+  "targeted_mutations_detected": 2,
+  "targeted_mutations_total": 2,
+  "mutations": [
+    "objective_replaced_by_mse",
+    "input_hash_validation_removed"
+  ],
+  "review_fix": "reject_compressed_checkpoint_before_loading_storages",
+  "additional_regressions": [
+    "no_partial_initialization_of_corrupt_weights",
+    "no_target_broadcasting"
+  ],
+  "analysis_sha256": "3bc75693bba43d9ff17ca1afb3bf3dc215ab01217e74c388747bb2d557c3332d",
+  "plot_sha256": "081b66c392ee41f5f4b4d95cecedb90c6f6b1b2f7476b88d745b4aa7674abe56",
+  "figure_verification": "SVG_rendered_with_CairoSVG_at_1150px_labels_scales_marks_and_legend_checked",
+  "process_time_tool": "GNU time -v",
+  "process_measurements": {
+    "initial_42_runs": {
+      "seconds": 220.2,
+      "maximum_rss_kib": 1572092
+    },
+    "matched_6_controls": {
+      "seconds": 14.96,
+      "maximum_rss_kib": 1529884
+    }
+  }
+}

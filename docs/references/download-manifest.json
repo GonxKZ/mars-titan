@@ -1,7 +1,17 @@
 {
   "retrieved_at": "2026-09-18T18:59:02.089157+00:00",
-  "updated_at": "2026-09-21T03:05:24+00:00",
+  "updated_at": "2026-09-22T02:59:26+00:00",
   "records": [
+    {
+      "id": "zhang2026klpo",
+      "requested_url": "https://raw.githubusercontent.com/yifanzhang-pro/KLPO/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/KLPO.pdf",
+      "url": "https://raw.githubusercontent.com/yifanzhang-pro/KLPO/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/KLPO.pdf",
+      "final_url": "https://raw.githubusercontent.com/yifanzhang-pro/KLPO/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/KLPO.pdf",
+      "status": "downloaded",
+      "downloaded_at": "2026-09-22T01:36:18.767205+00:00",
+      "sha256": "b4029a0eb42d7a05fbd9e4297f022a16d5d286dcd5cc4e0a5e4b1ce9d0db5c51",
+      "bytes": 899179
+    },
     {
       "id": "jurafsky2026hmm",
       "requested_url": "https://web.stanford.edu/~jurafsky/slp3/A.pdf",

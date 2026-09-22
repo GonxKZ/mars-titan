@@ -21,19 +21,43 @@ from mars_titan.budget_training import (
     run_epoch,
     save_checkpoint,
     seed_run,
+    validate_loss,
 )
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.preparation import atomic_parquet
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.data.streaming import iter_windows
+from mars_titan.models.baselines.initialization import initialize_weights
 from mars_titan.profiling import MODALITIES, CostProbe
 from mars_titan.reference_probe import prepare_probe
 
 
-def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind="gru"):
+def run_temporal_probe(
+    prepared,
+    samples,
+    output,
+    report_path,
+    *,
+    epochs=3,
+    kind="gru",
+    seed=42,
+    learning_rate=1e-4,
+    loss="mse",
+    huber_delta=0.01,
+    initialize_from=None,
+):
     """Ejecutar una configuración de coste, sin selección sobre el test final."""
-    if not isinstance(epochs, int) or not 2 <= epochs <= 10:
-        raise ValueError("La medición requiere entre 2 y 10 épocas")
+    if type(epochs) is not int or not 2 <= epochs <= 30:
+        raise ValueError("La medición requiere entre 2 y 30 épocas")
+    if type(seed) is not int or not 0 <= seed < 2**32:
+        raise ValueError("La semilla debe ser un entero de 32 bits sin signo")
+    if (
+        not isinstance(learning_rate, (int, float))
+        or not np.isfinite(learning_rate)
+        or learning_rate <= 0
+    ):
+        raise ValueError("La tasa de aprendizaje debe ser finita y positiva")
+    validate_loss(loss, huber_delta)
     if kind not in {"gru", "dlinear"}:
         raise ValueError("La referencia temporal solicitada no está implementada")
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
@@ -43,11 +67,13 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
     paths, targets, audit, hashes, counts = prepare_probe(prepared, samples, output, report_path)
     for relative in ("gru_probe.py", "reference_probe.py"):
         hashes[f"src/mars_titan/{relative}"] = sha256(Path(__file__).with_name(relative))
+    initialization_source = Path(__file__).parent / "models/baselines/initialization.py"
+    hashes["src/mars_titan/models/baselines/initialization.py"] = sha256(initialization_source)
     if kind == "dlinear":
         source = Path(__file__).parent / "models/baselines/dlinear.py"
         hashes["src/mars_titan/models/baselines/dlinear.py"] = sha256(source)
     device = require_cuda()
-    seed_run(42)
+    seed_run(seed)
     loaders = {
         partition: DataLoader(
             SupervisedWorkload(paths, prepared, targets, partition),
@@ -60,7 +86,6 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
     first, _ = next(iter(loaders["train"]))
     dimensions = {name: value.shape[-1] for name, value in first.items()}
     model = CostProbe(kind, dimensions).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     config = {
         "kind": kind,
         "dimensions": dimensions,
@@ -68,10 +93,12 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
         "hidden_size": 32,
         "batch_size": 16,
         "workers": 0,
-        "seed": 42,
+        "seed": seed,
         "epochs": epochs,
         "precision": "float32",
-        "lr": 1e-4,
+        "lr": learning_rate,
+        "loss": loss,
+        "huber_delta": huber_delta if loss == "huber" else None,
         "optimizer": "AdamW",
         "betas": [0.9, 0.999],
         "eps": 1e-8,
@@ -81,6 +108,12 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
         "price_output_horizon": 1 if kind == "dlinear" else None,
         "cublas_workspace_config": os.environ["CUBLAS_WORKSPACE_CONFIG"],
     }
+    config["initialization"] = (
+        initialize_weights(model, initialize_from, config=config, hashes=hashes)
+        if initialize_from is not None
+        else None
+    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     report = {
         "purpose": "strict_supervised_execution_probe_not_confirmatory_comparison",
         "started_at_utc": started_at,
@@ -112,8 +145,12 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
     }
     atomic_json(report_path, report)
     for epoch in range(epochs):
-        training = run_epoch(model, optimizer, loaders["train"], device)
-        validation = run_epoch(model, None, loaders["validation"], device)
+        training = run_epoch(
+            model, optimizer, loaders["train"], device, loss=loss, huber_delta=huber_delta
+        )
+        validation = run_epoch(
+            model, None, loaders["validation"], device, loss=loss, huber_delta=huber_delta
+        )
         if training["samples"] != counts["train"] or validation["samples"] != counts["validation"]:
             raise ValueError("La época no reconcilia con las etiquetas de cada partición")
         checkpoint_started = time.perf_counter()
@@ -137,8 +174,8 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
         output / "epoch-1.pt", model, optimizer, config=config, hashes=hashes
     )
     for _ in range(next_epoch, epochs):
-        run_epoch(model, optimizer, loaders["train"], device)
-        run_epoch(model, None, loaders["validation"], device)
+        run_epoch(model, optimizer, loaders["train"], device, loss=loss, huber_delta=huber_delta)
+        run_epoch(model, None, loaders["validation"], device, loss=loss, huber_delta=huber_delta)
     exact = all(torch.equal(expected[name], value) for name, value in model.state_dict().items())
     if not exact:
         raise ValueError("La reanudación no reproduce los pesos de la ejecución continua")
@@ -148,7 +185,7 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
         "elapsed_seconds": time.perf_counter() - resume_started,
     }
     restored = CostProbe(kind, dimensions).to(device)
-    restored_optimizer = torch.optim.AdamW(restored.parameters(), lr=1e-4)
+    restored_optimizer = torch.optim.AdamW(restored.parameters(), lr=learning_rate)
     load_checkpoint(checkpoint, restored, restored_optimizer, config=config, hashes=hashes)
     model.eval()
     restored.eval()
@@ -201,6 +238,8 @@ def run_temporal_probe(prepared, samples, output, report_path, *, epochs=3, kind
 
 def run_gru_probe(prepared, samples, output, report_path, *, epochs=3):
     """Conservar la entrada anterior de la sonda GRU."""
+    if not isinstance(epochs, int) or not 2 <= epochs <= 10:
+        raise ValueError("La sonda GRU original requiere entre 2 y 10 épocas")
     return run_temporal_probe(prepared, samples, output, report_path, epochs=epochs, kind="gru")
 
 
@@ -210,6 +249,11 @@ def main():
         parser.add_argument(f"--{option}", type=Path, required=True)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--kind", choices=["gru", "dlinear"], default="gru")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--learning-rate", type=float, default=1e-4)
+    parser.add_argument("--loss", choices=["mse", "mae", "huber"], default="mse")
+    parser.add_argument("--huber-delta", type=float, default=0.01)
+    parser.add_argument("--initialize-from", type=Path)
     args = parser.parse_args()
     print(
         json.dumps(
@@ -220,6 +264,11 @@ def main():
                 args.report,
                 epochs=args.epochs,
                 kind=args.kind,
+                seed=args.seed,
+                learning_rate=args.learning_rate,
+                loss=args.loss,
+                huber_delta=args.huber_delta,
+                initialize_from=args.initialize_from,
             ),
             indent=2,
         )
