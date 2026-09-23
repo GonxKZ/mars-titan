@@ -14,6 +14,14 @@ La etiqueta mantiene la referencia OLS en float64, con 252 sesiones y al menos
 menos el intercepto y la exposición al mercado estimados con el pasado. No se
 calculan etiquetas posteriores a 2023 para esta campaña.
 
+La preparación utiliza el motor `numpy`, que convierte las fechas una sola vez
+y conserva las operaciones de la referencia. La función de
+`mars_titan.training.corpus_targets` acepta `backend="reference"` para contrastar
+el recorrido anterior. La identidad incluye el motor y ambas implementaciones.
+Cambiar esa identidad exige una salida nueva, sin modificar las ediciones ya
+entrenadas. La [medición sobre 66 activos](../../reports/resources/residual-preparation.md)
+compara tiempo completo, memoria y huellas de los Parquet.
+
 Hay una fila de etiquetas por cada muestra materializada. Las filas no utilizables
 conservan un motivo. Omitir una fila y reducir el recuento del manifiesto no basta
 para convertirla en una población válida. Una etiqueta que madura en 2023 no se
