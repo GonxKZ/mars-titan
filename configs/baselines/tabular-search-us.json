@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "ridge_alphas": [0.1, 1.0, 10.0],
+  "depths": [3, 6],
+  "bins": [64, 128, 256],
+  "rates": [0.03, 0.1],
+  "rounds": 200,
+  "search_seed": 42,
+  "finalist_seeds": [42, 43, 44],
+  "batch_size": 1024,
+  "max_batch_bytes": 67108864,
+  "max_host_cache_bytes": 2147483648,
+  "on_host": false,
+  "checkpoint_interval": 10,
+  "final_test_opened": false
+}
