@@ -80,6 +80,13 @@ tres brazos, sin presentar valores ausentes como observaciones.
 
 ## Regla de admisión y reserva temporal
 
+La exigencia editorial completa de este apartado describe la cohorte estricta.
+La ampliación distingue una [cohorte original auditada](../data/cohort-policies.md)
+con controles y limitaciones propios. Cada comparación conserva una sola
+política y sus mismas observaciones entre modelos, sin mezclar resultados de
+ambas cohortes. La preparación no convierte una fecha contable ausente en una
+publicación.
+
 Para el activo $i$ y la decisión $t$, la admisión exige
 
 $$

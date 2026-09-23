@@ -8,7 +8,7 @@ El estudio compara soluciones para predecir retornos residuales de los mercados 
 
 La contribución prevista tiene tres partes: un protocolo temporal verificable, una adaptación compacta de memoria neural y una comparación con ablaciones. La novedad de esa combinación debe justificarse frente al [estado del arte](../references/neural-review.md). El nombre MARS-TITAN no acredita por sí mismo una arquitectura novedosa. La propuesta toma ideas de Titans, pero no se presentará como una reproducción completa de sus resultados.
 
-Quedan fuera del núcleo: operaciones reales, conexión a un bróker, recomendaciones de inversión, generación de estrategias por refuerzo, autoedición de modelos al estilo SEAL y entrenamiento de grandes codificadores multimodales. Varias escalas de memoria y kernels propios siguen condicionados a evidencia. La campaña china y la conjunta requieren resolver sus publicaciones, identidad y factor de mercado, sin dar por utilizables las cuatro modalidades solo porque existan sus archivos.
+Quedan fuera del núcleo las operaciones reales, la conexión a un bróker, las recomendaciones de inversión, la autoedición de modelos al estilo SEAL y el entrenamiento de grandes codificadores multimodales. La ampliación incorpora experimentos separados de refuerzo predictivo, decisiones financieras simuladas y ajuste conjunto. Su criterio principal sigue siendo el error predictivo, no el beneficio simulado. Varias escalas de memoria y kernels propios siguen condicionados a evidencia. La campaña china y la conjunta requieren resolver sus publicaciones, identidad y factor de mercado, sin dar por utilizables las cuatro modalidades solo porque existan sus archivos.
 
 ## Hipótesis registrables
 
@@ -22,6 +22,8 @@ Quedan fuera del núcleo: operaciones reales, conexión a un bróker, recomendac
 Métrica primaria propuesta: **MAE del retorno residual**. Rank IC medio por sesión será una métrica secundaria prioritaria. Los resultados económicos son secundarios y no sustituyen la pregunta predictiva. La hipótesis principal, la métrica y la familia de comparaciones se congelarán antes de ejecutar el test final. No se fija una mejora porcentual esperada sin piloto que justifique su relevancia práctica.
 
 ## Universo y selección del subconjunto
+
+La ampliación del 23 de septiembre de 2026 introduce [dos cohortes diferenciadas](../data/cohort-policies.md), original auditada y verificación externa estricta. La política acompaña cada edición y sus resultados. Esta ampliación no cambia retrospectivamente la admisión ni las conclusiones de las campañas anteriores.
 
 Actualización de la campaña de referencias: el [contrato del corpus completo](../engineering/comparison-campaign.md)
 amplía el recorrido a todos los instrumentos y muestras admisibles, sin el límite
