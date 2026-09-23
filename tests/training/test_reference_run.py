@@ -150,6 +150,36 @@ def test_scientific_configuration_changes_capacity_and_rejects_other_parent_arch
         )
 
 
+def test_evaluation_averages_sessions_without_company_count_weighting(tmp_path):
+    from mars_titan.data.embeddings import require_cuda
+    from mars_titan.training.corpus_inputs import CorpusDataset
+
+    manifest = training_corpus(tmp_path / "data")
+    meta = json.loads(manifest.read_text())
+    path = tmp_path / "data/labels/US/A0000/labels.parquet"
+    rows = pq.read_table(path).to_pylist()
+    for i, row in enumerate(rows):
+        row["reason"] = "insufficient_history" if i == 6 else "accepted"
+        if i == 6:
+            row.update(partition=None, target=None, target_available_at=None)
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    meta["assets"][0]["labels_sha256"] = sha256(path)
+    meta["assets"][0]["counts"]["validation"] = 2
+    meta["counts"]["validation"] = 5
+    manifest.write_text(json.dumps(meta))
+    device = require_cuda()
+
+    class Zero(torch.nn.Module):
+        def forward(self, values):
+            return torch.zeros(len(values["prices"]), device=device)
+
+    result = module()._evaluate(Zero(), CorpusDataset(manifest), 4)
+    assert result["samples"] == 5
+    assert result["session_count"] == 3
+    assert result["mae"] == pytest.approx(0.072)
+    assert result["session_mae"] == pytest.approx(0.07)
+
+
 def test_resume_rejects_changed_corpus_and_loss(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     output = tmp_path / "run"
