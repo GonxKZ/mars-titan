@@ -11,7 +11,6 @@ import pyarrow.parquet as pq
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import sha256
-from mars_titan.data.streaming import price_features
 
 from .cohort_contract import cohort_identity, validate_cohort_rows
 
@@ -65,6 +64,39 @@ def _availability(table):
         filled = field.fill_null(pa.scalar(0, type=field.type))
         bounds = np.maximum(bounds, _times(filled))
     return bounds, valid
+
+
+def _price_contexts(prices, ends, context):
+    """Transformar hasta 256 ventanas, con las mismas operaciones y precisión por fila."""
+    if (
+        prices.ndim != 2
+        or prices.shape[1] != 5
+        or prices.dtype.kind not in "fiu"
+        or ends.ndim != 1
+        or ends.dtype.kind not in "iu"
+        or not 1 <= len(ends) <= 256
+        or type(context) is not int
+        or not 2 <= context <= 512
+        or (ends < context - 1).any()
+        or (ends >= len(prices)).any()
+    ):
+        raise ValueError("Las ventanas del bloque no tienen índices o dimensiones válidos")
+    windows = prices[ends.astype(np.intp, copy=False)[:, None] - np.arange(context - 1, -1, -1)]
+    if (
+        not np.isfinite(windows).all()
+        or (windows[:, :, :4] <= 0).any()
+        or (windows[:, :, 4] < 0).any()
+    ):
+        raise ValueError("Los valores OHLCV del bloque no son válidos")
+    volume = windows[:, :, 4]
+    mean = volume.mean(axis=1, keepdims=True)
+    relative = np.zeros(volume.shape, dtype=np.result_type(volume.dtype, mean.dtype))
+    np.divide(volume, mean, out=relative, where=mean > 0)
+    np.log1p(relative, out=relative)
+    result = np.empty(windows.shape, dtype=np.float32)
+    result[:, :, :4] = np.log(windows[:, :, :4] / windows[:, 0:1, 3:4])
+    result[:, :, 4] = relative
+    return result
 
 
 class CorpusDataset:
@@ -306,6 +338,10 @@ class CorpusDataset:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
                     for offset in range(start, len(indexes)):
+                        local_offset = (offset - start) % 256
+                        if local_offset == 0:
+                            block_rows = positions[indexes[offset : offset + 256]] - offsets[group]
+                            contexts = _price_contexts(prices, ends[block_rows], self.context)
                         label = indexes[offset]
                         row = positions[label] - offsets[group]
                         price_end = ends[row]
@@ -327,9 +363,7 @@ class CorpusDataset:
                             )
                         if any(not np.isfinite(v).all() for v in inputs.values()):
                             raise ValueError("Una modalidad contiene valores no finitos")
-                        inputs["prices"] = price_features(
-                            prices[price_end - self.context + 1 : price_end + 1]
-                        )
+                        inputs["prices"] = contexts[local_offset].copy()
                         consumed += 1
                         yield (
                             inputs,
