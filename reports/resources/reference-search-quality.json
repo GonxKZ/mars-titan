@@ -1,0 +1,282 @@
+{
+  "full_suite": {
+    "passed": 1199,
+    "skipped": 0,
+    "seconds": 97.76
+  },
+  "focused_suite": {
+    "passed": 36
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/training/corpus_inputs.py",
+      "sha256": "d3fc0bddabfb4d639ce27fae6d53c7b2f0f6d0faa305561ae07c751eccf46db5",
+      "coverage": {
+        "covered_lines": 179,
+        "num_statements": 217,
+        "percent_covered": 77.84615384615384,
+        "percent_covered_display": "78",
+        "missing_lines": 38,
+        "excluded_lines": 0,
+        "percent_statements_covered": 82.48847926267281,
+        "percent_statements_covered_display": "82",
+        "num_branches": 108,
+        "num_partial_branches": 28,
+        "covered_branches": 74,
+        "missing_branches": 34,
+        "percent_branches_covered": 68.51851851851852,
+        "percent_branches_covered_display": "69"
+      },
+      "functions": [
+        {
+          "name": "_unique",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.0,
+          "crap": 12.0
+        },
+        {
+          "name": "_times",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_random",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_batch",
+          "complexity": 7,
+          "statement_coverage_fraction": 1.0,
+          "crap": 7.0
+        },
+        {
+          "name": "supervised_batches",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 1,
+          "statement_coverage_fraction": 0.0,
+          "crap": 2.0
+        },
+        {
+          "name": "CorpusDataset.__init__",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.875,
+          "crap": 29.53125
+        },
+        {
+          "name": "CorpusDataset._file",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 10.393643388249016
+        },
+        {
+          "name": "CorpusDataset._labels",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.7804878048780488,
+          "crap": 25.66460150026842
+        },
+        {
+          "name": "CorpusDataset._rows",
+          "complexity": 42,
+          "statement_coverage_fraction": 0.84,
+          "crap": 49.22534400000001
+        },
+        {
+          "name": "CorpusDataset.batches",
+          "complexity": 23,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 23.72565157750343
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/reference_campaign.py",
+      "sha256": "cb5ed8a2b4c1e8c04b9a20142b0eaf1a7bcceb19a1e83980102facbec7495175",
+      "coverage": {
+        "covered_lines": 111,
+        "num_statements": 136,
+        "percent_covered": 80.20833333333333,
+        "percent_covered_display": "80",
+        "missing_lines": 25,
+        "excluded_lines": 0,
+        "percent_statements_covered": 81.61764705882354,
+        "percent_statements_covered_display": "82",
+        "num_branches": 56,
+        "num_partial_branches": 9,
+        "covered_branches": 43,
+        "missing_branches": 13,
+        "percent_branches_covered": 76.78571428571429,
+        "percent_branches_covered_display": "77"
+      },
+      "functions": [
+        {
+          "name": "campaign_views",
+          "complexity": 18,
+          "statement_coverage_fraction": 1.0,
+          "crap": 18.0
+        },
+        {
+          "name": "_configuration",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.8,
+          "crap": 15.568
+        },
+        {
+          "name": "_check_finished",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.7777777777777778,
+          "crap": 7.537722908093278
+        },
+        {
+          "name": "run_reference_campaign",
+          "complexity": 33,
+          "statement_coverage_fraction": 0.8271604938271605,
+          "crap": 38.622855594506255
+        },
+        {
+          "name": "main",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.0,
+          "crap": 20.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/reference_design.py",
+      "sha256": "45ca0d0f0b009b74bfb244984df03e4263fee919ee4bca8588eb192d91549f9c",
+      "coverage": {
+        "covered_lines": 13,
+        "num_statements": 14,
+        "percent_covered": 90.9090909090909,
+        "percent_covered_display": "91",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.85714285714286,
+        "percent_statements_covered_display": "93",
+        "num_branches": 8,
+        "num_partial_branches": 1,
+        "covered_branches": 7,
+        "missing_branches": 1,
+        "percent_branches_covered": 87.5,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "design_cases",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.9166666666666666,
+          "crap": 11.070023148148149
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/reference_search.py",
+      "sha256": "211d571f465212b9ebeca92ec800decfd707f603a5926f76e214ab96341d1811",
+      "coverage": {
+        "covered_lines": 157,
+        "num_statements": 190,
+        "percent_covered": 79.54545454545455,
+        "percent_covered_display": "80",
+        "missing_lines": 33,
+        "excluded_lines": 0,
+        "percent_statements_covered": 82.63157894736842,
+        "percent_statements_covered_display": "83",
+        "num_branches": 74,
+        "num_partial_branches": 19,
+        "covered_branches": 53,
+        "missing_branches": 21,
+        "percent_branches_covered": 71.62162162162163,
+        "percent_branches_covered_display": "72"
+      },
+      "functions": [
+        {
+          "name": "_configuration",
+          "complexity": 32,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 33.40466392318244
+        },
+        {
+          "name": "_task",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_execute_design",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.9545454545454546,
+          "crap": 14.018407212622089
+        },
+        {
+          "name": "run_search",
+          "complexity": 33,
+          "statement_coverage_fraction": 0.9122807017543859,
+          "crap": 33.735043981143995
+        },
+        {
+          "name": "main",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.0,
+          "crap": 12.0
+        },
+        {
+          "name": "_Study.__init__",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 3.0416666666666665
+        },
+        {
+          "name": "_Study.save",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_Study.execute",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.7068965517241379,
+          "crap": 47.74144081348149
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "wrong_winner",
+      "missing_rate_levels",
+      "stale_running_state"
+    ]
+  },
+  "design": {
+    "configurations_per_family": 12,
+    "search_seed": 42,
+    "finalist_seeds": [
+      42,
+      43,
+      44
+    ],
+    "reuses_selected_search_case": true,
+    "us_runs": 80,
+    "multimarket_runs": 320
+  },
+  "limits": [
+    "La campa\u00f1a funcional de veinte ejecuciones utiliza datos sint\u00e9ticos.",
+    "No se ha entrenado todav\u00eda esta b\u00fasqueda con el corpus completo.",
+    "El lote de 512 est\u00e1 configurado, no acreditado como \u00f3ptimo.",
+    "La GPU comparte memoria con otras aplicaciones y no se realiz\u00f3 un perfil grande.",
+    "Los contratos, estados y decisiones se revisaron localmente."
+  ]
+}

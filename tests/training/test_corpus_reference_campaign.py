@@ -4,6 +4,8 @@ import os
 import signal
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.data.storage import sha256
@@ -95,6 +97,67 @@ def test_pooled_view_preserves_exact_union_and_market_weights(tmp_path):
     )
     assert weights == {"US": pytest.approx(2 / 3), "CN": 2.0}
     assert 12 * weights["US"] == 4 * weights["CN"] == 8.0
+
+
+def test_v2_market_views_reconcile_all_candidates_and_keep_cohort_rows(tmp_path):
+    from mars_titan.training.cohort_contract import representation_hash
+    from mars_titan.training.corpus_inputs import CorpusDataset
+
+    path = training_corpus(tmp_path / "data", markets=("US", "CN"))
+    meta = json.loads(path.read_text())
+    representation = dict(
+        fundamental_concepts=["asset"],
+        macro_indicators=["gdp"],
+        encoders=dict(version=1),
+        representation_code={"fixture": "0" * 64},
+        text_aggregation="fixture",
+        context_sessions=64,
+        news_lookback_sessions=5,
+    )
+    coverage = []
+    for asset in meta["assets"]:
+        asset.update(
+            cohort_id="original_audited",
+            samples=9,
+            representation_sha256=representation_hash(representation),
+        )
+        coverage.append(
+            dict(market=asset["market"], symbol=asset["symbol"], state="encoded", samples=9)
+        )
+        for kind in ("samples", "labels"):
+            file = Path(meta["roots"][kind]) / asset["market"] / asset["symbol"] / f"{kind}.parquet"
+            table = pq.read_table(file)
+            table = table.append_column("cohort_id", pa.array(["original_audited"] * len(table)))
+            pq.write_table(table, file)
+            asset[kind + "_sha256"] = sha256(file)
+    coverage.append(
+        dict(market="US", symbol="MISSING", state="missing_modalities", missing=["news"])
+    )
+    meta.update(
+        schema_version=2,
+        cohort_id="original_audited",
+        news_content_policy="source_audited_not_external",
+        markets=["US", "CN"],
+        representation=representation,
+        coverage=coverage,
+        candidate_count=5,
+        samples=36,
+        failed_assets=0,
+    )
+    path.write_text(json.dumps(meta))
+    views = module().campaign_views(path, ["US", "CN", "US+CN"])
+    assert views["US"]["candidate_count"] == 3
+    assert views["CN"]["candidate_count"] == 2
+    assert views["US+CN"]["candidate_count"] == 5
+    for arm, view in views.items():
+        destination = tmp_path / f"view-{arm}.json"
+        destination.write_text(json.dumps(view))
+        dataset = CorpusDataset(destination)
+        count = sum(
+            len(b["target"])
+            for b in dataset.batches(partition="validation", batch_size=4, epoch=0, seed=42)
+        )
+        assert count == (12 if arm == "US+CN" else 6)
 
 
 @pytest.mark.parametrize("change", ["source", "environment"])

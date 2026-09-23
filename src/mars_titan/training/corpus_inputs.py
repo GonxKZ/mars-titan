@@ -1,7 +1,6 @@
 """Lotes supervisados por activo y grupo Parquet, sin acumular el corpus en RAM."""
 
 import hashlib
-import json
 import re
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.batches import read_bounded_table
+from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import sha256
 from mars_titan.data.streaming import price_features
 
@@ -46,8 +46,7 @@ class CorpusDataset:
         self.path = Path(manifest)
         if self.path.is_symlink() or self.path.stat().st_size > 8 * 1024**2:
             raise ValueError("El manifiesto no es regular o supera 8 MiB")
-        self.identity = sha256(self.path)
-        self.manifest = json.loads(self.path.read_text(), object_pairs_hook=_unique)
+        self.manifest, self.identity = read_manifest(self.path, 8 * 1024**2)
         meta = self.manifest
         self.cohort = cohort_identity(meta)
         if (
