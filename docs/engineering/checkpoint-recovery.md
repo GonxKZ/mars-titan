@@ -84,3 +84,41 @@ retención, corrupción y restauración de una GRU con su optimizador y generado
 La siguiente actualización reproduce exactamente pesos y pérdida en CPU y en
 `cuda:0`. Esto no acredita recuperación frente a un corte eléctrico ni persistencia
 de los futuros módulos de memoria de MARS-TITAN.
+
+## Época seleccionada y estado de reanudación
+
+Las referencias pueden seleccionar una época mediante MAE por sesión. La
+decisión se toma después de evaluar una época completa. Los empates conservan
+la primera época aceptada. La paciencia cuenta épocas consecutivas sin una
+mejora mayor que `min_delta`. No altera las filas de entrenamiento ni consulta
+la reserva final.
+
+`recovery_checkpoint` identifica el último estado coherente, con su optimizador,
+cursor y generadores. `checkpoint` identifica el estado elegido para las
+predicciones finales y las continuaciones. El índice conserva ese estado como
+`best`. Si se interrumpe la generación de predicciones del modelo elegido, no
+se vuelve a guardar mezclando esos pesos antiguos con el optimizador reciente.
+
+La carga de un estado elegido comprueba que corresponda a la época y puntuación
+de selección, con cursor vacío y estadísticas de entrenamiento reiniciadas.
+Una referencia a otra época válida también es un error. Para una continuación
+se exige la huella concreta del origen. En ese caso, el cargador no sustituye
+el archivo solicitado por uno anterior. La recuperación operativa de `latest`
+sin huella específica mantiene la alternativa anterior con aviso.
+
+El parámetro opcional de un caso es:
+
+```json
+{
+  "selection": {
+    "metric": "session_mae",
+    "patience": 5,
+    "min_delta": 0.0
+  }
+}
+```
+
+`epochs` sigue siendo el máximo de épocas. `stopped_early` indica si el criterio
+detuvo el ajuste antes de agotarlo. El informe conserva todas las épocas
+ejecutadas, la época elegida y las dos referencias de estado. Los casos sin
+`selection` mantienen el número fijo de épocas anterior.

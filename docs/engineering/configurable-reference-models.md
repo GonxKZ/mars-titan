@@ -57,6 +57,7 @@ regularización sin declarar otro diseño.
 
 La comprobación actual cubre formas, gradientes de las cinco entradas, ausencia
 de estado arrastrado, regularización y recuperación. No demuestra superioridad
-predictiva ni sustituye la campaña sobre el corpus completo. La selección de
-configuraciones, el MAE por sesión y la parada temprana siguen siendo controles
-separados que deben quedar fijados antes de esa campaña.
+predictiva ni sustituye la campaña sobre el corpus completo. El
+[MAE por sesión](../research/metrics.md) y la
+[selección de épocas](checkpoint-recovery.md) tienen contratos separados.
+La búsqueda de configuraciones debe quedar fijada antes de ejecutar esa campaña.
