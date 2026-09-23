@@ -99,11 +99,12 @@ en `float32`. No se inventan cotas de características para ocultar ese aviso.
 
 ## Alcance implementado
 
-Las pruebas actuales usan proveedores sintéticos y cubren maduración, orden,
-recuperación, particiones y límites. El adaptador del corpus Parquet, los
-entrenadores de refuerzo y las campañas científicas requieren su propia
-integración y evidencia. Este entorno no ejecuta operaciones financieras
-ni implementa PPO o MARS-TITAN.
+Las pruebas del entorno cubren maduración, orden, recuperación, particiones
+y límites. El [adaptador Parquet](parquet-causal-source.md) incorpora el
+recorrido cronológico y su comprobación de población. Los entrenadores de
+refuerzo y las campañas científicas requieren su propia integración y
+evidencia. Este entorno no ejecuta operaciones financieras ni implementa
+PPO o MARS-TITAN.
 
 La [verificación local](../../reports/resources/causal-environment-quality.json)
 registra cobertura, complejidad, CRAP y mutaciones dirigidas. El

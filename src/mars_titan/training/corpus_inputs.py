@@ -39,6 +39,34 @@ def _random(seed, epoch, key):
     return np.random.default_rng(number)
 
 
+def _availability(table):
+    if "input_availability" not in table.column_names:
+        return None, None
+    column = table["input_availability"].combine_chunks()
+    names = {"prices", "news", "charts", "fundamentals", "macro"}
+    if not pa.types.is_struct(column.type):
+        raise ValueError("La disponibilidad no identifica las cuatro modalidades y macro")
+    fields = {field.name for field in column.type}
+    if fields != names and not (
+        fields == names - {"macro"} and "macro_available_at" in table.column_names
+    ):
+        raise ValueError("La disponibilidad no identifica las cuatro modalidades y macro")
+    valid = ~column.is_null().to_numpy(zero_copy_only=False)
+    bounds = np.zeros(len(column), dtype=np.int64)
+    for name in sorted(names):
+        field = (
+            column.field(name) if name in fields else table["macro_available_at"].combine_chunks()
+        )
+        valid &= ~field.is_null().to_numpy(zero_copy_only=False)
+        if field.null_count == len(field):
+            continue
+        if not pa.types.is_timestamp(field.type) or not field.type.tz:
+            raise ValueError("La disponibilidad necesita marcas temporales con zona horaria")
+        filled = field.fill_null(pa.scalar(0, type=field.type))
+        bounds = np.maximum(bounds, _times(filled))
+    return bounds, valid
+
+
 class CorpusDataset:
     """Validar una edición y reutilizar sus huellas mientras no cambien los archivos."""
 
@@ -163,7 +191,7 @@ class CorpusDataset:
         if not len(table):
             if any(asset["counts"].values()):
                 raise ValueError("La partición no concilia con sus etiquetas")
-            return positions, prediction, np.empty(0, dtype=np.float64)
+            return positions, prediction, np.empty(0, dtype=np.float64), prediction.copy()
         maturity = _times(table["target_available_at"])
         if np.any(maturity <= prediction):
             raise ValueError("La etiqueta debe madurar después de su predicción")
@@ -182,7 +210,7 @@ class CorpusDataset:
             raise ValueError("Una etiqueta cruza la partición o sus recuentos no concilian")
         selected = np.flatnonzero(partitions == partition)
         selected = selected[np.argsort(positions[selected])]
-        return positions[selected], prediction[selected], values[selected]
+        return positions[selected], prediction[selected], values[selected], maturity[selected]
 
     def _rows(self, partition, epoch, seed, cursor):
         order = _random(seed, epoch, "assets").permutation(len(self.assets))
@@ -192,7 +220,7 @@ class CorpusDataset:
             asset = self.assets[int(order[asset_position])]
             key = f"{asset['market']}/{asset['symbol']}"
             with pq.ParquetFile(self._file(asset, "samples")) as file:
-                positions, prediction, target = self._labels(
+                positions, prediction, target, maturity = self._labels(
                     asset, partition, file.metadata.num_rows
                 )
                 price_table = read_bounded_table(
@@ -235,6 +263,10 @@ class CorpusDataset:
                     columns = ["prediction_at", "price_end_index", *VECTORS] + (
                         ["cohort_id"] if self.cohort else []
                     )
+                    if "input_availability" in file.schema_arrow.names:
+                        columns.append("input_availability")
+                        if "macro_available_at" in file.schema_arrow.names:
+                            columns.append("macro_available_at")
                     metadata = file.metadata.row_group(int(group))
                     size = sum(
                         metadata.column(c).total_uncompressed_size
@@ -248,6 +280,7 @@ class CorpusDataset:
                     if table.nbytes > MAX_TABLE_BYTES:
                         raise ValueError("El grupo decodificado supera el presupuesto")
                     timestamps = _times(table["prediction_at"])
+                    availability, availability_valid = _availability(table)
                     ends = table["price_end_index"].to_numpy()
                     vectors = {}
                     for name in VECTORS:
@@ -286,6 +319,12 @@ class CorpusDataset:
                                 "Las modalidades y la etiqueta no coinciden temporalmente"
                             )
                         inputs = {name: values[row].copy() for name, values in vectors.items()}
+                        if availability is not None and (
+                            not availability_valid[row] or availability[row] > prediction[label]
+                        ):
+                            raise ValueError(
+                                "La disponibilidad de una modalidad es ausente o futura"
+                            )
                         if any(not np.isfinite(v).all() for v in inputs.values()):
                             raise ValueError("Una modalidad contiene valores no finitos")
                         inputs["prices"] = price_features(
@@ -297,6 +336,8 @@ class CorpusDataset:
                             float(target[label]),
                             key,
                             int(prediction[label]),
+                            int(maturity[label]),
+                            int(availability[row]) if availability is not None else None,
                             {
                                 "asset": asset_position,
                                 "group": group_position,
@@ -339,8 +380,10 @@ class CorpusDataset:
                 raise ValueError("El cursor no corresponde al corpus, época o partición")
             point = {key: cursor[key] for key in point}
         records = []
-        for inputs, target, key, timestamp, next_point in self._rows(partition, epoch, seed, point):
-            records.append((inputs, target, key, timestamp))
+        for inputs, target, key, timestamp, maturity, available, next_point in self._rows(
+            partition, epoch, seed, point
+        ):
+            records.append((inputs, target, key, timestamp, maturity, available))
             if len(records) == batch_size:
                 yield {
                     **_batch(records, {**identity, **next_point}),
@@ -361,6 +404,8 @@ def _batch(records, cursor):
         "sample_ids": [f"{r[2]}/{r[3]}" for r in records],
         "market": [r[2].split("/")[0] for r in records],
         "prediction_at": np.asarray([r[3] for r in records], dtype="datetime64[us]"),
+        "target_available_at": np.asarray([r[4] for r in records], dtype="datetime64[us]"),
+        "input_available_at": np.asarray([r[5] for r in records], dtype="datetime64[us]"),
         "weight": np.ones(len(records), dtype=np.float64),
         "confirmed_cursor": cursor,
     }

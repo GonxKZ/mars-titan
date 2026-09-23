@@ -112,6 +112,45 @@ def test_all_assets_and_last_partial_batch_are_visited_once(tmp_path):
         assert batch["inputs"]["prices"].shape[1:] == (2, 5)
 
 
+def test_batches_preserve_actual_maturity_and_do_not_invent_missing_availability(tmp_path):
+    manifest = corpus(tmp_path, assets=2, rows=5)
+    for batch in batches(manifest):
+        np.testing.assert_array_equal(
+            batch["target_available_at"],
+            batch["prediction_at"] + np.timedelta64(1, "s"),
+        )
+        assert np.isnat(batch["input_available_at"]).all()
+
+
+def test_modality_availability_is_checked_and_retained_in_batches(tmp_path):
+    manifest = corpus(tmp_path, assets=1, rows=5)
+    metadata = json.loads(manifest.read_text())
+    path = tmp_path / "samples/US/A0000/samples.parquet"
+    rows = pq.read_table(path).to_pylist()
+    for row in rows:
+        row["input_availability"] = {
+            name: row["prediction_at"]
+            for name in (
+                "prices",
+                "news",
+                "charts",
+                "fundamentals",
+                "macro",
+            )
+        }
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    metadata["assets"][0]["samples_sha256"] = sha256(path)
+    manifest.write_text(json.dumps(metadata))
+    for batch in batches(manifest):
+        np.testing.assert_array_equal(batch["input_available_at"], batch["prediction_at"])
+    rows[0]["input_availability"]["news"] += timedelta(days=1)
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    metadata["assets"][0]["samples_sha256"] = sha256(path)
+    manifest.write_text(json.dumps(metadata))
+    with pytest.raises(ValueError, match="disponibilidad|futuro"):
+        list(batches(manifest))
+
+
 def test_epoch_order_is_deterministic_and_changes_between_epochs(tmp_path):
     manifest = corpus(tmp_path, assets=3, rows=13)
 
