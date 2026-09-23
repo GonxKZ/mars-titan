@@ -1,9 +1,10 @@
-"""Analizar la edición local de 405 muestras con los diagnósticos ya comprobados."""
+"""Analizar una edición local de 96 referencias neuronales y cuatro tabulares."""
 
 import argparse
 import csv
 import json
 import math
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.analysis import (
     _artifact,
     _breakdown,
+    _check_grid,
     _cross_sectional,
     _posttraining_pairs,
     _predictions,
@@ -20,28 +22,45 @@ from mars_titan.models.baselines.analysis import (
 )
 from mars_titan.models.baselines.diagnostics import paired_date_bootstrap, point_diagnostics
 
+if not __debug__:
+    raise RuntimeError("El análisis requiere las comprobaciones activas, sin la opción -O")
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     "destination",
     type=Path,
     help="Directorio para los artefactos derivados, sin sobrescribir los anteriores",
 )
-destination = parser.parse_args().destination
+parser.add_argument(
+    "--campaign",
+    type=Path,
+    default=Path("data/interim/verified-streaming-campaign-20260923"),
+    help="Directorio de la campaña neuronal terminada",
+)
+parser.add_argument(
+    "--tabular",
+    type=Path,
+    default=Path("data/interim/tabular-edition-20260923"),
+    help="Directorio de los controles tabulares terminados",
+)
+parser.add_argument("--label", default="20260923", help="Identificador de la edición de resultados")
+args = parser.parse_args()
+if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", args.label):
+    raise ValueError("El identificador solo admite letras minúsculas, números y guiones")
+destination, root, tabular_root = args.destination, args.campaign, args.tabular
+metrics_name = f"verified-{args.label}-metrics.csv"
+diagnostics_name = f"streaming-reference-diagnostics-{args.label}.json"
 for protected in (
     Path("dataset"),
     Path("data/processed"),
-    Path("data/interim/verified-streaming-campaign-20260923"),
-    Path("data/interim/tabular-edition-20260923"),
+    root,
+    tabular_root,
 ):
     outside_source(protected, destination)
-if any(
-    (destination / name).exists()
-    for name in ("verified-20260923-metrics.csv", "streaming-reference-diagnostics-20260923.json")
-):
+if any((destination / name).exists() for name in (metrics_name, diagnostics_name)):
     raise ValueError("La salida ya contiene resultados de esta edición")
 destination.mkdir(parents=True, exist_ok=True)
 
-root = Path("data/interim/verified-streaming-campaign-20260923")
 summary_path = root / "summary.json"
 summary = json.loads(summary_path.read_text())
 assert (
@@ -49,12 +68,27 @@ assert (
 )
 assert all(r["arm"] == "US" and r["weighting"] == "natural" for r in summary["runs"])
 assert summary["scope"] == "development_snapshot" and not summary["cohort_complete"]
+recipe_path = Path("configs/baselines/expanded-reference-variants.json")
+recipe = json.loads(recipe_path.read_text())
+assert summary["identity"]["recipe_sha256"] == sha256(recipe_path)
+_check_grid(
+    [
+        dict(id=item["id"], **item["case"], stage="posttraining" if "parent" in item else "base")
+        for item in summary["runs"]
+    ],
+    recipe,
+)
+assert all(
+    item["case"]["epochs"]
+    == (recipe["posttraining"]["epochs"] if "parent" in item else recipe["epochs"])
+    for item in summary["runs"]
+)
 population, predictions, reports, runs, items, metrics_rows = {}, {}, {}, [], [], []
 bootstrap = dict(block_length=5, repetitions=2000, seed=42)
 sources = []
 
 
-def diagnostics(folder, report, identifier):
+def diagnostics(folder, report, identifier, source_root, source_group):
     outcome = {}
     predictions[identifier] = {}
     for partition in ("train", "validation"):
@@ -93,7 +127,13 @@ def diagnostics(folder, report, identifier):
             outcome[partition]["bootstrap_vs_zero"] = paired_date_bootstrap(
                 frame.date.to_numpy(), target, estimate, **bootstrap
             )
-        sources.append(dict(path=str(path.relative_to(Path.cwd())), sha256=artifact["sha256"]))
+        sources.append(
+            dict(
+                root=source_group,
+                path=str(path.relative_to(source_root.resolve())),
+                sha256=artifact["sha256"],
+            )
+        )
     return outcome
 
 
@@ -141,14 +181,17 @@ for item in summary["runs"]:
             "report": {"path": str(report_path.relative_to(root)), "sha256": item["report_sha256"]}
         },
         attempts=report["attempts"],
-        **diagnostics(folder, report, item["id"]),
+        **diagnostics(folder, report, item["id"], root, "neural"),
     )
     runs.append(run)
     items.append({**run, **({"parent": item["parent"]} if "parent" in item else {})})
 
-tabular_root = Path("data/interim/tabular-edition-20260923")
 tabular_summary = json.loads((tabular_root / "summary.json").read_text())
-assert tabular_summary["status"] == "completed" and tabular_summary["completed_runs"] == 4
+assert (
+    tabular_summary["status"] == "completed"
+    and tabular_summary["completed_runs"] == len(tabular_summary["runs"]) == 4
+    and len({item["id"] for item in tabular_summary["runs"]}) == 4
+)
 tabular_runs = []
 for item in tabular_summary["runs"]:
     folder = tabular_root / item["path"]
@@ -173,9 +216,15 @@ for item in tabular_summary["runs"]:
             report_sha256=item["report_sha256"],
             fit_seconds=report["fit_seconds"],
             total_seconds=report["total_seconds"],
-            **diagnostics(folder, report, item["id"]),
+            **diagnostics(folder, report, item["id"], tabular_root, "tabular"),
         )
     )
+assert {(run["kind"], run["alpha"]) for run in tabular_runs} == {
+    ("ridge", 0.1),
+    ("ridge", 1.0),
+    ("ridge", 10.0),
+    ("boosting", None),
+}
 common = set(population["train"].asset_id) & set(population["validation"].asset_id)
 for run in runs + tabular_runs:
     row = {
@@ -190,17 +239,18 @@ for run in runs + tabular_runs:
             }
         )
     metrics_rows.append(row)
-metrics_path = destination / "verified-20260923-metrics.csv"
+metrics_path = destination / metrics_name
 with metrics_path.open("x", newline="") as stream:
     writer = csv.DictWriter(stream, fieldnames=list(metrics_rows[0]), lineterminator="\n")
     writer.writeheader()
     writer.writerows(metrics_rows)
 old = json.loads(Path("reports/resources/verified-reference-diagnostics.json").read_text())
 result = dict(
-    schema_version=2,
+    schema_version=3,
     kind="streaming_reference_analysis",
     scope="development_snapshot",
     campaign_sha256=sha256(summary_path),
+    recipe_sha256=sha256(recipe_path),
     tabular_summary_sha256=sha256(tabular_root / "summary.json"),
     script_sha256=sha256(Path(__file__)),
     metrics_sha256=sha256(metrics_path),
@@ -209,7 +259,7 @@ result = dict(
     diagnostics_sha256=sha256(Path("src/mars_titan/models/baselines/diagnostics.py")),
     final_test_opened=False,
     exact_population_and_targets_match=True,
-    independently_recomputed_cases=100,
+    independently_recomputed_cases=len(runs) + len(tabular_runs),
     population={
         p: dict(
             n=len(f),
@@ -238,7 +288,7 @@ result = dict(
         "Existen pruebas de continuidad del motor.",
     ],
 )
-atomic_json(destination / "streaming-reference-diagnostics-20260923.json", result)
+atomic_json(destination / diagnostics_name, result)
 zero = runs[0]["validation"]["metrics"]["reference"]
 print(
     json.dumps(
