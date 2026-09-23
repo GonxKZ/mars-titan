@@ -13,6 +13,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.campaign import _cases, _load_config
 
 from .checkpoints import StopRequest
+from .cohort_contract import cohort_identity
 from .corpus_inputs import CorpusDataset
 from .reference_run import read_json, run_reference_case, scientific_identity
 
@@ -37,6 +38,16 @@ def campaign_views(manifest: Path, arms: list[str]) -> dict:
             "selected_arm": arm,
             "source_manifest_sha256": source.identity,
         }
+        if source.cohort:
+            coverage = [row for row in source.manifest["coverage"] if row["market"] in markets]
+            views[arm].update(
+                coverage=coverage,
+                candidate_count=len(coverage),
+                markets=sorted(markets),
+                samples=sum(row["samples"] for row in coverage if row["state"] == "encoded"),
+                failed_assets=sum(row["state"] == "failed" for row in coverage),
+            )
+            cohort_identity(views[arm])
     return views
 
 

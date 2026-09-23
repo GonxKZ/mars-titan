@@ -59,6 +59,7 @@ def scientific_identity():
         "budget_training.py",
         "data/streaming.py",
         "data/batches.py",
+        "data/cohort_files.py",
         "data/storage.py",
         "data/embeddings.py",
     )

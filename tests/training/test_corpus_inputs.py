@@ -149,6 +149,26 @@ def test_market_and_symbol_form_the_identity(tmp_path):
     assert {s.split("/")[0] for s in ids} == {"US", "CN"}
 
 
+def test_dataset_identity_binds_the_same_manifest_bytes_it_parses(tmp_path, monkeypatch):
+    manifest = corpus(tmp_path, assets=1)
+    engine, original = module(), module().sha256
+    changed = False
+
+    def replace_after_hash(path):
+        nonlocal changed
+        digest = original(path)
+        if path == manifest and not changed:
+            source = json.loads(path.read_text())
+            source["context_sessions"] = 3
+            path.write_text(json.dumps(source))
+            changed = True
+        return digest
+
+    monkeypatch.setattr(engine, "sha256", replace_after_hash)
+    dataset = engine.CorpusDataset(manifest)
+    assert dataset.identity == original(manifest)
+
+
 def test_sparse_accepted_rows_do_not_retain_entire_parquet_groups(tmp_path):
     manifest = corpus(tmp_path, assets=1, rows=300, group_size=100)
     label_path = tmp_path / "labels/US/A0000/labels.parquet"

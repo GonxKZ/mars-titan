@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "scope": "full_corpus",
+  "arms": ["US"],
+  "models": ["rnn", "lstm", "gru", "dlinear"],
+  "search_seed": 42,
+  "finalist_seeds": [42, 43, 44],
+  "max_epochs": 30,
+  "patience": 5,
+  "min_delta": 0.0,
+  "batch_size": 512,
+  "context_sessions": 64,
+  "checkpoint_seconds": 300,
+  "posttraining_epochs": 5,
+  "posttraining_learning_rate": 0.0001,
+  "posttraining_losses": ["mae", "mse"],
+  "pooled_weightings": ["natural", "balanced_markets"],
+  "final_test_opened": false
+}
