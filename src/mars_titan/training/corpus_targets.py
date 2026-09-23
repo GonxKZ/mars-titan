@@ -315,6 +315,9 @@ def prepare_corpus_targets(
             {k: meta[k] for k in ("coverage", "candidate_count", "samples", "failed_assets")}
         )
         result["representation"] = common_representation
+        for key in ("markets", "preparation_scope", "parent_preparation"):
+            if key in meta:
+                result[key] = meta[key]
         cohort_identity(result)
     atomic_json(output / "manifest.json", result)
     return {**result, "reused_assets": reused}

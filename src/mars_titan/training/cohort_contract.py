@@ -63,6 +63,12 @@ def validate_population(meta):
         elif state != "missing_modalities":
             raise ValueError("La cobertura tiene un estado desconocido")
     observed = [(a["market"], a["symbol"]) for a in meta.get("assets", [])]
+    if "markets" in meta and (
+        not isinstance(meta["markets"], list)
+        or len(meta["markets"]) != len(set(meta["markets"]))
+        or set(meta["markets"]) != {market for market, _ in keys}
+    ):
+        raise ValueError("Los mercados declarados no coinciden con la cobertura de candidatos")
     if (
         len(observed) != len(set(observed))
         or set(observed) != set(expected)
