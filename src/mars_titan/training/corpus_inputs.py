@@ -13,6 +13,8 @@ from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.storage import sha256
 from mars_titan.data.streaming import price_features
 
+from .cohort_contract import cohort_identity, validate_cohort_rows
+
 VECTORS = ("news", "charts", "fundamentals", "macro")
 MAX_TABLE_BYTES = 64 * 1024**2
 
@@ -47,8 +49,9 @@ class CorpusDataset:
         self.identity = sha256(self.path)
         self.manifest = json.loads(self.path.read_text(), object_pairs_hook=_unique)
         meta = self.manifest
+        self.cohort = cohort_identity(meta)
         if (
-            meta.get("schema_version") != 1
+            meta.get("schema_version") not in {1, 2}
             or meta.get("kind") != "corpus_supervision"
             or meta.get("scope") not in {"development_snapshot", "full_corpus"}
             or type(meta.get("cohort_complete")) is not bool
@@ -118,6 +121,7 @@ class CorpusDataset:
         table = read_bounded_table(
             self._file(asset, "labels"), max_rows=1_000_000, max_bytes=MAX_TABLE_BYTES
         )
+        validate_cohort_rows(table, self.cohort)
         if not pa.types.is_integer(table["sample_row"].type) or table["sample_row"].null_count:
             raise ValueError("La etiqueta necesita una posición entera de muestra")
         positions = table["sample_row"].to_numpy()
@@ -229,7 +233,9 @@ class CorpusDataset:
                             raise ValueError("El consumo confirmado del cursor no concilia")
                     if not len(indexes) or start == len(indexes):
                         continue
-                    columns = ["prediction_at", "price_end_index", *VECTORS]
+                    columns = ["prediction_at", "price_end_index", *VECTORS] + (
+                        ["cohort_id"] if self.cohort else []
+                    )
                     metadata = file.metadata.row_group(int(group))
                     size = sum(
                         metadata.column(c).total_uncompressed_size
@@ -239,6 +245,7 @@ class CorpusDataset:
                     if size > MAX_TABLE_BYTES:
                         raise ValueError("El grupo de características supera 64 MiB")
                     table = file.read_row_group(int(group), columns=columns, use_threads=False)
+                    validate_cohort_rows(table, self.cohort)
                     if table.nbytes > MAX_TABLE_BYTES:
                         raise ValueError("El grupo decodificado supera el presupuesto")
                     timestamps = _times(table["prediction_at"])
@@ -336,10 +343,16 @@ class CorpusDataset:
         for inputs, target, key, timestamp, next_point in self._rows(partition, epoch, seed, point):
             records.append((inputs, target, key, timestamp))
             if len(records) == batch_size:
-                yield _batch(records, {**identity, **next_point})
+                yield {
+                    **_batch(records, {**identity, **next_point}),
+                    **({"cohort_id": self.cohort} if self.cohort else {}),
+                }
                 records = []
         if records:
-            yield _batch(records, {**identity, **next_point})
+            yield {
+                **_batch(records, {**identity, **next_point}),
+                **({"cohort_id": self.cohort} if self.cohort else {}),
+            }
 
 
 def _batch(records, cursor):

@@ -14,10 +14,18 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.batches import atomic_parquet_batches, read_bounded_table
 from mars_titan.data.budget_targets import residual_targets
+from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.cohort_news import COHORT_POLICIES
 from mars_titan.data.residual_arrays import residual_targets_array
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.temporal import MarketClock
 
+from .cohort_contract import (
+    cohort_identity,
+    representation_hash,
+    representation_identity,
+    validate_cohort_rows,
+)
 from .corpus_inputs import _unique
 
 LABEL_SCHEMA = pa.schema(
@@ -45,7 +53,7 @@ def _path(root, market, symbol, name):
     return path
 
 
-def _asset_sources(asset, prepared, samples, context):
+def _asset_sources(asset, prepared, samples, context, cohort=None):
     market, symbol = asset["market"], asset["symbol"]
     if (
         market not in {"US", "CN"}
@@ -59,10 +67,15 @@ def _asset_sources(asset, prepared, samples, context):
     origin = _json(original, 64 * 1024**2)
     representation = _json(encoded)
     if any(
-        item.get("news_content_policy") != "verified_full_articles"
+        item.get("news_content_policy")
+        != (COHORT_POLICIES[cohort] if cohort else "verified_full_articles")
         for item in (origin, representation)
     ):
         raise ValueError("El entrenamiento requiere noticias completas verificadas")
+    if cohort is not None and any(
+        item.get("cohort_id") != cohort for item in (origin, representation)
+    ):
+        raise ValueError("Las noticias preparadas y sus vectores no pertenecen a la misma cohorte")
     if (
         any(
             item.get("market") != market or item.get("symbol") != symbol
@@ -85,19 +98,25 @@ def _asset_sources(asset, prepared, samples, context):
         or hashes["samples"] != representation["samples_sha256"]
     ):
         raise ValueError("Han cambiado las muestras o los precios preparados")
-    return prices, vectors, hashes
+    return prices, vectors, hashes, representation_identity(representation) if cohort else None
 
 
-def _label_batches(path, calculated, audit):
+def _label_batches(path, calculated, audit, cohort=None):
+    schema = (
+        LABEL_SCHEMA if cohort is None else LABEL_SCHEMA.append(pa.field("cohort_id", pa.string()))
+    )
     by_time = {row.prediction_at: row for row in calculated.itertuples()}
     position, pending = 0, []
     with pq.ParquetFile(path) as file:
         if file.metadata.num_rows == 0:
-            yield pa.Table.from_pylist([], schema=LABEL_SCHEMA)
+            yield pa.Table.from_pylist([], schema=schema)
             return
         for batch in file.iter_batches(
-            batch_size=1024, columns=["prediction_at"], use_threads=False
+            batch_size=1024,
+            columns=["prediction_at"] + (["cohort_id"] if cohort else []),
+            use_threads=False,
         ):
+            validate_cohort_rows(pa.Table.from_batches([batch]), cohort)
             for moment in batch.column(0).to_pylist():
                 if moment is None or moment.tzinfo is None:
                     raise ValueError("La muestra necesita una fecha con zona")
@@ -125,11 +144,12 @@ def _label_batches(path, calculated, audit):
                         target=target,
                         partition=partition,
                         reason=reason,
+                        **({"cohort_id": cohort} if cohort else {}),
                     )
                 )
                 position += 1
             if pending:
-                yield pa.Table.from_pylist(pending, schema=LABEL_SCHEMA)
+                yield pa.Table.from_pylist(pending, schema=schema)
                 pending = []
 
 
@@ -142,9 +162,10 @@ def prepare_corpus_targets(
         raise ValueError("El motor de etiquetas debe ser reference o numpy")
     if output.is_symlink():
         raise ValueError("El directorio de salida no puede ser un enlace")
-    meta = _json(manifest)
+    meta, manifest_hash = read_manifest(manifest, 8 * 1024**2)
+    cohort = cohort_identity(meta)
     if (
-        meta.get("schema_version") != 1
+        meta.get("schema_version") not in {1, 2}
         or meta.get("kind") != "materialized_corpus"
         or meta.get("scope") not in {"development_snapshot", "full_corpus"}
         or type(meta.get("cohort_complete")) is not bool
@@ -178,7 +199,7 @@ def prepare_corpus_targets(
         factors[market] = read_bounded_table(path, max_rows=200_000).to_pandas()
     configuration = {
         "backend": backend,
-        "source_manifest_sha256": sha256(manifest),
+        "source_manifest_sha256": manifest_hash,
         "prepared_root": str(prepared),
         "code_sha256": sha256(Path(__file__)),
         "target_reference_sha256": sha256(Path(__file__).parents[1] / "data/budget_targets.py"),
@@ -190,6 +211,8 @@ def prepare_corpus_targets(
         "numpy_version": np.__version__,
         "pandas_version": pd.__version__,
         "exchange_calendars_version": exchange_calendars.__version__,
+        "cohort_contract_sha256": sha256(Path(__file__).with_name("cohort_contract.py")),
+        "cohort_files_sha256": sha256(Path(__file__).parents[1] / "data/cohort_files.py"),
     }
     identity_path = output / "configuration.json"
     if output.exists() and not identity_path.exists() and next(output.iterdir(), None) is not None:
@@ -200,10 +223,27 @@ def prepare_corpus_targets(
     if not identity_path.exists():
         atomic_json(identity_path, configuration)
     assets, reused, counts = [], 0, Counter(train=0, validation=0)
+    common_representation = None
     clocks = {m: MarketClock(m, meta["calendar_start"][m], "2024-01-05") for m in factors}
     for asset in meta["assets"]:
         market, symbol = asset["market"], asset["symbol"]
-        prices, vectors, hashes = _asset_sources(asset, prepared, samples, meta["context_sessions"])
+        prices, vectors, hashes, representation = _asset_sources(
+            asset, prepared, samples, meta["context_sessions"], cohort
+        )
+        if cohort:
+            if common_representation is not None and common_representation != representation:
+                raise ValueError("No se pueden combinar representaciones con distinta semántica")
+            common_representation = representation
+        expected_receipt = dict(
+            market=market,
+            symbol=symbol,
+            prices_sha256=hashes["prices"],
+            samples_sha256=hashes["samples"],
+        )
+        if cohort:
+            expected_receipt.update(
+                cohort_id=cohort, representation_sha256=representation_hash(representation)
+            )
         fingerprint = hashlib.sha256(
             json.dumps([configuration, hashes], sort_keys=True).encode()
         ).hexdigest()
@@ -212,7 +252,16 @@ def prepare_corpus_targets(
         receipt = _json(receipt_path) if receipt_path.exists() else None
         if receipt and receipt["fingerprint"] != fingerprint:
             raise ValueError("Han cambiado los artefactos de la edición ya iniciada")
+        if receipt and any(receipt.get(k) != v for k, v in expected_receipt.items()):
+            raise ValueError("El recibo no corresponde a la identidad y cohorte esperadas")
         if receipt and label_path.is_file() and sha256(label_path) == receipt["labels_sha256"]:
+            observed = read_bounded_table(label_path, max_rows=1_000_000)
+            validate_cohort_rows(observed, cohort)
+            partitions = Counter(observed["partition"].to_pylist())
+            if receipt.get("samples") != len(observed) or receipt.get("counts") != {
+                p: partitions[p] for p in ("train", "validation")
+            }:
+                raise ValueError("Los recuentos del recibo no coinciden con las etiquetas")
             reused += 1
         else:
             price_frame = read_bounded_table(prices, max_rows=200_000).to_pandas()
@@ -220,16 +269,15 @@ def prepare_corpus_targets(
                 price_frame, factors[market], clocks[market], cutoff="2023-12-31"
             )
             audit = Counter()
-            total = atomic_parquet_batches(label_path, _label_batches(vectors, calculated, audit))
+            total = atomic_parquet_batches(
+                label_path, _label_batches(vectors, calculated, audit, cohort)
+            )
             if sha256(prices) != hashes["prices"] or sha256(vectors) != hashes["samples"]:
                 raise ValueError("Las entradas cambiaron durante la preparación de etiquetas")
             receipt = dict(
                 fingerprint=fingerprint,
-                market=market,
-                symbol=symbol,
+                **expected_receipt,
                 samples=total,
-                prices_sha256=hashes["prices"],
-                samples_sha256=hashes["samples"],
                 labels_sha256=sha256(label_path),
                 counts={p: audit[p] for p in ("train", "validation")},
                 excluded_reasons={
@@ -242,8 +290,11 @@ def prepare_corpus_targets(
             atomic_json(receipt_path, receipt)
         assets.append(receipt)
         counts.update(receipt["counts"])
+    if sha256(manifest) != manifest_hash:
+        raise ValueError("La edición materializada cambió durante la supervisión")
     result = {
-        "schema_version": 1,
+        "schema_version": meta["schema_version"],
+        **({"cohort_id": cohort, "news_content_policy": COHORT_POLICIES[cohort]} if cohort else {}),
         "kind": "corpus_supervision",
         "scope": meta["scope"],
         "cohort_complete": meta["cohort_complete"],
@@ -259,5 +310,11 @@ def prepare_corpus_targets(
         "market_factors": meta["market_factors"],
         "final_test_opened": False,
     }
+    if cohort:
+        result.update(
+            {k: meta[k] for k in ("coverage", "candidate_count", "samples", "failed_assets")}
+        )
+        result["representation"] = common_representation
+        cohort_identity(result)
     atomic_json(output / "manifest.json", result)
     return {**result, "reused_assets": reused}

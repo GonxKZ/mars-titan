@@ -1,5 +1,6 @@
 import importlib
 import json
+import shutil
 from datetime import UTC, datetime
 
 import pyarrow as pa
@@ -248,3 +249,178 @@ def test_unrelated_existing_output_is_not_adopted_or_overwritten(tmp_path):
         function()(manifest, prepared, output)
     assert original.read_text() == "Conservar"
     assert not (output / "configuration.json").exists()
+
+
+def audited_edition(tmp_path):
+    manifest, prepared = materialized(tmp_path)
+    meta = json.loads(manifest.read_text())
+    cohort = "original_audited"
+    policy = "source_audited_not_external"
+    meta.update(schema_version=2, cohort_id=cohort, news_content_policy=policy)
+    meta.update(
+        candidate_count=1,
+        samples=5,
+        failed_assets=0,
+        coverage=[dict(market="US", symbol="AAA", state="encoded", samples=5)],
+    )
+    meta["assets"][0]["cohort_id"] = cohort
+    folder = tmp_path / "samples/US/AAA"
+    sample_path = folder / "samples.parquet"
+    table = pq.read_table(sample_path)
+    pq.write_table(table.append_column("cohort_id", pa.array([cohort] * len(table))), sample_path)
+    for path in (prepared / "US/AAA/manifest.json", folder / "manifest.json"):
+        item = json.loads(path.read_text())
+        item.update(cohort_id=cohort, news_content_policy=policy)
+        if path.parent == folder:
+            item["samples_sha256"] = sha256(sample_path)
+            item.update(
+                fundamental_concepts=["Assets"],
+                macro_indicators=["inflation"],
+                encoders=dict(version=1),
+                representation_code={"fixture": "0" * 64},
+                text_aggregation="test_mean",
+                news_lookback_sessions=5,
+            )
+        path.write_text(json.dumps(item))
+    manifest.write_text(json.dumps(meta))
+    return manifest, prepared
+
+
+def test_audited_cohort_survives_labels_and_batches_without_external_claim(tmp_path):
+    manifest, prepared = audited_edition(tmp_path)
+    output = tmp_path / "supervised"
+    result = function()(manifest, prepared, output)
+    assert result["schema_version"] == 2
+    assert result["cohort_id"] == "original_audited"
+    assert result["news_content_policy"] == "source_audited_not_external"
+    assert all(a["cohort_id"] == result["cohort_id"] for a in result["assets"])
+    labels = pq.read_table(output / "labels/US/AAA/labels.parquet")
+    assert labels["cohort_id"].to_pylist() == ["original_audited"] * 5
+    dataset = importlib.import_module("mars_titan.training.corpus_inputs").CorpusDataset(
+        output / "manifest.json"
+    )
+    batch = next(dataset.batches(partition="train", batch_size=8, epoch=0, seed=42))
+    assert batch["cohort_id"] == "original_audited"
+    assert batch["target"].tolist() == pytest.approx([0.02], abs=1e-8)
+
+
+@pytest.mark.parametrize("where", ["manifest", "asset", "prepared", "encoded", "sample"])
+def test_mixed_cohort_identity_cannot_enter_supervision(tmp_path, where):
+    manifest, prepared = audited_edition(tmp_path)
+    meta = json.loads(manifest.read_text())
+    if where in {"manifest", "asset"}:
+        target = meta if where == "manifest" else meta["assets"][0]
+        target["cohort_id"] = "externally_verified"
+        manifest.write_text(json.dumps(meta))
+    elif where in {"prepared", "encoded"}:
+        path = (prepared if where == "prepared" else tmp_path / "samples") / "US/AAA/manifest.json"
+        item = json.loads(path.read_text())
+        item["cohort_id"] = "externally_verified"
+        path.write_text(json.dumps(item))
+    else:
+        path = tmp_path / "samples/US/AAA/samples.parquet"
+        table = pq.read_table(path)
+        rows = table.to_pylist()
+        rows[0]["cohort_id"] = "externally_verified"
+        pq.write_table(pa.Table.from_pylist(rows), path)
+        receipt = path.parent / "manifest.json"
+        item = json.loads(receipt.read_text())
+        item["samples_sha256"] = sha256(path)
+        receipt.write_text(json.dumps(item))
+    output = tmp_path / "supervised"
+    with pytest.raises(ValueError, match="cohorte|noticias"):
+        function()(manifest, prepared, output)
+    assert not (output / "manifest.json").exists()
+
+
+@pytest.mark.parametrize("artifact", ["samples", "labels"])
+def test_reader_rejects_rehashed_rows_from_another_cohort(tmp_path, artifact):
+    manifest, prepared = audited_edition(tmp_path)
+    output = tmp_path / "supervised"
+    function()(manifest, prepared, output)
+    path = (
+        tmp_path / "samples" if artifact == "samples" else output / "labels"
+    ) / f"US/AAA/{artifact}.parquet"
+    rows = pq.read_table(path).to_pylist()
+    rows[0]["cohort_id"] = "externally_verified"
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    meta_path = output / "manifest.json"
+    meta = json.loads(meta_path.read_text())
+    meta["assets"][0][artifact + "_sha256"] = sha256(path)
+    meta_path.write_text(json.dumps(meta))
+    dataset = importlib.import_module("mars_titan.training.corpus_inputs").CorpusDataset(meta_path)
+    with pytest.raises(ValueError, match="cohorte"):
+        list(dataset.batches(partition="train", batch_size=8, epoch=0, seed=42))
+
+
+def test_partial_asset_list_cannot_claim_complete_encoded_coverage(tmp_path):
+    manifest, prepared = audited_edition(tmp_path)
+    meta = json.loads(manifest.read_text())
+    meta.update(
+        scope="full_corpus",
+        cohort_complete=True,
+        candidate_count=2,
+        samples=10,
+        failed_assets=0,
+        coverage=[
+            dict(market="US", symbol="AAA", state="encoded", samples=5),
+            dict(market="US", symbol="BBB", state="encoded", samples=5),
+        ],
+    )
+    manifest.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="cobertura|población|candidatos"):
+        function()(manifest, prepared, tmp_path / "supervised")
+    assert not (tmp_path / "supervised/manifest.json").exists()
+
+
+@pytest.mark.parametrize(
+    "change", [dict(cohort_id="externally_verified"), dict(counts={"train": 99, "validation": 1})]
+)
+def test_reused_label_receipt_cannot_relabel_cohort(tmp_path, change):
+    manifest, prepared = audited_edition(tmp_path)
+    output = tmp_path / "supervised"
+    function()(manifest, prepared, output)
+    before = sha256(output / "manifest.json")
+    receipt = output / "labels/US/AAA/receipt.json"
+    receipt.write_text(json.dumps({**json.loads(receipt.read_text()), **change}))
+    with pytest.raises(ValueError, match="cohorte|recibo"):
+        function()(manifest, prepared, output)
+    assert sha256(output / "manifest.json") == before
+
+
+@pytest.mark.parametrize("field", ["fundamental_concepts", "macro_indicators", "encoders"])
+def test_equal_width_different_feature_meanings_cannot_share_corpus(tmp_path, field):
+    manifest, prepared = audited_edition(tmp_path)
+    for root in (prepared, tmp_path / "samples"):
+        shutil.copytree(root / "US/AAA", root / "US/BBB")
+        path = root / "US/BBB/manifest.json"
+        item = json.loads(path.read_text())
+        item["symbol"] = "BBB"
+        if root.name == "samples":
+            item.update(
+                fundamental_concepts=["Assets"],
+                macro_indicators=["inflation"],
+                encoders=dict(version=1),
+            )
+            item[field] = dict(version=2) if field == "encoders" else ["other_feature"]
+        path.write_text(json.dumps(item))
+    path = tmp_path / "samples/US/AAA/manifest.json"
+    item = json.loads(path.read_text())
+    item.update(
+        fundamental_concepts=["Assets"], macro_indicators=["inflation"], encoders=dict(version=1)
+    )
+    path.write_text(json.dumps(item))
+    meta = json.loads(manifest.read_text())
+    meta["assets"].append(dict(market="US", symbol="BBB", cohort_id="original_audited"))
+    meta.update(
+        candidate_count=2,
+        samples=10,
+        failed_assets=0,
+        coverage=[dict(market="US", symbol=s, state="encoded", samples=5) for s in ("AAA", "BBB")],
+    )
+    manifest.write_text(json.dumps(meta))
+    with pytest.raises(
+        ValueError, match="representaci|semántica|codificador|conceptos|indicadores"
+    ):
+        function()(manifest, prepared, tmp_path / "supervised")
+    assert not (tmp_path / "supervised/manifest.json").exists()
