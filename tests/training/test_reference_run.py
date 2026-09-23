@@ -80,10 +80,19 @@ def test_every_epoch_and_prediction_include_all_admissible_rows(tmp_path, kind):
     assert report["device"] == "cuda:0"
 
 
-def test_interruption_resumes_exact_next_batch_and_final_weights(tmp_path, monkeypatch):
+@pytest.mark.parametrize("architecture", [None, dict(hidden_size=64, layers=2, dropout=0.1)])
+@pytest.mark.parametrize("kind", ["rnn", "lstm", "gru", "dlinear"])
+def test_interruption_resumes_exact_next_batch_and_final_weights(
+    tmp_path, monkeypatch, architecture, kind
+):
     manifest = training_corpus(tmp_path / "data")
     engine = module()
-    reference = engine.run_reference_case(manifest, tmp_path / "continuous", case(), batch_size=5)
+    configuration = case(kind)
+    if architecture is not None:
+        configuration["architecture"] = architecture
+    reference = engine.run_reference_case(
+        manifest, tmp_path / "continuous", configuration, batch_size=5
+    )
     stop = StopRequest()
     real_save = engine.save_training_state
 
@@ -95,12 +104,22 @@ def test_interruption_resumes_exact_next_batch_and_final_weights(tmp_path, monke
 
     monkeypatch.setattr(engine, "save_training_state", pause)
     report = engine.run_reference_case(
-        manifest, tmp_path / "interrupted", case(), batch_size=5, checkpoint_steps=1, stop=stop
+        manifest,
+        tmp_path / "interrupted",
+        configuration,
+        batch_size=5,
+        checkpoint_steps=1,
+        stop=stop,
     )
     assert report["status"] == "paused"
     monkeypatch.setattr(engine, "save_training_state", real_save)
     completed = engine.run_reference_case(
-        manifest, tmp_path / "interrupted", case(), batch_size=5, checkpoint_steps=1, resume=True
+        manifest,
+        tmp_path / "interrupted",
+        configuration,
+        batch_size=5,
+        checkpoint_steps=1,
+        resume=True,
     )
     assert completed["status"] == "completed"
     assert completed["global_step"] == reference["global_step"] == 6
@@ -114,6 +133,21 @@ def test_interruption_resumes_exact_next_batch_and_final_weights(tmp_path, monke
     assert pq.read_table(tmp_path / "continuous/validation-predictions.parquet").equals(
         pq.read_table(tmp_path / "interrupted/validation-predictions.parquet")
     )
+
+
+def test_scientific_configuration_changes_capacity_and_rejects_other_parent_architecture(tmp_path):
+    manifest = training_corpus(tmp_path / "data")
+    configuration = {**case(), "architecture": dict(hidden_size=64, layers=2, dropout=0.1)}
+    engine = module()
+    report = engine.run_reference_case(manifest, tmp_path / "parent", configuration, batch_size=5)
+    assert report["parameters"] > 20_000
+    assert report["identity"]["model_family"] == "scientific_multimodal_reference"
+    assert report["identity"]["case"]["architecture"] == configuration["architecture"]
+    changed = {**configuration, "architecture": {**configuration["architecture"], "dropout": 0.2}}
+    with pytest.raises(ValueError, match="arquitectura|origen"):
+        engine.run_reference_case(
+            manifest, tmp_path / "child", changed, batch_size=5, initialize_from=tmp_path / "parent"
+        )
 
 
 def test_resume_rejects_changed_corpus_and_loss(tmp_path):
