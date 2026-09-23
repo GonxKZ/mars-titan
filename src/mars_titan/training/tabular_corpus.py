@@ -17,6 +17,7 @@ import torch
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.models.baselines.boosting import BoostingModel, fit_boosting_batches
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
@@ -24,20 +25,21 @@ from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
 from .corpus_inputs import CorpusDataset
 
 
-def _matrix(batch):
+def _matrix(batch, dtype=np.float64):
     count = len(batch["target"])
     return np.concatenate(
         [batch["inputs"][name].reshape(count, -1) for name in MODALITIES], axis=1
-    ).astype(np.float64)
+    ).astype(dtype, copy=False)
 
 
-def _predict(model, restored, dataset, partition, batch_size, destination):
+def _predict(model, restored, dataset, partition, batch_size, destination, *, dtype=np.float64):
     count, square, absolute, zero_square, zero_absolute = 0, 0.0, 0.0, 0.0, 0.0
+    sessions = SessionErrors()
 
     def tables():
         nonlocal count, square, absolute, zero_square, zero_absolute
         for batch in dataset.batches(partition=partition, batch_size=batch_size, epoch=0, seed=0):
-            matrix, target = _matrix(batch), batch["target"]
+            matrix, target = _matrix(batch, dtype), batch["target"]
             prediction = model.predict(matrix)
             if (
                 not np.array_equal(prediction, restored.predict(matrix))
@@ -47,6 +49,7 @@ def _predict(model, restored, dataset, partition, batch_size, destination):
                     "Las predicciones restauradas difieren o contienen valores no finitos"
                 )
             error = prediction - target
+            sessions.update(batch["market"], batch["prediction_at"], error)
             square += float(np.square(error).sum())
             absolute += float(np.abs(error).sum())
             zero_square += float(np.square(target).sum())
@@ -75,6 +78,7 @@ def _predict(model, restored, dataset, partition, batch_size, destination):
         mae=absolute / count,
         zero_mse=zero_square / count,
         zero_mae=zero_absolute / count,
+        **{key: value for key, value in sessions.summary().items() if key != "samples"},
     )
 
 
