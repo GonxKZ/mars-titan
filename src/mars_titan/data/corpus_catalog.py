@@ -68,10 +68,12 @@ def _readonly(database: Path):
     return db
 
 
-def corpus_candidates(source: Path, inventory: Path, market: str) -> list[dict]:
+def corpus_candidates(
+    source: Path, inventory: Path, market: str, *, validate_files: bool = True
+) -> list[dict]:
     """Conservar todos los instrumentos del inventario, incluso los incompletos."""
     source = source.resolve()
-    if market not in {"US", "CN"} or not source.is_dir():
+    if market not in {"US", "CN"} or not source.is_dir() or type(validate_files) is not bool:
         raise ValueError("El mercado o el directorio de origen no son válidos")
     assets = {}
     with closing(_readonly(inventory)) as db:
@@ -110,7 +112,14 @@ def corpus_candidates(source: Path, inventory: Path, market: str) -> list[dict]:
                     )
                 )
                 continue
-            _source_path(source, relative)
+            try:
+                _source_path(source, relative)
+            except ValueError as error:
+                if validate_files:
+                    raise
+                asset["source_errors"].append(
+                    dict(path=relative, modality=modality, reason=str(error))
+                )
             if not re.fullmatch(r"[0-9a-f]{64}", row.get("sha256", "")):
                 raise ValueError("La fuente no tiene una huella válida")
             asset["paths"][modality].append(relative)

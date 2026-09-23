@@ -61,12 +61,20 @@ def read_fundamentals(
                 counts["missing_publication"] += 1
                 continue
             try:
+                if not isinstance(fact.get("accn"), str) or (
+                    fact.get("start") is not None and not isinstance(fact["start"], str)
+                ):
+                    raise ValueError(
+                        "El identificador o el inicio del periodo no son escalares válidos"
+                    )
                 value = float(fact["val"])
                 if not math.isfinite(value) or not fact.get("accn"):
                     raise ValueError(
                         "El valor no es finito o falta el identificador de presentación"
                     )
                 end = datetime.fromisoformat(fact["end"]).date()
+                if fact.get("start") and datetime.fromisoformat(fact["start"]).date() > end:
+                    raise ValueError("El inicio del periodo es posterior a su cierre")
                 if end > datetime.fromisoformat(filed).date():
                     raise ValueError("El periodo termina después de la fecha de presentación")
                 available = clock.date_available(filed)
