@@ -16,6 +16,7 @@ from mars_titan.budget_training import seed_run, validate_loss
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.models.baselines.multimodal import MultimodalReference, validate_architecture
 from mars_titan.profiling import CostProbe
 
 from .checkpoints import (
@@ -48,6 +49,8 @@ def scientific_identity():
         "training/corpus_inputs.py",
         "profiling.py",
         "models/baselines/dlinear.py",
+        "models/baselines/multimodal.py",
+        "training/cohort_contract.py",
         "models/baselines/campaign.py",
         "budget_training.py",
         "data/streaming.py",
@@ -75,8 +78,9 @@ def scientific_identity():
 
 
 def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
+    required = {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
     if (
-        set(case) != {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
+        set(case) not in (required, required | {"architecture"})
         or case["kind"] not in {"rnn", "lstm", "gru", "dlinear"}
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 1000
@@ -92,6 +96,15 @@ def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
         or case["learning_rate"] <= 0
     ):
         raise ValueError("La configuración del entrenamiento no es válida")
+    if "architecture" in case:
+        architecture = case["architecture"]
+        if not isinstance(architecture, dict) or set(architecture) != {
+            "hidden_size",
+            "layers",
+            "dropout",
+        }:
+            raise ValueError("La arquitectura necesita anchura, profundidad y regularización")
+        validate_architecture(**architecture)
     validate_loss(case["loss"], case["huber_delta"])
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
         raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
@@ -197,6 +210,7 @@ def _parent(parent, dataset, case, model, batch_size, weighting):
         or identity["manifest_sha256"] != dataset.identity
         or identity["case"]["kind"] != case["kind"]
         or identity["case"]["seed"] != case["seed"]
+        or identity["case"].get("architecture") != case.get("architecture")
         or identity["batch_size"] != batch_size
         or identity["weighting"] != weighting
     ):
@@ -244,13 +258,22 @@ def run_reference_case(
         dataset.batches(partition="train", batch_size=batch_size, epoch=0, seed=case["seed"])
     )
     dimensions = {name: value.shape[-1] for name, value in first["inputs"].items()}
-    model = CostProbe(case["kind"], dimensions, context=dataset.context).to(device)
+    model = (
+        MultimodalReference(
+            case["kind"], dimensions, context=dataset.context, **case["architecture"]
+        )
+        if "architecture" in case
+        else CostProbe(case["kind"], dimensions, context=dataset.context)
+    ).to(device)
     weights = training_weights(dataset.assets, weighting)
     initialization = _parent(initialize_from, dataset, case, model, batch_size, weighting)
     identity = dict(
         **scientific_identity(),
         manifest_sha256=dataset.identity,
         case=case,
+        model_family="scientific_multimodal_reference"
+        if "architecture" in case
+        else "legacy_cost_probe",
         batch_size=batch_size,
         dimensions=dimensions,
         context=dataset.context,
