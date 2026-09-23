@@ -30,6 +30,11 @@ entradas, ajuste, validación, checkpoints y escritura de predicciones. No inclu
 el arranque del intérprete. Las solicitudes de 256 y 512 solo produjeron un lote
 de 160 muestras en esta edición. No miden lotes reales de esos tamaños.
 
+El primer ensayo, DLinear con solicitud de 128, tardó 2,715 segundos e incluye la
+primera inicialización CUDA del proceso. Los siguientes reutilizan ese contexto.
+Las medias conservan las tres observaciones, incluida la inicial. No se presentan
+como medidas homogéneas de régimen estacionario.
+
 El mayor pico asignado por PyTorch fue de 115.492.864 bytes. Esa cifra no incluye
 toda la memoria del controlador y del contexto CUDA. Había otra campaña,
 verificación editorial y pruebas locales concurrentes. La caché del sistema no
