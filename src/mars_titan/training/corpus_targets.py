@@ -14,6 +14,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.batches import atomic_parquet_batches, read_bounded_table
 from mars_titan.data.budget_targets import residual_targets
+from mars_titan.data.residual_arrays import residual_targets_array
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.temporal import MarketClock
 
@@ -132,8 +133,13 @@ def _label_batches(path, calculated, audit):
                 pending = []
 
 
-def prepare_corpus_targets(manifest: Path, prepared: Path, output: Path) -> dict:
+def prepare_corpus_targets(
+    manifest: Path, prepared: Path, output: Path, *, backend: str = "numpy"
+) -> dict:
     """Confirmar etiquetas por activo. Una interrupción no publica un corpus parcial."""
+    implementations = {"reference": residual_targets, "numpy": residual_targets_array}
+    if backend not in implementations:
+        raise ValueError("El motor de etiquetas debe ser reference o numpy")
     if output.is_symlink():
         raise ValueError("El directorio de salida no puede ser un enlace")
     meta = _json(manifest)
@@ -171,10 +177,14 @@ def prepare_corpus_targets(manifest: Path, prepared: Path, output: Path) -> dict
             raise ValueError("El factor de mercado ha cambiado o no tiene una fuente regular")
         factors[market] = read_bounded_table(path, max_rows=200_000).to_pandas()
     configuration = {
+        "backend": backend,
         "source_manifest_sha256": sha256(manifest),
         "prepared_root": str(prepared),
         "code_sha256": sha256(Path(__file__)),
         "target_reference_sha256": sha256(Path(__file__).parents[1] / "data/budget_targets.py"),
+        "target_implementation_sha256": sha256(
+            Path(__file__).parents[1] / "data/residual_arrays.py"
+        ),
         "temporal_reference_sha256": sha256(Path(__file__).parents[1] / "data/temporal.py"),
         "pyarrow_version": pa.__version__,
         "numpy_version": np.__version__,
@@ -206,7 +216,7 @@ def prepare_corpus_targets(manifest: Path, prepared: Path, output: Path) -> dict
             reused += 1
         else:
             price_frame = read_bounded_table(prices, max_rows=200_000).to_pandas()
-            calculated = residual_targets(
+            calculated = implementations[backend](
                 price_frame, factors[market], clocks[market], cutoff="2023-12-31"
             )
             audit = Counter()

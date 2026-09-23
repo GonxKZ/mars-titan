@@ -159,6 +159,44 @@ def test_changed_label_dependency_cannot_reuse_prior_assets(tmp_path, monkeypatc
         function()(manifest, prepared, output)
 
 
+def test_changed_array_implementation_cannot_reuse_labels(tmp_path, monkeypatch):
+    manifest, prepared = materialized(tmp_path)
+    output = tmp_path / "supervised"
+    function()(manifest, prepared, output)
+    target_module = importlib.import_module("mars_titan.training.corpus_targets")
+    original = target_module.sha256
+
+    def changed(path):
+        return "changed-array-code" if path.name == "residual_arrays.py" else original(path)
+
+    monkeypatch.setattr(target_module, "sha256", changed)
+    with pytest.raises(ValueError, match="configuración|edición"):
+        function()(manifest, prepared, output)
+
+
+def test_reference_and_numpy_backends_produce_identical_label_artifacts(tmp_path):
+    manifest, prepared = materialized(tmp_path)
+    module = importlib.import_module("mars_titan.training.corpus_targets")
+    hashes = []
+    for backend in ("reference", "numpy"):
+        output = tmp_path / backend
+        result = module.prepare_corpus_targets(manifest, prepared, output, backend=backend)
+        assert result["configuration"]["backend"] == backend
+        hashes.append(result["assets"][0]["labels_sha256"])
+    assert hashes[0] == hashes[1]
+    with pytest.raises(ValueError, match="configuración|edición"):
+        module.prepare_corpus_targets(manifest, prepared, tmp_path / "numpy", backend="reference")
+
+
+def test_unknown_target_backend_does_not_create_output(tmp_path):
+    manifest, prepared = materialized(tmp_path)
+    module = importlib.import_module("mars_titan.training.corpus_targets")
+    output = tmp_path / "unknown"
+    with pytest.raises(ValueError, match="motor"):
+        module.prepare_corpus_targets(manifest, prepared, output, backend="auto")
+    assert not output.exists()
+
+
 def test_factor_from_another_market_is_rejected_before_writing(tmp_path):
     manifest, prepared = materialized(tmp_path)
     data = json.loads(manifest.read_text())

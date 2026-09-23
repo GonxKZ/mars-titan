@@ -7,5 +7,6 @@ La [edición ampliada de 405 muestras](baselines/streaming-reference-study.md) r
 - [Ficha de experimento](experiment-record.md): pregunta, configuración, comprobaciones, resultados y límites.
 - [Ficha de literatura](literature-note.md): lectura verificable y decisión que fundamenta.
 - [Matriz de conclusiones](conclusion-matrix.md): objetivo, evidencia y alcance de la respuesta.
+- [Preparación de etiquetas residuales](resources/residual-preparation.md): comparación de motores con tiempos, memoria y paridad exacta.
 
 Las figuras de resultados deberán generarse desde artefactos identificados, con ejes, unidades, periodo, tamaño de muestra e intervalos cuando corresponda. No se versionan tablas con cifras de ejemplo que puedan confundirse con resultados.
