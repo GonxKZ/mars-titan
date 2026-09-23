@@ -373,6 +373,15 @@ def test_partial_asset_list_cannot_claim_complete_encoded_coverage(tmp_path):
     assert not (tmp_path / "supervised/manifest.json").exists()
 
 
+def test_declared_markets_must_match_the_entire_candidate_coverage(tmp_path):
+    manifest, prepared = audited_edition(tmp_path)
+    meta = json.loads(manifest.read_text())
+    meta["markets"] = ["CN"]
+    manifest.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="mercados|cobertura"):
+        function()(manifest, prepared, tmp_path / "supervised")
+
+
 @pytest.mark.parametrize(
     "change", [dict(cohort_id="externally_verified"), dict(counts={"train": 99, "validation": 1})]
 )

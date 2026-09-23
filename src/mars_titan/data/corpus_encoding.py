@@ -129,6 +129,9 @@ def encode_corpus(
         cache = EmbeddingCache(cache_path)
         result = dict(
             schema_version=2,
+            markets=markets,
+            preparation_scope=meta.get("scope", "full_corpus"),
+            parent_preparation=meta.get("parent_preparation"),
             kind="materialized_corpus",
             cohort_id=cohort,
             news_content_policy=COHORT_POLICIES[cohort],
