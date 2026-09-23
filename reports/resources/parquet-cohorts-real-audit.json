@@ -1,0 +1,34 @@
+{
+  "kind": "causal_corpus_parity_audit",
+  "scope": "development_snapshot",
+  "cohort_complete": false,
+  "source_manifest_sha256": "4b59dc103bbcc07e7b269835e86a4fe1167e676e11a3c9cf2ca407e600197391",
+  "ordered_manifest_sha256": "cbb673da18472ae2b2c4798168865f728f8fb96f92515c480f995c9f4a6e34ed",
+  "assets": 66,
+  "partitions": {
+    "train": {
+      "samples": 245,
+      "cohorts": 181,
+      "max_assets_per_cohort": 3,
+      "comparison_buffer_bytes_estimate": 1778570,
+      "maximum_feature_difference": 0.0,
+      "targets_equal": true,
+      "maturities_equal": true
+    },
+    "validation": {
+      "samples": 225,
+      "cohorts": 134,
+      "max_assets_per_cohort": 7,
+      "comparison_buffer_bytes_estimate": 1633380,
+      "maximum_feature_difference": 0.0,
+      "targets_equal": true,
+      "maturities_equal": true
+    }
+  },
+  "total_seconds": 0.9712119009927846,
+  "final_test_opened": false,
+  "limits": [
+    "Contraste de la edici\u00f3n indicada, no una campa\u00f1a de entrenamiento.",
+    "El comparador directo tiene un presupuesto de 64 MiB y falla si se supera."
+  ]
+}
