@@ -11,7 +11,8 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Revisar la procedencia contable china | [Contrato y contraste con CNINFO](data/china-provenance.md), separados de la admisión multimodal y de la recuperación completa. |
 | Revisar precios y su universo | [Auditoría de los 5.023 CSV](../reports/data/price-audit.md), con exclusiones, acciones corporativas y límites de identidad. |
 | Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |
-| Consultar entrenamientos medidos | [Campaña ampliada sobre 105 muestras](../reports/baselines/expanded-comparison.md), [variantes de GRU y DLinear](../reports/baselines/reference-variants.md) y [RNN y LSTM](../reports/baselines/recurrent-comparison.md), con cuatro modalidades y macro. |
+| Consultar entrenamientos medidos | [100 ajustes sobre 405 muestras](../reports/baselines/streaming-reference-study.md), con cuatro modalidades, macro y comparación frente a cero. Los ensayos de [295 muestras](../reports/baselines/verified-reference-study.md) y [105 muestras](../reports/baselines/expanded-comparison.md) permanecen separados. |
+| Ejecutar y continuar referencias sobre Parquet | [Campaña neuronal recuperable](engineering/reference-campaign.md), [supervisión por bloques](engineering/corpus-supervision.md) y [adaptación tabular](engineering/tabular-corpus.md). |
 | Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
 | Consultar la preparación por bloques | [Límites, paridad y medición macro](../reports/data/streaming-validation.md), con recuperación por activo. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
