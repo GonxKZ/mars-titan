@@ -16,6 +16,7 @@ from mars_titan.budget_training import seed_run, validate_loss
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.models.baselines.multimodal import MultimodalReference, validate_architecture
 from mars_titan.profiling import CostProbe
 
@@ -51,6 +52,7 @@ def scientific_identity():
         "models/baselines/dlinear.py",
         "models/baselines/multimodal.py",
         "training/cohort_contract.py",
+        "evaluation/session_metrics.py",
         "models/baselines/campaign.py",
         "budget_training.py",
         "data/streaming.py",
@@ -142,7 +144,7 @@ def _update(statistics, prediction, target):
 
 def _evaluate(model, dataset, batch_size, *, partition="validation", destination=None, stop=None):
     model.eval()
-    statistics = _statistics()
+    accumulator = SessionErrors()
     start = time.perf_counter()
 
     def tables():
@@ -152,11 +154,15 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
             ):
                 if stop is not None and stop.requested:
                     raise _Pause
-                target = torch.from_numpy(batch["target"]).to("cuda:0")
                 predicted = model(_inputs(batch, "cuda:0"))
-                if predicted.shape != target.shape:
+                if predicted.shape != batch["target"].shape:
                     raise ValueError("Predicción y etiqueta no tienen la misma forma")
-                _update(statistics, predicted, target)
+                predictions = predicted.cpu().numpy()
+                accumulator.update(
+                    batch["market"],
+                    batch["prediction_at"],
+                    predictions.astype(np.float64) - batch["target"],
+                )
                 yield pa.table(
                     {
                         "sample_id": batch["sample_ids"],
@@ -166,8 +172,8 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
                             batch["prediction_at"], type=pa.timestamp("us", tz="UTC")
                         ),
                         "target": batch["target"],
-                        "prediction": predicted.cpu().numpy(),
-                        "zero": np.zeros(len(target), dtype=np.float64),
+                        "prediction": predictions,
+                        "zero": np.zeros(len(predictions), dtype=np.float64),
                     }
                 )
 
@@ -177,6 +183,7 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
     else:
         atomic_parquet_batches(destination, tables())
     torch.cuda.synchronize(0)
+    statistics = accumulator.summary()
     statistics["elapsed_seconds"] = time.perf_counter() - start
     if statistics["samples"] != dataset.manifest["counts"][partition]:
         raise ValueError("La evaluación no reconcilia toda la población")
