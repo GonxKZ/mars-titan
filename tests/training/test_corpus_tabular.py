@@ -49,6 +49,9 @@ def test_tabular_fit_and_predictions_use_the_whole_neural_population(tmp_path, k
         assert {r["sample_id"]: r["target"] for r in rows} == expected_values
         assert all(np.isfinite(row["prediction"]) for row in rows)
         assert all(row["zero"] == 0 for row in rows)
+        metric = result["predictions"][partition]["metrics"]
+        assert metric["session_count"] == (6 if partition == "train" else 3)
+        assert metric["session_mae"] == pytest.approx(metric["mae"])
     assert result["restored_predictions_equal"] is True
 
 
