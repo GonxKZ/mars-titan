@@ -45,6 +45,14 @@ SQLite temporal en disco, con caché de 8 MiB. Los Parquet se escriben por bloqu
 acotados. La cuota predeterminada del archivo SQLite es de 2 GiB por activo.
 No incluye un límite exacto sobre su journal o los archivos temporales del sistema.
 
+Los nombres originales pueden contener bytes que no representan UTF-8 válido.
+Los recibos editoriales de versión 2 guardan `source_file` con escape porcentual
+de los bytes del sistema de archivos. `source_file_encoding` identifica esa
+regla. `unquote_to_bytes` recupera los bytes exactos, incluidos porcentajes
+literales. Las huellas siguen calculándose sobre los originales. No se renombra
+el archivo ni se intenta adivinar la codificación de su nombre. Esta regla se
+aplica tanto a noticias admitidas como a exclusiones.
+
 Cada activo conserva precios, fundamentales, noticias, exclusiones, fuentes y
 recibo. La preparación comprueba sus hashes antes de reutilizarlo. Un cambio de
 cohorte, fuentes, calendario o implementación necesita otra edición. Las

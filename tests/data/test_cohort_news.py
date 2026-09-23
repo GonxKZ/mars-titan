@@ -3,6 +3,8 @@
 import hashlib
 import importlib
 import json
+import os
+from urllib.parse import unquote_to_bytes
 
 import pyarrow.parquet as pq
 import pytest
@@ -63,6 +65,41 @@ def test_original_and_external_cohorts_do_not_share_admission_claims(tmp_path):
     assert row["available_at"] == options()["clock"].decision("2023-07-06")
     assert row["published_at"] is None
     assert (source / "A.jsonl").read_bytes() == raw
+
+
+def test_filesystem_byte_names_remain_reversible_for_admissions_and_rejections(tmp_path):
+    invalid = article()
+    invalid["Article"] = "Contenido con un carácter no válido \ud800"
+    source = source_rows(tmp_path, [article(), invalid, article("2023-07-06")])
+    name = os.fsdecode(b"A_\xef\xff%25.jsonl")
+    original = source / "A.jsonl"
+    before = original.read_bytes()
+    original.rename(source / name)
+    output = tmp_path / "output"
+    report = write(source, [name], output, **options())
+    assert report["counts"] == dict(records=3, accepted=2, excluded=1)
+    assert report["reasons"] == {"invalid_unicode": 1}
+    assert report["source_file_encoding"] == "percent_encoded_filesystem_bytes"
+    for artifact in ("news.parquet", "excluded.parquet"):
+        rows = pq.read_table(output / artifact).to_pylist()
+        assert rows
+        for row in rows:
+            assert unquote_to_bytes(row["source_file"]) == os.fsencode(name)
+            row["source_file"].encode("utf-8")
+    assert (source / name).read_bytes() == before
+    assert write(source, [name], output, **options())["reused"] is True
+
+
+def test_source_encoding_marker_cannot_change_when_reusing_news(tmp_path):
+    source = source_rows(tmp_path, [article()])
+    output = tmp_path / "output"
+    write(source, ["A.jsonl"], output, **options())
+    path = output / "manifest.json"
+    receipt = json.loads(path.read_text())
+    receipt["source_file_encoding"] = "utf8_path"
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(ValueError, match="recibo|procedencia|codificaci"):
+        write(source, ["A.jsonl"], output, **options())
 
 
 def test_strict_content_preserves_the_existing_reviewed_reader(tmp_path):

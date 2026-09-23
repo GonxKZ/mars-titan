@@ -3,6 +3,7 @@
 import fcntl
 import hashlib
 import json
+import os
 import re
 import sqlite3
 import tempfile
@@ -10,6 +11,7 @@ from collections import Counter
 from contextlib import closing
 from datetime import date, datetime
 from pathlib import Path
+from urllib.parse import quote_from_bytes
 
 import pyarrow as pa
 
@@ -31,6 +33,7 @@ SCHEMA = (
     .append(pa.field("quality_flags", pa.list_(pa.string())))
 )
 TIMESTAMPS = ("event_at", "published_at", "available_at")
+SOURCE_FILE_ENCODING = "percent_encoded_filesystem_bytes"
 
 
 def _normalise(raw, provenance, symbol, clock, cohort, reviews, lag):
@@ -175,6 +178,7 @@ def write_cohort_news(
         cutoff=cutoff,
         sources=hashes,
         source_root=str(source.resolve()),
+        source_file_encoding=SOURCE_FILE_ENCODING,
         date_only_lag=date_only_lag,
         batch_rows=batch_rows,
         max_record_bytes=max_record_bytes,
@@ -213,6 +217,8 @@ def write_cohort_news(
             receipt = json.loads(receipt_path.read_text())
             if (
                 set(receipt.get("artifacts", {})) != {"news.parquet", "excluded.parquet"}
+                or receipt.get("schema_version") != 2
+                or receipt.get("source_file_encoding") != SOURCE_FILE_ENCODING
                 or receipt.get("cohort_id") != cohort
                 or receipt.get("news_content_policy") != COHORT_POLICIES[cohort]
                 or set(receipt.get("counts", {})) != {"records", "accepted", "excluded"}
@@ -260,7 +266,7 @@ def write_cohort_news(
                             ) = item
                             counts["records"] += 1
                             provenance = dict(
-                                source_file=relative,
+                                source_file=quote_from_bytes(os.fsencode(relative), safe="/"),
                                 line=ordinal,
                                 source_record_hash=record_hash.hex() if record_hash else None,
                                 source_date=source_date,
@@ -339,10 +345,11 @@ def write_cohort_news(
         if any(sha256(path) != hashes[name] for name, path in inputs.items()):
             raise ValueError("Una fuente cambió durante la preparación editorial")
         receipt = dict(
-            schema_version=1,
+            schema_version=2,
             fingerprint=identity,
             cohort_id=cohort,
             news_content_policy=COHORT_POLICIES[cohort],
+            source_file_encoding=SOURCE_FILE_ENCODING,
             market=clock.market,
             symbol=symbol,
             counts=dict(counts),
