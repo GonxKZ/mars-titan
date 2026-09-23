@@ -94,9 +94,9 @@ flowchart LR
     E --> N[Siguiente corte<br/>nuevo ajuste con pasado]
 ```
 
-La búsqueda se limita inicialmente a diez configuraciones por familia principal y tres semillas de evaluación (`17`, `42`, `123`). Se registrarán todos los intentos, incluidos errores, descartes y cambios manuales. El límite se revisará con el piloto antes del test final. Cualquier reducción se aplicará de forma explicable a todas las familias.
+La [búsqueda implementada para la ampliación](../engineering/reference-search.md) fija doce configuraciones por familia principal, semilla `42` para seleccionar y semillas `42`, `43` y `44` para los finalistas. Se registra cada intento, incluidos errores y descartes. Este diseño sustituye el presupuesto inicial de diez configuraciones para las nuevas campañas, sin reinterpretar los experimentos anteriores. La reserva final permanece cerrada durante esa selección.
 
-Diez configuraciones es un techo y no una obligación. El [plan de cómputo](../engineering/compute-plan.md) comienza con un cribado menor y reserva recursos para confirmación y análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
+El [plan de cómputo](../engineering/compute-plan.md) distingue el cribado, la confirmación y el análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
 
 ## Métricas e interpretación
 
@@ -109,6 +109,10 @@ La simulación económica ordenará activos por señal al cierre de t y abrirá 
 Los retornos netos se calculan con retornos reales de activos, no sumando residuos como si fueran beneficios. Se estudiarán costes ilustrativos de 0, 5, 10 y 20 puntos básicos **por lado**, separados de préstamo de valores, impacto y deslizamiento. Los valores son escenarios de sensibilidad, no estimaciones observadas de ejecución. Si faltan disponibilidad de préstamo o precios ejecutables, se declara la limitación de la posición corta. La abstención deja capital en efectivo. Se informa su porcentaje y la exposición real, sin renormalizar silenciosamente el riesgo.
 
 Se publicarán retorno acumulado neto, drawdown máximo, rotación, exposición, número de operaciones y Sharpe diario con convención de anualización y análisis de dependencia. La incertidumbre se estimará remuestreando bloques de sesiones que conserven juntos los activos, sobre diferencias pareadas entre modelos. Longitud de bloque y sensibilidad se predefinen con el periodo de desarrollo. Las semillas no se tratarán como nuevos mercados independientes. La búsqueda múltiple se reflejará en los contrastes y en el registro de ensayos. PBO y DSR serán análisis complementarios cuando sus supuestos y datos de entrada estén justificados.
+
+La política financiera por refuerzo es otro experimento, distinto de la ordenación larga y corta descrita anteriormente. Su alcance previsto es efectivo o posiciones largas, sin apalancamiento, con ejecución en aperturas posteriores y cuentas separadas por moneda. No reutiliza retornos residuales como beneficios. Las restricciones de cada instrumento y fecha, incluidas las de China, deben estar acreditadas antes de simular sus operaciones.
+
+El [entorno predictivo causal](../engineering/causal-prediction-environment.md) separa observaciones, acciones y etiquetas maduras. Su implementación no acredita que estén terminados la política financiera, el ajuste conjunto o sus campañas. Los tres experimentos deben conservar padres, población y presupuestos comparables, y mantener el error predictivo como criterio principal.
 
 ## Reglas para cerrar el estudio
 
