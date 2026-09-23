@@ -211,11 +211,34 @@ def save_training_state(
                 pending.unlink()
 
 
-def load_training_state(directory: Path, *, expected_identity: dict) -> dict:
+def load_training_state(
+    directory: Path, *, expected_identity: dict, selection="latest", expected_sha256=None
+) -> dict:
     """Restaurar solo estados confirmados. Avisar si se descarta el más reciente."""
+    if selection not in {"latest", "best"}:
+        raise ValueError("La selección del punto de control debe ser latest o best")
+    if expected_sha256 is not None and (
+        not isinstance(expected_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", expected_sha256)
+    ):
+        raise ValueError("La identidad explícita del punto de control no es válida")
     with _locked(directory, expected_identity, create=False) as (directory, canonical):
         index = _index(directory)
-        for position, record in enumerate(index["latest"]):
+        selected = index["best"] if selection == "best" else next(iter(index["latest"]), None)
+        if expected_sha256 is not None and (
+            selected is None
+            or selected["sha256"] != expected_sha256
+            or not _intact(directory, selected)
+        ):
+            raise ValueError(
+                "El punto de control seleccionado ha cambiado o no conserva su identidad íntegra"
+            )
+        if selection == "best":
+            record = index["best"]
+            if record is None or not _intact(directory, record):
+                raise ValueError("No existe un punto de control seleccionado íntegro")
+            return _read_payload(directory / record["name"], canonical, record["global_step"])
+        candidates = index["latest"][:1] if expected_sha256 is not None else index["latest"]
+        for position, record in enumerate(candidates):
             if not _intact(directory, record):
                 continue
             path = directory / record["name"]

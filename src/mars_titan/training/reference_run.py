@@ -28,6 +28,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .corpus_inputs import CorpusDataset
+from .selection import advance_selection, validate_selection
 
 
 class _Pause(Exception):
@@ -46,6 +47,7 @@ def scientific_identity():
     sources = (
         "training/reference_run.py",
         "training/reference_campaign.py",
+        "training/selection.py",
         "training/checkpoints.py",
         "training/corpus_inputs.py",
         "profiling.py",
@@ -82,7 +84,7 @@ def scientific_identity():
 def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
     required = {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
     if (
-        set(case) not in (required, required | {"architecture"})
+        not required <= set(case) <= required | {"architecture", "selection"}
         or case["kind"] not in {"rnn", "lstm", "gru", "dlinear"}
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 1000
@@ -107,6 +109,8 @@ def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
         }:
             raise ValueError("La arquitectura necesita anchura, profundidad y regularización")
         validate_architecture(**architecture)
+    if "selection" in case:
+        validate_selection(case["selection"])
     validate_loss(case["loss"], case["huber_delta"])
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
         raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
@@ -207,6 +211,31 @@ def training_weights(assets, weighting):
     }
 
 
+def _confirmed_state(directory, identity, checkpoint, selection_state=None):
+    choice = "best" if identity["case"].get("selection") else "latest"
+    index = read_json(directory / "checkpoints/latest.json")
+    record = index["best"] if choice == "best" else next(iter(index["latest"]), None)
+    if record is None or checkpoint != dict(
+        path=f"checkpoints/{record['name']}", sha256=record["sha256"]
+    ):
+        raise ValueError("El punto de control confirmado ha cambiado")
+    state = load_training_state(
+        directory / "checkpoints",
+        expected_identity=identity,
+        selection=choice,
+        expected_sha256=checkpoint["sha256"],
+    )
+    if choice == "best" and (
+        selection_state is None
+        or state.get("epoch") != selection_state["best_epoch"]
+        or state.get("confirmed_cursor") is not None
+        or state.get("statistics", {}).get("samples") != 0
+        or state.get("selection", {}).get("best_score") != selection_state["best_score"]
+    ):
+        raise ValueError("El estado no corresponde a la época y evaluación seleccionadas")
+    return state
+
+
 def _parent(parent, dataset, case, model, batch_size, weighting):
     if parent is None:
         return None
@@ -223,14 +252,9 @@ def _parent(parent, dataset, case, model, batch_size, weighting):
     ):
         raise ValueError("El origen no corresponde a la población, arquitectura y semilla")
     checkpoint = report["checkpoint"]
-    if sha256(parent / checkpoint["path"]) != checkpoint["sha256"]:
-        raise ValueError("El punto de control final de origen ha cambiado")
     if any(identity.get(k) != v for k, v in scientific_identity().items()):
         raise ValueError("El entorno o el código no coincide con el origen de la continuación")
-    index = read_json(parent / "checkpoints/latest.json")
-    if index["latest"][0]["sha256"] != checkpoint["sha256"]:
-        raise ValueError("El punto de control de origen ha cambiado")
-    state = load_training_state(parent / "checkpoints", expected_identity=identity)
+    state = _confirmed_state(parent, identity, checkpoint, report.get("selection"))
     model.load_state_dict(state["model"])
     return dict(parent_checkpoint_sha256=checkpoint["sha256"], optimizer_policy="new_adamw")
 
@@ -298,12 +322,10 @@ def run_reference_case(
         if report["identity"] != identity:
             raise ValueError("La identidad o configuración de la ejecución ha cambiado")
         if report["status"] == "completed":
-            if sha256(output / report["checkpoint"]["path"]) != report["checkpoint"]["sha256"]:
-                raise ValueError("El punto de control final ha cambiado")
+            _confirmed_state(output, identity, report["checkpoint"], report.get("selection"))
             for item in report["predictions"].values():
                 if sha256(output / item["path"]) != item["sha256"]:
                     raise ValueError("Han cambiado las predicciones confirmadas")
-            load_training_state(output / "checkpoints", expected_identity=identity)
             return report
     else:
         output.mkdir(parents=True, exist_ok=False)
@@ -325,6 +347,8 @@ def run_reference_case(
         )
         atomic_json(report_path, report)
     epoch, cursor, step, statistics, history = 0, None, 0, _statistics(), []
+    selection, selection_options = None, case.get("selection")
+    evaluating_selected = False
     if resume and (output / "checkpoints/latest.json").exists():
         state = load_training_state(output / "checkpoints", expected_identity=identity)
         model.load_state_dict(state["model"])
@@ -332,10 +356,12 @@ def run_reference_case(
         restore_rng(state["rng"], "cuda:0")
         epoch, cursor, step = state["epoch"], state["confirmed_cursor"], state["global_step"]
         statistics, history = state["statistics"], state["history"]
+        selection = state.get("selection")
+    report["selection"] = selection
     stop = stop or StopRequest()
     last_saved = time.perf_counter()
 
-    def save(*, pin=False):
+    def save(*, pin=False, best=False):
         nonlocal last_saved
         if any(
             sha256(Path(__file__).parents[1] / name) != expected
@@ -351,15 +377,20 @@ def run_reference_case(
             rng=capture_rng("cuda:0"),
             statistics=statistics,
             history=history,
+            selection=selection,
         )
-        path = save_training_state(output / "checkpoints", state, identity=identity, pin=pin)
+        path = save_training_state(
+            output / "checkpoints", state, identity=identity, pin=pin, best=best
+        )
         report["checkpoint"] = dict(path=str(path.relative_to(output)), sha256=sha256(path))
+        report["recovery_checkpoint"] = dict(report["checkpoint"])
+        report["selection"] = selection
         last_saved = time.perf_counter()
 
     torch.cuda.reset_peak_memory_stats(0)
-    save()
     try:
-        while epoch < case["epochs"]:
+        save()
+        while epoch < case["epochs"] and not (selection and selection["should_stop"]):
             if stop.requested:
                 raise _Pause
             model.train()
@@ -417,9 +448,23 @@ def run_reference_case(
             validation = _evaluate(model, dataset, batch_size, stop=stop)
             history.append(dict(epoch=epoch + 1, train=_metrics(statistics), validation=validation))
             epoch, cursor, statistics = epoch + 1, None, _statistics()
-            save(pin=epoch == case["epochs"])
+            if selection_options:
+                selection = advance_selection(
+                    selection, validation["session_mae"], epoch, selection_options
+                )
+            save(pin=epoch == case["epochs"], best=bool(selection and selection["last_improved"]))
             report.update(global_step=step, epochs=history, status="running")
             atomic_json(report_path, report)
+        report["stopped_early"] = epoch < case["epochs"]
+        if selection_options:
+            record = read_json(output / "checkpoints/latest.json")["best"]
+            if record is None:
+                raise ValueError("La selección no tiene una época confirmada")
+            checkpoint = dict(path=f"checkpoints/{record['name']}", sha256=record["sha256"])
+            selected = _confirmed_state(output, identity, checkpoint, selection)
+            model.load_state_dict(selected["model"])
+            report["checkpoint"] = checkpoint
+            evaluating_selected = True
         predictions = {}
         for partition in ("train", "validation"):
             path = output / f"{partition}-predictions.parquet"
@@ -435,7 +480,8 @@ def run_reference_case(
         )
         return report
     except _Pause:
-        save()
+        if not evaluating_selected:
+            save()
         report.update(status="paused", global_step=step, epochs=history)
         return report
     except BaseException as error:
