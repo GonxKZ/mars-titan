@@ -1,0 +1,251 @@
+{
+  "full_suite": {
+    "passed": 1240,
+    "skipped": 0,
+    "warnings": 2,
+    "seconds": 174.64
+  },
+  "focused_suite": {
+    "passed": 26,
+    "seconds": 0.14
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/environments/__init__.py",
+      "sha256": "68487299143a3622cd6a80bd903f0b554481832a5802d5325ccf0af7adc01be4",
+      "coverage": {
+        "covered_lines": 0,
+        "num_statements": 0,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 0,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      },
+      "functions": []
+    },
+    {
+      "path": "src/mars_titan/environments/actions.py",
+      "sha256": "78d01ec28ce7378ff5b066aabf324984686014209a1dac7e5d12efcbff844f6a",
+      "coverage": {
+        "covered_lines": 71,
+        "num_statements": 79,
+        "percent_covered": 86.13861386138613,
+        "percent_covered_display": "86",
+        "missing_lines": 8,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.87341772151899,
+        "percent_statements_covered_display": "90",
+        "num_branches": 22,
+        "num_partial_branches": 6,
+        "covered_branches": 16,
+        "missing_branches": 6,
+        "percent_branches_covered": 72.72727272727273,
+        "percent_branches_covered_display": "73"
+      },
+      "functions": [
+        {
+          "name": "_real",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.8181818181818182,
+          "crap": 6.216378662659654
+        },
+        {
+          "name": "ActionGrid.__post_init__",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 11.560185185185185
+        },
+        {
+          "name": "ActionGrid.fit",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.9090909090909091,
+          "crap": 4.012021036814425
+        },
+        {
+          "name": "ActionGrid._probabilities",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "ActionGrid.median",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "ActionGrid.expected_loss",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.8,
+          "crap": 2.032
+        },
+        {
+          "name": "ActionGrid.reward",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.8,
+          "crap": 7.3919999999999995
+        },
+        {
+          "name": "ActionGrid.saturation",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.75,
+          "crap": 2.0625
+        },
+        {
+          "name": "ActionGrid.to_dict",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ActionGrid.from_dict",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 7.333333333333334
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/environments/cohorts.py",
+      "sha256": "45095f4cca23cc5ea6ab4c25190ae413d62fbfd37d9026981892bae8c0d0fda7",
+      "coverage": {
+        "covered_lines": 58,
+        "num_statements": 69,
+        "percent_covered": 80.1980198019802,
+        "percent_covered_display": "80",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 84.05797101449275,
+        "percent_statements_covered_display": "84",
+        "num_branches": 32,
+        "num_partial_branches": 9,
+        "covered_branches": 23,
+        "missing_branches": 9,
+        "percent_branches_covered": 71.875,
+        "percent_branches_covered_display": "72"
+      },
+      "functions": [
+        {
+          "name": "shapes_contract",
+          "complexity": 20,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 34.814814814814824
+        },
+        {
+          "name": "_timestamps",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 5.9259259259259265
+        },
+        {
+          "name": "read_cohort",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.8636363636363636,
+          "crap": 29.987978963185576
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/environments/prediction.py",
+      "sha256": "a0c957fcf892c0e37103599e1465b01682cb15d5e7f8224719b49c0c0ae5e768",
+      "coverage": {
+        "covered_lines": 99,
+        "num_statements": 104,
+        "percent_covered": 92.85714285714286,
+        "percent_covered_display": "93",
+        "missing_lines": 5,
+        "excluded_lines": 0,
+        "percent_statements_covered": 95.1923076923077,
+        "percent_statements_covered_display": "95",
+        "num_branches": 36,
+        "num_partial_branches": 5,
+        "covered_branches": 31,
+        "missing_branches": 5,
+        "percent_branches_covered": 86.11111111111111,
+        "percent_branches_covered_display": "86"
+      },
+      "functions": [
+        {
+          "name": "CausalPredictionEnv.__init__",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.9166666666666666,
+          "crap": 11.070023148148149
+        },
+        {
+          "name": "CausalPredictionEnv._read",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "CausalPredictionEnv._observation",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "CausalPredictionEnv._info",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "CausalPredictionEnv.reset",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 4.074074074074074
+        },
+        {
+          "name": "CausalPredictionEnv.step",
+          "complexity": 20,
+          "statement_coverage_fraction": 0.96,
+          "crap": 20.0256
+        },
+        {
+          "name": "CausalPredictionEnv.snapshot",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 3.3333333333333335
+        },
+        {
+          "name": "CausalPredictionEnv.restore",
+          "complexity": 35,
+          "statement_coverage_fraction": 1.0,
+          "crap": 35.0
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "median_rounding",
+      "restored_partition",
+      "early_reward"
+    ]
+  },
+  "review": {
+    "important_findings_fixed": 2,
+    "regressions": "RED\u2192GREEN"
+  },
+  "limits": [
+    "Los casos usan fuentes sint\u00e9ticas. No acreditan una campa\u00f1a de refuerzo entrenada.",
+    "Gymnasium avisa de cotas infinitas del espacio. Cada observaci\u00f3n s\u00ed exige valores finitos.",
+    "El entorno no comprueba publicaciones originales, depende de la edici\u00f3n y su adaptador de datos.",
+    "El checkpoint exterior debe verificar la integridad de todos los bytes del estado serializado.",
+    "El adaptador Parquet, PPO financiero y ajuste conjunto siguen pendientes de integraci\u00f3n."
+  ]
+}
