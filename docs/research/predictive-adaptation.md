@@ -120,3 +120,25 @@ acumular contextos CUDA con la GPU compartida. Incluye igualdad del gradiente,
 rechazo de alineaciones incorrectas y recuperación exacta. Un fallo antes del
 primer checkpoint permite reiniciar la preparación, pero la desaparición de
 un estado confirmado se rechaza.
+
+La [comprobación con la edición histórica](../../reports/resources/predictive-adaptation-real-check.json)
+completó nueve ajustes sobre el padre Ridge con regularización uno. Usa 245
+muestras de entrenamiento y 225 de validación, no el corpus amplio. Cada ajuste
+recorre cinco épocas. Como train cabe en un lote, son cinco actualizaciones.
+El MAE de sesión de la mediana en validación queda entre 0,031334 y 0,031612,
+frente a 0,014740 para la predicción cero. No hay una mejora sobre ese control.
+Las predicciones almacenadas concuerdan con los MAE y MSE de los informes y con
+su agregación por sesión. Estas semillas no constituyen mercados independientes.
+
+La ejecución usa el entorno local y los mismos artefactos históricos. Para
+reanudarla o volver a verificar sus resultados confirmados:
+
+```bash
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run --no-sync \
+  --with gymnasium==1.3.0 --with duckdb==1.5.5 \
+  python -m mars_titan.training.predictive_study \
+  --config configs/baselines/predictive-adaptation.json \
+  --ordered data/interim/causal-source-verified-check-final-20260923/manifest.json \
+  --parent data/interim/tabular-post-scan-20260923/ridge-1/run.json \
+  --output data/interim/predictive-adaptation-verified-check-20260923 --resume
+```

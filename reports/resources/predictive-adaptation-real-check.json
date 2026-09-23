@@ -1,0 +1,1154 @@
+{
+  "scope": "development_snapshot",
+  "full_corpus": false,
+  "counts": {
+    "train": 245,
+    "validation": 225
+  },
+  "parent_model": "ridge",
+  "parent_regularization": 1.0,
+  "completed_runs": 9,
+  "epochs_per_run": 5,
+  "assets": 66,
+  "train_assets": 33,
+  "validation_assets": 41,
+  "common_assets": 8,
+  "study_sha256": "a201f1b28d58cb621d9a90f7c8f0c3823d584e5d0565d896f79b6ac4519c7ab5",
+  "code_commit": "759aa6424f796a582ceffb28354a5a27bebfa959",
+  "final_test_opened": false,
+  "reconciled_saved_predictions": true,
+  "records": [
+    {
+      "id": "reinforce-s42",
+      "case": {
+        "mode": "reinforce",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "0d890be01c11b7b250f93cafb5637daa97bf07c6090a971ab19b2e3c093b124b",
+      "checkpoint_sha256": "e42b712807b80ab03a4d350d68628758a0d8a81ad4ea8631e8c157467b76364c",
+      "selected_epoch": 4,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.479979834634063,
+          "squared_error": 0.3992446077466933,
+          "session_count": 134,
+          "session_mae": 0.03215075059144729,
+          "session_mse": 0.0017146568966287703,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03215075059144729,
+              "mse": 0.0017146568966287703
+            }
+          },
+          "mae": 0.03324435482059584,
+          "mse": 0.0017744204788741923
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.3800681014382725,
+          "squared_error": 0.38132413563519846,
+          "session_count": 134,
+          "session_mae": 0.03166718072962065,
+          "session_mse": 0.001639233921151773,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03166718072962065,
+              "mse": 0.001639233921151773
+            }
+          },
+          "mae": 0.03280030267305899,
+          "mse": 0.0016947739361564376
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.267253186812068,
+          "squared_error": 0.3645369220802596,
+          "session_count": 134,
+          "session_mae": 0.0313341204600993,
+          "session_mse": 0.0015885334433558796,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.0313341204600993,
+              "mse": 0.0015885334433558796
+            }
+          },
+          "mae": 0.03229890305249808,
+          "mse": 0.0016201640981344872
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.035201423231605716,
+          "mean_entropy_nats": 2.097405287311389,
+          "mean_extreme_action_mass": 0.026934922880104576,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 1.278310761001194,
+      "peak_vram_allocated_bytes": 77073408,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1797345280
+    },
+    {
+      "id": "expected-s42",
+      "case": {
+        "mode": "expected",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "495a924036c04757141dd78994a8a24584d61850e98676f042180ca7b1d4a13e",
+      "checkpoint_sha256": "726b676a7456f938800ea8aa25583fb5c5188b866a4792f1b826d819c9b259f0",
+      "selected_epoch": 1,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.4929717064294,
+          "squared_error": 0.40043037387724384,
+          "session_count": 134,
+          "session_mae": 0.032184836419812936,
+          "session_mse": 0.0017132446837026102,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.032184836419812936,
+              "mse": 0.0017132446837026102
+            }
+          },
+          "mae": 0.03330209647301956,
+          "mse": 0.001779690550565528
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.3789241454121655,
+          "squared_error": 0.38389463184392847,
+          "session_count": 134,
+          "session_mae": 0.03178277037257559,
+          "session_mse": 0.0016592308761895942,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03178277037257559,
+              "mse": 0.0016592308761895942
+            }
+          },
+          "mae": 0.03279521842405407,
+          "mse": 0.0017061983637507933
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.30949958256527,
+          "squared_error": 0.3729548937351702,
+          "session_count": 134,
+          "session_mae": 0.03156843992135583,
+          "session_mse": 0.0016250570894647271,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03156843992135583,
+              "mse": 0.0016250570894647271
+            }
+          },
+          "mae": 0.0324866648114012,
+          "mse": 0.0016575773054896454
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.035250777423719154,
+          "mean_entropy_nats": 2.0969184863441606,
+          "mean_extreme_action_mass": 0.027195293718217457,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.8243762589991093,
+      "peak_vram_allocated_bytes": 77071360,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1799475200
+    },
+    {
+      "id": "mae-s42",
+      "case": {
+        "mode": "mae",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "88d2c655933b5e7f2b4ee62b022f79b30929f5cdc210c4d0822ea57e00016452",
+      "checkpoint_sha256": "84d8924e4c1995ec9420eff8fbfdde97b7e4ead26c0ba786d0739c82c12bc085",
+      "selected_epoch": 4,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.486405174124662,
+          "squared_error": 0.3997452020520874,
+          "session_count": 134,
+          "session_mae": 0.03216648418069902,
+          "session_mse": 0.0017114326046207906,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03216648418069902,
+              "mse": 0.0017114326046207906
+            }
+          },
+          "mae": 0.03327291188499849,
+          "mse": 0.001776645342453722
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.361568004700442,
+          "squared_error": 0.38239655210603324,
+          "session_count": 134,
+          "session_mae": 0.031696421413810794,
+          "session_mse": 0.001650202380224429,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.031696421413810794,
+              "mse": 0.001650202380224429
+            }
+          },
+          "mae": 0.032718080020890855,
+          "mse": 0.0016995402315823699
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.266109230785962,
+          "squared_error": 0.3672004267788087,
+          "session_count": 134,
+          "session_mae": 0.03140653562367184,
+          "session_mse": 0.0016034598333432477,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03140653562367184,
+              "mse": 0.0016034598333432477
+            }
+          },
+          "mae": 0.03229381880349316,
+          "mse": 0.0016320018967947054
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.03523076950120612,
+          "mean_entropy_nats": 2.097205896037459,
+          "mean_extreme_action_mass": 0.027040607388906106,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 1.1412250569992466,
+      "peak_vram_allocated_bytes": 77071360,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1800564736
+    },
+    {
+      "id": "reinforce-s43",
+      "case": {
+        "mode": "reinforce",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "8876a9024c2a2e60a3e07d7090bcc8f556f0ce87970e9fa140e5d1a593a11fd6",
+      "checkpoint_sha256": "81f460be8513d78b4b457c0414aef1ae77760c45ad8d68f4e1050ae3cb510f84",
+      "selected_epoch": 5,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.511340606253452,
+          "squared_error": 0.4019475492679585,
+          "session_count": 134,
+          "session_mae": 0.032257412229298156,
+          "session_mse": 0.0017150967702258748,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.032257412229298156,
+              "mse": 0.0017150967702258748
+            }
+          },
+          "mae": 0.03338373602779312,
+          "mse": 0.001786433552302038
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.412997719458835,
+          "squared_error": 0.38666049179692624,
+          "session_count": 134,
+          "session_mae": 0.03188991215887141,
+          "session_mse": 0.0016695493104423604,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03188991215887141,
+              "mse": 0.0016695493104423604
+            }
+          },
+          "mae": 0.03294665653092815,
+          "mse": 0.0017184910746530055
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.317538945544354,
+          "squared_error": 0.3727151598312625,
+          "session_count": 134,
+          "session_mae": 0.03158383593896406,
+          "session_mse": 0.0016220971101039731,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03158383593896406,
+              "mse": 0.0016220971101039731
+            }
+          },
+          "mae": 0.03252239531353046,
+          "mse": 0.0016565118214722778
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.0353104538480641,
+          "mean_entropy_nats": 2.096473594803447,
+          "mean_extreme_action_mass": 0.027432875963318375,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.9502261729940074,
+      "peak_vram_allocated_bytes": 77073408,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1802870784
+    },
+    {
+      "id": "expected-s43",
+      "case": {
+        "mode": "expected",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "39f7c64be3a78dee751b6c32ae0a09fd8611bb6ffd270146c05c84b3f92fd4a1",
+      "checkpoint_sha256": "06c9b3fd07e1e70e4aec54f2c2afd2915d13fd475d9ab961a4c2934590916d9b",
+      "selected_epoch": 1,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.492971706357198,
+          "squared_error": 0.4004303738823292,
+          "session_count": 134,
+          "session_mae": 0.03218483641936894,
+          "session_mse": 0.0017132446837574442,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218483641936894,
+              "mse": 0.0017132446837574442
+            }
+          },
+          "mae": 0.03330209647269866,
+          "mse": 0.0017796905505881298
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.3789241454121655,
+          "squared_error": 0.38389463184392847,
+          "session_count": 134,
+          "session_mae": 0.03178277037257559,
+          "session_mse": 0.0016592308761895942,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03178277037257559,
+              "mse": 0.0016592308761895942
+            }
+          },
+          "mae": 0.03279521842405407,
+          "mse": 0.0017061983637507933
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.30949958256527,
+          "squared_error": 0.3729548937351702,
+          "session_count": 134,
+          "session_mae": 0.03156843992135583,
+          "session_mse": 0.0016250570894647271,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03156843992135583,
+              "mse": 0.0016250570894647271
+            }
+          },
+          "mae": 0.0324866648114012,
+          "mse": 0.0016575773054896454
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.035250777424151065,
+          "mean_entropy_nats": 2.0969184863477675,
+          "mean_extreme_action_mass": 0.027195293716322996,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.8166015460010385,
+      "peak_vram_allocated_bytes": 77071360,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1803034624
+    },
+    {
+      "id": "mae-s43",
+      "case": {
+        "mode": "mae",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "1fedc224222a00dbf8935d8d946bd6178b46a534a92cdeea7ff2aa5929370f07",
+      "checkpoint_sha256": "07b55ff13adb0044d0ec45cbea0201c666dbcbae9d70f30f3089de6233f41d2d",
+      "selected_epoch": 4,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.486405173324162,
+          "squared_error": 0.39974520194212687,
+          "session_count": 134,
+          "session_mae": 0.03216648417553188,
+          "session_mse": 0.001711432604024707,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03216648417553188,
+              "mse": 0.001711432604024707
+            }
+          },
+          "mae": 0.03327291188144072,
+          "mse": 0.0017766453419650083
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.361568004700442,
+          "squared_error": 0.38239655210603324,
+          "session_count": 134,
+          "session_mae": 0.031696421413810794,
+          "session_mse": 0.001650202380224429,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.031696421413810794,
+              "mse": 0.001650202380224429
+            }
+          },
+          "mae": 0.032718080020890855,
+          "mse": 0.0016995402315823699
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.266109230785962,
+          "squared_error": 0.3672004267788087,
+          "session_count": 134,
+          "session_mae": 0.03140653562367184,
+          "session_mse": 0.0016034598333432477,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03140653562367184,
+              "mse": 0.0016034598333432477
+            }
+          },
+          "mae": 0.03229381880349316,
+          "mse": 0.0016320018967947054
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.03523076949859476,
+          "mean_entropy_nats": 2.09720589607643,
+          "mean_extreme_action_mass": 0.027040607367905076,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.8386441979964729,
+      "peak_vram_allocated_bytes": 77071360,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1803034624
+    },
+    {
+      "id": "reinforce-s44",
+      "case": {
+        "mode": "reinforce",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "4fd6ad2e2d4d3ea410cdee81731d9002c0d49c34ef094810a9be9de1d60e816c",
+      "checkpoint_sha256": "869ec81dc0b02a6d47d6ca3632b378acf9b625537ce4a97047385e5ac58c8ad0",
+      "selected_epoch": 1,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.487921996332768,
+          "squared_error": 0.4000264106005344,
+          "session_count": 134,
+          "session_mae": 0.03218120971112762,
+          "session_mse": 0.0017130144007127773,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218120971112762,
+              "mse": 0.0017130144007127773
+            }
+          },
+          "mae": 0.03327965331703452,
+          "mse": 0.0017778951582245973
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.370246075056304,
+          "squared_error": 0.38240182980544307,
+          "session_count": 134,
+          "session_mae": 0.03172880227334759,
+          "session_mse": 0.0016510093936566849,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03172880227334759,
+              "mse": 0.0016510093936566849
+            }
+          },
+          "mae": 0.03275664922247246,
+          "mse": 0.0016995636880241915
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.318177652921133,
+          "squared_error": 0.3733633525608325,
+          "session_count": 134,
+          "session_mae": 0.031611614400738224,
+          "session_mse": 0.0016270629239321752,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.031611614400738224,
+              "mse": 0.0016270629239321752
+            }
+          },
+          "mae": 0.03252523401298281,
+          "mse": 0.0016593926780481443
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.03522836269921772,
+          "mean_entropy_nats": 2.096957921039862,
+          "mean_extreme_action_mass": 0.027174097541887137,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.8665199160022894,
+      "peak_vram_allocated_bytes": 77073408,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1803034624
+    },
+    {
+      "id": "expected-s44",
+      "case": {
+        "mode": "expected",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "74d2f64cb9947b9c3e559a15f85d9309a1ef4194984e3fd79c83e687ae39669e",
+      "checkpoint_sha256": "4a75a9659d90c3d5080dd1b86ab231f53fb2506586ea6bb0f708bd02f52dbea7",
+      "selected_epoch": 1,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.492971706480674,
+          "squared_error": 0.40043037388451114,
+          "session_count": 134,
+          "session_mae": 0.03218483641979304,
+          "session_mse": 0.001713244683757814,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218483641979304,
+              "mse": 0.001713244683757814
+            }
+          },
+          "mae": 0.03330209647324744,
+          "mse": 0.0017796905505978273
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.3789241454121655,
+          "squared_error": 0.38389463184392847,
+          "session_count": 134,
+          "session_mae": 0.03178277037257559,
+          "session_mse": 0.0016592308761895942,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03178277037257559,
+              "mse": 0.0016592308761895942
+            }
+          },
+          "mae": 0.03279521842405407,
+          "mse": 0.0017061983637507933
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.30949958256527,
+          "squared_error": 0.3729548937351702,
+          "session_count": 134,
+          "session_mae": 0.03156843992135583,
+          "session_mse": 0.0016250570894647271,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03156843992135583,
+              "mse": 0.0016250570894647271
+            }
+          },
+          "mae": 0.0324866648114012,
+          "mse": 0.0016575773054896454
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.035250777424394635,
+          "mean_entropy_nats": 2.0969184863446864,
+          "mean_extreme_action_mass": 0.027195293717956044,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.8517765680007869,
+      "peak_vram_allocated_bytes": 77071360,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1803034624
+    },
+    {
+      "id": "mae-s44",
+      "case": {
+        "mode": "mae",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "report_sha256": "938300479060960af1de427964dbb6952eff585a4f5a43d787095bf2af56bc4e",
+      "checkpoint_sha256": "5fbf3af98b17f0af8e8b19132da388d7683ce8d490c27ac3a07ebfd16ca8a9e6",
+      "selected_epoch": 4,
+      "validation": {
+        "center": {
+          "samples": 225,
+          "absolute_error": 7.486405173456009,
+          "squared_error": 0.39974520198825325,
+          "session_count": 134,
+          "session_mae": 0.03216648417589538,
+          "session_mse": 0.0017114326042318192,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03216648417589538,
+              "mse": 0.0017114326042318192
+            }
+          },
+          "mae": 0.033272911882026704,
+          "mse": 0.0017766453421700144
+        },
+        "nearest": {
+          "samples": 225,
+          "absolute_error": 7.361568004700442,
+          "squared_error": 0.38239655210603324,
+          "session_count": 134,
+          "session_mae": 0.031696421413810794,
+          "session_mse": 0.001650202380224429,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.031696421413810794,
+              "mse": 0.001650202380224429
+            }
+          },
+          "mae": 0.032718080020890855,
+          "mse": 0.0016995402315823699
+        },
+        "median": {
+          "samples": 225,
+          "absolute_error": 7.266109230785962,
+          "squared_error": 0.3672004267788087,
+          "session_count": 134,
+          "session_mae": 0.03140653562367184,
+          "session_mse": 0.0016034598333432477,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03140653562367184,
+              "mse": 0.0016034598333432477
+            }
+          },
+          "mae": 0.03229381880349316,
+          "mse": 0.0016320018967947054
+        },
+        "parent": {
+          "samples": 225,
+          "absolute_error": 7.488761374191637,
+          "squared_error": 0.39996676770534145,
+          "session_count": 134,
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.03218032274117526,
+              "mse": 0.0017121731780114823
+            }
+          },
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "samples": 225,
+          "absolute_error": 3.1761734484329214,
+          "squared_error": 0.09503674721925766,
+          "session_count": 134,
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "session_metrics_reason": null,
+          "by_market_session": {
+            "US": {
+              "sessions": 134,
+              "samples": 225,
+              "mae": 0.014740397268312158,
+              "mse": 0.0004751431450528187
+            }
+          },
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "samples": 225,
+          "expected_mae": 0.035230769499442025,
+          "mean_entropy_nats": 2.097205896055002,
+          "mean_extreme_action_mass": 0.027040607379338197,
+          "center_saturation_rate": 0.02666666666666667,
+          "target_saturation_rate": 0.008888888888888889,
+          "near_one_hot_rate": 0.0,
+          "calibrated_uncertainty": false
+        }
+      },
+      "seconds": 0.8685517629928654,
+      "peak_vram_allocated_bytes": 77071360,
+      "peak_vram_reserved_bytes": 90177536,
+      "process_lifetime_peak_rss_bytes": 1803034624
+    }
+  ],
+  "limits": [
+    "La poblaci\u00f3n reutiliza la edici\u00f3n verificada hist\u00f3rica de 470 muestras, no el corpus amplio.",
+    "Los 245 ejemplos de entrenamiento caben en un \u00fanico lote. Son cinco actualizaciones por ajuste.",
+    "Las semillas no representan mercados independientes ni aumentan el n\u00famero de observaciones.",
+    "Los tiempos internos excluyen la preparaci\u00f3n compartida y no estiman el coste del corpus completo.",
+    "La comparaci\u00f3n de la mediana adaptada con el padre continuo no a\u00edsla el efecto de la rejilla."
+  ]
+}
