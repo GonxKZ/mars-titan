@@ -189,7 +189,7 @@ def write_world(world, output, *, resume=False, stop=None, block_sessions=16, ch
 
 
 class EpisodeSource:
-    """Leer columnas seleccionadas de una cohorte, con un máximo de dos grupos en RAM."""
+    """Leer cohortes con un solo bloque abierto y un máximo de dos grupos en RAM."""
 
     def __init__(self, manifest, *, max_cache_bytes=MAX_BYTES):
         self.path = Path(manifest)
@@ -230,6 +230,7 @@ class EpisodeSource:
         self.manifest_stat = self.path.stat()
         self.cache, self.signatures = OrderedDict(), {}
         self.max_cache_bytes, self.cache_bytes, self.closed = max_cache_bytes, 0, False
+        self._file, self._file_block = None, None
         self.starts = np.array([block["start"] for block in self.blocks])
 
     def __len__(self):
@@ -252,11 +253,16 @@ class EpisodeSource:
         if key in self.cache:
             self.cache.move_to_end(key)
             return self.cache[key]
-        with pq.ParquetFile(path) as file:
-            group = position - block["start"]
-            if file.metadata.row_group(group).total_byte_size > self.max_cache_bytes:
-                raise ValueError("El bloque supera el presupuesto de lectura")
-            table = file.read_row_group(group, columns=columns, use_threads=False)
+        if self._file_block != block_index:
+            if self._file is not None:
+                self._file.close()
+            self._file, self._file_block = None, None
+            self._file = pq.ParquetFile(path)
+            self._file_block = block_index
+        group = position - block["start"]
+        if self._file.metadata.row_group(group).total_byte_size > self.max_cache_bytes:
+            raise ValueError("El bloque supera el presupuesto de lectura")
+        table = self._file.read_row_group(group, columns=columns, use_threads=False)
         if table.nbytes > self.max_cache_bytes:
             raise ValueError("Las columnas decodificadas superan el presupuesto")
         while self.cache and (
@@ -333,6 +339,9 @@ class EpisodeSource:
         return self.read(position)
 
     def close(self):
+        if self._file is not None:
+            self._file.close()
+        self._file, self._file_block = None, None
         self.cache.clear()
         self.cache_bytes = 0
         self.closed = True

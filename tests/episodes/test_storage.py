@@ -3,6 +3,7 @@
 import json
 
 import numpy as np
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.episodes.storage import EpisodeSource, write_world
@@ -104,3 +105,75 @@ def test_variable_universe_roundtrips_and_recovers(tmp_path):
         assert [len(source(i)["asset_ids"]) for i in range(len(source))] == [
             row[1] for row in world.index
         ]
+
+
+def test_reader_reuses_one_open_block_and_closes_on_switch_and_exit(tmp_path, monkeypatch):
+    world = generate_world(WorldConfig(assets=4, sessions=48, context=8))
+    write_world(world, tmp_path / "world")
+    opened, real_open = [], pq.ParquetFile
+
+    def record_open(*args, **kwargs):
+        reader = real_open(*args, **kwargs)
+        opened.append(reader)
+        return reader
+
+    monkeypatch.setattr(pq, "ParquetFile", record_open)
+    with EpisodeSource(tmp_path / "world/manifest.json") as source:
+        retained = source(0)
+        for position in (0, 1, 17, 18, 0):
+            actual = source(position)
+            for name in world.shapes:
+                np.testing.assert_array_equal(
+                    actual["inputs"][name], world(position)["inputs"][name]
+                )
+            assert sum(not reader.closed for reader in opened) == 1
+            assert len(source.cache) <= 2
+            assert source.cache_bytes <= source.max_cache_bytes
+        assert len(opened) == 3
+        assert all(reader.closed for reader in opened[:-1])
+    assert all(reader.closed for reader in opened)
+    for name in world.shapes:
+        np.testing.assert_array_equal(retained["inputs"][name], world(0)["inputs"][name])
+    assert source.cache_bytes == 0
+    source.close()
+    with pytest.raises(ValueError, match="abierta"):
+        source(0)
+
+
+@pytest.mark.parametrize("change", ["overwrite", "replace", "manifest"])
+def test_open_reader_checks_integrity_before_returning_cached_cohort(tmp_path, change):
+    world = generate_world(WorldConfig(assets=4, sessions=40, context=8))
+    report = write_world(world, tmp_path / "world")
+    manifest = tmp_path / "world/manifest.json"
+    block = manifest.parent / report["blocks"][0]["path"]
+    with EpisodeSource(manifest) as source:
+        source(0)
+        if change == "overwrite":
+            with block.open("r+b") as handle:
+                handle.write(b"FAIL")
+        elif change == "replace":
+            replacement = block.with_suffix(".new")
+            replacement.write_bytes(block.read_bytes())
+            replacement.replace(block)
+        else:
+            manifest.write_text(manifest.read_text() + " ")
+        with pytest.raises(ValueError, match="cambió"):
+            source(0)
+
+
+def test_read_budget_failure_closes_open_reader_on_context_exit(tmp_path, monkeypatch):
+    world = generate_world(WorldConfig(assets=4, sessions=40, context=8))
+    write_world(world, tmp_path / "world")
+    opened, real_open = [], pq.ParquetFile
+
+    def record_open(*args, **kwargs):
+        reader = real_open(*args, **kwargs)
+        opened.append(reader)
+        return reader
+
+    monkeypatch.setattr(pq, "ParquetFile", record_open)
+    with pytest.raises(ValueError, match="presupuesto"):
+        with EpisodeSource(tmp_path / "world/manifest.json", max_cache_bytes=1) as source:
+            source(0)
+    assert opened and all(reader.closed for reader in opened)
+    assert source.cache_bytes == 0

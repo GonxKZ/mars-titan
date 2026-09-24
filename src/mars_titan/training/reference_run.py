@@ -168,6 +168,8 @@ def _evaluate(model, dataset, batch_size, *, partition="validation", destination
                     batch["prediction_at"],
                     predictions.astype(np.float64) - batch["target"],
                 )
+                if destination is None:
+                    continue
                 yield pa.table(
                     {
                         "sample_id": batch["sample_ids"],
