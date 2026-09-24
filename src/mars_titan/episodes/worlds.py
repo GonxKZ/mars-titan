@@ -195,6 +195,20 @@ class SyntheticWorld:
     def cohort(self, at):
         if type(at) is not int or not self.config.context - 1 <= at < self.config.sessions - 1:
             raise ValueError("La decisión necesita contexto y una etiqueta posterior")
+        observation = self.observation_at(at)
+        n = len(observation["asset_ids"])
+        target = self.prices[at + 1, :n, 3] / self.prices[at + 1, :n, 0] - 1
+        target -= self.market_returns[at + 1] * self.market_loading[at + 1]
+        return dict(
+            observation,
+            target=target,
+            target_available_at=np.full(n, self.times[at + 1], dtype=np.int64),
+        )
+
+    def observation_at(self, at):
+        """Leer entradas aunque todavía no exista una etiqueta para esa decisión."""
+        if type(at) is not int or not self.config.context - 1 <= at < self.config.sessions:
+            raise ValueError("La observación necesita una ventana pasada completa")
         n, context, period = self.count_at(at), self.config.context, self.periods[at]
         price_inputs = np.stack(
             [_price_contexts(self.prices[:, i], np.array([at]), context)[0] for i in range(n)]
@@ -218,14 +232,10 @@ class SyntheticWorld:
             ),
             (n, 6),
         ).copy()
-        target = self.prices[at + 1, :n, 3] / self.prices[at + 1, :n, 0] - 1
-        target -= self.market_returns[at + 1] * self.market_loading[at + 1]
         return dict(
             prediction_at=int(self.times[at]),
             asset_ids=list(self.asset_ids[:n]),
             available_at=np.full(n, self.times[at], dtype=np.int64),
-            target_available_at=np.full(n, self.times[at + 1], dtype=np.int64),
-            target=target,
             inputs=dict(
                 prices=price_inputs,
                 news=news,

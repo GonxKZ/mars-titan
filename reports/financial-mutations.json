@@ -1,0 +1,29 @@
+{
+  "method": "Mutaciones dirigidas en copias aisladas de src. La suite original pasa y cada mutación debe provocar fallos de aserción.",
+  "results": [
+    {
+      "name": "double_selection",
+      "detected": true,
+      "command": "pytest tests/simulation/test_algorithms.py",
+      "exit_code": 1
+    },
+    {
+      "name": "truncation_boundary",
+      "detected": true,
+      "command": "pytest tests/simulation/test_algorithms.py",
+      "exit_code": 1
+    },
+    {
+      "name": "trading_cost",
+      "detected": true,
+      "command": "pytest tests/simulation/test_portfolio.py",
+      "exit_code": 1
+    },
+    {
+      "name": "resume_rng",
+      "detected": true,
+      "command": "pytest tests/simulation/test_training.py",
+      "exit_code": 1
+    }
+  ]
+}

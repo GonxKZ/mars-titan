@@ -141,6 +141,12 @@ class EncodedWorld:
         if raw is None:
             return None
         at = position + self.config.context - 1
+        return self._encode(raw, at)
+
+    def observation_at(self, at):
+        return self._encode(self.world.observation_at(at), at)
+
+    def _encode(self, raw, at):
         raw["inputs"]["news"] = np.stack(
             [self.encoders.text(text) for text in self.world.events(at)]
         )
