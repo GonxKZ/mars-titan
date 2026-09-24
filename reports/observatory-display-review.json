@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-24T13:22:14.378653+00:00",
+  "domain": "technical",
+  "issue": 157,
+  "browser": "Chrome 153.0.8010.47",
+  "source_sha256": {
+    "app.js": "b4e88096ceb6f293a3389c04d7c4673fdae6694a293597633bbd5fe027006aea",
+    "index.html": "8d1b3db1c9e011b2d01167f1bcaa45bc454d26f06e64c40c325913e06b8dd4ab",
+    "styles.css": "65d31099c62a02770af69be963997b88ede6adaac6df08a6086bef0f8b971d8f",
+    "tests/display-browser.mjs": "3899dd117fad7b91f0c83f5ac7900bd8e968bb4f3e968c9753418105091c0657"
+  },
+  "public_before": {
+    "runs": 693,
+    "pages": 11,
+    "duplicate_run_attempt_pairs": 0,
+    "duplicate_dom_ids": 0,
+    "javascript_errors": 0,
+    "failed_requests": 0,
+    "overflow_at_320_px": true,
+    "catalog_text_overlaps": true
+  },
+  "local_after": {
+    "runs": 694,
+    "pages": 11,
+    "viewports": [
+      320,
+      390,
+      768,
+      1024,
+      1440
+    ],
+    "duplicate_run_attempt_pairs": 0,
+    "duplicate_dom_ids": 0,
+    "javascript_errors": 0,
+    "failed_requests": 0,
+    "document_overflow": false,
+    "catalog_text_overlaps": false
+  },
+  "tests": {
+    "state_node": 27,
+    "display_browser": 8,
+    "observatory_python": 131,
+    "browser_suites": [
+      "browser-smoke.mjs",
+      "campaigns-browser.mjs",
+      "experiments-browser.mjs",
+      "display-browser.mjs"
+    ]
+  },
+  "state_coverage": {
+    "tool": "node --experimental-test-coverage",
+    "line_percent": 97.2,
+    "branch_percent": 88.39,
+    "function_percent": 94.74
+  },
+  "display_coverage_and_complexity": {
+    "source_sha256": "b4e88096ceb6f293a3389c04d7c4673fdae6694a293597633bbd5fe027006aea",
+    "tools": {
+      "parser": "Acorn 8.15.0, ECMAScript 2022",
+      "coverage": "Chrome 153 V8 mediante Playwright"
+    },
+    "scope": "Ocho pruebas de display-browser.mjs. No incluye la cobertura de los otros recorridos de navegador ejecutados.",
+    "convention": "Líneas no vacías. El primer carácter de cada línea se considera cubierto cuando el rango V8 más interno se ejecuta en alguna prueba. CC suma decisiones y operadores lógicos de cada función, sin funciones anidadas. CRAP = CC² × (1 − cobertura)³ + CC. No mide cobertura de ramas.",
+    "functions": [
+      {
+        "name": "element",
+        "complexity": 3,
+        "lines": 6,
+        "covered_lines": 6,
+        "line_coverage_percent": 100,
+        "crap": 3
+      },
+      {
+        "name": "svgElement",
+        "complexity": 3,
+        "lines": 6,
+        "covered_lines": 6,
+        "line_coverage_percent": 100,
+        "crap": 3
+      },
+      {
+        "name": "dateText",
+        "complexity": 2,
+        "lines": 4,
+        "covered_lines": 4,
+        "line_coverage_percent": 100,
+        "crap": 2
+      },
+      {
+        "name": "runKey",
+        "complexity": 1,
+        "lines": 1,
+        "covered_lines": 1,
+        "line_coverage_percent": 100,
+        "crap": 1
+      },
+      {
+        "name": "modelName",
+        "complexity": 2,
+        "lines": 1,
+        "covered_lines": 1,
+        "line_coverage_percent": 100,
+        "crap": 2
+      },
+      {
+        "name": "count",
+        "complexity": 2,
+        "lines": 1,
+        "covered_lines": 1,
+        "line_coverage_percent": 100,
+        "crap": 2
+      },
+      {
+        "name": "selectedRun",
+        "complexity": 2,
+        "lines": 1,
+        "covered_lines": 1,
+        "line_coverage_percent": 100,
+        "crap": 2
+      },
+      {
+        "name": "setOptions",
+        "complexity": 5,
+        "lines": 12,
+        "covered_lines": 12,
+        "line_coverage_percent": 100,
+        "crap": 5
+      },
+      {
+        "name": "announce",
+        "complexity": 1,
+        "lines": 4,
+        "covered_lines": 4,
+        "line_coverage_percent": 100,
+        "crap": 1
+      },
+      {
+        "name": "showError",
+        "complexity": 1,
+        "lines": 4,
+        "covered_lines": 4,
+        "line_coverage_percent": 100,
+        "crap": 1
+      },
+      {
+        "name": "renderTracking",
+        "complexity": 44,
+        "lines": 90,
+        "covered_lines": 76,
+        "line_coverage_percent": 84.44444444444444,
+        "crap": 51.28722085048011
+      },
+      {
+        "name": "curveFormatter",
+        "complexity": 4,
+        "lines": 8,
+        "covered_lines": 8,
+        "line_coverage_percent": 100,
+        "crap": 4
+      },
+      {
+        "name": "renderCurve",
+        "complexity": 16,
+        "lines": 41,
+        "covered_lines": 41,
+        "line_coverage_percent": 100,
+        "crap": 16
+      },
+      {
+        "name": "renderComparison",
+        "complexity": 1,
+        "lines": 19,
+        "covered_lines": 19,
+        "line_coverage_percent": 100,
+        "crap": 1
+      },
+      {
+        "name": "filteredHistory",
+        "complexity": 2,
+        "lines": 9,
+        "covered_lines": 9,
+        "line_coverage_percent": 100,
+        "crap": 2
+      },
+      {
+        "name": "renderHistory",
+        "complexity": 5,
+        "lines": 34,
+        "covered_lines": 29,
+        "line_coverage_percent": 85.29411764705883,
+        "crap": 5.079508446977407
+      },
+      {
+        "name": "render",
+        "complexity": 14,
+        "lines": 29,
+        "covered_lines": 29,
+        "line_coverage_percent": 100,
+        "crap": 14
+      },
+      {
+        "name": "stopPolling",
+        "complexity": 1,
+        "lines": 1,
+        "covered_lines": 1,
+        "line_coverage_percent": 100,
+        "crap": 1
+      },
+      {
+        "name": "stopHealth",
+        "complexity": 1,
+        "lines": 1,
+        "covered_lines": 1,
+        "line_coverage_percent": 100,
+        "crap": 1
+      },
+      {
+        "name": "refreshHealth",
+        "complexity": 13,
+        "lines": 29,
+        "covered_lines": 0,
+        "line_coverage_percent": 0,
+        "crap": 182
+      },
+      {
+        "name": "scheduleHealth",
+        "complexity": 5,
+        "lines": 6,
+        "covered_lines": 4,
+        "line_coverage_percent": 66.66666666666666,
+        "crap": 5.9259259259259265
+      },
+      {
+        "name": "schedulePoll",
+        "complexity": 4,
+        "lines": 4,
+        "covered_lines": 4,
+        "line_coverage_percent": 100,
+        "crap": 4
+      },
+      {
+        "name": "readResponse",
+        "complexity": 8,
+        "lines": 19,
+        "covered_lines": 19,
+        "line_coverage_percent": 100,
+        "crap": 8
+      },
+      {
+        "name": "refreshPublic",
+        "complexity": 24,
+        "lines": 45,
+        "covered_lines": 39,
+        "line_coverage_percent": 86.66666666666667,
+        "crap": 25.365333333333332
+      },
+      {
+        "name": "loadPage",
+        "complexity": 14,
+        "lines": 20,
+        "covered_lines": 20,
+        "line_coverage_percent": 100,
+        "crap": 14
+      }
+    ]
+  },
+  "mutations": {
+    "source_sha256": "b4e88096ceb6f293a3389c04d7c4673fdae6694a293597633bbd5fe027006aea",
+    "mutations": [
+      {
+        "mutation": "metric-window",
+        "detected": true,
+        "exit_code": 1,
+        "test": "la medida se elige dentro de las últimas 240"
+      },
+      {
+        "mutation": "metric-fallback",
+        "detected": true,
+        "exit_code": 1,
+        "test": "la curva elige MAE"
+      },
+      {
+        "mutation": "catalog-page-state",
+        "detected": true,
+        "exit_code": 1,
+        "test": "el catálogo es estable al paginar"
+      },
+      {
+        "mutation": "axis-precision",
+        "detected": true,
+        "exit_code": 1,
+        "test": "el eje distingue errores próximos"
+      }
+    ],
+    "scope": "Cambios temporales fuera del repositorio. La fuente de producción permanece intacta."
+  },
+  "limits": [
+    "Chrome local y anchos indicados. No se ha ejecutado esta revisión en Safari o Firefox.",
+    "La comprobación de registros usa la identidad de ejecución e intento. Las semillas, ediciones e intentos distintos permanecen separados.",
+    "La cobertura de presentación corresponde a ocho pruebas. renderTracking conserva complejidad 44 y CRAP 51,29 con esta cobertura parcial. Las otras pruebas de navegador se ejecutaron, pero no se fusionó su cobertura.",
+    "La comprobación posterior del despliegue se registra en la issue después de promover a main. No se afirma ausencia de fallos para entradas o navegadores no comprobados.",
+    "Lizard 1.17.31 no delimitó correctamente funciones con la sintaxis JavaScript usada. La complejidad declarada procede de Acorn y de la convención indicada."
+  ],
+  "local_data_axis_audit": {
+    "runs": 694,
+    "curves_with_repeated_3_decimal_axis_labels": 121
+  }
+}

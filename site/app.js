@@ -9,6 +9,12 @@ const MAX_BYTES = 8 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 10000;
 const POLL_MS = 60000;
 const SVG_NS = "http://www.w3.org/2000/svg";
+const CURVE_POINTS = 240;
+const MODEL_KINDS = {
+  baseline: "Referencia", candidate: "Candidato", ablation: "Ablación", generator: "Generación sintética",
+  simulation: "Simulación", reinforcement: "Aprendizaje por refuerzo",
+  financial_baseline: "Control financiero", summary: "Resumen",
+};
 const byId = id => document.getElementById(id);
 let snapshot = null;
 let sourceMode = "public";
@@ -79,13 +85,13 @@ function renderTracking() {
   const status = run ? displayStatus(run, Date.now(), snapshot.stale_after_seconds) : "empty";
   byId("run-status").className = `status status-${status}`;
   byId("run-status").textContent = run ? STATUS_LABELS[status] : "Registro vacío";
-  byId("run-heading").textContent = run ? `${run.model_id} / ${modelName(run)}` : "Sin ejecuciones registradas";
+  byId("run-heading").textContent = run ? modelName(run) : "Sin ejecuciones registradas";
   byId("run-description").textContent = run ? `${run.variant_id ?? "Variante no informada"} / ${run.run_id} / ${run.attempt_id}` : "Los modelos están planificados. Todavía no hay resultados de entrenamiento en este registro.";
   for (const item of byId("phase-list").children) {
     if (run?.phase === item.dataset.phase) item.setAttribute("aria-current", "step");
     else item.removeAttribute("aria-current");
   }
-  byId("phase-description").textContent = run?.metadata ? "Las métricas pertenecen a validación. El recibo no identifica la operación actual del proceso." : run ? `Fase declarada: ${PHASE_LABELS[run.phase] ?? "no informada"}. Las etapas anteriores del esquema no se dan por verificadas.` : "Secuencia de referencia. Ninguna fase está activa.";
+  byId("phase-description").textContent = run?.metadata ? `Fase del registro: ${PHASE_LABELS[run.phase] ?? "no informada"}. El recibo no identifica la operación actual del proceso.` : run ? `Fase declarada: ${PHASE_LABELS[run.phase] ?? "no informada"}. Las etapas anteriores del esquema no se dan por verificadas.` : "Secuencia de referencia. Ninguna fase está activa.";
   if (!run) return;
   const protectedResults = resultsProtected(run);
   byId("test-notice").hidden = !protectedResults;
@@ -98,6 +104,7 @@ function renderTracking() {
   const metrics = publicMetrics(run);
   const predictive = isPredictive(run);
   byId("predictive-curve").hidden = !predictive;
+  byId("predictive-curve").parentElement.classList.toggle("without-curve", !predictive);
   const primary = predictive ? [
     ["MAE residual", metrics.mae, { digits: 4 }],
     ["Rank IC", metrics.rank_ic, { digits: 4 }],
@@ -114,7 +121,7 @@ function renderTracking() {
     ["Actividad", ACTIVITY_LABELS[run.activity] ?? "No informada"],
     ["Última observación del proceso", dateText(run.heartbeat_at)],
     ["Último progreso registrado", dateText(run.updated_at)],
-    ...(run.metadata ? [["Campaña y método", `${run.metadata.campaign} / ${run.metadata.method}`], ["Origen", {real: "Corpus real", synthetic: "Mundo sintético", technical: "Comprobación técnica"}[run.metadata.domain]], ["Filas de entrenamiento / validación", `${count(run.metadata.train_rows)} / ${count(run.metadata.validation_rows)}`], ...(predictive ? [["Eje de la curva", run.metadata.history_axis === "epoch" ? "Épocas sin fecha original" : "Pasos"]] : []), ["Error registrado", run.metadata.error_type ?? "Sin error informado"]] : []),
+    ...(run.metadata ? [["Campaña", run.metadata.campaign], ...(run.metadata.method !== run.activity ? [["Método", run.metadata.method]] : []), ["Origen", {real: "Corpus real", synthetic: "Mundo sintético", technical: "Comprobación técnica"}[run.metadata.domain]], ["Filas de entrenamiento / validación", `${count(run.metadata.train_rows)} / ${count(run.metadata.validation_rows)}`], ["Error registrado", run.metadata.error_type ?? "Sin error informado"]] : []),
     ...(run.metadata?.condition ? [["Condición de entrenamiento", CONDITION_LABELS[run.metadata.condition]]] : []),
     ...(run.metadata?.parent_model ? [["Referencia de partida", snapshot.models.find(model => model.id === run.metadata.parent_model)?.name ?? run.metadata.parent_model]] : []),
     ["Último punto de control", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
@@ -123,7 +130,7 @@ function renderTracking() {
     [RAM_SCOPE_LABELS[run.metadata?.ram_peak_scope] ?? "RAM máxima, MiB (alcance no informado)", formatValue(metrics.ram_peak_mib, { digits: 0 })],
     ...(run.metadata?.ram_peak_scope === "executable" ? [[RAM_SCOPE_LABELS.process_lifetime, formatValue(protectedResults ? null : run.metadata.process_lifetime_peak_rss_mib, {digits: 0})]] : []),
     ["Latencia p50 / p95 / p99, ms", [metrics.latency_p50_ms, metrics.latency_p95_ms, metrics.latency_p99_ms].map(value => formatValue(value, { digits: 1 })).join(" / ")],
-    ["Tiempo observado, segundos", formatValue(metrics.elapsed_seconds, { digits: 0 })],
+    ...(predictive ? [["Tiempo observado, segundos", formatValue(metrics.elapsed_seconds, { digits: 0 })]] : []),
     ["Muestras por segundo", formatValue(metrics.samples_per_second, { digits: 1 })],
   ];
   byId("run-details").replaceChildren(...details.map(([label, value]) => {
@@ -148,33 +155,53 @@ function renderTracking() {
       return group;
     }));
   }
+  const history = publicHistory(run).slice(-CURVE_POINTS);
+  const curveMetric = byId("curve-metric");
+  for (const option of curveMetric.options) option.disabled = !history.some(point => point[option.value] !== null);
+  const available = [...curveMetric.options].find(option => !option.disabled);
+  curveMetric.disabled = !available;
+  if (available && curveMetric.selectedOptions[0].disabled) curveMetric.value = available.value;
   renderCurve(run);
+}
+
+function curveFormatter(ticks) {
+  const notation = Math.max(...ticks.map(Math.abs)) >= 1e6 ? "scientific" : "standard";
+  for (let digits = 3; digits <= 8; digits++) {
+    const formatter = new Intl.NumberFormat("es-ES", {notation, minimumFractionDigits: digits, maximumFractionDigits: digits});
+    if (new Set(ticks.map(value => formatter.format(value))).size === ticks.length) return formatter;
+  }
+  return new Intl.NumberFormat("es-ES", {notation: "scientific", maximumSignificantDigits: 17});
 }
 
 function renderCurve(run) {
   const metric = byId("curve-metric").value;
-  const history = publicHistory(run).slice(-240);
+  const history = publicHistory(run).slice(-CURVE_POINTS);
   const valid = history.filter(point => point[metric] !== null);
   const container = byId("curve-content");
   if (!valid.length) {
     container.replaceChildren(element("p", resultsProtected(run) ? "Curva protegida hasta publicar los resultados finales." : "No hay observaciones de esta medida en el registro."));
     return;
   }
-  const width = 680, height = 242, left = 60, right = 18, top = 22, bottom = 34;
   const values = valid.map(point => point[metric]);
   const minimum = Math.min(...values), maximum = Math.max(...values);
   const padding = (maximum - minimum) * .1 || Math.abs(maximum) * .05 || .01;
   const low = minimum - padding, high = maximum + padding;
+  const ticks = [low, (low + high) / 2, high];
+  const formatter = curveFormatter(ticks);
+  const labels = ticks.map(value => formatter.format(value));
+  const width = 680, height = 242, right = 18, top = 22, bottom = 34;
+  const left = Math.max(60, ...labels.map(label => label.length * 7 + 12));
   const firstStep = history[0].step, lastStep = history.at(-1).step;
   const x = step => left + (step - firstStep) / (lastStep - firstStep || 1) * (width - left - right);
   const y = value => top + (high - value) / (high - low) * (height - top - bottom);
   const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-labelledby": "curve-title curve-description" });
   const label = metric === "mae" ? "MAE residual" : "Pérdida";
-  svg.append(svgElement("title", { id: "curve-title" }, `${label} por paso registrado`));
-  svg.append(svgElement("desc", { id: "curve-description" }, `Últimos ${history.length} registros. ${valid.length} valores conocidos entre ${formatValue(minimum)} y ${formatValue(maximum)}. Los huecos permanecen separados.`));
-  for (const value of [low, (low + high) / 2, high]) {
+  const epochs = run.metadata?.history_axis === "epoch";
+  svg.append(svgElement("title", { id: "curve-title" }, `${label} por ${epochs ? "época registrada" : "paso registrado"}`));
+  svg.append(svgElement("desc", { id: "curve-description" }, `Últimos ${history.length} registros. ${valid.length} valores conocidos entre ${formatter.format(minimum)} y ${formatter.format(maximum)}. Los huecos permanecen separados.`));
+  for (const [index, value] of ticks.entries()) {
     svg.append(svgElement("line", { x1: left, x2: width - right, y1: y(value), y2: y(value), class: "chart-axis" }));
-    svg.append(svgElement("text", { x: left - 9, y: y(value) + 4, "text-anchor": "end", class: "chart-label" }, formatValue(value, { digits: 3 })));
+    svg.append(svgElement("text", { x: left - 9, y: y(value) + 4, "text-anchor": "end", class: "chart-label" }, labels[index]));
   }
   for (const step of new Set([firstStep, lastStep])) svg.append(svgElement("text", { x: x(step), y: height - 11, "text-anchor": "middle", class: "chart-label" }, count(step)));
   let path = "", connected = false;
@@ -185,7 +212,7 @@ function renderCurve(run) {
   }
   svg.append(svgElement("path", { d: path, class: "chart-line" }));
   for (const point of valid) svg.append(svgElement("circle", { cx: x(point.step), cy: y(point[metric]), r: valid.length > 80 ? 1.4 : 2.5, class: "chart-point" }));
-  container.replaceChildren(svg, element("p", `Últimos ${history.length} registros. Pasos ${count(firstStep)} a ${count(lastStep)}.`, "curve-summary"));
+  container.replaceChildren(svg, element("p", `${epochs ? "Épocas" : "Pasos"} ${count(firstStep)} a ${count(lastStep)}. ${valid.length} observaciones${epochs ? " sin fecha original" : ""}.`, "curve-summary"));
 }
 
 function renderComparison() {
@@ -201,7 +228,7 @@ function renderComparison() {
   byId("comparison-body").replaceChildren(...rows.map(run => {
     const row = element("tr");
     const model = element("td");
-    model.append(element("span", `${run.model_id} / ${modelName(run)}`), element("small", `${run.variant_id ?? "Variante no informada"} / ${run.attempt_id}`));
+    model.append(element("span", modelName(run)), element("small", `${run.variant_id ?? "Variante no informada"} / ${run.attempt_id}`));
     row.append(model, element("td", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`));
     for (const [key, options] of [["mae", { digits: 4 }], ["rank_ic", { digits: 4 }], ["coverage_95", { digits: 1, style: "percent" }], ["latency_p95_ms", { digits: 1 }], ["vram_peak_mib", { digits: 0 }]]) row.append(element("td", formatValue(run.metrics[key], options), "numeric"));
     return row;
@@ -275,7 +302,7 @@ function render() {
   byId("model-catalog").replaceChildren(...snapshot.models.map(model => {
     const row = element("div", undefined, "model-item");
     row.dataset.kind = model.kind;
-    row.append(element("span", model.id, "model-id"), element("span", model.name, "model-name"), element("span", snapshot.runs.some(run => run.model_id === model.id) ? "Con registro" : "Planificado", "model-state"));
+    row.append(element("span", model.name, "model-name"), element("span", MODEL_KINDS[model.kind] ?? "Catálogo", "model-state"));
     return row;
   }));
   byId("snapshot-notes").hidden = snapshot.notes.length === 0;
