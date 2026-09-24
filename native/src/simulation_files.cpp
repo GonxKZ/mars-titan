@@ -6,6 +6,7 @@
 #include <array>
 #include <atomic>
 #include <cerrno>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -187,6 +188,80 @@ std::size_t process_peak_rss() {
 #endif
 }
 
+std::size_t executable_peak_rss() {
+#if defined(__linux__)
+    const FileDescriptor file(::open("/proc/self/status", O_RDONLY | O_NOFOLLOW | O_CLOEXEC));
+    std::array<char, stream_chunk_bytes> buffer{};
+    std::size_t used = 0;
+    while (used < buffer.size()) {
+        const auto remaining = std::span(buffer).subspan(used);
+        const auto count = ::read(file.get(), remaining.data(), remaining.size());
+        if (count < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            io_error("No se puede leer VmHWM");
+        }
+        if (count == 0) {
+            break;
+        }
+        used += static_cast<std::size_t>(count);
+    }
+    if (used == buffer.size()) {
+        throw std::runtime_error("El estado de procfs alcanza el límite de 64 KiB");
+    }
+    std::string_view text(buffer.data(), used);
+    constexpr std::string_view field = "VmHWM:";
+    while (!text.empty()) {
+        const auto end = text.find('\n');
+        const auto line = text.substr(0, end);
+        text = end == std::string_view::npos ? std::string_view{} : text.substr(end + 1);
+        if (!line.starts_with(field)) {
+            continue;
+        }
+        auto value = line.substr(field.size());
+        const auto start = value.find_first_not_of(" \t");
+        if (start == std::string_view::npos) {
+            break;
+        }
+        value.remove_prefix(start);
+        const auto split = value.find_first_not_of("0123456789");
+        if (split == 0 || split == std::string_view::npos) {
+            break;
+        }
+        const auto digits = value.substr(0, split);
+        uint64_t kibibytes = 0;
+        const auto converted = std::from_chars(digits.begin(), digits.end(), kibibytes);
+        const auto unit = value.substr(split);
+        const auto unit_start = unit.find_first_not_of(" \t");
+        if (converted.ec != std::errc{} || converted.ptr != digits.end() ||
+            unit_start == std::string_view::npos || unit.substr(unit_start) != "kB" ||
+            kibibytes > std::numeric_limits<std::size_t>::max() / 1024U) {
+            break;
+        }
+        return static_cast<std::size_t>(kibibytes) * 1024U;
+    }
+    throw std::runtime_error("VmHWM no conserva un valor y unidad reconocidos");
+#else
+    throw std::runtime_error("La medición de VmHWM solo está disponible en Linux");
+#endif
+}
+
+void record_memory(Json& report) {
+    const auto peak_rss = process_peak_rss();
+    report["process_peak_rss_bytes"] = peak_rss;
+    report["process_lifetime_peak_rss_bytes"] = peak_rss;
+    report["process_lifetime_peak_rss_method"] = "getrusage_RUSAGE_SELF_including_pre_exec";
+    report["executable_peak_rss_method"] = "linux_proc_self_status_VmHWM";
+    try {
+        report["executable_peak_rss_bytes"] = executable_peak_rss();
+        report["executable_peak_rss_reason"] = nullptr;
+    } catch (const std::exception& error) {
+        report["executable_peak_rss_bytes"] = nullptr;
+        report["executable_peak_rss_reason"] = error.what();
+    }
+}
+
 Json metrics_json(const FinancialMetrics& metrics) {
     const std::unordered_set<std::string> reasons{"", "incomplete", "missing_close", "ruined"};
     if (!reasons.contains(metrics.invalid_reason)) {
@@ -224,6 +299,10 @@ Json run_identity(const MarketTape& tape, const RunOptions& options) {
                 {"parent_id", tape.parent_id},
                 {"native_version", MARS_TITAN_NATIVE_VERSION},
                 {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
+                {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                {"compiler_id", MARS_TITAN_NATIVE_COMPILER_ID},
+                {"compiler_version", MARS_TITAN_NATIVE_COMPILER_VERSION},
+                {"build_type", MARS_TITAN_NATIVE_BUILD_TYPE},
                 {"config", parameters_json(options.parameters)},
                 {"policy", policy_name(options.policy)},
                 {"diagnostic", options.diagnostic},
@@ -649,12 +728,10 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
     const double previous_seconds = numeric_value(report.at("total_seconds"));
     const auto record_resources = [&] {
         const auto elapsed = std::chrono::duration<double>(Clock::now() - started).count();
-        const auto peak_rss = process_peak_rss();
         report["attempt_seconds"] = elapsed;
         report["total_seconds"] = previous_seconds + elapsed;
         report["timing_scope"] = "reference_with_checkpoints_excluding_shared_input";
-        report["process_peak_rss_bytes"] = peak_rss;
-        report["process_lifetime_peak_rss_bytes"] = peak_rss;
+        record_memory(report);
         report["price_and_score_bytes"] =
             (tape->prices.size() + tape->scores.size()) * sizeof(double);
         report["updated_at_utc"] = utc_now();
@@ -777,8 +854,8 @@ Json run_comparison(std::shared_ptr<const MarketTape> tape, const ComparisonOpti
                  {"parent_frozen", true},
                  {"updated_at_utc", utc_now()},
                  {"total_seconds", std::chrono::duration<double>(Clock::now() - started).count()},
-                 {"process_peak_rss_bytes", process_peak_rss()},
                  {"timing_scope", "comparison_excluding_shared_input"}};
+    record_memory(summary);
     atomic_json_file(options.run.output / "comparison.json", summary);
     for (const auto& failure : failures) {
         if (failure) {

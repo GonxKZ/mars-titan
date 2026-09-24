@@ -165,6 +165,8 @@ def test_comparisons_have_the_same_results_for_every_worker_budget(tmp_path, wor
     execute(original, output, "--compare", "--workers", str(workers), "--capital", "1000")
     summary = read(output / "comparison.json")
     assert summary["status"] == "completed" and len(summary["runs"]) == 9
+    assert summary["executable_peak_rss_bytes"] > 0
+    assert summary["executable_peak_rss_method"] == "linux_proc_self_status_VmHWM"
     results = {}
     for record in summary["runs"]:
         report = read(output / record["path"])
@@ -389,3 +391,28 @@ def test_checkpoint_index_version_cannot_be_silently_converted(tmp_path):
     previous = path.read_bytes()
     execute(directory, output, "--resume", success=False)
     assert path.read_bytes() == previous
+
+
+def test_executable_memory_uses_linux_vmhwm_with_explicit_scope(tmp_path):
+    directory, output = source(tmp_path), tmp_path / "output"
+    execute(directory, output)
+    report = read(output / "run.json")
+    assert report["executable_peak_rss_bytes"] > 0
+    assert report["executable_peak_rss_method"] == "linux_proc_self_status_VmHWM"
+    assert report["executable_peak_rss_reason"] is None
+
+
+def test_build_identity_is_recorded_and_cannot_change_on_resume(tmp_path):
+    directory, output = source(tmp_path), tmp_path / "output"
+    execute(directory, output, "--stop-after", "0")
+    report = read(output / "run.json")
+    identity = report["identity"]
+    assert len(identity["native_build_sha256"]) == 64
+    assert identity["compiler_id"] and identity["compiler_version"] and identity["build_type"]
+    marker = output / "identity.json"
+    altered = read(marker)
+    altered["native_build_sha256"] = "f" * 64
+    marker.write_text(json.dumps(altered))
+    previous = marker.read_bytes()
+    execute(directory, output, "--resume", success=False)
+    assert marker.read_bytes() == previous

@@ -149,6 +149,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Diagnostics.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Instrumentation.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Coverage.cmake"
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildIdentity.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunnerDependencies.cmake")
         if(TARGET mars-titan-sim)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation_files.hpp")
@@ -193,6 +194,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 mars_titan_sanitizer_test_environment(fuzz_session_smoke)
             endif()
         endif()
+    endif()
+
+    if(MARS_TITAN_BUILD_FINANCIAL)
+        include(cmake/BuildIdentity.cmake)
+        mars_titan_build_identity("${native_source_hash}")
     endif()
 
     if(MARS_TITAN_ENABLE_STATIC_ANALYZER)

@@ -62,11 +62,13 @@ function(mars_titan_find_arrow)
     add_library(mars_titan_arrow SHARED IMPORTED)
     set_target_properties(mars_titan_arrow PROPERTIES
         IMPORTED_LOCATION "${arrow_library}"
+        MARS_TITAN_DEPENDENCY_VERSION "${sdk_version}"
         INTERFACE_INCLUDE_DIRECTORIES "${sdk_include}"
         INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${sdk_include}")
     add_library(mars_titan_parquet SHARED IMPORTED)
     set_target_properties(mars_titan_parquet PROPERTIES
         IMPORTED_LOCATION "${parquet_library}"
+        MARS_TITAN_DEPENDENCY_VERSION "${sdk_version}"
         INTERFACE_INCLUDE_DIRECTORIES "${sdk_include}"
         INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${sdk_include}"
         INTERFACE_LINK_LIBRARIES mars_titan_arrow)

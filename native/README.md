@@ -23,7 +23,9 @@ Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para co
 
 El programa utiliza Arrow y Parquet C++, OpenSSL Crypto y [nlohmann_json 3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0). La descarga de JSON se verifica con el SHA-256 publicado. CMake busca primero los paquetes del SDK Arrow/Parquet. En Linux puede localizar las cabeceras y bibliotecas C++ de PyArrow mediante `uv` durante la configuración. El ejecutable enlaza `libarrow` y `libparquet`, sin `arrow_python` ni `libpython`. JSON y las dependencias de archivos quedan fuera de la sesión pura.
 
-La identidad compilada contiene la versión y una huella de fuentes, cabeceras y configuración. Incluye `accurate_sum.hpp`. Los cambios en esos archivos hacen que CMake vuelva a calcular la huella antes de compilar.
+La identidad compilada separa la huella de fuentes y cabeceras de la huella de compilación. Esta última incorpora compiladores y versiones, sistema y arquitectura, C++20, configuración, flags, opciones de los objetivos, endurecimiento STL, sanitizadores, cobertura, LTO y PGO. Cuando se usa PGO, incluye también el contenido de sus perfiles. Debug, Release y GCC tienen identidades distintas. `native-build-identity-Release.txt`, o el archivo equivalente de cada configuración, permite consultar los valores utilizados. Es una identidad de configuración y fuentes, no un hash del binario.
+
+La huella de fuentes incluye `accurate_sum.hpp` y los módulos de CMake que preparan la compilación. Los cambios en esos archivos hacen que CMake vuelva a calcular ambas huellas antes de compilar. El ejecutable registra también el identificador y la versión del compilador y el tipo de build.
 
 ## Perfiles y diagnósticos
 
