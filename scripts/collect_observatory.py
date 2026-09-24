@@ -6,7 +6,6 @@ import json
 import logging
 import signal
 import subprocess
-import threading
 import time
 from contextlib import ExitStack
 from pathlib import Path
@@ -35,9 +34,15 @@ def main():
         parser.error("Configuración de campañas inválida")
     args.state_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    stop = threading.Event()
+    stop_requested = False
+
+    def request_stop(*_args):
+        nonlocal stop_requested
+        # El manejador puede interrumpir un bloqueo del hilo principal.
+        stop_requested = True
+
     for signum in (signal.SIGTERM, signal.SIGINT):
-        signal.signal(signum, lambda *_args: stop.set())
+        signal.signal(signum, request_stop)
     publisher = GitPublisher(args.publish_checkout) if args.publish_checkout else None
     worker = PublicationWorker(publisher) if publisher else None
     try:
@@ -47,7 +52,7 @@ def main():
             with (args.state_dir / "collector.lock").open("a") as lock:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 with Collector(args.root, args.state_dir / "sources.sqlite") as collector:
-                    while not stop.is_set():
+                    while not stop_requested:
                         started = time.monotonic()
                         try:
                             snapshot = collector.collect(config["sources"])
@@ -70,7 +75,8 @@ def main():
                                 raise
                         if not args.watch:
                             break
-                        stop.wait(max(0, 15 - (time.monotonic() - started)))
+                        if not stop_requested:
+                            time.sleep(max(0, 15 - (time.monotonic() - started)))
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         logging.error("Recolección o publicación sin confirmar: %s", type(error).__name__)
         return 1

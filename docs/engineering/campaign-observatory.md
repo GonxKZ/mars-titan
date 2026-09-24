@@ -46,7 +46,9 @@ uv run --locked python scripts/collect_observatory.py \
 
 Sin `--watch` realiza una única recolección. Con él, el intervalo es de 15 segundos.
 El bloqueo local impide dos recolectores sobre el mismo estado. SIGTERM y SIGINT
-terminan tras la operación en curso. Una fuente corrupta conserva el índice público
+marcan la parada sin tomar bloqueos desde el manejador. Se completa la operación
+en curso y, si ya comenzó, la espera local restante del intervalo de 15 segundos.
+Una fuente corrupta conserva el índice público
 anterior. Las lecturas admiten hasta 2 MiB por JSON, 4096 fuentes y 64 MiB de
 contenido acumulado. Si se supera el presupuesto se informa del error.
 
