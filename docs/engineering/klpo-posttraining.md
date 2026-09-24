@@ -54,6 +54,12 @@ con otra semilla ni se sobrescriben para acomodar cambios de código o datos.
 Cada campaña nueva necesita otro directorio. La pausa de una ejecución se
 solicita con SIGINT y se retoma con la misma configuración.
 
+La cola, el origen ordenado, la caché padre, el estudio y cada ajuste registran
+su identidad antes de generar artefactos. Un fallo en la primera escritura
+puede retomarse si la carpeta solo contiene sus archivos de inicialización.
+Una carpeta con contenido ajeno o con artefactos cuyo recibo se ha perdido se
+rechaza. La identidad se comprueba también al regresar del último ajuste.
+
 Para un padre y un corpus ordenado ya preparados:
 
 ```bash
@@ -103,3 +109,7 @@ El corpus estadounidense conserva la política `source_audited_not_external`.
 No equivale a una verificación externa de cada noticia. La cola no amplía por
 sí misma la cobertura china ni resuelve fechas de publicación pendientes.
 Los resultados del conjunto de prueba final no se consultan en este flujo.
+
+La [comprobación ejecutada sobre 470 muestras](../../reports/baselines/klpo-check-20260924.md)
+conserva sus 36 ajustes y sus límites. Ninguno superó el retorno cero en esa
+edición. Es una comprobación previa, no el resultado de la cola completa.
