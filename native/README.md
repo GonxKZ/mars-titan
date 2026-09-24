@@ -72,7 +72,7 @@ cmake --build --preset native-asan-ubsan
 ctest --preset native-asan-ubsan
 ```
 
-Los tests `simulation`, `concurrency` y `c_abi` comprueban la contabilidad, las llamadas concurrentes y un consumidor C17 real. La sesión añade `financial_session`. El perfil de fuzzing añade `fuzz_smoke` y, cuando la sesión está activada, `fuzz_session_smoke`. Cada ejecución utiliza 1000 entradas, semilla 42, un máximo de 4096 bytes por entrada y un límite de 2048 MiB. Cada test tiene un tiempo máximo.
+Los tests `simulation`, `concurrency` y `c_abi` comprueban la contabilidad, las llamadas concurrentes y un consumidor C17 real. La sesión añade `financial_session`. El perfil de fuzzing añade `fuzz_smoke` y, cuando la sesión está activada, `fuzz_session_smoke`. Si también está activado el ejecutable, `fuzz_serialization_smoke` comprueba la lectura JSON acotada y la conservación de snapshots al serializarlos y recuperarlos. Su semilla se copia a `fuzz-json-corpus` en el directorio de build y las entradas generadas se guardan allí. Cada ejecución utiliza 1000 entradas, semilla 42, un máximo de 4096 bytes por entrada y un límite de 2048 MiB. Cada test tiene un tiempo máximo.
 
 Los perfiles instrumentados conservan símbolos y punteros de pila. CTest solicita trazas simbolizadas y utiliza `llvm-symbolizer` cuando está disponible. Las búsquedas de símbolos por red quedan desactivadas. ASan y UBSan se combinan entre sí. TSan y MSan requieren sus propios directorios y runtimes.
 

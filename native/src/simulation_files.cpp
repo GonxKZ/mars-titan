@@ -13,9 +13,12 @@
 #include <ctime>
 #include <exception>
 #include <fcntl.h>
+#include <iomanip>
 #include <limits>
+#include <locale>
 #include <memory>
 #include <span>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -36,8 +39,12 @@ constexpr std::size_t sha_bytes = 32;
 constexpr std::size_t sha_characters = 64;
 constexpr std::size_t maximum_json_depth = 64;
 constexpr std::size_t checkpoint_history = 2;
-constexpr std::size_t stream_chunk_bytes = 64U * 1024U;
-constexpr std::size_t latest_bytes = 64U * 1024U;
+constexpr std::size_t stream_chunk_bytes = 64 * bytes_per_kibibyte;
+constexpr std::size_t latest_bytes = 64 * bytes_per_kibibyte;
+constexpr std::size_t utc_buffer_characters = 32;
+constexpr std::size_t maximum_workers = 8;
+constexpr unsigned int hexadecimal_digit_mask = 0x0f;
+constexpr std::array reference_costs{0, 10, 25};
 
 [[noreturn]] void io_error(std::string_view operation) {
     const int error = errno;
@@ -85,6 +92,8 @@ class OutputLock {
             throw std::invalid_argument("La salida debe ser nueva o usar --resume explícito");
         }
         require_safe_path(directory / ".run.lock");
+        // POSIX requiere open con su argumento mode_t al crear el archivo.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         return ::open((directory / ".run.lock").c_str(), O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
                       S_IRUSR | S_IWUSR);
     }
@@ -168,7 +177,7 @@ std::string utc_now() {
     if (::gmtime_r(&current, &utc) == nullptr) {
         throw std::runtime_error("No se puede obtener la fecha UTC");
     }
-    std::array<char, 32> buffer{};
+    std::array<char, utc_buffer_characters> buffer{};
     const auto length = std::strftime(buffer.data(), buffer.size(), "%Y-%m-%dT%H:%M:%SZ", &utc);
     if (length == 0) {
         throw std::runtime_error("La fecha UTC no cabe en su formato");
@@ -178,18 +187,30 @@ std::string utc_now() {
 
 std::size_t process_peak_rss() {
     rusage usage{};
-    if (::getrusage(RUSAGE_SELF, &usage) != 0 || usage.ru_maxrss < 0) {
+    if (::getrusage(RUSAGE_SELF, &usage) != 0) {
         throw std::runtime_error("No se puede medir el pico de memoria del proceso");
     }
+    // glibc expone ru_maxrss mediante una unión de su ABI, escrita por getrusage.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+    const auto maximum = usage.ru_maxrss;
+    if (maximum < 0) {
+        throw std::runtime_error("El pico de memoria del proceso no puede ser negativo");
+    }
 #if defined(__APPLE__)
-    return static_cast<std::size_t>(usage.ru_maxrss);
+    return static_cast<std::size_t>(maximum);
 #else
-    return static_cast<std::size_t>(usage.ru_maxrss) * 1024U;
+    if (static_cast<uintmax_t>(maximum) >
+        std::numeric_limits<std::size_t>::max() / bytes_per_kibibyte) {
+        throw std::overflow_error("El pico de memoria excede su representación en bytes");
+    }
+    return static_cast<std::size_t>(maximum) * bytes_per_kibibyte;
 #endif
 }
 
 std::size_t executable_peak_rss() {
 #if defined(__linux__)
+    // El API POSIX conserva la firma variádica también en aperturas de lectura.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     const FileDescriptor file(::open("/proc/self/status", O_RDONLY | O_NOFOLLOW | O_CLOEXEC));
     std::array<char, stream_chunk_bytes> buffer{};
     std::size_t used = 0;
@@ -236,10 +257,10 @@ std::size_t executable_peak_rss() {
         const auto unit_start = unit.find_first_not_of(" \t");
         if (converted.ec != std::errc{} || converted.ptr != digits.end() ||
             unit_start == std::string_view::npos || unit.substr(unit_start) != "kB" ||
-            kibibytes > std::numeric_limits<std::size_t>::max() / 1024U) {
+            kibibytes > std::numeric_limits<std::size_t>::max() / bytes_per_kibibyte) {
             break;
         }
-        return static_cast<std::size_t>(kibibytes) * 1024U;
+        return static_cast<std::size_t>(kibibytes) * bytes_per_kibibyte;
     }
     throw std::runtime_error("VmHWM no conserva un valor y unidad reconocidos");
 #else
@@ -308,6 +329,93 @@ Json run_identity(const MarketTape& tape, const RunOptions& options) {
                 {"diagnostic", options.diagnostic},
                 {"partition", tape.partition},
                 {"rng", "none_deterministic_policies"}};
+}
+
+Json receipt_contract(const MarketTape& tape, const RunOptions& options, const Json& identity) {
+    return Json{{"schema_version", 1},
+                {"activity", "simulation"},
+                {"model", policy_name(options.policy)},
+                {"domain", options.diagnostic ? "technical" : "synthetic"},
+                {"partition", "validation"},
+                {"identity", identity},
+                {"total_steps", tape.close_times.size() - 1},
+                {"final_test_opened", false},
+                {"parent_frozen", true},
+                {"currency", tape.currency},
+                {"cost_bps", options.parameters.cost_bps}};
+}
+
+std::string receipt_time(const Json& value) {
+    constexpr std::size_t timestamp_characters = 20;
+    constexpr int calendar_year_offset = 1900;
+    const auto text = value.get<std::string>();
+    std::istringstream input(text);
+    input.imbue(std::locale::classic());
+    std::tm parsed{};
+    input >> std::get_time(&parsed, "%Y-%m-%dT%H:%M:%SZ");
+    const std::chrono::year_month_day date{
+        std::chrono::year{parsed.tm_year + calendar_year_offset},
+        std::chrono::month{static_cast<unsigned>(parsed.tm_mon + 1)},
+        std::chrono::day{static_cast<unsigned>(parsed.tm_mday)}};
+    if (text.size() != timestamp_characters || input.fail() || input.peek() != EOF || !date.ok()) {
+        throw std::invalid_argument("El recibo necesita fechas UTC válidas");
+    }
+    return text;
+}
+
+void validate_receipt(const Json& report, const FinancialSession& session, const Json& expected) {
+    for (const auto& [key, value] : expected.items()) {
+        if (report.at(key) != value) {
+            throw std::invalid_argument("El recibo no conserva el contrato de la ejecución");
+        }
+    }
+    if (read_json_int64(report.at("schema_version")) != 1) {
+        throw std::invalid_argument("El recibo no conserva su versión entera");
+    }
+    const auto step = size_value(report.at("global_step"), session.cursor());
+    static_cast<void>(size_value(report.at("total_steps"), maximum_sessions));
+    const std::unordered_set<std::string> statuses{"running", "paused", "failed", "completed"};
+    if (!statuses.contains(report.at("status").get<std::string>())) {
+        throw std::invalid_argument("El recibo contiene un estado de ejecución desconocido");
+    }
+    const auto total = numeric_value(report.at("total_seconds"));
+    if (total < 0 || (report.contains("attempt_seconds") &&
+                      (numeric_value(report.at("attempt_seconds")) < 0 ||
+                       numeric_value(report.at("attempt_seconds")) > total))) {
+        throw std::invalid_argument("Los tiempos del recibo deben ser no negativos y coherentes");
+    }
+    for (const auto* field : {"process_peak_rss_bytes", "process_lifetime_peak_rss_bytes",
+                              "executable_peak_rss_bytes", "price_and_score_bytes"}) {
+        if (report.contains(field) && !report.at(field).is_null()) {
+            static_cast<void>(
+                size_value(report.at(field), std::numeric_limits<std::size_t>::max()));
+        }
+    }
+    if (report.contains("timing_scope") &&
+        report.at("timing_scope") != "reference_with_checkpoints_excluding_shared_input") {
+        throw std::invalid_argument("El tiempo del recibo tiene un alcance desconocido");
+    }
+    const auto started = receipt_time(report.at("started_at_utc"));
+    const auto updated =
+        report.contains("updated_at_utc") ? receipt_time(report.at("updated_at_utc")) : started;
+    if (updated < started || updated > utc_now()) {
+        throw std::invalid_argument("Las fechas del recibo no conservan el orden observado");
+    }
+    if (report.contains("checkpoint")) {
+        const auto& checkpoint = report.at("checkpoint");
+        const auto digest = checkpoint.at("sha256").get<std::string>();
+        const auto saved = receipt_time(checkpoint.at("saved_at"));
+        if (!valid_digest(digest) ||
+            checkpoint.at("path") != "private/checkpoints/state-" + digest + ".json" ||
+            size_value(checkpoint.at("step"), session.cursor()) != step ||
+            checkpoint.at("resumable") != true || saved < started || saved > updated) {
+            throw std::invalid_argument("El recibo no conserva sus metadatos de recuperación");
+        }
+    }
+    if (step == session.cursor() &&
+        report.at("financial_validation") != metrics_json(session.metrics())) {
+        throw std::invalid_argument("El recibo no coincide con la contabilidad confirmada");
+    }
 }
 
 void confirm_identity(const std::filesystem::path& output, const Json& identity, bool resume) {
@@ -457,7 +565,9 @@ void require_safe_path(const std::filesystem::path& path) {
 
 std::string read_bounded_file(const std::filesystem::path& path, std::size_t maximum) {
     require_safe_path(path);
-    const FileDescriptor file(::open(path.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC));
+    // O_NONBLOCK permite rechazar un FIFO con fstat sin esperar a que otro proceso lo abra.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+    const FileDescriptor file(::open(path.c_str(), O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC));
     struct stat before{};
     if (::fstat(file.get(), &before) != 0) {
         io_error("No se puede inspeccionar el archivo");
@@ -512,7 +622,7 @@ std::string content_sha256(std::string_view bytes) {
     encoded.reserve(sha_characters);
     for (const auto byte : result) {
         encoded.push_back(hexadecimal[byte >> 4U]);
-        encoded.push_back(hexadecimal[byte & 0x0fU]);
+        encoded.push_back(hexadecimal[byte & hexadecimal_digit_mask]);
     }
     return encoded;
 }
@@ -576,7 +686,9 @@ void atomic_json_file(const std::filesystem::path& path, const Json& value, std:
             io_error("No se puede confirmar el JSON");
         }
         std::filesystem::rename(pending, path);
+        // La sincronización del directorio necesita un descriptor POSIX con O_DIRECTORY.
         const FileDescriptor directory(
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
             ::open(path.parent_path().c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC));
         if (::fsync(directory.get()) != 0) {
             io_error("No se puede confirmar el directorio");
@@ -695,10 +807,7 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
         event = payload.at("last_event");
         report = parse_bounded_json(
             read_bounded_file(options.output / "run.json", maximum_manifest_bytes));
-        if (report.at("identity") != identity || report.at("final_test_opened") != false ||
-            report.at("parent_frozen") != true) {
-            throw std::invalid_argument("El recibo de ejecución no conserva su identidad");
-        }
+        validate_receipt(report, session, receipt_contract(*tape, options, identity));
         if (report.at("status") == "completed") {
             if (!session.done() || report.at("global_step") != session.cursor() ||
                 report.at("financial_validation") != metrics_json(session.metrics())) {
@@ -707,25 +816,17 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
             return report;
         }
     } else {
-        report = Json{{"schema_version", 1},
-                      {"activity", "simulation"},
-                      {"model", policy_name(options.policy)},
-                      {"domain", options.diagnostic ? "technical" : "synthetic"},
-                      {"partition", "validation"},
-                      {"identity", identity},
-                      {"global_step", 0},
-                      {"total_steps", tape->close_times.size() - 1},
-                      {"final_test_opened", false},
-                      {"parent_frozen", true},
-                      {"currency", tape->currency},
-                      {"cost_bps", options.parameters.cost_bps},
-                      {"started_at_utc", utc_now()},
-                      {"total_seconds", 0.0}};
+        report = receipt_contract(*tape, options, identity);
+        report["global_step"] = 0;
+        report["started_at_utc"] = utc_now();
+        report["total_seconds"] = 0.0;
     }
+    const double previous_seconds = numeric_value(report.at("total_seconds"));
     report["status"] = "running";
+    report.erase("error");
+    report.erase("error_type");
     report["financial_validation"] = metrics_json(session.metrics());
     atomic_json_file(options.output / "run.json", report);
-    const double previous_seconds = numeric_value(report.at("total_seconds"));
     const auto record_resources = [&] {
         const auto elapsed = std::chrono::duration<double>(Clock::now() - started).count();
         report["attempt_seconds"] = elapsed;
@@ -780,7 +881,7 @@ Json run_comparison(std::shared_ptr<const MarketTape> tape, const ComparisonOpti
                     const std::function<bool()>& stop_requested) {
     const auto started = Clock::now();
     if (options.workers != 1 && options.workers != 2 && options.workers != 4 &&
-        options.workers != 8) {
+        options.workers != maximum_workers) {
         throw std::invalid_argument("La comparación admite 1, 2, 4 u 8 trabajadores");
     }
     if (!tape || tape->partition != "validation" || tape->domain != "synthetic") {
@@ -791,11 +892,11 @@ Json run_comparison(std::shared_ptr<const MarketTape> tape, const ComparisonOpti
     identity.erase("policy");
     identity["config"].erase("cost_bps");
     identity["policies"] = {"cash", "hold_initial", "rebalance_50"};
-    identity["cost_bps"] = {0, 10, 25};
+    identity["cost_bps"] = reference_costs;
     confirm_identity(options.run.output, identity, options.run.resume);
     constexpr std::array policies{ReferencePolicy::cash, ReferencePolicy::hold_initial,
                                   ReferencePolicy::rebalance_50};
-    constexpr std::array costs{0, 10, 25};
+    constexpr auto costs = reference_costs;
     constexpr auto jobs = policies.size() * costs.size();
     std::vector<Json> results(jobs);
     std::vector<std::exception_ptr> failures(jobs);
@@ -807,8 +908,8 @@ Json run_comparison(std::shared_ptr<const MarketTape> tape, const ComparisonOpti
                 break;
             }
             try {
-                const auto policy = policies[index / costs.size()];
-                const auto cost = costs[index % costs.size()];
+                const auto policy = policies.at(index / costs.size());
+                const auto cost = costs.at(index % costs.size());
                 const auto name = policy_name(policy) + "-cost-" + std::to_string(cost);
                 auto job = options.run;
                 job.output /= name;

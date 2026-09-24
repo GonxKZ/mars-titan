@@ -194,6 +194,23 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 mars_titan_sanitizer_test_environment(fuzz_session_smoke)
             endif()
         endif()
+        if(TARGET mars-titan-sim)
+            add_executable(fuzz_serialization tests/fuzz_serialization.cpp src/simulation_files.cpp)
+            target_link_libraries(fuzz_serialization PRIVATE mars_titan_financial OpenSSL::Crypto
+                Threads::Threads nlohmann_json::nlohmann_json)
+            mars_titan_configure_target(fuzz_serialization)
+            target_compile_options(fuzz_serialization PRIVATE -fsanitize=fuzzer-no-link)
+            target_link_options(fuzz_serialization PRIVATE -fsanitize=fuzzer)
+            set(fuzz_json_corpus "${CMAKE_CURRENT_BINARY_DIR}/fuzz-json-corpus")
+            configure_file(tests/fixtures/snapshot.json "${fuzz_json_corpus}/snapshot.json" COPYONLY)
+            if(BUILD_TESTING)
+                add_test(NAME fuzz_serialization_smoke COMMAND fuzz_serialization
+                    "${fuzz_json_corpus}" -seed=42 -runs=1000 -max_len=4096 -timeout=5 -rss_limit_mb=2048)
+                set_tests_properties(fuzz_serialization_smoke PROPERTIES
+                    TIMEOUT 60 LABELS "fuzz;serialization")
+                mars_titan_sanitizer_test_environment(fuzz_serialization_smoke)
+            endif()
+        endif()
     endif()
 
     if(MARS_TITAN_BUILD_FINANCIAL)

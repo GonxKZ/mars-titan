@@ -64,22 +64,134 @@ def source(tmp_path):
     return path
 
 
-def execute(input_path, output, *args, success=True):
+def execute(input_path, output, *args, success=True, timeout=60):
     result = subprocess.run(
         [str(binary()), "--input", str(input_path), "--output", str(output), "--diagnostic", *args],
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=timeout,
     )
     if success:
         assert result.returncode == 0, result.stderr
     else:
-        assert result.returncode != 0
+        assert result.returncode == 1, result.stderr
+        assert result.stderr.startswith("Error: "), result.stderr
+    for diagnostic in (
+        "AddressSanitizer",
+        "UndefinedBehaviorSanitizer",
+        "ThreadSanitizer",
+        "MemorySanitizer",
+        "runtime error:",
+    ):
+        assert diagnostic not in result.stderr, result.stderr
     return result
 
 
 def read(path):
     return json.loads(path.read_text())
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ("--workers", "2"),
+        ("--compare", "--workers", "3"),
+        ("--compare", "--cost-bps", "1"),
+        ("--compare", "--policy", "cash"),
+        ("--capital", "nan"),
+        ("--capital", "0"),
+        ("--participation", "1.1"),
+        ("--checkpoint-steps", "0"),
+        ("--stop-after", "-1"),
+        ("--diagnostic",),
+        ("--unknown", "x"),
+        ("--cost-bps",),
+        ("--cost-bps", "10trailing"),
+    ],
+)
+def test_invalid_options_are_rejected_before_creating_output(tmp_path, arguments):
+    original, output = source(tmp_path), tmp_path / "output"
+    execute(original, output, *arguments, success=False)
+    assert not output.exists()
+
+
+def test_output_cannot_overlap_the_input_directory(tmp_path):
+    original = source(tmp_path)
+    previous = (original / "manifest.json").read_bytes()
+    execute(original, original / "output", success=False)
+    assert (original / "manifest.json").read_bytes() == previous
+    assert not (original / "output").exists()
+
+
+def test_help_runs_without_input_files():
+    result = subprocess.run([str(binary()), "--help"], capture_output=True, text=True, timeout=2)
+    assert result.returncode == 0 and not result.stderr
+    assert "--compare --workers 1|2|4|8" in result.stdout
+
+
+@pytest.mark.parametrize("document", ["manifest.json", "market.parquet", "checkpoint"])
+def test_named_pipes_are_rejected_without_waiting_for_a_writer(tmp_path, document):
+    original, output = source(tmp_path), tmp_path / "output"
+    args = ()
+    if document == "checkpoint":
+        execute(original, output, "--stop-after", "0")
+        path = output / "private/checkpoints/latest.json"
+        args = ("--resume",)
+    else:
+        path = original / document
+    path.unlink()
+    os.mkfifo(path)
+    result = execute(original, output, *args, success=False, timeout=2)
+    assert "no es regular" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("domain", "real"),
+        ("schema_version", 9),
+        ("model", "unknown"),
+        ("activity", "rl"),
+        ("partition", "test"),
+        ("currency", "EUR"),
+        ("cost_bps", 999),
+        ("total_steps", 99),
+        ("global_step", 99),
+        ("status", "unknown"),
+        ("total_seconds", "broken"),
+        ("total_seconds", -1),
+        ("started_at_utc", "2026-02-31T00:00:00Z"),
+        ("updated_at_utc", "broken"),
+        ("attempt_seconds", -1),
+        ("executable_peak_rss_bytes", -1),
+        ("timing_scope", "unknown"),
+    ],
+)
+def test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file(tmp_path, field, value):
+    original, output = source(tmp_path), tmp_path / "output"
+    execute(original, output, "--stop-after", "1")
+    path = output / "run.json"
+    report = read(path)
+    report[field] = value
+    path.write_text(json.dumps(report))
+    previous = path.read_bytes()
+    state, _ = checkpoint(output)
+    previous_state = state.read_bytes()
+    execute(original, output, "--resume", success=False)
+    assert path.read_bytes() == previous
+    assert state.read_bytes() == previous_state
+
+
+def test_receipt_behind_a_confirmed_checkpoint_can_recover(tmp_path):
+    original, output = source(tmp_path), tmp_path / "output"
+    execute(original, output, "--stop-after", "1")
+    previous = (output / "run.json").read_bytes()
+    execute(original, output, "--stop-after", "1", "--resume")
+    state, _ = checkpoint(output)
+    assert read(state)["global_step"] == 2
+    (output / "run.json").write_bytes(previous)
+    execute(original, output, "--resume")
+    assert read(output / "run.json")["status"] == "completed"
 
 
 def test_cpp_reads_parquet_and_uses_actual_manifest_digest(tmp_path):

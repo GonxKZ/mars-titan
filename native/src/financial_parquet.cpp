@@ -30,7 +30,12 @@ constexpr std::size_t price_columns = 5;
 constexpr std::size_t numerical_columns = 6;
 constexpr std::size_t calendar_columns = 3;
 constexpr std::size_t footer_bytes = 8;
-constexpr std::size_t maximum_footer_bytes = 4U * 1024U * 1024U;
+constexpr std::size_t maximum_footer_bytes = 4 * bytes_per_mebibyte;
+constexpr std::size_t sha256_characters = 64;
+constexpr std::size_t bits_per_byte = 8;
+constexpr std::size_t maximum_asset_characters = 96;
+constexpr int64_t reader_buffer_bytes = 64 * static_cast<int64_t>(bytes_per_kibibyte);
+constexpr int32_t maximum_metadata_items = 100'000;
 constexpr int64_t reader_batch_rows = 4096;
 
 void require_arrow(const arrow::Status& status) {
@@ -60,7 +65,7 @@ bool valid_digest(const Json& value) {
         return false;
     }
     const auto& text = value.get_ref<const std::string&>();
-    return text.size() == 64 && std::ranges::all_of(text, [](char ch) {
+    return text.size() == sha256_characters && std::ranges::all_of(text, [](char ch) {
                return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
            });
 }
@@ -74,7 +79,7 @@ void validate_footer(std::string_view bytes) {
     for (std::size_t i = 0; i < 4; ++i) {
         const auto byte = static_cast<uint32_t>(
             static_cast<unsigned char>(bytes[bytes.size() - footer_bytes + i]));
-        length |= byte << (i * 8U);
+        length |= byte << (i * bits_per_byte);
     }
     if (length == 0 || length > maximum_footer_bytes || length > bytes.size() - footer_bytes) {
         throw std::invalid_argument("El pie Parquet excede el presupuesto de metadatos");
@@ -126,12 +131,12 @@ void read_batches(parquet::arrow::FileReader& reader, MarketTape& tape, std::siz
     }
     std::array<int, columns.size()> indices{};
     for (std::size_t i = 0; i < columns.size(); ++i) {
-        indices[i] = schema->GetFieldIndex(std::string(columns[i]));
+        indices.at(i) = schema->GetFieldIndex(std::string(columns.at(i)));
         const auto wanted = i < numerical_columns                      ? arrow::Type::DOUBLE
                             : i < numerical_columns + calendar_columns ? arrow::Type::INT64
                                                                        : arrow::Type::STRING;
-        if (indices[i] < 0 || schema->field(indices[i])->type()->id() != wanted) {
-            throw std::invalid_argument("La columna " + std::string(columns[i]) +
+        if (indices.at(i) < 0 || schema->field(indices.at(i))->type()->id() != wanted) {
+            throw std::invalid_argument("La columna " + std::string(columns.at(i)) +
                                         " no conserva su tipo");
         }
     }
@@ -147,12 +152,13 @@ void read_batches(parquet::arrow::FileReader& reader, MarketTape& tape, std::siz
         std::array<std::shared_ptr<arrow::DoubleArray>, numerical_columns> numeric{};
         std::array<std::shared_ptr<arrow::Int64Array>, calendar_columns> calendar{};
         for (std::size_t i = 0; i < numeric.size(); ++i) {
-            numeric[i] = std::static_pointer_cast<arrow::DoubleArray>(batch->column(indices[i]));
+            numeric.at(i) =
+                std::static_pointer_cast<arrow::DoubleArray>(batch->column(indices.at(i)));
         }
         for (std::size_t i = 0; i < calendar.size(); ++i) {
-            calendar[i] = std::static_pointer_cast<arrow::Int64Array>(
-                batch->column(indices[numerical_columns + i]));
-            if (calendar[i]->null_count() != 0) {
+            calendar.at(i) = std::static_pointer_cast<arrow::Int64Array>(
+                batch->column(indices.at(numerical_columns + i)));
+            if (calendar.at(i)->null_count() != 0) {
                 throw std::invalid_argument("El calendario contiene valores ausentes");
             }
         }
@@ -175,9 +181,9 @@ void read_batches(parquet::arrow::FileReader& reader, MarketTape& tape, std::siz
                 throw std::invalid_argument("Las columnas decodificadas exceden 256 MiB");
             }
             for (std::size_t i = 0; i < numeric.size(); ++i) {
-                const double value = numeric[i]->IsNull(row)
+                const double value = numeric.at(i)->IsNull(row)
                                          ? std::numeric_limits<double>::quiet_NaN()
-                                         : numeric[i]->Value(row);
+                                         : numeric.at(i)->Value(row);
                 if (std::isinf(value)) {
                     throw std::invalid_argument("El Parquet contiene valores infinitos");
                 }
@@ -233,7 +239,9 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
     tape->assets = identity.at("assets").get<std::vector<std::string>>();
     if (tape->assets.size() != assets || !std::ranges::is_sorted(tape->assets) ||
         std::ranges::any_of(tape->assets,
-                            [](const auto& name) { return name.empty() || name.size() > 96; }) ||
+                            [](const auto& name) {
+                                return name.empty() || name.size() > maximum_asset_characters;
+                            }) ||
         std::adjacent_find(tape->assets.begin(), tape->assets.end()) != tape->assets.end()) {
         throw std::invalid_argument("El manifiesto necesita activos únicos y ordenados");
     }
@@ -257,9 +265,9 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
     arrow::CappedMemoryPool pool(&accounting, static_cast<int64_t>(maximum_market_bytes));
     parquet::ReaderProperties properties(&pool);
     properties.enable_buffered_stream();
-    properties.set_buffer_size(64 * 1024);
+    properties.set_buffer_size(reader_buffer_bytes);
     properties.set_thrift_string_size_limit(static_cast<int32_t>(maximum_footer_bytes));
-    properties.set_thrift_container_size_limit(100'000);
+    properties.set_thrift_container_size_limit(maximum_metadata_items);
     properties.set_page_checksum_verification(true);
     parquet::ArrowReaderProperties arrow_properties(false);
     arrow_properties.set_pre_buffer(false);

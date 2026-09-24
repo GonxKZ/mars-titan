@@ -15,15 +15,18 @@
 
 namespace mars_titan::simulation {
 
-inline constexpr std::size_t maximum_manifest_bytes = 4U * 1024U * 1024U;
-inline constexpr std::size_t maximum_market_bytes = 256U * 1024U * 1024U;
-inline constexpr std::size_t maximum_checkpoint_bytes = 16U * 1024U * 1024U;
+inline constexpr std::size_t bytes_per_kibibyte = 1024;
+inline constexpr std::size_t bytes_per_mebibyte = bytes_per_kibibyte * bytes_per_kibibyte;
+inline constexpr std::size_t maximum_manifest_bytes = 4 * bytes_per_mebibyte;
+inline constexpr std::size_t maximum_market_bytes = 256 * bytes_per_mebibyte;
+inline constexpr std::size_t maximum_checkpoint_bytes = 16 * bytes_per_mebibyte;
+inline constexpr std::size_t default_checkpoint_steps = 64;
 
 struct RunOptions {
     std::filesystem::path output;
     Parameters parameters;
     ReferencePolicy policy = ReferencePolicy::cash;
-    std::size_t checkpoint_steps = 64;
+    std::size_t checkpoint_steps = default_checkpoint_steps;
     std::optional<std::size_t> stop_after;
     bool resume = false;
     bool diagnostic = false;
