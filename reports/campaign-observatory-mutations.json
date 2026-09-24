@@ -1,0 +1,21 @@
+{
+  "method": "Mutaciones dirigidas del contrato. Cada sustitución se ejecuta y se revierte antes de entregar.",
+  "mutations": [
+    {
+      "name": "exponer_test",
+      "detected": true
+    },
+    {
+      "name": "inventar_heartbeat",
+      "detected": true
+    },
+    {
+      "name": "perder_paginacion",
+      "detected": true
+    },
+    {
+      "name": "romper_cache",
+      "detected": true
+    }
+  ]
+}

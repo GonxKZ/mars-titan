@@ -48,8 +48,9 @@
     <section id="seguimiento" class="section section-first" aria-labelledby="tracking-heading">
       <div class="section-heading tracking-heading">
         <div><h1 id="tracking-heading">Seguimiento</h1><p class="section-intro">El estado de cada ejecución, con su evidencia y su momento de actualización.</p></div>
-        <div class="source-meta"><span id="source-label">Registro público</span><span id="snapshot-date">Fecha del resumen pendiente</span></div>
+        <div class="source-meta"><span id="source-label">Registro público</span><span id="snapshot-date">Fecha del resumen pendiente</span><span id="publication-date">Publicación no informada</span></div>
       </div>
+      <details id="campaign-summary" class="notice" hidden><summary>Campañas y recuentos previstos</summary><div id="campaign-rows"></div></details>
       <div class="run-heading">
         <div class="run-title"><span id="run-status" class="status status-empty" role="status">Registro vacío</span><h2 id="run-heading">Sin ejecuciones registradas</h2><p id="run-description">Los modelos están planificados. Todavía no hay resultados de entrenamiento en este registro.</p></div>
         <div class="control run-picker" id="run-picker" hidden><label for="run-select">Ejecución e intento</label><select id="run-select"></select></div>
@@ -78,13 +79,18 @@
         <div class="progress-row"><div><span id="progress-label">Avance no disponible</span><span id="epoch-label"></span></div><progress id="run-progress" max="100" aria-label="Avance de la ejecución" hidden></progress></div>
         <dl id="key-metrics" class="metric-strip"></dl>
         <div class="observation-layout">
-          <div class="curve-panel">
+          <div class="curve-panel" id="predictive-curve">
             <div class="panel-heading"><h3>Curva observada</h3><div class="control control-inline"><label for="curve-metric">Medida</label><select id="curve-metric"><option value="loss">Pérdida</option><option value="mae">MAE residual</option></select></div></div>
             <div id="curve-content" class="curve-content"></div>
             <p class="caption">Valores del registro. Los huecos no se interpolan y las fases no son intercambiables.</p>
           </div>
           <aside class="run-details" aria-labelledby="details-heading"><h3 id="details-heading">Continuidad y recursos</h3><dl id="run-details"></dl><p class="caption">Una señal de actividad antigua indica falta de información reciente. No confirma una pausa del proceso.</p></aside>
         </div>
+        <section id="financial-panel" hidden aria-labelledby="financial-heading">
+          <h3 id="financial-heading">Validación financiera</h3>
+          <p class="caption">Agregados de episodios sin deuda ni posiciones cortas. No son errores de predicción ni resultados del test final.</p>
+          <dl id="financial-metrics" class="metric-strip"></dl>
+        </section>
       </div>
       <ul id="snapshot-notes" class="snapshot-notes" hidden></ul>
     </section>
@@ -106,7 +112,7 @@
     <section id="metodo" class="section" aria-labelledby="method-heading">
       <div class="section-heading"><div><h2 id="method-heading">Método</h2><p class="section-intro">¿Aporta información una memoria adaptativa frente a modelos sin esa memoria?</p></div><a class="document-link" href="https://github.com/GonxKZ/mars-titan/blob/main/docs/research/protocol.md">Leer el protocolo</a></div>
       <div class="method-layout">
-        <div class="method-explanation"><h3>Primero predecir. Después actualizar.</h3><p>FinMultiTime reúne precios, noticias, tablas e imágenes. Cada entrada necesita una fecha de disponibilidad defendible. El núcleo requiere precios, noticias, fundamentales y gráficos, junto con contexto macro.</p><p>La predicción se emite después del cierre. El objetivo es el retorno residual entre la apertura y el cierre de la siguiente sesión. La memoria incorpora el error solo cuando la etiqueta ha madurado.</p><p class="method-boundary">Piloto previsto de hasta 64 activos. Comparación principal propuesta de hasta 128, con 32 GB de RAM y una RTX 4070 de 8 GB. Son límites de planificación, no medidas de una ejecución.</p></div>
+        <div class="method-explanation"><h3>Primero predecir. Después actualizar.</h3><p>FinMultiTime reúne precios, noticias, tablas e imágenes. Cada entrada necesita una fecha de disponibilidad defendible. El núcleo requiere precios, noticias, fundamentales y gráficos, junto con contexto macro.</p><p>La predicción se emite después del cierre. El objetivo es el retorno residual entre la apertura y el cierre de la siguiente sesión. La memoria incorpora el error solo cuando la etiqueta ha madurado.</p><p class="method-boundary">La campaña de referencias recorre el universo admitido por su edición de datos. Cada registro identifica la población y sus límites de comparación. El candidato MARS-TITAN sigue sin implementar.</p></div>
         <figure class="causal-diagram">
           <figcaption>Orden de la información <span>Esquema conceptual</span></figcaption>
           <svg viewBox="0 0 600 228" role="img" aria-labelledby="method-svg-title method-svg-desc">
@@ -155,7 +161,8 @@
 
     <section id="historial" class="section" aria-labelledby="history-heading">
       <div class="section-heading"><div><h2 id="history-heading">Historial</h2><p class="section-intro">Resúmenes incluidos en esta instantánea, también cuando terminan con un fallo.</p></div><button class="button button-quiet" id="export-button" type="button" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>Exportar CSV</button></div>
-      <div class="history-controls"><div class="control search-control"><label for="history-search">Buscar ejecución o modelo</label><input id="history-search" type="search" placeholder="Identificador, modelo o variante" autocomplete="off"></div><div class="control"><label for="history-status">Estado</label><select id="history-status"><option value="all">Todos los estados</option><option value="running">En curso</option><option value="stale">Sin actualización</option><option value="queued">En cola</option><option value="paused">Pausada</option><option value="completed">Completada</option><option value="failed">Fallida</option><option value="cancelled">Cancelada</option></select></div><p id="history-count" class="history-count" role="status">Sin ejecuciones registradas</p></div>
+      <div class="history-pages" id="history-pages" hidden><button id="previous-page" class="button" type="button">Página anterior</button><span id="page-position" role="status"></span><button id="next-page" class="button" type="button">Página siguiente</button><p>Los filtros, el CSV y la comparación se aplican a la página consultada.</p></div>
+      <div class="history-controls"><div class="control search-control"><label for="history-search">Buscar ejecución o modelo</label><input id="history-search" type="search" placeholder="Identificador, modelo o variante" autocomplete="off"></div><div class="control"><label for="history-status">Estado</label><select id="history-status"><option value="all">Todos los estados</option><option value="blocked">Bloqueada</option><option value="running">En curso</option><option value="stale">Sin actualización</option><option value="queued">En cola</option><option value="paused">Pausada</option><option value="completed">Completada</option><option value="failed">Fallida</option><option value="cancelled">Cancelada</option></select></div><p id="history-count" class="history-count" role="status">Sin ejecuciones registradas</p></div>
       <div id="history-empty" class="empty-history"><h3>El registro aún no contiene ejecuciones</h3><p>No hay ejecuciones que mostrar. Los intentos aparecerán con su fecha, fase y estado declarado.</p></div>
       <div id="history-table-wrap" class="table-scroll" role="region" aria-label="Historial de ejecuciones" tabindex="0" hidden><table><caption>Ejecuciones registradas, más recientes primero</caption><thead><tr><th scope="col">Ejecución e intento</th><th scope="col">Modelo</th><th scope="col">Fase</th><th scope="col">Estado</th><th scope="col">Último registro</th><th scope="col"><span class="visually-hidden">Abrir detalle</span></th></tr></thead><tbody id="history-body"></tbody></table></div>
     </section>
