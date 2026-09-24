@@ -3,6 +3,7 @@
 import copy
 import fcntl
 import math
+import os
 import resource
 import time
 from dataclasses import asdict, dataclass
@@ -105,6 +106,11 @@ class FinancialTrainer:
         self, env, algorithm, config, *, seed, device="cuda:0", diagnostic=False, lease=None
     ):
         config.validate()
+        if device == "cuda:0" and os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {
+            ":4096:8",
+            ":16:8",
+        }:
+            raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
         if (
             algorithm not in {"ppo", "double_dqn"}
             or env.tape.partition != "train"
@@ -132,6 +138,7 @@ class FinancialTrainer:
             torch.set_num_threads(1)
         torch.manual_seed(seed)
         torch.use_deterministic_algorithms(True)
+        torch.set_float32_matmul_precision("highest")
         self.network = FinancialNetwork(
             env.observation_space.shape[0], value_head=algorithm == "ppo"
         ).to(device)
@@ -161,6 +168,14 @@ class FinancialTrainer:
             diagnostic=diagnostic,
             environment=env.identity,
             torch=str(torch.__version__),
+            numerics=dict(
+                parameter_dtype="float32",
+                float32_matmul_precision=torch.get_float32_matmul_precision(),
+                deterministic_algorithms=torch.are_deterministic_algorithms_enabled(),
+                cublas_workspace=os.environ.get("CUBLAS_WORKSPACE_CONFIG")
+                if device == "cuda:0"
+                else None,
+            ),
             code={
                 name: sha256(Path(__file__).with_name(name))
                 for name in (

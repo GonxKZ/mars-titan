@@ -2,22 +2,22 @@
   "tool": "coverage.py 7.16.1 con ramas y radon 6.0.1",
   "convention": "CRAP = CC² × (1 − cobertura de líneas ejecutables en el intervalo de la función)³ + CC. Diagnóstico, no garantía de corrección.",
   "command": "coverage run --branch --source=mars_titan.simulation -m pytest -q tests/simulation",
-  "tests_passed": 32,
+  "tests_passed": 38,
   "totals": {
-    "covered_lines": 823,
-    "num_statements": 898,
-    "percent_covered": 87.60064412238326,
+    "covered_lines": 844,
+    "num_statements": 919,
+    "percent_covered": 87.92156862745098,
     "percent_covered_display": "88",
     "missing_lines": 75,
     "excluded_lines": 0,
-    "percent_statements_covered": 91.64810690423162,
+    "percent_statements_covered": 91.83895538628944,
     "percent_statements_covered_display": "92",
-    "num_branches": 344,
+    "num_branches": 356,
     "num_partial_branches": 75,
-    "covered_branches": 265,
+    "covered_branches": 277,
     "missing_branches": 79,
-    "percent_branches_covered": 77.03488372093024,
-    "percent_branches_covered_display": "77"
+    "percent_branches_covered": 77.80898876404494,
+    "percent_branches_covered_display": "78"
   },
   "functions": [
     {
@@ -148,10 +148,17 @@
     },
     {
       "file": "src/mars_titan/simulation/market.py",
+      "name": "_times",
+      "complexity": 6,
+      "line_coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "file": "src/mars_titan/simulation/market.py",
       "name": "MarketTape.__init__",
-      "complexity": 45,
+      "complexity": 51,
       "line_coverage": 0.7857142857142857,
-      "crap": 64.92529154518951
+      "crap": 76.59293002915453
     },
     {
       "file": "src/mars_titan/simulation/market.py",
@@ -296,9 +303,16 @@
     {
       "file": "src/mars_titan/simulation/portfolio.py",
       "name": "Portfolio._fill",
-      "complexity": 3,
+      "complexity": 2,
       "line_coverage": 1.0,
-      "crap": 3.0
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/simulation/portfolio.py",
+      "name": "Portfolio._reconcile_cash",
+      "complexity": 6,
+      "line_coverage": 1.0,
+      "crap": 6.0
     },
     {
       "file": "src/mars_titan/simulation/portfolio.py",
@@ -324,9 +338,9 @@
     {
       "file": "src/mars_titan/simulation/portfolio.py",
       "name": "Portfolio._validate",
-      "complexity": 42,
-      "line_coverage": 0.782608695652174,
-      "crap": 60.12279115640666
+      "complexity": 44,
+      "line_coverage": 0.7916666666666666,
+      "crap": 61.50578703703705
     },
     {
       "file": "src/mars_titan/simulation/portfolio.py",
@@ -373,9 +387,9 @@
     {
       "file": "src/mars_titan/simulation/replay.py",
       "name": "Replay.restore",
-      "complexity": 15,
-      "line_coverage": 0.7777777777777778,
-      "crap": 17.469135802469136
+      "complexity": 16,
+      "line_coverage": 0.8181818181818182,
+      "crap": 17.53869271224643
     },
     {
       "file": "src/mars_titan/simulation/storage.py",
@@ -408,9 +422,9 @@
     {
       "file": "src/mars_titan/simulation/training.py",
       "name": "FinancialTrainer.__init__",
-      "complexity": 17,
+      "complexity": 20,
       "line_coverage": 1.0,
-      "crap": 17.0
+      "crap": 20.0
     },
     {
       "file": "src/mars_titan/simulation/training.py",

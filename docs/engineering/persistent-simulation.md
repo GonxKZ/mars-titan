@@ -32,7 +32,7 @@ La preparación analítica genera doce escenarios y conserva su procedencia. La 
 
 ```bash
 uv run --extra reinforcement python scripts/prepare_financial_scenarios.py --output data/interim/financial-scenarios-v1
-uv run --extra reinforcement --extra cuda python scripts/run_financial_comparators.py \
+CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run --extra reinforcement --extra cuda python scripts/run_financial_comparators.py \
   --train-tape data/interim/financial-scenarios-v1/known_signal-train-42 \
   --validation-tape data/interim/financial-scenarios-v1/known_signal-validation-1042 \
   --output data/interim/financial-comparison-v1

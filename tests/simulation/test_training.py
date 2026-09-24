@@ -84,3 +84,21 @@ def test_network_and_replay_do_not_depend_on_default_dtype():
         assert Replay(8, 8).data["observation"].dtype == torch.float32
     finally:
         torch.set_default_dtype(original)
+
+
+def test_replay_rejects_actions_outside_the_shared_contract():
+    from mars_titan.simulation.replay import Replay
+
+    replay = Replay(2, 2)
+    replay.add([1.0, 2.0], [2.0, 3.0], 0, 0.0, False)
+    state = replay.snapshot()
+    state["data"]["action"][0] = 6
+    with pytest.raises(ValueError, match="acción"):
+        replay.restore(state)
+    assert replay.data["action"][0] == 0
+
+
+def test_cuda_requires_deterministic_workspace_before_allocating(monkeypatch):
+    monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
+    with pytest.raises(ValueError, match="CUBLAS_WORKSPACE_CONFIG"):
+        FinancialTrainer(environment(), "ppo", TrainConfig(), seed=42)

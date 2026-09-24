@@ -213,11 +213,6 @@ class Portfolio:
     def _fill(self, state, asset, quantity, price, trades):
         currency = self.instruments[asset].currency
         notional, cost = quantity * price, abs(quantity * price) * self.rate
-        before = state["cash"][currency]
-        remaining = math.fsum((before, -notional, -cost))
-        # Corregir solo el redondeo de la resta, nunca financiar un descubierto.
-        tolerance = 8 * math.ulp(max(before, abs(notional), cost, 1))
-        state["cash"][currency] = 0.0 if -tolerance <= remaining < 0 else remaining
         held = state["positions"].get(asset, 0) + quantity
         if abs(held) < 1e-12:
             state["positions"].pop(asset, None)
@@ -229,7 +224,19 @@ class Portfolio:
             dict(asset=asset, quantity=quantity, price=price, cost=cost, currency=currency)
         )
 
+    @staticmethod
+    def _reconcile_cash(state, opening, trades):
+        amounts = {currency: [value] for currency, value in opening.items()}
+        for trade in trades:
+            amounts[trade["currency"]].extend((-trade["quantity"] * trade["price"], -trade["cost"]))
+        for currency, values in amounts.items():
+            remaining = math.fsum(values)
+            # Conciliar el redondeo agregado, sin acumular el error de cada resta.
+            tolerance = 8 * math.ulp(math.fsum(abs(value) for value in values))
+            state["cash"][currency] = 0.0 if abs(remaining) <= tolerance else remaining
+
     def _execute(self, state, quotes):
+        opening = dict(state["cash"])
         trades, unfilled, buys = [], [], []
         for asset, order in sorted(state["orders"].items()):
             quote = quotes.get(asset)
@@ -249,6 +256,7 @@ class Portfolio:
                     self._fill(state, asset, -quantity, quote.open, trades)
             elif quantity:
                 buys.append((asset, quantity, quote.open))
+        self._reconcile_cash(state, opening, trades)
         for currency in state["cash"]:
             selected = [b for b in buys if self.instruments[b[0]].currency == currency]
             required = math.fsum(q * price * (1 + self.rate) for _, q, price in selected)
@@ -258,6 +266,7 @@ class Portfolio:
                 executable = math.floor(quantity * scale / lot) * lot
                 if executable:
                     self._fill(state, asset, executable, price, trades)
+        self._reconcile_cash(state, opening, trades)
         pending = {}
         reasons = {entry["asset"] for entry in unfilled}
         for asset, order in state["orders"].items():
@@ -353,6 +362,8 @@ class Portfolio:
             raise ValueError("El estado contiene instrumentos desconocidos")
         if len(state["receivables"]) > 65536 or len(state["applied"]) > 65536:
             raise ValueError("El estado supera el presupuesto")
+        if len({entry["id"] for entry in state["receivables"]}) != len(state["receivables"]):
+            raise ValueError("El estado duplica un derecho por dividendo")
         if (
             len(set(state["applied"])) != len(state["applied"])
             or any(

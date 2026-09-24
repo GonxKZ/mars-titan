@@ -104,3 +104,17 @@ def test_restore_rejects_a_reopened_terminal_state():
     state["done"] = False
     with pytest.raises(ValueError, match="final"):
         FinancialEnv(env.tape, cost_bps=0).restore(state)
+
+
+def test_fractional_future_timestamp_cannot_be_rounded_into_the_past():
+    source = tape()
+    with pytest.raises(ValueError, match="enteros"):
+        MarketTape(
+            source.prices,
+            source.close_times,
+            source.assets,
+            source.scores,
+            domain="synthetic",
+            currency="USD",
+            prediction_times=source.close_times.astype(float) + 0.5,
+        )

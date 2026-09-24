@@ -65,6 +65,8 @@ class Replay:
                 or not torch.isfinite(value).all()
             ):
                 raise ValueError("El replay contiene dimensiones o valores inválidos")
+        if ((state["data"]["action"] < 0) | (state["data"]["action"] >= 6)).any():
+            raise ValueError("El replay contiene una acción fuera del contrato financiero")
         for key, value in state["data"].items():
             self.data[key][: state["size"]].copy_(value)
         self.position, self.size = state["position"], state["size"]

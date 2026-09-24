@@ -12,6 +12,19 @@ from mars_titan.environments.cohorts import FINAL_TEST_START_US, VALIDATION_STAR
 from .portfolio import CorporateAction, Quote
 
 
+def _times(values):
+    result = np.asarray(values)
+    if (
+        result.ndim != 1
+        or not len(result)
+        or result.dtype.kind not in "iu"
+        or int(result.min()) < 0
+        or int(result.max()) >= 2**63
+    ):
+        raise ValueError("Los tiempos deben ser enteros UTC no negativos de 64 bits")
+    return result.astype(np.int64, copy=True)
+
+
 class MarketTape:
     def __init__(
         self,
@@ -47,14 +60,18 @@ class MarketTape:
             raise ValueError(
                 "Las predicciones históricas necesitan tiempos de disponibilidad explícitos"
             )
-        prices, scores, times = np.asarray(prices), np.asarray(scores), np.asarray(close_times)
+        prices, scores, times = np.asarray(prices), np.asarray(scores), _times(close_times)
         if (
             prices.ndim != 3
             or prices.shape[2] != 5
             or prices.shape[0] < 2
+            or not 1 <= prices.shape[1] <= 4096
             or prices.shape[0] * prices.shape[1] > 1_048_576
             or len(assets) != prices.shape[1]
             or len(set(assets)) != len(assets)
+            or any(not isinstance(asset, str) or not 1 <= len(asset) <= 96 for asset in assets)
+            or not isinstance(currency, str)
+            or not re.fullmatch(r"[A-Z]{3}", currency)
             or scores.shape != prices.shape[:2]
             or times.shape != (len(prices),)
             or times.dtype.kind not in "iu"
@@ -77,15 +94,13 @@ class MarketTape:
         self.prices = np.array(prices[:, order], dtype=np.float64, copy=True)
         self.scores = np.array(scores[:, order], dtype=np.float64, copy=True)
         self.close_times = times.astype(np.int64, copy=True)
-        self.prediction_times = np.array(
-            times if prediction_times is None else prediction_times, dtype=np.int64
-        )
+        self.prediction_times = _times(times if prediction_times is None else prediction_times)
         if self.prediction_times.shape != times.shape or (self.prediction_times > times).any():
             raise ValueError("Las predicciones contienen información posterior al cierre")
         self.open_times = (
             self.close_times - min(23_400_000_000, int(np.diff(times).min()) // 2)
             if open_times is None
-            else np.asarray(open_times, dtype=np.int64).copy()
+            else _times(open_times)
         )
         if (
             self.open_times.shape != times.shape

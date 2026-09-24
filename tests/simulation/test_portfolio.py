@@ -2,7 +2,9 @@
 
 import hashlib
 import json
+import math
 
+import numpy as np
 import pytest
 
 from mars_titan.simulation.portfolio import CorporateAction, Instrument, Portfolio, Quote
@@ -114,6 +116,26 @@ def test_exact_budget_is_not_rejected_by_float_roundoff():
     assert result["nav"]["USD"] == pytest.approx(1749.21, rel=1e-15)
 
 
+@pytest.mark.parametrize("assets", [32, 128])
+def test_many_simultaneous_purchases_conserve_the_aggregate_budget(assets):
+    prices = dict(
+        zip(
+            (f"A{i:03}" for i in range(assets)),
+            np.random.default_rng(42).uniform(1, 1000, assets).round(2).tolist(),
+            strict=True,
+        )
+    )
+    capital = math.fsum(prices.values())
+    portfolio = Portfolio({a: Instrument("USD") for a in prices}, {"USD": capital}, cost_bps=0)
+    quotes = {a: Quote(p, p, 100000) for a, p in prices.items()}
+    portfolio.start(1, quotes)
+    portfolio.submit(dict.fromkeys(prices, 1), decision_at=1)
+    result = portfolio.advance(2, 3, quotes)
+    assert portfolio.positions == dict.fromkeys(prices, 1)
+    assert portfolio.cash["USD"] == pytest.approx(0, abs=8 * math.ulp(capital))
+    assert result["nav"]["USD"] == capital
+
+
 @pytest.mark.parametrize("change", ["nav", "future_order"])
 def test_rehashed_state_still_requires_accounting_and_temporal_consistency(change):
     portfolio = book()
@@ -139,3 +161,19 @@ def test_pending_order_uses_newly_observed_liquidity_at_next_open():
     assert first["unfilled"][0]["reason"] == "unknown_liquidity"
     second = portfolio.advance(4, 5, {"A": Quote(10, 10, 0)})
     assert second["trades"][0]["quantity"] == 50
+
+
+def test_recovery_cannot_pay_the_same_dividend_twice():
+    portfolio = book()
+    portfolio.submit({"A": 100}, decision_at=1)
+    portfolio.advance(2, 3, {"A": Quote(10, 10, 10000)})
+    dividend = CorporateAction("d", "A", "dividend", 4, 0.5, pay_at=10, verified=True)
+    portfolio.advance(4, 5, {"A": Quote(9.5, 9.5, 10000)}, actions=[dividend])
+    state = portfolio.snapshot()
+    state["state"]["receivables"].append(dict(state["state"]["receivables"][0]))
+    state["state"]["nav"]["USD"] += 50
+    state["state_sha256"] = hashlib.sha256(
+        json.dumps(state["state"], sort_keys=True, allow_nan=False).encode()
+    ).hexdigest()
+    with pytest.raises(ValueError, match="dividendo"):
+        portfolio.restore(state)
