@@ -244,7 +244,7 @@ class CorpusDataset:
         selected = selected[np.argsort(positions[selected])]
         return positions[selected], prediction[selected], values[selected], maturity[selected]
 
-    def _rows(self, partition, epoch, seed, cursor):
+    def _blocks(self, partition, epoch, seed, cursor):
         order = _random(seed, epoch, "assets").permutation(len(self.assets))
         consumed = sum(self.assets[int(i)]["counts"][partition] for i in order[: cursor["asset"]])
         dimensions = None
@@ -337,48 +337,36 @@ class CorpusDataset:
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
-                    for offset in range(start, len(indexes)):
-                        local_offset = (offset - start) % 256
-                        if local_offset == 0:
-                            block_rows = positions[indexes[offset : offset + 256]] - offsets[group]
-                            contexts = _price_contexts(prices, ends[block_rows], self.context)
-                        label = indexes[offset]
-                        row = positions[label] - offsets[group]
-                        price_end = ends[row]
-                        if (
-                            not np.issubdtype(ends.dtype, np.integer)
-                            or not self.context - 1 <= price_end < len(prices)
-                            or timestamps[row] != prediction[label]
-                            or available[price_end] > prediction[label]
-                        ):
-                            raise ValueError(
-                                "Las modalidades y la etiqueta no coinciden temporalmente"
-                            )
-                        inputs = {name: values[row].copy() for name, values in vectors.items()}
-                        if availability is not None and (
-                            not availability_valid[row] or availability[row] > prediction[label]
-                        ):
-                            raise ValueError(
-                                "La disponibilidad de una modalidad es ausente o futura"
-                            )
-                        if any(not np.isfinite(v).all() for v in inputs.values()):
-                            raise ValueError("Una modalidad contiene valores no finitos")
-                        inputs["prices"] = contexts[local_offset].copy()
-                        consumed += 1
-                        yield (
-                            inputs,
-                            float(target[label]),
-                            key,
-                            int(prediction[label]),
-                            int(maturity[label]),
-                            int(availability[row]) if availability is not None else None,
-                            {
+                    for offset in range(start, len(indexes), 256):
+                        labels = indexes[offset : offset + 256]
+                        block_rows = positions[labels] - offsets[group]
+                        if (block_rows < 0).any() or (block_rows >= len(table)).any():
+                            raise ValueError("La etiqueta queda fuera de su grupo de muestras")
+                        contexts = _price_contexts(prices, ends[block_rows], self.context)
+                        yield dict(
+                            vectors=vectors,
+                            rows=block_rows,
+                            prices=contexts,
+                            target=target[labels],
+                            key=key,
+                            prediction_at=prediction[labels],
+                            target_available_at=maturity[labels],
+                            sample_at=timestamps[block_rows],
+                            price_available_at=available[ends[block_rows]],
+                            input_available_at=(
+                                availability[block_rows] if availability is not None else None
+                            ),
+                            availability_valid=(
+                                availability_valid[block_rows] if availability is not None else None
+                            ),
+                            cursor={
                                 "asset": asset_position,
                                 "group": group_position,
-                                "offset": offset + 1,
+                                "offset": offset,
                                 "consumed": int(consumed),
                             },
                         )
+                        consumed += len(labels)
             for kind in ("prices", "samples", "labels"):
                 self._file(asset, kind)
         if consumed != self.manifest["counts"][partition]:
@@ -413,36 +401,84 @@ class CorpusDataset:
             ):
                 raise ValueError("El cursor no corresponde al corpus, época o partición")
             point = {key: cursor[key] for key in point}
-        records = []
-        for inputs, target, key, timestamp, maturity, available, next_point in self._rows(
-            partition, epoch, seed, point
-        ):
-            records.append((inputs, target, key, timestamp, maturity, available))
-            if len(records) == batch_size:
-                yield {
-                    **_batch(records, {**identity, **next_point}),
-                    **({"cohort_id": self.cohort} if self.cohort else {}),
+        batch, filled, consumed = None, 0, point["consumed"]
+        total = self.manifest["counts"][partition]
+        for block in self._blocks(partition, epoch, seed, point):
+            offset = 0
+            while offset < len(block["rows"]):
+                if batch is None:
+                    batch = _new_batch(
+                        block["vectors"], self.context, min(batch_size, total - consumed)
+                    )
+                    if self.cohort:
+                        batch["cohort_id"] = self.cohort
+                count = min(len(batch["target"]) - filled, len(block["rows"]) - offset)
+                if count <= 0:
+                    raise ValueError("El recorrido excede la población declarada")
+                _fill_batch(batch, filled, block, offset, offset + count)
+                offset += count
+                filled += count
+                consumed += count
+                batch["confirmed_cursor"] = {
+                    **identity,
+                    **block["cursor"],
+                    "offset": block["cursor"]["offset"] + offset,
+                    "consumed": consumed,
                 }
-                records = []
-        if records:
-            yield {
-                **_batch(records, {**identity, **next_point}),
-                **({"cohort_id": self.cohort} if self.cohort else {}),
-            }
+                if filled == batch_size:
+                    yield batch
+                    batch, filled = None, 0
+            # El grupo consumido puede liberarse antes de que el lector abra el siguiente.
+            block = None
+        # La última tanda parcial se publica después de comprobar los archivos y el recuento.
+        if batch is not None:
+            if filled != len(batch["target"]):
+                raise ValueError("El recorrido no completa la población declarada")
+            yield batch
 
 
-def _batch(records, cursor):
+def _new_batch(vectors, context, size):
     return {
-        "inputs": {name: np.stack([r[0][name] for r in records]) for name in (*VECTORS, "prices")},
-        "target": np.asarray([r[1] for r in records], dtype=np.float64),
-        "sample_ids": [f"{r[2]}/{r[3]}" for r in records],
-        "market": [r[2].split("/")[0] for r in records],
-        "prediction_at": np.asarray([r[3] for r in records], dtype="datetime64[us]"),
-        "target_available_at": np.asarray([r[4] for r in records], dtype="datetime64[us]"),
-        "input_available_at": np.asarray([r[5] for r in records], dtype="datetime64[us]"),
-        "weight": np.ones(len(records), dtype=np.float64),
-        "confirmed_cursor": cursor,
+        "inputs": {
+            **{
+                name: np.empty((size, values.shape[1]), dtype=np.float32)
+                for name, values in vectors.items()
+            },
+            "prices": np.empty((size, context, 5), dtype=np.float32),
+        },
+        "target": np.empty(size, dtype=np.float64),
+        "sample_ids": [],
+        "market": [],
+        "prediction_at": np.empty(size, dtype="datetime64[us]"),
+        "target_available_at": np.empty(size, dtype="datetime64[us]"),
+        "input_available_at": np.full(size, np.datetime64("NaT", "us")),
+        "weight": np.ones(size, dtype=np.float64),
     }
+
+
+def _fill_batch(batch, filled, block, start, stop):
+    source, destination = slice(start, stop), slice(filled, filled + stop - start)
+    at = block["prediction_at"][source]
+    if (block["sample_at"][source] != at).any() or (block["price_available_at"][source] > at).any():
+        raise ValueError("Las modalidades y la etiqueta no coinciden temporalmente")
+    available = block["input_available_at"]
+    if available is not None and (
+        not block["availability_valid"][source].all() or (available[source] > at).any()
+    ):
+        raise ValueError("La disponibilidad de una modalidad es ausente o futura")
+    for name, values in block["vectors"].items():
+        selected = batch["inputs"][name][destination]
+        # Los índices se han validado antes. clip evita el buffer adicional del modo raise.
+        np.take(values, block["rows"][source], axis=0, out=selected, mode="clip")
+        if not np.isfinite(selected).all():
+            raise ValueError("Una modalidad contiene valores no finitos")
+    batch["inputs"]["prices"][destination] = block["prices"][source]
+    for name in ("target", "prediction_at", "target_available_at"):
+        batch[name][destination] = block[name][source]
+    if available is not None:
+        batch["input_available_at"][destination] = available[source]
+    batch["sample_ids"].extend(f"{block['key']}/{moment}" for moment in at)
+    batch["market"].extend([block["key"].split("/", 1)[0]] * (stop - start))
 
 
 def supervised_batches(
