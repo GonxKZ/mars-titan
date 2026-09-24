@@ -1,0 +1,4888 @@
+{
+  "schema_version": 2,
+  "project": "MARS-TITAN",
+  "generated_at": "2026-09-24T04:31:01.484382Z",
+  "source_status": "available",
+  "poll_interval_seconds": 60,
+  "stale_after_seconds": 900,
+  "models": [
+    {
+      "id": "rnn",
+      "name": "RNN",
+      "kind": "baseline"
+    },
+    {
+      "id": "gru",
+      "name": "GRU",
+      "kind": "baseline"
+    },
+    {
+      "id": "lstm",
+      "name": "LSTM",
+      "kind": "baseline"
+    },
+    {
+      "id": "dlinear",
+      "name": "DLinear",
+      "kind": "baseline"
+    },
+    {
+      "id": "ridge",
+      "name": "Ridge",
+      "kind": "baseline"
+    },
+    {
+      "id": "xgboost",
+      "name": "XGBoost",
+      "kind": "baseline"
+    },
+    {
+      "id": "mlp",
+      "name": "MLP",
+      "kind": "baseline"
+    },
+    {
+      "id": "boosting",
+      "name": "Boosting",
+      "kind": "baseline"
+    },
+    {
+      "id": "zero",
+      "name": "Residual cero",
+      "kind": "baseline"
+    },
+    {
+      "id": "adaptation",
+      "name": "Adaptaci\u00f3n predictiva",
+      "kind": "baseline"
+    },
+    {
+      "id": "factor_world",
+      "name": "Generador de mundos sint\u00e9ticos",
+      "kind": "generator"
+    },
+    {
+      "id": "ppo",
+      "name": "PPO",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "double_dqn",
+      "name": "Double DQN",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "simulator",
+      "name": "Simulador financiero",
+      "kind": "simulation"
+    },
+    {
+      "id": "cash",
+      "name": "Mantener efectivo",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "hold_initial",
+      "name": "Conservar posiciones iniciales",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "rebalance_50",
+      "name": "Reequilibrar al 50 %",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "financial_comparison",
+      "name": "Resumen de comparaci\u00f3n financiera",
+      "kind": "summary"
+    },
+    {
+      "id": "unknown",
+      "name": "Modelo no identificado",
+      "kind": "baseline"
+    }
+  ],
+  "notes": [
+    "El test final permanece sellado. MARS-TITAN no est\u00e1 implementado.",
+    "Las curvas sin fechas originales utilizan \u00e9pocas. La observaci\u00f3n del proceso no acredita nuevo progreso.",
+    "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes."
+  ],
+  "runs": [
+    {
+      "run_id": "streaming-20260923-d84cd0471db4398dd8c7",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "5bc078a9d34fa242",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:17:23.834438Z",
+      "updated_at": "2026-09-22T23:17:41.576165Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.027531047116666114,
+        "mse": 0.0013255935903271614,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 64.9658203125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.808860156001174,
+        "samples_per_second": 756.923579011181
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.12016270885732164
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.11781176026180037
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.1033632642206831
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.08485475169372318
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.071373719616242
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0655835403174107
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.05964328009345122
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.05421297486499008
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.050722315488735355
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04700916964940404
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04520127998550388
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04199707830940076
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03937406365683516
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0374609034774977
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.036178455822490505
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03502141637866522
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03400641895223008
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03274637364352255
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03225843840916388
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.031510465094458505
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03084658062331144
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03076347153510479
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.029843396835622826
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02954128303020281
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.029641982239217445
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.028761043879688163
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.028754786376191305
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.028216337399341585
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.027951862180433263
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.027531047116666114
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "5bc078a9d34fa2428ee5b576ee7bc28b17b7c81e7b2eb936e3cf3fdd437d6153",
+        "source_sha256": "f336c481e28c959b20637309b52d5b40ccca471044961005f470fb83e9201125",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-dd0d9c8b87d834778a0e",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "6700f4c562a1164c",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:02:57.180137Z",
+      "updated_at": "2026-09-22T23:03:14.609999Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.04369161601573764,
+        "mse": 0.0024773797948668902,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 75.02197265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.491955600009533,
+        "samples_per_second": 770.8244250289425
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.11032831547415091
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.12175654697946489
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.08181392873704606
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.08146933869230223
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06681524611007704
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.08244113244705537
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.08017219470559878
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06500618819103725
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0626208025978218
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06504871244286262
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06624744725476481
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.07678260177261331
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.07281857129730028
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06820619466218489
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04451282705101984
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.040959816812231625
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.038105363358519904
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04126877231912298
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03273131511700414
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032530087578417334
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.042084304525548885
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03756079632797468
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04770157735834722
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.042624499293551575
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04015436831330265
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.047537120097830086
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.038810310911886386
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.057996976281488824
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04156960851079432
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04369161601573764
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "6700f4c562a1164c92f3f93fd774fda252cb809397bedb3f13cb8956dc9a011f",
+        "source_sha256": "1df7ea6d6bdb442ea867c15da6d4252e43640cf94b7d1dc0a4635f3a118d5ebb",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-e24075b1276658e51ac9",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "35742406ca250fe8",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:22:26.405737Z",
+      "updated_at": "2026-09-22T23:22:29.811305Z",
+      "heartbeat_at": null,
+      "completed_steps": 65,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.015017906382693118,
+        "mse": 0.0003976200659687058,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 75.02197265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 3.4775306990050012,
+        "samples_per_second": 744.4813348365708
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01598948738314004
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016066154431852667
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01566949226511016
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01638170465926098
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015017906382693118
+        }
+      ],
+      "checkpoint": {
+        "step": 65,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "35742406ca250fe8096a689d1ba5ec761140a53b4161319e838ee70ad9d713e9",
+        "source_sha256": "17677196c9977482d0a2239837c38adf27b679bbd5389fa240814bec3947e7e8",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": "91e6813d6a2e17bb10c85462481b29ffd51f012aa8e5c5a88240fa3d432b6e44",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-e2a15fb8c581965101e1",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "ec56039335eedefd",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:02:04.183607Z",
+      "updated_at": "2026-09-22T23:02:21.628355Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.02140329846264156,
+        "mse": 0.0007146556453438914,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 75.02197265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.506688747991575,
+        "samples_per_second": 783.5732180609842
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.20016273852204464
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.050026738143641454
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0527493044073419
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03837569791344088
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024423181741999634
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023136360735180772
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023496181674171765
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02251094058507142
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02229206171485678
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022071084574336708
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020880451064541426
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02103695135163858
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021818456537565055
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02156387501441875
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022149898902387097
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02063619888693989
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020455379045176407
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023217897577678216
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020328490951406347
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019462999348382495
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023857145416459353
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02362548168662648
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020895247890832285
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021544020301830797
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023803858270328045
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022567053378149418
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022403478033297803
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021360442090115287
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021449333666238576
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02140329846264156
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "ec56039335eedefd0ca9e7cf3be7316adc81c65260dfe507efae80bde38fa92b",
+        "source_sha256": "3822bb7a949ac5fde3e37dce9579a9e5bfbb9d58779c098fa3b27dcbbb69b2cb",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-eb2ec0dc2d69e7503056",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "259572b12bde0aaa",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:15:21.763842Z",
+      "updated_at": "2026-09-22T23:15:38.518581Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.021673490817112884,
+        "mse": 0.0009079447979670687,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.30859375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 16.813875416002702,
+        "samples_per_second": 557.7869232712328
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.09880294718174033
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06572518761116287
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.05845865343155083
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.054051236416515894
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04334383670959832
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.039021715023879466
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03615890326825502
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03126696607588969
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.029690866524910757
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.028907046525422916
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.027518875440048572
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024105803089110537
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02400230957108409
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022809661957876842
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02232084300927792
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021653597234033928
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021738879440552746
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022688303695434828
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02147459972537066
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02351700035577755
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02471520844350929
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021866524405857193
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02108042809602424
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022358317187164946
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02524167579999365
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022210971811641764
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02184508021475752
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02268573849080786
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021811157514696734
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021673490817112884
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "259572b12bde0aaa4748634254bc7241e1ad14bbcb90f57dae4925f2bca390ce",
+        "source_sha256": "2ad9c0f3f80e0cbd68271542c0f2b4604c2d24a5448db11229c558c36b61a334",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-ec2144650468a686491c",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "87fd92358c0e24c9",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:10:31.439419Z",
+      "updated_at": "2026-09-22T23:10:48.490884Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.019725610662051727,
+        "mse": 0.0006882097082733666,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.56640625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.117737392007257,
+        "samples_per_second": 731.8388347424082
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04679519369888921
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.05851898044334306
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.058491151804497196
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03051778196124051
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.026526462109095546
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02626020136255577
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.030709023667566795
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03186070135490199
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02307417579820652
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0233777645057885
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.028361352265991426
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02606597143212379
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02278927201703074
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021071992170891233
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020347061104835897
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022120555581414278
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020865743693913537
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022966734451191545
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020383178015156017
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020315655197725803
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022402411215061858
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020479856224685716
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.025454640286593146
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024695235073968747
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0220779835558428
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02018713504532399
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021374379633760193
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.026651889250116804
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021446613578758544
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019725610662051727
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "87fd92358c0e24c9caf4aaf8a528767d21e92f093f9f391d77c4d174767e17fb",
+        "source_sha256": "8a66c2b723d14b60105a7e7a4d9f9b3ef169c43976b9a17d643a0f76ad4c9f11",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-ee4a253c8b1b61c01a67",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "a42f0450c165ca29",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:10:48.568613Z",
+      "updated_at": "2026-09-22T23:11:05.436614Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.02315988036275332,
+        "mse": 0.0008616379244244291,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.56640625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 16.9346929989988,
+        "samples_per_second": 800.4037300700516
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.07944172680867508
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03424978362628683
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06270296597678186
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0282733065325556
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.050757665752807546
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022898535595683365
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.029209348944601317
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01931549519077364
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020321517618981096
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021385930639128047
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02401544100346996
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024568405426474888
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02015688367417521
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018296882007533526
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016820310264233765
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017732548242288013
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024355537125383995
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01830451051257764
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019273080725797406
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017889591018501728
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01838522197075192
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016326243292245374
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015632532595496833
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01609478587199511
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017545764492577418
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01630919534885366
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018542441428845976
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01758123789236216
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015519057030846795
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02315988036275332
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "a42f0450c165ca29d1c8b4e1dc464f9815966813e44ee50bd182d7d9c080cadd",
+        "source_sha256": "45f3a40d3ae7a7dd735a3cf4b93e83a3b837e1ab769bc1d4f0b35af49477585a",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-f2c1bc9e578a280475d6",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "b5eddb0f12c61748",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:11:22.636816Z",
+      "updated_at": "2026-09-22T23:11:39.692690Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.015311687032025885,
+        "mse": 0.00041611840164934257,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.56640625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.122763938998105,
+        "samples_per_second": 775.9885580948333
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04541916104267795
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.083805727061867
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03038484129042297
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02719461364913348
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.025728092802967194
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023900299101061978
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020000067300921975
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01774324612982077
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01853929693767774
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015455164266792165
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015421886771192755
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014604640236175519
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014586902533524952
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015258038655402505
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0150264911112879
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018755070454647086
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014683706475473533
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01611796379844908
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015517035689021604
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014700163207712358
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01670048683135792
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02306072590140814
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01584709813430372
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01815757930854416
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017050365522096985
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01620960570893465
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016522893035938728
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014912161744508151
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01645373098271437
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015311687032025885
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "b5eddb0f12c61748d761fdb742d71c23c6184fa06d36409c9a1d6fc745368e4c",
+        "source_sha256": "46c6a285ee693abd8850d35f3f9a35f34be6e43bec0cc6d67c4b84434ea889d5",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-f41347bec59d6db316d5",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "c5468532461ba7c5",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:11:05.512728Z",
+      "updated_at": "2026-09-22T23:11:22.556866Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.017232932024543172,
+        "mse": 0.0005628248864315604,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.56640625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.108450194995385,
+        "samples_per_second": 754.9663963894969
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04657244348813117
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.06492792074055231
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.030472413000210773
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02994838126297246
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03307082699598933
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.027136737519318745
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03236040827274191
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.028584483158838672
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.025492437159284297
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.025538880810324835
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.025229707935827194
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.026994051606962745
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020593598144435524
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0408601509487111
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020249360372538168
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0201154727317195
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023993738842597874
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02017903391386354
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020391031516548513
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019079145539135804
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021221381156495956
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02053481922538223
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019570508202446543
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.026462278462463698
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018113067041670632
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017668268746257768
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.029955571921721384
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02927575788724011
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017061258276700474
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017232932024543172
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "c5468532461ba7c56a3815d80198e64af1329614747a1244a9211773f9d0b1f6",
+        "source_sha256": "ec2ce23ec4aab64bc002f81e8b6ea5fb4f0ce81f17ddaa1f861e3cbeca9d8ce1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-f51f85dd9ae4ec7ad767",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "920748188a5ee264",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:21:16.087786Z",
+      "updated_at": "2026-09-22T23:21:36.940539Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.022407234251817443,
+        "mse": 0.0007430271438875944,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 64.9658203125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 20.914669813995715,
+        "samples_per_second": 743.5040617118498
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.07551582875305168
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.09619708847007086
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.026615894019734833
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020653851880745863
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03293694239561144
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020597979996922082
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015637861480324974
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02161520801665592
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017215532492755658
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019977610424322074
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016781235270898167
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016593657757859134
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01517982788417485
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01836142671395512
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016123147948295807
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01779823852482176
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017856667585328702
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0204602930471158
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03262919900127758
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.030031935960156842
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01962105160057722
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01868316354264923
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017005811632219935
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015636256457083178
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01449640363868446
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015030785420452508
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016220457334357924
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016758968323912236
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015712371979872897
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022407234251817443
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "920748188a5ee2643234167223e32622f7456e419d25947746d37906f4430631",
+        "source_sha256": "d828dba97a38d1ee332cfd0612e857b127c3abf31266ed4a8a5fa8038b83cf69",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-f665827a656440de087f",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "61ce9817b0d3f967",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:16:12.937104Z",
+      "updated_at": "2026-09-22T23:16:30.595873Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.016913180179319195,
+        "mse": 0.0005191058993900666,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.30859375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.722768357998575,
+        "samples_per_second": 767.9162000551272
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.11652174183725456
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0720687258357477
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.027967886655802028
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.041769784671482985
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0245769528405263
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019756404939996895
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02725329729334036
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017687613495074885
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019279510317764575
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016430722460845076
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01553860617504335
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01478390059542213
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016213864781850336
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016639072072877077
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01969278182912394
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015125328075000857
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01697363698788098
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01382885145663245
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01826516532883329
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015342629745643417
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01618364186197372
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014682630708522035
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015369214478497586
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015781413443878352
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014910339351869322
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01675989156491428
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01514950176136525
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014994632258463007
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016218041079133067
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016913180179319195
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "61ce9817b0d3f967b2875490dff9e2fc564c98d6e83d58d4ce04ae36acdf9373",
+        "source_sha256": "f3653e1bab258e766d1a3f05663455ba22c0a9f18e3560c9efe48d4687e393ed",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-fa5fd6ea647757637802",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "d084a26bae5c43f6",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:23:19.107224Z",
+      "updated_at": "2026-09-22T23:23:22.365209Z",
+      "heartbeat_at": null,
+      "completed_steps": 65,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.018635725641807963,
+        "mse": 0.0005973101270991839,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 64.9658203125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 3.3268509750050725,
+        "samples_per_second": 793.8663913777985
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019189323358169114
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019389194567413927
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019889406523197924
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018840018199189484
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018635725641807963
+        }
+      ],
+      "checkpoint": {
+        "step": 65,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "d084a26bae5c43f6fcabf2898e43f8e5f35844fb1d61749bec12ec7634f08e34",
+        "source_sha256": "6fba78a4f15bae2e10b5ab4f75001d1d637f48a52c5c988fc91ea54c678e872a",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": "b3662150faf1e135674943cfe00e7cec3006aa0903f9469c191df4568bcfac29",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-fe2a268408e67290cca3",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "e7c36de9594e094c",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:19:27.786062Z",
+      "updated_at": "2026-09-22T23:19:45.309855Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.018399734102079277,
+        "mse": 0.0005458540523040733,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 64.9658203125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 17.58659213699866,
+        "samples_per_second": 729.2477715374216
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0715682800481855
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.07753354556734998
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.04663383086502324
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017427327641304266
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018207180596834554
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02735021613085547
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018337090718243087
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.025540234087180286
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018286257586666275
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02026679258126233
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017343496260325622
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024640470630078553
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01967804025902726
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017002672433942274
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016769784990330282
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016716063590854417
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015978452358874014
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.023935826737862823
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018445855677967676
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018530293433566977
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016323882423507005
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018938269095165494
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017697971856918085
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02599600384485909
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.038596086535964
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01633468094967258
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01524050975443911
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017551291070607277
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014765629713863573
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018399734102079277
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "e7c36de9594e094c3c0cbfdaeec0aeb779d8519114f8bc0b15bfa1d1d278c0f4",
+        "source_sha256": "d44c8586041d3fc4c5919112446ffa8a2709af2d736c6c484d06945dbdb18b0e",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-fec48255dff84aa31315",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "50451565b4fa81bc",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:07:58.583930Z",
+      "updated_at": "2026-09-22T23:08:15.307943Z",
+      "heartbeat_at": null,
+      "completed_steps": 390,
+      "total_steps": null,
+      "epoch": 30,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.018219161922030134,
+        "mse": 0.000572136225503453,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.56640625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 16.797592207993148,
+        "samples_per_second": 803.0869022012989
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.08069207774259005
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.07014083458778538
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.031568917379239954
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032541387235371054
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022645255308487426
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018827770808333137
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018484950791299585
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018102861382073565
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02483457554415084
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019646690494258153
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017461667356240246
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017328775046880237
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017901623653102557
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017554428166642246
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018092451811779584
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01746074394697257
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017594463355364832
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017757437999138644
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017560383677806123
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018183646661887494
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018782707984711877
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017917254943673303
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0186865154492145
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017147639738473868
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0177785183467803
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01807782189714358
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018153557386506168
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017221702110930305
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017806286687581437
+        },
+        {
+          "step": 30,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018219161922030134
+        }
+      ],
+      "checkpoint": {
+        "step": 390,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "50451565b4fa81bcea27ccabde76eb083f72950d18bafdda0afd9df36cf0c320",
+        "source_sha256": "a385514990c81e6993946ea6611efaa27bcda92b50c38d484b1d3e27241b4a30",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-ff4aaac7f7d7c1fe3663",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "c779dc9c03d97eb1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:23:32.666888Z",
+      "updated_at": "2026-09-22T23:23:35.928111Z",
+      "heartbeat_at": null,
+      "completed_steps": 65,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.020282902203750276,
+        "mse": 0.0007180555504994068,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 64.9658203125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 3.33326085099543,
+        "samples_per_second": 777.176194168566
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02134544762807815
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021181800434799933
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02023586986367782
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020586269648200463
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020282902203750276
+        }
+      ],
+      "checkpoint": {
+        "step": 65,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "c779dc9c03d97eb1af1144a801e910a3f98cc7178710d6934597f5830b35db21",
+        "source_sha256": "39b1345363375064ffa8fbf5ea68adf841afc31e46d81dca01011e8b553b3ef3",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": "d724ace3a74a062e0b7db5052e9f19db2bbc979d14913686d10f59d7ca282a98",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "streaming-20260923-ffa1f5d3e4a1efb6981d",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "a5848f4c5e0c6373",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:23:05.585406Z",
+      "updated_at": "2026-09-22T23:23:08.872806Z",
+      "heartbeat_at": null,
+      "completed_steps": 65,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "3956a6afb3c92cce46e57a3c16e23e41dbda1593212eb783796a0ef62e63c4f7",
+      "metrics": {
+        "mae": 0.01922652332957708,
+        "mse": 0.0006715333859176108,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.30859375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 3.3538660210033413,
+        "samples_per_second": 775.5984443670593
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.024591289035318483
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021475092150627702
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019028576690694913
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018876809986932173
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01922652332957708
+        }
+      ],
+      "checkpoint": {
+        "step": 65,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "streaming-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "a5848f4c5e0c6373bdbc798b1a66d7c4a587bbcecaebf0ce75f725330692ee6d",
+        "source_sha256": "2b24ddc8b5a37fbe43e5d591139f8051dd9334f2a7086a12243ef760541bacc1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": "6b1fa78ae79cd26ed9b310ea3508ba1cb1328538d68c8c03f0f9fdf970c2014a",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-18061a73dd534f68e3f8",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "3c7c345431c503f4",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.072057Z",
+      "updated_at": "2026-09-24T04:31:00.196445Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "8234b1fe9125d577e4ee3459915903ec05b53bac52931f34668004c5186d64b1",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.1244054329872597,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "3c7c345431c503f4ce6286f2e25ca53a0fe08916b5dceaf988eb409d13b314d1",
+        "source_sha256": "eaa8cf01f03afa0885c124379e1c336855e491d307809aad97310da36893fc61",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1024,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-1a13e2cca4938cb03008",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "f176634163b206d0",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:01.362309Z",
+      "updated_at": "2026-09-24T04:31:01.484382Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 1044,
+      "fold": "unidentified",
+      "comparison_group": "22323586d1eb1a018ebc36fe81f0c2157388a36e2baccf813f6520728b1521b9",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12208645901409909,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "f176634163b206d016220ce6f307a10c6ce55647a9e631092d69504c4696f0c0",
+        "source_sha256": "db77ae591316af3417afa5f01f0e7498153e583489eeb2a0d8de0a777d9c3706",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": 1024,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-217942cbee4dcd7320d9",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "755775ff800ec4bc",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:01.236091Z",
+      "updated_at": "2026-09-24T04:31:01.358561Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 1043,
+      "fold": "unidentified",
+      "comparison_group": "f3dd05597f8cafd490a5658848b0a4713c1d16b5046c987b1c032c5302aaa5ae",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12248105098842643,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "755775ff800ec4bcb7e1090f6d961c6f78e8a1ac2c4a109b2da5ffcfbd43f2f2",
+        "source_sha256": "9126fe3d4e7b62153085443a56734c18eb131521cd318dfc802de9d1650276ec",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": 1024,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-3cd3ac96ad7a96b804a2",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "f176634163b206d0",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.978085Z",
+      "updated_at": "2026-09-24T04:31:01.100529Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 1044,
+      "fold": "unidentified",
+      "comparison_group": "82f0d805a3c6a4b653f13dfddd7cea3c39ed5a5e7af9ec4a2112099c991fa060",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12245504299062304,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "f176634163b206d016220ce6f307a10c6ce55647a9e631092d69504c4696f0c0",
+        "source_sha256": "2c67ada3e195e12bf6925bf5f2c82a085432b5ca1eae40e6d5b44e303b17920c",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": 1024,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-3f3d59de678406dc516b",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "eb6d3c09fd7fa40f",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:30:59.943766Z",
+      "updated_at": "2026-09-24T04:31:00.068792Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "2436e1b74bb38e4ade539c9b9f3630b3d3a5df5f2b8aaf3ace143182d33e7e87",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.125039436010411,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "eb6d3c09fd7fa40f80e52ba57478219e84af535e3559e5262476ae6b918a6b9b",
+        "source_sha256": "5c389e0cab315aa629faa5bc76da93cbfcf963fe0ff9fc099d51d3900e127916",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1024,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-6b31ee97b65ac43b57f5",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "3c7c345431c503f4",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.460965Z",
+      "updated_at": "2026-09-24T04:31:00.586169Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "7cc64b237ed3786dcf23196bfcf4bd1c650dee0a2dbcb3ab7155a9542d252f07",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.125217621010961,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "3c7c345431c503f4ce6286f2e25ca53a0fe08916b5dceaf988eb409d13b314d1",
+        "source_sha256": "a424e1f08ee11d0b284f23ce19fa574a3a73230902af149171b5564ba2fde98f",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1024,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-709e6033cbc82c4bbdb3",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "54ab3b5c530cfc13",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.589787Z",
+      "updated_at": "2026-09-24T04:31:00.716104Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "092ec1cbbd5d2d1ea61a7f5e09dc7a7d29732806a35957869b597b40090629e8",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12633622699650005,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "54ab3b5c530cfc134aea8d412b35cd1090e306b8500858d22fb1d037f9279e82",
+        "source_sha256": "5ac4bca013d824c51f6bb6d0dca4cb74d057afd4016fabf02d47cdd2c0357e56",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1024,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-ba33285f6858b2bee6d5",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "54ab3b5c530cfc13",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.200216Z",
+      "updated_at": "2026-09-24T04:31:00.325020Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "69babc8bdc1b06a6bf71a813ff9b35115c2a5dc6d5277dab057e27738e9a83de",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12487101001897827,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "54ab3b5c530cfc134aea8d412b35cd1090e306b8500858d22fb1d037f9279e82",
+        "source_sha256": "cd612749a67e1971448c5134d64810d8126c3a94de93c635493661337e2d1643",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1024,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-c1dc66b4342c5bdcdd0c",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "59aab3d9efa111ce",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.720062Z",
+      "updated_at": "2026-09-24T04:31:00.847883Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 1042,
+      "fold": "unidentified",
+      "comparison_group": "d3cdf864b4c57bfcc25e8c7b38aaf8c215a8c1a67bcfab1968abdc2fd6b0c898",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12783415499143302,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "59aab3d9efa111cebdc5071ffadd0c593ff938e3470e51bb87caa54f7b942e65",
+        "source_sha256": "e4213ba8ab91ea45c34fbb9682ea8ebfb091e8a6fb3028cc6414964ae91ce1fa",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": 1024,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-d496707a16e6875524f3",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "755775ff800ec4bc",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.851238Z",
+      "updated_at": "2026-09-24T04:31:00.974714Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 1043,
+      "fold": "unidentified",
+      "comparison_group": "25efaa729eb76dacee303c6d9e8e62743b1a9836340f870ef2fd115dbee15b71",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.1234891880012583,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "755775ff800ec4bcb7e1090f6d961c6f78e8a1ac2c4a109b2da5ffcfbd43f2f2",
+        "source_sha256": "308faadc59ef387b1e53312a85e912a50ee7e89804a8ccd74ada7f3b7f35d11e",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": 1024,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-e3fd6aee62a01ff10962",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "eb6d3c09fd7fa40f",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:00.329539Z",
+      "updated_at": "2026-09-24T04:31:00.457644Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "b5b310749617a19bffee1d93c9f41a294e9207e370ce1aad4a12af08d6d622c8",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.128130302997306,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "eb6d3c09fd7fa40f80e52ba57478219e84af535e3559e5262476ae6b918a6b9b",
+        "source_sha256": "62f091df930defa027438255c8bd676e8294695bd12d9a0c71b4d3d8f20ed31b",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1024,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "synthetic-worlds-20260924-v2-f59567134a354d35df96",
+      "attempt_id": "legacy",
+      "model_id": "factor_world",
+      "activity": "synthetic_generation",
+      "variant_id": "59aab3d9efa111ce",
+      "status": "completed",
+      "phase": "prepare",
+      "started_at": "2026-09-24T04:31:01.104358Z",
+      "updated_at": "2026-09-24T04:31:01.232046Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 1042,
+      "fold": "unidentified",
+      "comparison_group": "ebadf78715eaf33dfa20a75f7e0fb258af2bf0754d4b9124f314bac475321dbb",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.12770471101976,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "synthetic-worlds-20260924-v2",
+        "domain": "synthetic",
+        "method": "synthetic_generation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "59aab3d9efa111cebdc5071ffadd0c593ff938e3470e51bb87caa54f7b942e65",
+        "source_sha256": "70e699c478f086fe319c8707019090f24474e2c30e78fa945718a4a6182fb331",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": 1024,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260922-33fffd3908180734a6db",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T22:50:55.115773Z",
+      "updated_at": "2026-09-22T22:50:55.819919Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "9ba3477e8b02a15906458669a3729688c44f29d75edde84f9894043bf28edaa4",
+      "metrics": {
+        "mae": 0.026422447093006247,
+        "mse": 0.0012265874270708504,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 100.08056640625,
+        "ram_peak_mib": 1038.44921875,
+        "elapsed_seconds": 0.8989382040017517,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260922",
+        "domain": "technical",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "97f75499ecd934e78b10a065e16a82f220901053e460c5d48411b13c672426fb",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 160,
+        "validation_rows": 135,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1038.44921875
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260922-3459b91ca394364f5dc5",
+      "attempt_id": "legacy",
+      "model_id": "boosting",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T22:50:56.899367Z",
+      "updated_at": "2026-09-22T22:50:57.781165Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "9ba3477e8b02a15906458669a3729688c44f29d75edde84f9894043bf28edaa4",
+      "metrics": {
+        "mae": 0.015172163616924856,
+        "mse": 0.0004117971223851822,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 1083.49609375,
+        "elapsed_seconds": 1.0521117169992067,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260922",
+        "domain": "technical",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "8c29dbb35597112c3abbe777f6607237bf7003fdef8adaba641dfc08ab39c0fa",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 160,
+        "validation_rows": 135,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1083.49609375
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260922-6370fe43cd6fc34fc0fd",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T22:50:54.080126Z",
+      "updated_at": "2026-09-22T22:50:54.914869Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "9ba3477e8b02a15906458669a3729688c44f29d75edde84f9894043bf28edaa4",
+      "metrics": {
+        "mae": 0.02655639575181338,
+        "mse": 0.0012383683560928996,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 100.08056640625,
+        "ram_peak_mib": 1037.23828125,
+        "elapsed_seconds": 1.2730551389977336,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260922",
+        "domain": "technical",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "a6e1755f9c3618831bf5a3a20472beee3dd33a9aa554c32de8773ce7aa3021e5",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 160,
+        "validation_rows": 135,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1037.23828125
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260922-8fc9b84726d124ac5c09",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T22:50:56.016668Z",
+      "updated_at": "2026-09-22T22:50:56.721590Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "9ba3477e8b02a15906458669a3729688c44f29d75edde84f9894043bf28edaa4",
+      "metrics": {
+        "mae": 0.025319450447848887,
+        "mse": 0.0011319094877918904,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 100.08056640625,
+        "ram_peak_mib": 1038.484375,
+        "elapsed_seconds": 0.8945160750008654,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260922",
+        "domain": "technical",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "5b361b69ea7d347ab304aa9b4413d4a3c9de325b180fd90148f08e3b114b3ac4",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 160,
+        "validation_rows": 135,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1038.484375
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260923-33fffd3908180734a6db",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:27:06.970092Z",
+      "updated_at": "2026-09-22T23:27:07.969029Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "677b5074a1116f2939028c4f8e80d7a2629510f51b174c8e9b3c78c36ba521ac",
+      "metrics": {
+        "mae": 0.02439952364011192,
+        "mse": 0.0009906709403396249,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 100.658203125,
+        "ram_peak_mib": 1043.75390625,
+        "elapsed_seconds": 1.2594681339978706,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "aa6bdaaef6bc8b0aed80f98706dece4dab999839ea1d89f8becee0313ece238f",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1043.75390625
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260923-3459b91ca394364f5dc5",
+      "attempt_id": "legacy",
+      "model_id": "boosting",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:27:09.529283Z",
+      "updated_at": "2026-09-22T23:27:10.666088Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "677b5074a1116f2939028c4f8e80d7a2629510f51b174c8e9b3c78c36ba521ac",
+      "metrics": {
+        "mae": 0.015338912246112052,
+        "mse": 0.0004131671467207357,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 1087.69921875,
+        "elapsed_seconds": 1.3811465920007322,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "7e7628e482892651fc0289d262b87a9ae528e7eed4b91663b42b59b261d177a4",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1087.69921875
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260923-6370fe43cd6fc34fc0fd",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:27:05.570943Z",
+      "updated_at": "2026-09-22T23:27:06.688997Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "677b5074a1116f2939028c4f8e80d7a2629510f51b174c8e9b3c78c36ba521ac",
+      "metrics": {
+        "mae": 0.024590273109496047,
+        "mse": 0.0010039490980839868,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 100.658203125,
+        "ram_peak_mib": 1040.42578125,
+        "elapsed_seconds": 1.6267849819996627,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "da74e763174d6db8e31bd5a5a0f24a7a22a1b9cc05cc91872302a3723f58542f",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1040.42578125
+      }
+    },
+    {
+      "run_id": "tabular-edition-20260923-8fc9b84726d124ac5c09",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-22T23:27:08.246596Z",
+      "updated_at": "2026-09-22T23:27:09.264424Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "677b5074a1116f2939028c4f8e80d7a2629510f51b174c8e9b3c78c36ba521ac",
+      "metrics": {
+        "mae": 0.023022858765113233,
+        "mse": 0.000894316716904995,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 100.658203125,
+        "ram_peak_mib": 1043.9296875,
+        "elapsed_seconds": 1.2751628499972867,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-edition-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "f277c635ba906a3e95c55f7a0b68ff3a93ce84715155f70cb2756fd088721711",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 205,
+        "validation_rows": 200,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1043.9296875
+      }
+    },
+    {
+      "run_id": "tabular-post-scan-20260923-33fffd3908180734a6db",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T00:22:37.244941Z",
+      "updated_at": "2026-09-23T00:22:38.426703Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "2b2f54268c0808007f210d216fc34dabcd3f633270dbef3d7f494b7a4ab9a5eb",
+      "metrics": {
+        "mae": 0.03328338388529617,
+        "mse": 0.0017776300786904065,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 133.17138671875,
+        "ram_peak_mib": 1969.17578125,
+        "elapsed_seconds": 1.4929798259981908,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-post-scan-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "e5977ccff0dd80a0dc69af2f72605bf3014585f6631ed2e52bd80ad0de6422af",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1969.17578125
+      }
+    },
+    {
+      "run_id": "tabular-post-scan-20260923-3459b91ca394364f5dc5",
+      "attempt_id": "legacy",
+      "model_id": "boosting",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T00:22:40.229215Z",
+      "updated_at": "2026-09-23T00:22:41.510458Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "2b2f54268c0808007f210d216fc34dabcd3f633270dbef3d7f494b7a4ab9a5eb",
+      "metrics": {
+        "mae": 0.0158837617118483,
+        "mse": 0.000478723462176798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 2011.0546875,
+        "elapsed_seconds": 1.578313061996596,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-post-scan-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "94d4c3eeb286385c1c21aaf3de46c4220d85fe3aacabee8d25b409d4725c4f0a",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 2011.0546875
+      }
+    },
+    {
+      "run_id": "tabular-post-scan-20260923-6370fe43cd6fc34fc0fd",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T00:22:35.608718Z",
+      "updated_at": "2026-09-23T00:22:36.928178Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "2b2f54268c0808007f210d216fc34dabcd3f633270dbef3d7f494b7a4ab9a5eb",
+      "metrics": {
+        "mae": 0.03366294390050063,
+        "mse": 0.0018173917658094766,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 133.17138671875,
+        "ram_peak_mib": 1968.30859375,
+        "elapsed_seconds": 1.6405541929998435,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-post-scan-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "0d90643c8e965161b05b3ba8d46560c7b96553899e0bcb0019c56406963ae049",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1968.30859375
+      }
+    },
+    {
+      "run_id": "tabular-post-scan-20260923-8fc9b84726d124ac5c09",
+      "attempt_id": "legacy",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T00:22:38.750879Z",
+      "updated_at": "2026-09-23T00:22:39.926247Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "2b2f54268c0808007f210d216fc34dabcd3f633270dbef3d7f494b7a4ab9a5eb",
+      "metrics": {
+        "mae": 0.030520883141395547,
+        "mse": 0.0015054900292198637,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 133.17138671875,
+        "ram_peak_mib": 1969.1953125,
+        "elapsed_seconds": 1.4940154209907632,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-post-scan-20260923",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "5d28689160c3c94d88fdb926fcdb1bc3a9ce38b0d5647a09f49ddc3184bbadcf",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1969.1953125
+      }
+    }
+  ]
+}
