@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-24T17:07:25.385904Z",
+  "generated_at": "2026-09-24T17:11:55.387515Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -88,10 +88,11 @@
         "neural-original-us"
       ],
       "counts": {
+        "completed": 1,
         "running": 1,
-        "not_started": 16
+        "not_started": 15
       },
-      "registered_runs": 1
+      "registered_runs": 2
     },
     {
       "id": "adaptation-original-us",
@@ -332,7 +333,7 @@
   ],
   "runs": [
     {
-      "run_id": "tabular-original-us-3ad322f4e616501807a2",
+      "run_id": "tabular-original-us-36ba0beb3d811911fd79",
       "attempt_id": "attempt-0001",
       "model_id": "ridge",
       "activity": "initial_training",
@@ -341,7 +342,7 @@
       "phase": "validation",
       "started_at": null,
       "updated_at": null,
-      "heartbeat_at": "2026-09-24T17:07:25.385904Z",
+      "heartbeat_at": "2026-09-24T17:11:55.387515Z",
       "completed_steps": null,
       "total_steps": null,
       "epoch": null,
@@ -11504,7 +11505,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 697,
+    "total_runs": 698,
     "page_size": 64,
     "pages": [
       "pages/7e5180751505220c2c18982404c840b6140c5763f2c3453a3845753948a380af.json",
@@ -11516,7 +11517,7 @@
       "pages/c2dac65a1096bbed7b5389e6ccc6de1657c421ac19577146e844348e3578786b.json",
       "pages/5fd597d13c00e55404ca1f2a8f9e359372a0fd8d2e7316fdcb263fd058a3d549.json",
       "pages/b4822d4e88d74ae392e82a11b5841edfd30a3481a49a25dd64aef43fdaab45ba.json",
-      "pages/5d74412baacee4924965464a151e311cee69f7d5137c9c380b46a8c3e4dfa66d.json"
+      "pages/389a84fedc04e8d4570fbda8ac0a64ba49bb8c427a7aa8c582977d21c648f8c7.json"
     ]
   }
 }
