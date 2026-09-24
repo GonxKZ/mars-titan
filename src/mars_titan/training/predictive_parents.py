@@ -15,6 +15,8 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.corpus_source import ParquetCohortSource
 
+from .run_receipts import initialize_receipt
+
 
 def _signature(path):
     stat = path.stat()
@@ -90,6 +92,7 @@ def _parent(ordered, parent):
         horizon_binding="source_manifest_sha256",
         final_test_opened=False,
         code_sha256=sha256(Path(__file__)),
+        receipt_code_sha256=sha256(Path(__file__).with_name("run_receipts.py")),
         duckdb=duckdb.__version__,
         numpy=np.__version__,
     )
@@ -216,12 +219,13 @@ def prepare_parent_cache(ordered, parent, output, *, resume=False):
     safe_destination(output)
     if output.exists() and not resume:
         raise ValueError("La caché necesita una salida nueva o recuperación explícita")
-    if resume and not any((output / name).is_file() for name in ("manifest.json", "progress.json")):
+    if resume and not output.exists():
         raise ValueError("No existe una caché confirmada para recuperar")
     output.mkdir(parents=True, exist_ok=resume)
     descriptor = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        confirmed = initialize_receipt(output, identity, record="progress.json", lock=".lock")
         if resume and (output / "manifest.json").exists():
             cached = read_manifest(output / "manifest.json")[0]
             if cached["identity"] != identity or cached["status"] != "completed":
@@ -231,7 +235,7 @@ def prepare_parent_cache(ordered, parent, output, *, resume=False):
             return cached
         result = (
             read_manifest(output / "progress.json")[0]
-            if resume
+            if confirmed
             else dict(
                 schema_version=1,
                 kind="aligned_parent_predictions",

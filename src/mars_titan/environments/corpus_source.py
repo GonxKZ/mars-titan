@@ -22,6 +22,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.run_receipts import initialize_receipt
 
 from .actions import ActionGrid
 from .cohorts import FINAL_TEST_START_US, VALIDATION_START_US, read_cohort, shapes_contract
@@ -39,6 +40,7 @@ def _code():
             "environments/actions.py",
             "training/corpus_inputs.py",
             "training/cohort_contract.py",
+            "training/run_receipts.py",
             "data/streaming.py",
             "data/batches.py",
             "data/cohort_files.py",
@@ -259,7 +261,7 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
     safe_destination(output)
     if output.exists() and not resume:
         raise ValueError("La preparación necesita una salida nueva o recuperación explícita")
-    if resume and not (output / "progress.json").is_file():
+    if resume and not output.exists():
         raise ValueError("No existe una preparación recuperable")
     identity = dict(
         source_sha256=dataset.identity,
@@ -271,14 +273,12 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
         cohort_id=dataset.cohort,
         news_content_policy=dataset.manifest.get("news_content_policy"),
     )
-    first = (
-        None if resume else next(dataset.batches(partition="train", batch_size=1, epoch=0, seed=0))
-    )
     output.mkdir(parents=True, exist_ok=resume)
     lock = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        if resume:
+        confirmed = initialize_receipt(output, identity, record="progress.json", lock=".lock")
+        if confirmed:
             report = read_manifest(output / "progress.json")[0]
             if report["identity"] != identity:
                 raise ValueError("La identidad de datos, versiones o código ha cambiado")
@@ -293,6 +293,7 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
                     atomic_json(final, report)
                 return report
         else:
+            first = next(dataset.batches(partition="train", batch_size=1, epoch=0, seed=0))
             report = dict(
                 schema_version=1,
                 kind="causal_prediction_corpus",

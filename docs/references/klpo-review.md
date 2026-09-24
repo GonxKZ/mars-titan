@@ -4,7 +4,9 @@ KLPO optimiza políticas a partir de recompensas terminales y probabilidades
 registradas durante la generación. La versión revisada es la del
 [commit 30c0ae8c](https://github.com/yifanzhang-pro/KLPO/tree/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696),
 del 21 de septiembre de 2026. El informe se publicó el 18 de septiembre y se
-revisó el día 20. No se ha instalado ni ejecutado KLPO en el proyecto.
+revisó el día 20. El proyecto incorpora una implementación matemática independiente
+para una política predictiva de una decisión. No se ha instalado el paquete
+original ni se han reproducido sus experimentos con modelos de lenguaje.
 
 ## Mecanismo y evidencia
 
@@ -37,15 +39,16 @@ declara pruebas CPU y señala que el entrenamiento GPU y las pruebas de rendimie
 escala del informe no están validados. Estas pruebas del proyecto original no se han
 ejecutado localmente. La
 [guía del backend](https://github.com/yifanzhang-pro/KLPO/blob/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/docs/training.md)
-exige actualmente recogida síncrona y una actualización por lote. El coste
-en la RTX 4070 de 8 GB no está medido.
+exige actualmente recogida síncrona y una actualización por lote. Las pruebas
+locales de la adaptación predictiva no validan ese sistema de entrenamiento.
 
 ## Diferencias respecto a la tarea del proyecto
 
-Ridge, boosting, GRU y DLinear producen un número. No generan una política de
-acciones ni las probabilidades del muestreador que necesita KLPO. Su uso exigiría
-otra cabeza o un adaptador identificado como variante distinta. No basta con
-cambiar el nombre de una función de pérdida.
+Ridge, boosting, RNN, LSTM, GRU y DLinear producen un número. El
+[adaptador residual](../research/predictive-adaptation.md) añade una corrección
+lineal y convierte el centro resultante en una distribución discreta de 21
+acciones. El padre permanece congelado. Este ajuste no actualiza los pesos
+internos del predictor ni se presenta como una nueva arquitectura neuronal.
 
 La implementación también
 [valida logaritmos de probabilidades discretas](https://github.com/yifanzhang-pro/KLPO/blob/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696/klpo/_validation.py).
@@ -56,16 +59,65 @@ directamente sus errores, sin añadir necesariamente la varianza de muestreo
 de un estimador de aprendizaje por refuerzo. Esta es una consideración de
 diseño del proyecto, no un resultado experimental de KLPO.
 
-Se ha priorizado comparar MSE, L1 y Huber y un ajuste posterior con control de
-pasos. Los [48 ensayos ejecutados](../../reports/baselines/reference-variants.md)
-no muestran una mejora consistente frente al retorno cero. Su resultado no
-permite afirmar que KLPO vaya a funcionar mejor o peor, porque no se ha probado.
+## Adaptación de una decisión
 
-Si se activa posteriormente, necesitará una política explícita, recompensa
-predefinida, registros del muestreador y etiquetas maduras. El ajuste se hará
-solo con entrenamiento. Se conservarán la referencia original y un control
-supervisado con el mismo presupuesto. No se usarán validación o test como
-recompensas para mejorar retrospectivamente la predicción evaluada.
+Para cada fila, las acciones son retornos de una rejilla fijada con entrenamiento.
+La recompensa es $R_a=-|a-y|/s$, donde $s$ se estima solo con entrenamiento.
+El muestreador histórico se define como
+
+$$
+q_a=(1-\varepsilon)\,\pi_{\mathrm{padre}}(a)+\varepsilon/21,
+\qquad \varepsilon=10^{-6}.
+$$
+
+La mezcla evita perder soporte por subdesbordamiento. Se calcula con
+`logaddexp` y se usa la misma distribución en las acciones, los auxiliares y
+la corrección exacta. La política optimizada $p$ conserva la gaussiana discreta
+original. Por ello, su centro inicial coincide con el padre, pero $p_0$ no es
+exactamente igual a $q$. La exploración uniforme no es una probabilidad mínima
+impuesta retrospectivamente a los registros.
+
+Con $h_a=R_a-\beta\log(p_a/q_a)$ y $q$ fija, la ecuación 3.13 se reduce a
+
+$$
+F(\theta)=\frac{1}{2\beta}\sum_a q_a
+\left(h_a-\sum_bq_bh_b\right)^2.
+$$
+
+Su gradiente coincide con la esperanza del sustituto token Full-KL. La variante
+MC estima la corrección con 128 sorteos independientes con reemplazo. Se renuevan
+las acciones y los auxiliares en cada visita, con generadores separados. Los
+duplicados se conservan. El control `klpo_exact` calcula directamente $F$, sin
+muestrear acciones ni detener su gradiente. Full-KL y MC sí detienen el coeficiente
+$h$ en su sustituto de retropropagación.
+
+Con 21 acciones, la corrección completa evita el muestreo auxiliar. MC se
+mantiene para contrastar el estimador del artículo, no como una optimización
+presupuesta. El valor de su pérdida sustituta puede ser negativo y no equivale
+al de $F$. La igualdad de gradientes en esperanza tampoco implica igualdad de
+actualizaciones después de AdamW y del recorte de norma.
+
+La gaussiana discreta con anchura fija tiene un logaritmo afín en el centro salvo
+un término común a las acciones. Al centrar $h$, ese término desaparece. En esta
+familia, $F$ es cuadrática convexa respecto al centro y a los parámetros del
+adaptador lineal. Esta deducción permite un control numérico sencillo. No demuestra
+convexidad para una red completa ni que el adaptador pueda representar el óptimo
+sin restricciones $p^*\propto q\exp(R/\beta)$.
+
+## Comparación y límites
+
+El [diseño de ejecución](../engineering/klpo-posttraining.md) conserva los controles
+REINFORCE, pérdida esperada y MAE. Usa la misma población admitida, normalización,
+capacidad y presupuesto. Las etiquetas maduras de entrenamiento permiten conocer
+la recompensa de todas las acciones. La validación selecciona el checkpoint,
+pero sus etiquetas no se usan para actualizar parámetros. El test permanece cerrado.
+
+Esta es una adaptación predictiva offline. No reproduce negociación secuencial,
+costes de cartera ni las evaluaciones agentic del informe. Los
+[48 ensayos históricos](../../reports/baselines/reference-variants.md) pertenecen
+a otra campaña y no son resultados de KLPO. Las pruebas sintéticas comprueban
+álgebra, aprendizaje de una señal definida y recuperación. No se incorporan al
+corpus financiero ni demuestran rentabilidad o mejora predictiva real.
 
 La revisión del PDF cubrió las páginas 1 a 11, 16 a 19 y 33 a 36, no una lectura
 integral. La copia local tiene 899.179 bytes y SHA-256
