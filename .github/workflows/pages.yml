@@ -1,10 +1,15 @@
-name: Publish Pages
+name: Publicar Pages
 
 on:
   push:
     branches: [main]
     paths: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
+    inputs:
+      data_sha:
+        description: Commit completo de la rama de datos públicos
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -28,12 +33,42 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Resolver la versión de datos
+        id: data
+        env:
+          REQUESTED_SHA: ${{ inputs.data_sha }}
+        run: |
+          if [ -n "$REQUESTED_SHA" ]; then
+            [[ "$REQUESTED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+            git fetch --no-tags origin refs/heads/observatory-data
+            git merge-base --is-ancestor "$REQUESTED_SHA" FETCH_HEAD
+            echo "sha=$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code origin refs/heads/observatory-data > /tmp/data-ref; then
+            read -r DATA_SHA DATA_REF < /tmp/data-ref
+            echo "sha=$DATA_SHA" >> "$GITHUB_OUTPUT"
+          else
+            RESULT=$?
+            if [ "$RESULT" -ne 2 ]; then exit "$RESULT"; fi
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.data.outputs.sha != ''
+        with:
+          ref: ${{ steps.data.outputs.sha }}
+          path: public-data
           persist-credentials: false
       - name: Preparar solo los archivos públicos
         run: |
           mkdir -p _site/data
           cp site/index.html site/styles.css site/app.js site/state.mjs _site/
-          cp site/data/observatory.json _site/data/
+          if [ -d public-data ]; then
+            cp public-data/observatory.json _site/data/
+            if [ -d public-data/pages ]; then cp -r public-data/pages _site/data/; fi
+          else
+            cp site/data/observatory.json _site/data/
+          fi
+          jq -n --arg frontend "$GITHUB_SHA" --arg data "${{ steps.data.outputs.sha }}" --arg time "$(date -u +%FT%TZ)" '{frontend_sha: $frontend, data_sha: $data, packaged_at: $time}' > _site/data/deployment.json
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
