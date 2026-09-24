@@ -1,11 +1,48 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-24T10:36:49.050262Z",
+  "generated_at": "2026-09-24T10:39:30.087175Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
   "campaigns": [
+    {
+      "id": "native-financial-check-20260924",
+      "domain": "technical",
+      "planned_runs": 18,
+      "status": "completed",
+      "dependencies": [],
+      "counts": {
+        "completed": 18,
+        "not_started": 0
+      },
+      "registered_runs": 18
+    },
+    {
+      "id": "paired-posttraining-20260924",
+      "domain": "real",
+      "planned_runs": 396,
+      "status": "blocked",
+      "dependencies": [
+        "neural-original-us",
+        "tabular-original-us"
+      ],
+      "counts": {
+        "not_started": 396
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "financial-training-20260924",
+      "domain": "synthetic",
+      "planned_runs": 6,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 6
+      },
+      "registered_runs": 0
+    },
     {
       "id": "financial-check-20260924",
       "domain": "technical",
@@ -303,18 +340,18 @@
       "status": "running",
       "phase": "validation",
       "started_at": "2026-09-24T10:31:31.506617Z",
-      "updated_at": "2026-09-24T10:35:09.340226Z",
-      "heartbeat_at": "2026-09-24T10:36:49.050262Z",
-      "completed_steps": 6050,
+      "updated_at": "2026-09-24T10:38:48.491624Z",
+      "heartbeat_at": "2026-09-24T10:39:30.087175Z",
+      "completed_steps": 12100,
       "total_steps": null,
-      "epoch": 2,
+      "epoch": 4,
       "max_epochs": 5,
       "seed": 42,
       "fold": "US",
       "comparison_group": "1e9cf09b9b5ee61dc99a1a6a6f2fa728123409622fe3a5b6a234f8567fd54e84",
       "metrics": {
-        "mae": 0.015054966700790559,
-        "mse": 0.0006133184520033792,
+        "mae": 0.01507279723446414,
+        "mse": 0.0006138369132609275,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -325,7 +362,7 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": 10642.058605963786
+        "samples_per_second": 10805.31462135118
       },
       "history": [
         {
@@ -339,10 +376,22 @@
           "recorded_at": null,
           "loss": null,
           "mae": 0.015054966700790559
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015049900310196965
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01507279723446414
         }
       ],
       "checkpoint": {
-        "step": 6050,
+        "step": 12100,
         "saved_at": null,
         "resumable": null
       },
@@ -354,14 +403,19 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "gru",
         "configuration_sha256": "3d012c6373074014bbc90a9dfa73f7e5ccb712e71a7eb21fa43c185a13a69206",
-        "source_sha256": "bd0d8feac3773d6411e7de003a6ddad466b3b1b310e5c14caaefefa8f771051e",
+        "source_sha256": "6dedd70738a530539acf4da5338764fa518ca2a664d3642a0602aaa8a684b9ab",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
         "validation_rows": 261069,
         "parent": "043c016d4ddde590fe279f5f0f26bb4a28f68fd6e4c75627e55628f36c4a2193",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -442,6 +496,8 @@
         "method": "mae",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "179170af2f6dece305ee2f274e5d416181daf0f94df51dd197654d3fd6822048",
         "source_sha256": "234edff42e73df63ed08d413b4a6d0a4927cae80d45282f704f86a6c3d3fc652",
         "history_axis": "epoch",
@@ -449,7 +505,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1717.15234375
       }
     },
     {
@@ -530,6 +589,8 @@
         "method": "mae",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "eca6581c24b98379664a3279aad5a9b5021dbac6dbf3a844609c8766f6aa2694",
         "source_sha256": "f8e4a7b5ae127925bc40ca1841f6422e4de7d71de8d7a273e9ad2f449bca9b33",
         "history_axis": "epoch",
@@ -537,7 +598,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1719.5078125
       }
     },
     {
@@ -618,6 +682,8 @@
         "method": "reinforce",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "981f57a434046faa7890809dd68f03a39b74d6275d57aa0c2dc57d8e4a7ff850",
         "source_sha256": "31f59fe9287b3752784d7760d4ef0a1c67ef9bf44aae3033b9609693055462d4",
         "history_axis": "epoch",
@@ -625,7 +691,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1719.3515625
       }
     },
     {
@@ -706,6 +775,8 @@
         "method": "reinforce",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "487734f55a5bcd82c9a1ad7d3f6eb53fae28b20e5a3e01cc8c50be88c0db2db3",
         "source_sha256": "426a38394f493d0fd760184739492bd5fa0acfbb32f85470147f3f11b2a87680",
         "history_axis": "epoch",
@@ -713,7 +784,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1714.08203125
       }
     },
     {
@@ -794,6 +868,8 @@
         "method": "mae",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "cd3c2efe13a314900b8aa1330cd9f7c833eef5229ea8b638b5e860824c83d8fd",
         "source_sha256": "7e952318214fd73ef003478fb1f77a7b735d83496cb54e09d1e7c7031124c938",
         "history_axis": "epoch",
@@ -801,7 +877,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1719.5078125
       }
     },
     {
@@ -882,6 +961,8 @@
         "method": "reinforce",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "f37b58860c5a5d793ab6625021360c80b8e8b5ea09edf086692ac3ab2a79d4e1",
         "source_sha256": "db8279e5e5dab37e608a7d193da3dd2247172d69470bdac0e0e707c222dc8aff",
         "history_axis": "epoch",
@@ -889,7 +970,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1719.5078125
       }
     },
     {
@@ -970,6 +1054,8 @@
         "method": "expected",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "ba0dd9742347e257ccc7898417d4896b0be00d110789c6ac496697a93ee3db15",
         "source_sha256": "572379843f7ffe54a82dc20a62f6f52503fc212a382f60ee59cce64c13414ff5",
         "history_axis": "epoch",
@@ -977,7 +1063,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1719.5078125
       }
     },
     {
@@ -1058,6 +1147,8 @@
         "method": "expected",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "4c647b670fc6d0cfc727852ecef642dcaa2db632820ce9a25c8e33690530c311",
         "source_sha256": "cf360349702db2089bc1d9c623ee6bf1983b950e719dccec4c1d9ebc2ed34ddf",
         "history_axis": "epoch",
@@ -1065,7 +1156,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1716.11328125
       }
     },
     {
@@ -1146,6 +1240,8 @@
         "method": "expected",
         "parent_frozen": true,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "08e0982d029149b0365374fc0df1593b8ec18cab5a8920321423506938981ee6",
         "source_sha256": "46ed59c5b19453b03d1cb3ca0cf65f40cee3d6173994ab5596f95f812ca466e9",
         "history_axis": "epoch",
@@ -1153,7 +1249,10 @@
         "train_rows": 245,
         "validation_rows": 225,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1719.5078125
       }
     },
     {
@@ -1384,6 +1483,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "ba11d048a35e695b72aa7773003a99217d9556e85b8bf5da395aa227577516b8",
         "source_sha256": "eac0372d43c4fb999230d42a8913686e146b4b40abe21e0e512c0dc2f997aa6d",
         "history_axis": "epoch",
@@ -1391,7 +1492,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -1622,6 +1726,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "1fc8ba1dcd410d031f7587f2e0497022d054be35d0a850330647974e9bf895f3",
         "source_sha256": "0d2c5e3b39020c1ea3a8a6384d069eb312aa4f0113e7d124c3c048a7e5ba3a36",
         "history_axis": "epoch",
@@ -1629,7 +1735,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -1860,6 +1969,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "096e20fe88714024d760672c2fad20e58d294cfb27ae1897c834650e0da4e2a8",
         "source_sha256": "636fcf76982f6389a7e95607c8392ba19f79425ea3e58299e3c212f52c6cb9c3",
         "history_axis": "epoch",
@@ -1867,7 +1978,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -2098,6 +2212,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "8402461fef4f1da03b1426bcf66ebb3c41f54f25986ae44217a1f48f6d689f60",
         "source_sha256": "c78a279003b7f7e4d7a42d63f699b9280e2f7cbe0846923652c2656b7e02b663",
         "history_axis": "epoch",
@@ -2105,7 +2221,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -2336,6 +2455,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "691a0f2293f0535d4348a1401cb7bfce9780ac70e19b351ac154772f0487a056",
         "source_sha256": "8c979aa92a37acd29a398c2390458e5adf4ce498c9189669d7ba0aa22c1627a7",
         "history_axis": "epoch",
@@ -2343,7 +2464,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -2424,6 +2548,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "gru",
         "configuration_sha256": "71c4ca875bd8fcee3ce11ea448e09073ec34bb5f2d7bdcc3f4cd8cee343e0b51",
         "source_sha256": "d7b7e2bae3cde61386ec0c58e089fbcf1feca260783707c05cddbaad5e8bb0fa",
         "history_axis": "epoch",
@@ -2431,7 +2557,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "67ef0ae651f37686cb912de8776d60552c90d8f5bb9d3091674b972bf039be88",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -2512,6 +2641,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
         "configuration_sha256": "ba5e3ebd9429e4e5668f1bbf528e7915bcb72586748c91db97d74a93786ae8bf",
         "source_sha256": "804e493936c97082130b0e840314334cb2e9f2ebc45d7986cb5c2dcddd9f5e0f",
         "history_axis": "epoch",
@@ -2519,7 +2650,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "a1070089a1d36761f4794c89e14226a5427665f495418f3869a832d5a5e03a5a",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -2750,6 +2884,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "68b7895188edbc4a2f6dc5ab516328790820472ff6260beebc1e74cd3b2cc9ab",
         "source_sha256": "dc534d35f632a377cda93fae4a52b41dd7ecda5cdb1be3cbb187f9d878cc45ab",
         "history_axis": "epoch",
@@ -2757,7 +2893,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -2838,6 +2977,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
         "configuration_sha256": "cb9b72e0a4d31b28e7bb3836e6865a85ee8b683aaf33a9ae20c5b102bfce4b67",
         "source_sha256": "72614a3167a46f42a64c93954db54dde3493f8e59f250d550e5f68b6947be504",
         "history_axis": "epoch",
@@ -2845,7 +2986,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "30c42484fe2812421e12abbdb9b19597601d0c23dd1916a3f4540ddccf994542",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -3076,6 +3220,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "0551e059fbbe25bf497bdda5fd808a90ddc233219888372dcc5cac19923a92ab",
         "source_sha256": "04f3c6a35a390f8b88eb13aff7192363172554dd6174ef345bb351ba41339763",
         "history_axis": "epoch",
@@ -3083,7 +3229,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -3314,6 +3463,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "0a8e6a6f4bbeb1fcd8fb0bc7e83f17e4030767e568c104f31f16c129cc3946a2",
         "source_sha256": "229af728c02a34289ab8c18f3c01b581562f25279764034938806bc31ed2fa9c",
         "history_axis": "epoch",
@@ -3321,7 +3472,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -3552,6 +3706,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "68ad379ec1df20925ab0e9bbacd3000c8b10046edadc24ec4098c45c8161d725",
         "source_sha256": "edb301d7bd70327117b97b5f9f76a18d6b77684e10b9bc623970fd895cac13da",
         "history_axis": "epoch",
@@ -3559,7 +3715,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -3790,6 +3949,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "a661a2a93b0c5e5928f762a5d490e9af863b79c66e4235098372c0bb343f4b73",
         "source_sha256": "ea1fd3c4cafe4310e63ef24e679b384e66c1653954c43d6803a92a6eeb82dd89",
         "history_axis": "epoch",
@@ -3797,7 +3958,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -4028,6 +4192,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "fc74ca995c6eade415ba5a3ad9089e0d65f34764ab4c0063e50daada63679fb7",
         "source_sha256": "f6ebe6b623b2d543e3f198581e23539cf8ad0f91dc73b46bf8938bfdc1810e57",
         "history_axis": "epoch",
@@ -4035,7 +4201,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -4266,6 +4435,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "d40dea94721e6c15a0fc792efe12c1ae0f27ba61cbe4561b41fd630e04327aa5",
         "source_sha256": "5fb183638a4aa6a90e05c19521e3086921476a677f11bdb3555e2439659ebc99",
         "history_axis": "epoch",
@@ -4273,7 +4444,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -4354,6 +4528,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
         "configuration_sha256": "0bbac6490f80c27579497fa567d4e1b5a72d7ac96e4a8afe1b96ab76a8763244",
         "source_sha256": "44e906d02acf28f5221e2ee640fe126a58775e7f154c4d2aae280656443e634e",
         "history_axis": "epoch",
@@ -4361,7 +4537,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "88d96e3fd46d377e2e5c62ed075a08da61ea07dee3a201c04e8f5464b91df834",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -4592,6 +4771,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "a7a263c2f33df870e952d83250bd77078f7a0d2971ccae3afe9ece3574073b69",
         "source_sha256": "3168d0842dc2132434ecf3ca951c61cebda38ee50822473e9942bd166e560420",
         "history_axis": "epoch",
@@ -4599,7 +4780,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -4830,6 +5014,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "a28491dc9afb253e3d73963a631ea442348e8e565eb3431901745bb4fc3e28b6",
         "source_sha256": "8cdf305242fdc02f165dbda2a0ed485b6b547ef73e92852504178f9ab59acd6e",
         "history_axis": "epoch",
@@ -4837,7 +5023,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -5068,6 +5257,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "ba189e258bf93ee0a46d3c8569e0c4b0f5530c649c98e96f65a292239f3d1f51",
         "source_sha256": "53a41a70e9e3e928c8fbbd567948aedc83fa3e2b011fd496c3a8d99f2db591e7",
         "history_axis": "epoch",
@@ -5075,7 +5266,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -5306,6 +5500,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "c5468532461ba7c56a3815d80198e64af1329614747a1244a9211773f9d0b1f6",
         "source_sha256": "48823feab4e1718e015c37ef668035222924ea44afefbd1748177df29f7bf4a2",
         "history_axis": "epoch",
@@ -5313,7 +5509,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -5544,6 +5743,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "b93e16318d83924130dd6661b9e9f6d19f5add1b74d9f55aea3ad83c0e8ed935",
         "source_sha256": "9dd41062317cdd01fff25f0f92d1932349150381f00a0561d2904667b0cb1920",
         "history_axis": "epoch",
@@ -5551,7 +5752,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -5782,6 +5986,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "517b4f45b5dcf4fb2d54fa497ce58ad16443f9d285dd9a5afa838c7334f51787",
         "source_sha256": "a38b05219540defe3977ed533b1f93312888dbd3b5507dda34194a9123070acf",
         "history_axis": "epoch",
@@ -5789,7 +5995,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -5870,6 +6079,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
         "configuration_sha256": "25a738b0d64afe995ee4a9d8f39dced0f796db6b33238cbdd1755c3a60e9349d",
         "source_sha256": "9716d911148bf0d22756105f4744c20bfd9dde6541167ba6b4f4257dd786197b",
         "history_axis": "epoch",
@@ -5877,7 +6088,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "4167a75866762c1ad8a820317579b843570d57026b1102dcf723798e656a690f",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -6108,6 +6322,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "8a9727f55d0033159fc78380ddde84202211be1ab46de7a90b2f7c1d3fd3734a",
         "source_sha256": "1f40502f6d73dbca43f795901c6578f8480bd777b7ede6f197f8c8bc51f0ba13",
         "history_axis": "epoch",
@@ -6115,7 +6331,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -6346,6 +6565,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "c51dec2cb161c241397d7c6181cd99595da3ac3a66aa2fb69775f0693e77d95f",
         "source_sha256": "8f0add1e553b0cced9cea807cb3755d9547f02dbe14753730b8155bbf04584f0",
         "history_axis": "epoch",
@@ -6353,7 +6574,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -6584,6 +6808,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "5871925bcccbc9b67b73e8af33fbc80b33d65ffbde7445cd818d0537bfcabb4d",
         "source_sha256": "0a6914c6bd9bf6c941aaafad4a31d6ec7c33918e673436abf4c2ce2cf9de33f1",
         "history_axis": "epoch",
@@ -6591,7 +6817,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -6672,6 +6901,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
         "configuration_sha256": "b5120ba338b72744eae5bc03441cf8ff9fa3ac7829904ce4bf5aa4ccfaa2abc7",
         "source_sha256": "777c45bb7a897c41e48437287f17f83ae6ec7fe67d16a7bcd751ac85cf096c4f",
         "history_axis": "epoch",
@@ -6679,7 +6910,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "a1070089a1d36761f4794c89e14226a5427665f495418f3869a832d5a5e03a5a",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -6910,6 +7144,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "a0c36ab5d5c78fde1fbe0a503f615d2a4aa0adee7ec09b11aefd476d0b024a8d",
         "source_sha256": "e24e60c5ba937ad86789a8bb70f785c37dbbb85e620d69aad479a6fa83448f60",
         "history_axis": "epoch",
@@ -6917,7 +7153,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -6998,6 +7237,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
         "configuration_sha256": "7d223d851ac6eba53257f5ca2ec0cc431888d99c787c4d40698e2184dfc7dccd",
         "source_sha256": "9b0960fafa0a9892a8256a6bc9ddfc3dc98f8983b19f4199ba3f7c0921a381b8",
         "history_axis": "epoch",
@@ -7005,7 +7246,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "99b45e59985807ce9d2789d49bdc845c07e0d3c4732b0e1a33ded464af561e83",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -7236,6 +7480,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "899c054185609ae4c5c35f5bcbeb84607b4118a60a37fd20c9332ba76e3c257d",
         "source_sha256": "c0c923206000faf0ce3bb5fd06b8a163923e36becd552d9afdee22f08ab02257",
         "history_axis": "epoch",
@@ -7243,7 +7489,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -7474,6 +7723,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "7d6071342fc172c0158fab15f00a55ecfd49633c2ed91652cc21e3c45775bd60",
         "source_sha256": "f4e052b2392149e8c447848c4e64b53cbfb48c85a86dfcee6a17bc778d11c2f2",
         "history_axis": "epoch",
@@ -7481,7 +7732,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -7712,6 +7966,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "307d30071f4cdccf810328c012633a2569e00c53abc14fd91d444658fc7df556",
         "source_sha256": "0ef27591dd4969e9af2bef2a4e5c5af5ee1e68fe1c744a8fdfe070d02be17c6a",
         "history_axis": "epoch",
@@ -7719,7 +7975,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -7800,6 +8059,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
         "configuration_sha256": "ddc1a3178f16eb5418544058313855c30b94e5af1374980ec1425cfedb9535a2",
         "source_sha256": "d23d5cf9e9669ba6f9d8237e7a6a0f841b310c5a6cebc19ebfb23ffa7af7526c",
         "history_axis": "epoch",
@@ -7807,7 +8068,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "9e5a85190abfa345e0ab01a05fd2ac08355c4c710f3ff882ef531e55f8680bb8",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -7888,6 +8152,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "gru",
         "configuration_sha256": "811350decf536f1652fe8080160340afb1aa75199d9b42818b663f4177245cb3",
         "source_sha256": "f9728d259ad29b7b37b8dc64ed15b4d7ca48c14690ec595625a0650b72491b31",
         "history_axis": "epoch",
@@ -7895,7 +8161,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "8d551744e3960e7fe754a79aa8fa77434afb044131914de4bcb499af18a9721e",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -7976,6 +8245,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
         "configuration_sha256": "3cc7a1beafda76419a228357497fce9c6c103b1e91fc21a6f0424fb88e515467",
         "source_sha256": "f363a11336e82de0896b68fcdee0ba6cd0f6501b298acbfa3fe3c9738fa46378",
         "history_axis": "epoch",
@@ -7983,7 +8254,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "4167a75866762c1ad8a820317579b843570d57026b1102dcf723798e656a690f",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -8214,6 +8488,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "920748188a5ee2643234167223e32622f7456e419d25947746d37906f4430631",
         "source_sha256": "f9fde32c056bd1618946f3de37fc058b2dfaba9a402d0452f8d2af17df16c441",
         "history_axis": "epoch",
@@ -8221,7 +8497,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -8452,6 +8731,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "cd9a086dc347ed7fa5d443207022383a5907fce75ab893c045323a667615f0a2",
         "source_sha256": "69e8388739c7fadbf3e10280ddaa7edb534ab967095a0c0af8b04a6ab08ddfde",
         "history_axis": "epoch",
@@ -8459,7 +8740,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -8540,6 +8824,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
         "configuration_sha256": "4df9b789660777e611654f53f94b06d8b7122dbc043619bd03b0cd6e0b4727b0",
         "source_sha256": "36edbe941f86fc8b59b6e41394346823e4213913bbe53300e5ff45fa1155c50e",
         "history_axis": "epoch",
@@ -8547,7 +8833,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "571ba74caca8f011bc923c7a416105dd308fc85f96fa56bef5cce7606ecebd56",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -8778,6 +9067,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "fa04745ea22b7fc65ffe7a5fad82de165ff404faf44d64586f05cb587bd8f94e",
         "source_sha256": "6b63cb7924ffb40d4e414dad73bfd0287adb883ad1356208fd75f4d3b1f6d9cd",
         "history_axis": "epoch",
@@ -8785,7 +9076,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9016,6 +9310,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "ecdcc9b54c0b16f647083d6a06d87606e4f2969cfc10b5f00c56fbe19172357d",
         "source_sha256": "2a475acd4ed7c564c0895250f37a512b9ae7306f6d14d87197be699196586fd9",
         "history_axis": "epoch",
@@ -9023,7 +9319,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9254,6 +9553,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "251b6abacb1fa9d86d5d73f4fb95e043acef6bc340c79bbdcfe6c4b374dba757",
         "source_sha256": "88cd4636da29c081a500e5274fdd6a7f440efcdc79d171314ce1203e8987ad44",
         "history_axis": "epoch",
@@ -9261,7 +9562,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9342,6 +9646,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "gru",
         "configuration_sha256": "ae6261c3619e65b4ec648ab953afebae6fe48dbcc32fc7df45b94b72b23a7372",
         "source_sha256": "2bc59f90f270c4218b5c40b876b72372d7b725e07b9bce1be954da7fc34b09a7",
         "history_axis": "epoch",
@@ -9349,7 +9655,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "0b94af2ec86d41d0aa0a57926df1ac98e7db81bcc2f7707717abebc4ef6ddc04",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9430,6 +9739,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "gru",
         "configuration_sha256": "7e7c5afbcb464f5cdf9501547241ead5ba24e9fe7ec03bcd9d6a2f368c13b996",
         "source_sha256": "821879ae5cbec579708ee278874420ed0413769d5af2bc56bce3fc9fdd6be645",
         "history_axis": "epoch",
@@ -9437,7 +9748,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "67ef0ae651f37686cb912de8776d60552c90d8f5bb9d3091674b972bf039be88",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9518,6 +9832,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
         "configuration_sha256": "085689370192b11129247b50ffe141094005d08802968bc6f291a1b88caa55a6",
         "source_sha256": "b00ff8449fd578693979ee4b5bd0cdcb2066f97c1811b7977c6c25ea802906d2",
         "history_axis": "epoch",
@@ -9525,7 +9841,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "99b45e59985807ce9d2789d49bdc845c07e0d3c4732b0e1a33ded464af561e83",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9606,6 +9925,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
         "configuration_sha256": "e2b518253f55100498484f5d6fe773344e18cdb51148bc5edad9e2fce51bbdd1",
         "source_sha256": "314894779b4c2b87ef086ad87b7706d0d29249f3c29fc9cb0e2fa9bfd2691b46",
         "history_axis": "epoch",
@@ -9613,7 +9934,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "30c42484fe2812421e12abbdb9b19597601d0c23dd1916a3f4540ddccf994542",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9694,6 +10018,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
         "configuration_sha256": "69fb218b13ccf75302ce7207f81679a8f66bfdaa7749b2b057f14e0e96e5e31a",
         "source_sha256": "8126f18d250452f28db4cf87afddb5a3a104b42830dbbfa9717fe7476878fd34",
         "history_axis": "epoch",
@@ -9701,7 +10027,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "9671384761dd0a49040b6a2235900bc93dfededb53e228d96045bffee7398d01",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9782,6 +10111,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
         "configuration_sha256": "b2ebccd3048a24a99644d6ada11d82b087c2feb712658fc22d46cb0caf0759cf",
         "source_sha256": "16d10b5e5146056cdf1217e061895b1b4dae68cce75cbcb6b7ed88d70a7610b8",
         "history_axis": "epoch",
@@ -9789,7 +10120,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "9671384761dd0a49040b6a2235900bc93dfededb53e228d96045bffee7398d01",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9870,6 +10204,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
         "configuration_sha256": "5939f64664e24188adfbefe53db0533cac39745b7be06f4a4fa5c802a852b047",
         "source_sha256": "2bd7dd1848a05073b2aa6aa36253f56a868749153a377c18a33759e5030e5733",
         "history_axis": "epoch",
@@ -9877,7 +10213,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "88d96e3fd46d377e2e5c62ed075a08da61ea07dee3a201c04e8f5464b91df834",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -9958,6 +10297,8 @@
         "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
         "configuration_sha256": "db88cfe95f3a9f20051a7f348ac117d65ff3dc03aeda1c8fd165cdd68c480672",
         "source_sha256": "378897c2874c7a38ecc1e6b404883eff98f3e17217ee0b523c0dd4f691bc1872",
         "history_axis": "epoch",
@@ -9965,7 +10306,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": "9e5a85190abfa345e0ab01a05fd2ac08355c4c710f3ff882ef531e55f8680bb8",
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -10196,6 +10540,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "259572b12bde0aaa4748634254bc7241e1ad14bbcb90f57dae4925f2bca390ce",
         "source_sha256": "754369d50fbe31ebb6c5f1acffea290b4ef9c127e6a644dc6ea866fecf8e784e",
         "history_axis": "epoch",
@@ -10203,7 +10549,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -10434,6 +10783,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "ec56039335eedefd0ca9e7cf3be7316adc81c65260dfe507efae80bde38fa92b",
         "source_sha256": "1f4422337fae70807500a6a393492a4e2c71a0c156a5683073fb2f867e8d3522",
         "history_axis": "epoch",
@@ -10441,7 +10792,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -10672,6 +11026,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "345e1d4405793f0fddd2997eb38e7a6824e1422d1b1f7cd221d2f761c4858061",
         "source_sha256": "9cc5c1481317d7d9148382d484b01b7ec589b8bfe34ecb90ffcf2ea3cfc021d9",
         "history_axis": "epoch",
@@ -10679,7 +11035,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -10910,6 +11269,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "14f5866c8d9e3ddfc8c746611880b82972751ef48c32239a192e5b8a1b9aaa40",
         "source_sha256": "39a9955e7196163e1470f80e1aeb8356381614c3c7c6b3daeae65b0ca0a69129",
         "history_axis": "epoch",
@@ -10917,7 +11278,10 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     },
     {
@@ -11148,6 +11512,8 @@
         "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
+        "condition": null,
+        "parent_model": null,
         "configuration_sha256": "fc6c32b5b3cbf4e533daaab59d38d56265645246ee2d02216ce8da0adc94f90c",
         "source_sha256": "8acfa6a353d2bbcb4ba4bb967fd51133c9b90d3b065f5fbd48fa1bc3cd9ad70a",
         "history_axis": "epoch",
@@ -11155,24 +11521,27 @@
         "train_rows": 80,
         "validation_rows": 25,
         "parent": null,
-        "error_type": null
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
       }
     }
   ],
   "pagination": {
-    "total_runs": 654,
+    "total_runs": 672,
     "page_size": 64,
     "pages": [
-      "pages/bf41be2a1cb0e3c5681d019506dfa5f448ea39d06eb842ed6ec9e8a3a31778d2.json",
-      "pages/eaf6f2e7d9c0f1e850021d8f32362d74dabbbf1722d6619ceccc5aa2226961bf.json",
-      "pages/7037ae70e6ed4023d622239562cc07791801e918f3aa10cdc93dc29db1bb5cdc.json",
-      "pages/1b7d931ac17ebaf934ec9b912018481053b6046c4f6d6240a973397d42960462.json",
-      "pages/7fe478818766a51c5ea34907ff23ba2c76db4e989877bc98648b5d55f416d729.json",
-      "pages/e6942e6f07b71be3bf31853c781e3fb95b6bec16962f03e82ae849a1d7efab3b.json",
-      "pages/d0bf30b6f7681217244f4df2daefc23003c646da43f477f2c2ff07085a3a49e7.json",
-      "pages/e8bcfa4d0f35b6ecc1dcd0a5a60ac870d09e9d791e8ae5f25b1379c3185882de.json",
-      "pages/138c9046463d91f61f813462945fffc4dcf49a5961badf3fd21905eac65153e8.json",
-      "pages/111855ed91182ddd2268c356331dfb876099a181b061ce6d6d4cf2e853b1de08.json"
+      "pages/7e5180751505220c2c18982404c840b6140c5763f2c3453a3845753948a380af.json",
+      "pages/db2c87db96936a91cc10e4cb9f9f7959bf6de50f71d2b1d156065b8872c9504f.json",
+      "pages/3e9b5dec4412ea6d4905d2afeb51c29bbe6340561ebd26720515d0a268d5cdaa.json",
+      "pages/7f752c2b4f2c9f17cba95e7bedf3707affa5393ef3bc9860e7917876843730ed.json",
+      "pages/999062e67010647c1caeab960bf8eb33a4442a1bf0bf8f34da036a932ff717df.json",
+      "pages/3af67d3e0e9ea365a30b518b6ff876d3ebceadcd92ef5efa1d21647545051a5a.json",
+      "pages/50ef10aebb83c5f2e513a7e37315c898fee6c5ff393c980ca017916b26d8eb8d.json",
+      "pages/e22b45f22084b3db4816971a500780961efb67fc0aa67efedf81a5907dbe7be0.json",
+      "pages/6f64882afef8cff7e1bbe004aef0f56cd7fbe2a1c63753990616c7374fdf044f.json",
+      "pages/ba77c4f848d55c67d03736029b20be908e6e61260aaa3d55ca6cb41eebb5ffc1.json"
     ]
   }
 }
