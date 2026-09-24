@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-24T12:22:34.966856Z",
+  "generated_at": "2026-09-24T12:27:49.968560Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -339,19 +339,19 @@
       "variant_id": "30687f7fa1a4dddc",
       "status": "running",
       "phase": "validation",
-      "started_at": null,
-      "updated_at": null,
-      "heartbeat_at": "2026-09-24T12:22:34.966856Z",
-      "completed_steps": null,
+      "started_at": "2026-09-24T12:22:36.900745Z",
+      "updated_at": "2026-09-24T12:27:34.881641Z",
+      "heartbeat_at": "2026-09-24T12:27:49.968560Z",
+      "completed_steps": 9075,
       "total_steps": null,
-      "epoch": null,
+      "epoch": 3,
       "max_epochs": 5,
       "seed": 42,
       "fold": "US",
-      "comparison_group": null,
+      "comparison_group": "1e9cf09b9b5ee61dc99a1a6a6f2fa728123409622fe3a5b6a234f8567fd54e84",
       "metrics": {
-        "mae": null,
-        "mse": null,
+        "mae": 0.015062352876181339,
+        "mse": 0.0006132827791682917,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -362,11 +362,30 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": null
+        "samples_per_second": 11088.422577769763
       },
-      "history": [],
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015084801005507117
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058592657158077
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015062352876181339
+        }
+      ],
       "checkpoint": {
-        "step": null,
+        "step": 9075,
         "saved_at": null,
         "resumable": null
       },
@@ -381,11 +400,11 @@
         "condition": null,
         "parent_model": "dlinear",
         "configuration_sha256": "30687f7fa1a4dddcab0c7b29511725fc81f39e296e93ef8054f58c78ba256716",
-        "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "source_sha256": "f6406ff4115f2772cc6f3b06d14a4478f9e92aa919251755667089eb0ee9876f",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
-        "train_rows": null,
-        "validation_rows": null,
+        "train_rows": 1548307,
+        "validation_rows": 261069,
         "parent": "52f7e1ed1e5a4c243dc28592caead03164f3a339da405fed8c6cab2bbbd08194",
         "error_type": null,
         "ram_peak_scope": null,
