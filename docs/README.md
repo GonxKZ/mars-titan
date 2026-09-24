@@ -14,6 +14,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Consultar entrenamientos medidos | [100 ajustes sobre 470 muestras](../reports/baselines/post-scan-reference-study.md), con cuatro modalidades, macro y comparación frente a cero. Las ediciones de [405 muestras](../reports/baselines/streaming-reference-study.md) y [295 muestras](../reports/baselines/verified-reference-study.md) permanecen separadas. |
 | Ejecutar y continuar referencias sobre Parquet | [Campaña neuronal recuperable](engineering/reference-campaign.md), [supervisión por bloques](engineering/corpus-supervision.md) y [adaptación tabular](engineering/tabular-corpus.md). |
 | Comparar objetivos de adaptación con padres congelados | [REINFORCE, pérdida esperada y MAE](research/predictive-adaptation.md), con una corrección común y recuperación del muestreo. |
+| Añadir KLPO a los ajustes posteriores | [Derivación de una decisión](references/klpo-review.md) y [controles, cola y recuperación](engineering/klpo-posttraining.md). |
 | Inspeccionar almacenamiento y memoria | [Bytes por capa y contrato Parquet](../reports/resources/storage-budget.md), con cobertura y límites de la conversión. |
 | Consultar la preparación por bloques | [Límites, paridad y medición macro](../reports/data/streaming-validation.md), con recuperación por activo. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
