@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-24T11:37:24.426978+00:00",
+  "method": "Callgrind 3.26.0, referencias de instrucciones Ir",
+  "workload": {
+    "assets": 128,
+    "decisions": 192,
+    "scenarios": 9,
+    "workers": 1
+  },
+  "source_identities": {
+    "reference": {
+      "build_type": "Release",
+      "compiler_id": "Clang",
+      "compiler_version": "21.1.8",
+      "native_build_sha256": "c6cd1b22b8b4610f23a74d6b1d36ef85dcd100218ca24ef617e5c270d8ba677e",
+      "native_source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "native_version": "0.1.0"
+    },
+    "candidate": {
+      "build_type": "Release",
+      "compiler_id": "Clang",
+      "compiler_version": "21.1.8",
+      "native_build_sha256": "a46f9feeb3dc90c49cd0dc480844ba0ffd59e3dd6e3d0a87812d365bae04bde4",
+      "native_source_sha256": "8d569ff2fdf24705c67057ecfaf096552eb8157646a47e4b3f09b835e4abf90d",
+      "native_version": "0.1.0"
+    }
+  },
+  "profiles": {
+    "reference": {
+      "instruction_references": 937728799,
+      "artifact_sha256": "73d8abd2353d3056331a801f506195808d371463151bce1cf854f3f5c675891b"
+    },
+    "candidate": {
+      "instruction_references": 646559763,
+      "artifact_sha256": "2e097b793c49ffee014492dc19629c8bf8acf92e09c8fe44cf42ee86c20639ff"
+    }
+  },
+  "limits": [
+    "Las referencias de instrucciones son eventos instrumentados, no tiempo, energía ni ancho de banda del hardware.",
+    "No se atribuyen cuellos de botella de caché ni Roofline sin contadores de bytes y FLOPs.",
+    "Los tiempos sin instrumentación están en el benchmark separado."
+  ]
+}

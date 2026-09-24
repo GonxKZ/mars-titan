@@ -52,3 +52,5 @@ Los controles nativos incluyen consumidores C17, contabilidad, eventos, recupera
 La referencia Python y la interfaz C siguen disponibles para comprobaciones y para integrar el motor con los comparadores neuronales. Las pruebas contrastan decisiones, observaciones, costes y estados recuperados. Las cifras de rendimiento deben proceder del ejecutable Release y del recorrido completo, con las diferencias de persistencia entre implementaciones declaradas.
 
 La [medición del recorrido financiero](../../reports/resources/native-go-no-go.md) compara 1, 2, 4 y 8 trabajadores con la referencia Python y recoge sus límites.
+
+La [medición de serialización](../../reports/resources/native-checkpoints.md) contrasta el guardado de eventos al confirmar checkpoints frente a su construcción en cada transición, con 16, 128 y 512 activos.
