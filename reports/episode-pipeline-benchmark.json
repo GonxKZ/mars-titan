@@ -1,0 +1,685 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-24T06:40:06.004311+00:00",
+  "domain": "technical",
+  "final_test_opened": false,
+  "workload": {
+    "assets": 128,
+    "sessions": 256,
+    "context": 64,
+    "observations": "analytic",
+    "admitted_modalities": [
+      "prices",
+      "news",
+      "charts",
+      "fundamentals",
+      "macro"
+    ]
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "architecture": "x86_64",
+    "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "other_cuda_processes": 4
+  },
+  "software": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "concurrency": {
+    "worker_options": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "pending_tasks": "como m\u00e1ximo un bloque por trabajador",
+    "arrow_threads": false,
+    "numerical_threads": 1,
+    "cache_bytes_per_worker": 8388608
+  },
+  "preparation_seconds": 2.2215643020172138,
+  "repetitions": 3,
+  "warmup_runs_per_process": 1,
+  "fastest_measured_workers": 4,
+  "code_sha256": {
+    "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+    "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+    "src/mars_titan/simulation/portfolio.py": "bc2c45d61f02ae047615eba81ffbaf9d1bbccf1c7aed2e328d32f434ccbba9b1",
+    "src/mars_titan/simulation/environment.py": "1cbf05cc7ae210661d1274a95234d68fbdc5a6cbd8962a8d7e7127aa13dab47d",
+    "src/mars_titan/simulation/evaluation.py": "b835920344a5c3c3ba707acf6765254104ad830cc36c9fdd6b98450a3574056a"
+  },
+  "summary": [
+    {
+      "workers": 1,
+      "median_seconds": 0.7775861010013614,
+      "min_seconds": 0.7423942390014417,
+      "max_seconds": 0.8022429370030295,
+      "std_seconds": 0.030078490002879134,
+      "median_peak_rss_bytes": 169312256.0
+    },
+    {
+      "workers": 2,
+      "median_seconds": 0.6169096019875724,
+      "min_seconds": 0.594738799991319,
+      "max_seconds": 0.6246161800227128,
+      "std_seconds": 0.015511252064813654,
+      "median_peak_rss_bytes": 193351680.0
+    },
+    {
+      "workers": 4,
+      "median_seconds": 0.5444168520043604,
+      "min_seconds": 0.5374626780103426,
+      "max_seconds": 0.5509841890016105,
+      "std_seconds": 0.00676167768458761,
+      "median_peak_rss_bytes": 245706752.0
+    },
+    {
+      "workers": 8,
+      "median_seconds": 0.5602286990033463,
+      "min_seconds": 0.555511139013106,
+      "max_seconds": 0.5780524080037139,
+      "std_seconds": 0.011888711610166497,
+      "median_peak_rss_bytes": 318472192.0
+    }
+  ],
+  "runs": [
+    {
+      "workers": 1,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.8022429370030295,
+      "samples_per_second": 30634.11202074216,
+      "parquet_and_input_seconds": 0.4238996529893484,
+      "simulation_seconds": 0.3652907849755138,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.001873522502137348,
+        "p95": 0.005431918047543139,
+        "p99": 0.006262112559052185
+      },
+      "io_delta": {
+        "rchar": 110053979,
+        "wchar": 0,
+        "syscr": 434,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 169312256,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.7921113790071104,
+      "total_process_seconds": 1.990246052009752
+    },
+    {
+      "workers": 1,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.7423942390014417,
+      "samples_per_second": 33103.70515947966,
+      "parquet_and_input_seconds": 0.37659244300448336,
+      "simulation_seconds": 0.35680426098406315,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.00177596349385567,
+        "p95": 0.004337872333417181,
+        "p99": 0.0046850900904974
+      },
+      "io_delta": {
+        "rchar": 110053979,
+        "wchar": 0,
+        "syscr": 434,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 169312256,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.7526698669826146,
+      "total_process_seconds": 1.8801910140027758
+    },
+    {
+      "workers": 1,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.7775861010013614,
+      "samples_per_second": 31605.503195532263,
+      "parquet_and_input_seconds": 0.40539111601538025,
+      "simulation_seconds": 0.36146712698973715,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.0017973989888560027,
+        "p95": 0.005691763517097569,
+        "p99": 0.006086790847766679
+      },
+      "io_delta": {
+        "rchar": 110053979,
+        "wchar": 0,
+        "syscr": 434,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 169312256,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.7788489649828989,
+      "total_process_seconds": 1.9346254940028302
+    },
+    {
+      "workers": 2,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.594738799991319,
+      "samples_per_second": 41322.341842097274,
+      "parquet_and_input_seconds": 0.2236182639899198,
+      "simulation_seconds": 0.36202602699631825,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.002063459003693424,
+        "p95": 0.00442821850592736,
+        "p99": 0.006745364367670845
+      },
+      "io_delta": {
+        "rchar": 110083961,
+        "wchar": 0,
+        "syscr": 439,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 193216512,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.609912195999641,
+      "total_process_seconds": 1.5908840940101072
+    },
+    {
+      "workers": 2,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.6169096019875724,
+      "samples_per_second": 39837.279109970936,
+      "parquet_and_input_seconds": 0.24154813299537636,
+      "simulation_seconds": 0.365000499994494,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.0021919104910921305,
+        "p95": 0.006232699239626525,
+        "p99": 0.00700231621216517
+      },
+      "io_delta": {
+        "rchar": 110083961,
+        "wchar": 0,
+        "syscr": 439,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 193351680,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.608656485012034,
+      "total_process_seconds": 1.6101729290094227
+    },
+    {
+      "workers": 2,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.6246161800227128,
+      "samples_per_second": 39345.76270359559,
+      "parquet_and_input_seconds": 0.2527773340116255,
+      "simulation_seconds": 0.3629847400006838,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.002172134001739323,
+        "p95": 0.00461808305553859,
+        "p99": 0.007007506467052735
+      },
+      "io_delta": {
+        "rchar": 110083961,
+        "wchar": 0,
+        "syscr": 439,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 199553024,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.6085248180024792,
+      "total_process_seconds": 1.6211916529864538
+    },
+    {
+      "workers": 4,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.5509841890016105,
+      "samples_per_second": 44603.820745803954,
+      "parquet_and_input_seconds": 0.1840653020190075,
+      "simulation_seconds": 0.3575440809945576,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.0035011375148314983,
+        "p95": 0.006183630489977076,
+        "p99": 0.008588948576361874
+      },
+      "io_delta": {
+        "rchar": 110143925,
+        "wchar": 0,
+        "syscr": 449,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 245706752,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.5479727970086969,
+      "total_process_seconds": 1.476881953974953
+    },
+    {
+      "workers": 4,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.5444168520043604,
+      "samples_per_second": 45141.87962683265,
+      "parquet_and_input_seconds": 0.17321125598391518,
+      "simulation_seconds": 0.36175580898998305,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.0031607824930688366,
+        "p95": 0.00578656839206814,
+        "p99": 0.007858306271373296
+      },
+      "io_delta": {
+        "rchar": 110143925,
+        "wchar": 0,
+        "syscr": 449,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 249733120,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.5435214180033654,
+      "total_process_seconds": 1.4674794559832662
+    },
+    {
+      "workers": 4,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.5374626780103426,
+      "samples_per_second": 45725.96573771225,
+      "parquet_and_input_seconds": 0.17268467601388693,
+      "simulation_seconds": 0.35491168199223466,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.003250761510571465,
+        "p95": 0.00505009404441807,
+        "p99": 0.008595899960200768
+      },
+      "io_delta": {
+        "rchar": 110143925,
+        "wchar": 0,
+        "syscr": 449,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 241664000,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.5534566270071082,
+      "total_process_seconds": 1.475224538007751
+    },
+    {
+      "workers": 8,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.5780524080037139,
+      "samples_per_second": 42515.17623613481,
+      "parquet_and_input_seconds": 0.19169431499904022,
+      "simulation_seconds": 0.37735807299031876,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.00730447300884407,
+        "p95": 0.010857629394740793,
+        "p99": 0.013934735902585092
+      },
+      "io_delta": {
+        "rchar": 126511575,
+        "wchar": 0,
+        "syscr": 481,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 323252224,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.5826931030023843,
+      "total_process_seconds": 1.5454764460155275
+    },
+    {
+      "workers": 8,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.555511139013106,
+      "samples_per_second": 44240.33700505182,
+      "parquet_and_input_seconds": 0.1868693740107119,
+      "simulation_seconds": 0.35885512601817027,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.00717776948295068,
+        "p95": 0.010701735650945917,
+        "p99": 0.012964629599882755
+      },
+      "io_delta": {
+        "rchar": 126511575,
+        "wchar": 0,
+        "syscr": 481,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 298512384,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.5706723629846238,
+      "total_process_seconds": 1.5236578760086559
+    },
+    {
+      "workers": 8,
+      "samples": 24576,
+      "cohort_count": 192,
+      "pipeline_seconds": 0.5602286990033463,
+      "samples_per_second": 43867.79906798957,
+      "parquet_and_input_seconds": 0.1879917740006931,
+      "simulation_seconds": 0.3629877060011495,
+      "decoded_input_bytes": 58392576,
+      "cohort_latency_seconds": {
+        "p50": 0.007238218488055281,
+        "p95": 0.011398745085170957,
+        "p99": 0.013125810573983472
+      },
+      "io_delta": {
+        "rchar": 126511575,
+        "wchar": 0,
+        "syscr": 481,
+        "syscw": 0,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      },
+      "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+      "financial_validation": {
+        "net_return": -0.04377205092400205,
+        "max_drawdown": 0.07542503296029202,
+        "costs": 1214.2602019292108,
+        "turnover": 121.42602019292141,
+        "steps": 192,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "process_lifetime_peak_rss_bytes": 318472192,
+      "peak_vram_bytes": null,
+      "cpu_gpu_transfer_bytes": null,
+      "energy_joules": null,
+      "cost_currency": null,
+      "warmup_seconds": 0.5650101079954766,
+      "total_process_seconds": 1.5176873109885491
+    }
+  ],
+  "profile": [
+    {
+      "file": "episode_pipeline.py",
+      "line": 38,
+      "function": "pipeline",
+      "calls": 1,
+      "self_seconds": 0.000434096,
+      "cumulative_seconds": 1.558890746
+    },
+    {
+      "file": "evaluation.py",
+      "line": 7,
+      "function": "evaluate",
+      "calls": 1,
+      "self_seconds": 0.0013202370000000001,
+      "cumulative_seconds": 1.068966282
+    },
+    {
+      "file": "environment.py",
+      "line": 126,
+      "function": "step",
+      "calls": 192,
+      "self_seconds": 0.0033278310000000003,
+      "cumulative_seconds": 1.0622821630000001
+    },
+    {
+      "file": "portfolio.py",
+      "line": 307,
+      "function": "advance",
+      "calls": 192,
+      "self_seconds": 0.005318285000000001,
+      "cumulative_seconds": 0.7337617350000001
+    },
+    {
+      "file": "episode_pipeline.py",
+      "line": 44,
+      "function": "read_positions",
+      "calls": 1,
+      "self_seconds": 0.005982123000000001,
+      "cumulative_seconds": 0.47244897900000005
+    },
+    {
+      "file": "storage.py",
+      "line": 328,
+      "function": "__call__",
+      "calls": 192,
+      "self_seconds": 0.001008575,
+      "cumulative_seconds": 0.43649555300000004
+    },
+    {
+      "file": "storage.py",
+      "line": 271,
+      "function": "read",
+      "calls": 192,
+      "self_seconds": 0.035833758,
+      "cumulative_seconds": 0.435261496
+    },
+    {
+      "file": "portfolio.py",
+      "line": 344,
+      "function": "_validate",
+      "calls": 192,
+      "self_seconds": 0.012957627000000001,
+      "cumulative_seconds": 0.37526456700000005
+    },
+    {
+      "file": "storage.py",
+      "line": 238,
+      "function": "_group",
+      "calls": 192,
+      "self_seconds": 0.01929652,
+      "cumulative_seconds": 0.2907728
+    },
+    {
+      "file": "portfolio.py",
+      "line": 280,
+      "function": "_mark",
+      "calls": 385,
+      "self_seconds": 0.011538579,
+      "cumulative_seconds": 0.18976831600000002
+    },
+    {
+      "file": "environment.py",
+      "line": 73,
+      "function": "_observation",
+      "calls": 193,
+      "self_seconds": 0.12601151200000002,
+      "cumulative_seconds": 0.16366349900000002
+    },
+    {
+      "file": "market.py",
+      "line": 146,
+      "function": "quotes",
+      "calls": 193,
+      "self_seconds": 0.060850775,
+      "cumulative_seconds": 0.10361073600000001
+    }
+  ],
+  "limits": [
+    "Carga sint\u00e9tica anal\u00edtica, sin codificadores ni entrenamiento neuronal.",
+    "Cach\u00e9 del sistema caliente, sin vaciar cach\u00e9s ni detener otros procesos.",
+    "El tiempo total incluye importaciones y calentamiento. El recorrido los excluye.",
+    "No se mide GPU, energ\u00eda ni coste monetario. El perfil usa otra ejecuci\u00f3n."
+  ]
+}
