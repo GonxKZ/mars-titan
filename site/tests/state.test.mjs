@@ -55,6 +55,32 @@ test("oculta los agregados financieros reservados y rechaza contratos inválidos
   assert.throws(() => validateSnapshot(data), /max_drawdown/);
 });
 
+test("distingue el RSS del ejecutable del máximo histórico del proceso", () => {
+  const data = activitySnapshot();
+  Object.assign(data.runs[0].metadata, {
+    ram_peak_scope: "executable", executable_peak_rss_mib: 64,
+    process_lifetime_peak_rss_mib: 512, condition: null, parent_model: null,
+  });
+  data.runs[0].metrics.ram_peak_mib = 64;
+  const run = validateSnapshot(data).runs[0];
+  assert.equal(run.metadata.ram_peak_scope, "executable");
+  assert.equal(run.metadata.executable_peak_rss_mib, 64);
+  assert.equal(run.metadata.process_lifetime_peak_rss_mib, 512);
+  const csv = toCSV([run], data.models);
+  assert.match(csv, /"ram_peak_scope"/);
+  assert.match(csv, /"executable"/);
+  data.runs[0].metadata.ram_peak_scope = "unknown_scope";
+  assert.throws(() => validateSnapshot(data), /ram_peak_scope/);
+});
+
+test("los metadatos nuevos son opcionales en las instantáneas anteriores", () => {
+  const run = validateSnapshot(activitySnapshot()).runs[0];
+  assert.equal(run.metadata.ram_peak_scope, null);
+  assert.equal(run.metadata.executable_peak_rss_mib, null);
+  assert.equal(run.metadata.condition, null);
+  assert.equal(run.metadata.parent_model, null);
+});
+
 function metrics(overrides = {}) {
   return {
     mae: null, mse: null, rank_ic: null, coverage_80: null, coverage_95: null,
