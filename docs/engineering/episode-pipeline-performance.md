@@ -30,3 +30,5 @@ uv run --extra reinforcement python benchmarks/episode_pipeline.py \
 ```
 
 La carpeta de trabajo debe ser nueva. El máximo es ocho trabajadores, una tarea pendiente por trabajador y 8 MiB de caché por lector. Esta carga permanece por debajo de los límites de memoria de las ejecuciones científicas, pero no demuestra el consumo de una campaña neuronal completa.
+
+La [comparación posterior de lectura y evaluación](evaluation-io-performance.md) mide la reutilización de un lector por bloque con un trabajador y la evaluación sin tablas descartadas. Conserva las medidas anteriores y registra por separado sus referencias, comprobaciones de paridad y límites.
