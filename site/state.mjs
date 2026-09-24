@@ -1,11 +1,22 @@
 export const STATUS_LABELS = Object.freeze({
-  queued: "En cola", running: "En curso", paused: "Pausada", completed: "Completada",
+  blocked: "Bloqueada", queued: "En cola", running: "En curso", paused: "Pausada", completed: "Completada",
   failed: "Fallida", cancelled: "Cancelada", stale: "Sin actualización", unknown: "Estado no informado",
 });
 
 export const PHASE_LABELS = Object.freeze({
   prepare: "Preparación", train: "Entrenamiento", validation: "Validación",
-  calibration: "Calibración", test: "Test final", evaluation: "Evaluación",
+  calibration: "Calibración", test: "Prueba final", evaluation: "Evaluación",
+});
+
+export const ACTIVITY_LABELS = Object.freeze({
+  initial_training: "Entrenamiento inicial", supervised_continuation: "Continuación supervisada",
+  predictive_adaptation: "Adaptación predictiva", rl: "Aprendizaje por refuerzo",
+  synthetic_generation: "Generación sintética", simulation: "Simulación", evaluation: "Evaluación",
+});
+
+export const FINANCIAL_REASON_LABELS = Object.freeze({
+  none: "Sin incidencia", missing_close: "Falta un cierre", ruined: "Patrimonio agotado",
+  incomplete: "Episodio incompleto",
 });
 
 export const METRIC_KEYS = Object.freeze([
@@ -14,7 +25,7 @@ export const METRIC_KEYS = Object.freeze([
   "ram_peak_mib", "elapsed_seconds", "samples_per_second",
 ]);
 
-const RUN_STATUSES = ["queued", "running", "paused", "completed", "failed", "cancelled"];
+const RUN_STATUSES = ["blocked", "queued", "running", "paused", "completed", "failed", "cancelled"];
 const EMPTY_METRICS = Object.freeze(Object.fromEntries(METRIC_KEYS.map(key => [key, null])));
 
 function fail(path, detail = "valor no válido") {
@@ -75,7 +86,7 @@ function metric(value, path, key) {
   return number(value, path, { min: key === "loss" ? -Infinity : 0 });
 }
 
-function validateRun(input, index, modelIds, generatedAt) {
+function validateRun(input, index, modelIds, generatedAt, version = 1) {
   const path = `runs[${index}]`;
   record(input, path);
   const result = {};
@@ -109,7 +120,7 @@ function validateRun(input, index, modelIds, generatedAt) {
     if (Object.hasOwn(entry, "phase") && entry.phase !== result.phase) fail(field, "el punto pertenece a otra fase");
     if (Object.hasOwn(entry, "attempt_id") && entry.attempt_id !== result.attempt_id) fail(field, "el punto pertenece a otro intento");
     const step = number(entry.step, `${field}.step`, { integer: true, nullable: false });
-    const recordedAt = timestamp(entry.recorded_at, `${field}.recorded_at`);
+    const recordedAt = timestamp(entry.recorded_at, `${field}.recorded_at`, version === 2);
     if (step <= previousStep) fail(field, "historia fuera de orden o paso duplicado");
     checkOrder(previousTime, recordedAt, field);
     checkOrder(result.started_at, recordedAt, field);
@@ -131,12 +142,26 @@ function validateRun(input, index, modelIds, generatedAt) {
   checkOrder(result.checkpoint.saved_at, result.updated_at, `${path}.checkpoint.saved_at`);
   checkOrder(result.checkpoint.saved_at, generatedAt, `${path}.checkpoint.saved_at`);
   result.test_released = boolean(input.test_released, `${path}.test_released`);
+  if (version === 2) {
+    const meta = record(input.metadata, `${path}.metadata`);
+    result.metadata = {};
+    for (const key of ["campaign", "domain", "method", "history_axis", "progress_time_source"]) result.metadata[key] = text(meta[key], `${path}.${key}`, 96);
+    if (!["real", "synthetic", "technical"].includes(meta.domain)) fail(path, "dominio desconocido");
+    for (const key of ["train_rows", "validation_rows"]) result.metadata[key] = number(meta[key], `${path}.${key}`, {integer: true});
+    for (const key of ["configuration_sha256", "source_sha256", "parent", "error_type"]) result.metadata[key] = text(meta[key], `${path}.${key}`, 96, true);
+    result.metadata.parent_frozen = boolean(meta.parent_frozen ?? null, `${path}.parent_frozen`, true);
+    result.metadata.currency = meta.currency ?? null;
+    if (result.metadata.currency !== null && (typeof result.metadata.currency !== "string" || !/^[A-Z]{3}$/.test(result.metadata.currency))) fail(`${path}.currency`);
+    result.activity = input.activity ?? (["initial_training", "supervised_continuation"].includes(meta.method) ? meta.method : "predictive_adaptation");
+    if (!Object.hasOwn(ACTIVITY_LABELS, result.activity)) fail(`${path}.activity`, "actividad desconocida");
+    result.financial_validation = validateFinancial(input.financial_validation, result, path);
+  }
   return result;
 }
 
 export function validateSnapshot(input) {
   record(input, "resumen");
-  if (input.schema_version !== 1) fail("schema_version", "versión no admitida");
+  if (![1, 2].includes(input.schema_version)) fail("schema_version", "versión no admitida");
   if (input.project !== "MARS-TITAN") fail("project", "el resumen pertenece a otro proyecto");
   const generatedAt = timestamp(input.generated_at, "generated_at");
   if (!["no_runs_registered", "available"].includes(input.source_status)) fail("source_status");
@@ -153,7 +178,7 @@ export function validateSnapshot(input) {
   });
   const identities = new Set();
   const runs = list(input.runs, "runs", 128).map((entry, index) => {
-    const validated = validateRun(entry, index, modelIds, generatedAt);
+    const validated = validateRun(entry, index, modelIds, generatedAt, input.schema_version);
     const key = JSON.stringify([validated.run_id, validated.attempt_id]);
     if (identities.has(key)) fail(`runs[${index}]`, "ejecución e intento duplicados");
     identities.add(key);
@@ -161,7 +186,8 @@ export function validateSnapshot(input) {
   });
   if ((runs.length === 0) !== (input.source_status === "no_runs_registered")) fail("source_status", "no coincide con el número de ejecuciones");
   return {
-    schema_version: 1, project: "MARS-TITAN", generated_at: generatedAt,
+    schema_version: input.schema_version, project: "MARS-TITAN", generated_at: generatedAt,
+    ...(input.schema_version === 2 ? validatePagination(input) : {}),
     source_status: input.source_status, poll_interval_seconds: poll, stale_after_seconds: stale,
     models, runs, notes: list(input.notes, "notes", 40).map((note, index) => text(note, `notes[${index}]`, 600)),
   };
@@ -184,16 +210,22 @@ export function resultsProtected(run) {
 }
 
 export function publicMetrics(run) {
-  return resultsProtected(run) ? { ...EMPTY_METRICS } : { ...run.metrics };
+  const values = resultsProtected(run) ? { ...EMPTY_METRICS } : { ...run.metrics };
+  if (!isPredictive(run)) for (const key of ["mae", "mse", "loss", "rank_ic", "coverage_80", "coverage_95"]) values[key] = null;
+  return values;
 }
 
 export function publicHistory(run) {
-  return resultsProtected(run) ? [] : run.history;
+  return resultsProtected(run) || !isPredictive(run) ? [] : run.history;
+}
+
+export function isPredictive(run) {
+  return run.activity === undefined || ["initial_training", "supervised_continuation", "predictive_adaptation"].includes(run.activity);
 }
 
 export function comparableRuns(runs, group, phase, sortMetric = "mae") {
   if (!group || !METRIC_KEYS.includes(sortMetric)) return [];
-  return runs.filter(run => run.status === "completed" && run.comparison_group === group && run.phase === phase && !resultsProtected(run)).sort((a, b) => {
+  return runs.filter(run => isPredictive(run) && run.status === "completed" && run.comparison_group === group && run.phase === phase && !resultsProtected(run)).sort((a, b) => {
     const av = a.metrics[sortMetric];
     const bv = b.metrics[sortMetric];
     if (av === null && bv === null) return a.run_id.localeCompare(b.run_id);
@@ -201,6 +233,23 @@ export function comparableRuns(runs, group, phase, sortMetric = "mae") {
     if (bv === null) return -1;
     return sortMetric === "rank_ic" ? bv - av : av - bv;
   });
+}
+
+function validateFinancial(value, run, path) {
+  if (value == null || !["rl", "simulation", "evaluation"].includes(run.activity) || run.phase === null || ["test", "evaluation"].includes(run.phase)) return null;
+  record(value, `${path}.financial_validation`);
+  const result = {};
+  for (const key of ["net_return", "max_drawdown", "costs", "turnover", "steps"]) {
+    result[key] = number(value[key] ?? null, `${path}.financial_validation.${key}`, {
+      min: key === "net_return" ? -1 : 0,
+      max: key === "max_drawdown" ? 1 : Infinity,
+      integer: key === "steps",
+    });
+  }
+  result.completed = boolean(value.completed ?? null, `${path}.financial_validation.completed`, true);
+  result.invalid_reason = value.invalid_reason ?? null;
+  if (result.invalid_reason !== null && !Object.hasOwn(FINANCIAL_REASON_LABELS, result.invalid_reason)) fail(`${path}.financial_validation.invalid_reason`);
+  return result;
 }
 
 export function formatValue(value, { digits = 4, style = "decimal" } = {}) {
@@ -223,4 +272,28 @@ export function toCSV(runs, models, now = Date.now(), staleAfterSeconds = 180) {
       run.updated_at, run.test_released, ...METRIC_KEYS.map(key => visible[key])];
   });
   return [headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
+}
+
+function validatePagination(input) {
+  const result = {campaigns: list(input.campaigns ?? [], "campaigns", 64).map(c => {
+    record(c, "campaign");
+    const counts = record(c.counts, "counts");
+    return {id: text(c.id, "campaign.id", 96), domain: text(c.domain, "domain", 20),
+      status: text(c.status, "status", 20), planned_runs: number(c.planned_runs, "planned_runs", {integer: true}),
+      registered_runs: number(c.registered_runs, "registered_runs", {integer: true}),
+      counts: Object.fromEntries(Object.entries(counts).map(([key, value]) => {
+        if (![...RUN_STATUSES, "null", "not_started"].includes(key)) fail("counts");
+        return [key, number(value, key, {integer: true, nullable: false})];
+      }))};
+  })};
+  if (input.pagination) {
+    const p = record(input.pagination, "pagination");
+    result.pagination = {total_runs: number(p.total_runs, "total_runs", {integer: true, nullable: false}),
+      page_size: number(p.page_size, "page_size", {min: 1, max: 128, integer: true, nullable: false}),
+      pages: list(p.pages, "pages", 4096).map(path => {
+        if (typeof path !== "string" || !/^pages\/[a-f0-9]{64}\.json$/.test(path)) fail("pages", "ruta no admitida");
+        return path;
+      })};
+  }
+  return result;
 }

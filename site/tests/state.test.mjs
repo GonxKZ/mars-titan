@@ -13,6 +13,48 @@ import {
 
 const NOW = Date.parse("2026-09-18T20:00:00Z");
 
+function activitySnapshot(overrides = {}) {
+  return { ...snapshot([run({
+    activity: "rl", metrics: metrics({mae: 99, loss: 88, elapsed_seconds: 3}),
+    metadata: {campaign: "worlds", domain: "synthetic", method: "rl", history_axis: "epoch",
+      progress_time_source: "receipt_mtime", train_rows: 100, validation_rows: 20,
+      configuration_sha256: null, source_sha256: null, parent: null, error_type: null,
+      parent_frozen: true},
+    financial_validation: {net_return: -.02, max_drawdown: .1, costs: .003, turnover: 2,
+      steps: 10, completed: false, invalid_reason: "missing_close", private_path: "/private/orders"},
+    ...overrides,
+  })]), schema_version: 2, campaigns: [] };
+}
+
+test("conserva la actividad y los agregados financieros sin convertirlos en error predictivo", () => {
+  const result = validateSnapshot(activitySnapshot()).runs[0];
+  assert.equal(result.activity, "rl");
+  assert.equal(result.financial_validation.net_return, -.02);
+  assert.equal(result.financial_validation.invalid_reason, "missing_close");
+  assert.equal(result.metadata.parent_frozen, true);
+  assert.equal(publicMetrics(result).mae, null);
+  assert.equal(publicMetrics(result).loss, null);
+  assert.equal(publicMetrics(result).elapsed_seconds, 3);
+  assert.equal(Object.hasOwn(result.financial_validation, "private_path"), false);
+});
+
+test("las actividades financieras no participan en curvas ni rankings predictivos", () => {
+  const financial = run({run_id: "finance", activity: "rl", status: "completed", metrics: metrics({mae: .01}),
+    history: [{step: 1, recorded_at: "2026-09-18T19:30:00Z", mae: .01, loss: .02}]});
+  const predictive = run({status: "completed", metrics: metrics({mae: .1})});
+  assert.deepEqual(publicHistory(financial), []);
+  assert.deepEqual(comparableRuns([financial, predictive], "group-01", "train"), [predictive]);
+  assert.equal(toCSV([financial], snapshot().models).includes('"0.01"'), false);
+});
+
+test("oculta los agregados financieros reservados y rechaza contratos inválidos", () => {
+  assert.equal(validateSnapshot(activitySnapshot({phase: "test"})).runs[0].financial_validation, null);
+  assert.throws(() => validateSnapshot(activitySnapshot({activity: "unknown"})), /actividad|activity/);
+  const data = activitySnapshot();
+  data.runs[0].financial_validation.max_drawdown = 1.1;
+  assert.throws(() => validateSnapshot(data), /max_drawdown/);
+});
+
 function metrics(overrides = {}) {
   return {
     mae: null, mse: null, rank_ic: null, coverage_80: null, coverage_95: null,
@@ -60,10 +102,23 @@ test("preserva la diferencia entre una medida cero y una medida desconocida", ()
 });
 
 test("rechaza versiones, estados y fechas sin UTC válidos", () => {
-  assert.throws(() => validateSnapshot({ ...snapshot(), schema_version: 2 }), /versión|version/i);
+  assert.throws(() => validateSnapshot({ ...snapshot(), schema_version: 3 }), /versión|version/i);
   assert.throws(() => validateSnapshot(snapshot([run({ status: "active" })])), /status/);
   assert.throws(() => validateSnapshot(snapshot([run({ phase: "inference" })])), /phase/);
   assert.throws(() => validateSnapshot({ ...snapshot(), generated_at: "2026-09-18" }), /generated_at/);
+});
+
+test("el registro paginado conserva épocas sin inventar horas y rechaza rutas externas", () => {
+  const input = { ...snapshot([run({ history: [{step: 1, recorded_at: null, loss: null, mae: .1}],
+    metadata: {campaign: "original", domain: "real", method: "initial_training", history_axis: "epoch",
+      train_rows: 100, validation_rows: 20, configuration_sha256: "a".repeat(64),
+      source_sha256: "b".repeat(64), parent: null, error_type: null, progress_time_source: "receipt_mtime"}})]),
+    schema_version: 2, campaigns: [], pagination: { total_runs: 129, page_size: 1, pages: ["pages/" + "a".repeat(64) + ".json"] }};
+  const output = validateSnapshot(input);
+  assert.equal(output.runs[0].history[0].recorded_at, null);
+  assert.equal(output.runs[0].metadata.train_rows, 100);
+  assert.equal(output.pagination.total_runs, 129);
+  assert.throws(() => validateSnapshot({...input, pagination: {...input.pagination, pages: ["https://example.org/private"]}}));
 });
 
 test("un estado o fase desconocidos permanecen desconocidos", () => {
@@ -105,7 +160,7 @@ test("acota el registro a 128 ejecuciones y 500 puntos por curva", () => {
   assert.throws(() => validateSnapshot(snapshot([run({ total_steps: 600, completed_steps: 600, history })])), /history/);
 });
 
-test("valida avance, checkpoint y orden de historia para evitar progreso engañoso", () => {
+test("valida avance, punto de control y orden de historia para evitar progreso engañoso", () => {
   assert.throws(() => validateSnapshot(snapshot([run({ completed_steps: 101 })])), /completed_steps/);
   assert.throws(() => validateSnapshot(snapshot([run({ checkpoint: { step: 26, saved_at: "2026-09-18T19:30:00Z", resumable: true } })])), /checkpoint/);
   assert.throws(() => validateSnapshot(snapshot([run({ history: [
@@ -139,7 +194,7 @@ test("rechaza puntos de historia que pertenezcan a otro intento o fase", () => {
   }
 });
 
-test("un heartbeat antiguo, ausente o futuro no equivale a una ejecución pausada", () => {
+test("una señal de actividad antigua, ausente o futura no equivale a una ejecución pausada", () => {
   assert.equal(displayStatus(run(), NOW, 180), "running");
   assert.equal(displayStatus(run({ heartbeat_at: "2026-09-18T19:50:00Z" }), NOW, 180), "stale");
   assert.equal(displayStatus(run({ heartbeat_at: null }), NOW, 180), "stale");
@@ -155,7 +210,7 @@ test("el progreso desconocido no se representa como cero ni divide por cero", ()
   assert.equal(progressPercent(run({ completed_steps: 0 })), 0);
 });
 
-test("el test cerrado oculta métricas y curva incluso si el archivo incluye valores", () => {
+test("la prueba final cerrada oculta métricas y curva aunque el archivo incluya valores", () => {
   const hidden = run({ phase: "test", metrics: metrics({ mae: 0.001, loss: 0.002 }),
     history: [{ step: 1, recorded_at: "2026-09-18T19:00:00Z", loss: 0.2, mae: 0.01 }] });
   assert.equal(publicMetrics(hidden).mae, null);

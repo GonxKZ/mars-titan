@@ -1,8 +1,10 @@
 import {
   validateSnapshot, displayStatus, progressPercent, publicMetrics, publicHistory,
   resultsProtected, comparableRuns, formatValue, toCSV, STATUS_LABELS, PHASE_LABELS,
+  isPredictive, ACTIVITY_LABELS, FINANCIAL_REASON_LABELS,
 } from "./state.mjs";
 
+let pageIndex = 0, firstPage = null, deployment = null;
 const MAX_BYTES = 8 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 10000;
 const POLL_MS = 60000;
@@ -83,7 +85,7 @@ function renderTracking() {
     if (run?.phase === item.dataset.phase) item.setAttribute("aria-current", "step");
     else item.removeAttribute("aria-current");
   }
-  byId("phase-description").textContent = run ? `Fase declarada: ${PHASE_LABELS[run.phase] ?? "no informada"}. Las etapas anteriores del esquema no se dan por verificadas.` : "Secuencia de referencia. Ninguna fase está activa.";
+  byId("phase-description").textContent = run?.metadata ? "Las métricas pertenecen a validación. El recibo no identifica la operación actual del proceso." : run ? `Fase declarada: ${PHASE_LABELS[run.phase] ?? "no informada"}. Las etapas anteriores del esquema no se dan por verificadas.` : "Secuencia de referencia. Ninguna fase está activa.";
   if (!run) return;
   const protectedResults = resultsProtected(run);
   byId("test-notice").hidden = !protectedResults;
@@ -94,22 +96,28 @@ function renderTracking() {
   byId("run-progress").hidden = progress === null;
   if (progress !== null) byId("run-progress").value = progress;
   const metrics = publicMetrics(run);
-  const primary = [
+  const predictive = isPredictive(run);
+  byId("predictive-curve").hidden = !predictive;
+  const primary = predictive ? [
     ["MAE residual", metrics.mae, { digits: 4 }],
     ["Rank IC", metrics.rank_ic, { digits: 4 }],
     ["Cobertura del intervalo 95 %", metrics.coverage_95, { digits: 1, style: "percent" }],
     ["Pico de VRAM, MiB", metrics.vram_peak_mib, { digits: 0 }],
-  ];
+  ] : [["Tiempo observado, segundos", metrics.elapsed_seconds, {digits: 1}],
+    ["Pico de VRAM, MiB", metrics.vram_peak_mib, {digits: 0}]];
   byId("key-metrics").replaceChildren(...primary.map(([label, value, options]) => {
     const group = element("div");
     group.append(element("dt", label), element("dd", formatValue(value, options), value === null ? "missing" : undefined));
     return group;
   }));
   const details = [
-    ["Último heartbeat", dateText(run.heartbeat_at)],
-    ["Último checkpoint", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
+    ["Actividad", ACTIVITY_LABELS[run.activity] ?? "No informada"],
+    ["Última observación del proceso", dateText(run.heartbeat_at)],
+    ["Último progreso registrado", dateText(run.updated_at)],
+    ...(run.metadata ? [["Campaña y método", `${run.metadata.campaign} / ${run.metadata.method}`], ["Origen", {real: "Corpus real", synthetic: "Mundo sintético", technical: "Comprobación técnica"}[run.metadata.domain]], ["Filas de entrenamiento / validación", `${count(run.metadata.train_rows)} / ${count(run.metadata.validation_rows)}`], ...(predictive ? [["Eje de la curva", run.metadata.history_axis === "epoch" ? "Épocas sin fecha original" : "Pasos"]] : []), ["Error registrado", run.metadata.error_type ?? "Sin error informado"]] : []),
+    ["Último punto de control", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
     ["Recuperación", run.checkpoint.resumable === null ? "No informada" : run.checkpoint.resumable ? "Disponible según el registro" : "No recuperable según el registro"],
-    ["Semilla y fold", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`],
+    ["Semilla y partición", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`],
     ["RAM máxima, MiB", formatValue(metrics.ram_peak_mib, { digits: 0 })],
     ["Latencia p50 / p95 / p99, ms", [metrics.latency_p50_ms, metrics.latency_p95_ms, metrics.latency_p99_ms].map(value => formatValue(value, { digits: 1 })).join(" / ")],
     ["Tiempo observado, segundos", formatValue(metrics.elapsed_seconds, { digits: 0 })],
@@ -120,6 +128,23 @@ function renderTracking() {
     group.append(element("dt", label), element("dd", value));
     return group;
   }));
+  const financial = run.financial_validation;
+  byId("financial-panel").hidden = !financial;
+  if (financial) {
+    const rows = [
+      ["Retorno neto", formatValue(financial.net_return, {digits: 2, style: "percent"})],
+      ["Caída máxima desde el pico", formatValue(financial.max_drawdown, {digits: 2, style: "percent"})],
+      [`Costes${run.metadata.currency ? ` (${run.metadata.currency})` : ""}`, formatValue(financial.costs)], ["Rotación", formatValue(financial.turnover)],
+      ["Pasos evaluados", count(financial.steps)],
+      ["Episodio completo", financial.completed === null ? "No informado" : financial.completed ? "Sí" : "No"],
+      ["Incidencia", financial.invalid_reason === null ? "No informada" : FINANCIAL_REASON_LABELS[financial.invalid_reason]],
+    ];
+    byId("financial-metrics").replaceChildren(...rows.map(([label, value]) => {
+      const group = element("div");
+      group.append(element("dt", label), element("dd", value));
+      return group;
+    }));
+  }
   renderCurve(run);
 }
 
@@ -162,14 +187,14 @@ function renderCurve(run) {
 
 function renderComparison() {
   const phase = byId("comparison-phase").value;
-  const eligible = snapshot.runs.filter(run => run.status === "completed" && run.phase === phase && run.comparison_group && !resultsProtected(run));
+  const eligible = snapshot.runs.filter(run => isPredictive(run) && run.status === "completed" && run.phase === phase && run.comparison_group && !resultsProtected(run));
   const groups = [...new Set(eligible.map(run => run.comparison_group))].sort();
   setOptions(byId("comparison-group"), groups.map(group => ({ value: group, label: `Grupo ${group.slice(0, 16)}${group.length > 16 ? "…" : ""}` })), "Sin grupos en esta fase");
   const group = byId("comparison-group").value;
   const rows = comparableRuns(snapshot.runs, group, phase, byId("comparison-metric").value);
   byId("comparison-empty").hidden = rows.length > 0;
   byId("comparison-table-wrap").hidden = rows.length === 0;
-  byId("comparison-caption").textContent = `${rows.length} ejecuciones / ${PHASE_LABELS[phase]} / Grupo ${group}`;
+  byId("comparison-caption").textContent = `${rows.length} ejecuciones en ${PHASE_LABELS[phase]}. Grupo ${group}`;
   byId("comparison-body").replaceChildren(...rows.map(run => {
     const row = element("tr");
     const model = element("td");
@@ -197,7 +222,7 @@ function renderHistory() {
   byId("history-empty").hidden = rows.length > 0;
   byId("history-table-wrap").hidden = rows.length === 0;
   byId("export-button").disabled = rows.length === 0;
-  byId("history-empty").firstElementChild.textContent = snapshot.runs.length ? "No hay coincidencias con estos filtros" : "Un registro que todavía está por empezar";
+  byId("history-empty").firstElementChild.textContent = snapshot.runs.length ? "No hay coincidencias con estos filtros" : "El registro aún no contiene ejecuciones";
   byId("history-empty").lastElementChild.textContent = snapshot.runs.length ? "Prueba otro identificador o selecciona todos los estados." : "No hay ejecuciones que mostrar. Los intentos aparecerán con su fecha, fase y estado declarado.";
   byId("history-body").replaceChildren(...rows.map(run => {
     const row = element("tr");
@@ -228,10 +253,19 @@ function renderHistory() {
 function render() {
   if (!snapshot) return;
   byId("source-label").textContent = snapshotOrigin === "local" ? "Archivo local" : "Registro público";
-  byId("snapshot-date").textContent = dateText(snapshot.generated_at);
+  byId("snapshot-date").textContent = `Recolección: ${dateText(firstPage?.generated_at ?? snapshot.generated_at)}`;
+  byId("publication-date").textContent = deployment && sourceMode === "public" ? `Publicación preparada: ${dateText(deployment.packaged_at)}. Datos ${deployment.data_sha.slice(0, 8)}.` : "Publicación no informada";
   byId("local-notice").hidden = snapshotOrigin !== "local";
   byId("public-source-button").disabled = Boolean(activeRequest);
   byId("refresh-button").disabled = sourceMode === "local" || Boolean(activeRequest);
+  const campaigns = firstPage?.campaigns ?? snapshot.campaigns ?? [];
+  byId("campaign-summary").hidden = !campaigns.length;
+  byId("campaign-rows").replaceChildren(...campaigns.map(c => element("p", `${c.id}: ${c.counts.completed ?? 0} completadas de ${c.planned_runs} previstas, ${c.registered_runs} registradas. ${STATUS_LABELS[c.status] ?? c.status}.`)));
+  const pages = sourceMode === "public" ? firstPage?.pagination?.pages ?? [] : [];
+  byId("history-pages").hidden = !pages.length;
+  byId("previous-page").disabled = pageIndex === 0 || Boolean(activeRequest);
+  byId("next-page").disabled = pageIndex >= pages.length || Boolean(activeRequest);
+  byId("page-position").textContent = `Página ${pageIndex + 1} de ${pages.length + 1}. ${firstPage?.pagination?.total_runs ?? snapshot.runs.length} registros.`;
   renderTracking();
   renderComparison();
   renderHistory();
@@ -324,12 +358,21 @@ async function refreshPublic() {
   try {
     const response = await fetch(new URL("./data/observatory.json", import.meta.url), { cache: "no-store", credentials: "omit", signal: controller.signal, headers: { Accept: "application/json" } });
     const next = validateSnapshot(JSON.parse(await readResponse(response)));
+    let publication = null;
+    if (next.schema_version === 2) {
+      try {
+        const meta = JSON.parse(await readResponse(await fetch(new URL("./data/deployment.json", import.meta.url), {cache: "no-store", credentials: "omit", signal: controller.signal})));
+        if (/^[a-f0-9]{40}$/.test(meta.data_sha) && /^[a-f0-9]{40}$/.test(meta.frontend_sha) && Number.isFinite(Date.parse(meta.packaged_at))) publication = meta;
+      } catch (_error) { /* El recibo de despliegue puede faltar en una vista local. */ }
+    }
     if (version !== requestVersion || sourceMode !== "public") return;
     snapshot = next;
+    deployment = publication;
+    firstPage = next; pageIndex = 0;
     snapshotOrigin = "public";
     showError("");
     const active = snapshot.runs.some(run => displayStatus(run, Date.now(), snapshot.stale_after_seconds) === "running");
-    announce(snapshot.runs.length ? "Resumen leído / consulta cada 60 s" : "Sin ejecuciones registradas", active ? "ready" : "idle");
+    announce(snapshot.runs.length ? "Resumen leído. Próxima consulta en 60 s" : "Sin ejecuciones registradas", active ? "ready" : "idle");
     render();
   } catch (error) {
     if (version !== requestVersion || sourceMode !== "public" || (controller.signal.aborted && !timedOut)) return;
@@ -342,9 +385,34 @@ async function refreshPublic() {
     if (activeRequest === controller) activeRequest = null;
     byId("refresh-button").disabled = sourceMode === "local";
     byId("public-source-button").disabled = false;
+    byId("previous-page").disabled = pageIndex === 0;
+    byId("next-page").disabled = pageIndex >= (firstPage?.pagination?.pages.length ?? 0);
     schedulePoll();
   }
 }
+
+async function loadPage(index) {
+  if (activeRequest || sourceMode !== "public" || !firstPage || index < 0 || index > firstPage.pagination.pages.length) return;
+  stopPolling();
+  const version = requestVersion, source = firstPage;
+  const controller = new AbortController();
+  activeRequest = controller;
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const next = index === 0 ? source : validateSnapshot(JSON.parse(await readResponse(await fetch(new URL("./data/" + source.pagination.pages[index - 1], import.meta.url), {credentials: "omit", signal: controller.signal}))));
+    if (version !== requestVersion || sourceMode !== "public" || source !== firstPage) return;
+    snapshot = next; pageIndex = index; showError("");
+  } catch (_error) {
+    if (version === requestVersion) showError("No se pudo leer la página. Se conserva la página anterior.");
+  } finally {
+    clearTimeout(timeout);
+    if (activeRequest === controller) activeRequest = null;
+    render();
+    if (pageIndex === 0) schedulePoll();
+  }
+}
+byId("previous-page").addEventListener("click", () => loadPage(pageIndex - 1));
+byId("next-page").addEventListener("click", () => loadPage(pageIndex + 1));
 
 byId("refresh-button").addEventListener("click", refreshPublic);
 byId("import-button").addEventListener("click", () => byId("import-file").click());
@@ -360,10 +428,10 @@ byId("import-file").addEventListener("change", async event => {
     snapshotOrigin = "local";
     stopPolling();
     activeRequest?.abort();
-    snapshot = next;
+    snapshot = next; firstPage = null; pageIndex = 0;
     byId("local-file-name").textContent = file.name;
     showError("");
-    announce("Archivo local / consulta pública detenida", "idle");
+    announce("Archivo local. Consulta pública detenida", "idle");
     render();
   } catch (error) {
     showError(`${error instanceof SyntaxError ? "El archivo no contiene JSON válido" : error.message}. El registro anterior se conserva.`);
