@@ -1,0 +1,21 @@
+{
+  "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "parameters": {
+    "capital": 1000.0,
+    "cost_bps": 10.0,
+    "participation": 0.01,
+    "score_scale": 0.01,
+    "ruin_penalty": -20.0
+  },
+  "cursor": 0,
+  "done": false,
+  "positions": [{"quantity": 0.0, "target": null, "capacity": null, "decision_at": 0}],
+  "account": {"cash": 1000.0, "costs": 0.0, "turnover": 0.0, "receivable": 0.0, "nav": 1000.0},
+  "retired": [0],
+  "applied_actions": [],
+  "receivables": [],
+  "held_order": [],
+  "peak_nav": 1000.0,
+  "max_drawdown": 0.0,
+  "unfilled_order_observations": 0
+}
