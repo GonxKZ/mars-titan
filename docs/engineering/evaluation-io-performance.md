@@ -50,3 +50,5 @@ CUDA_VISIBLE_DEVICES='' uv run --extra cuda --extra reinforcement python benchma
 `--size small` ejecuta los tamaños pequeños. `--persist` activa la escritura de predicciones. Para repetir la referencia se usa el mismo script con las versiones de `episodes/storage.py` y `training/reference_run.py` de `4a5bc69`, en una copia separada. El informe registra sus huellas y las de los archivos modificados.
 
 La GPU seguía ocupada por otros procesos. El benchmark adapta explícitamente las entradas y la sincronización a CPU, sin introducir una alternativa CPU en el entrenamiento. Las pruebas completas de entrenamiento CUDA requieren una ventana exclusiva y no forman parte de esta medida. La caché del sistema estaba caliente y otras aplicaciones siguieron activas. No se midieron energía, coste monetario, VRAM ni transferencias CPU/GPU.
+
+La [medición posterior de acumulación por sesión](session-metrics-performance.md) compara la agrupación de errores con sesiones repetidas y con fechas únicas, incluidos lotes pequeños y la escritura de predicciones.
