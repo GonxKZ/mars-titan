@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-24T12:57:04.979034Z",
+  "generated_at": "2026-09-24T13:02:19.980737Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -340,18 +340,18 @@
       "status": "running",
       "phase": "validation",
       "started_at": "2026-09-24T12:57:03.976947Z",
-      "updated_at": "2026-09-24T12:57:03.977115Z",
-      "heartbeat_at": "2026-09-24T12:57:04.979034Z",
-      "completed_steps": 0,
+      "updated_at": "2026-09-24T13:02:05.202560Z",
+      "heartbeat_at": "2026-09-24T13:02:19.980737Z",
+      "completed_steps": 9075,
       "total_steps": null,
-      "epoch": null,
+      "epoch": 3,
       "max_epochs": 5,
       "seed": 43,
       "fold": "US",
       "comparison_group": "1e9cf09b9b5ee61dc99a1a6a6f2fa728123409622fe3a5b6a234f8567fd54e84",
       "metrics": {
-        "mae": null,
-        "mse": null,
+        "mae": 0.015083836222503418,
+        "mse": 0.0006138902974020511,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -362,11 +362,30 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": null
+        "samples_per_second": 10736.482345179555
       },
-      "history": [],
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059362932825263
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015076414821618022
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015083836222503418
+        }
+      ],
       "checkpoint": {
-        "step": 0,
+        "step": 9075,
         "saved_at": null,
         "resumable": null
       },
@@ -381,7 +400,7 @@
         "condition": null,
         "parent_model": "dlinear",
         "configuration_sha256": "2c5529a4d8a8a59f8a751dfc4ec320feb9c971028ea4df374f727f994bbd8444",
-        "source_sha256": "21254ad959acb43d14bdac16af70ea8e0fcf17204510007a3259b0ae853e3b77",
+        "source_sha256": "45d58808294c010cf34e53689a637016df6dc517cea4ac5b6428ffd55de1acbd",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
