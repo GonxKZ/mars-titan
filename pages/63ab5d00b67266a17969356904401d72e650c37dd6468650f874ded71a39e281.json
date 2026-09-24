@@ -1,0 +1,6452 @@
+{
+  "schema_version": 2,
+  "project": "MARS-TITAN",
+  "generated_at": "2026-09-24T07:28:43.924070Z",
+  "source_status": "available",
+  "poll_interval_seconds": 60,
+  "stale_after_seconds": 900,
+  "models": [
+    {
+      "id": "rnn",
+      "name": "RNN",
+      "kind": "baseline"
+    },
+    {
+      "id": "gru",
+      "name": "GRU",
+      "kind": "baseline"
+    },
+    {
+      "id": "lstm",
+      "name": "LSTM",
+      "kind": "baseline"
+    },
+    {
+      "id": "dlinear",
+      "name": "DLinear",
+      "kind": "baseline"
+    },
+    {
+      "id": "ridge",
+      "name": "Ridge",
+      "kind": "baseline"
+    },
+    {
+      "id": "xgboost",
+      "name": "XGBoost",
+      "kind": "baseline"
+    },
+    {
+      "id": "mlp",
+      "name": "MLP",
+      "kind": "baseline"
+    },
+    {
+      "id": "boosting",
+      "name": "Boosting",
+      "kind": "baseline"
+    },
+    {
+      "id": "zero",
+      "name": "Residual cero",
+      "kind": "baseline"
+    },
+    {
+      "id": "adaptation",
+      "name": "Adaptaci\u00f3n predictiva",
+      "kind": "baseline"
+    },
+    {
+      "id": "factor_world",
+      "name": "Generador de mundos sint\u00e9ticos",
+      "kind": "generator"
+    },
+    {
+      "id": "ppo",
+      "name": "PPO",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "double_dqn",
+      "name": "Double DQN",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "simulator",
+      "name": "Simulador financiero",
+      "kind": "simulation"
+    },
+    {
+      "id": "cash",
+      "name": "Mantener efectivo",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "hold_initial",
+      "name": "Conservar posiciones iniciales",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "rebalance_50",
+      "name": "Reequilibrar al 50 %",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "financial_comparison",
+      "name": "Resumen de comparaci\u00f3n financiera",
+      "kind": "summary"
+    },
+    {
+      "id": "unknown",
+      "name": "Modelo no identificado",
+      "kind": "baseline"
+    }
+  ],
+  "notes": [
+    "El test final permanece sellado. MARS-TITAN no est\u00e1 implementado.",
+    "Las curvas sin fechas originales utilizan \u00e9pocas. La observaci\u00f3n del proceso no acredita nuevo progreso.",
+    "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes."
+  ],
+  "runs": [
+    {
+      "run_id": "financial-check-20260924-fdcac994fbc23d41bd2a",
+      "attempt_id": "legacy",
+      "model_id": "cash",
+      "activity": "evaluation",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T06:10:50.733323Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "c4ae71017363330d935c9d116eeefaa5ae9353e4ead4f83d1dfc073b592ad853",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 0.013114760018652305,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": {
+        "net_return": 0.0,
+        "max_drawdown": 0.0,
+        "costs": 0.0,
+        "turnover": 0.0,
+        "steps": 64,
+        "completed": true,
+        "invalid_reason": null
+      },
+      "test_released": false,
+      "metadata": {
+        "campaign": "financial-check-20260924",
+        "domain": "technical",
+        "method": "evaluation",
+        "parent_frozen": true,
+        "currency": "USD",
+        "configuration_sha256": null,
+        "source_sha256": "ca03f588e112b2ad37914af46ff7e5192b85d3d3091b63dd5d4de1d28cfb5e26",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "financial-check-20260924-fe61da39785bd20092c0",
+      "attempt_id": "legacy",
+      "model_id": "ppo",
+      "activity": "rl",
+      "variant_id": "e9d00015025a3d63",
+      "status": "completed",
+      "phase": "train",
+      "started_at": "2026-09-24T06:10:52.509858Z",
+      "updated_at": "2026-09-24T06:10:52.619259Z",
+      "heartbeat_at": null,
+      "completed_steps": 16,
+      "total_steps": 16,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "476bc1b6f7293c9cc6a29162683725fe046dccf967fad0b94ba54cf8b2f3c02f",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 816.65625,
+        "elapsed_seconds": 0.1094603210221976,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": 16,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "financial-check-20260924",
+        "domain": "technical",
+        "method": "rl",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "e9d00015025a3d63ae0a8935382710210e13d24e138ae28d062c13ff581e2908",
+        "source_sha256": "8629064a843eef43f1b90472bfc2e41a6fb68e4d0b9bcb8621b7dd655da9e187",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-00cb63f7388eadad7516",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "664f293660d75b90",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:47.888592Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032377817999820424,
+        "mse": 0.0016444073753807253,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1754.62109375,
+        "elapsed_seconds": 0.8329895210044924,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032377817999820424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03251827918594294
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032662856499652976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032624287298071375
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "664f293660d75b901f5dc669ea6f5160d4d7e2e8346b38d491aa3f425871e15f",
+        "source_sha256": "070b0a937adb22831bd54996ca9529bab561f18c630d89e425cc74925aed2d63",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-024231f6522e53705e12",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "4f97c0d0714f6e4f",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:56.920837Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03241638720140203,
+        "mse": 0.0016478126658073984,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8336882299918216,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03241638720140203
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03258571809648976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257643671491761
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "4f97c0d0714f6e4f76c8f81c71ae7062c43d8e56dca234276aa6434c1f3e99c1",
+        "source_sha256": "c7cf803a17f73266b922c6f73470f509d08be0c0fb44406e07fccacccecacfed",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-06f10d34ae72282da80e",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "6db000e54d01e4f1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:53.287973Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03248666481140121,
+        "mse": 0.001655040126964241,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8401370990031864,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03260923320931008
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "6db000e54d01e4f14e6870cdd1581a2733cd0b8a8ad7da411574fbea5b68408c",
+        "source_sha256": "911b53f4e1940d230d70e9a4685c18583d294c7bfd0aee38cda62ecdbc9ae038",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-08ed7c5ae311fd26270e",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "179170af2f6dece3",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:39.546459Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229381880349316,
+        "mse": 0.0016320018967947054,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7509765625,
+        "ram_peak_mib": 1729.39453125,
+        "elapsed_seconds": 0.8298563279968221,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03233238800507477
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229381880349316
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "mae",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "179170af2f6dece305ee2f274e5d416181daf0f94df51dd197654d3fd6822048",
+        "source_sha256": "eaa28f43f601e127f4ca3ad2e325571ef4fb0477875c73385cc279726af2ad93",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-1b545fd86a18fe973697",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "1ae749b33d796325",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:56.044319Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03248666481140121,
+        "mse": 0.001655040126964241,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8937563599902205,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257066400772846
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "1ae749b33d796325c2bd631f9acebeedccab1c44424790101c94bc89234f70cf",
+        "source_sha256": "2e3f5d399280d7d0c447fbc88fe5d564f18106bbc99587953e2012bc0ee2e6a0",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-2512ba73bbb2fc537062",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "5392cdb96087c56d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:57.810884Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032377817999820424,
+        "mse": 0.0016418841555419198,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8460301180020906,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032377817999820424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03254714889490816
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03258571809648976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257643671491761
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "5392cdb96087c56da26277d0eb4d7ca9c74b8c69521e0e05fd32a54ca6d0f14b",
+        "source_sha256": "1636f39cd6b9e8a4044d547eb90fccdc55dd68eefad4508df404c53884bc625c",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-25199a53c325f2750cae",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "946281bf89f2bc30",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:52.406708Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03248666481140121,
+        "mse": 0.001655040126964241,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8457706970220897,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03260923320931008
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "946281bf89f2bc3046908a1e6a1273aba37553e84fc5e39ad69868a780e4eb85",
+        "source_sha256": "1914d038d337706cc9bfcb1621f29c5726920ba7d72e9d602461e0e26667f274",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-2538f5f4d932e0123de9",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "28941810ed5b1b28",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:06.902519Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03237095720665638,
+        "mse": 0.0016414996448227337,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8440557319845539,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03254998759436051
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03262712599752372
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257059412538366
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "28941810ed5b1b28c4cb26b0bed29153b22ae6dc4cdd0c6b279adc43d63410eb",
+        "source_sha256": "9b2cd88aefe4925951b676f4bab8f72a7e4299e9f9dee4c80b1f71b34863d1b9",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-2ee110b87aa709b6bf95",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "62e9fc14f8e69694",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:43.303898Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03226555714226586,
+        "mse": 0.0016178667977690977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1751.32421875,
+        "elapsed_seconds": 0.8642134850088041,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03241461065724291
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03226555714226586
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032342695545429075
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "62e9fc14f8e69694a525e6d87ffa30d654be204a23f683b8007e563ea73c8a1d",
+        "source_sha256": "74f188737a26102a8f14aa01bbe5bf8d5e5c83b538bb12a7c2cd1e7abc426a18",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-355bf1efcab593e01e15",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "1d2d1d6436656852",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:04.149496Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032409526408237986,
+        "mse": 0.0016494398720309077,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.838603862997843,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032588556795942115
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03260916332696528
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "1d2d1d6436656852d8ee505bb4ca34d5fb0689f042da5a2476a8192b741358c5",
+        "source_sha256": "befc27e6171f64d72526b1412314fb31506596f4f189bd753eaa7b939474e1ab",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-35f0bbf80df5abfaa9f3",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "eca6581c24b98379",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:50.633789Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229381880349316,
+        "mse": 0.0016320018967947054,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7509765625,
+        "ram_peak_mib": 1754.62109375,
+        "elapsed_seconds": 0.8297903700149618,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03233238800507477
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229381880349316
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "mae",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "eca6581c24b98379664a3279aad5a9b5021dbac6dbf3a844609c8766f6aa2694",
+        "source_sha256": "b6662e16dbc5e38094134848318163a8b21706acfec661c3ff59a0ddd4aba224",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-3ef022494bfc3ac9594a",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "9536179c6079a89d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:08.720636Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032377817999820424,
+        "mse": 0.0016418841555419198,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.9036896179895848,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032377817999820424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03254714889490816
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03258571809648976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257643671491761
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "9536179c6079a89d98a985e3ea9f6bc02653364376060175bf292ec8e7cfe823",
+        "source_sha256": "74a98bebdf9b0a3d287fba5e7a17cab94f1140a9abc0ef81418f07ce47da2013",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-3f390de57563f6e492ad",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "2c28fa4b3e0677a9",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:07.772527Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03241638720140203,
+        "mse": 0.0016478126658073984,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8291153110039886,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03241638720140203
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03258571809648976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257643671491761
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "2c28fa4b3e0677a97ce6d83edcd55a609e4e9ae3b237468c1feb3b7f2f430cc4",
+        "source_sha256": "d68aa39af222c76c79b36a9d852f79fbde6af90f6fb84d6fa3d5bbd8fda174d5",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-429b2c0b740fc56aae06",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "3d28885211ba8168",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:41.416301Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229890305249808,
+        "mse": 0.0016236253460003294,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1751.32421875,
+        "elapsed_seconds": 0.9239121610007714,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0323760414556613
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "3d28885211ba81686c5f135681cefaca6bb64076e5be68c9f9d16e96a47c391f",
+        "source_sha256": "f5aa5e5e8242ab193991108da30a625fbffa4b70ccca92a477ecd36868872137",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-4442b7e087bd0a061dbd",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "a76213bbacc3fe12",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:45.097333Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03226555714226586,
+        "mse": 0.0016178667977690977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1753.12890625,
+        "elapsed_seconds": 0.8618903599854093,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03241461065724291
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03226555714226586
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032342695545429075
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "a76213bbacc3fe123bb0c59da469a9b69fdac3b3a13b3372a6df7da0a13e8a8d",
+        "source_sha256": "aa5068c341322865aa2d1f52aa9f75e6e3e4943d3492dde28b9832d75b0fb9d7",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-46b2a4c7090f9b35e37b",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "981f57a434046faa",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:48.892000Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03252239531353046,
+        "mse": 0.0016565118214722778,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7529296875,
+        "ram_peak_mib": 1754.62109375,
+        "elapsed_seconds": 0.9603764819912612,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032563803214564424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032532094806146855
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032532094806146855
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252239531353046
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "reinforce",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "981f57a434046faa7890809dd68f03a39b74d6275d57aa0c2dc57d8e4a7ff850",
+        "source_sha256": "7a767364a1b81a576f0122db041dfbb33dc10941f7c8a26959b30515250bc3f9",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-56478747a1b63e74ace1",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "487734f55a5bcd82",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:37.808543Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229890305249808,
+        "mse": 0.0016201640981344872,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7529296875,
+        "ram_peak_mib": 1725.97265625,
+        "elapsed_seconds": 1.263556823018007,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032376041455661295
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "reinforce",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "487734f55a5bcd82c9a1ad7d3f6eb53fae28b20e5a3e01cc8c50be88c0db2db3",
+        "source_sha256": "3769ddcc84d0f8449283544f0a02e690499699b35ea1d341020509a6bf0d915d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-5a455b27c70ca561886d",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "8e4da179ec69c6bc",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:55.106418Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03248666481140121,
+        "mse": 0.001655040126964241,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8931887130020186,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257066400772846
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "8e4da179ec69c6bc7572fea134e0d7d3d662d86cb093cbcaa38798c83b8276a1",
+        "source_sha256": "264d52fb5236c75f311d765b0f67b9c1ef94eaaed2bc811c5f2043af9647097f",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-5dd43004c10fbbd3ae38",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "2a4774f4f5da7869",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:05.128966Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03237095720665638,
+        "mse": 0.0016414996448227337,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.9345842849870678,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03254998759436051
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03262712599752372
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03253202492380206
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "2a4774f4f5da786940950ef8a6acea64665a87e610ee4992c75cbae9627d1090",
+        "source_sha256": "008a653ffcde092424e7a585cefe623a7a73ad6785b048c0e1bf5b317afb48bf",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-63356f3c807bbd6f0a1d",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "cd3c2efe13a31490",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:01.330927Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229381880349316,
+        "mse": 0.0016320018967947054,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7509765625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.9057183359982446,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03233238800507477
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229381880349316
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "mae",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "cd3c2efe13a314900b8aa1330cd9f7c833eef5229ea8b638b5e860824c83d8fd",
+        "source_sha256": "3c0b83ab0bdd55b67332468e67dcd353ff5e4e749604fe675b82b440f1106e74",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-6ebe40bb49ef09d67dde",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "6b9ee7577614da03",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:54.173575Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03248666481140121,
+        "mse": 0.001655040126964241,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8393238610005938,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257066400772846
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "6b9ee7577614da03a1cfa22b646eb1eb2aa647180a9bd95bb59e8ee8bdefb1a3",
+        "source_sha256": "5e99eab53c8a9a58b922afdb7a6cd92ef70dbc3f950266078d935a1cd98063f6",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-7fe77e0957cd20365ecd",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "3b07a686df8933d0",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:06.015847Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03237095720665638,
+        "mse": 0.0016414996448227337,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8420297630073037,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03254998759436051
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03262712599752372
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03253202492380206
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "3b07a686df8933d08ffe25c3fe153162c0bff480d8a1cf6b1ad78b896706c966",
+        "source_sha256": "70e520500c87de71a2ab37cdebb83d9f909507fa5e58374e7ba65f498ba2a9bc",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-948626562580c7023063",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "c79c3a730b63afa6",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:03.260592Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032409526408237986,
+        "mse": 0.0016494398720309077,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8542339499981608,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032588556795942115
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257059412538366
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "c79c3a730b63afa6071fb85fea5499bb2415e1bf28086c52567d3234119e1886",
+        "source_sha256": "41763bf72f35b02b9c026dcb22ef13e1f10ba90a91062fc6b05699c2f6297249",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-a1d9766f1c7558bdd1f6",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "f37b58860c5a5d79",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:59.538008Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03252523401298281,
+        "mse": 0.0016593926780481443,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7529296875,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8156514109869022,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032472849191197285
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03253202492380206
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03260916332696528
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "reinforce",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "f37b58860c5a5d793ab6625021360c80b8e8b5ea09edf086692ac3ab2a79d4e1",
+        "source_sha256": "b4804cdb67126482b937c089be48cfe98b87a343e3623c655dbaaee6735b42e1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-a2b07f97d41670e3b41b",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "361c54a71f930e31",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:58.679340Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032377817999820424,
+        "mse": 0.0016444073753807253,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8232895859982818,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032377817999820424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03251827918594294
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032662856499652976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032624287298071375
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "361c54a71f930e31f8368cdbc2fe7339fa23137a0bb9dd10d04b8170c4185441",
+        "source_sha256": "7e26724e16de3026f3d0404a1abdb5a9757bd7e4721bdb8f618ce0b03c5c8305",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-a7bed5cda8803046ded6",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "64e0d1b9980b87d9",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:40.443293Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229890305249808,
+        "mse": 0.0016236253460003294,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1751.32421875,
+        "elapsed_seconds": 0.8495003590069246,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0323760414556613
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "64e0d1b9980b87d934f3549773a3eaea865079c074abd57769fbc8a8c8761c9f",
+        "source_sha256": "6ea3cb5dc8258e97011736d3e5bfbb158b4f378699cfb0214cdeeee0e41830eb",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-aefa6f9c3ab04682c20c",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "ba0dd9742347e257",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:00.382665Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.0324866648114012,
+        "mse": 0.0016575773054896454,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7509765625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.801254151010653,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03247970998436134
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032595417589106154
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032711125193850984
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03274969439543259
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "expected",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "ba0dd9742347e257ccc7898417d4896b0be00d110789c6ac496697a93ee3db15",
+        "source_sha256": "3e4c243cbef04049a1c2cf16650a471cde4577df239593273bfbc0cb1da33a8e",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-b451f7f35087bef3131f",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "4c647b670fc6d0cf",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:38.674871Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.0324866648114012,
+        "mse": 0.0016575773054896454,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7509765625,
+        "ram_peak_mib": 1728.2265625,
+        "elapsed_seconds": 0.8203041130036581,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03247970998436134
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032595417589106154
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032711125193850984
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03274969439543259
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "expected",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "4c647b670fc6d0cfc727852ecef642dcaa2db632820ce9a25c8e33690530c311",
+        "source_sha256": "25bf826bb6481c0bfe3798884f08b389c358310786434de3e9b26f55a5f41d06",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-b7d8a8bb1be3dcd71738",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "08e0982d029149b0",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:49.760436Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.0324866648114012,
+        "mse": 0.0016575773054896454,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.7509765625,
+        "ram_peak_mib": 1754.62109375,
+        "elapsed_seconds": 0.8245592979947105,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03247970998436134
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032595417589106154
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032711125193850984
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03274969439543259
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "expected",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "08e0982d029149b0365374fc0df1593b8ec18cab5a8920321423506938981ee6",
+        "source_sha256": "8e6b29b8402efb0a8f3f9190085b1a41c9eb624033f7f290aab2fbe532475353",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-d66e11935af753d13b51",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "b01fb55fb16e520b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:47.011926Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032377817999820424,
+        "mse": 0.0016418841555419198,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1754.62109375,
+        "elapsed_seconds": 0.9894396459858399,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032377817999820424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03254714889490816
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03258571809648976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257643671491761
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "b01fb55fb16e520bcb495a4622e4d658bc473dfdfaac7129c88d556abc097c53",
+        "source_sha256": "289136b2ee1b63c95b431ca23431ef17ad19d4c843007e76faca6ff7b5d90dd8",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-dcba941c231d327a7caf",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "207fb9a5ff78e06e",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:42.394310Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03229890305249808,
+        "mse": 0.0016236253460003294,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1751.32421875,
+        "elapsed_seconds": 0.9336375900020357,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03237095720665638
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0323760414556613
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03229890305249808
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "207fb9a5ff78e06ecb84adce7cf6b09b237c8614961792ab72fc57e5fa6249ae",
+        "source_sha256": "0cb84239c6cedb099218d19fb5d6e7b21ac9ab5a962332b3653462574f4a51b8",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-e374f55b3add917a867c",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "3ff046645addfb94",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:44.194325Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03226555714226586,
+        "mse": 0.0016178667977690977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1753.12890625,
+        "elapsed_seconds": 0.8492994839907624,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032448095609819594
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03241461065724291
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03226555714226586
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032342695545429075
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_mc",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "3ff046645addfb9496fcb9321ad19678fc4fa18bbf708fd4950ce590c09c51fb",
+        "source_sha256": "8403a9876d4e5c508ca9143f712b3fc6c11c174d1f53c4217aa4a9e0939e1be5",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-e53253b19d9a820bb256",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "a34ff885820a6afb",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:45.982281Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03241638720140203,
+        "mse": 0.0016478126658073984,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1753.12890625,
+        "elapsed_seconds": 0.8409374579787254,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03241638720140203
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03258571809648976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257643671491761
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "a34ff885820a6afb29ec93bce1b75a2a9d780c0c0bec35fe9442bc905782436a",
+        "source_sha256": "0e8ccf9f914caac02a73aef7a4940a5b706a3a0052c9b0a866c0f42be4e0d34d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-f409695ea767c5e5c33b",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "7682856465d051d1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:23:51.516673Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.03248666481140121,
+        "mse": 0.001655040126964241,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1755.4375,
+        "elapsed_seconds": 0.8369218239968177,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03248666481140121
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03252523401298281
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03249352560456525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03260923320931008
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "7682856465d051d172c88c7c614c79d7b8de4aecdcda7ef976fdb97d352368d9",
+        "source_sha256": "c891720ce9b1cbe0758b82aec05f913ddab3b6c07291e64e190daedd29926f7d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-f6824bf00678be52bb8e",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "9eba8c0299e2c709",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:02.361878Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032409526408237986,
+        "mse": 0.0016494398720309077,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.87158203125,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.9135867469885852,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032409526408237986
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0325114183927789
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032588556795942115
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03257059412538366
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "9eba8c0299e2c709a632abf02d07b0e3894778078c356149f4528b44e45e462e",
+        "source_sha256": "d874359021af9e9a115df1d87f3d23091def2e7184ea679cefa91fc7a5537628",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "klpo-check-20260924-fe4cbc1c87e83f0410d5",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "eb6349e94f05e883",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-24T01:24:09.602543Z",
+      "heartbeat_at": null,
+      "completed_steps": 5,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
+      "metrics": {
+        "mae": 0.032377817999820424,
+        "mse": 0.0016444073753807253,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 9.86962890625,
+        "ram_peak_mib": 1759.4609375,
+        "elapsed_seconds": 0.8400204879872035,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0324866648114012
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032377817999820424
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.03251827918594294
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032662856499652976
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.032624287298071375
+        }
+      ],
+      "checkpoint": {
+        "step": 5,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "klpo-check-20260924",
+        "domain": "technical",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "configuration_sha256": "eb6349e94f05e8833f039d61f20ca160e98f867f7523bf5585c5bc59b8ed5122",
+        "source_sha256": "8865cf069edd62277466fb097db1cd9e0015e6123581f5d0eb35cb86cd0177aa",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 245,
+        "validation_rows": 225,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-043c016d4ddde590fe27",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "0345795b377a361d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T02:07:17.410888Z",
+      "updated_at": "2026-09-24T02:23:19.411207Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015055340912240622,
+        "mse": 0.0006131250056133566,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 209.18896484375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 967.462179789989,
+        "samples_per_second": 10461.88886704154
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015161972177533536
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015061507284429003
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015055340912240622
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015083668422373773
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015069567121971371
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015087299599119253
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015055774494600693
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058114765410042
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "0345795b377a361d677393872bb0b3b1b6e921440d0c1206227c964e7dd97616",
+        "source_sha256": "10e3fbb8ef28af023c1285b4140d31b83b8b3f99d817e8d83e5a88098d944ea6",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-0ce0148676dbb2e7f45a",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "71d7f5997bdf2181",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T04:24:49.666312Z",
+      "updated_at": "2026-09-24T04:43:00.916592Z",
+      "heartbeat_at": null,
+      "completed_steps": 30250,
+      "total_steps": null,
+      "epoch": 10,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015061326453882973,
+        "mse": 0.0006134967840825279,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.08251953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1096.6320250029967,
+        "samples_per_second": 11057.058781187698
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015096370587113618
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01509467677272269
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015087172038747095
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01523212965823274
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015061326453882973
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015103408706221655
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015069995316620937
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015073535469336836
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015077130892020266
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01508228061983729
+        }
+      ],
+      "checkpoint": {
+        "step": 30250,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "71d7f5997bdf21816a37107b9018390ffa27c3685aac4e470151494568fe990b",
+        "source_sha256": "1c7b2b1b37d989fd9a2ae6712f442f928d01587e872ba0ca344388338b1c781e",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-1671555fd0ff7ca3cb6c",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "fac6bcebb86a28f6",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T01:38:35.345920Z",
+      "updated_at": "2026-09-24T02:07:11.867236Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015089059386272361,
+        "mse": 0.0006141865135113435,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 514.0947265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1722.1167604729999,
+        "samples_per_second": 10152.228094738985
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0162139453638414
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015144015348547705
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01524024906396427
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015117169763488697
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01518955942279531
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015301034175811188
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015100500139734324
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015089059386272361
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015567535795701734
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01519763515055318
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015145127186204565
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015433851545762926
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015276535775949653
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "fac6bcebb86a28f65f414dfa8c835369f63b64c0963b2fd42210f68047935a7e",
+        "source_sha256": "a2f57e07f7444b58f864430e929896b0505a5b31017460fb07640ac20d573049",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-170d6f5a4d47886cd355",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "857ff714b5512d34",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T03:13:12.949535Z",
+      "updated_at": "2026-09-24T03:36:26.843913Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015060108845415518,
+        "mse": 0.000613055609863637,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1399.3255919099902,
+        "samples_per_second": 10946.926483561478
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01970790223195462
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01554409943471645
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01519808542625663
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015117563805252962
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015093251202984362
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015190275299193617
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015091366659248581
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015060108845415518
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015084221706986879
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015064765847144106
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01509032424329454
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015191963122078505
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015213074422033004
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "857ff714b5512d34c185ffe949fc1dc7f1c8ec31e69f456d50593d0bf31f8b23",
+        "source_sha256": "7dd6b7fca219fa167e40c0629109555a89bf6539b68402fdbfa66539d5a39f31",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-1880d52a92bc291247ae",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "fdc03a7ead9dc325",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T07:17:59.910278Z",
+      "updated_at": "2026-09-24T07:28:43.924070Z",
+      "heartbeat_at": null,
+      "completed_steps": 15125,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "1e9cf09b9b5ee61dc99a1a6a6f2fa728123409622fe3a5b6a234f8567fd54e84",
+      "metrics": {
+        "mae": 0.015086648254866839,
+        "mse": 0.0006140158303298269,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 231.30322265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 649.6025493449997,
+        "samples_per_second": 10526.852045056545
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015072284092201441
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015063249575467962
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015063489490443475
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01505612782444885
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015086648254866839
+        }
+      ],
+      "checkpoint": {
+        "step": 15125,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "fdc03a7ead9dc3250bf731f23a2788aa17f3debbd83020692b55fb71e1995979",
+        "source_sha256": "6813901ab817add15c4d1a4b15812510a579285fc7ed680f8614a5d6aa6bb591",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": "437ae73b33e43e64028c3979cfdd14a80e49e019b41bc848d591cf70b5b60041",
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-19047b004870c74818ed",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "bdf5f999b81bd766",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T02:23:24.900371Z",
+      "updated_at": "2026-09-24T02:43:39.173505Z",
+      "heartbeat_at": null,
+      "completed_steps": 30250,
+      "total_steps": null,
+      "epoch": 10,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015075333910484112,
+        "mse": 0.0006135615132525256,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 294.1240234375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1219.6875316459918,
+        "samples_per_second": 10667.841695278701
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.021469126530884324
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017639387199204087
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015393991961005056
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01513606323429515
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015075333910484112
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01512244342639778
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01510048883254841
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015116656267265926
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015174076154428154
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015186356286811939
+        }
+      ],
+      "checkpoint": {
+        "step": 30250,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "bdf5f999b81bd766846c845b7f96cf9ad30b76bb29ae3ec52ff9d8f4e798424f",
+        "source_sha256": "2ea6296f770fdb21f8855aab3a08e7fc75aebbb789dbcfed30f97459ef9df733",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-195798adc43d84538be7",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "0b9bc9d86a8429e2",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T07:07:02.219122Z",
+      "updated_at": "2026-09-24T07:17:54.242152Z",
+      "heartbeat_at": null,
+      "completed_steps": 15125,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "1e9cf09b9b5ee61dc99a1a6a6f2fa728123409622fe3a5b6a234f8567fd54e84",
+      "metrics": {
+        "mae": 0.015064414652214732,
+        "mse": 0.0006134770028463392,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 231.30322265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 657.9538543900126,
+        "samples_per_second": 10315.817994414574
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015068757591186362
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015057605124191797
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01505491416436019
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015057850776769525
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015064414652214732
+        }
+      ],
+      "checkpoint": {
+        "step": 15125,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "0b9bc9d86a8429e26f81ea6ae89d30abbfc829dec3089e5333a58976ae7becd7",
+        "source_sha256": "f8ab314c6c6a45ac952bf25a4cd454e6492e17e562c487534bba153ec234dc41",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": "437ae73b33e43e64028c3979cfdd14a80e49e019b41bc848d591cf70b5b60041",
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-1a11a2e78456ac5b2a65",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "891831aa07291a3b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T01:04:52.796700Z",
+      "updated_at": "2026-09-24T01:20:41.481637Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.01506690267204897,
+        "mse": 0.0006133004046253265,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 184.5126953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 954.0418969689927,
+        "samples_per_second": 10188.530258187238
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01707723336866373
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015107693431268129
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01506690267204897
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015072064598546618
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015143843031681745
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015238901506287381
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01509261304655539
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01509231600693414
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "891831aa07291a3b915e8e5f7c0f42d8d6264433ebecccb804f3a390954c4f8d",
+        "source_sha256": "653beaa4d18d166e554df2e76f11e9a9e3d6412fc6bbfa17f17d424010af7eb8",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-2043c20ebbbecde745fc",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "eba983332981410d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T16:49:35.763087Z",
+      "updated_at": "2026-09-23T17:06:40.073173Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015060946236178173,
+        "mse": 0.0006132650632000185,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 396.57421875,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1029.657804086979,
+        "samples_per_second": 10413.159047602065
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015264004126823225
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015095145379313469
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015060946236178173
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01507319725735752
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015123246804561374
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015086098608899107
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015065522473390897
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015073410835426343
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "eba983332981410d26448af50fa80695aec775b3041824096ec6d5c3ca1d2797",
+        "source_sha256": "06a411aef722aafa595a73e59e4b442254abdfd77a5abc08c77641314f909ff0",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-2144647cab144a6a0639",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "e912b0367f1de506",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T21:44:06.081231Z",
+      "updated_at": "2026-09-23T22:02:18.560453Z",
+      "heartbeat_at": null,
+      "completed_steps": 27225,
+      "total_steps": null,
+      "epoch": 9,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015090190398457114,
+        "mse": 0.0006140131807710543,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 310.19140625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1097.7260900989932,
+        "samples_per_second": 10935.722937559025
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019267924838247335
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015479561434472105
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015596457219202508
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015090190398457114
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015110256330659272
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015181328443332106
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015106351114286593
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015144587574831168
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015156665957317985
+        }
+      ],
+      "checkpoint": {
+        "step": 27225,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "e912b0367f1de506ff791cdc07025d5cdd0a97f93bd34c99f5fa0371967108c2",
+        "source_sha256": "0c9d78d4d87769859aba6d9e80d22facdaa6745c7d7dec91e93f4dfd979d9fa1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-24505be44a8ad5214eb8",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "0f88e787ecaeb78d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T13:44:45.180790Z",
+      "updated_at": "2026-09-23T14:08:26.208641Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.01508065879443298,
+        "mse": 0.0006140222451884073,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 149.08984375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1426.4772344509838,
+        "samples_per_second": 10889.544153850411
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015194540636051716
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015108778000368448
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015108398293549244
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0151013619554987
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015093552895425993
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01514996561745056
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015090244788606922
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01508065879443298
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015324004855408635
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015108760956169077
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015112038511954909
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015180691452804708
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015166563283408497
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "0f88e787ecaeb78dbdb72c671974095c9908da919765f421c2d9f7568c6b8c28",
+        "source_sha256": "1609641721a2281c09c751e200d14f8fa8a3ab9f25719d2e94c73e3c4e738949",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-28dfd35f1215664335ac",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "f0da593b098a28cd",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T21:27:59.541820Z",
+      "updated_at": "2026-09-23T21:44:00.766484Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015058121111193784,
+        "mse": 0.0006131857788126131,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 209.23828125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 967.4539699290181,
+        "samples_per_second": 10665.599031225038
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015183565824775902
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015060944338514765
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058121111193784
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01506988729118
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015079751395048543
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015085111626443382
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058600528775105
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059234386866877
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "f0da593b098a28cd52ea699b8d1103d862b1fc10918dd98717102f2bbc38d2e2",
+        "source_sha256": "ac74c13353868434144ba22d7ce537e9c0cff5db5de7b3b05fdc916f94a855f4",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-2c32364244fb726e9af0",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "9d6407c3e1ef1fc8",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T20:27:25.947659Z",
+      "updated_at": "2026-09-23T21:03:27.839133Z",
+      "heartbeat_at": null,
+      "completed_steps": 36300,
+      "total_steps": null,
+      "epoch": 12,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015051239307396541,
+        "mse": 0.0006134478448185585,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 352.51171875,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 2168.6840947050077,
+        "samples_per_second": 7799.535964494911
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015346840569451695
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015060345488465715
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015066424608437384
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015063779335874938
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01509567039568948
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015087472520702605
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015051239307396541
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015065241406746966
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015106419370393892
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058171684471057
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015067125727537078
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015091062875369547
+        }
+      ],
+      "checkpoint": {
+        "step": 36300,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "9d6407c3e1ef1fc89b2d65157c5afc7dccaaa8407c847f22933090f388dc0e38",
+        "source_sha256": "ea549a6e7d7b719d67d3f9560368577168abdadf622e479c58ad452ffcdf6e2b",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-329075557d505a9e857e",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "4aa5afb01ba6ac07",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T04:43:06.380797Z",
+      "updated_at": "2026-09-24T04:59:48.127600Z",
+      "heartbeat_at": null,
+      "completed_steps": 27225,
+      "total_steps": null,
+      "epoch": 9,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015059580417954604,
+        "mse": 0.0006130942480688369,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 76.8173828125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1007.1364346490009,
+        "samples_per_second": 10900.834954019669
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015434573088469248
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015122539275962913
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015073450579080223
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059580417954604
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015087017536478252
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015120234609299689
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015103815370932874
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015076472302854886
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01510734136455401
+        }
+      ],
+      "checkpoint": {
+        "step": 27225,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "4aa5afb01ba6ac0740d28bdb73db98794d0220207a9d7e77d2f2aa2b25589283",
+        "source_sha256": "75d957af0f74b7cd5ef3d8e75c8ee11755fd45b1a4497fc7e0642ca4982dfb07",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-336b05dc2246dc8076f5",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "7321a31c373ffd16",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T04:59:53.481230Z",
+      "updated_at": "2026-09-24T05:21:38.557944Z",
+      "heartbeat_at": null,
+      "completed_steps": 36300,
+      "total_steps": null,
+      "epoch": 12,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015055922756927883,
+        "mse": 0.0006133684931277307,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1310.356836846011,
+        "samples_per_second": 10779.176394319398
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015158117601761665
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015084333352097924
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058492342001805
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015090406304720017
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015097474144787291
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015130497755812362
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015055922756927883
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01505720436283782
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015149447075121562
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015093680972390583
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015070735974902454
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01522144476270042
+        }
+      ],
+      "checkpoint": {
+        "step": 36300,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "7321a31c373ffd1661320a9c0f511ed2dd580016f0af52c2cf4b8c907eefe5cf",
+        "source_sha256": "f74297c90aecc13112be14958405e37db63c2f0d1380998a1ab24a5adb32e11e",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-34c17537d42df6c909af",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "10b21eabe65e44ac",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T17:06:45.377664Z",
+      "updated_at": "2026-09-23T17:31:07.336150Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015133938246900923,
+        "mse": 0.0006169015670814081,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1467.1912313459907,
+        "samples_per_second": 10794.109285259934
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015781101348778376
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015525014283766044
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01520408747869454
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016951244804657404
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015226666757871224
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015139301091068424
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015214181541998814
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015133938246900923
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015192601045304802
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015140710871453833
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015167661791199986
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015264441394992827
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015320458740014054
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "10b21eabe65e44ac5a43b49bf9445dc60f83824c4475f5ee8fadde2bcd5910cb",
+        "source_sha256": "83e648749d74945a40222b6c34caa54a86e8cc2241b7cc4635a77b8d8f5a96d1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-41b41fe99b9433f56f01",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "683ee60bee9e09fe",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T12:54:40.477402Z",
+      "updated_at": "2026-09-23T13:19:15.179969Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015098726511026606,
+        "mse": 0.0006144306035318415,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 231.30322265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1480.8108695079864,
+        "samples_per_second": 10811.754380389455
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01518885331934773
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015332110503649769
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015165153821786154
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015263070308348548
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01511517509505686
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01515914803877554
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015111888423578404
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015098726511026606
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015283437424759719
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015123539264202327
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015145171440654179
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015302402094289784
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015233151038292897
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "683ee60bee9e09feb1c9213fd117fa090a7590f3d1a7f239ecc58d7c54be18d3",
+        "source_sha256": "76a1d508259a8959c12ca72d925e42fce22cfa39daa36dd4ee0147d21c1ada8d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-426d0121e26046a9dbdf",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "fa5b94ed3985c99c",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T14:35:44.150019Z",
+      "updated_at": "2026-09-23T15:02:16.874270Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015058539041234683,
+        "mse": 0.0006132031685566671,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 396.57421875,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1598.1184503789991,
+        "samples_per_second": 10627.8440283067
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015258294141577644
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015082890643547472
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059003327404155
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015061998221868671
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015077437375983596
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015084297296563826
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01508815297284195
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058539041234683
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015072475778435877
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015092087159978928
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015114093649989634
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015119869142634017
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015219831171190008
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "fa5b94ed3985c99c828d530b6cf95c2901992ce485925e50860624aab57f3710",
+        "source_sha256": "9ab3e30f0fc88e1ccec45e52afde84f1697daeba26fc41fcad2cb6cce5d5c20a",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-437ae73b33e43e64028c",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "d0148484d0a4f86f",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T15:24:03.207929Z",
+      "updated_at": "2026-09-23T15:41:33.170095Z",
+      "heartbeat_at": null,
+      "completed_steps": 27225,
+      "total_steps": null,
+      "epoch": 9,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015052525832066772,
+        "mse": 0.0006131180244953437,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 231.30322265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1055.2814138380054,
+        "samples_per_second": 10899.849820262332
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015167156713476147
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015071670879402522
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015056289985261949
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015052525832066772
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015097307405797221
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015107663070315436
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059031982978397
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01505616532759906
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015089755027566393
+        }
+      ],
+      "checkpoint": {
+        "step": 27225,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "d0148484d0a4f86f3ff363a3a89db48608d0e21a238757684f71f5f960623963",
+        "source_sha256": "0ad97b3470cd99145e449c5982e1f298429289af8aae7f0960297d0777ed0ac5",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-509dff650a222c68fd00",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "c156ece51a3eb921",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T06:08:22.672049Z",
+      "updated_at": "2026-09-24T06:24:23.515565Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015058519109098684,
+        "mse": 0.0006131041223388659,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.42041015625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 966.7864086430054,
+        "samples_per_second": 10682.244337634429
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015213131722666117
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015069986208984336
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058519109098684
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015107119174265505
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015097971799412743
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015072736758453742
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059115086971091
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015076393442663875
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "c156ece51a3eb921b04bbbe7e5c63974bc51257b9aac5fb14c07ce8da7030897",
+        "source_sha256": "281a480dadc18d872e07749b8c4e72b7c5025918077a2b8f6d20fc80c0f5848e",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-52f7e1ed1e5a4c243dc2",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "18a52454e5bb62ba",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T03:51:32.937857Z",
+      "updated_at": "2026-09-24T04:06:27.092482Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015055134591823791,
+        "mse": 0.0006129891980829917,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 75.75341796875,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 899.5394602830056,
+        "samples_per_second": 10794.128087985124
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015186892250933488
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015161332185066862
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015055134591823791
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015155689802619875
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015074120588064519
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01506332827313351
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015061851241753096
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01505841422107232
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "18a52454e5bb62bae4944b1041831eebd5ae5eba62ade0883dd7128d8a143edb",
+        "source_sha256": "3cec1cf65299395eec9f1b96102d87d1be14d4b6b58a199dfcc050a0fedf13f9",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-56d67be61da286690e6f",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "23bb3729d23d7614",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T23:28:41.183352Z",
+      "updated_at": "2026-09-23T23:56:47.657360Z",
+      "heartbeat_at": null,
+      "completed_steps": 39325,
+      "total_steps": null,
+      "epoch": 13,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015058403369749644,
+        "mse": 0.0006133902294944803,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 514.0947265625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1691.7025525659847,
+        "samples_per_second": 10226.250811804275
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015620338246828621
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015128470018193082
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0150601214906239
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015071227742447284
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015060440712566101
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01506259502768982
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015061525821682943
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015058403369749644
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015068235729362845
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059536892937377
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015064203700492051
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015093011496128727
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015112298641161412
+        }
+      ],
+      "checkpoint": {
+        "step": 39325,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "23bb3729d23d7614ab1c17fc4d67049370362d6478c5b6e2ac086c491ca629ee",
+        "source_sha256": "83ece3010080cf35e339a53a120053080afc5e26199a0186c42e51432af98a04",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-60e06d1e30b4c5c5d5e5",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "8ccbbf3c7607597a",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T01:20:48.258635Z",
+      "updated_at": "2026-09-24T01:38:29.673901Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015056784743689777,
+        "mse": 0.0006130962553317138,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 351.69384765625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1068.1027284640004,
+        "samples_per_second": 10407.52952259997
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015115552191210847
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059546536566826
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015056784743689777
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015086586573474012
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015090032935476895
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015068089091612022
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01505886860323949
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015076852614586692
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "8ccbbf3c7607597a991e13fb5af5c1048dae74bb9fa15081fecccb037b1f9361",
+        "source_sha256": "e5b531992ce5dd9fd11e98ab9a9da217009e5cf44066010c9411cd3baa0dbd95",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-63170042e14839c4c6d5",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "c4c209e83e741b0d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-24T03:36:32.423452Z",
+      "updated_at": "2026-09-24T03:51:27.478210Z",
+      "heartbeat_at": null,
+      "completed_steps": 24200,
+      "total_steps": null,
+      "epoch": 8,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015069954069690033,
+        "mse": 0.0006133647399522191,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.224609375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 900.4460803229886,
+        "samples_per_second": 10802.96362984257
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015241018035180706
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015163783603787456
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015069954069690033
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015127546555511868
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015099250063265011
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01517448344394874
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015078391243650945
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015168135832331526
+        }
+      ],
+      "checkpoint": {
+        "step": 24200,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "c4c209e83e741b0dc91d622294832f48bbbc02ae866eb15da987f9c368fa8a1f",
+        "source_sha256": "a425b891099f5fbd3f76c14c8191515cc4c07df18dae337175f62b43d358b3ee",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-6645ba095f361b6957c4",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "4b0073e8b6382842",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T16:05:14.775370Z",
+      "updated_at": "2026-09-23T16:27:21.281358Z",
+      "heartbeat_at": null,
+      "completed_steps": 36300,
+      "total_steps": null,
+      "epoch": 12,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015057830507326193,
+        "mse": 0.0006132334491814348,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 149.08984375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1331.8418014349882,
+        "samples_per_second": 10854.611733978403
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015163767060079441
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015062917615690542
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015059707349480141
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0150736734676774
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015106984540136996
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015116146658412896
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015057830507326193
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015075763256255549
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015070862077891593
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015060455719189021
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015066012690211603
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01507106764258988
+        }
+      ],
+      "checkpoint": {
+        "step": 36300,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "4b0073e8b6382842feda15bf4dff5c2dc95ae9593accffd8cf7d429d596ee419",
+        "source_sha256": "c6c1280604acf6184bcc604fbaf81ef5a94fdd1f9c0a98047edfe76352fe047c",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    },
+    {
+      "run_id": "neural-original-us-68ab99c1a0c1aa6012d5",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "f86978f7b6d3f4c3",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-23T21:03:33.622795Z",
+      "updated_at": "2026-09-23T21:27:53.222190Z",
+      "heartbeat_at": null,
+      "completed_steps": 27225,
+      "total_steps": null,
+      "epoch": 9,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "99e1609dd02f6ebaedf1fb7e7631c5d96b847b9dd1cc0b8d0df92d3451dee69a",
+      "metrics": {
+        "mae": 0.015075903811202105,
+        "mse": 0.0006136371142379981,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 546.982421875,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 1465.3112155460112,
+        "samples_per_second": 9618.997228137894
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016031991143009357
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015239692766997383
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015142638965306507
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015075903811202105
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015152487259997289
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015219440030888003
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015090110192060201
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015156019367166753
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015441807842798574
+        }
+      ],
+      "checkpoint": {
+        "step": 27225,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-original-us",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "configuration_sha256": "f86978f7b6d3f4c3fef825e89a1d38de95d3d2e1143fae7e5263abccac9480e1",
+        "source_sha256": "6901c54d0e7725bfa8529c771dc5c1453743a155b043991aafe02654c60d3932",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null
+      }
+    }
+  ]
+}
