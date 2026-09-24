@@ -1,6 +1,7 @@
 """Errores conocidos, sin dar más peso a las sesiones con más activos."""
 
 import importlib
+from copy import deepcopy
 
 import numpy as np
 import pytest
@@ -88,3 +89,84 @@ def test_numpy_datetime_batches_preserve_microsecond_session_keys():
 def test_missing_or_unrepresentable_date_does_not_merge_sessions(times):
     with pytest.raises(ValueError, match="fechas|precisión"):
         accumulator().update(["US"], times, [1.0])
+
+
+def row_reference(state, markets, times, errors):
+    """Oráculo secuencial con el orden de suma de cada lote explícito."""
+    pending = {}
+    for market, moment, value in zip(markets, times, errors, strict=True):
+        entry = pending.setdefault((str(market), int(moment)), [0, 0.0, 0.0])
+        value = float(value)
+        entry[0] += 1
+        entry[1] += abs(value)
+        entry[2] += value * value
+    for key, values in pending.items():
+        previous = state.get(key, [0, 0.0, 0.0])
+        state[key] = [previous[i] + values[i] for i in range(3)]
+
+
+@pytest.mark.parametrize("rows", [31, 32, 33, 64, 65, 128, 129, 512, 4096])
+@pytest.mark.parametrize("layout", ["cohorts", "unique"])
+@pytest.mark.parametrize("dtype", ["int64", "uint64", "datetime64[us]"])
+def test_grouping_matches_sequential_batch_sums_and_preserves_timestamp_range(rows, layout, dtype):
+    rng = np.random.default_rng(984)
+    markets = rng.choice(["CN", "US"], rows)
+    times = np.arange(rows, dtype=np.int64)
+    if layout == "cohorts":
+        times //= 16
+    if dtype == "uint64":
+        times = times.astype(np.uint64) + np.uint64(2**64 - rows)
+    elif dtype == "int64":
+        times += np.iinfo(np.int64).min
+    raw_times = times
+    times = times.astype(dtype)
+    metrics, expected = accumulator(), {}
+    for _ in range(3):
+        errors = rng.normal(size=rows)
+        errors[::7] = 2**50
+        errors[::11] = 2**-50
+        metrics.update(markets, times, errors)
+        row_reference(expected, markets, raw_times, errors)
+        assert metrics.sessions == expected
+        assert list(metrics.sessions) == list(expected)
+
+
+@pytest.mark.parametrize("previous", [False, True])
+def test_overflow_in_a_group_or_its_previous_state_rejects_the_entire_batch(previous):
+    metrics = accumulator()
+    metrics.update(["US"], [1], [1e154 if previous else 2.0])
+    before = deepcopy(metrics.sessions)
+    markets = ["CN", "US"] if previous else ["CN", "US", "US"]
+    times = [2, 1] if previous else [2, 1, 1]
+    errors = [1.0, 1e154] if previous else [1.0, 1e154, 1e154]
+    with pytest.raises(ValueError, match="acumulación|rango"):
+        metrics.update(markets, times, errors)
+    assert metrics.sessions == before
+
+
+@pytest.mark.parametrize("rows", [0, 4097])
+def test_row_limit_rejects_the_batch_without_changing_the_confirmed_state(rows):
+    metrics = accumulator()
+    metrics.update(["US"], [1], [2.0])
+    before = deepcopy(metrics.sessions)
+    with pytest.raises(ValueError, match="4096"):
+        metrics.update(["US"] * rows, np.arange(rows), np.ones(rows))
+    assert metrics.sessions == before
+
+
+@pytest.mark.parametrize("rows", [31, 32, 33, 64, 65, 128, 129, 512, 4096])
+def test_each_batch_is_reduced_before_adding_the_previous_large_state(rows):
+    metrics = accumulator()
+    metrics.update(["US"], [7], [2**53])
+    metrics.update(["US"] * rows, [7] * rows, np.ones(rows))
+    assert metrics.sessions == {("US", 7): [1 + rows, float(2**53 + rows), float(2**106)]}
+    assert metrics.summary()["absolute_error"] == float(2**53 + rows)
+
+
+def test_group_reduction_preserves_row_order_when_rounding_is_observable():
+    first, last = accumulator(), accumulator()
+    values = np.array([2**53, *([1.0] * 128)])
+    first.update(["US"] * 129, [7] * 129, values)
+    last.update(["US"] * 129, [7] * 129, values[::-1])
+    assert first.sessions[("US", 7)] == [129, float(2**53), float(2**106)]
+    assert last.sessions[("US", 7)] == [129, float(2**53 + 128), float(2**106)]
