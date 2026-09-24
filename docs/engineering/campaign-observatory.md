@@ -14,6 +14,23 @@ calculan con las configuraciones de búsqueda y adaptación. El diseño actual t
 80 ejecuciones neuronales, 17 tabulares y 216 ajustes predictivos. Los informes
 anteriores tienen sus propios recuentos y procedencia.
 
+El postentrenamiento emparejado añade 396 ajustes previstos. El recuento se deriva
+de tres semillas, tres condiciones, seis modos para cada uno de los seis padres y
+dos continuaciones adicionales para cada una de las cuatro familias neuronales.
+La familia de cada padre se declara en la configuración de fuentes. La campaña
+depende de las búsquedas neuronal y tabular originales. El plan financiero añade
+seis entrenamientos previstos, dos algoritmos por tres semillas. Las evaluaciones
+de sus referencias y costes no multiplican ese recuento de entrenamientos.
+
+Las configuraciones canónicas siguen en `configs/baselines/paired-posttraining.json`
+y `configs/simulation/comparators.json`. Si una raíz de datos anterior aún no las
+contiene, `configuration_snapshot` permite leer sus copias de
+`data/interim/experimental-configurations-20260924`. El manifiesto de esa carpeta
+registra la revisión `0e5d85c66a14300f0f6d8e00c63a50771cc15678`, las rutas originales
+y sus SHA-256. Las copias quedan separadas de las futuras salidas de las colas.
+`configuration_sha256` exige los mismos bytes en la ruta canónica y en la copia,
+también al leer desde caché. Una configuración presente con otra huella se rechaza.
+
 ## Recolección local
 
 Desde un checkout dedicado al seguimiento, la siguiente orden observa las fuentes
@@ -32,6 +49,12 @@ El bloqueo local impide dos recolectores sobre el mismo estado. SIGTERM y SIGINT
 terminan tras la operación en curso. Una fuente corrupta conserva el índice público
 anterior. Las lecturas admiten hasta 2 MiB por JSON, 4096 fuentes y 64 MiB de
 contenido acumulado. Si se supera el presupuesto se informa del error.
+
+El recorrido excluye los directorios `private` y `checkpoints`. Los estados
+privados tampoco se admiten como rutas de lectura explícitas. Solo se consultan
+los índices históricos pequeños `checkpoints/latest.json` cuando el recibo no
+declara su propio resumen de recuperación. Las rutas de los checkpoints del
+ejecutable C++ no se siguen.
 
 El historial conserva las ejecuciones aunque una fuente deje de estar presente.
 Los intentos explícitos del coordinador tabular tienen registros separados. Los
@@ -79,6 +102,13 @@ como base del grupo. La moneda, el coste en puntos básicos, la partición y las
 condiciones financieras separan los grupos. La moneda declarada acompaña a los costes.
 No se leen operaciones, posiciones ni órdenes para calcular nuevas medidas.
 
+La fuente `native-financial-check-20260924` incorpora los nueve recibos de la
+comprobación C++, con procedencia `technical` y `comparison.json` como resumen.
+Los resúmenes pueden declarar ejecuciones mediante una lista o un diccionario,
+y señalar directamente la ruta de cada `run.json`. El postentrenamiento conserva
+su condición, modelo padre y modo. Los recibos que declaran `primary: "median"`
+usan las métricas de esa mediana, tanto en el resumen como en las épocas.
+
 RL, simulación y evaluación financiera pueden proporcionar `financial_validation`.
 La web muestra estos agregados en una sección propia y los excluye del ranking y
 de las curvas predictivas. No exporta pérdidas de PPO o del crítico como MAE.
@@ -108,6 +138,15 @@ Anunciar recuperación exige paso y fecha observados. Un índice antiguo sin fec
 permite mostrar su paso, pero no afirmar que el estado sea recuperable.
 `parent_frozen` conserva la declaración del productor y no acredita por sí solo
 que todos los parámetros permanezcan congelados.
+
+La RAM distingue dos alcances. `executable_peak_rss_bytes` procede de `VmHWM`
+después de `exec`, mientras que `process_lifetime_peak_rss_bytes` conserva el máximo
+de `getrusage`, que puede incluir picos anteriores del proceso. El valor principal
+`metrics.ram_peak_mib` usa el primero cuando está disponible y, si falta, el segundo.
+`metadata.ram_peak_scope` identifica la elección. Ambos valores se conservan por
+separado en MiB y la interfaz muestra sus etiquetas. El CSV incluye el alcance.
+Estos máximos pueden incluir varios casos ejecutados en el mismo proceso.
+Las fases reservadas ocultan también estas medidas.
 
 La fecha del informe, la observación del proceso y la fecha de recolección son
 campos distintos. Un bloqueo de campaña activo permite observar el proceso,
@@ -171,10 +210,36 @@ El [benchmark de esta ampliación](../../reports/observatory-activities-benchmar
 midió una mediana de 0,595 s en cinco pasadas posteriores a la inicial y un pico
 de RAM de 35,9 MiB. No se ejecutaron entrenamiento ni pruebas de GPU.
 
+La ampliación experimental del 24 de septiembre de 2026 comprobó 669 registros en
+once páginas, incluidos dieciocho recibos nativos de dos comprobaciones conservadas
+por separado. Pasaron 132 pruebas Python y 27 JavaScript. Chrome comprobó las
+etiquetas y valores distintos de `VmHWM` y del máximo del proceso, la recuperación
+declarada y una fixture técnica de continuación neuronal con su condición y padre.
+La prueba espera el texto completo de cada página y revisa escritorio y móvil.
+
+El [informe de esta ampliación](../../reports/observatory-experimental-tracking-quality.json)
+registra cobertura de sentencias del 91,52 %, cobertura de ramas del 82,71 %,
+complejidad y CRAP por función. Tres mutaciones dirigidas fueron detectadas por
+pruebas sobre la huella de configuración, el recuento de controles neuronales y
+la elección del alcance de RAM. La auditoría comprobó 1345 accesos JSON por pasada,
+sin leer Parquet ni estados privados.
+
+La recolección y escritura de páginas tardó 0,971 segundos con una caché nueva y
+0,667 y 0,653 segundos en dos pasadas posteriores. La primera leyó 23,2 MB y las
+siguientes no volvieron a leer contenido sin cambios. El máximo `VmHWM` del proceso
+fue 51,9 MiB, incluidas las herramientas de comprobación. Había otras validaciones
+activas, por lo que estas medidas no establecen una mejora frente a las anteriores.
+
 ```bash
 uv run --locked pytest tests/tooling/test_campaign_observatory.py \
-  tests/tooling/test_observatory_publication.py
+  tests/tooling/test_observatory.py tests/tooling/test_observatory_benchmark.py \
+  tests/tooling/test_observatory_publication.py tests/tooling/test_observatory_activities.py \
+  tests/tooling/test_observatory_experiments.py
 node --test site/tests/state.test.mjs
 uv run --locked python scripts/benchmark_campaign_observatory.py \
   --root . --output reports/campaign-observatory-benchmark.json
 ```
+
+`site/tests/experiments-browser.mjs` recibe la ruta del módulo Playwright y la carpeta
+de páginas generada por el recolector. Selecciona un recibo nativo real y construye
+la fixture técnica en memoria, sin modificar las páginas de entrada.
