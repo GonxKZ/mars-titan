@@ -8,7 +8,7 @@ Proyecto de investigación y desarrollo de **Gonzalo García Lama** sobre memori
 
 [Tablero Kanban privado](https://github.com/users/GonxKZ/projects/4) · [Issues](https://github.com/GonxKZ/mars-titan/issues) · [Hitos](https://github.com/GonxKZ/mars-titan/milestones) · [Documentación](docs/README.md)
 
-[Observatorio de experimentos](https://gonxkz.github.io/mars-titan/) · [Uso, contrato y límites](docs/engineering/observatory.md)
+[Observatorio de experimentos](https://gonxkz.github.io/mars-titan/) · [Recolección, publicación y límites](docs/engineering/campaign-observatory.md)
 
 ## Qué se quiere investigar
 
@@ -28,7 +28,20 @@ El panel técnico anterior de 25.856 muestras sirvió para preparar y medir el f
 
 El [índice textual completo](reports/data/corpus-index-20260922.md) ya recorre los 5.586 archivos de ambos mercados y conserva 4.469.917 registros con sus localizadores y hashes. Incluye instrumentos incompletos y no filtra por sector. Este censo no convierte las noticias pendientes en contenido verificado ni acredita nuevos entrenamientos.
 
-La [preparación y sus límites](docs/data/preparation.md) y la [ampliación verificada de noticias](reports/data/verified-news-cohort-20260922.md) detallan la cobertura real. El [presupuesto experimental](reports/resources/campaign-budget.md) conserva las mediciones anteriores, incluida una comprobación de 20 épocas. El observatorio mantiene su último estado publicado, no constituye un monitor automático de estos ensayos locales.
+La [preparación y sus límites](docs/data/preparation.md) y la [ampliación verificada de noticias](reports/data/verified-news-cohort-20260922.md) detallan la cobertura real. El [presupuesto experimental](reports/resources/campaign-budget.md) conserva las mediciones anteriores, incluida una comprobación de 20 épocas. El observatorio muestra la última publicación del recolector local. Su fecha de publicación se distingue del último progreso y de la observación del proceso.
+
+## Módulos implementados y comprobaciones pendientes
+
+Las guías de cada módulo recogen sus pruebas y límites. La implementación de estas herramientas no acredita haber entrenado el candidato MARS-TITAN ni completado nuevas comparaciones científicas.
+
+| Módulo | Comportamiento implementado | Límite de la evidencia |
+| --- | --- | --- |
+| [Observatorio](docs/engineering/campaign-observatory.md) | Recolección local con historial SQLite, páginas de 64 registros y publicación periódica en Pages. Separa entrenamiento, generación sintética y evaluación financiera, y excluye datos reservados del paquete público. | La web depende de los informes observados y del último despliegue. No deduce pasos de entrenamiento a partir de un proceso activo. |
+| [Episodios y mundos sintéticos](docs/engineering/experimental-episodes.md) | Bloques cronológicos recuperables, remuestreo solo de entrenamiento, mundos de mecanismo conocido y aumentos con tamaños emparejados. Conserva las cuatro modalidades y el contexto macro simulado con sus máscaras. | Las pruebas de contrato usan codificadores controlados. La ruta con MiniLM y ResNet18 reales requiere comprobación CUDA. No demuestra utilidad predictiva del aumento. |
+| [Simulación y comparadores](docs/engineering/persistent-simulation.md) | Efectivo por moneda, posiciones, órdenes, splits y dividendos. PPO, Double DQN y reglas fijas utilizan predicciones congeladas y estados recuperables. | La comprobación usa datos sintéticos de contabilidad conocida. La campaña CUDA y el histórico real con OHLC sin ajustar, calendarios y acciones corporativas acreditados siguen pendientes. |
+| [Postentrenamiento emparejado](docs/engineering/paired-posttraining.md) | Ajustes sobre datos reales, remuestreados y sintéticos, con padres identificados, seis objetivos residuales y continuaciones neuronales MAE/MSE. La selección usa validación real y el test permanece cerrado. | Se ha comprobado con ejemplos pequeños en CPU. La campaña científica no se ha ejecutado y la integración real en GPU sigue pendiente. |
+
+La [medición de lectura y simulación](docs/engineering/episode-pipeline-performance.md) compara concurrencia sobre episodios analíticos y comprueba paridad contable. No mide codificadores neuronales ni entrenamiento en GPU. El [diseño de capacidad y coste por parámetro](docs/research/parameter-efficiency.md) define futuros contrastes de representación, parámetros compartidos, destilación y selección de memoria para O3, O4 y O6.
 
 ## Alcance y recursos
 
@@ -69,7 +82,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 
 - [Mapa de documentación](docs/README.md).
 - [Protocolo de investigación](docs/research/protocol.md), [experimentos](docs/research/experiment-matrix.md) y [revisión del documento inicial](docs/research/original-review.md).
-- [Arquitectura candidata](docs/research/candidate-architecture.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
+- [Arquitectura candidata](docs/research/candidate-architecture.md), [capacidad y coste por parámetro](docs/research/parameter-efficiency.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
 - [Contrato de datos](docs/data/data-contract.md), [inspección inicial de FinMultiTime](docs/data/finmultitime-card.md) y [arquitectura](docs/engineering/architecture.md).
 - [140 indicadores macroeconómicos candidatos](docs/data/macro-catalog.md), con fuentes, fórmulas y reglas de disponibilidad. Se han calculado las 70 fórmulas y 125 indicadores tienen algún valor admisible en el intervalo preparado. Cada ausencia conserva su motivo.
 - [Fuentes gratuitas y nueve archivos complementarios obtenidos](docs/data/free-data-sources.md), conservados en instantáneas locales separadas del benchmark, y [actualización manual](docs/data/public-source-updates.md).
@@ -82,7 +95,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 ## Estructura del repositorio
 
 ```text
-src/mars_titan/       Preparación temporal, macro y ensayos de coste
+src/mars_titan/       Datos, modelos de referencia, episodios y simulación
 native/              C/C++ y CUDA con CMake, optimización guiada por perfilado
 configs/             Configuraciones de datos y experimentos
 tests/               Pruebas de datos, cálculos, recuperación y herramientas
@@ -150,14 +163,14 @@ El actualizador necesita `curl`. Sin `--source`, consulta las ocho fuentes renov
 
 ## Datos, resultados y licencia
 
-Para generar una instantánea del observatorio desde estados locales:
+Para generar una instantánea puntual del observatorio desde estados locales:
 
 ```bash
 uv run --locked python scripts/export_observatory.py --output site/data/observatory.json
 node --test site/tests/*.test.mjs
 ```
 
-El exportador no usa GPU, red ni logs completos. Generar una instantánea no la publica. La web puede consultar el último resumen publicado o importar un JSON local sin enviarlo a un servidor. La [guía del observatorio](docs/engineering/observatory.md) explica la integración futura con los entrenadores, el historial privado y la protección del test.
+El exportador no usa GPU, red ni logs completos. Generar una instantánea no la publica. La web puede consultar el último resumen publicado o importar un JSON local sin enviarlo a un servidor. El [recolector de campañas](docs/engineering/campaign-observatory.md) mantiene el historial paginado y permite observar fuentes cada 15 segundos y publicar cambios ordinarios cada cinco minutos. Los estados terminales tienen prioridad. La [guía de la web](site/README.md) describe la consulta y las comprobaciones locales.
 
 La copia de FinMultiTime y sus derivados no se suben al repositorio. La selección experimental se fijará tras auditar cobertura, fechas y derechos de uso. No se presentan aquí resultados de rentabilidad ni recomendaciones de inversión.
 
