@@ -4,6 +4,8 @@ import argparse
 import json
 import re
 import resource
+import signal
+import threading
 import time
 from contextlib import ExitStack
 from datetime import UTC, datetime
@@ -13,7 +15,6 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.episodes.encoding import EncodedWorld
 from mars_titan.episodes.storage import write_world
 from mars_titan.episodes.worlds import WorldConfig, generate_world, recipe_fingerprints
-from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.experiment_resources import GpuLease, check_host_memory
 
 
@@ -76,79 +77,97 @@ def main():
         final_test_opened=False,
     )
     atomic_json(existing, summary)
-    with ExitStack() as cleanup:
-        stop = cleanup.enter_context(StopRequest())
-        encoders = None
-        check_resources = check_host_memory
-        if args.reference_encoding:
-            lease = cleanup.enter_context(GpuLease())
-            check_resources = lease.check
-            from mars_titan.data.embeddings import FrozenEncoders
+    phase = "generation"
+    try:
+        with ExitStack() as cleanup:
+            stop = threading.Event()
+            for signum in (signal.SIGINT, signal.SIGTERM):
+                previous = signal.signal(signum, lambda *_args: stop.set())
+                cleanup.callback(signal.signal, signum, previous)
+            encoders = None
+            check_resources = check_host_memory
+            if args.reference_encoding:
+                phase = "admission"
+                lease = cleanup.enter_context(GpuLease())
+                phase = "encoding"
+                check_resources = lease.check
+                from mars_titan.data.embeddings import FrozenEncoders
 
-            encoders = FrozenEncoders()
-            check_resources()
-            reference = json.loads(args.reference_encoding.read_text())
-        for partition in ("train", "validation"):
-            for scenario, signal in config["scenarios"].items():
-                for seed in config[partition + "_seeds"]:
-                    case_started = time.perf_counter()
-                    started_at = datetime.now(UTC).isoformat()
-                    world = generate_world(
-                        WorldConfig(
-                            **config["generator"], seed=seed, signal=signal, partition=partition
+                encoders = FrozenEncoders()
+                check_resources()
+                reference = json.loads(args.reference_encoding.read_text())
+            for partition in ("train", "validation"):
+                for scenario, signal_strength in config["scenarios"].items():
+                    for seed in config[partition + "_seeds"]:
+                        case_started = time.perf_counter()
+                        started_at = datetime.now(UTC).isoformat()
+                        world = generate_world(
+                            WorldConfig(
+                                **config["generator"],
+                                seed=seed,
+                                signal=signal_strength,
+                                partition=partition,
+                            )
                         )
-                    )
-                    if encoders:
-                        world = EncodedWorld(
-                            world, encoders, expected_spec=reference["configuration"]["encoders"]
+                        if encoders:
+                            world = EncodedWorld(
+                                world,
+                                encoders,
+                                expected_spec=reference["configuration"]["encoders"],
+                            )
+                        folder = args.output / f"{partition}-{scenario}-s{seed}"
+                        result = write_world(
+                            world,
+                            folder,
+                            resume=args.resume and folder.exists(),
+                            stop=stop.is_set,
+                            check_resources=check_resources,
                         )
-                    folder = args.output / f"{partition}-{scenario}-s{seed}"
-                    result = write_world(
-                        world,
-                        folder,
-                        resume=args.resume and folder.exists(),
-                        stop=lambda: stop.requested,
-                        check_resources=check_resources,
-                    )
-                    atomic_json(
-                        folder / "run.json",
-                        dict(
-                            schema_version=1,
-                            activity="synthetic_generation",
-                            model="factor_world",
-                            domain="synthetic",
-                            status=result["status"],
-                            identity={
-                                "case": {"kind": "factor_world", "seed": seed},
-                                "manifest_sha256": world.source_sha256,
-                            },
-                            samples={partition: sum(r[1] for r in world.index)},
-                            started_at_utc=started_at,
-                            finished_at_utc=datetime.now(UTC).isoformat(),
-                            total_seconds=time.perf_counter() - case_started,
-                            final_test_opened=False,
-                        ),
-                    )
-                    summary["runs"].append(
-                        dict(
-                            id=folder.name,
-                            path=folder.name,
-                            status=result["status"],
-                            rows=sum(r[1] for r in world.index),
-                            partition=partition,
-                            encoding=result["encoding"],
+                        atomic_json(
+                            folder / "run.json",
+                            dict(
+                                schema_version=1,
+                                activity="synthetic_generation",
+                                model="factor_world",
+                                domain="synthetic",
+                                status=result["status"],
+                                identity={
+                                    "case": {"kind": "factor_world", "seed": seed},
+                                    "manifest_sha256": world.source_sha256,
+                                },
+                                samples={partition: sum(r[1] for r in world.index)},
+                                started_at_utc=started_at,
+                                finished_at_utc=datetime.now(UTC).isoformat(),
+                                total_seconds=time.perf_counter() - case_started,
+                                final_test_opened=False,
+                            ),
                         )
-                    )
-                    summary["status"] = "paused" if stop.requested else "running"
-                    atomic_json(args.output / "summary.json", summary)
-                    if stop.requested:
-                        return 0
+                        summary["runs"].append(
+                            dict(
+                                id=folder.name,
+                                path=folder.name,
+                                status=result["status"],
+                                rows=sum(r[1] for r in world.index),
+                                partition=partition,
+                                encoding=result["encoding"],
+                            )
+                        )
+                        summary["status"] = "paused" if stop.is_set() else "running"
+                        atomic_json(args.output / "summary.json", summary)
+                        if stop.is_set():
+                            return 0
+            summary.update(
+                status="completed",
+                elapsed_seconds=time.perf_counter() - started,
+                peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
+            )
+            atomic_json(args.output / "summary.json", summary)
+    except Exception as error:
         summary.update(
-            status="completed",
-            elapsed_seconds=time.perf_counter() - started,
-            peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
+            status="blocked" if phase == "admission" else "failed", error_type=type(error).__name__
         )
-        atomic_json(args.output / "summary.json", summary)
+        atomic_json(existing, summary)
+        raise
     return 0
 
 
