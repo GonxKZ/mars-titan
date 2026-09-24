@@ -152,17 +152,25 @@ class MarketTape:
         return result
 
     @classmethod
-    def from_world(cls, world, predict, *, parent_id="fixed_signal_reference"):
+    def from_world(
+        cls, world, predict, *, parent_id="fixed_signal_reference", check_resources=None
+    ):
+        if check_resources is not None and not callable(check_resources):
+            raise ValueError("La comprobación de recursos debe ser una función")
         raw_world = world.raw_world
         start = world.config.context - 1
         prices = raw_world.prices[start:]
         scores = np.full(prices.shape[:2], np.nan)
         for position in range(len(world) + 1):
+            if check_resources is not None:
+                check_resources()
             cohort = world.observation_at(start + position)
             values = np.asarray(predict(cohort["inputs"]), dtype=np.float64)
             if values.shape != (len(cohort["asset_ids"]),) or not np.isfinite(values).all():
                 raise ValueError("El padre no devuelve una predicción por muestra admitida")
             scores[position, : len(values)] = values
+        if check_resources is not None:
+            check_resources()
         return cls(
             prices,
             raw_world.times[start:],
