@@ -14,6 +14,7 @@ from .baseline_queue import reference_view
 from .checkpoints import StopRequest
 from .predictive_run import _code
 from .predictive_study import _configuration, run_predictive_study
+from .run_receipts import initialize_receipt
 from .tabular_search import _artifact, _completed
 
 
@@ -181,16 +182,15 @@ def run_queue(config, reference, tabular, output, *, arm="US", stop=None):
         outside_source(output, protected)
     identity = dict(proof=proof, config_sha256=config_hash, code=_queue_code())
     summary_path = output / "summary.json"
-    if output.exists() and not summary_path.is_file():
-        raise ValueError("La salida existe sin un resumen recuperable")
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".queue.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     stop = stop or StopRequest()
     try:
         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        confirmed = initialize_receipt(output, identity, record="summary.json", lock=".queue.lock")
         summary = (
             read_manifest(summary_path, 8 * 1024**2)[0]
-            if summary_path.is_file()
+            if confirmed
             else dict(
                 schema_version=1,
                 status="running",
@@ -261,6 +261,10 @@ def run_queue(config, reference, tabular, output, *, arm="US", stop=None):
                         resume=folder.exists(),
                         stop=stop,
                     )
+                if sha256(config) != config_hash or _queue_code() != identity["code"]:
+                    raise ValueError(
+                        "El diseño o el código de la cola ha cambiado durante el padre"
+                    )
                 if result["counts"] != proof["counts"] or result["planned_runs"] != len(cases):
                     raise ValueError("El ajuste no conserva la población o todos sus controles")
                 summary["parents"][kind] = dict(
@@ -280,6 +284,8 @@ def run_queue(config, reference, tabular, output, *, arm="US", stop=None):
                     summary["status"] = "paused"
                     break
             else:
+                if sha256(config) != config_hash or _queue_code() != identity["code"]:
+                    raise ValueError("La identidad ha cambiado antes de confirmar la cola")
                 summary["status"] = "completed"
         except BaseException as error:
             summary.update(

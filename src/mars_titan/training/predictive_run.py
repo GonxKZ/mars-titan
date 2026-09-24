@@ -32,6 +32,7 @@ from .checkpoints import (
 )
 from .predictive_evaluation import evaluate_predictive
 from .predictive_inputs import PredictiveDataset, fit_standardizer
+from .run_receipts import initialize_receipt
 
 
 def _code():
@@ -40,6 +41,7 @@ def _code():
         name: sha256(root / name)
         for name in (
             "training/predictive_run.py",
+            "training/run_receipts.py",
             "training/predictive_evaluation.py",
             "training/predictive_inputs.py",
             "training/predictive_parents.py",
@@ -130,7 +132,7 @@ def run_predictive_case(
     for protected in (ordered.parent, parent_cache.parent):
         outside_source(protected, output)
         outside_source(output, protected)
-    if output.exists() and not resume or resume and not (output / "initialization.json").is_file():
+    if output.exists() and not resume or resume and not output.exists():
         raise ValueError("Usa una salida nueva o una ejecución recuperable")
     if type(resume) is not bool:
         raise ValueError("La recuperación debe solicitarse de forma explícita")
@@ -145,10 +147,13 @@ def run_predictive_case(
             batch_size=batch_size,
             code=_code(),
         )
-        if resume and read_manifest(output / "initialization.json")[0] != initialization:
-            raise ValueError("La preparación pertenece a otra identidad de datos o código")
-        if not resume:
-            atomic_json(output / "initialization.json", initialization)
+        confirmed = initialize_receipt(
+            output,
+            initialization,
+            record="run.json",
+            lock=".run.lock",
+            initial_files=("normalization.json",),
+        )
         return _setup_run(
             ordered,
             parent_cache,
@@ -157,7 +162,7 @@ def run_predictive_case(
             batch_size,
             checkpoint_steps,
             checkpoint_seconds,
-            resume and (output / "run.json").is_file(),
+            resume and confirmed,
             stop,
             normalization,
         )

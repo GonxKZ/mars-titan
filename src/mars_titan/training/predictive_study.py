@@ -15,6 +15,7 @@ from .checkpoints import StopRequest
 from .predictive_inputs import PredictiveDataset, fit_standardizer
 from .predictive_parents import prepare_parent_cache
 from .predictive_run import _code, _options, run_predictive_case
+from .run_receipts import initialize_receipt
 
 
 def _configuration(path):
@@ -96,16 +97,17 @@ def run_predictive_study(config_path, ordered, parent, output, *, resume=False, 
     for protected in (ordered.parent, parent.parent):
         outside_source(protected, output)
         outside_source(output, protected)
-    if output.exists() and not resume or resume and not (output / "summary.json").is_file():
+    if output.exists() and not resume or resume and not output.exists():
         raise ValueError("La campaña requiere una salida nueva o recuperación explícita")
     output.mkdir(parents=True, exist_ok=resume)
     descriptor = os.open(output / ".study.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     started, stop = time.perf_counter(), stop or StopRequest()
     try:
         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        confirmed = initialize_receipt(output, identity, record="summary.json", lock=".study.lock")
         summary = (
             read_manifest(output / "summary.json")[0]
-            if resume
+            if confirmed
             else dict(
                 schema_version=1,
                 status="running",
@@ -178,6 +180,11 @@ def run_predictive_study(config_path, ordered, parent, output, *, resume=False, 
                     normalization=normalization,
                     stop=stop,
                 )
+                if (
+                    sha256(config_path) != config_hash
+                    or _code() | {"predictive_study.py": sha256(Path(__file__))} != identity["code"]
+                ):
+                    raise ValueError("El diseño o el código ha cambiado durante el último ajuste")
                 item.update(
                     status=report["status"],
                     report_sha256=sha256(folder / "run.json"),
@@ -198,6 +205,11 @@ def run_predictive_study(config_path, ordered, parent, output, *, resume=False, 
                 summary["status"] = "completed"
             if summary["status"] == "completed" and summary["completed_runs"] != len(cases):
                 raise ValueError("La campaña no ha completado todos sus controles")
+            if (
+                sha256(config_path) != config_hash
+                or _code() | {"predictive_study.py": sha256(Path(__file__))} != identity["code"]
+            ):
+                raise ValueError("El diseño o el código ha cambiado antes de confirmar la campaña")
         except BaseException as error:
             summary.update(
                 status="failed", last_failure=dict(type=type(error).__name__, message=str(error))
