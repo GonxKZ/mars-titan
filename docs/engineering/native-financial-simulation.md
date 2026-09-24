@@ -1,6 +1,6 @@
 # Ejecutar la simulación en C++20
 
-`mars-titan-sim` es un ejecutable C++20 autónomo. Lee precios y predicciones congeladas desde Parquet, mantiene posiciones y órdenes entre sesiones y guarda el estado necesario para continuar. El proceso no carga Python ni ejecuta un modelo de lenguaje. La lectura utiliza Arrow C++ y Parquet, con OpenSSL para las huellas de los archivos.
+`mars-titan-sim` es un ejecutable C++20 autónomo. Lee precios y predicciones congeladas desde Parquet, mantiene posiciones y órdenes entre sesiones y guarda el estado necesario para continuar. La lectura utiliza Arrow C++ y Parquet, con OpenSSL para las huellas de los archivos. El proceso no carga Python.
 
 La versión actual admite escenarios sintéticos de validación. El histórico real necesita una auditoría de ajustes OHLC y acciones corporativas que todavía no está acreditada. Los datos sintéticos permanecen identificados como tales y el test final se rechaza antes de abrir el Parquet.
 
@@ -41,12 +41,14 @@ Los buffers de posiciones, cuentas y trabajo se reutilizan. El cálculo de un pa
 
 ## Recuperación y verificación
 
-`--stop-after` permite detener una comprobación en una barrera conocida. SIGINT y SIGTERM solicitan una pausa recuperable. `--resume` exige la misma fuente, configuración, política y versión de código. Los checkpoints incluyen posiciones, efectivo, órdenes, dividendos pendientes, acciones aplicadas, cursor y estado de valoración. Las políticas de referencia son deterministas y no utilizan un generador aleatorio.
+`--stop-after` permite detener una comprobación en una barrera conocida. SIGINT y SIGTERM solicitan una pausa recuperable. `--resume` exige la misma fuente, configuración, política, fuentes nativas y configuración de compilación. Debug y Release tienen identidades distintas. Los checkpoints incluyen posiciones, efectivo, órdenes, dividendos pendientes, acciones aplicadas, cursor y estado de valoración. Las políticas de referencia son deterministas y no utilizan un generador aleatorio.
 
 Los archivos se confirman mediante escritura temporal, sincronización y cambio de nombre. El índice conserva dos estados con huellas verificables. Una corrupción o una identidad incompatible impide recuperar. La salida queda separada de los datos de entrada y cada ejecución utiliza un bloqueo exclusivo.
 
-El programa emite `run.json` por escenario y un resumen de comparación. Los estados contables completos permanecen en `private/checkpoints`. Los recibos distinguen tiempo de lectura compartida, tiempo de ejecución, pico de memoria del proceso y origen de los datos. El observatorio publica únicamente su selección saneada de campos.
+El programa emite `run.json` por escenario y un resumen de comparación. Los estados contables completos permanecen en `private/checkpoints`. Los recibos distinguen tiempo de lectura compartida, tiempo de ejecución y origen de los datos. Linux proporciona el pico de memoria desde `exec` mediante `VmHWM`. El máximo de `getrusage`, que puede incluir memoria anterior a `exec`, se registra por separado. El observatorio publica únicamente su selección saneada de campos.
 
 Los controles nativos incluyen consumidores C17, contabilidad, eventos, recuperación y concurrencia. Se ejecutan en perfiles separados de Clang, GCC, análisis estático, vida útil, ASan/UBSan, TSan, MSan y fuzzing. MSan cubre el núcleo y la sesión con una biblioteca estándar instrumentada. Las bibliotecas precompiladas Arrow y OpenSSL delimitan su aplicación al ejecutable completo.
 
 La referencia Python y la interfaz C siguen disponibles para comprobaciones y para integrar el motor con los comparadores neuronales. Las pruebas contrastan decisiones, observaciones, costes y estados recuperados. Las cifras de rendimiento deben proceder del ejecutable Release y del recorrido completo, con las diferencias de persistencia entre implementaciones declaradas.
+
+La [medición del recorrido financiero](../../reports/resources/native-go-no-go.md) compara 1, 2, 4 y 8 trabajadores con la referencia Python y recoge sus límites.

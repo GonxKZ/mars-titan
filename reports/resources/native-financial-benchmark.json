@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-24T09:58:20.266392+00:00",
+  "domain": "technical",
+  "workload": {
+    "assets": 128,
+    "sessions": 193,
+    "decisions": 192,
+    "scenarios": 9,
+    "parent": "fixed_signal_reference",
+    "input_file_bytes": 1015016
+  },
+  "source_sha256": "fc6fb429d911c7240086609cb17979a210121ea55f032b5ce342943cd2520c1e",
+  "executable_sha256": "68b87f5eeb454705e1131b8cc5eacc25f0991d66f3fc3ea65713538a0f7eb9c9",
+  "benchmark_sha256": "baf5ffb9f5075110f7ae8c839533d897e97be576d9f75d09ab9b44a607ae3796",
+  "financial_metrics_sha256": "ffc1d5974ee60e7563ee8a8560aa6d21c3e6b8fb177fb2d18dbbdf23b243d83b",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.12.14",
+  "libraries": {
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "native_identity": {
+    "build_type": "Release",
+    "compiler_id": "Clang",
+    "compiler_version": "21.1.8",
+    "config": {
+      "capital": 10000.0,
+      "participation": 0.01,
+      "ruin_penalty": -20.0,
+      "score_scale": 0.01
+    },
+    "cost_bps": [
+      0,
+      10,
+      25
+    ],
+    "diagnostic": true,
+    "manifest_sha256": "fc6fb429d911c7240086609cb17979a210121ea55f032b5ce342943cd2520c1e",
+    "native_build_sha256": "c6cd1b22b8b4610f23a74d6b1d36ef85dcd100218ca24ef617e5c270d8ba677e",
+    "native_source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+    "native_version": "0.1.0",
+    "parent_id": "fixed_signal_reference",
+    "partition": "validation",
+    "policies": [
+      "cash",
+      "hold_initial",
+      "rebalance_50"
+    ],
+    "rng": "none_deterministic_policies"
+  },
+  "logical_cpus": 16,
+  "load_average_before": [
+    1.44970703125,
+    2.25244140625,
+    2.2548828125
+  ],
+  "load_average_after": [
+    2.10546875,
+    2.34521484375,
+    2.28564453125
+  ],
+  "peak_rss_method": "linux_proc_self_status_VmHWM_after_exec",
+  "repetitions": 5,
+  "warmup_per_configuration": 1,
+  "summary": [
+    {
+      "implementation": "python",
+      "workers": 1,
+      "median_seconds": 3.3832765579863917,
+      "minimum_seconds": 3.3354290059942286,
+      "maximum_seconds": 3.402337075996911,
+      "std_seconds": 0.025092397177400125,
+      "portfolio_decisions_per_second": 510.74748705392426,
+      "asset_decisions_per_second": 65375.678342902305,
+      "median_peak_rss_bytes": 140247040
+    },
+    {
+      "implementation": "cpp",
+      "workers": 1,
+      "median_seconds": 0.3246966619917657,
+      "minimum_seconds": 0.31763972199405544,
+      "maximum_seconds": 0.353127864014823,
+      "std_seconds": 0.015728748521287913,
+      "portfolio_decisions_per_second": 5321.890251042439,
+      "asset_decisions_per_second": 681201.9521334321,
+      "median_peak_rss_bytes": 38985728
+    },
+    {
+      "implementation": "cpp",
+      "workers": 2,
+      "median_seconds": 0.24882292401161976,
+      "minimum_seconds": 0.2478698450140655,
+      "maximum_seconds": 0.25289552498725243,
+      "std_seconds": 0.0021687919541686427,
+      "portfolio_decisions_per_second": 6944.6977478622675,
+      "asset_decisions_per_second": 888921.3117263702,
+      "median_peak_rss_bytes": 39288832
+    },
+    {
+      "implementation": "cpp",
+      "workers": 4,
+      "median_seconds": 0.17561514698900282,
+      "minimum_seconds": 0.17260171502130106,
+      "maximum_seconds": 0.1808335779933259,
+      "std_seconds": 0.0038036181368736747,
+      "portfolio_decisions_per_second": 9839.697939655563,
+      "asset_decisions_per_second": 1259481.3362759121,
+      "median_peak_rss_bytes": 39784448
+    },
+    {
+      "implementation": "cpp",
+      "workers": 8,
+      "median_seconds": 0.11502662100247107,
+      "minimum_seconds": 0.11108864500420168,
+      "maximum_seconds": 0.11638270801631734,
+      "std_seconds": 0.002212866426065867,
+      "portfolio_decisions_per_second": 15022.609418065736,
+      "asset_decisions_per_second": 1922894.0055124143,
+      "median_peak_rss_bytes": 40767488
+    }
+  ],
+  "runs": [
+    {
+      "implementation": "python",
+      "workers": 1,
+      "repetition": 1,
+      "total_process_seconds": 3.374173571006395,
+      "internal_seconds": 3.1860097699973267,
+      "process_peak_rss_bytes": 140214272,
+      "persisted_bytes": 2321
+    },
+    {
+      "implementation": "python",
+      "workers": 1,
+      "repetition": 2,
+      "total_process_seconds": 3.3832765579863917,
+      "internal_seconds": 3.1928473729931284,
+      "process_peak_rss_bytes": 140247040,
+      "persisted_bytes": 2321
+    },
+    {
+      "implementation": "python",
+      "workers": 1,
+      "repetition": 3,
+      "total_process_seconds": 3.402337075996911,
+      "internal_seconds": 3.2168564989988226,
+      "process_peak_rss_bytes": 140259328,
+      "persisted_bytes": 2321
+    },
+    {
+      "implementation": "python",
+      "workers": 1,
+      "repetition": 4,
+      "total_process_seconds": 3.3354290059942286,
+      "internal_seconds": 3.1475136549852323,
+      "process_peak_rss_bytes": 140328960,
+      "persisted_bytes": 2321
+    },
+    {
+      "implementation": "python",
+      "workers": 1,
+      "repetition": 5,
+      "total_process_seconds": 3.387120914994739,
+      "internal_seconds": 3.20283558400115,
+      "process_peak_rss_bytes": 140083200,
+      "persisted_bytes": 2319
+    },
+    {
+      "implementation": "cpp",
+      "workers": 1,
+      "repetition": 1,
+      "total_process_seconds": 0.32091496998327784,
+      "internal_seconds": 0.303576133,
+      "process_peak_rss_bytes": 38985728,
+      "persisted_bytes": 218528
+    },
+    {
+      "implementation": "cpp",
+      "workers": 1,
+      "repetition": 2,
+      "total_process_seconds": 0.3246966619917657,
+      "internal_seconds": 0.306058764,
+      "process_peak_rss_bytes": 38969344,
+      "persisted_bytes": 218532
+    },
+    {
+      "implementation": "cpp",
+      "workers": 1,
+      "repetition": 3,
+      "total_process_seconds": 0.31763972199405544,
+      "internal_seconds": 0.299477994,
+      "process_peak_rss_bytes": 39014400,
+      "persisted_bytes": 218532
+    },
+    {
+      "implementation": "cpp",
+      "workers": 1,
+      "repetition": 4,
+      "total_process_seconds": 0.353127864014823,
+      "internal_seconds": 0.330722151,
+      "process_peak_rss_bytes": 38985728,
+      "persisted_bytes": 218532
+    },
+    {
+      "implementation": "cpp",
+      "workers": 1,
+      "repetition": 5,
+      "total_process_seconds": 0.3446878279792145,
+      "internal_seconds": 0.326463771,
+      "process_peak_rss_bytes": 39026688,
+      "persisted_bytes": 218534
+    },
+    {
+      "implementation": "cpp",
+      "workers": 2,
+      "repetition": 1,
+      "total_process_seconds": 0.24882292401161976,
+      "internal_seconds": 0.230434457,
+      "process_peak_rss_bytes": 39292928,
+      "persisted_bytes": 218530
+    },
+    {
+      "implementation": "cpp",
+      "workers": 2,
+      "repetition": 2,
+      "total_process_seconds": 0.24824053602060303,
+      "internal_seconds": 0.229574987,
+      "process_peak_rss_bytes": 39292928,
+      "persisted_bytes": 218528
+    },
+    {
+      "implementation": "cpp",
+      "workers": 2,
+      "repetition": 3,
+      "total_process_seconds": 0.25289552498725243,
+      "internal_seconds": 0.234663624,
+      "process_peak_rss_bytes": 39161856,
+      "persisted_bytes": 218530
+    },
+    {
+      "implementation": "cpp",
+      "workers": 2,
+      "repetition": 4,
+      "total_process_seconds": 0.2478698450140655,
+      "internal_seconds": 0.229180562,
+      "process_peak_rss_bytes": 39288832,
+      "persisted_bytes": 218532
+    },
+    {
+      "implementation": "cpp",
+      "workers": 2,
+      "repetition": 5,
+      "total_process_seconds": 0.25125661099446006,
+      "internal_seconds": 0.232214032,
+      "process_peak_rss_bytes": 39178240,
+      "persisted_bytes": 218532
+    },
+    {
+      "implementation": "cpp",
+      "workers": 4,
+      "repetition": 1,
+      "total_process_seconds": 0.1805590319854673,
+      "internal_seconds": 0.162169975,
+      "process_peak_rss_bytes": 39874560,
+      "persisted_bytes": 218530
+    },
+    {
+      "implementation": "cpp",
+      "workers": 4,
+      "repetition": 2,
+      "total_process_seconds": 0.17388599802507088,
+      "internal_seconds": 0.153939073,
+      "process_peak_rss_bytes": 39784448,
+      "persisted_bytes": 218528
+    },
+    {
+      "implementation": "cpp",
+      "workers": 4,
+      "repetition": 3,
+      "total_process_seconds": 0.1808335779933259,
+      "internal_seconds": 0.162391631,
+      "process_peak_rss_bytes": 39784448,
+      "persisted_bytes": 218534
+    },
+    {
+      "implementation": "cpp",
+      "workers": 4,
+      "repetition": 4,
+      "total_process_seconds": 0.17260171502130106,
+      "internal_seconds": 0.15374191,
+      "process_peak_rss_bytes": 39862272,
+      "persisted_bytes": 218529
+    },
+    {
+      "implementation": "cpp",
+      "workers": 4,
+      "repetition": 5,
+      "total_process_seconds": 0.17561514698900282,
+      "internal_seconds": 0.156453753,
+      "process_peak_rss_bytes": 39739392,
+      "persisted_bytes": 218526
+    },
+    {
+      "implementation": "cpp",
+      "workers": 8,
+      "repetition": 1,
+      "total_process_seconds": 0.11367867098306306,
+      "internal_seconds": 0.095339438,
+      "process_peak_rss_bytes": 40783872,
+      "persisted_bytes": 218534
+    },
+    {
+      "implementation": "cpp",
+      "workers": 8,
+      "repetition": 2,
+      "total_process_seconds": 0.11635836298228242,
+      "internal_seconds": 0.09849124,
+      "process_peak_rss_bytes": 40615936,
+      "persisted_bytes": 218533
+    },
+    {
+      "implementation": "cpp",
+      "workers": 8,
+      "repetition": 3,
+      "total_process_seconds": 0.11638270801631734,
+      "internal_seconds": 0.09696932,
+      "process_peak_rss_bytes": 40730624,
+      "persisted_bytes": 218533
+    },
+    {
+      "implementation": "cpp",
+      "workers": 8,
+      "repetition": 4,
+      "total_process_seconds": 0.11108864500420168,
+      "internal_seconds": 0.092649423,
+      "process_peak_rss_bytes": 40783872,
+      "persisted_bytes": 218532
+    },
+    {
+      "implementation": "cpp",
+      "workers": 8,
+      "repetition": 5,
+      "total_process_seconds": 0.11502662100247107,
+      "internal_seconds": 0.096431345,
+      "process_peak_rss_bytes": 40767488,
+      "persisted_bytes": 218534
+    }
+  ],
+  "parity": {
+    "relative_tolerance": 1e-12,
+    "absolute_tolerance": 1e-10,
+    "maximum_absolute_error": 0.0,
+    "all_scenarios": true
+  },
+  "peak_vram_bytes": null,
+  "cpu_gpu_transfer_bytes": null,
+  "energy_joules": null,
+  "monetary_cost": null,
+  "final_test_opened": false,
+  "limits": [
+    "La referencia Python usa evaluate y persiste un resumen, sin checkpoints intermedios.",
+    "C++ incluye checkpoints, bloqueo y recibos en su tiempo interno.",
+    "El tiempo total incluye arranque, bibliotecas, lectura y salida de datos sint\u00e9ticos.",
+    "La cach\u00e9 del sistema permanece caliente. No se detienen otras aplicaciones.",
+    "VmHWM mide el m\u00e1ximo observado por Linux desde exec, compartido por todos los hilos.",
+    "No se mide entrenamiento neuronal, GPU, energ\u00eda ni coste monetario."
+  ]
+}
