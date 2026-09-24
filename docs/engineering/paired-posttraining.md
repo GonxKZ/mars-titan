@@ -4,6 +4,8 @@
 
 La comparación científica no se ha ejecutado. Las comprobaciones descritas aquí usan ejemplos pequeños en CPU. No aportan resultados predictivos sobre datos financieros reales ni medidas de rendimiento en GPU.
 
+La [edición 2 de selección](continuation-selection.md) añade el estado inicial como candidato y una configuración separada de continuaciones reales con paciencia. Este documento conserva el diseño y las comprobaciones de la edición original.
+
 ## Comparación fijada
 
 El diseño está en [paired-posttraining.json](../../configs/baselines/paired-posttraining.json). Fija cinco épocas, semillas 42, 43 y 44, AdamW nuevo con tasa `0.0001`, `weight_decay=0.01`, recorte de norma 1 y lotes de hasta 256 filas. KLPO utiliza `beta=0.1`, mezcla exploratoria `0.000001` y 128 muestras auxiliares independientes en MC.

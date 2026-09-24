@@ -4,6 +4,7 @@ import argparse
 import fcntl
 import gc
 import os
+from contextlib import nullcontext
 from pathlib import Path
 
 import torch
@@ -25,10 +26,12 @@ from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
 from .parents import NEURAL, load_parent
 from .preparation import EpisodeFactory, encoder_contract, prepare_augmentation
 from .run import MODES, code_identity, run_case, validate_case
+from .selection import selection_policy
 
 
 def read_design(path):
     plan, digest = read_manifest(Path(path))
+    real_only = plan.get("conditions") == ["real"] and "selection" in plan
     options = {
         "epochs",
         "learning_rate",
@@ -38,6 +41,8 @@ def read_design(path):
         "behavior_epsilon",
         "auxiliary_samples",
     }
+    if "selection" in plan:
+        options.add("selection")
     keys = {
         "schema_version",
         "conditions",
@@ -51,19 +56,26 @@ def read_design(path):
         "checkpoint_seconds",
         "final_test_opened",
     } | options
+    if real_only:
+        keys -= {"fraction", "decisions", "warmup"}
     if (
         set(plan) != keys
         or plan["schema_version"] != 1
-        or plan["conditions"] != list(CONDITIONS)
+        or (not real_only and plan["conditions"] != list(CONDITIONS))
         or plan["modes"] != list(MODES[:6])
         or plan["neural_controls"] != list(MODES[6:])
-        or plan["fraction"] != 0.25
+        or (not real_only and plan["fraction"] != 0.25)
         or plan["final_test_opened"] is not False
         or not isinstance(plan["seeds"], list)
         or not 1 <= len(plan["seeds"]) <= 10
         or any(type(s) is not int or not 0 <= s < 2**32 for s in plan["seeds"])
         or len(set(plan["seeds"])) != len(plan["seeds"])
-        or any(type(plan[k]) is not int or not 1 <= plan[k] <= 128 for k in ("decisions", "warmup"))
+        or (
+            not real_only
+            and any(
+                type(plan[k]) is not int or not 1 <= plan[k] <= 128 for k in ("decisions", "warmup")
+            )
+        )
         or type(plan["batch_size"]) is not int
         or not 1 <= plan["batch_size"] <= 4096
         or type(plan["checkpoint_seconds"]) not in (int, float)
@@ -116,12 +128,50 @@ def _confirm_artifact(summary, root, path):
     atomic_json(root / "summary.json", summary)
 
 
+def _prepare_augmentations(plan, train, output, binding, summary, stop, lease):
+    if plan["conditions"] == ["real"]:
+        return {}
+    calibration_path = output / "calibration.json"
+    if calibration_path.exists():
+        calibration = read_manifest(calibration_path)[0]
+    else:
+        calibration = fit_volatility(train)
+        atomic_json(calibration_path, calibration)
+    _confirm_artifact(summary, output, calibration_path)
+    if (
+        calibration.get("source_sha256") != train.manifest_sha256
+        or calibration.get("fit_partition") != "train"
+    ):
+        raise ValueError("La calibración no corresponde a las etiquetas de entrenamiento")
+    encoders, augmentations = FrozenEncoders(), {}
+    for seed in plan["seeds"]:
+        folder = output / "augmentation" / f"seed-{seed}"
+        augmentations[seed] = prepare_augmentation(
+            train,
+            folder,
+            encoders,
+            expected_spec=binding["encoders"],
+            seed=seed,
+            decisions=plan["decisions"],
+            warmup=plan["warmup"],
+            volatility=calibration["volatility"],
+            stop=stop,
+            check_resources=lease.check,
+        )
+        _confirm_artifact(summary, output, folder / "augmentation.json")
+    del encoders
+    gc.collect()
+    torch.cuda.empty_cache()
+    return augmentations
+
+
 def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=None):
     """Ejecutar secuencialmente la cola o recuperarla, con una única concesión de GPU."""
     config, reference, tabular, encoded, output = map(
         Path, (config, reference, tabular, encoded, output)
     )
     plan, cases, config_hash = read_design(config)
+    policy = selection_policy(cases("gru")[0]["case"])
     stop = stop or StopRequest()
     # La admisión precede a pesos, fuentes grandes y preparación de codificadores.
     with GpuLease() as lease:
@@ -140,7 +190,13 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
         ):
             outside_source(protected, output)
             outside_source(output, protected)
-        identity = dict(proof=proof, config_sha256=config_hash, binding=binding, code=_queue_code())
+        identity = dict(
+            proof=proof,
+            config_sha256=config_hash,
+            binding=binding,
+            code=_queue_code(),
+            selection_policy=policy,
+        )
         output.mkdir(parents=True, exist_ok=True)
         descriptor = os.open(output / ".queue.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         try:
@@ -153,7 +209,10 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                 if confirmed
                 else dict(
                     schema_version=1,
-                    kind="paired_posttraining_queue",
+                    kind="real_continuations_queue"
+                    if plan["conditions"] == ["real"]
+                    else "paired_posttraining_queue",
+                    selection_policy=policy,
                     identity=identity,
                     status="running",
                     runs={},
@@ -183,40 +242,9 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                     ParquetCohortSource(ordered_path, partition="validation") as validation,
                 ):
                     grid = ActionGrid.from_dict(prepared["grid"])
-                    calibration_path = output / "calibration.json"
-                    if calibration_path.exists():
-                        calibration = read_manifest(calibration_path)[0]
-                    else:
-                        calibration = fit_volatility(train)
-                        atomic_json(calibration_path, calibration)
-                    _confirm_artifact(summary, output, calibration_path)
-                    if (
-                        calibration.get("source_sha256") != train.manifest_sha256
-                        or calibration.get("fit_partition") != "train"
-                    ):
-                        raise ValueError(
-                            "La calibración no corresponde a las etiquetas de entrenamiento"
-                        )
-                    encoders = FrozenEncoders()
-                    augmentations = {}
-                    for seed in plan["seeds"]:
-                        folder = output / "augmentation" / f"seed-{seed}"
-                        augmentations[seed] = prepare_augmentation(
-                            train,
-                            folder,
-                            encoders,
-                            expected_spec=binding["encoders"],
-                            seed=seed,
-                            decisions=plan["decisions"],
-                            warmup=plan["warmup"],
-                            volatility=calibration["volatility"],
-                            stop=stop,
-                            check_resources=lease.check,
-                        )
-                        _confirm_artifact(summary, output, folder / "augmentation.json")
-                    del encoders
-                    gc.collect()
-                    torch.cuda.empty_cache()
+                    augmentations = _prepare_augmentations(
+                        plan, train, output, binding, summary, stop, lease
+                    )
                     for kind, parent_record in proof["parents"].items():
                         if stop.requested:
                             raise InterruptedError
@@ -244,14 +272,19 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                             _confirm_artifact(summary, output, norm_path)
                             for seed in plan["seeds"]:
                                 extra_folder = output / "augmentation" / f"seed-{seed}"
-                                with EpisodeFactory(extra_folder, augmentations[seed]) as extras:
+                                context = (
+                                    EpisodeFactory(extra_folder, augmentations[seed])
+                                    if augmentations
+                                    else nullcontext()
+                                )
+                                with context as extras:
                                     data = PairedInputs(
                                         train,
                                         validation,
                                         cache,
-                                        windows=extras.windows,
+                                        windows=extras.windows if extras else (),
                                         synthetic=extras,
-                                        synthetic_identity=extras.identity,
+                                        synthetic_identity=extras.identity if extras else None,
                                     )
                                     for item in (
                                         r for r in cases(kind) if r["case"]["seed"] == seed

@@ -54,6 +54,38 @@ def test_design_contains_all_conditions_and_continuations_only_for_neural_parent
         }
 
 
+def test_real_continuation_design_declares_selection_without_augmentation(tmp_path):
+    plan = read_design(Path("configs/baselines/paired-posttraining.json"))[0]
+    plan["conditions"] = ["real"]
+    plan["selection"] = dict(version=2, metric="session_mae", patience=2, min_delta=0.0)
+    for key in ("fraction", "decisions", "warmup"):
+        plan.pop(key)
+    config = tmp_path / "real.json"
+    atomic_json(config, plan)
+    _, cases, _ = read_design(config)
+    assert len(cases("gru")) == 24
+    assert len(cases("ridge")) == 18
+    for item in cases("gru"):
+        assert item["case"]["condition"] == "real"
+        assert item["case"]["selection"] == plan["selection"]
+        assert item["case"]["epochs"] == 5
+
+
+def test_versioned_designs_keep_parameters_and_make_stopping_explicit():
+    legacy, _, _ = read_design(Path("configs/baselines/paired-posttraining.json"))
+    paired, _, _ = read_design(Path("configs/baselines/paired-posttraining-v2.json"))
+    real, _, _ = read_design(Path("configs/baselines/real-continuations-v2.json"))
+    assert paired.pop("selection") == dict(
+        version=2, metric="session_mae", patience=None, min_delta=0.0
+    )
+    assert paired == legacy
+    assert real.pop("selection") == dict(version=2, metric="session_mae", patience=2, min_delta=0.0)
+    assert real == {
+        **{k: v for k, v in legacy.items() if k not in {"fraction", "decisions", "warmup"}},
+        "conditions": ["real"],
+    }
+
+
 def test_encoder_contract_rejects_unrelated_or_open_test_manifests(tmp_path):
     encoded = dict(
         final_test_opened=False, context_sessions=4, configuration={"encoders": TestEncoders.spec}
@@ -159,7 +191,10 @@ def test_partial_augmentation_receipt_cannot_change_the_matched_budget(tmp_path,
         prepare_augmentation(source, output, encoders, **kwargs)
 
 
-def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(tmp_path, monkeypatch):
+@pytest.mark.parametrize("edition", ["legacy", "paired_v2", "real_v2"])
+def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
+    tmp_path, monkeypatch, edition
+):
     import importlib
 
     import torch
@@ -277,6 +312,23 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(tmp_pa
     monkeypatch.setattr(module, "run_case", cpu_run)
     plan = read_design(Path("configs/baselines/paired-posttraining.json"))[0]
     plan.update(seeds=[7], decisions=2, warmup=1, epochs=1, batch_size=8, auxiliary_samples=2)
+    if edition != "legacy":
+        plan["selection"] = dict(
+            version=2,
+            metric="session_mae",
+            patience=2 if edition == "real_v2" else None,
+            min_delta=0.0,
+        )
+    if edition == "real_v2":
+        plan["conditions"] = ["real"]
+        for key in ("fraction", "decisions", "warmup"):
+            plan.pop(key)
+
+        def forbidden(*_args, **_kwargs):
+            pytest.fail("La continuación real no debe cargar codificadores ni preparar aumentos")
+
+        for name in ("FrozenEncoders", "prepare_augmentation", "fit_volatility", "EpisodeFactory"):
+            monkeypatch.setattr(module, name, forbidden)
     config = tmp_path / "config.json"
     atomic_json(config, plan)
     output = tmp_path / "queue"
@@ -287,14 +339,25 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(tmp_pa
     previous = sha256(output / record["path"])
     completed = run_queue(*args)
     assert completed["status"] == "completed"
-    assert completed["completed_runs"] == completed["planned_runs"] == 24
+    assert (
+        completed["completed_runs"]
+        == completed["planned_runs"]
+        == (8 if edition == "real_v2" else 24)
+    )
     assert sha256(output / record["path"]) == previous
+    condition = "real" if edition == "real_v2" else "real_synthetic"
     result = read_manifest(
-        output / "parents/gru/runs/seed-7/real_synthetic/neural_mae/run.json", 8 * 1024**2
+        output / f"parents/gru/runs/seed-7/{condition}/neural_mae/run.json", 8 * 1024**2
     )[0]
-    assert result["budget"]["rows"] == 20
+    assert result["budget"]["rows"] == (16 if edition == "real_v2" else 20)
     assert result["epochs"][0]["validation"]["samples"] == 8
     assert result["final_test_opened"] is False
+    if edition != "legacy":
+        assert result["baseline"]["samples"] == 8
+        assert completed["selection_policy"] == result["selection_policy"]
+    if edition == "real_v2":
+        assert not (output / "augmentation").exists()
+        assert not (output / "calibration.json").exists()
     path = output / "parents/gru/normalization.json"
     changed = read_manifest(path)[0]
     changed["mean"][0] += 1
