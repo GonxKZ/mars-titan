@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-24T19:19:11.903578Z",
+  "generated_at": "2026-09-24T19:19:41.903740Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -342,7 +342,7 @@
       "phase": "validation",
       "started_at": null,
       "updated_at": "2026-09-24T18:27:05.971192Z",
-      "heartbeat_at": null,
+      "heartbeat_at": "2026-09-24T19:19:41.903740Z",
       "completed_steps": null,
       "total_steps": null,
       "epoch": null,
