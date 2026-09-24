@@ -223,15 +223,93 @@ def test_sparse_accepted_rows_do_not_retain_entire_parquet_groups(tmp_path):
     metadata["assets"][0]["labels_sha256"] = sha256(label_path)
     manifest.write_text(json.dumps(metadata))
     dataset = module().CorpusDataset(manifest)
-    point = dict(asset=0, group=0, offset=0, consumed=0)
-    observed = list(dataset._rows("train", 0, 42, point))
-    assert len(observed) == 3
-    for inputs, *_ in observed:
+    observed = list(dataset.batches(partition="train", batch_size=2, epoch=0, seed=42))
+    assert sum(len(batch["target"]) for batch in observed) == 3
+    for batch in observed:
         for name in ("news", "charts", "fundamentals", "macro"):
-            root = inputs[name]
+            root = batch["inputs"][name]
             while isinstance(root.base, np.ndarray):
                 root = root.base
-            assert root.nbytes == inputs[name].nbytes
+            assert root.nbytes == batch["inputs"][name].nbytes
+
+
+@pytest.mark.parametrize("batch_size", [1, 7, 129, 512])
+def test_batches_own_contiguous_buffers_after_advancing_and_mutating_other_batches(
+    tmp_path, batch_size
+):
+    manifest = corpus(tmp_path, assets=3, rows=257, group_size=100)
+    observed = (
+        module()
+        .CorpusDataset(manifest)
+        .batches(partition="train", batch_size=batch_size, epoch=2, seed=43)
+    )
+    first = next(observed)
+    saved = {name: value.copy() for name, value in first["inputs"].items()}
+    second = next(observed)
+    for name, values in second["inputs"].items():
+        assert values.flags.c_contiguous and values.flags.owndata
+        assert not np.shares_memory(values, first["inputs"][name])
+        values.fill(-999)
+    last = second
+    for batch in observed:
+        last = batch
+    for name, values in first["inputs"].items():
+        np.testing.assert_array_equal(values, saved[name])
+        assert last["inputs"][name].flags.owndata
+
+
+def test_excluded_modalities_are_not_validated_as_admitted_samples(tmp_path):
+    manifest = corpus(tmp_path, assets=1, rows=9, group_size=9)
+    metadata = json.loads(manifest.read_text())
+    sample_path = tmp_path / "samples/US/A0000/samples.parquet"
+    samples = pq.read_table(sample_path).to_pylist()
+    samples[1]["news"] = [np.nan, np.inf]
+    pq.write_table(pa.Table.from_pylist(samples), sample_path, row_group_size=9)
+
+    def exclude(rows):
+        rows[1].update(reason="insufficient_history", partition=None, target=None)
+        for index, row in enumerate(rows):
+            if index != 1:
+                row["reason"] = "accepted"
+        return rows
+
+    change_labels(manifest, exclude)
+    metadata = json.loads(manifest.read_text())
+    metadata["counts"]["train"] = metadata["assets"][0]["counts"]["train"] = 8
+    metadata["assets"][0]["samples_sha256"] = sha256(sample_path)
+    manifest.write_text(json.dumps(metadata))
+    actual = list(batches(manifest))
+    assert sum(len(batch["target"]) for batch in actual) == 8
+    assert all(np.isfinite(batch["inputs"]["news"]).all() for batch in actual)
+
+
+def test_invalid_later_batch_does_not_reject_or_mutate_the_preceding_batch(tmp_path):
+    manifest = corpus(tmp_path, assets=1, rows=9, group_size=9)
+    metadata = json.loads(manifest.read_text())
+    for kind, folder in (("samples", "samples"), ("labels", "labels")):
+        path = tmp_path / folder / "US/A0000" / f"{kind}.parquet"
+        rows = pq.read_table(path).to_pylist()
+        for row in rows:
+            row["prediction_at"] = row["prediction_at"].replace(year=2023)
+            if kind == "labels":
+                row["partition"] = "validation"
+                row["target_available_at"] = row["target_available_at"].replace(year=2023)
+        if kind == "samples":
+            rows[5]["news"] = [np.nan, 2.0]
+        pq.write_table(pa.Table.from_pylist(rows), path, row_group_size=9)
+        metadata["assets"][0][kind + "_sha256"] = sha256(path)
+    metadata["counts"] = metadata["assets"][0]["counts"] = dict(train=0, validation=9)
+    manifest.write_text(json.dumps(metadata))
+    iterator = (
+        module()
+        .CorpusDataset(manifest)
+        .batches(partition="validation", batch_size=4, epoch=0, seed=42)
+    )
+    first = next(iterator)
+    np.testing.assert_array_equal(first["target"], [0, 0.01, 0.02, 0.03])
+    with pytest.raises(ValueError, match="finitos"):
+        next(iterator)
+    np.testing.assert_array_equal(first["inputs"]["news"][:, 0], [0, 1, 2, 3])
 
 
 def test_modified_manifest_or_cursor_cannot_silently_restart(tmp_path):
