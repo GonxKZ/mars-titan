@@ -7,10 +7,13 @@ import torch
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.evaluation.session_metrics import SessionErrors
+from mars_titan.models.klpo import behavior_log_probabilities, token_loss
 from mars_titan.models.predictive_adaptation import gaussian_log_probabilities
 
 
-def evaluate_predictive(model, dataset, batch_size, *, partition, destination=None, stop=None):
+def evaluate_predictive(
+    model, dataset, batch_size, *, partition, destination=None, stop=None, klpo=None
+):
     model.eval()
     grid = ActionGrid.from_dict(dataset.metadata["grid"])
     values = torch.tensor(grid.values, dtype=torch.float64, device="cuda:0")
@@ -25,6 +28,8 @@ def evaluate_predictive(model, dataset, batch_size, *, partition, destination=No
         centers_outside_grid=0,
         targets_outside_grid=0,
         near_one_hot=0,
+        behavior_kl_nats=0.0,
+        klpo_variance=0.0,
     )
 
     def tables():
@@ -41,6 +46,20 @@ def evaluate_predictive(model, dataset, batch_size, *, partition, destination=No
                 logp = gaussian_log_probabilities(centers_gpu, values, grid.scale)
                 p = logp.exp()
                 target_gpu = torch.as_tensor(batch["target"], dtype=torch.float64, device="cuda:0")
+                extra_columns = {}
+                if klpo is not None:
+                    logq = behavior_log_probabilities(
+                        parent, values, grid.scale, klpo["behavior_epsilon"]
+                    )
+                    divergence = (logq.exp() * (logq - logp)).sum(1)
+                    rewards = -(values[None, :] - target_gpu[:, None]).abs() / grid.scale
+                    variance, _ = token_loss(logp, logq, rewards, klpo["beta"], "klpo_exact")
+                    metrics = torch.stack((divergence, variance), dim=1).cpu().numpy()
+                    extra_columns = dict(
+                        behavior_kl_nats=metrics[:, 0], klpo_variance=metrics[:, 1]
+                    )
+                    for key, column in extra_columns.items():
+                        totals[key] += float(column.sum())
                 expected = (p * (values[None, :] - target_gpu[:, None]).abs()).sum(dim=1)
                 entropy = -(p * logp).sum(dim=1)
                 edge_mass = p[:, 0] + p[:, -1]
@@ -93,6 +112,7 @@ def evaluate_predictive(model, dataset, batch_size, *, partition, destination=No
                         extreme_action_mass=statistics[:, 3],
                         center_outside_grid=outside,
                         target_outside_grid=target_outside,
+                        **extra_columns,
                     )
                 )
 
@@ -120,4 +140,9 @@ def evaluate_predictive(model, dataset, batch_size, *, partition, destination=No
         near_one_hot_rate=totals["near_one_hot"] / count,
         calibrated_uncertainty=False,
     )
+    if klpo is not None:
+        result["policy"].update(
+            mean_behavior_kl_nats=totals["behavior_kl_nats"] / count,
+            mean_klpo_variance=totals["klpo_variance"] / count,
+        )
     return result

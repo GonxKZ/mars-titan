@@ -16,7 +16,12 @@ from mars_titan.budget_training import seed_run
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.models.predictive_adaptation import LinearResidualPolicy, objective
+from mars_titan.models.klpo import MODES, behavior_log_probabilities, token_loss
+from mars_titan.models.predictive_adaptation import (
+    LinearResidualPolicy,
+    gaussian_log_probabilities,
+    objective,
+)
 
 from .checkpoints import (
     StopRequest,
@@ -40,6 +45,7 @@ def _code():
             "training/predictive_parents.py",
             "training/checkpoints.py",
             "models/predictive_adaptation.py",
+            "models/klpo.py",
             "training/corpus_inputs.py",
             "environments/corpus_source.py",
             "environments/cohorts.py",
@@ -54,10 +60,12 @@ def _code():
 
 
 def _options(case, batch_size, checkpoint_steps, checkpoint_seconds):
+    extra = {"beta", "behavior_epsilon", "auxiliary_samples"}
+    base = {"mode", "epochs", "seed", "learning_rate", "weight_decay", "clip_norm"}
     if (
         not isinstance(case, dict)
-        or set(case) != {"mode", "epochs", "seed", "learning_rate", "weight_decay", "clip_norm"}
-        or case["mode"] not in {"reinforce", "expected", "mae"}
+        or set(case) != base | (extra if case.get("mode") in MODES else set())
+        or case["mode"] not in {"reinforce", "expected", "mae", *MODES}
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 30
         or type(case["seed"]) is not int
@@ -70,6 +78,17 @@ def _options(case, batch_size, checkpoint_steps, checkpoint_seconds):
         or not 0 < checkpoint_seconds <= 900
     ):
         raise ValueError("La configuración de adaptación no es válida")
+    if case["mode"] in MODES and (
+        type(case["beta"]) not in (int, float)
+        or not math.isfinite(case["beta"])
+        or case["beta"] <= 0
+        or type(case["behavior_epsilon"]) not in (int, float)
+        or not math.isfinite(case["behavior_epsilon"])
+        or not 0 < case["behavior_epsilon"] < 1
+        or type(case["auxiliary_samples"]) is not int
+        or not 1 <= case["auxiliary_samples"] <= 4096
+    ):
+        raise ValueError("La regularización o el muestreador de KLPO no son válidos")
     for name, allow_zero in (
         ("learning_rate", False),
         ("weight_decay", True),
@@ -210,6 +229,18 @@ def _setup_run(
             optimizer="AdamW",
             precision="parameters_float32_objective_float64_parent_float64",
         )
+        if case["mode"] in MODES:
+            identity["sampler"] = dict(
+                kind="frozen_parent_gaussian_uniform_mixture",
+                epsilon=case["behavior_epsilon"],
+                fixed_parent=True,
+                policy_initially_equals_sampler=False,
+                fresh_actions_each_visit=True,
+                fresh_independent_auxiliaries=True,
+                reward="negative_absolute_error_over_train_scale",
+                horizon_decisions=1,
+                upstream_commit="30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696",
+            )
         report = (
             read_manifest(output / "run.json")[0]
             if resume
@@ -248,6 +279,7 @@ def _setup_run(
             model.parameters(), lr=case["learning_rate"], weight_decay=case["weight_decay"]
         )
         generator = torch.Generator(device=device).manual_seed(case["seed"])
+        auxiliary_generator = torch.Generator(device=device).manual_seed(case["seed"] ^ 0x5DEECE66D)
         state = dict(
             global_step=0,
             epoch=0,
@@ -269,6 +301,7 @@ def _setup_run(
             optimizer.load_state_dict(state["optimizer"])
             restore_rng(state["rng"], "cuda:0")
             generator.set_state(state["sampling_rng"])
+            auxiliary_generator.set_state(state["auxiliary_rng"])
         report["trainable_parameters"] = sum(p.numel() for p in model.parameters())
         return _train(
             dataset,
@@ -281,6 +314,7 @@ def _setup_run(
             model,
             optimizer,
             generator,
+            auxiliary_generator,
             state,
             report,
         )
@@ -297,6 +331,7 @@ def _train(
     model,
     optimizer,
     generator,
+    auxiliary_generator,
     state,
     report,
 ):
@@ -315,6 +350,7 @@ def _train(
             optimizer=optimizer.state_dict(),
             rng=capture_rng("cuda:0"),
             sampling_rng=generator.get_state(),
+            auxiliary_rng=auxiliary_generator.get_state(),
         )
         path = save_training_state(output / "checkpoints", state, identity=identity, best=best)
         report.update(
@@ -348,9 +384,26 @@ def _train(
                 weights = torch.as_tensor(batch["weight"], dtype=torch.float64, device="cuda:0")
                 optimizer.zero_grad(set_to_none=True)
                 centers = model(features, parent)
-                losses, _ = objective(
-                    centers, targets, values, scale, case["mode"], generator=generator
-                )
+                if case["mode"] in MODES:
+                    logp = gaussian_log_probabilities(centers, values, scale)
+                    logq = behavior_log_probabilities(
+                        parent, values, scale, case["behavior_epsilon"]
+                    )
+                    rewards = -(values[None, :] - targets[:, None]).abs() / scale
+                    losses, _ = token_loss(
+                        logp,
+                        logq,
+                        rewards,
+                        case["beta"],
+                        case["mode"],
+                        generator=generator,
+                        auxiliary_generator=auxiliary_generator,
+                        auxiliary_samples=case["auxiliary_samples"],
+                    )
+                else:
+                    losses, _ = objective(
+                        centers, targets, values, scale, case["mode"], generator=generator
+                    )
                 (losses * weights).mean().backward()
                 torch.nn.utils.clip_grad_norm_(
                     model.parameters(), case["clip_norm"], error_if_nonfinite=True
@@ -376,7 +429,12 @@ def _train(
                 raise ValueError("La época no conserva todas las filas de entrenamiento")
             save()
             validation = evaluate_predictive(
-                model, dataset, batch_size, partition="validation", stop=stop
+                model,
+                dataset,
+                batch_size,
+                partition="validation",
+                stop=stop,
+                klpo=case if case["mode"] in MODES else None,
             )
             state["epochs"].append(
                 dict(
@@ -407,7 +465,13 @@ def _train(
         for partition in ("train", "validation"):
             path = output / f"{partition}-predictions.parquet"
             metrics = evaluate_predictive(
-                model, dataset, batch_size, partition=partition, destination=path, stop=stop
+                model,
+                dataset,
+                batch_size,
+                partition=partition,
+                destination=path,
+                stop=stop,
+                klpo=case if case["mode"] in MODES else None,
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
         if _code() != identity["code"]:

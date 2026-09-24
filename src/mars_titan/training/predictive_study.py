@@ -2,12 +2,14 @@
 
 import argparse
 import fcntl
+import math
 import os
 import time
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.models.klpo import MODES
 
 from .checkpoints import StopRequest
 from .predictive_inputs import PredictiveDataset, fit_standardizer
@@ -17,9 +19,12 @@ from .predictive_run import _code, _options, run_predictive_case
 
 def _configuration(path):
     config, digest = read_manifest(path, 64 * 1024)
+    klpo = config.get("schema_version") == 2
+    extra = {"betas", "behavior_epsilon", "auxiliary_samples"} if klpo else set()
     if (
         set(config)
-        != {
+        != extra
+        | {
             "schema_version",
             "modes",
             "seeds",
@@ -31,8 +36,9 @@ def _configuration(path):
             "checkpoint_seconds",
             "final_test_opened",
         }
-        or config["schema_version"] != 1
-        or config["modes"] != ["reinforce", "expected", "mae"]
+        or type(config["schema_version"]) is not int
+        or config["schema_version"] not in (1, 2)
+        or config["modes"] != ["reinforce", "expected", "mae"] + (list(MODES) if klpo else [])
         or not isinstance(config["seeds"], list)
         or not 1 <= len(config["seeds"]) <= 8
         or any(type(seed) is not int or not 0 <= seed < 2**32 for seed in config["seeds"])
@@ -40,6 +46,16 @@ def _configuration(path):
         or config["final_test_opened"] is not False
     ):
         raise ValueError("El diseño necesita los tres controles, semillas únicas y test cerrado")
+    if klpo and (
+        not isinstance(config["betas"], list)
+        or not 1 <= len(config["betas"]) <= 8
+        or any(
+            type(beta) not in (int, float) or not math.isfinite(beta) or beta <= 0
+            for beta in config["betas"]
+        )
+        or len(set(config["betas"])) != len(config["betas"])
+    ):
+        raise ValueError("Las intensidades de regularización deben ser positivas y únicas")
     cases = []
     for seed in config["seeds"]:
         for mode in config["modes"]:
@@ -51,8 +67,17 @@ def _configuration(path):
                     for key in ("epochs", "learning_rate", "weight_decay", "clip_norm")
                 },
             )
-            _options(case, config["batch_size"], 0, config["checkpoint_seconds"])
-            cases.append(dict(id=f"{mode}-s{seed}", case=case, path=f"runs/{mode}-s{seed}"))
+            for index, beta in enumerate(config["betas"] if mode in MODES else [None]):
+                configured = dict(case)
+                if beta is not None:
+                    configured.update(
+                        beta=beta,
+                        behavior_epsilon=config["behavior_epsilon"],
+                        auxiliary_samples=config["auxiliary_samples"],
+                    )
+                _options(configured, config["batch_size"], 0, config["checkpoint_seconds"])
+                name = f"{mode}-b{index}-s{seed}" if beta is not None else f"{mode}-s{seed}"
+                cases.append(dict(id=name, case=configured, path=f"runs/{name}"))
     return config, cases, digest
 
 
