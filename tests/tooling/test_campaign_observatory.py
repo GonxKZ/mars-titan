@@ -52,9 +52,23 @@ def test_counts_follow_existing_configurations():
 
 
 def test_incremental_collection_redacts_and_preserves_undated_epochs(tmp_path):
+    def numeric_values(value):
+        if isinstance(value, dict):
+            for child in value.values():
+                yield from numeric_values(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from numeric_values(child)
+        elif type(value) in (int, float):
+            yield value
+
     entry = source(tmp_path)
+    report_path = tmp_path / "private/campaign/runs/one/run.json"
+    report = json.loads(report_path.read_text())
+    report["updated_at_utc"] = "2026-01-01T00:00:00Z"
+    dump(report_path, report)
     with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
-        snapshot = collector.collect([entry])
+        snapshot = collector.collect([entry], now="2026-01-02T00:00:00.999999Z")
         assert collector.bytes_read > 0
         run = snapshot["runs"][0]
         assert run["metrics"]["mae"] == 0.1
@@ -62,7 +76,8 @@ def test_incremental_collection_redacts_and_preserves_undated_epochs(tmp_path):
         assert run["heartbeat_at"] is None
         assert run["metadata"]["train_rows"] == 30
         assert "private" not in json.dumps(snapshot)
-        assert "999" not in json.dumps(snapshot)
+        assert 999 not in numeric_values(snapshot)
+        assert "predictions" not in run
         collector.collect([entry])
         assert collector.bytes_read == 0
     with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as recovered:
