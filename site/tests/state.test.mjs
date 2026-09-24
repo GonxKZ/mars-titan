@@ -60,10 +60,23 @@ test("preserva la diferencia entre una medida cero y una medida desconocida", ()
 });
 
 test("rechaza versiones, estados y fechas sin UTC válidos", () => {
-  assert.throws(() => validateSnapshot({ ...snapshot(), schema_version: 2 }), /versión|version/i);
+  assert.throws(() => validateSnapshot({ ...snapshot(), schema_version: 3 }), /versión|version/i);
   assert.throws(() => validateSnapshot(snapshot([run({ status: "active" })])), /status/);
   assert.throws(() => validateSnapshot(snapshot([run({ phase: "inference" })])), /phase/);
   assert.throws(() => validateSnapshot({ ...snapshot(), generated_at: "2026-09-18" }), /generated_at/);
+});
+
+test("el registro paginado conserva épocas sin inventar horas y rechaza rutas externas", () => {
+  const input = { ...snapshot([run({ history: [{step: 1, recorded_at: null, loss: null, mae: .1}],
+    metadata: {campaign: "original", domain: "real", method: "initial_training", history_axis: "epoch",
+      train_rows: 100, validation_rows: 20, configuration_sha256: "a".repeat(64),
+      source_sha256: "b".repeat(64), parent: null, error_type: null, progress_time_source: "receipt_mtime"}})]),
+    schema_version: 2, campaigns: [], pagination: { total_runs: 129, page_size: 1, pages: ["pages/" + "a".repeat(64) + ".json"] }};
+  const output = validateSnapshot(input);
+  assert.equal(output.runs[0].history[0].recorded_at, null);
+  assert.equal(output.runs[0].metadata.train_rows, 100);
+  assert.equal(output.pagination.total_runs, 129);
+  assert.throws(() => validateSnapshot({...input, pagination: {...input.pagination, pages: ["https://example.org/private"]}}));
 });
 
 test("un estado o fase desconocidos permanecen desconocidos", () => {

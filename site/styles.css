@@ -309,3 +309,8 @@ td.numeric, th.numeric { text-align: right; white-space: nowrap; }
   a { color: var(--ink); }
   .notice-error { border-color: var(--ink); color: var(--ink); }
 }
+/* La navegación conserva su espacio al cambiar de página. */
+.history-pages { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.history-pages[hidden] { display: none; }
+.history-pages p { flex-basis: 100%; margin: 0; }
+#campaign-summary summary { cursor: pointer; }

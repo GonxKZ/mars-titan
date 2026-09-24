@@ -1,0 +1,330 @@
+{
+  "tool": "coverage.py 7.16.1 (ramas) y radon 6.0.1 (complejidad ciclomática)",
+  "convention": "CRAP = CC² × (1 − cobertura de líneas de la función)³ + CC. Diagnóstico, no prueba de corrección.",
+  "totals": {
+    "covered_lines": 352,
+    "num_statements": 393,
+    "percent_covered": 85.42805100182149,
+    "percent_covered_display": "85",
+    "missing_lines": 41,
+    "excluded_lines": 0,
+    "percent_statements_covered": 89.56743002544529,
+    "percent_statements_covered_display": "90",
+    "num_branches": 156,
+    "num_partial_branches": 35,
+    "covered_branches": 117,
+    "missing_branches": 39,
+    "percent_branches_covered": 75.0,
+    "percent_branches_covered_display": "75"
+  },
+  "functions": [
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "digest",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "identifier",
+      "complexity": 3,
+      "line_coverage": 0.75,
+      "crap": 3.140625
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "finite",
+      "complexity": 4,
+      "line_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "utc",
+      "complexity": 3,
+      "line_coverage": 0.8571428571428571,
+      "crap": 3.0262390670553936
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "planned_runs",
+      "complexity": 8,
+      "line_coverage": 0.9,
+      "crap": 8.064
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "safe_path",
+      "complexity": 5,
+      "line_coverage": 0.9,
+      "crap": 5.025
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "lock_held",
+      "complexity": 5,
+      "line_coverage": 0.9333333333333333,
+      "crap": 5.007407407407407
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "public_run",
+      "complexity": 40,
+      "line_coverage": 0.8571428571428571,
+      "crap": 44.66472303206997
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "validation_metrics",
+      "complexity": 15,
+      "line_coverage": 0.9473684210526315,
+      "crap": 15.032803615687419
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "validate_record",
+      "complexity": 21,
+      "line_coverage": 0.782608695652174,
+      "crap": 25.530697789101666
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "write_pages",
+      "complexity": 10,
+      "line_coverage": 0.9473684210526315,
+      "crap": 10.014579384749963
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.read",
+      "complexity": 11,
+      "line_coverage": 0.8928571428571429,
+      "crap": 11.14882470845481
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.collect",
+      "complexity": 29,
+      "line_coverage": 0.8297872340425532,
+      "crap": 33.14736619053582
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector._campaign",
+      "complexity": 18,
+      "line_coverage": 0.9655172413793104,
+      "crap": 18.013284677518552
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.read",
+      "complexity": 11,
+      "line_coverage": 0.8928571428571429,
+      "crap": 11.14882470845481
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector.collect",
+      "complexity": 29,
+      "line_coverage": 0.8297872340425532,
+      "crap": 33.14736619053582
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "Collector._campaign",
+      "complexity": 18,
+      "line_coverage": 0.9655172413793104,
+      "crap": 18.013284677518552
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "publication_identity",
+      "complexity": 5,
+      "line_coverage": 1.0,
+      "crap": 5.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationSchedule.due",
+      "complexity": 4,
+      "line_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationSchedule.succeeded",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationSchedule.failed",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationSchedule.due",
+      "complexity": 4,
+      "line_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationSchedule.succeeded",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationSchedule.failed",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.__init__",
+      "complexity": 4,
+      "line_coverage": 0.875,
+      "crap": 4.03125
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.allowed",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.git",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.publish",
+      "complexity": 14,
+      "line_coverage": 0.7931034482758621,
+      "crap": 15.735864529090984
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.__init__",
+      "complexity": 4,
+      "line_coverage": 0.875,
+      "crap": 4.03125
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.allowed",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.git",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "GitPublisher.publish",
+      "complexity": 14,
+      "line_coverage": 0.7931034482758621,
+      "crap": 15.735864529090984
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationWorker.__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationWorker.tick",
+      "complexity": 7,
+      "line_coverage": 0.8125,
+      "crap": 7.322998046875
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationWorker.close",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationWorker.__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationWorker.tick",
+      "complexity": 7,
+      "line_coverage": 0.8125,
+      "crap": 7.322998046875
+    },
+    {
+      "file": "src/mars_titan/observatory/publication.py",
+      "name": "PublicationWorker.close",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    }
+  ]
+}
