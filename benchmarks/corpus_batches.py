@@ -204,13 +204,52 @@ def measure(manifest, *, batch_size, revision):
     )
 
 
+def profile_reader(manifest, *, batch_size, revision):
+    """Perfilar otra pasada con reloj de CPU, sin mezclarla con el tiempo sin instrumentar."""
+    import cProfile
+    import pstats
+
+    implementation, code_hash = reader(revision)
+    dataset = implementation(manifest)
+    traverse(dataset, batch_size, fingerprint=False)
+    profiler = cProfile.Profile(timer=time.process_time)
+    profiler.enable()
+    volume = traverse(dataset, batch_size, fingerprint=False)
+    profiler.disable()
+    statistics = pstats.Stats(profiler)
+    functions = []
+    for (filename, line, name), (_, calls, own, cumulative, _) in sorted(
+        statistics.stats.items(), key=lambda item: item[1][3], reverse=True
+    )[:25]:
+        functions.append(
+            dict(
+                file=Path(filename).name,
+                line=line,
+                function=name,
+                calls=calls,
+                self_seconds=own,
+                cumulative_seconds=cumulative,
+            )
+        )
+    return dict(
+        rows=volume["rows"],
+        batches=volume["batches"],
+        code_sha256=code_hash,
+        source_sha256=dataset.identity,
+        profiled_process_seconds=statistics.total_tt,
+        timer="cProfile_process_time",
+        functions=functions,
+    )
+
+
 def benchmark(output, reference, repetitions, baseline_only=False):
     if not 2 <= repetitions <= 10:
         raise ValueError("La comparación necesita entre dos y diez repeticiones")
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
     revision = subprocess.check_output(["git", "rev-parse", reference], text=True).strip()
-    measurements = []
+    measurements, workloads = [], []
+    load_before = list(os.getloadavg())
     environment = {
         **os.environ,
         "CUDA_VISIBLE_DEVICES": "",
@@ -221,6 +260,29 @@ def benchmark(output, reference, repetitions, baseline_only=False):
     for name, (assets, rows, groups, stride) in CASES.items():
         manifest = prepare_corpus(
             output / name, assets=assets, rows=rows, group_rows=groups, stride=stride
+        )
+        metadata = json.loads(manifest.read_text())
+        source_bytes = sum(
+            (Path(metadata["roots"][root]) / asset["market"] / asset["symbol"] / filename)
+            .stat()
+            .st_size
+            for asset in metadata["assets"]
+            for root, filename in (
+                ("prepared", "prices.parquet"),
+                ("samples", "samples.parquet"),
+                ("labels", "labels.parquet"),
+            )
+        )
+        workloads.append(
+            dict(
+                case=name,
+                assets=assets,
+                source_rows=assets * rows,
+                admitted_rows=metadata["counts"]["train"],
+                group_rows=groups,
+                accepted_stride=stride,
+                source_parquet_bytes=source_bytes,
+            )
         )
         for batch_size in (32, 512):
             expected = None
@@ -295,11 +357,23 @@ def benchmark(output, reference, repetitions, baseline_only=False):
         numpy=np.__version__,
         pyarrow=pa.__version__,
         platform=platform.platform(),
+        cpu=next(
+            line.split(":", 1)[1].strip()
+            for line in Path("/proc/cpuinfo").read_text().splitlines()
+            if line.startswith("model name")
+        ),
         logical_cpus=os.cpu_count(),
+        load_average_before=load_before,
+        load_average_after=list(os.getloadavg()),
+        workloads=workloads,
         shapes={**DIMENSIONS, "prices": [64, 5]},
         repetitions=repetitions,
         warmup_full_passes=1,
         numerical_threads=1,
+        peak_vram_bytes=None,
+        cpu_gpu_transfer_bytes=None,
+        energy_joules=None,
+        monetary_cost=None,
         final_test_opened=False,
         summary=summary,
         measurements=measurements,
@@ -324,9 +398,13 @@ def main():
     parser.add_argument("--baseline-only", action="store_true")
     parser.add_argument("--worker", type=Path)
     parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--profile", action="store_true")
     args = parser.parse_args()
     if args.worker:
-        print(json.dumps(measure(args.worker, batch_size=args.batch_size, revision=args.reference)))
+        operation = profile_reader if args.profile else measure
+        print(
+            json.dumps(operation(args.worker, batch_size=args.batch_size, revision=args.reference))
+        )
     elif args.output:
         result = benchmark(args.output, args.reference, args.repetitions, args.baseline_only)
         print(json.dumps(result["summary"], indent=2))

@@ -208,8 +208,17 @@ def test_dataset_identity_binds_the_same_manifest_bytes_it_parses(tmp_path, monk
     assert dataset.identity == original(manifest)
 
 
-def test_sparse_accepted_rows_do_not_retain_entire_parquet_groups(tmp_path):
-    manifest = corpus(tmp_path, assets=1, rows=300, group_size=100)
+def test_sparse_accepted_rows_do_not_retain_entire_parquet_groups(tmp_path, monkeypatch):
+    import gc
+
+    manifest = corpus(tmp_path, assets=1, rows=1200, group_size=100)
+    sample_path = tmp_path / "samples/US/A0000/samples.parquet"
+    original = pq.read_table(sample_path)
+    columns = {name: original[name] for name in ("prediction_at", "price_end_index")}
+    for name, width in dict(news=384, charts=512, fundamentals=45, macro=420).items():
+        values = np.ones((1200, width), dtype=np.float32)
+        columns[name] = pa.FixedSizeListArray.from_arrays(pa.array(values.reshape(-1)), width)
+    pq.write_table(pa.table(columns), sample_path, row_group_size=100)
     label_path = tmp_path / "labels/US/A0000/labels.parquet"
     rows = pq.read_table(label_path).to_pylist()
     for i, row in enumerate(rows):
@@ -218,13 +227,27 @@ def test_sparse_accepted_rows_do_not_retain_entire_parquet_groups(tmp_path):
             row.update(partition=None, target=None)
     pq.write_table(pa.Table.from_pylist(rows), label_path)
     metadata = json.loads(manifest.read_text())
-    metadata["counts"]["train"] = 3
-    metadata["assets"][0]["counts"]["train"] = 3
+    metadata["counts"]["train"] = 12
+    metadata["assets"][0]["counts"]["train"] = 12
+    metadata["assets"][0]["samples_sha256"] = sha256(sample_path)
     metadata["assets"][0]["labels_sha256"] = sha256(label_path)
     manifest.write_text(json.dumps(metadata))
+    gc.collect()
+    initial_bytes, allocations, group_bytes = pa.total_allocated_bytes(), [], []
+    read_group = pq.ParquetFile.read_row_group
+
+    def observed_read(file, *args, **kwargs):
+        table = read_group(file, *args, **kwargs)
+        if {"news", "charts", "fundamentals", "macro"} <= set(table.column_names):
+            allocations.append(pa.total_allocated_bytes() - initial_bytes)
+            group_bytes.append(table.nbytes)
+        return table
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_group", observed_read)
     dataset = module().CorpusDataset(manifest)
-    observed = list(dataset.batches(partition="train", batch_size=2, epoch=0, seed=42))
-    assert sum(len(batch["target"]) for batch in observed) == 3
+    observed = list(dataset.batches(partition="train", batch_size=32, epoch=0, seed=42))
+    assert sum(len(batch["target"]) for batch in observed) == 12
+    assert allocations and max(allocations) <= 4 * max(group_bytes) + 256 * 1024
     for batch in observed:
         for name in ("news", "charts", "fundamentals", "macro"):
             root = batch["inputs"][name]

@@ -1,0 +1,2570 @@
+{
+  "measured_at": "2026-09-24T11:20:11.524726+00:00",
+  "reference_revision": "4f1ae0fae2c48b3cad89b7bd776e366bc10dfe18",
+  "benchmark_sha256": "5147397fbe13f94139a7a427e4b2842cefd250d6642005aaf72018e831748e55",
+  "timer": "cProfile_process_time",
+  "warmup_full_passes": 1,
+  "profiles": [
+    {
+      "rows": 256,
+      "batches": 8,
+      "code_sha256": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+      "source_sha256": "4fbf09612886bd56e2b50f3102eedd9ce9484cd0efd5edf988fe1717d65d4eff",
+      "profiled_process_seconds": 0.06955759399999997,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 8.3167e-05,
+          "cumulative_seconds": 0.06954433900000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 387,
+          "function": "batches",
+          "calls": 9,
+          "self_seconds": 0.000992127,
+          "cumulative_seconds": 0.069448509
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_rows",
+          "calls": 257,
+          "self_seconds": 0.007312196000000001,
+          "cumulative_seconds": 0.064172512
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 24,
+          "self_seconds": 0.000459745,
+          "cumulative_seconds": 0.018205583
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 272,
+          "self_seconds": 0.001369117,
+          "cumulative_seconds": 0.008763516
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 24,
+          "self_seconds": 0.00010296,
+          "cumulative_seconds": 0.007451071
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 364,
+          "function": "<genexpr>",
+          "calls": 1280,
+          "self_seconds": 0.0024174350000000003,
+          "cumulative_seconds": 0.007138846000000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 4,
+          "self_seconds": 0.0007411910000000001,
+          "cumulative_seconds": 0.006885411
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 24,
+          "self_seconds": 9.7489e-05,
+          "cumulative_seconds": 0.0057022470000000006
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 1112,
+          "self_seconds": 0.0019532020000000002,
+          "cumulative_seconds": 0.00520886
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 24,
+          "self_seconds": 0.001162161,
+          "cumulative_seconds": 0.005202194
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 16,
+          "self_seconds": 0.004963351,
+          "cumulative_seconds": 0.005190499
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 24,
+          "self_seconds": 0.00014363600000000002,
+          "cumulative_seconds": 0.005126418000000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 16,
+          "self_seconds": 0.002087555,
+          "cumulative_seconds": 0.004305251
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 301,
+          "self_seconds": 0.000564398,
+          "cumulative_seconds": 0.00393899
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 434,
+          "function": "_batch",
+          "calls": 8,
+          "self_seconds": 0.000556205,
+          "cumulative_seconds": 0.003807201
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 96,
+          "self_seconds": 0.00016748700000000002,
+          "cumulative_seconds": 0.0036382180000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 96,
+          "self_seconds": 0.00046869,
+          "cumulative_seconds": 0.0034707310000000003
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 8,
+          "self_seconds": 0.002044455,
+          "cumulative_seconds": 0.0033644350000000003
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 24,
+          "self_seconds": 0.00020612,
+          "cumulative_seconds": 0.003307094
+        },
+        {
+          "file": "_methods.py",
+          "line": 64,
+          "function": "_all",
+          "calls": 1112,
+          "self_seconds": 0.0018369640000000002,
+          "cumulative_seconds": 0.0032556580000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 157,
+          "self_seconds": 0.000277492,
+          "cumulative_seconds": 0.003152532
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 96,
+          "self_seconds": 0.000190003,
+          "cumulative_seconds": 0.003078003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 192,
+          "self_seconds": 0.000539257,
+          "cumulative_seconds": 0.0030201990000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 312,
+          "self_seconds": 0.001474643,
+          "cumulative_seconds": 0.0030094730000000004
+        }
+      ],
+      "case": "small",
+      "batch_size": 32,
+      "mode": "reference"
+    },
+    {
+      "rows": 256,
+      "batches": 8,
+      "code_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+      "source_sha256": "4fbf09612886bd56e2b50f3102eedd9ce9484cd0efd5edf988fe1717d65d4eff",
+      "profiled_process_seconds": 0.050501797,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 7.555100000000001e-05,
+          "cumulative_seconds": 0.050483133000000006
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 375,
+          "function": "batches",
+          "calls": 9,
+          "self_seconds": 0.00028599500000000004,
+          "cumulative_seconds": 0.050396972000000005
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_blocks",
+          "calls": 17,
+          "self_seconds": 0.003872495,
+          "cumulative_seconds": 0.047204148
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 24,
+          "self_seconds": 0.00045482700000000004,
+          "cumulative_seconds": 0.018209447
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 24,
+          "self_seconds": 0.000101556,
+          "cumulative_seconds": 0.007448713
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 4,
+          "self_seconds": 0.000769797,
+          "cumulative_seconds": 0.006783832
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 24,
+          "self_seconds": 9.6489e-05,
+          "cumulative_seconds": 0.005663816
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 24,
+          "self_seconds": 0.001151906,
+          "cumulative_seconds": 0.005172162
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 24,
+          "self_seconds": 0.00013877800000000002,
+          "cumulative_seconds": 0.00511551
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 16,
+          "self_seconds": 0.004742833,
+          "cumulative_seconds": 0.0049649690000000005
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 16,
+          "self_seconds": 0.002042428,
+          "cumulative_seconds": 0.004358211
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 301,
+          "self_seconds": 0.0005566480000000001,
+          "cumulative_seconds": 0.003956531
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 96,
+          "self_seconds": 0.000169776,
+          "cumulative_seconds": 0.0036669700000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 96,
+          "self_seconds": 0.000469651,
+          "cumulative_seconds": 0.0034971940000000003
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 8,
+          "self_seconds": 0.001995874,
+          "cumulative_seconds": 0.003325343
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 24,
+          "self_seconds": 0.00020577600000000002,
+          "cumulative_seconds": 0.0032972780000000003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 157,
+          "self_seconds": 0.000276753,
+          "cumulative_seconds": 0.00317796
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 96,
+          "self_seconds": 0.000197867,
+          "cumulative_seconds": 0.0031016470000000003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 192,
+          "self_seconds": 0.000545298,
+          "cumulative_seconds": 0.0030256460000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 312,
+          "self_seconds": 0.001460644,
+          "cumulative_seconds": 0.002996725
+        },
+        {
+          "file": "pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 72,
+          "self_seconds": 0.000305328,
+          "cumulative_seconds": 0.0029037800000000003
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1022,
+          "function": "__iter__",
+          "calls": 96,
+          "self_seconds": 0.00016246700000000002,
+          "cumulative_seconds": 0.0025194220000000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 459,
+          "function": "_fill_batch",
+          "calls": 16,
+          "self_seconds": 0.00060618,
+          "cumulative_seconds": 0.002416197
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 16,
+          "self_seconds": 0.001376391,
+          "cumulative_seconds": 0.002407553
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 30,
+          "function": "_times",
+          "calls": 108,
+          "self_seconds": 0.0009057980000000001,
+          "cumulative_seconds": 0.0023783510000000003
+        }
+      ],
+      "case": "small",
+      "batch_size": 32,
+      "mode": "candidate"
+    },
+    {
+      "rows": 256,
+      "batches": 1,
+      "code_sha256": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+      "source_sha256": "4fbf09612886bd56e2b50f3102eedd9ce9484cd0efd5edf988fe1717d65d4eff",
+      "profiled_process_seconds": 0.067441032,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.00016767300000000002,
+          "cumulative_seconds": 0.067426945
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 387,
+          "function": "batches",
+          "calls": 2,
+          "self_seconds": 0.000803064,
+          "cumulative_seconds": 0.06725337
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_rows",
+          "calls": 257,
+          "self_seconds": 0.0071144630000000006,
+          "cumulative_seconds": 0.062762548
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 24,
+          "self_seconds": 0.00045766700000000003,
+          "cumulative_seconds": 0.018117685
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 272,
+          "self_seconds": 0.001319717,
+          "cumulative_seconds": 0.008360611
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 24,
+          "self_seconds": 0.000100259,
+          "cumulative_seconds": 0.0074026790000000006
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 4,
+          "self_seconds": 0.000774183,
+          "cumulative_seconds": 0.006812584
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 364,
+          "function": "<genexpr>",
+          "calls": 1280,
+          "self_seconds": 0.0023252850000000003,
+          "cumulative_seconds": 0.00680753
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 24,
+          "self_seconds": 9.665e-05,
+          "cumulative_seconds": 0.005660388000000001
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 24,
+          "self_seconds": 0.001148233,
+          "cumulative_seconds": 0.005171511
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 24,
+          "self_seconds": 0.000138987,
+          "cumulative_seconds": 0.005083069
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 1112,
+          "self_seconds": 0.0018582840000000002,
+          "cumulative_seconds": 0.00497133
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 16,
+          "self_seconds": 0.004659363000000001,
+          "cumulative_seconds": 0.004879475
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 16,
+          "self_seconds": 0.0020273590000000003,
+          "cumulative_seconds": 0.004189927
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 301,
+          "self_seconds": 0.000562863,
+          "cumulative_seconds": 0.003941841000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 96,
+          "self_seconds": 0.00016479800000000002,
+          "cumulative_seconds": 0.00363188
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 96,
+          "self_seconds": 0.00047041400000000005,
+          "cumulative_seconds": 0.0034670820000000002
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 8,
+          "self_seconds": 0.002061217,
+          "cumulative_seconds": 0.003396783
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 24,
+          "self_seconds": 0.000207554,
+          "cumulative_seconds": 0.0032694630000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 434,
+          "function": "_batch",
+          "calls": 1,
+          "self_seconds": 0.000391715,
+          "cumulative_seconds": 0.003200056
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 157,
+          "self_seconds": 0.000276662,
+          "cumulative_seconds": 0.0031460950000000002
+        },
+        {
+          "file": "_methods.py",
+          "line": 64,
+          "function": "_all",
+          "calls": 1112,
+          "self_seconds": 0.001738781,
+          "cumulative_seconds": 0.0031130460000000004
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 96,
+          "self_seconds": 0.00019057700000000002,
+          "cumulative_seconds": 0.003080609
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 312,
+          "self_seconds": 0.0014822930000000002,
+          "cumulative_seconds": 0.0030170120000000003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 192,
+          "self_seconds": 0.0005334480000000001,
+          "cumulative_seconds": 0.0029972500000000003
+        }
+      ],
+      "case": "small",
+      "batch_size": 512,
+      "mode": "reference"
+    },
+    {
+      "rows": 256,
+      "batches": 1,
+      "code_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+      "source_sha256": "4fbf09612886bd56e2b50f3102eedd9ce9484cd0efd5edf988fe1717d65d4eff",
+      "profiled_process_seconds": 0.053303910000000024,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 2.2852e-05,
+          "cumulative_seconds": 0.05328792
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 375,
+          "function": "batches",
+          "calls": 2,
+          "self_seconds": 0.00034504200000000005,
+          "cumulative_seconds": 0.053259066
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_blocks",
+          "calls": 17,
+          "self_seconds": 0.004231394,
+          "cumulative_seconds": 0.049821646000000004
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 24,
+          "self_seconds": 0.00047219700000000005,
+          "cumulative_seconds": 0.018447579000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 24,
+          "self_seconds": 0.00010377200000000001,
+          "cumulative_seconds": 0.007512033
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 4,
+          "self_seconds": 0.000883615,
+          "cumulative_seconds": 0.007354739000000001
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 24,
+          "self_seconds": 0.00010031100000000001,
+          "cumulative_seconds": 0.005723761
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 24,
+          "self_seconds": 0.0011608780000000002,
+          "cumulative_seconds": 0.005224134
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 24,
+          "self_seconds": 0.00014353100000000002,
+          "cumulative_seconds": 0.005135125
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 16,
+          "self_seconds": 0.004725586,
+          "cumulative_seconds": 0.004942220000000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 16,
+          "self_seconds": 0.002172317,
+          "cumulative_seconds": 0.004430678
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 301,
+          "self_seconds": 0.0005720590000000001,
+          "cumulative_seconds": 0.003983376
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 8,
+          "self_seconds": 0.002379023,
+          "cumulative_seconds": 0.003958906
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 96,
+          "self_seconds": 0.000166335,
+          "cumulative_seconds": 0.003730179
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 96,
+          "self_seconds": 0.00050363,
+          "cumulative_seconds": 0.003563844
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 24,
+          "self_seconds": 0.00021035200000000002,
+          "cumulative_seconds": 0.0033143400000000003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 157,
+          "self_seconds": 0.000280914,
+          "cumulative_seconds": 0.0032108170000000004
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 96,
+          "self_seconds": 0.00019082200000000002,
+          "cumulative_seconds": 0.003108219
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 312,
+          "self_seconds": 0.001494911,
+          "cumulative_seconds": 0.003046505
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 192,
+          "self_seconds": 0.000560996,
+          "cumulative_seconds": 0.0030214340000000004
+        },
+        {
+          "file": "pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 72,
+          "self_seconds": 0.00030465900000000004,
+          "cumulative_seconds": 0.0029173970000000004
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 459,
+          "function": "_fill_batch",
+          "calls": 16,
+          "self_seconds": 0.00073643,
+          "cumulative_seconds": 0.0028306250000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 16,
+          "self_seconds": 0.001654798,
+          "cumulative_seconds": 0.0027954200000000003
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1022,
+          "function": "__iter__",
+          "calls": 96,
+          "self_seconds": 0.00017093500000000002,
+          "cumulative_seconds": 0.0025281630000000004
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 30,
+          "function": "_times",
+          "calls": 108,
+          "self_seconds": 0.0009306890000000001,
+          "cumulative_seconds": 0.002452568
+        }
+      ],
+      "case": "small",
+      "batch_size": 512,
+      "mode": "candidate"
+    },
+    {
+      "rows": 16384,
+      "batches": 512,
+      "code_sha256": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+      "source_sha256": "e1ff1a9cf1f18ffc52e2f0cb39c3adc7f88346149de7fe4871f11fdade637c1d",
+      "profiled_process_seconds": 1.70079977,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.003059651,
+          "cumulative_seconds": 1.7007853430000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 387,
+          "function": "batches",
+          "calls": 513,
+          "self_seconds": 0.050721647,
+          "cumulative_seconds": 1.6972788300000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_rows",
+          "calls": 16385,
+          "self_seconds": 0.234367138,
+          "cumulative_seconds": 1.3891887580000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 16448,
+          "self_seconds": 0.07799014900000001,
+          "cumulative_seconds": 0.5113526230000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 364,
+          "function": "<genexpr>",
+          "calls": 81920,
+          "self_seconds": 0.14654872800000002,
+          "cumulative_seconds": 0.43206141400000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 65888,
+          "self_seconds": 0.10862864900000001,
+          "cumulative_seconds": 0.28782392900000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 434,
+          "function": "_batch",
+          "calls": 512,
+          "self_seconds": 0.032014393,
+          "cumulative_seconds": 0.23078072100000002
+        },
+        {
+          "file": "_methods.py",
+          "line": 64,
+          "function": "_all",
+          "calls": 65888,
+          "self_seconds": 0.10193289400000001,
+          "cumulative_seconds": 0.17919528
+        },
+        {
+          "file": "shape_base.py",
+          "line": 378,
+          "function": "stack",
+          "calls": 2560,
+          "self_seconds": 0.10042208200000001,
+          "cumulative_seconds": 0.164660953
+        },
+        {
+          "file": "numerictypes.py",
+          "line": 418,
+          "function": "issubdtype",
+          "calls": 16384,
+          "self_seconds": 0.055119510000000004,
+          "cumulative_seconds": 0.146417933
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.130406017,
+          "cumulative_seconds": 0.13137495600000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'copy' of 'numpy.ndarray' objects>",
+          "calls": 81920,
+          "self_seconds": 0.10798139500000001,
+          "cumulative_seconds": 0.10798139500000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+          "calls": 66304,
+          "self_seconds": 0.079158119,
+          "cumulative_seconds": 0.079158119
+        },
+        {
+          "file": "numerictypes.py",
+          "line": 230,
+          "function": "issubclass_",
+          "calls": 32768,
+          "self_seconds": 0.051826185000000004,
+          "cumulative_seconds": 0.079047633
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.001863056,
+          "cumulative_seconds": 0.073055652
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method numpy.asanyarray>",
+          "calls": 82176,
+          "self_seconds": 0.057962475000000006,
+          "cumulative_seconds": 0.057962475000000006
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 64,
+          "self_seconds": 0.038050031000000005,
+          "cumulative_seconds": 0.043869914
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.005880697000000001,
+          "cumulative_seconds": 0.042645561000000005
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.issubclass>",
+          "calls": 49280,
+          "self_seconds": 0.039603432,
+          "cumulative_seconds": 0.039603432
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 40066,
+          "self_seconds": 0.032817504000000004,
+          "cumulative_seconds": 0.033694470000000004
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000412211,
+          "cumulative_seconds": 0.029896642
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.020567583,
+          "cumulative_seconds": 0.026669005000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.000386458,
+          "cumulative_seconds": 0.022864839
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004643573000000001,
+          "cumulative_seconds": 0.020867171
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.0005536800000000001,
+          "cumulative_seconds": 0.020432142
+        }
+      ],
+      "case": "dense",
+      "batch_size": 32,
+      "mode": "reference"
+    },
+    {
+      "rows": 16384,
+      "batches": 512,
+      "code_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+      "source_sha256": "e1ff1a9cf1f18ffc52e2f0cb39c3adc7f88346149de7fe4871f11fdade637c1d",
+      "profiled_process_seconds": 0.509225617,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.002523543,
+          "cumulative_seconds": 0.5092085550000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 375,
+          "function": "batches",
+          "calls": 513,
+          "self_seconds": 0.004976334000000001,
+          "cumulative_seconds": 0.506229029
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_blocks",
+          "calls": 65,
+          "self_seconds": 0.026848798,
+          "cumulative_seconds": 0.38375856700000005
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.134040839,
+          "cumulative_seconds": 0.134992379
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 459,
+          "function": "_fill_batch",
+          "calls": 512,
+          "self_seconds": 0.019087341,
+          "cumulative_seconds": 0.095273354
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.0019271520000000001,
+          "cumulative_seconds": 0.07493094800000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.0057025420000000005,
+          "cumulative_seconds": 0.043995218
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 64,
+          "self_seconds": 0.037675456,
+          "cumulative_seconds": 0.043297593
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'extend' of 'list' objects>",
+          "calls": 1856,
+          "self_seconds": 0.015758412,
+          "cumulative_seconds": 0.033468807
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000423714,
+          "cumulative_seconds": 0.030452802
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.022296424000000002,
+          "cumulative_seconds": 0.028470649
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.00039299900000000005,
+          "cumulative_seconds": 0.023274112000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004723614,
+          "cumulative_seconds": 0.021262660000000003
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.000569156,
+          "cumulative_seconds": 0.020915168
+        },
+        {
+          "file": "fromnumeric.py",
+          "line": 106,
+          "function": "take",
+          "calls": 2048,
+          "self_seconds": 0.003842063,
+          "cumulative_seconds": 0.020701719
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 440,
+          "function": "_new_batch",
+          "calls": 512,
+          "self_seconds": 0.007366125,
+          "cumulative_seconds": 0.019786105000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 64,
+          "self_seconds": 0.01023771,
+          "cumulative_seconds": 0.019557598000000002
+        },
+        {
+          "file": "fromnumeric.py",
+          "line": 48,
+          "function": "_wrapfunc",
+          "calls": 2176,
+          "self_seconds": 0.005739279000000001,
+          "cumulative_seconds": 0.01810045
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 480,
+          "function": "<genexpr>",
+          "calls": 16896,
+          "self_seconds": 0.017710395,
+          "cumulative_seconds": 0.017710395
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 1201,
+          "self_seconds": 0.002332812,
+          "cumulative_seconds": 0.016270483000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 384,
+          "self_seconds": 0.00068336,
+          "cumulative_seconds": 0.015154844
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 2912,
+          "self_seconds": 0.005379499,
+          "cumulative_seconds": 0.014655232
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 384,
+          "self_seconds": 0.0020025,
+          "cumulative_seconds": 0.014471484000000001
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 96,
+          "self_seconds": 0.0008492290000000001,
+          "cumulative_seconds": 0.013497513000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 625,
+          "self_seconds": 0.001145654,
+          "cumulative_seconds": 0.013078510000000002
+        }
+      ],
+      "case": "dense",
+      "batch_size": 32,
+      "mode": "candidate"
+    },
+    {
+      "rows": 16384,
+      "batches": 32,
+      "code_sha256": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+      "source_sha256": "e1ff1a9cf1f18ffc52e2f0cb39c3adc7f88346149de7fe4871f11fdade637c1d",
+      "profiled_process_seconds": 1.7023501000000005,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.00066757,
+          "cumulative_seconds": 1.702333759
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 387,
+          "function": "batches",
+          "calls": 33,
+          "self_seconds": 0.055647141000000004,
+          "cumulative_seconds": 1.7016254320000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_rows",
+          "calls": 16385,
+          "self_seconds": 0.238874983,
+          "cumulative_seconds": 1.4143622530000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 16448,
+          "self_seconds": 0.077584464,
+          "cumulative_seconds": 0.511974367
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 364,
+          "function": "<genexpr>",
+          "calls": 81920,
+          "self_seconds": 0.145638775,
+          "cumulative_seconds": 0.433111152
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 65888,
+          "self_seconds": 0.109442829,
+          "cumulative_seconds": 0.28979191800000004
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 434,
+          "function": "_batch",
+          "calls": 32,
+          "self_seconds": 0.025622235,
+          "cumulative_seconds": 0.20457387600000002
+        },
+        {
+          "file": "_methods.py",
+          "line": 64,
+          "function": "_all",
+          "calls": 65888,
+          "self_seconds": 0.10220983900000001,
+          "cumulative_seconds": 0.18034908900000002
+        },
+        {
+          "file": "shape_base.py",
+          "line": 378,
+          "function": "stack",
+          "calls": 160,
+          "self_seconds": 0.10231253600000001,
+          "cumulative_seconds": 0.162115053
+        },
+        {
+          "file": "numerictypes.py",
+          "line": 418,
+          "function": "issubdtype",
+          "calls": 16384,
+          "self_seconds": 0.054889,
+          "cumulative_seconds": 0.14661411300000002
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.13651912600000002,
+          "cumulative_seconds": 0.137471764
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'copy' of 'numpy.ndarray' objects>",
+          "calls": 81920,
+          "self_seconds": 0.11923799900000001,
+          "cumulative_seconds": 0.11923799900000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+          "calls": 66304,
+          "self_seconds": 0.08009848500000001,
+          "cumulative_seconds": 0.08009848500000001
+        },
+        {
+          "file": "numerictypes.py",
+          "line": 230,
+          "function": "issubclass_",
+          "calls": 32768,
+          "self_seconds": 0.051957351000000006,
+          "cumulative_seconds": 0.07932446600000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.0018717760000000001,
+          "cumulative_seconds": 0.073077455
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method numpy.asanyarray>",
+          "calls": 82176,
+          "self_seconds": 0.05953068,
+          "cumulative_seconds": 0.05953068
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 64,
+          "self_seconds": 0.039001648,
+          "cumulative_seconds": 0.045018615000000005
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.006009292,
+          "cumulative_seconds": 0.043027988
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.issubclass>",
+          "calls": 49280,
+          "self_seconds": 0.039902052,
+          "cumulative_seconds": 0.039902052
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 36706,
+          "self_seconds": 0.030219508000000003,
+          "cumulative_seconds": 0.031103600000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000398792,
+          "cumulative_seconds": 0.029784657000000003
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.021075613,
+          "cumulative_seconds": 0.027069871000000002
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.00039013100000000005,
+          "cumulative_seconds": 0.022839793
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004601066,
+          "cumulative_seconds": 0.020859114
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.000557713,
+          "cumulative_seconds": 0.020464018
+        }
+      ],
+      "case": "dense",
+      "batch_size": 512,
+      "mode": "reference"
+    },
+    {
+      "rows": 16384,
+      "batches": 32,
+      "code_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+      "source_sha256": "e1ff1a9cf1f18ffc52e2f0cb39c3adc7f88346149de7fe4871f11fdade637c1d",
+      "profiled_process_seconds": 0.4391794139999999,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.000583143,
+          "cumulative_seconds": 0.439164225
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 375,
+          "function": "batches",
+          "calls": 33,
+          "self_seconds": 0.00121772,
+          "cumulative_seconds": 0.43854424200000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_blocks",
+          "calls": 65,
+          "self_seconds": 0.027635802,
+          "cumulative_seconds": 0.387127865
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.136528431,
+          "cumulative_seconds": 0.13746745700000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.0018575640000000001,
+          "cumulative_seconds": 0.0741719
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 459,
+          "function": "_fill_batch",
+          "calls": 64,
+          "self_seconds": 0.005615176,
+          "cumulative_seconds": 0.048003269
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 64,
+          "self_seconds": 0.037695515,
+          "cumulative_seconds": 0.043408016
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.005720022,
+          "cumulative_seconds": 0.042607257
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000432853,
+          "cumulative_seconds": 0.030191693000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'extend' of 'list' objects>",
+          "calls": 960,
+          "self_seconds": 0.014004502,
+          "cumulative_seconds": 0.030129932
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.021533046,
+          "cumulative_seconds": 0.027749412
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.00039131400000000003,
+          "cumulative_seconds": 0.023059546
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004659468,
+          "cumulative_seconds": 0.021070032000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.0005685470000000001,
+          "cumulative_seconds": 0.020988682
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 64,
+          "self_seconds": 0.010856553000000001,
+          "cumulative_seconds": 0.020602932
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 1201,
+          "self_seconds": 0.002289806,
+          "cumulative_seconds": 0.016129826
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 480,
+          "function": "<genexpr>",
+          "calls": 16448,
+          "self_seconds": 0.01612543,
+          "cumulative_seconds": 0.01612543
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 384,
+          "self_seconds": 0.0006820130000000001,
+          "cumulative_seconds": 0.014938141
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 384,
+          "self_seconds": 0.0019625050000000002,
+          "cumulative_seconds": 0.014256128000000002
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 96,
+          "self_seconds": 0.000837046,
+          "cumulative_seconds": 0.013521421
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 625,
+          "self_seconds": 0.001142378,
+          "cumulative_seconds": 0.012904388000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 384,
+          "self_seconds": 0.000761727,
+          "cumulative_seconds": 0.012624980000000001
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 1248,
+          "self_seconds": 0.0059667570000000005,
+          "cumulative_seconds": 0.012210539000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 768,
+          "self_seconds": 0.002224522,
+          "cumulative_seconds": 0.012182452000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 30,
+          "function": "_times",
+          "calls": 432,
+          "self_seconds": 0.0044905380000000005,
+          "cumulative_seconds": 0.012022444
+        }
+      ],
+      "case": "dense",
+      "batch_size": 512,
+      "mode": "candidate"
+    },
+    {
+      "rows": 1024,
+      "batches": 32,
+      "code_sha256": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+      "source_sha256": "efee3691769d24cbe2395d496f043b284113cd0b053fd03031017cda29b8d092",
+      "profiled_process_seconds": 0.44388463899999997,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.000374075,
+          "cumulative_seconds": 0.443868419
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 387,
+          "function": "batches",
+          "calls": 33,
+          "self_seconds": 0.0039051090000000004,
+          "cumulative_seconds": 0.44345977200000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_rows",
+          "calls": 1025,
+          "self_seconds": 0.040018515000000005,
+          "cumulative_seconds": 0.42180101200000003
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.1250178,
+          "cumulative_seconds": 0.125961252
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.001889933,
+          "cumulative_seconds": 0.073104891
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.005034096,
+          "cumulative_seconds": 0.06205840000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 1088,
+          "self_seconds": 0.016271663000000002,
+          "cumulative_seconds": 0.055709948
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.00041099200000000005,
+          "cumulative_seconds": 0.029749123000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 364,
+          "function": "<genexpr>",
+          "calls": 5120,
+          "self_seconds": 0.009282708,
+          "cumulative_seconds": 0.027358631
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.020007774000000002,
+          "cumulative_seconds": 0.026212834
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.00038359,
+          "cumulative_seconds": 0.022690493000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004579921000000001,
+          "cumulative_seconds": 0.02071778
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.000575786,
+          "cumulative_seconds": 0.020445362
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 4448,
+          "self_seconds": 0.007558971,
+          "cumulative_seconds": 0.020254135000000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 64,
+          "self_seconds": 0.01030053,
+          "cumulative_seconds": 0.019619864
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 434,
+          "function": "_batch",
+          "calls": 32,
+          "self_seconds": 0.002393819,
+          "cumulative_seconds": 0.016026252
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 1201,
+          "self_seconds": 0.002260339,
+          "cumulative_seconds": 0.015823772
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 384,
+          "self_seconds": 0.000666665,
+          "cumulative_seconds": 0.014751616
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 384,
+          "self_seconds": 0.0019521920000000002,
+          "cumulative_seconds": 0.014084951
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 96,
+          "self_seconds": 0.000821153,
+          "cumulative_seconds": 0.013202917000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 625,
+          "self_seconds": 0.0011061010000000002,
+          "cumulative_seconds": 0.012723355
+        },
+        {
+          "file": "_methods.py",
+          "line": 64,
+          "function": "_all",
+          "calls": 4448,
+          "self_seconds": 0.007053183,
+          "cumulative_seconds": 0.012695164
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 384,
+          "self_seconds": 0.000754788,
+          "cumulative_seconds": 0.012365575
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 768,
+          "self_seconds": 0.002170305,
+          "cumulative_seconds": 0.012093426000000001
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 1248,
+          "self_seconds": 0.005882135,
+          "cumulative_seconds": 0.012054681000000001
+        }
+      ],
+      "case": "sparse",
+      "batch_size": 32,
+      "mode": "reference"
+    },
+    {
+      "rows": 1024,
+      "batches": 32,
+      "code_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+      "source_sha256": "efee3691769d24cbe2395d496f043b284113cd0b053fd03031017cda29b8d092",
+      "profiled_process_seconds": 0.37743864199999994,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 0.000351306,
+          "cumulative_seconds": 0.377425436
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 375,
+          "function": "batches",
+          "calls": 33,
+          "self_seconds": 0.001022471,
+          "cumulative_seconds": 0.37703982500000005
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_blocks",
+          "calls": 65,
+          "self_seconds": 0.026538262,
+          "cumulative_seconds": 0.36322690500000004
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.128766592,
+          "cumulative_seconds": 0.129749201
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.0018729250000000001,
+          "cumulative_seconds": 0.07334360100000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.00506644,
+          "cumulative_seconds": 0.06285916600000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000403976,
+          "cumulative_seconds": 0.029972011000000003
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.020889468,
+          "cumulative_seconds": 0.027219601000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 64,
+          "self_seconds": 0.011403317000000001,
+          "cumulative_seconds": 0.023485568000000002
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.000383008,
+          "cumulative_seconds": 0.022910660000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.0046386560000000005,
+          "cumulative_seconds": 0.020923975
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.0005582100000000001,
+          "cumulative_seconds": 0.020466529
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 64,
+          "self_seconds": 0.010677562,
+          "cumulative_seconds": 0.020410691
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 1201,
+          "self_seconds": 0.0022894210000000003,
+          "cumulative_seconds": 0.015813354
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 384,
+          "self_seconds": 0.000665753,
+          "cumulative_seconds": 0.014748173000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 384,
+          "self_seconds": 0.0019846620000000003,
+          "cumulative_seconds": 0.014082420000000002
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 96,
+          "self_seconds": 0.000822143,
+          "cumulative_seconds": 0.013203848
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 625,
+          "self_seconds": 0.0011154090000000001,
+          "cumulative_seconds": 0.012699537
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 384,
+          "self_seconds": 0.0007534810000000001,
+          "cumulative_seconds": 0.012336398
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 1248,
+          "self_seconds": 0.005947256000000001,
+          "cumulative_seconds": 0.012106417000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 768,
+          "self_seconds": 0.002174917,
+          "cumulative_seconds": 0.012021742
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 30,
+          "function": "_times",
+          "calls": 432,
+          "self_seconds": 0.00439225,
+          "cumulative_seconds": 0.011787047
+        },
+        {
+          "file": "pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 288,
+          "self_seconds": 0.001227292,
+          "cumulative_seconds": 0.011582917
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 214,
+          "function": "<genexpr>",
+          "calls": 15376,
+          "self_seconds": 0.011196768000000001,
+          "cumulative_seconds": 0.011196768000000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 64,
+          "self_seconds": 0.0065095330000000005,
+          "cumulative_seconds": 0.011038739
+        }
+      ],
+      "case": "sparse",
+      "batch_size": 32,
+      "mode": "candidate"
+    },
+    {
+      "rows": 1024,
+      "batches": 2,
+      "code_sha256": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+      "source_sha256": "efee3691769d24cbe2395d496f043b284113cd0b053fd03031017cda29b8d092",
+      "profiled_process_seconds": 0.4524227359999999,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 4.7999000000000006e-05,
+          "cumulative_seconds": 0.452407999
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 387,
+          "function": "batches",
+          "calls": 3,
+          "self_seconds": 0.004026757000000001,
+          "cumulative_seconds": 0.452353117
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_rows",
+          "calls": 1025,
+          "self_seconds": 0.040550506,
+          "cumulative_seconds": 0.432935031
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.131751438,
+          "cumulative_seconds": 0.13270056200000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.0018888890000000001,
+          "cumulative_seconds": 0.073504452
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.004895214,
+          "cumulative_seconds": 0.062289726000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 1088,
+          "self_seconds": 0.016715684,
+          "cumulative_seconds": 0.057501504
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000406893,
+          "cumulative_seconds": 0.030098911000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 364,
+          "function": "<genexpr>",
+          "calls": 5120,
+          "self_seconds": 0.009846981000000001,
+          "cumulative_seconds": 0.028703676
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.021296124,
+          "cumulative_seconds": 0.027575828
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.00039144200000000004,
+          "cumulative_seconds": 0.023019258
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'all' of 'numpy.ndarray' objects>",
+          "calls": 4448,
+          "self_seconds": 0.007892747,
+          "cumulative_seconds": 0.021025973
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004682273000000001,
+          "cumulative_seconds": 0.021014593
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.000567656,
+          "cumulative_seconds": 0.02047382
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 64,
+          "self_seconds": 0.010421421,
+          "cumulative_seconds": 0.019916431000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 1201,
+          "self_seconds": 0.002275617,
+          "cumulative_seconds": 0.015943033000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 384,
+          "self_seconds": 0.000659308,
+          "cumulative_seconds": 0.014827529
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 384,
+          "self_seconds": 0.0019855190000000003,
+          "cumulative_seconds": 0.014168221000000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 434,
+          "function": "_batch",
+          "calls": 2,
+          "self_seconds": 0.001645062,
+          "cumulative_seconds": 0.013560798
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 96,
+          "self_seconds": 0.000824423,
+          "cumulative_seconds": 0.013175035000000002
+        },
+        {
+          "file": "_methods.py",
+          "line": 64,
+          "function": "_all",
+          "calls": 4448,
+          "self_seconds": 0.007319066000000001,
+          "cumulative_seconds": 0.013133226000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 625,
+          "self_seconds": 0.001114537,
+          "cumulative_seconds": 0.012775456000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 384,
+          "self_seconds": 0.000759731,
+          "cumulative_seconds": 0.012463108
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 1248,
+          "self_seconds": 0.005979887000000001,
+          "cumulative_seconds": 0.012155864
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 768,
+          "self_seconds": 0.0021760160000000002,
+          "cumulative_seconds": 0.012064430000000001
+        }
+      ],
+      "case": "sparse",
+      "batch_size": 512,
+      "mode": "reference"
+    },
+    {
+      "rows": 1024,
+      "batches": 2,
+      "code_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+      "source_sha256": "efee3691769d24cbe2395d496f043b284113cd0b053fd03031017cda29b8d092",
+      "profiled_process_seconds": 0.38709898099999984,
+      "timer": "cProfile_process_time",
+      "functions": [
+        {
+          "file": "corpus_batches.py",
+          "line": 140,
+          "function": "traverse",
+          "calls": 1,
+          "self_seconds": 4.5966e-05,
+          "cumulative_seconds": 0.38708275000000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 375,
+          "function": "batches",
+          "calls": 3,
+          "self_seconds": 0.000997622,
+          "cumulative_seconds": 0.38702895800000003
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 247,
+          "function": "_blocks",
+          "calls": 65,
+          "self_seconds": 0.027839873,
+          "cumulative_seconds": 0.374288842
+        },
+        {
+          "file": "core.py",
+          "line": 439,
+          "function": "read_row_group",
+          "calls": 64,
+          "self_seconds": 0.13375788700000002,
+          "cumulative_seconds": 0.13468681100000002
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 152,
+          "function": "_file",
+          "calls": 96,
+          "self_seconds": 0.0019384620000000002,
+          "cumulative_seconds": 0.074805535
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 179,
+          "function": "_labels",
+          "calls": 16,
+          "self_seconds": 0.005091548,
+          "cumulative_seconds": 0.063046155
+        },
+        {
+          "file": "pathlib.py",
+          "line": 1228,
+          "function": "resolve",
+          "calls": 96,
+          "self_seconds": 0.000415624,
+          "cumulative_seconds": 0.030494246000000003
+        },
+        {
+          "file": "batches.py",
+          "line": 13,
+          "function": "read_bounded_table",
+          "calls": 32,
+          "self_seconds": 0.022216892000000002,
+          "cumulative_seconds": 0.028707366
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 64,
+          "self_seconds": 0.01148094,
+          "cumulative_seconds": 0.023680455000000003
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 420,
+          "function": "realpath",
+          "calls": 96,
+          "self_seconds": 0.000407618,
+          "cumulative_seconds": 0.023324245
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 429,
+          "function": "_joinrealpath",
+          "calls": 96,
+          "self_seconds": 0.004691476,
+          "cumulative_seconds": 0.021290815
+        },
+        {
+          "file": "pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 96,
+          "self_seconds": 0.000577569,
+          "cumulative_seconds": 0.020748345
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 41,
+          "function": "_availability",
+          "calls": 64,
+          "self_seconds": 0.010641903000000001,
+          "cumulative_seconds": 0.020257532
+        },
+        {
+          "file": "pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 1201,
+          "self_seconds": 0.002318128,
+          "cumulative_seconds": 0.016121655000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "calls": 384,
+          "self_seconds": 0.000678733,
+          "cumulative_seconds": 0.015075553
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 384,
+          "self_seconds": 0.002040926,
+          "cumulative_seconds": 0.014396820000000001
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 96,
+          "self_seconds": 0.0008318990000000001,
+          "cumulative_seconds": 0.013351370000000001
+        },
+        {
+          "file": "pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 625,
+          "self_seconds": 0.001134482,
+          "cumulative_seconds": 0.012954317000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 384,
+          "self_seconds": 0.000773014,
+          "cumulative_seconds": 0.012585983
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "calls": 1248,
+          "self_seconds": 0.006069335,
+          "cumulative_seconds": 0.01240982
+        },
+        {
+          "file": "pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 768,
+          "self_seconds": 0.002232876,
+          "cumulative_seconds": 0.012349152
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 30,
+          "function": "_times",
+          "calls": 432,
+          "self_seconds": 0.0044860970000000005,
+          "cumulative_seconds": 0.012003580000000002
+        },
+        {
+          "file": "pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 288,
+          "self_seconds": 0.0012267410000000002,
+          "cumulative_seconds": 0.011812969000000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 69,
+          "function": "_price_contexts",
+          "calls": 64,
+          "self_seconds": 0.006698347,
+          "cumulative_seconds": 0.011505254000000001
+        },
+        {
+          "file": "corpus_inputs.py",
+          "line": 214,
+          "function": "<genexpr>",
+          "calls": 15376,
+          "self_seconds": 0.011292772000000001,
+          "cumulative_seconds": 0.011292772000000001
+        }
+      ],
+      "case": "sparse",
+      "batch_size": 512,
+      "mode": "candidate"
+    }
+  ],
+  "limits": [
+    "Una pasada instrumentada por carga, tamaño de lote y versión.",
+    "Estos tiempos incluyen el coste de instrumentación y no sustituyen el benchmark.",
+    "Se conservan las 25 funciones con mayor tiempo acumulado de cada perfil."
+  ]
+}

@@ -8,5 +8,6 @@ La [edición de 470 muestras](baselines/post-scan-reference-study.md) reúne 96 
 - [Ficha de literatura](literature-note.md): lectura verificable y decisión que fundamenta.
 - [Matriz de conclusiones](conclusion-matrix.md): objetivo, evidencia y alcance de la respuesta.
 - [Preparación de etiquetas residuales](resources/residual-preparation.md): comparación de motores con tiempos, memoria y paridad exacta.
+- [Construcción directa de lotes](resources/corpus-batches.md): recorrido CPU, propiedad de buffers, recuperación y comparación con la referencia.
 
 Las figuras de resultados deberán generarse desde artefactos identificados, con ejes, unidades, periodo, tamaño de muestra e intervalos cuando corresponda. No se versionan tablas con cifras de ejemplo que puedan confundirse con resultados.

@@ -57,3 +57,12 @@ def test_invalid_workload_is_rejected_before_creating_files(tmp_path):
     with pytest.raises(ValueError):
         engine.prepare_corpus(tmp_path / "corpus", assets=2, rows=9, group_rows=0, stride=3)
     assert not (tmp_path / "corpus").exists()
+
+
+def test_cpu_profile_includes_the_complete_reader_traversal(tmp_path):
+    engine = benchmark()
+    manifest = engine.prepare_corpus(tmp_path / "corpus", assets=2, rows=9, group_rows=4, stride=3)
+    result = engine.profile_reader(manifest, batch_size=4, revision="current")
+    assert result["rows"] == 6 and result["batches"] == 2
+    assert result["profiled_process_seconds"] > 0
+    assert any(row["file"] == "corpus_inputs.py" for row in result["functions"])
