@@ -90,3 +90,10 @@ Las pruebas puras cubren validación, valores desconocidos, cronología, caducid
 Los cinco recursos iniciales ocupan aproximadamente 77,5 kB sin compresión y 22,3 kB al comprimirlos individualmente con gzip en esta revisión. Son tamaños de archivos, no tiempos de carga medidos en GitHub Pages. No hay fuentes, bibliotecas o estilos remotos. El registro publicado continúa vacío y las medidas usadas en las pruebas no representan experimentos científicos.
 
 El cierre del desarrollo exige revisar el contrato del exportador y las pruebas junto con la página. Una captura visual no demuestra la validez científica de los experimentos que se registren después.
+## Registro de campañas
+
+El contrato de versión 2 añade campañas e historial paginado bajo demanda.
+Consulta el [recolector y la publicación periódica](../docs/engineering/campaign-observatory.md)
+para las fuentes, los límites de lectura y la separación entre progreso,
+observación y publicación. La interfaz mantiene la importación del contrato
+anterior de versión 1 descrito en este documento.

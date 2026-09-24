@@ -1,0 +1,52 @@
+{
+  "python": "3.12.14",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "workers": 1,
+  "repetitions": 5,
+  "warmup": 1,
+  "measurements": [
+    {
+      "cold": true,
+      "seconds": 0.8472491159918718,
+      "bytes_read": 22653695,
+      "runs": 526
+    },
+    {
+      "cold": false,
+      "seconds": 0.5533438679995015,
+      "bytes_read": 0,
+      "runs": 526
+    },
+    {
+      "cold": false,
+      "seconds": 0.558653466985561,
+      "bytes_read": 0,
+      "runs": 526
+    },
+    {
+      "cold": false,
+      "seconds": 0.5991158759861719,
+      "bytes_read": 0,
+      "runs": 526
+    },
+    {
+      "cold": false,
+      "seconds": 0.576178917021025,
+      "bytes_read": 0,
+      "runs": 526
+    },
+    {
+      "cold": false,
+      "seconds": 0.5726323699927889,
+      "bytes_read": 0,
+      "runs": 526
+    }
+  ],
+  "warm_median_seconds": 0.5726323699927889,
+  "warm_stdev_seconds": 0.01788374984719737,
+  "process_seconds": 3.7201822729839478,
+  "peak_rss_mib": 34.4453125,
+  "gpu_used": false,
+  "concurrent_scientific_workload": true,
+  "limits": "Lectura l\u00f3gica de JSON. No mide contadores f\u00edsicos de disco ni energ\u00eda."
+}
