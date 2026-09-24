@@ -17,6 +17,7 @@
 #include <limits>
 #include <locale>
 #include <memory>
+#include <optional>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -796,6 +797,7 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
     confirm_identity(options.output, identity, options.resume);
     const auto folder = options.output / "private/checkpoints";
     Json event = nullptr;
+    std::optional<StepOutcome> pending_event;
     Json report;
     if (options.resume) {
         const auto payload = load_checkpoint(folder, identity);
@@ -838,6 +840,10 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
         report["updated_at_utc"] = utc_now();
     };
     const auto publish = [&] {
+        if (pending_event) {
+            event = event_json(*pending_event);
+            pending_event.reset();
+        }
         const auto record = save_checkpoint(folder, session.snapshot(), identity, event);
         report["checkpoint"] =
             Json{{"path", "private/checkpoints/" + record.at("name").get<std::string>()},
@@ -855,8 +861,7 @@ Json run_reference(std::shared_ptr<const MarketTape> tape, const RunOptions& opt
         publish();
         while (!session.done() && !stop_requested() &&
                (!options.stop_after || applied < *options.stop_after)) {
-            const auto outcome = session.step(policy_action(options.policy, session.cursor()));
-            event = event_json(outcome);
+            pending_event = session.step(policy_action(options.policy, session.cursor()));
             ++applied;
             if (session.cursor() % options.checkpoint_steps == 0) {
                 publish();

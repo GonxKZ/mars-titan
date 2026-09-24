@@ -242,19 +242,35 @@ def test_native_resume_preserves_exact_state_and_does_not_restart_initial_policy
         "--policy",
         "hold_initial",
         "--checkpoint-steps",
-        "1",
+        "64",
         "--stop-after",
         "2",
     )
     paused = read(partial / "run.json")
     assert paused["status"] == "paused" and paused["global_step"] == 2
     assert paused["financial_validation"]["invalid_reason"] == "incomplete"
+    periodic = tmp_path / "periodic"
+    execute(
+        original,
+        periodic,
+        "--policy",
+        "hold_initial",
+        "--checkpoint-steps",
+        "1",
+        "--stop-after",
+        "2",
+    )
+    stopped, _ = checkpoint(partial)
+    every_step, _ = checkpoint(periodic)
+    assert read(stopped)["snapshot"] == read(every_step)["snapshot"]
+    assert read(stopped)["last_event"] == read(every_step)["last_event"]
     execute(original, partial, "--policy", "hold_initial", "--checkpoint-steps", "1", "--resume")
     first, second = read(complete / "run.json"), read(partial / "run.json")
     assert first["financial_validation"] == second["financial_validation"]
     left, _ = checkpoint(complete)
     right, records = checkpoint(partial)
     assert read(left)["snapshot"] == read(right)["snapshot"]
+    assert read(left)["last_event"] == read(right)["last_event"]
     assert len(records) == 2
 
 
