@@ -34,6 +34,7 @@ from mars_titan.training.run_receipts import initialize_receipt
 from .evaluation import centers, evaluate
 from .inputs import CONDITIONS
 from .parents import require_device
+from .selection import select_epoch, selection_policy
 
 MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
 
@@ -45,6 +46,8 @@ def code_identity():
         "posttraining/inputs.py",
         "posttraining/parents.py",
         "posttraining/evaluation.py",
+        "posttraining/selection.py",
+        "training/selection.py",
         "training/checkpoints.py",
         "training/run_receipts.py",
         "episodes/parents.py",
@@ -90,7 +93,7 @@ def validate_case(case):
     }
     if (
         not isinstance(case, dict)
-        or set(case) != required
+        or not required <= set(case) <= required | {"selection"}
         or case["mode"] not in MODES
         or case["condition"] not in CONDITIONS
         or type(case["seed"]) is not int
@@ -112,6 +115,7 @@ def validate_case(case):
             raise ValueError("El caso requiere parámetros finitos y positivos")
     if case["behavior_epsilon"] >= 1:
         raise ValueError("La mezcla exploratoria debe ser inferior a uno")
+    selection_policy(case)
 
 
 def _statistics():
@@ -230,6 +234,7 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
         torch=str(torch.__version__),
         python=platform.python_version(),
         optimizer="new_adamw",
+        selection_policy=selection_policy(case),
         fit_timing="offline_after_training_cutoff",
         cuda=torch.version.cuda if device == "cuda:0" else None,
         gpu=torch.cuda.get_device_name(0) if device == "cuda:0" else None,
@@ -245,6 +250,24 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
     )
     # Los recibos y checkpoints usan el mismo árbol de tipos JSON.
     return json.loads(json.dumps(identity, allow_nan=False))
+
+
+def _best_state(output, identity, selection, expected_sha256=None):
+    selected = load_training_state(
+        output / "checkpoints",
+        expected_identity=identity,
+        selection="best",
+        expected_sha256=expected_sha256,
+    )
+    if (
+        selection is None
+        or selected["epoch"] != selection["best_epoch"]
+        or selected["best_score"] != selection["best_score"]
+        or selected["cursor"] is not None
+        or selected["statistics"]["samples"] != 0
+    ):
+        raise ValueError("El checkpoint no corresponde a la época seleccionada")
+    return selected
 
 
 def run_case(
@@ -282,6 +305,7 @@ def run_case(
     identity = _identity(
         dataset, parent, case, grid, normalization, budget, batch_size, device, diagnostic
     )
+    policy = identity["selection_policy"]
     output = Path(output)
     safe_destination(output)
     if (output.exists() and not resume) or (resume and not output.is_dir()):
@@ -308,6 +332,8 @@ def run_case(
                 global_step=0,
                 total_steps=budget["updates"] * case["epochs"],
                 epochs=[],
+                selection_policy=policy,
+                checkpoint_retention=dict(recent=2, best=1, pinned=0),
                 samples=dataset.counts,
                 budget=budget,
                 attempts=[],
@@ -318,10 +344,10 @@ def run_case(
         if report.get("recovery_checkpoint") and not (output / "checkpoints/latest.json").exists():
             raise ValueError("Falta el índice del checkpoint previamente confirmado")
         if report["status"] == "completed":
-            load_training_state(
-                output / "checkpoints",
-                expected_identity=identity,
-                selection="best",
+            _best_state(
+                output,
+                identity,
+                report["selection"],
                 expected_sha256=report["checkpoint"]["sha256"],
             )
             from mars_titan.training.predictive_parents import _verified_file
@@ -358,9 +384,13 @@ def run_case(
             history=[],
             best_score=None,
             best_epoch=None,
+            selection=None,
+            baseline=None,
         )
         if (output / "checkpoints/latest.json").exists():
             state = load_training_state(output / "checkpoints", expected_identity=identity)
+            if state["selection"] is not None:
+                _best_state(output, identity, state["selection"])
             model.load_state_dict(state["model"])
             optimizer.load_state_dict(state["optimizer"])
             restore_rng(state["rng"], device)
@@ -368,6 +398,14 @@ def run_case(
                 generator.set_state(state["generators"][key])
         stop = stop or StopRequest()
         last_saved, updates = time.perf_counter(), 0
+        evaluating_selected = False
+
+        def stopped_early():
+            return bool(
+                policy["patience"] is not None
+                and state["selection"]
+                and state["selection"]["should_stop"]
+            )
 
         def save(best=False):
             nonlocal last_saved
@@ -385,6 +423,10 @@ def run_case(
             report.update(
                 global_step=state["global_step"],
                 epochs=state["history"],
+                selection=state["selection"],
+                baseline=state["baseline"],
+                best_epoch=state["best_epoch"],
+                best_score=state["best_score"],
                 recovery_checkpoint=dict(path=str(path.relative_to(output)), sha256=sha256(path)),
             )
             last_saved = time.perf_counter()
@@ -393,7 +435,24 @@ def run_case(
             torch.cuda.reset_peak_memory_stats(0)
         try:
             save()
-            while state["epoch"] < case["epochs"]:
+            if policy["version"] == 2 and state["baseline"] is None:
+                baseline = evaluate(
+                    model,
+                    dataset,
+                    grid,
+                    batch_size=batch_size,
+                    neural=neural,
+                    device=device,
+                    stop=stop,
+                )
+                state["selection"] = select_epoch(
+                    None, baseline["session_mae"], 0, policy, case["epochs"]
+                )
+                state["baseline"] = baseline
+                state["best_score"], state["best_epoch"] = baseline["session_mae"], 0
+                save(best=True)
+                atomic_json(output / "run.json", report)
+            while state["epoch"] < case["epochs"] and not stopped_early():
                 if stop.requested:
                     raise InterruptedError
                 model.train()
@@ -453,16 +512,20 @@ def run_case(
                 state["epoch"] += 1
                 state["cursor"], state["statistics"] = None, _statistics()
                 score = validation["session_mae"]
-                better = state["best_score"] is None or score < state["best_score"]
-                if better:
-                    state["best_score"], state["best_epoch"] = score, state["epoch"]
-                save(best=better)
-            if state["global_step"] != report["total_steps"]:
+                state["selection"] = select_epoch(
+                    state["selection"], score, state["epoch"], policy, case["epochs"]
+                )
+                state["best_score"] = state["selection"]["best_score"]
+                state["best_epoch"] = state["selection"]["best_epoch"]
+                save(best=state["selection"]["last_improved"])
+            if state["global_step"] != budget["updates"] * state["epoch"] or (
+                not stopped_early() and state["global_step"] != report["total_steps"]
+            ):
                 raise ValueError("El número de actualizaciones no coincide con el diseño")
-            selected = load_training_state(
-                output / "checkpoints", expected_identity=identity, selection="best"
-            )
+            report["stopped_early"] = state["epoch"] < case["epochs"]
+            selected = _best_state(output, identity, state["selection"])
             model.load_state_dict(selected["model"])
+            evaluating_selected = True
             record = read_manifest(output / "checkpoints/latest.json")[0]["best"]
             path = output / "validation-predictions.parquet"
             metrics = evaluate(
@@ -487,7 +550,7 @@ def run_case(
             )
         except InterruptedError:
             # La evaluación seleccionada no debe mezclarse con el optimizador de la última época.
-            if state["epoch"] < case["epochs"]:
+            if not evaluating_selected:
                 save()
             report["status"] = "paused"
         except BaseException as error:
