@@ -1,0 +1,652 @@
+{
+  "tool": "coverage.py 7.16.1 (ramas) y radon 6.0.1 (complejidad ciclomática)",
+  "convention": "CRAP = CC² × (1 − cobertura de líneas de la función)³ + CC. Diagnóstico, no prueba de corrección.",
+  "totals": {
+    "covered_lines": 603,
+    "num_statements": 682,
+    "percent_covered": 83.59375,
+    "percent_covered_display": "84",
+    "missing_lines": 79,
+    "excluded_lines": 0,
+    "percent_statements_covered": 88.41642228739003,
+    "percent_statements_covered_display": "88",
+    "num_branches": 214,
+    "num_partial_branches": 60,
+    "covered_branches": 146,
+    "missing_branches": 68,
+    "percent_branches_covered": 68.22429906542057,
+    "percent_branches_covered_display": "68"
+  },
+  "functions": [
+    {
+      "file": "src/mars_titan/episodes/augmentation.py",
+      "name": "augmentation_windows",
+      "complexity": 10,
+      "line_coverage": 0.8823529411764706,
+      "crap": 10.16283329940973
+    },
+    {
+      "file": "src/mars_titan/episodes/augmentation.py",
+      "name": "training_visits",
+      "complexity": 10,
+      "line_coverage": 0.8181818181818182,
+      "crap": 10.601051840721261
+    },
+    {
+      "file": "src/mars_titan/episodes/augmentation.py",
+      "name": "paired_world",
+      "complexity": 4,
+      "line_coverage": 0.9,
+      "crap": 4.016
+    },
+    {
+      "file": "src/mars_titan/episodes/augmentation.py",
+      "name": "fit_volatility",
+      "complexity": 5,
+      "line_coverage": 0.058823529411764705,
+      "crap": 25.84266232444535
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld.__init__",
+      "complexity": 7,
+      "line_coverage": 0.9375,
+      "crap": 7.011962890625
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld.__len__",
+      "complexity": 1,
+      "line_coverage": 0.5,
+      "crap": 1.125
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld._fundamentals",
+      "complexity": 5,
+      "line_coverage": 1.0,
+      "crap": 5.0
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld._macro",
+      "complexity": 4,
+      "line_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld.__call__",
+      "complexity": 5,
+      "line_coverage": 0.9090909090909091,
+      "crap": 5.018782870022539
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld.__init__",
+      "complexity": 7,
+      "line_coverage": 0.9375,
+      "crap": 7.011962890625
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld.__len__",
+      "complexity": 1,
+      "line_coverage": 0.5,
+      "crap": 1.125
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld._fundamentals",
+      "complexity": 5,
+      "line_coverage": 1.0,
+      "crap": 5.0
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld._macro",
+      "complexity": 4,
+      "line_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/episodes/encoding.py",
+      "name": "EncodedWorld.__call__",
+      "complexity": 5,
+      "line_coverage": 0.9090909090909091,
+      "crap": 5.018782870022539
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "input_fingerprint",
+      "complexity": 18,
+      "line_coverage": 0.9090909090909091,
+      "crap": 18.24342599549211
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.__init__",
+      "complexity": 6,
+      "line_coverage": 0.8888888888888888,
+      "crap": 6.049382716049383
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.predict",
+      "complexity": 10,
+      "line_coverage": 0.7142857142857143,
+      "crap": 12.332361516034986
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.close",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.__init__",
+      "complexity": 6,
+      "line_coverage": 0.8888888888888888,
+      "crap": 6.049382716049383
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.predict",
+      "complexity": 10,
+      "line_coverage": 0.7142857142857143,
+      "crap": 12.332361516034986
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.close",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/parents.py",
+      "name": "ParentCache.__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/prediction.py",
+      "name": "EpisodePredictionEnv.__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/prediction.py",
+      "name": "EpisodePredictionEnv.snapshot",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/prediction.py",
+      "name": "EpisodePredictionEnv.restore",
+      "complexity": 3,
+      "line_coverage": 0.75,
+      "crap": 3.140625
+    },
+    {
+      "file": "src/mars_titan/episodes/prediction.py",
+      "name": "EpisodePredictionEnv.__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/prediction.py",
+      "name": "EpisodePredictionEnv.snapshot",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/prediction.py",
+      "name": "EpisodePredictionEnv.restore",
+      "complexity": 3,
+      "line_coverage": 0.75,
+      "crap": 3.140625
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "_table",
+      "complexity": 5,
+      "line_coverage": 0.9444444444444444,
+      "crap": 5.004286694101509
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "_verified",
+      "complexity": 5,
+      "line_coverage": 0.875,
+      "crap": 5.048828125
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "write_world",
+      "complexity": 30,
+      "line_coverage": 0.9076923076923077,
+      "crap": 30.707874374146563
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__init__",
+      "complexity": 18,
+      "line_coverage": 0.8214285714285714,
+      "crap": 19.844934402332363
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__len__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource._group",
+      "complexity": 9,
+      "line_coverage": 0.8275862068965517,
+      "crap": 9.415146172454795
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.read",
+      "complexity": 17,
+      "line_coverage": 0.7727272727272727,
+      "crap": 20.39265589782119
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__call__",
+      "complexity": 4,
+      "line_coverage": 0.6666666666666666,
+      "crap": 4.592592592592593
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.close",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__init__",
+      "complexity": 18,
+      "line_coverage": 0.8214285714285714,
+      "crap": 19.844934402332363
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__len__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource._group",
+      "complexity": 9,
+      "line_coverage": 0.8275862068965517,
+      "crap": 9.415146172454795
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.read",
+      "complexity": 17,
+      "line_coverage": 0.7727272727272727,
+      "crap": 20.39265589782119
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__call__",
+      "complexity": 4,
+      "line_coverage": 0.6666666666666666,
+      "crap": 4.592592592592593
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.close",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "resample_windows",
+      "complexity": 10,
+      "line_coverage": 0.9230769230769231,
+      "crap": 10.04551661356395
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.__init__",
+      "complexity": 9,
+      "line_coverage": 0.8,
+      "crap": 9.648
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.__len__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.warmup",
+      "complexity": 3,
+      "line_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.__call__",
+      "complexity": 7,
+      "line_coverage": 0.9,
+      "crap": 7.049
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.__init__",
+      "complexity": 9,
+      "line_coverage": 0.8,
+      "crap": 9.648
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.__len__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.warmup",
+      "complexity": 3,
+      "line_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/episodes/windows.py",
+      "name": "EpisodeView.__call__",
+      "complexity": 7,
+      "line_coverage": 0.9,
+      "crap": 7.049
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "recipe_fingerprints",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "generate_world",
+      "complexity": 7,
+      "line_coverage": 0.975,
+      "crap": 7.000765625
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "WorldConfig.validate",
+      "complexity": 18,
+      "line_coverage": 0.8235294117647058,
+      "crap": 19.780582129045392
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "WorldConfig.validate",
+      "complexity": 18,
+      "line_coverage": 0.8235294117647058,
+      "crap": 19.780582129045392
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.__init__",
+      "complexity": 3,
+      "line_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.count_at",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.raw_world",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.content_sha256",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.__len__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.__call__",
+      "complexity": 4,
+      "line_coverage": 0.75,
+      "crap": 4.25
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.events",
+      "complexity": 4,
+      "line_coverage": 0.8333333333333334,
+      "crap": 4.074074074074074
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.chart",
+      "complexity": 4,
+      "line_coverage": 0.9090909090909091,
+      "crap": 4.012021036814425
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.cohort",
+      "complexity": 5,
+      "line_coverage": 0.9166666666666666,
+      "crap": 5.014467592592593
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.__init__",
+      "complexity": 3,
+      "line_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.count_at",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.raw_world",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.content_sha256",
+      "complexity": 2,
+      "line_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.__len__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.__call__",
+      "complexity": 4,
+      "line_coverage": 0.75,
+      "crap": 4.25
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.events",
+      "complexity": 4,
+      "line_coverage": 0.8333333333333334,
+      "crap": 4.074074074074074
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.chart",
+      "complexity": 4,
+      "line_coverage": 0.9090909090909091,
+      "crap": 4.012021036814425
+    },
+    {
+      "file": "src/mars_titan/episodes/worlds.py",
+      "name": "SyntheticWorld.cohort",
+      "complexity": 5,
+      "line_coverage": 0.9166666666666666,
+      "crap": 5.014467592592593
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "check_host_memory",
+      "complexity": 2,
+      "line_coverage": 0.6666666666666666,
+      "crap": 2.1481481481481484
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.__init__",
+      "complexity": 4,
+      "line_coverage": 0.8571428571428571,
+      "crap": 4.0466472303206995
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.__enter__",
+      "complexity": 6,
+      "line_coverage": 0.90625,
+      "crap": 6.0296630859375
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.check",
+      "complexity": 3,
+      "line_coverage": 0.8,
+      "crap": 3.072
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.__exit__",
+      "complexity": 3,
+      "line_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.__init__",
+      "complexity": 4,
+      "line_coverage": 0.8571428571428571,
+      "crap": 4.0466472303206995
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.__enter__",
+      "complexity": 6,
+      "line_coverage": 0.90625,
+      "crap": 6.0296630859375
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.check",
+      "complexity": 3,
+      "line_coverage": 0.8,
+      "crap": 3.072
+    },
+    {
+      "file": "src/mars_titan/training/experiment_resources.py",
+      "name": "GpuLease.__exit__",
+      "complexity": 3,
+      "line_coverage": 1.0,
+      "crap": 3.0
+    }
+  ]
+}

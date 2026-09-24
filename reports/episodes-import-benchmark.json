@@ -1,0 +1,47 @@
+{
+  "workload": "Doce mundos, 16 activos y 64 cohortes admitidas por mundo. Codificación analítica.",
+  "hypothesis": "La carga de PyTorch para gestionar señales añade tiempo y RAM sin usarse en la generación analítica.",
+  "repetitions": 3,
+  "before": [
+    {
+      "process_seconds": 3.14,
+      "peak_rss_mib": 619.8203125,
+      "loop_seconds": 1.5781326190044638
+    },
+    {
+      "process_seconds": 3.09,
+      "peak_rss_mib": 617.6875,
+      "loop_seconds": 1.5259823869855609
+    },
+    {
+      "process_seconds": 3.09,
+      "peak_rss_mib": 617.7734375,
+      "loop_seconds": 1.5589441829943098
+    }
+  ],
+  "after": [
+    {
+      "process_seconds": 2.0,
+      "peak_rss_mib": 133.60546875,
+      "loop_seconds": 1.587765689007938
+    },
+    {
+      "process_seconds": 1.96,
+      "peak_rss_mib": 133.8828125,
+      "loop_seconds": 1.5576469080115203
+    },
+    {
+      "process_seconds": 1.97,
+      "peak_rss_mib": 133.63671875,
+      "loop_seconds": 1.553271570999641
+    }
+  ],
+  "exact_parquet_blocks": 48,
+  "median_process_speedup": 1.5685279187817258,
+  "timing": "/usr/bin/time, tiempo total del proceso y ru_maxrss en KiB convertido a MiB",
+  "concurrent_scientific_workload": true,
+  "gpu_used": false,
+  "energy_joules": null,
+  "monetary_cost": null,
+  "limits": "Sin vaciar la caché del sistema. La comparación no mide entrenamiento ni codificación neuronal."
+}

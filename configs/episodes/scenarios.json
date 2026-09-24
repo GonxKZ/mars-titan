@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "generator": {"assets": 16, "sessions": 128, "context": 64, "sectors": 4, "volatility": 0.006, "jump_probability": 0.01, "regime_sessions": 32, "publication_lag": 2},
+  "scenarios": {"no_signal": 0.0, "known_signal": 0.002},
+  "train_seeds": [42, 43, 44],
+  "validation_seeds": [1042, 1043, 1044],
+  "additional_fraction": 0.25,
+  "final_test_opened": false
+}
