@@ -1,4 +1,4 @@
-Checks: '-*,clang-analyzer-*,bugprone-*,performance-*,portability-*,modernize-use-nullptr,modernize-use-override'
+Checks: '-*,clang-analyzer-*,bugprone-*,performance-*,portability-*,cppcoreguidelines-*,modernize-use-nullptr,modernize-use-override'
 WarningsAsErrors: '*'
-HeaderFilterRegex: '.*/native/(include|src|cuda)/.*'
+HeaderFilterRegex: '.*/native/(include|src|tests|cuda)/.*'
 FormatStyle: file

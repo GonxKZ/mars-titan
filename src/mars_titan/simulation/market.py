@@ -91,8 +91,8 @@ class MarketTape:
             raise ValueError("La simulación histórica cruza su partición o el test sellado")
         order = np.argsort(assets)
         self.assets = [assets[i] for i in order]
-        self.prices = np.array(prices[:, order], dtype=np.float64, copy=True)
-        self.scores = np.array(scores[:, order], dtype=np.float64, copy=True)
+        self.prices = np.array(prices[:, order], dtype=np.float64, order="C", copy=True)
+        self.scores = np.array(scores[:, order], dtype=np.float64, order="C", copy=True)
         self.close_times = times.astype(np.int64, copy=True)
         self.prediction_times = _times(times if prediction_times is None else prediction_times)
         if self.prediction_times.shape != times.shape or (self.prediction_times > times).any():

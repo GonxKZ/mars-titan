@@ -27,6 +27,8 @@ class FinancialEnv(gym.Env):
         participation=0.01,
         score_scale=0.01,
         ruin_penalty=-20,
+        backend="python",
+        native_library=None,
     ):
         if (
             not math.isfinite(score_scale)
@@ -35,6 +37,15 @@ class FinancialEnv(gym.Env):
             or ruin_penalty >= 0
         ):
             raise ValueError("La escala y la penalización de ruina deben fijarse antes de evaluar")
+        if backend not in {"python", "native"} or (
+            native_library is not None and backend != "native"
+        ):
+            raise ValueError("El motor debe ser python o native con una biblioteca explícita")
+        self.backend, self.native_library = backend, None
+        if backend == "native":
+            from .native_runtime import load_library
+
+            self.native_library = load_library(native_library)
         self.tape, self.capital, self.cost_bps, self.participation = (
             tape,
             capital,
@@ -52,25 +63,39 @@ class FinancialEnv(gym.Env):
             allocation="positive_top_quartile_equal_weight",
             action_levels=list(ACTIONS),
             final_test_opened=False,
+            accounting_backend=backend,
+            native_library_sha256=self.native_library.sha256 if self.native_library else None,
         )
         self.action_space = gym.spaces.Discrete(6)
         self.observation_space = gym.spaces.Box(-10, 10, (6 * len(tape.assets) + 2,), np.float32)
         self.book, self.cursor, self.done, self.paused = None, 0, True, False
 
+    def _new_book(self):
+        instruments = {asset: Instrument(self.tape.currency) for asset in self.tape.assets}
+        cash = {self.tape.currency: self.capital}
+        options = dict(cost_bps=self.cost_bps, participation=self.participation)
+        if self.backend == "native":
+            from .native_portfolio import NativePortfolio
+
+            return NativePortfolio(instruments, cash, library=self.native_library.path, **options)
+        return Portfolio(instruments, cash, **options)
+
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self.action_space.seed(seed)
-        self.book = Portfolio(
-            {a: Instrument(self.tape.currency) for a in self.tape.assets},
-            {self.tape.currency: self.capital},
-            cost_bps=self.cost_bps,
-            participation=self.participation,
-        )
+        self.book = self._new_book()
         self.book.start(int(self.tape.close_times[0]), self.tape.quotes(0))
         self.cursor, self.done, self.paused = 0, False, False
         return self._observation(), {"domain": self.tape.domain, "parent_frozen": True}
 
     def _observation(self):
+        if self.backend == "native":
+            return self.book.observation(
+                self.tape.prices[self.cursor],
+                self.tape.prices[max(0, self.cursor - 1)],
+                self.tape.scores[self.cursor],
+                self.score_scale,
+            )
         nav = self.book.nav[self.tape.currency]
         if nav is None or nav <= 0:
             return np.zeros(self.observation_space.shape, dtype=np.float32)
@@ -140,10 +165,14 @@ class FinancialEnv(gym.Env):
         previous = self.book.nav[self.tape.currency]
         following = self.cursor + 1
         at = int(self.tape.open_times[following])
-        result = self.book.advance(
+        advance = self.book.advance_frame if self.backend == "native" else self.book.advance
+        quotes = (
+            self.tape.prices[following] if self.backend == "native" else self.tape.quotes(following)
+        )
+        result = advance(
             at,
             int(self.tape.close_times[following]),
-            self.tape.quotes(following),
+            quotes,
             actions=[a for a in self.tape.actions if a.effective_at == at],
         )
         self.cursor = following
@@ -209,12 +238,7 @@ class FinancialEnv(gym.Env):
             or type(state.get("paused")) is not bool
         ):
             raise ValueError("El estado pertenece a otro episodio o tiene un cursor inválido")
-        book = Portfolio(
-            {a: Instrument(self.tape.currency) for a in self.tape.assets},
-            {self.tape.currency: self.capital},
-            cost_bps=self.cost_bps,
-            participation=self.participation,
-        )
+        book = self._new_book()
         book.restore(state["book"])
         if book.clock != int(self.tape.close_times[state["cursor"]]):
             raise ValueError("El cursor no corresponde al cierre de la cartera")

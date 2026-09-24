@@ -1,127 +1,117 @@
-# Configuración nativa de MARS-TITAN
+# Núcleo nativo de simulación
 
-Este directorio prepara CMake para C17 y C++20. CUDA es opcional y está desactivada por defecto. El objetivo de interfaz `mars_titan::native_options` agrupa los estándares y los avisos de compilación para futuros objetivos. No genera una biblioteca, un ejecutable ni una extensión de Python.
+`mars_titan_simulation` es una biblioteca compartida con una interfaz C. `mars_titan_financial` contiene la sesión financiera pura y `mars-titan-sim` permite ejecutarla desde un programa C++ autónomo. CMake mantiene C17 para los consumidores de la interfaz C y C++20 para la implementación. Los perfiles usan Ninja y dos trabajos de compilación. CUDA continúa desactivada por defecto.
 
-La configuración requiere CMake 3.24 o posterior y compiladores de C y C++. Desde la raíz del repositorio:
-
-```bash
-cmake -S native -B build/native-cpu -DMARS_TITAN_ENABLE_CUDA=OFF
-```
-
-Para comprobar las herramientas de CUDA en el equipo documentado:
-
-```bash
-cmake -S native -B build/native-cuda \
-  -DMARS_TITAN_ENABLE_CUDA=ON \
-  -DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.4/bin/nvcc \
-  -DCUDAToolkit_ROOT=/usr/local/cuda-13.4 \
-  -DCMAKE_CUDA_ARCHITECTURES=89
-```
-
-`89` corresponde a la capacidad de cómputo 8.9 observada en la RTX 4070 Laptop. En otro equipo se debe comprobar la arquitectura y ajustar las rutas. Al activar CUDA, CMake exige tanto el compilador como el conjunto de herramientas. Una ausencia o incompatibilidad produce un error visible, sin cambiar automáticamente a una compilación con CPU.
-
-Conviene usar directorios de configuración distintos para CPU y CUDA. CMake conserva la elección de compilador en su caché. Estos directorios contienen archivos generados y quedan fuera del código fuente.
-
-## Alcance de la comprobación
-
-Configurar con éxito verifica que CMake reconoce las herramientas y puede realizar sus comprobaciones de compilador. No verifica kernels, resultados numéricos, gradientes, rendimiento o compatibilidad de una futura extensión con PyTorch. No hay fuentes científicas ni binarios del proyecto que compilar o ejecutar.
-
-La estructura reserva [include/](include/README.md) para contratos públicos, [src/](src/README.md) para implementaciones C/C++ y [cuda/](cuda/README.md) para posibles kernels. Su contenido se decidirá después de perfilar una implementación de referencia en Python. No se añaden opciones de cálculo aproximado ni opciones de optimización numérica antes de medir su efecto.
-
-El conjunto de herramientas local y el entorno de ejecución usado por una distribución de PyTorch pueden tener versiones distintas. Antes de compilar una extensión habrá que comprobar la compatibilidad de PyTorch, el conjunto de herramientas, el compilador anfitrión y la ABI. Los detalles del entorno están en [reproducibility.md](../docs/engineering/reproducibility.md).
-
-## Diagnóstico por objetivo
-
-Los objetivos C++ propios llaman a `mars_titan_configure_target(nombre)`. La función aplica C++20, los avisos del proyecto y la base de comandos de compilación. Las opciones de análisis se aplican a ese objetivo y no reescriben las opciones de compilación de bibliotecas de terceros. C17 se mantiene para fuentes C que se incorporen de forma explícita.
-
-C++20 es la base común con CUDA. Una necesidad concreta de C++23 debe justificar el cambio de estándar y comprobar el soporte del compilador anfitrión, el conjunto de herramientas y la extensión de PyTorch. No se adopta un estándar superior solo por su fecha.
-
-```cmake
-add_library(operacion src/operacion.cpp)
-mars_titan_configure_target(operacion)
-```
-
-El ejemplo describe la integración futura. No existe todavía esa biblioteca.
-
-Desde `native/` se pueden configurar perfiles separados:
+La configuración requiere CMake 3.24 o posterior, Ninja y compiladores de C y C++. Desde `native/`:
 
 ```bash
 cmake --preset native-debug
-cmake --preset native-asan
-cmake --preset native-profile
+cmake --build --preset native-debug
+ctest --preset native-debug
 ```
 
-| Opción | Comprobación o finalidad |
+Los binarios y `compile_commands.json` se guardan en `build/native/`, fuera de este directorio. En Linux, la biblioteca de Release se genera en `build/native/native-release/libmars_titan_simulation.so`, respecto a la raíz del repositorio.
+
+```bash
+cmake --preset native-release -DMARS_TITAN_BUILD_RUNNER=ON
+cmake --build --preset native-release
+ctest --preset native-release
+../build/native/native-release/mars-titan-sim --help
+```
+
+Los perfiles habituales de Clang y GCC activan `MARS_TITAN_BUILD_RUNNER` para construir la sesión y el ejecutable. `MARS_TITAN_BUILD_RUNNER=OFF` con `MARS_TITAN_BUILD_FINANCIAL=ON` permite compilar solo la sesión y sus pruebas. El ejecutable requiere UNIX por sus bloqueos y escrituras confirmadas. Las bibliotecas pueden configurarse por separado en MSVC. Una fuente requerida que falta produce un error de configuración.
+
+El programa utiliza Arrow y Parquet C++, OpenSSL Crypto y [nlohmann_json 3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0). La descarga de JSON se verifica con el SHA-256 publicado. CMake busca primero los paquetes del SDK Arrow/Parquet. En Linux puede localizar las cabeceras y bibliotecas C++ de PyArrow mediante `uv` durante la configuración. El ejecutable enlaza `libarrow` y `libparquet`, sin `arrow_python` ni `libpython`. JSON y las dependencias de archivos quedan fuera de la sesión pura.
+
+La identidad compilada contiene la versión y una huella de fuentes, cabeceras y configuración. Incluye `accurate_sum.hpp`. Los cambios en esos archivos hacen que CMake vuelva a calcular la huella antes de compilar.
+
+## Perfiles y diagnósticos
+
+| Perfil | Finalidad |
 | --- | --- |
-| `MARS_TITAN_WARNINGS_AS_ERRORS=ON` | Convierte avisos propios en errores. Incluye conversiones y ocultación de nombres en C++. |
-| `MARS_TITAN_ENABLE_CLANG_TIDY=ON` | Ejecuta análisis estático, comprobaciones de errores, rendimiento y portabilidad. |
-| `MARS_TITAN_SANITIZER=address-undefined` | Instrumenta memoria y comportamiento indefinido en CPU. |
-| `MARS_TITAN_SANITIZER=thread` | Configuración alternativa para comprobar concurrencia CPU. |
-| `MARS_TITAN_PROFILE=ON` | Conserva punteros de pila en un perfil de medición sin sanitizadores. |
+| `native-debug` | Clang, símbolos, avisos como errores y análisis de lifetime disponible. |
+| `native-release` | Release con paridad de coma flotante y endurecimiento STL. |
+| `native-asan-ubsan` | AddressSanitizer, UndefinedBehaviorSanitizer y detección de fugas cuando la plataforma la admite. |
+| `native-tsan` | ThreadSanitizer en una compilación independiente. |
+| `native-msan` | MemorySanitizer con libc++ y libc++abi instrumentadas. |
+| `native-static-analysis` | clang-tidy y analizador de rutas de Clang. |
+| `native-fuzz` | libFuzzer con ASan y UBSan, entradas y tiempo acotados. |
+| `native-coverage` | Cobertura LLVM de líneas y ramas, separada de Release y los sanitizadores. |
+| `native-gcc-debug`, `native-gcc-release` | Compilación alternativa con GCC. |
+| `native-gcc-analysis` | Analizador de rutas de GCC mediante `-fanalyzer`. |
+| `native-profile` | RelWithDebInfo con símbolos y punteros de pila. |
 
-Los sanitizadores de CPU y los perfiles de rendimiento no se combinan. Tampoco se activan automáticamente sobre CUDA. El coste de instrumentación no se publica como rendimiento de una versión optimizada.
+`native-asan` conserva el nombre del perfil anterior y equivale a `native-asan-ubsan`. Los perfiles `native-msvc-debug`, `native-msvc-release`, `native-msvc-asan` y `native-msvc-analysis` están disponibles en Windows, desde un entorno de desarrollo de MSVC con Ninja. Incluyen las opciones compatibles `/W4`, `/permissive-`, `/sdl`, `/fp:strict` y `/analyze` cuando se solicita. Estos perfiles de Windows no se han probado en este equipo.
 
-clang-tidy y clang-format deben corresponder a herramientas disponibles en el
-entorno. Se puede pasar su ruta sin modificar la configuración del sistema:
+CMake comprueba el soporte de los avisos antes de activarlos. Incluye conversiones, cambios de signo, ocultación de nombres, formatos, desreferencias nulas y otros diagnósticos de C++. En Clang intenta primero Lifetime Safety y después la combinación experimental `-Xclang -fexperimental-lifetime-safety -Wexperimental-lifetime-safety`. GCC utiliza los avisos de referencias y punteros colgantes que admita.
 
-```bash
-cmake -S native -B build/native/tidy \
-  -DMARS_TITAN_ENABLE_CLANG_TIDY=ON \
-  -DMARS_TITAN_CLANG_TIDY=/ruta/a/clang-tidy
-clang-format --dry-run --Werror --style=file:native/.clang-format archivo.cpp
-```
+libstdc++ utiliza `_GLIBCXX_ASSERTIONS`. Cuando se detecta libc++ con modos de endurecimiento, Release utiliza el modo rápido y los perfiles de verificación el extensivo. Las opciones se aplican a los objetivos propios mediante `mars_titan_configure_target`.
 
-Una herramienta solicitada que no existe produce un error, no un análisis omitido silenciosamente. El archivo `.clang-tidy` selecciona comprobaciones concretas y `.clang-format` fija un formato común. No sustituyen las pruebas de comportamiento.
+## Análisis estático
 
-## Medición y depuración
-
-Primero se registra una carga representativa, sus entradas, la precisión, la versión y la salida de referencia. El informe separa lectura, conversiones, transferencia, cálculo, sincronización y escritura. Debe medir latencia, caudal, RAM y VRAM máximas, además del tiempo completo. La mejora teórica máxima depende de la fracción del recorrido que realmente se acelere.
-
-El paralelismo también forma parte del experimento. Se comparan cantidades
-acotadas de trabajadores, hilos de BLAS y compilación, tamaño de lote y precarga.
-No se multiplican estos niveles sin medir la sobresuscripción, el ancho de banda
-y las copias. Los perfiles de compilación usan dos trabajos como punto de partida,
-no como máximo demostrado del equipo. La carga científica conservará colas y
-cachés limitadas, cancelación y errores visibles.
-
-Para CPU se emplean símbolos de depuración, `perf` cuando el entorno lo permita y
-Valgrind para perfiles o errores de memoria. No se cambian permisos del kernel ni
-parámetros de seguridad para habilitar un contador. Para CUDA, las herramientas
-previstas son Nsight Systems para el recorrido, Nsight Compute para kernels y
-Compute Sanitizer para memoria y sincronización. Solo se usarán cuando exista un
-ejecutable concreto y una carga autorizada.
+El perfil de análisis exige una instalación ejecutable de clang-tidy. Con Clang 21, la herramienta utilizada se puede instalar en el entorno del usuario:
 
 ```bash
-perf stat -- ejecutable argumentos
-valgrind --tool=memcheck --error-exitcode=1 ejecutable argumentos
-nsys profile --trace=cuda,nvtx,osrt -o perfil ejecutable argumentos
-ncu --set basic ejecutable argumentos
-compute-sanitizer --tool memcheck --error-exitcode=1 ejecutable argumentos
-compute-sanitizer --tool racecheck --error-exitcode=1 ejecutable argumentos
-compute-sanitizer --tool synccheck --error-exitcode=1 ejecutable argumentos
+uv tool install clang-tidy==21.1.6
+cmake --preset native-static-analysis
+cmake --build --preset native-static-analysis
+ctest --preset native-static-analysis
 ```
 
-Son órdenes para futuros ejecutables, no experimentos ejecutados. No se activa
-`fast-math`, precisión reducida, copias asíncronas o kernels propios sin contrastar
-sus errores y el beneficio completo frente a las bibliotecas existentes.
+También puede indicarse su ruta mediante la variable CMake `MARS_TITAN_CLANG_TIDY`. Se comprueba que clang-tidy comparte la versión principal del compilador Clang. `.clang-tidy` selecciona análisis de rutas, errores, rendimiento, portabilidad y comprobaciones de las C++ Core Guidelines compatibles con el estándar del proyecto.
 
-## Comprobación de las herramientas
+El objetivo `static-analysis` utiliza `clang-check` y la base de comandos de compilación para analizar las fuentes propias activadas, incluidas la sesión y el ejecutable. Devuelve un error cuando detecta un problema. En GCC y MSVC, el análisis forma parte de la compilación del perfil correspondiente. Una herramienta solicitada que falta o no acepta las opciones produce un error de configuración.
 
-Las [pruebas locales](../tests/native/test_diagnostics.py) crean programas C++
-temporales. Verifican compilación correcta, avisos como errores, un acceso fuera
-de límites detectado por AddressSanitizer y una desreferencia nula detectada por
-clang-tidy. También prueban configuraciones incompatibles y herramientas ausentes.
+## Sanitizadores y pruebas
+
+```bash
+cmake --preset native-asan-ubsan -DMARS_TITAN_BUILD_RUNNER=ON
+cmake --build --preset native-asan-ubsan
+ctest --preset native-asan-ubsan
+```
+
+Los tests `simulation`, `concurrency` y `c_abi` comprueban la contabilidad, las llamadas concurrentes y un consumidor C17 real. La sesión añade `financial_session`. El perfil de fuzzing añade `fuzz_smoke` y, cuando la sesión está activada, `fuzz_session_smoke`. Cada ejecución utiliza 1000 entradas, semilla 42, un máximo de 4096 bytes por entrada y un límite de 2048 MiB. Cada test tiene un tiempo máximo.
+
+Los perfiles instrumentados conservan símbolos y punteros de pila. CTest solicita trazas simbolizadas y utiliza `llvm-symbolizer` cuando está disponible. Las búsquedas de símbolos por red quedan desactivadas. ASan y UBSan se combinan entre sí. TSan y MSan requieren sus propios directorios y runtimes.
+
+MSan no se configura con una biblioteca estándar sin instrumentar. `MARS_TITAN_MSAN_STDLIB_ROOT` debe señalar una instalación de libc++ y libc++abi compiladas con MSan, con cabeceras en `include/c++/v1` y bibliotecas en `lib`. CMake comprueba esas rutas y las referencias a la instrumentación. La presencia del runtime de Clang por sí sola no basta. En ausencia de estas dependencias, el perfil termina con un error explícito.
+
+La [preparación de LLVM para MSan](cmake/msan-runtime.md) fija la versión, el commit y las opciones de la instalación local.
+
+```bash
+cmake --preset native-msan -DMARS_TITAN_BUILD_FINANCIAL=ON \
+  -DMARS_TITAN_MSAN_STDLIB_ROOT="${MSAN_STDLIB_ROOT:?Define la instalación instrumentada}"
+```
+
+El núcleo y la sesión pura se comprueban con MSan. Ese perfil excluye explícitamente `mars-titan-sim` porque Arrow y OpenSSL son bibliotecas precompiladas sin instrumentación MSan. El ejecutable sigue disponible para ASan, UBSan, TSan y análisis del código propio.
+
+La ejecución de los sanitizadores depende también del sistema operativo y de su espacio de direcciones. Un fallo de inicialización del runtime no equivale a una prueba superada. No se cambian permisos, ASLR ni opciones del sistema para ocultarlo. MSVC dispone de ASan en un perfil separado de las comprobaciones `/RTC` de Debug.
+
+Las pruebas locales de `tests/native/test_diagnostics.py` usan programas temporales para comprobar avisos, accesos inválidos y herramientas ausentes. Se ejecutan desde la raíz:
 
 ```bash
 uv run --locked pytest tests/native/test_diagnostics.py
 ```
 
-La prueba de clang-tidy acepta su ruta mediante `MARS_TITAN_CLANG_TIDY`. Si falta,
-se informa como omitida. En la prueba del fallo de memoria se desactiva únicamente
-la simbolización externa para evitar búsquedas de símbolos por red. Se exige la
-salida de error real del sanitizador, no basta con que el proceso termine por señal.
+## Release y medición
 
-Referencias: [AddressSanitizer](https://clang.llvm.org/docs/AddressSanitizer.html),
-[UndefinedBehaviorSanitizer](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html),
-[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) y
-[Compute Sanitizer](https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html).
+Release utiliza `-fno-fast-math` y `-ffp-contract=off` en GCC y Clang. MSVC utiliza `/fp:strict` cuando lo admite. LTO y PGO están desactivados. La instrumentación de sanitizadores, el perfil de rendimiento y CUDA se configuran por separado.
+
+`MARS_TITAN_ENABLE_IPO=ON` solicita LTO para Release y comprueba su disponibilidad. `MARS_TITAN_PGO=generate` y `MARS_TITAN_PGO=use` son opciones explícitas. GCC utiliza un directorio de perfiles. Clang genera archivos `.profraw` y consume un archivo `.profdata` combinado con `llvm-profdata`. La ruta se indica mediante `MARS_TITAN_PGO_DATA`. Estos modos necesitan una carga representativa y una comparación de paridad y tiempo total antes de adoptar sus resultados.
+
+La medición del núcleo debe incluir la preparación de entradas y el enlace con Python, además del tiempo interno. Deben registrarse las versiones, la configuración, las formas de los datos, las repeticiones, la memoria y el error frente a la referencia. Los tiempos de los perfiles instrumentados describen esas comprobaciones, no el rendimiento de Release.
+
+## Cobertura de líneas y ramas
+
+```bash
+cmake --preset native-coverage -DMARS_TITAN_BUILD_RUNNER=ON
+cmake --build --preset native-coverage
+ctest --preset native-coverage
+cmake --build --preset native-coverage --target coverage-report
+```
+
+El perfil utiliza contadores atómicos para las pruebas concurrentes. `llvm-profdata` combina los perfiles y `llvm-cov` genera un resumen y `build/native/native-coverage/coverage/native-coverage.json`, respecto a la raíz del repositorio. El informe excluye pruebas, cabeceras del sistema y dependencias externas. Los nombres de fuentes del proyecto quedan relativos al repositorio. El informe rechaza perfiles anteriores a los binarios para evitar mezclar ejecuciones de versiones distintas.
+
+Las pruebas externas del ejecutable pueden escribir en el mismo directorio mediante `LLVM_PROFILE_FILE`. La cobertura registra líneas y ramas observadas. Las pruebas de comportamiento y de mutación deben comprobar qué errores detectan esos recorridos.
+
+Referencias: [AddressSanitizer](https://clang.llvm.org/docs/AddressSanitizer.html), [UndefinedBehaviorSanitizer](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html), [MemorySanitizer](https://clang.llvm.org/docs/MemorySanitizer.html), [ThreadSanitizer](https://clang.llvm.org/docs/ThreadSanitizer.html) y [clang-tidy](https://clang.llvm.org/extra/clang-tidy/).

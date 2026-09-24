@@ -2,38 +2,222 @@
   "version": 5,
   "configurePresets": [
     {
-      "name": "native-debug",
-      "displayName": "C++ con avisos estrictos",
-      "generator": "Unix Makefiles",
+      "name": "native-base",
+      "hidden": true,
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/../build/native/${presetName}",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON",
+        "MARS_TITAN_ENABLE_CUDA": "OFF",
         "MARS_TITAN_WARNINGS_AS_ERRORS": "ON",
-        "MARS_TITAN_ENABLE_CUDA": "OFF"
+        "MARS_TITAN_SANITIZER": "none",
+        "MARS_TITAN_PROFILE": "OFF",
+        "MARS_TITAN_ENABLE_IPO": "OFF",
+        "MARS_TITAN_PGO": "off",
+        "MARS_TITAN_ENABLE_CLANG_TIDY": "OFF",
+        "MARS_TITAN_ENABLE_STATIC_ANALYZER": "OFF",
+        "MARS_TITAN_BUILD_FUZZER": "OFF",
+        "MARS_TITAN_ENABLE_COVERAGE": "OFF"
+      }
+    },
+    {
+      "name": "native-clang",
+      "hidden": true,
+      "inherits": "native-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "native-debug",
+      "displayName": "Clang C++20 con avisos estrictos",
+      "inherits": "native-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MARS_TITAN_BUILD_RUNNER": "ON"
+      }
+    },
+    {
+      "name": "native-release",
+      "displayName": "Clang Release sin instrumentación",
+      "inherits": "native-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "MARS_TITAN_BUILD_RUNNER": "ON"
+      }
+    },
+    {
+      "name": "native-asan-ubsan",
+      "displayName": "Memoria y comportamiento indefinido",
+      "inherits": "native-debug",
+      "cacheVariables": {
+        "MARS_TITAN_SANITIZER": "address-undefined"
       }
     },
     {
       "name": "native-asan",
-      "displayName": "Memoria y comportamiento indefinido",
+      "displayName": "Compatibilidad con el perfil ASan anterior",
+      "inherits": "native-asan-ubsan",
+      "cacheVariables": {}
+    },
+    {
+      "name": "native-tsan",
+      "displayName": "Detección independiente de carreras",
       "inherits": "native-debug",
-      "binaryDir": "${sourceDir}/../build/native/${presetName}",
-      "cacheVariables": {"MARS_TITAN_SANITIZER": "address-undefined"}
+      "cacheVariables": {
+        "MARS_TITAN_SANITIZER": "thread"
+      }
+    },
+    {
+      "name": "native-msan",
+      "displayName": "MSan con biblioteca estándar instrumentada",
+      "inherits": "native-debug",
+      "cacheVariables": {
+        "MARS_TITAN_SANITIZER": "memory"
+      }
+    },
+    {
+      "name": "native-static-analysis",
+      "displayName": "clang-tidy y análisis de rutas",
+      "inherits": "native-debug",
+      "cacheVariables": {
+        "MARS_TITAN_ENABLE_CLANG_TIDY": "ON",
+        "MARS_TITAN_ENABLE_STATIC_ANALYZER": "ON"
+      }
+    },
+    {
+      "name": "native-fuzz",
+      "displayName": "libFuzzer con ASan y UBSan",
+      "inherits": "native-asan-ubsan",
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_FUZZER": "ON"
+      }
+    },
+    {
+      "name": "native-coverage",
+      "displayName": "Cobertura LLVM de líneas y ramas",
+      "inherits": "native-debug",
+      "cacheVariables": {
+        "MARS_TITAN_ENABLE_COVERAGE": "ON"
+      }
     },
     {
       "name": "native-profile",
-      "displayName": "Medición sin sanitizadores",
-      "inherits": "native-debug",
-      "binaryDir": "${sourceDir}/../build/native/${presetName}",
+      "displayName": "Medición con símbolos y punteros de pila",
+      "inherits": "native-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "MARS_TITAN_PROFILE": "ON",
-        "MARS_TITAN_SANITIZER": "none"
+        "MARS_TITAN_PROFILE": "ON"
+      }
+    },
+    {
+      "name": "native-gcc-debug",
+      "displayName": "GCC C++20 con avisos estrictos",
+      "inherits": "native-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MARS_TITAN_BUILD_RUNNER": "ON"
+      }
+    },
+    {
+      "name": "native-gcc-release",
+      "displayName": "GCC Release sin instrumentación",
+      "inherits": "native-gcc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "native-gcc-analysis",
+      "displayName": "Análisis de rutas con GCC",
+      "inherits": "native-gcc-debug",
+      "cacheVariables": {
+        "MARS_TITAN_ENABLE_STATIC_ANALYZER": "ON"
+      }
+    },
+    {
+      "name": "native-msvc-debug",
+      "displayName": "MSVC con diagnósticos de desarrollo",
+      "inherits": "native-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "native-msvc-release",
+      "displayName": "MSVC Release",
+      "inherits": "native-msvc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "native-msvc-asan",
+      "displayName": "MSVC AddressSanitizer sin /RTC",
+      "inherits": "native-msvc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "MARS_TITAN_SANITIZER": "address"
+      }
+    },
+    {
+      "name": "native-msvc-analysis",
+      "displayName": "MSVC /analyze",
+      "inherits": "native-msvc-debug",
+      "cacheVariables": {
+        "MARS_TITAN_ENABLE_STATIC_ANALYZER": "ON"
       }
     }
   ],
   "buildPresets": [
-    {"name": "native-debug", "configurePreset": "native-debug", "jobs": 2},
-    {"name": "native-asan", "configurePreset": "native-asan", "jobs": 2},
-    {"name": "native-profile", "configurePreset": "native-profile", "jobs": 2}
+    {"name":"native-build","hidden":true,"jobs":2},
+    {"name":"native-debug","inherits":"native-build","configurePreset":"native-debug"},
+    {"name":"native-release","inherits":"native-build","configurePreset":"native-release"},
+    {"name":"native-asan-ubsan","inherits":"native-build","configurePreset":"native-asan-ubsan"},
+    {"name":"native-asan","inherits":"native-build","configurePreset":"native-asan"},
+    {"name":"native-tsan","inherits":"native-build","configurePreset":"native-tsan"},
+    {"name":"native-msan","inherits":"native-build","configurePreset":"native-msan"},
+    {"name":"native-static-analysis","inherits":"native-build","configurePreset":"native-static-analysis","targets":["all","static-analysis"]},
+    {"name":"native-fuzz","inherits":"native-build","configurePreset":"native-fuzz"},
+    {"name":"native-profile","inherits":"native-build","configurePreset":"native-profile"},
+    {"name":"native-gcc-debug","inherits":"native-build","configurePreset":"native-gcc-debug"},
+    {"name":"native-gcc-release","inherits":"native-build","configurePreset":"native-gcc-release"},
+    {"name":"native-gcc-analysis","inherits":"native-build","configurePreset":"native-gcc-analysis","targets":["all","static-analysis"]},
+    {"name":"native-msvc-debug","inherits":"native-build","configurePreset":"native-msvc-debug"},
+    {"name":"native-msvc-release","inherits":"native-build","configurePreset":"native-msvc-release"},
+    {"name":"native-msvc-asan","inherits":"native-build","configurePreset":"native-msvc-asan"},
+    {"name":"native-msvc-analysis","inherits":"native-build","configurePreset":"native-msvc-analysis","targets":["all","static-analysis"]},
+    {"name":"native-coverage","inherits":"native-build","configurePreset":"native-coverage"}
+  ],
+  "testPresets": [
+    {"name":"native-test","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""}},
+    {"name":"native-debug","inherits":"native-test","configurePreset":"native-debug"},
+    {"name":"native-release","inherits":"native-test","configurePreset":"native-release"},
+    {"name":"native-asan-ubsan","inherits":"native-test","configurePreset":"native-asan-ubsan"},
+    {"name":"native-asan","inherits":"native-test","configurePreset":"native-asan"},
+    {"name":"native-tsan","inherits":"native-test","configurePreset":"native-tsan"},
+    {"name":"native-msan","inherits":"native-test","configurePreset":"native-msan"},
+    {"name":"native-static-analysis","inherits":"native-test","configurePreset":"native-static-analysis"},
+    {"name":"native-fuzz","inherits":"native-test","configurePreset":"native-fuzz"},
+    {"name":"native-profile","inherits":"native-test","configurePreset":"native-profile"},
+    {"name":"native-gcc-debug","inherits":"native-test","configurePreset":"native-gcc-debug"},
+    {"name":"native-gcc-release","inherits":"native-test","configurePreset":"native-gcc-release"},
+    {"name":"native-gcc-analysis","inherits":"native-test","configurePreset":"native-gcc-analysis"},
+    {"name":"native-msvc-debug","inherits":"native-test","configurePreset":"native-msvc-debug"},
+    {"name":"native-msvc-release","inherits":"native-test","configurePreset":"native-msvc-release"},
+    {"name":"native-msvc-asan","inherits":"native-test","configurePreset":"native-msvc-asan"},
+    {"name":"native-msvc-analysis","inherits":"native-test","configurePreset":"native-msvc-analysis"},
+    {"name":"native-coverage","inherits":"native-test","configurePreset":"native-coverage"}
   ]
 }

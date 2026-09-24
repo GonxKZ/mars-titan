@@ -104,11 +104,11 @@ La máquina dispone de toolkit CUDA 13.4 y el entorno compartido usa una distrib
 
 Una extensión nativa introduce una comprobación adicional. Antes de compilarla se revisarán las versiones admitidas por PyTorch, el toolkit, el compilador C/C++ anfitrión, la ABI y la arquitectura de GPU. Detectar CUDA en PyTorch no demuestra esa compatibilidad de compilación. La documentación de [extensiones de PyTorch](https://docs.pytorch.org/docs/stable/cpp_extension.html) describe los requisitos del toolkit para extensiones CUDA.
 
-[native/](../../native/README.md) declara C17, C++20 y CUDA opcional. La opción `MARS_TITAN_ENABLE_CUDA` es `OFF` por defecto. Al activarla se requieren el compilador CUDA y el toolkit. Solo existe un target de interfaz para compartir opciones, sin fuentes científicas, kernels o binarios.
+[native/](../../native/README.md) utiliza C17 en su interfaz pública y C++20 en el núcleo y el ejecutable financiero. `mars-titan-sim` lee Parquet y ejecuta escenarios sin iniciar Python. Arrow y Parquet se enlazan como bibliotecas C++. La opción `MARS_TITAN_ENABLE_CUDA` sigue siendo `OFF` por defecto y el simulador contable no incorpora kernels CUDA.
 
 La configuración local se ha completado con CUDA desactivada y activada, en directorios temporales separados. En la segunda comprobación se usaron `nvcc` 13.4.92, GNU 15.2.0 y la arquitectura 89.
 
-Las órdenes de configuración están en el README nativo. Un resultado correcto de CMake acredita la detección de herramientas y sus comprobaciones de compilador. No verifica un kernel, su concordancia numérica o su rendimiento. Estas pruebas se diseñarán si el perfilado justifica una implementación nativa.
+Las órdenes del README nativo separan Release de los perfiles de avisos, análisis estático, vida útil, sanitizadores y fuzzing. La verificación contrasta los resultados con la referencia Python y comprueba recuperación y concurrencia. Cada informe debe identificar el binario y las herramientas realmente ejecutadas. Detectar una opción del compilador no acredita por sí solo la corrección ni una mejora de rendimiento.
 
 ## Registro de futuros experimentos
 
