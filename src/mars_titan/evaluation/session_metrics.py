@@ -5,6 +5,34 @@ import math
 import numpy as np
 
 
+def _group_errors(markets, times, absolute, squared):
+    """Mantener sumas por lote y el orden de sus primeras claves, con hasta 4096 filas."""
+    if len(times) <= 128:
+        pending = {}
+        for market, moment, ae, se in zip(markets, times, absolute, squared, strict=True):
+            entry = pending.setdefault((str(market), int(moment)), [0, 0.0, 0.0])
+            entry[0] += 1
+            entry[1] += float(ae)
+            entry[2] += float(se)
+        yield from pending.items()
+        return
+    # Dos índices por instante separan mercados sin convertir las fechas originales.
+    moments, inverse = np.unique(times, return_inverse=True)
+    groups = 2 * inverse + (markets == "CN")
+    counts = np.bincount(groups)
+    absolute_sums = np.bincount(groups, weights=absolute)
+    squared_sums = np.bincount(groups, weights=squared)
+    # Conservar el orden de primera aparición de las claves.
+    first = np.full(len(counts), len(times), dtype=np.intp)
+    np.minimum.at(first, groups, np.arange(len(times), dtype=np.intp))
+    ordered = np.argsort(first)
+    for group in ordered[counts[ordered] != 0]:
+        yield (
+            ("CN" if group % 2 else "US", int(moments[group // 2])),
+            (int(counts[group]), float(absolute_sums[group]), float(squared_sums[group])),
+        )
+
+
 class SessionErrors:
     """Acumular conteo, error absoluto y error cuadrático por decisión de cada mercado."""
 
@@ -40,24 +68,20 @@ class SessionErrors:
             raise ValueError("Los errores deben ser reales y representables en float64") from error
         if not np.isfinite(squared).all():
             raise ValueError("Los errores deben ser finitos")
-        pending = {}
-        for market, moment, ae, se in zip(markets, times, absolute, squared, strict=True):
-            key = str(market), int(moment)
-            entry = pending.setdefault(key, [0, 0.0, 0.0])
-            entry[0] += 1
-            entry[1] += float(ae)
-            entry[2] += float(se)
-        if (
-            len(self.sessions) + sum(key not in self.sessions for key in pending)
-            > self.max_sessions
-        ):
-            raise ValueError("El número de sesiones supera el presupuesto de evaluación")
-        merged = {}
-        for key, values in pending.items():
-            previous = self.sessions.get(key, (0, 0.0, 0.0))
-            merged[key] = [a + b for a, b in zip(previous, values, strict=True)]
-            if not all(math.isfinite(v) for v in merged[key]):
+        merged, added = {}, 0
+        for key, (count, ae, se) in _group_errors(markets, times, absolute, squared):
+            previous = self.sessions.get(key)
+            if previous is None:
+                added += 1
+                if len(self.sessions) + added > self.max_sessions:
+                    raise ValueError("El número de sesiones supera el presupuesto de evaluación")
+            else:
+                count += previous[0]
+                ae += previous[1]
+                se += previous[2]
+            if not (math.isfinite(count) and math.isfinite(ae) and math.isfinite(se)):
                 raise ValueError("La acumulación de errores supera el rango numérico")
+            merged[key] = [count, ae, se]
         self.sessions.update(merged)
 
     @staticmethod
