@@ -19,6 +19,16 @@ export const FINANCIAL_REASON_LABELS = Object.freeze({
   incomplete: "Episodio incompleto",
 });
 
+export const CONDITION_LABELS = Object.freeze({
+  real: "Datos reales", real_resampled: "Reales y bloques remuestreados",
+  real_synthetic: "Reales y bloques sintéticos",
+});
+
+export const RAM_SCOPE_LABELS = Object.freeze({
+  executable: "RSS máximo del ejecutable (VmHWM), MiB",
+  process_lifetime: "RSS máximo durante la vida del proceso, MiB",
+});
+
 export const METRIC_KEYS = Object.freeze([
   "mae", "mse", "rank_ic", "coverage_80", "coverage_95", "loss",
   "latency_p50_ms", "latency_p95_ms", "latency_p99_ms", "vram_peak_mib",
@@ -152,6 +162,17 @@ function validateRun(input, index, modelIds, generatedAt, version = 1) {
     result.metadata.parent_frozen = boolean(meta.parent_frozen ?? null, `${path}.parent_frozen`, true);
     result.metadata.currency = meta.currency ?? null;
     if (result.metadata.currency !== null && (typeof result.metadata.currency !== "string" || !/^[A-Z]{3}$/.test(result.metadata.currency))) fail(`${path}.currency`);
+    result.metadata.condition = meta.condition ?? null;
+    if (result.metadata.condition !== null && !Object.hasOwn(CONDITION_LABELS, result.metadata.condition)) fail(`${path}.condition`);
+    result.metadata.parent_model = text(meta.parent_model ?? null, `${path}.parent_model`, 96, true);
+    result.metadata.ram_peak_scope = meta.ram_peak_scope ?? null;
+    if (result.metadata.ram_peak_scope !== null && !Object.hasOwn(RAM_SCOPE_LABELS, result.metadata.ram_peak_scope)) fail(`${path}.ram_peak_scope`);
+    for (const key of ["executable_peak_rss_mib", "process_lifetime_peak_rss_mib"]) {
+      result.metadata[key] = number(meta[key] ?? null, `${path}.${key}`);
+    }
+    if (resultsProtected(result)) {
+      for (const key of ["ram_peak_scope", "executable_peak_rss_mib", "process_lifetime_peak_rss_mib"]) result.metadata[key] = null;
+    }
     result.activity = input.activity ?? (["initial_training", "supervised_continuation"].includes(meta.method) ? meta.method : "predictive_adaptation");
     if (!Object.hasOwn(ACTIVITY_LABELS, result.activity)) fail(`${path}.activity`, "actividad desconocida");
     result.financial_validation = validateFinancial(input.financial_validation, result, path);
@@ -264,12 +285,13 @@ function csvCell(value) {
 
 export function toCSV(runs, models, now = Date.now(), staleAfterSeconds = 180) {
   const names = new Map(models.map(model => [model.id, model.name]));
-  const headers = ["run_id", "attempt_id", "model_id", "model_name", "variant_id", "status", "display_status", "phase", "comparison_group", "fold", "seed", "updated_at", "test_released", ...METRIC_KEYS];
+  const headers = ["run_id", "attempt_id", "model_id", "model_name", "variant_id", "status", "display_status", "phase", "comparison_group", "fold", "seed", "updated_at", "test_released", "ram_peak_scope", ...METRIC_KEYS];
   const rows = runs.map(run => {
     const visible = publicMetrics(run);
     return [run.run_id, run.attempt_id, run.model_id, names.get(run.model_id) ?? run.model_id, run.variant_id,
       run.status, displayStatus(run, now, staleAfterSeconds), run.phase, run.comparison_group, run.fold, run.seed,
-      run.updated_at, run.test_released, ...METRIC_KEYS.map(key => visible[key])];
+      run.updated_at, run.test_released, resultsProtected(run) ? null : run.metadata?.ram_peak_scope,
+      ...METRIC_KEYS.map(key => visible[key])];
   });
   return [headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
 }

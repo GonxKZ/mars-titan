@@ -15,6 +15,8 @@ PREDICTIVE = {"initial_training", "supervised_continuation", "predictive_adaptat
 FINANCIAL = {"rl", "simulation", "evaluation"}
 INVALID_REASONS = {None, "none", "missing_close", "ruined", "incomplete"}
 ADAPTATION_METHODS = {"reinforce", "expected", "mae", "klpo_full", "klpo_mc", "klpo_exact"}
+NEURAL_CONTROLS = {"neural_mae", "neural_mse"}
+CONDITIONS = {"real", "real_resampled", "real_synthetic"}
 
 
 def classify(report, task, case):
@@ -45,9 +47,12 @@ def classify(report, task, case):
         else "initial_training"
     )
     activity = report.get("activity", inferred)
-    if activity not in ACTIVITIES or mode and mode not in ADAPTATION_METHODS:
+    valid_mode = mode in ADAPTATION_METHODS or (
+        mode in NEURAL_CONTROLS and activity == "supervised_continuation"
+    )
+    if activity not in ACTIVITIES or mode and not valid_mode:
         raise ValueError("Actividad o método sin contrato público")
-    return activity, mode if activity == "predictive_adaptation" and mode else activity
+    return activity, mode if activity in PREDICTIVE and mode else activity
 
 
 def financial_validation(report, activity):

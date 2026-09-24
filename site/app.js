@@ -1,7 +1,7 @@
 import {
   validateSnapshot, displayStatus, progressPercent, publicMetrics, publicHistory,
   resultsProtected, comparableRuns, formatValue, toCSV, STATUS_LABELS, PHASE_LABELS,
-  isPredictive, ACTIVITY_LABELS, FINANCIAL_REASON_LABELS,
+  isPredictive, ACTIVITY_LABELS, FINANCIAL_REASON_LABELS, CONDITION_LABELS, RAM_SCOPE_LABELS,
 } from "./state.mjs";
 
 let pageIndex = 0, firstPage = null, deployment = null;
@@ -115,10 +115,13 @@ function renderTracking() {
     ["Última observación del proceso", dateText(run.heartbeat_at)],
     ["Último progreso registrado", dateText(run.updated_at)],
     ...(run.metadata ? [["Campaña y método", `${run.metadata.campaign} / ${run.metadata.method}`], ["Origen", {real: "Corpus real", synthetic: "Mundo sintético", technical: "Comprobación técnica"}[run.metadata.domain]], ["Filas de entrenamiento / validación", `${count(run.metadata.train_rows)} / ${count(run.metadata.validation_rows)}`], ...(predictive ? [["Eje de la curva", run.metadata.history_axis === "epoch" ? "Épocas sin fecha original" : "Pasos"]] : []), ["Error registrado", run.metadata.error_type ?? "Sin error informado"]] : []),
+    ...(run.metadata?.condition ? [["Condición de entrenamiento", CONDITION_LABELS[run.metadata.condition]]] : []),
+    ...(run.metadata?.parent_model ? [["Referencia de partida", snapshot.models.find(model => model.id === run.metadata.parent_model)?.name ?? run.metadata.parent_model]] : []),
     ["Último punto de control", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
     ["Recuperación", run.checkpoint.resumable === null ? "No informada" : run.checkpoint.resumable ? "Disponible según el registro" : "No recuperable según el registro"],
     ["Semilla y partición", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`],
-    ["RAM máxima, MiB", formatValue(metrics.ram_peak_mib, { digits: 0 })],
+    [RAM_SCOPE_LABELS[run.metadata?.ram_peak_scope] ?? "RAM máxima, MiB (alcance no informado)", formatValue(metrics.ram_peak_mib, { digits: 0 })],
+    ...(run.metadata?.ram_peak_scope === "executable" ? [[RAM_SCOPE_LABELS.process_lifetime, formatValue(protectedResults ? null : run.metadata.process_lifetime_peak_rss_mib, {digits: 0})]] : []),
     ["Latencia p50 / p95 / p99, ms", [metrics.latency_p50_ms, metrics.latency_p95_ms, metrics.latency_p99_ms].map(value => formatValue(value, { digits: 1 })).join(" / ")],
     ["Tiempo observado, segundos", formatValue(metrics.elapsed_seconds, { digits: 0 })],
     ["Muestras por segundo", formatValue(metrics.samples_per_second, { digits: 1 })],

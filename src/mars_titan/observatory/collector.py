@@ -14,7 +14,7 @@ from pathlib import Path
 
 from mars_titan.data.storage import atomic_json
 
-from .activities import FINANCIAL, PREDICTIVE, classify, financial_validation
+from .activities import CONDITIONS, FINANCIAL, PREDICTIVE, classify, financial_validation
 
 METRICS = (
     "mae",
@@ -93,6 +93,8 @@ def utc(value):
 
 def planned_runs(kind, config, *, parents=1):
     """Contar el diseño fijo sin importar entrenadores ni reservar CUDA."""
+    if not isinstance(config, dict):
+        raise ValueError("Falta una configuración de campaña válida")
     if kind == "neural":
         arms = sum(len(config["pooled_weightings"]) if a == "US+CN" else 1 for a in config["arms"])
         seeds = len(config["finalist_seeds"])
@@ -116,7 +118,74 @@ def planned_runs(kind, config, *, parents=1):
                 len(config["betas"]) if mode.startswith("klpo_") else 1 for mode in config["modes"]
             )
         )
+    if kind in {"paired_posttraining", "financial"}:
+        if config.get("schema_version") != 1 or config.get("final_test_opened") is not False:
+            raise ValueError("El diseño debe declarar su versión y mantener cerrado el test")
+        fields = (
+            ("seeds", "conditions", "modes", "neural_controls")
+            if kind == "paired_posttraining"
+            else ("seeds", "algorithms")
+        )
+        counts = {}
+        for field in fields:
+            values = config.get(field)
+            item_type = int if field == "seeds" else str
+            if (
+                not isinstance(values, list)
+                or not (0 if field == "neural_controls" else 1) <= len(values) <= 128
+                or any(type(value) is not item_type for value in values)
+                or len(set(values)) != len(values)
+                or field == "seeds"
+                and any(not 0 <= value < 2**32 for value in values)
+            ):
+                raise ValueError("Las listas del diseño deben ser únicas, válidas y acotadas")
+            if item_type is str:
+                for value in values:
+                    identifier(value)
+            counts[field] = len(values)
+        if kind == "financial":
+            return counts["seeds"] * counts["algorithms"]
+        if (
+            not isinstance(parents, dict)
+            or not 1 <= len(parents) <= 64
+            or any(
+                not isinstance(family, str) or family not in {"neural", "tabular"}
+                for family in parents.values()
+            )
+        ):
+            raise ValueError("Cada padre debe declarar una familia neuronal o tabular")
+        for parent in parents:
+            identifier(parent)
+        objectives = (
+            len(parents) * counts["modes"]
+            + sum(family == "neural" for family in parents.values()) * counts["neural_controls"]
+        )
+        return counts["seeds"] * counts["conditions"] * objectives
     raise ValueError("Tipo de diseño desconocido")
+
+
+def _check_sha256(body, expected):
+    if (
+        not isinstance(expected, str)
+        or not re.fullmatch(r"[a-f0-9]{64}", expected)
+        or hashlib.sha256(body).hexdigest() != expected
+    ):
+        raise ValueError("La configuración no conserva su huella confirmada")
+
+
+def _report_paths(folder, maximum):
+    pending, entries_seen = [folder], 0
+    while pending:
+        with os.scandir(pending.pop()) as entries:
+            for entry in entries:
+                entries_seen += 1
+                if entries_seen > maximum * 16:
+                    raise ValueError("El recorrido de informes supera su presupuesto")
+                if entry.is_dir(follow_symlinks=False):
+                    if entry.name not in {"private", "checkpoints"}:
+                        pending.append(Path(entry.path))
+                elif entry.name == "run.json":
+                    yield safe_path(folder, Path(entry.path).relative_to(folder))
 
 
 def safe_path(root, relative):
@@ -132,7 +201,7 @@ def safe_path(root, relative):
 
 
 def lock_held(folder):
-    for name in (".lock", ".queue.lock", ".study.lock"):
+    for name in (".lock", ".queue.lock", ".study.lock", ".run.lock"):
         try:
             fd = os.open(folder / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         except FileNotFoundError:
@@ -170,8 +239,11 @@ class Collector:
     def __exit__(self, *_args):
         self.db.close()
 
-    def read(self, path):
-        path = safe_path(self.root, path.relative_to(self.root))
+    def read(self, path, *, expected_sha256=None):
+        relative = path.relative_to(self.root)
+        if "private" in relative.parts:
+            raise ValueError("No se leen los estados privados de las ejecuciones")
+        path = safe_path(self.root, relative)
         try:
             fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         except FileNotFoundError:
@@ -187,6 +259,8 @@ class Collector:
                 "SELECT signature, body FROM sources WHERE path=?", (str(path),)
             ).fetchone()
             if cached and signature == cached[0]:
+                if expected_sha256 is not None:
+                    _check_sha256(cached[1].encode(), expected_sha256)
                 return json.loads(cached[1])
             body = handle.read(2 * 1024**2 + 1)
             after = os.fstat(handle.fileno())
@@ -197,6 +271,8 @@ class Collector:
             or (after.st_size, after.st_mtime_ns) != (metadata.st_size, metadata.st_mtime_ns)
         ):
             raise ValueError("La fuente ha cambiado durante la lectura o supera el presupuesto")
+        if expected_sha256 is not None:
+            _check_sha256(body, expected_sha256)
         try:
             raw = json.loads(body)
             if not isinstance(raw, dict):
@@ -220,14 +296,24 @@ class Collector:
                     raise ValueError("Campaña duplicada o dominio desconocido")
                 seen.add(name)
                 folder = safe_path(self.root, source["path"])
-                summary = self.read(folder / "summary.json") or {}
+                summary = self.read(safe_path(folder, source.get("summary", "summary.json"))) or {}
                 planned = summary.get("planned_runs")
                 if planned is not None and (
                     type(planned) is not int or not 0 <= planned <= 2**53 - 1
                 ):
                     raise ValueError("El recuento previsto necesita un entero acotado")
                 if "configuration" in source:
-                    configuration = self.read(safe_path(self.root, source["configuration"]))
+                    configuration = self.read(
+                        safe_path(self.root, source["configuration"]),
+                        expected_sha256=source.get("configuration_sha256"),
+                    )
+                    if configuration is None and "configuration_snapshot" in source:
+                        if "configuration_sha256" not in source:
+                            raise ValueError("La copia de configuración necesita una huella fijada")
+                        configuration = self.read(
+                            safe_path(self.root, source["configuration_snapshot"]),
+                            expected_sha256=source["configuration_sha256"],
+                        )
                     planned = planned_runs(
                         source["kind"], configuration, parents=source.get("parents", 1)
                     )
@@ -309,15 +395,20 @@ class Collector:
 
     def _campaign(self, source, folder, summary, now, live):
         tasks = {}
-        for item in summary.get("runs", []):
+        runs = summary.get("runs", [])
+        if len(runs) > self.max_files:
+            raise ValueError("Demasiados recibos en el resumen de campaña")
+        if isinstance(runs, dict):
+            runs = [{**record, "id": key} for key, record in runs.items()]
+        for item in runs:
             attempts = item.get("attempts") or [item]
             for index, attempt in enumerate(attempts, 1):
                 if "path" in attempt or "report_path" in attempt:
-                    relative = (
-                        Path(attempt["report_path"])
-                        if "report_path" in attempt
-                        else Path(attempt["path"]) / "run.json"
-                    )
+                    relative = Path(attempt.get("report_path", attempt.get("path")))
+                    if "report_path" not in attempt and relative.name != "run.json":
+                        relative /= "run.json"
+                    if set(relative.parts[:-1]) & {"private", "checkpoints"}:
+                        raise ValueError("El recibo no puede estar dentro de los estados privados")
                     safe_path(folder, relative)
                     tasks[str(relative)] = {
                         **item,
@@ -328,11 +419,11 @@ class Collector:
                         else item.get("attempt_id", "legacy"),
                     }
         if folder.exists():
-            for path in folder.rglob("run.json"):
-                safe_path(folder, path.relative_to(folder))
-                if len(tasks) >= self.max_files:
+            for path in _report_paths(folder, self.max_files):
+                relative = str(path.relative_to(folder))
+                if relative not in tasks and len(tasks) >= self.max_files:
                     raise ValueError("Demasiados recibos en la campaña")
-                tasks.setdefault(str(path.relative_to(folder)), {})
+                tasks.setdefault(relative, {})
         records = []
         for relative, task in tasks.items():
             report_path = safe_path(folder, relative)
@@ -347,11 +438,61 @@ class Collector:
             ):
                 continue
             report = report or {}
-            checkpoint = self.read(report_path.parent / "checkpoints/latest.json") or {}
+            recovery = report.get("checkpoint", {})
+            checkpoint = (
+                {}
+                if any(key in recovery for key in ("step", "saved_at", "resumable"))
+                else self.read(report_path.parent / "checkpoints/latest.json") or {}
+            )
             record = public_run(source, task, report, checkpoint, relative, report_path, now, live)
             validate_record(record, now)
             records.append(record)
         return records
+
+
+def _resources(report):
+    attempts = report.get("attempts") or []
+    if not isinstance(attempts, list) or any(not isinstance(row, dict) for row in attempts):
+        raise ValueError("Los intentos deben conservar una lista de medidas")
+    records = [report, *attempts]
+
+    def peak(field):
+        values = [finite(row.get(field)) for row in records]
+        observed = [value for value in values if value is not None]
+        return max(observed) / 1024**2 if observed else None
+
+    elapsed = finite(
+        report.get("total_seconds", report.get("attempt_seconds", report.get("elapsed_seconds")))
+    )
+    timings = [finite(row.get("total_seconds", row.get("seconds"))) for row in attempts]
+    observed = [value for value in timings if value is not None]
+    if observed:
+        elapsed = sum(observed)
+        if not math.isfinite(elapsed):
+            raise ValueError("El tiempo acumulado supera el rango numérico")
+    executable = peak("executable_peak_rss_bytes")
+    lifetime = peak("process_lifetime_peak_rss_bytes")
+    scope = (
+        "executable"
+        if executable is not None
+        else "process_lifetime"
+        if lifetime is not None
+        else None
+    )
+    metadata = dict(
+        ram_peak_scope=scope,
+        executable_peak_rss_mib=executable,
+        process_lifetime_peak_rss_mib=lifetime,
+    )
+    resources = dict(
+        elapsed_seconds=elapsed,
+        ram_peak_mib=executable if executable is not None else lifetime,
+        vram_peak_mib=peak("peak_vram_allocated_bytes"),
+    )
+    if report.get("phase") in {"test", "evaluation"}:
+        metadata = dict.fromkeys(metadata)
+        resources = dict.fromkeys(resources)
+    return resources, metadata
 
 
 def public_run(source, task, report, checkpoint, relative, report_path, now, live):
@@ -398,22 +539,8 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         for e in epochs
         if predictive
     ]
-    metrics = dict(measures)
-    metrics["elapsed_seconds"] = finite(
-        report.get("total_seconds", report.get("attempt_seconds", report.get("elapsed_seconds")))
-    )
-    for key, raw_key in (
-        ("ram_peak_mib", "process_lifetime_peak_rss_bytes"),
-        ("vram_peak_mib", "peak_vram_allocated_bytes"),
-    ):
-        value = finite(report.get(raw_key))
-        metrics[key] = value / 1024**2 if value is not None else None
-    attempts = report.get("attempts", [])
-    if attempts:
-        metrics["elapsed_seconds"] = sum(finite(a.get("seconds")) or 0 for a in attempts)
-        peaks = [finite(a.get("peak_vram_allocated_bytes")) for a in attempts]
-        observed = [p for p in peaks if p is not None]
-        metrics["vram_peak_mib"] = max(observed) / 1024**2 if observed else None
+    resources, memory = _resources(report)
+    metrics = dict(measures, **resources)
     observed_time = (
         report.get("finished_at_utc") or report.get("updated_at_utc") or report.get("updated_at")
     )
@@ -430,10 +557,32 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     saved_at = utc(recovery.get("saved_at"))
     resumable = recovery.get("resumable")
     environment = identity.get("environment", {})
+    if not environment and activity in FINANCIAL:
+        environment = {
+            key: case.get(key, identity.get(key))
+            for key in ("capital", "participation", "allocation", "score_scale", "ruin_penalty")
+        }
     manifest = identity.get(
         "manifest_sha256",
         report.get("manifest_sha256", identity.get("tape_sha256", environment.get("tape_sha256"))),
     )
+    if manifest is None:
+        manifest = identity.get("dataset", {}).get("validation_sha256")
+    parent = identity.get("parent")
+    parent_model = parent.get("model", kind) if isinstance(parent, dict) else kind
+    parent_model = {"xgboost_external_cuda": "xgboost"}.get(parent_model, parent_model)
+    if activity not in {"predictive_adaptation", "supervised_continuation"} or parent_model not in {
+        "rnn",
+        "lstm",
+        "gru",
+        "dlinear",
+        "ridge",
+        "xgboost",
+    }:
+        parent_model = None
+    condition = case.get("condition")
+    if condition not in CONDITIONS:
+        condition = None
     currency = report.get("currency")
     if currency is not None and (
         not isinstance(currency, str) or not re.fullmatch(r"[A-Z]{3}", currency)
@@ -495,20 +644,24 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             method=method,
             parent_frozen=report.get("parent_frozen"),
             currency=currency,
+            condition=condition,
+            parent_model=parent_model,
             configuration_sha256=digest(case) if case else None,
             source_sha256=digest(report),
             history_axis="epoch" if predictive else "none",
             progress_time_source="receipt_timestamp" if observed_time else "receipt_mtime",
             train_rows=finite(samples.get("train")),
             validation_rows=finite(samples.get("validation")),
-            parent=digest(task["parent"]) if task.get("parent") else None,
+            parent=digest(parent or task["parent"]) if parent or task.get("parent") else None,
             error_type=identifier(task["error_type"]) if task.get("error_type") else None,
+            **memory,
         ),
     )
 
 
 def validation_metrics(measures, mode):
-    measures = measures.get("median", {}) if mode else measures
+    if mode:
+        measures = measures.get("median", measures if measures.get("primary") == "median" else {})
     values = {key: measures.get(key) for key in METRICS}
     for key in ("mae", "mse"):
         if values[key] is None:

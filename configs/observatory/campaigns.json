@@ -1,6 +1,36 @@
 {
   "schema_version": 1,
   "sources": [
+    {
+      "id": "native-financial-check-20260924",
+      "path": "data/interim/experimental-native-financial-20260924",
+      "kind": "archive",
+      "domain": "technical",
+      "summary": "comparison.json"
+    },
+    {
+      "id": "paired-posttraining-20260924",
+      "path": "data/interim/paired-posttraining-20260924",
+      "kind": "paired_posttraining",
+      "domain": "real",
+      "configuration": "configs/baselines/paired-posttraining.json",
+      "configuration_snapshot": "data/interim/experimental-configurations-20260924/paired-posttraining.json",
+      "configuration_sha256": "4e50cb48cfd50b3a09168a471a279d3989aef1531166ae0f044288b2431e52f7",
+      "parents": {
+        "rnn": "neural", "lstm": "neural", "gru": "neural", "dlinear": "neural",
+        "ridge": "tabular", "xgboost": "tabular"
+      },
+      "dependencies": ["neural-original-us", "tabular-original-us"]
+    },
+    {
+      "id": "financial-training-20260924",
+      "path": "data/interim/experimental-financial-training-20260924",
+      "kind": "financial",
+      "domain": "synthetic",
+      "configuration": "configs/simulation/comparators.json",
+      "configuration_snapshot": "data/interim/experimental-configurations-20260924/comparators.json",
+      "configuration_sha256": "b4fcfd2fee75df0ed9b1338d23448180181501a401337e853e67b2cf112a9a41"
+    },
     {"id": "financial-check-20260924", "path": "data/interim/experimental-financial-check-20260924", "kind": "archive", "domain": "technical"},
     {"id": "synthetic-worlds-20260924-v2", "path": "data/interim/experimental-synthetic-20260924-v2", "kind": "archive", "domain": "synthetic"},
     {"id": "neural-original-us", "path": "data/interim/original-audited-us-scientific-search-20260923", "kind": "neural", "domain": "real", "configuration": "configs/baselines/scientific-search-us.json"},
