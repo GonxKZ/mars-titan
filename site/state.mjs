@@ -8,6 +8,17 @@ export const PHASE_LABELS = Object.freeze({
   calibration: "Calibración", test: "Prueba final", evaluation: "Evaluación",
 });
 
+export const ACTIVITY_LABELS = Object.freeze({
+  initial_training: "Entrenamiento inicial", supervised_continuation: "Continuación supervisada",
+  predictive_adaptation: "Adaptación predictiva", rl: "Aprendizaje por refuerzo",
+  synthetic_generation: "Generación sintética", simulation: "Simulación", evaluation: "Evaluación",
+});
+
+export const FINANCIAL_REASON_LABELS = Object.freeze({
+  none: "Sin incidencia", missing_close: "Falta un cierre", ruined: "Patrimonio agotado",
+  incomplete: "Episodio incompleto",
+});
+
 export const METRIC_KEYS = Object.freeze([
   "mae", "mse", "rank_ic", "coverage_80", "coverage_95", "loss",
   "latency_p50_ms", "latency_p95_ms", "latency_p99_ms", "vram_peak_mib",
@@ -138,6 +149,12 @@ function validateRun(input, index, modelIds, generatedAt, version = 1) {
     if (!["real", "synthetic", "technical"].includes(meta.domain)) fail(path, "dominio desconocido");
     for (const key of ["train_rows", "validation_rows"]) result.metadata[key] = number(meta[key], `${path}.${key}`, {integer: true});
     for (const key of ["configuration_sha256", "source_sha256", "parent", "error_type"]) result.metadata[key] = text(meta[key], `${path}.${key}`, 96, true);
+    result.metadata.parent_frozen = boolean(meta.parent_frozen ?? null, `${path}.parent_frozen`, true);
+    result.metadata.currency = meta.currency ?? null;
+    if (result.metadata.currency !== null && (typeof result.metadata.currency !== "string" || !/^[A-Z]{3}$/.test(result.metadata.currency))) fail(`${path}.currency`);
+    result.activity = input.activity ?? (["initial_training", "supervised_continuation"].includes(meta.method) ? meta.method : "predictive_adaptation");
+    if (!Object.hasOwn(ACTIVITY_LABELS, result.activity)) fail(`${path}.activity`, "actividad desconocida");
+    result.financial_validation = validateFinancial(input.financial_validation, result, path);
   }
   return result;
 }
@@ -193,16 +210,22 @@ export function resultsProtected(run) {
 }
 
 export function publicMetrics(run) {
-  return resultsProtected(run) ? { ...EMPTY_METRICS } : { ...run.metrics };
+  const values = resultsProtected(run) ? { ...EMPTY_METRICS } : { ...run.metrics };
+  if (!isPredictive(run)) for (const key of ["mae", "mse", "loss", "rank_ic", "coverage_80", "coverage_95"]) values[key] = null;
+  return values;
 }
 
 export function publicHistory(run) {
-  return resultsProtected(run) ? [] : run.history;
+  return resultsProtected(run) || !isPredictive(run) ? [] : run.history;
+}
+
+export function isPredictive(run) {
+  return run.activity === undefined || ["initial_training", "supervised_continuation", "predictive_adaptation"].includes(run.activity);
 }
 
 export function comparableRuns(runs, group, phase, sortMetric = "mae") {
   if (!group || !METRIC_KEYS.includes(sortMetric)) return [];
-  return runs.filter(run => run.status === "completed" && run.comparison_group === group && run.phase === phase && !resultsProtected(run)).sort((a, b) => {
+  return runs.filter(run => isPredictive(run) && run.status === "completed" && run.comparison_group === group && run.phase === phase && !resultsProtected(run)).sort((a, b) => {
     const av = a.metrics[sortMetric];
     const bv = b.metrics[sortMetric];
     if (av === null && bv === null) return a.run_id.localeCompare(b.run_id);
@@ -210,6 +233,23 @@ export function comparableRuns(runs, group, phase, sortMetric = "mae") {
     if (bv === null) return -1;
     return sortMetric === "rank_ic" ? bv - av : av - bv;
   });
+}
+
+function validateFinancial(value, run, path) {
+  if (value == null || !["rl", "simulation", "evaluation"].includes(run.activity) || run.phase === null || ["test", "evaluation"].includes(run.phase)) return null;
+  record(value, `${path}.financial_validation`);
+  const result = {};
+  for (const key of ["net_return", "max_drawdown", "costs", "turnover", "steps"]) {
+    result[key] = number(value[key] ?? null, `${path}.financial_validation.${key}`, {
+      min: key === "net_return" ? -1 : 0,
+      max: key === "max_drawdown" ? 1 : Infinity,
+      integer: key === "steps",
+    });
+  }
+  result.completed = boolean(value.completed ?? null, `${path}.financial_validation.completed`, true);
+  result.invalid_reason = value.invalid_reason ?? null;
+  if (result.invalid_reason !== null && !Object.hasOwn(FINANCIAL_REASON_LABELS, result.invalid_reason)) fail(`${path}.financial_validation.invalid_reason`);
+  return result;
 }
 
 export function formatValue(value, { digits = 4, style = "decimal" } = {}) {

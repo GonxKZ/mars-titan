@@ -44,10 +44,70 @@ nombres contienen sus huellas. La web descarga la primera página y solicita las
 siguientes al navegar. Los filtros, el CSV y la comparación se aplican a la página
 visible. La reserva del test se mantiene en todas las páginas.
 
-Las métricas publicadas proceden de validación. La comparación usa la identidad
-de la fuente, la ponderación y la convención de MAE por fila. Sin identidad
-comparable no se asigna grupo. Los registros distinguen corpus real, escenarios
-sintéticos y comprobaciones técnicas. El candidato MARS-TITAN no se ejecuta.
+Las métricas predictivas publicadas proceden de validación. La comparación usa la
+identidad de la fuente, la ponderación, la actividad y el objetivo declarado. Sin
+identidad comparable no se asigna grupo. Los registros distinguen corpus real,
+escenarios sintéticos y comprobaciones técnicas. El candidato MARS-TITAN no se ejecuta.
+
+## Actividades y validación financiera
+
+Cada registro v2 incluye `activity`: `initial_training`, `supervised_continuation`,
+`predictive_adaptation`, `rl`, `synthetic_generation`, `simulation` o `evaluation`.
+Las tres primeras admiten curvas y comparaciones predictivas. La continuación
+supervisada y la adaptación predictiva conservan grupos distintos del entrenamiento
+inicial. Los informes anteriores se clasifican por el método y la etapa del
+coordinador. La web sigue leyendo instantáneas v1 y v2 anteriores a este campo.
+
+Los nuevos productores escriben `run.json` con `schema_version: 1`, `activity`,
+`model`, `domain` y `status`. Se admiten `factor_world`, `ppo`, `double_dqn` y
+`simulator`, las referencias `cash`, `hold_initial` y `rebalance_50`, y el resumen
+`financial_comparison`. `domain` debe coincidir con la fuente configurada.
+`identity.case`, `identity.model_config` o `identity.config` identifica la configuración.
+`identity.objective` separa
+objetivos dentro de una misma actividad sin copiar su texto al registro público.
+`global_step`, `total_steps`, `samples` y `seed` conservan únicamente contadores
+observados. El total no se deduce de la existencia de un proceso.
+
+La fuente `synthetic-worlds-20260924-v2` incorpora los doce mundos generados por el
+productor `factor_world`. Su origen es `synthetic` y su actividad es generación,
+sin presentarlos como entrenamientos de un modelo predictivo.
+
+La fuente `financial-check-20260924` incorpora seis ajustes, 81 evaluaciones y su
+resumen con procedencia `technical`. Sus resultados son comprobaciones del motor.
+La identidad de las observaciones, `tape_sha256`, puede sustituir al manifiesto
+como base del grupo. La moneda, el coste en puntos básicos, la partición y las
+condiciones financieras separan los grupos. La moneda declarada acompaña a los costes.
+No se leen operaciones, posiciones ni órdenes para calcular nuevas medidas.
+
+RL, simulación y evaluación financiera pueden proporcionar `financial_validation`.
+La web muestra estos agregados en una sección propia y los excluye del ranking y
+de las curvas predictivas. No exporta pérdidas de PPO o del crítico como MAE.
+Solo se admiten los campos siguientes:
+
+| Campo | Contrato |
+| --- | --- |
+| `net_return` | Retorno neto finito, no inferior a -1. |
+| `max_drawdown` | Caída relativa desde el máximo, entre 0 y 1. |
+| `costs`, `turnover` | Costes y rotación agregados, finitos y no negativos. |
+| `steps` | Pasos evaluados, entero no negativo representable en JavaScript. |
+| `completed` | Booleano que indica si se completó el episodio. |
+| `invalid_reason` | `missing_close`, `ruined`, `incomplete`, `none` o `null`. |
+
+Estos límites corresponden al motor sin deuda, posiciones cortas ni apalancamiento.
+Los valores desconocidos se mantienen como `null`. La falta de un cierre admite
+retorno y caída desconocidos, `completed: false` y `missing_close`. La ruina
+conocida admite `completed: true`, retorno -1, caída 1 y `ruined`.
+No se publican mensajes libres, operaciones individuales, rutas ni pesos.
+El bloque se oculta si `final_test_opened` no es `false`, si la partición explícita
+no es `validation` o si la fase es `test` o `evaluation`. Una actividad llamada
+`evaluation` no libera las fases reservadas ni el test.
+
+Los intentos explícitos pueden declarar `attempt_id`. `checkpoint` admite `step`,
+`saved_at` y `resumable`, sin publicar la ruta del archivo. El paso cero es válido.
+Anunciar recuperación exige paso y fecha observados. Un índice antiguo sin fecha
+permite mostrar su paso, pero no afirmar que el estado sea recuperable.
+`parent_frozen` conserva la declaración del productor y no acredita por sí solo
+que todos los parámetros permanezcan congelados.
 
 La fecha del informe, la observación del proceso y la fecha de recolección son
 campos distintos. Un bloqueo de campaña activo permite observar el proceso,
@@ -100,6 +160,16 @@ registran la herramienta y la fórmula de CRAP.
 Las [mutaciones dirigidas](../../reports/campaign-observatory-mutations.json)
 comprueban que las pruebas detectan la exposición del test, la invención de un
 heartbeat, la pérdida de páginas y la omisión de la caché.
+
+La ampliación de actividades verificó 635 registros, incluidos los doce mundos
+sintéticos y la comprobación financiera, y diez páginas compatibles con el navegador. Pasaron 110 pruebas
+Python, 25 pruebas JavaScript y un recorrido de generación, PPO, simulación y
+estados bloqueados en escritorio y móvil. El [informe de calidad](../../reports/observatory-activities-quality.json)
+registra cobertura de líneas del 89,6 %, cobertura de ramas del 77,5 %, complejidad,
+CRAP y tres mutaciones detectadas sobre protección del test, actividad y procedencia.
+El [benchmark de esta ampliación](../../reports/observatory-activities-benchmark.json)
+midió una mediana de 0,595 s en cinco pasadas posteriores a la inicial y un pico
+de RAM de 35,9 MiB. No se ejecutaron entrenamiento ni pruebas de GPU.
 
 ```bash
 uv run --locked pytest tests/tooling/test_campaign_observatory.py \

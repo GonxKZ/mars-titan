@@ -14,6 +14,8 @@ from pathlib import Path
 
 from mars_titan.data.storage import atomic_json
 
+from .activities import FINANCIAL, PREDICTIVE, classify, financial_validation
+
 METRICS = (
     "mae",
     "mse",
@@ -53,6 +55,14 @@ KINDS = {
         ("boosting", "Boosting"),
         ("zero", "Residual cero"),
         ("adaptation", "Adaptación predictiva"),
+        ("factor_world", "Generador de mundos sintéticos"),
+        ("ppo", "PPO"),
+        ("double_dqn", "Double DQN"),
+        ("simulator", "Simulador financiero"),
+        ("cash", "Mantener efectivo"),
+        ("hold_initial", "Conservar posiciones iniciales"),
+        ("rebalance_50", "Reequilibrar al 50 %"),
+        ("financial_comparison", "Resumen de comparación financiera"),
         ("unknown", "Modelo no identificado"),
     )
 }
@@ -270,7 +280,23 @@ class Collector:
             poll_interval_seconds=60,
             stale_after_seconds=900,
             campaigns=campaigns,
-            models=[dict(id=k, name=v, kind="baseline") for k, v in KINDS.items()],
+            models=[
+                dict(
+                    id=k,
+                    name=v,
+                    kind={
+                        "factor_world": "generator",
+                        "simulator": "simulation",
+                        "ppo": "reinforcement",
+                        "double_dqn": "reinforcement",
+                        "cash": "financial_baseline",
+                        "hold_initial": "financial_baseline",
+                        "rebalance_50": "financial_baseline",
+                        "financial_comparison": "summary",
+                    }.get(k, "baseline"),
+                )
+                for k, v in KINDS.items()
+            ],
             runs=runs,
             notes=[
                 "El test final permanece sellado. MARS-TITAN no está implementado.",
@@ -297,7 +323,9 @@ class Collector:
                         **item,
                         **attempt,
                         "case": item.get("case", item.get("options", {})),
-                        "attempt_id": f"attempt-{index:04d}" if item.get("attempts") else "legacy",
+                        "attempt_id": identifier(attempt.get("attempt_id", f"attempt-{index:04d}"))
+                        if item.get("attempts")
+                        else item.get("attempt_id", "legacy"),
                     }
         if folder.exists():
             for path in folder.rglob("run.json"):
@@ -328,10 +356,21 @@ class Collector:
 
 def public_run(source, task, report, checkpoint, relative, report_path, now, live):
     identity = report.get("identity", {})
-    case = identity.get("case", task.get("case", {}))
+    case = identity.get(
+        "case", identity.get("model_config", identity.get("config", task.get("case", {})))
+    )
+    if report.get("domain", source["domain"]) != source["domain"]:
+        raise ValueError("La procedencia del informe no coincide con su campaña")
+    activity, method = classify(report, task, case)
     kind = case.get("kind", task.get("kind", report.get("model", report.get("kind", "unknown"))))
     mode = case.get("mode")
-    model = "adaptation" if mode else kind if kind in KINDS else "unknown"
+    model = (
+        "adaptation"
+        if activity == "predictive_adaptation"
+        else kind
+        if kind in KINDS
+        else "unknown"
+    )
     status = STATUS.get(report.get("status", task.get("status")))
     # Un recibo de error del coordinador puede ser posterior al último punto del hijo.
     if task.get("status") in {"failed", "paused", "interrupted"}:
@@ -340,12 +379,15 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     epochs = epochs if isinstance(epochs, list) else []
     if len(epochs) > 500:
         raise ValueError("Demasiadas épocas en un recibo")
-    measures = report.get("predictions", {}).get("validation", {}).get("metrics", {})
+    predictive = activity in PREDICTIVE and report.get("phase") not in {"test", "evaluation"}
+    measures = (
+        report.get("predictions", {}).get("validation", {}).get("metrics", {}) if predictive else {}
+    )
     if not measures:
         measures = task.get("metrics", {}).get(kind, {})
     if not measures and epochs:
         measures = epochs[-1].get("validation", {})
-    measures = validation_metrics(measures, mode)
+    measures = validation_metrics(measures if predictive else {}, mode)
     history = [
         dict(
             step=e["epoch"],
@@ -354,9 +396,12 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             mae=validation_metrics(e.get("validation", {}), mode)["mae"],
         )
         for e in epochs
+        if predictive
     ]
     metrics = dict(measures)
-    metrics["elapsed_seconds"] = finite(report.get("total_seconds", report.get("attempt_seconds")))
+    metrics["elapsed_seconds"] = finite(
+        report.get("total_seconds", report.get("attempt_seconds", report.get("elapsed_seconds")))
+    )
     for key, raw_key in (
         ("ram_peak_mib", "process_lifetime_peak_rss_bytes"),
         ("vram_peak_mib", "peak_vram_allocated_bytes"),
@@ -369,68 +414,91 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         peaks = [finite(a.get("peak_vram_allocated_bytes")) for a in attempts]
         observed = [p for p in peaks if p is not None]
         metrics["vram_peak_mib"] = max(observed) / 1024**2 if observed else None
-    updated = utc(report.get("finished_at_utc"))
+    observed_time = (
+        report.get("finished_at_utc") or report.get("updated_at_utc") or report.get("updated_at")
+    )
+    updated = utc(observed_time)
     if updated is None and report_path.exists():
         updated = utc(datetime.fromtimestamp(report_path.stat().st_mtime, UTC).isoformat())
     if updated is not None and updated > now:
         raise ValueError("Recibo con fecha posterior a la observación")
     saved = checkpoint.get("latest", [])
-    step = finite(report.get("global_step"))
-    saved_step = finite(saved[0].get("global_step")) if saved else None
-    manifest = identity.get("manifest_sha256", report.get("manifest_sha256"))
+    recovery = report.get("checkpoint", {})
+    step = report.get("global_step")
+    saved_step = saved[0].get("global_step") if saved else recovery.get("step")
+    progress = [value for value in (step, saved_step) if value is not None]
+    saved_at = utc(recovery.get("saved_at"))
+    resumable = recovery.get("resumable")
+    environment = identity.get("environment", {})
+    manifest = identity.get(
+        "manifest_sha256",
+        report.get("manifest_sha256", identity.get("tape_sha256", environment.get("tape_sha256"))),
+    )
+    currency = report.get("currency")
+    if currency is not None and (
+        not isinstance(currency, str) or not re.fullmatch(r"[A-Z]{3}", currency)
+    ):
+        raise ValueError("La moneda necesita un código público de tres letras")
     run_key = task.get("id", str(Path(relative).parent))
     name = source["id"] + "-" + digest(run_key)[:20]
-    stage = task.get("stage", "adaptation" if mode else "train")
-    method = mode or ("supervised_continuation" if stage == "posttraining" else "initial_training")
-    if method not in {
-        "initial_training",
-        "supervised_continuation",
-        "reinforce",
-        "expected",
-        "mae",
-        "klpo_full",
-        "klpo_mc",
-        "klpo_exact",
-    }:
-        raise ValueError("Método sin contrato público")
     samples = report.get("samples", report.get("counts", task.get("samples", {})))
     fingerprint = digest(
         {
             "manifest": manifest,
             "domain": source["domain"],
+            "activity": activity,
+            "objective": identity.get("objective", case.get("objective", report.get("objective"))),
             "weighting": identity.get("weighting"),
-            "metric": "row_mae",
+            "metric": "financial_return" if activity in FINANCIAL else "row_mae",
+            "currency": currency,
+            "cost_bps": report.get(
+                "cost_bps", identity.get("cost_bps", environment.get("cost_bps"))
+            ),
+            "partition": report.get("partition"),
+            "financial_conditions": environment
+            if environment
+            else {key: identity.get(key) for key in ("capital", "participation", "allocation")},
         }
     )
     return dict(
         run_id=name,
-        attempt_id=task.get("attempt_id", "legacy"),
+        attempt_id=identifier(report.get("attempt_id", task.get("attempt_id", "legacy"))),
         model_id=model,
+        activity=activity,
         variant_id=digest(case)[:16] if case else None,
         status=status,
-        phase="validation",
-        started_at=utc(report.get("started_at_utc")),
+        phase=report.get(
+            "phase",
+            {
+                "synthetic_generation": "prepare",
+                "rl": "train",
+            }.get(activity, "validation"),
+        ),
+        started_at=utc(report.get("started_at_utc") or report.get("started_at")),
         updated_at=updated,
         heartbeat_at=now if live and status == "running" else None,
-        completed_steps=max(step or 0, saved_step or 0) or None,
-        total_steps=None,
-        epoch=epochs[-1]["epoch"] if epochs else None,
+        completed_steps=max(progress) if progress else None,
+        total_steps=report.get("total_steps"),
+        epoch=epochs[-1]["epoch"] if epochs and predictive else None,
         max_epochs=finite(case.get("epochs")),
-        seed=finite(case.get("seed")),
+        seed=case.get("seed", report.get("seed")),
         fold=task.get("arm") if task.get("arm") in {"US", "CN", "US+CN"} else "unidentified",
         comparison_group=fingerprint if manifest else None,
         metrics=metrics,
         history=history,
-        checkpoint=dict(step=saved_step, saved_at=None, resumable=None),
+        checkpoint=dict(step=saved_step, saved_at=saved_at, resumable=resumable),
+        financial_validation=financial_validation(report, activity),
         test_released=False,
         metadata=dict(
             campaign=source["id"],
             domain=source["domain"],
             method=method,
+            parent_frozen=report.get("parent_frozen"),
+            currency=currency,
             configuration_sha256=digest(case) if case else None,
             source_sha256=digest(report),
-            history_axis="epoch",
-            progress_time_source="receipt_mtime",
+            history_axis="epoch" if predictive else "none",
+            progress_time_source="receipt_timestamp" if observed_time else "receipt_mtime",
             train_rows=finite(samples.get("train")),
             validation_rows=finite(samples.get("validation")),
             parent=digest(task["parent"]) if task.get("parent") else None,
@@ -473,6 +541,28 @@ def validate_record(record, now):
         for value in counters
     ):
         raise ValueError("El progreso necesita contadores enteros acotados")
+    if record["phase"] not in {
+        "prepare",
+        "train",
+        "validation",
+        "calibration",
+        "test",
+        "evaluation",
+    }:
+        raise ValueError("Fase sin contrato público")
+    if record["total_steps"] is not None and record["completed_steps"] is not None:
+        if record["completed_steps"] > record["total_steps"]:
+            raise ValueError("El progreso supera el total declarado")
+    recovery = record["checkpoint"]
+    for flag in (recovery["resumable"], record["metadata"]["parent_frozen"]):
+        if flag is not None and type(flag) is not bool:
+            raise ValueError("La recuperación y el padre congelado requieren booleanos")
+    if recovery["resumable"] and (recovery["step"] is None or recovery["saved_at"] is None):
+        raise ValueError("No se acredita recuperación sin paso y fecha guardados")
+    if recovery["saved_at"] and datetime.fromisoformat(
+        recovery["saved_at"]
+    ) > datetime.fromisoformat(record["updated_at"] or now):
+        raise ValueError("El checkpoint es posterior al informe")
     if record["epoch"] is not None and record["max_epochs"] is not None:
         if record["epoch"] > record["max_epochs"]:
             raise ValueError("Las épocas superan el presupuesto declarado")

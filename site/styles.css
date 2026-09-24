@@ -314,3 +314,6 @@ td.numeric, th.numeric { text-align: right; white-space: nowrap; }
 .history-pages[hidden] { display: none; }
 .history-pages p { flex-basis: 100%; margin: 0; }
 #campaign-summary summary { cursor: pointer; }
+#financial-panel { margin-top: 1.5rem; }
+#financial-metrics { grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); }
+.observation-layout:has(#predictive-curve[hidden]) { grid-template-columns: 1fr; }

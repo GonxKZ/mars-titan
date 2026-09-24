@@ -6,6 +6,8 @@ import path from "node:path";
 
 const {chromium} = await import(pathToFileURL(process.argv[2]).href);
 const data = process.argv[3];
+const first = JSON.parse(await readFile(path.join(data, "observatory.json")));
+const totalPages = first.pagination.pages.length + 1;
 const site = new URL("../", import.meta.url);
 const allowed = new Set(["index.html", "styles.css", "app.js", "state.mjs"]);
 const mime = {".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".json": "application/json"};
@@ -28,7 +30,7 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.locator("#history-pages").waitFor();
   assert.equal(pageRequests, 0);
-  assert.match(await page.locator("#page-position").textContent(), /Página 1 de 9/);
+  assert.equal(await page.locator("#page-position").textContent(), `Página 1 de ${totalPages}. ${first.pagination.total_runs} registros.`);
   await page.locator("#next-page").click();
   await page.waitForFunction(() => document.getElementById("page-position").textContent.startsWith("Página 2"));
   assert.equal(pageRequests, 1);
@@ -37,7 +39,7 @@ try {
   await page.locator("#error-message").waitFor();
   assert.match(await page.locator("#page-position").textContent(), /Página 2/);
   failPages = false;
-  for (let n = 3; n <= 9; n++) {
+  for (let n = 3; n <= totalPages; n++) {
     await page.locator("#next-page").click();
     await page.waitForFunction(n => document.getElementById("page-position").textContent.startsWith(`Página ${n} `), n);
   }
@@ -46,7 +48,7 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.screenshot({path: "/tmp/mars-titan-campaigns-mobile.png", fullPage: true});
   assert.deepEqual(errors, []);
-  console.log("Paginación comprobada: carga bajo demanda, nueve páginas, fallo recuperable y móvil.");
+  console.log(`Paginación comprobada: carga bajo demanda, ${totalPages} páginas, fallo recuperable y móvil.`);
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

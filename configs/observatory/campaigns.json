@@ -1,6 +1,8 @@
 {
   "schema_version": 1,
   "sources": [
+    {"id": "financial-check-20260924", "path": "data/interim/experimental-financial-check-20260924", "kind": "archive", "domain": "technical"},
+    {"id": "synthetic-worlds-20260924-v2", "path": "data/interim/experimental-synthetic-20260924-v2", "kind": "archive", "domain": "synthetic"},
     {"id": "neural-original-us", "path": "data/interim/original-audited-us-scientific-search-20260923", "kind": "neural", "domain": "real", "configuration": "configs/baselines/scientific-search-us.json"},
     {"id": "tabular-original-us", "path": "data/interim/original-audited-us-tabular-search-20260924", "kind": "tabular", "domain": "real", "configuration": "configs/baselines/tabular-search-us.json", "dependencies": ["neural-original-us"]},
     {"id": "adaptation-original-us", "path": "data/interim/original-audited-us-klpo-20260924", "kind": "adaptation", "domain": "real", "configuration": "configs/baselines/klpo-adaptation.json", "parents": 6, "dependencies": ["neural-original-us", "tabular-original-us"]},

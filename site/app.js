@@ -1,6 +1,7 @@
 import {
   validateSnapshot, displayStatus, progressPercent, publicMetrics, publicHistory,
   resultsProtected, comparableRuns, formatValue, toCSV, STATUS_LABELS, PHASE_LABELS,
+  isPredictive, ACTIVITY_LABELS, FINANCIAL_REASON_LABELS,
 } from "./state.mjs";
 
 let pageIndex = 0, firstPage = null, deployment = null;
@@ -95,21 +96,25 @@ function renderTracking() {
   byId("run-progress").hidden = progress === null;
   if (progress !== null) byId("run-progress").value = progress;
   const metrics = publicMetrics(run);
-  const primary = [
+  const predictive = isPredictive(run);
+  byId("predictive-curve").hidden = !predictive;
+  const primary = predictive ? [
     ["MAE residual", metrics.mae, { digits: 4 }],
     ["Rank IC", metrics.rank_ic, { digits: 4 }],
     ["Cobertura del intervalo 95 %", metrics.coverage_95, { digits: 1, style: "percent" }],
     ["Pico de VRAM, MiB", metrics.vram_peak_mib, { digits: 0 }],
-  ];
+  ] : [["Tiempo observado, segundos", metrics.elapsed_seconds, {digits: 1}],
+    ["Pico de VRAM, MiB", metrics.vram_peak_mib, {digits: 0}]];
   byId("key-metrics").replaceChildren(...primary.map(([label, value, options]) => {
     const group = element("div");
     group.append(element("dt", label), element("dd", formatValue(value, options), value === null ? "missing" : undefined));
     return group;
   }));
   const details = [
+    ["Actividad", ACTIVITY_LABELS[run.activity] ?? "No informada"],
     ["Última observación del proceso", dateText(run.heartbeat_at)],
     ["Último progreso registrado", dateText(run.updated_at)],
-    ...(run.metadata ? [["Campaña y método", `${run.metadata.campaign} / ${run.metadata.method}`], ["Origen", {real: "Corpus real", synthetic: "Mundo sintético", technical: "Comprobación técnica"}[run.metadata.domain]], ["Filas de entrenamiento / validación", `${count(run.metadata.train_rows)} / ${count(run.metadata.validation_rows)}`], ["Eje de la curva", run.metadata.history_axis === "epoch" ? "Épocas sin fecha original" : "Pasos"], ["Error registrado", run.metadata.error_type ?? "Sin error informado"]] : []),
+    ...(run.metadata ? [["Campaña y método", `${run.metadata.campaign} / ${run.metadata.method}`], ["Origen", {real: "Corpus real", synthetic: "Mundo sintético", technical: "Comprobación técnica"}[run.metadata.domain]], ["Filas de entrenamiento / validación", `${count(run.metadata.train_rows)} / ${count(run.metadata.validation_rows)}`], ...(predictive ? [["Eje de la curva", run.metadata.history_axis === "epoch" ? "Épocas sin fecha original" : "Pasos"]] : []), ["Error registrado", run.metadata.error_type ?? "Sin error informado"]] : []),
     ["Último punto de control", run.checkpoint.step === null ? "Sin punto registrado" : `Paso ${count(run.checkpoint.step)} / ${dateText(run.checkpoint.saved_at)}`],
     ["Recuperación", run.checkpoint.resumable === null ? "No informada" : run.checkpoint.resumable ? "Disponible según el registro" : "No recuperable según el registro"],
     ["Semilla y partición", `${count(run.seed)} / ${run.fold ?? "Sin dato"}`],
@@ -123,6 +128,23 @@ function renderTracking() {
     group.append(element("dt", label), element("dd", value));
     return group;
   }));
+  const financial = run.financial_validation;
+  byId("financial-panel").hidden = !financial;
+  if (financial) {
+    const rows = [
+      ["Retorno neto", formatValue(financial.net_return, {digits: 2, style: "percent"})],
+      ["Caída máxima desde el pico", formatValue(financial.max_drawdown, {digits: 2, style: "percent"})],
+      [`Costes${run.metadata.currency ? ` (${run.metadata.currency})` : ""}`, formatValue(financial.costs)], ["Rotación", formatValue(financial.turnover)],
+      ["Pasos evaluados", count(financial.steps)],
+      ["Episodio completo", financial.completed === null ? "No informado" : financial.completed ? "Sí" : "No"],
+      ["Incidencia", financial.invalid_reason === null ? "No informada" : FINANCIAL_REASON_LABELS[financial.invalid_reason]],
+    ];
+    byId("financial-metrics").replaceChildren(...rows.map(([label, value]) => {
+      const group = element("div");
+      group.append(element("dt", label), element("dd", value));
+      return group;
+    }));
+  }
   renderCurve(run);
 }
 
@@ -165,7 +187,7 @@ function renderCurve(run) {
 
 function renderComparison() {
   const phase = byId("comparison-phase").value;
-  const eligible = snapshot.runs.filter(run => run.status === "completed" && run.phase === phase && run.comparison_group && !resultsProtected(run));
+  const eligible = snapshot.runs.filter(run => isPredictive(run) && run.status === "completed" && run.phase === phase && run.comparison_group && !resultsProtected(run));
   const groups = [...new Set(eligible.map(run => run.comparison_group))].sort();
   setOptions(byId("comparison-group"), groups.map(group => ({ value: group, label: `Grupo ${group.slice(0, 16)}${group.length > 16 ? "…" : ""}` })), "Sin grupos en esta fase");
   const group = byId("comparison-group").value;
