@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-26T13:51:09.315183Z",
+  "generated_at": "2026-09-26T13:56:24.317219Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -104,9 +104,10 @@
       ],
       "counts": {
         "completed": 38,
-        "not_started": 178
+        "running": 1,
+        "not_started": 177
       },
-      "registered_runs": 38
+      "registered_runs": 39
     },
     {
       "id": "reference-edition-20260922",
@@ -332,6 +333,87 @@
     "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes."
   ],
   "runs": [
+    {
+      "run_id": "adaptation-original-us-b2af3b198d45d04640f0",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "179170af2f6dece3",
+      "status": "running",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-26T13:55:43.898639Z",
+      "heartbeat_at": "2026-09-26T13:56:24.317219Z",
+      "completed_steps": 18147,
+      "total_steps": null,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.015192289330107151,
+        "mse": 0.0006183874770368628,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": null,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015096034236997381
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015306669835922599
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015192289330107151
+        }
+      ],
+      "checkpoint": {
+        "step": 18147,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "179170af2f6dece305ee2f274e5d416181daf0f94df51dd197654d3fd6822048",
+        "source_sha256": "c160fd65d07ad26a20a512eeb142ce1d3c017aee5c18c6cb4c9305f59974ad92",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
     {
       "run_id": "adaptation-check-20260923-08ed7c5ae311fd26270e",
       "attempt_id": "legacy",
@@ -7990,266 +8072,23 @@
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": null
       }
-    },
-    {
-      "run_id": "expanded-check-20260922-4167a75866762c1ad8a8",
-      "attempt_id": "legacy",
-      "model_id": "lstm",
-      "activity": "initial_training",
-      "variant_id": "a7a263c2f33df870",
-      "status": "completed",
-      "phase": "validation",
-      "started_at": "2026-09-22T06:37:44.410981Z",
-      "updated_at": "2026-09-22T06:37:55.636043Z",
-      "heartbeat_at": null,
-      "completed_steps": null,
-      "total_steps": null,
-      "epoch": 30,
-      "max_epochs": 30,
-      "seed": 42,
-      "fold": "unidentified",
-      "comparison_group": null,
-      "metrics": {
-        "mae": 0.02123062062332025,
-        "mse": 0.0007173817333060814,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": null,
-        "ram_peak_mib": null,
-        "elapsed_seconds": 11.204435485000431,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": 0.03724162995815277,
-          "mae": 0.1895417046546936
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": 0.0025920270662754775,
-          "mae": 0.04380308210849762
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": 0.004466743171215057,
-          "mae": 0.06398456364870071
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": 0.0008330249274149537,
-          "mae": 0.02240163490176201
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": 0.0014901924855075777,
-          "mae": 0.03362813018262387
-        },
-        {
-          "step": 6,
-          "recorded_at": null,
-          "loss": 0.001056147962808609,
-          "mae": 0.023868582397699355
-        },
-        {
-          "step": 7,
-          "recorded_at": null,
-          "loss": 0.0010218225885182618,
-          "mae": 0.02366429567337036
-        },
-        {
-          "step": 8,
-          "recorded_at": null,
-          "loss": 0.0007932093809358776,
-          "mae": 0.022693084478378298
-        },
-        {
-          "step": 9,
-          "recorded_at": null,
-          "loss": 0.0007291847886517644,
-          "mae": 0.020650361403822898
-        },
-        {
-          "step": 10,
-          "recorded_at": null,
-          "loss": 0.0008341041393578053,
-          "mae": 0.022204921692609788
-        },
-        {
-          "step": 11,
-          "recorded_at": null,
-          "loss": 0.0006780685717239976,
-          "mae": 0.020588016659021376
-        },
-        {
-          "step": 12,
-          "recorded_at": null,
-          "loss": 0.000708317318931222,
-          "mae": 0.020907624736428262
-        },
-        {
-          "step": 13,
-          "recorded_at": null,
-          "loss": 0.000774882291443646,
-          "mae": 0.021496264338493346
-        },
-        {
-          "step": 14,
-          "recorded_at": null,
-          "loss": 0.0007085648970678449,
-          "mae": 0.021004960834980012
-        },
-        {
-          "step": 15,
-          "recorded_at": null,
-          "loss": 0.0007169165462255478,
-          "mae": 0.020949017778038977
-        },
-        {
-          "step": 16,
-          "recorded_at": null,
-          "loss": 0.0007376482803374529,
-          "mae": 0.021158536821603777
-        },
-        {
-          "step": 17,
-          "recorded_at": null,
-          "loss": 0.0007086790399625897,
-          "mae": 0.02091589607298374
-        },
-        {
-          "step": 18,
-          "recorded_at": null,
-          "loss": 0.0007255816319957375,
-          "mae": 0.021085641458630563
-        },
-        {
-          "step": 19,
-          "recorded_at": null,
-          "loss": 0.0007292081648483873,
-          "mae": 0.02114811398088932
-        },
-        {
-          "step": 20,
-          "recorded_at": null,
-          "loss": 0.0007173769548535347,
-          "mae": 0.021106357648968697
-        },
-        {
-          "step": 21,
-          "recorded_at": null,
-          "loss": 0.0007249896461144089,
-          "mae": 0.021128487959504127
-        },
-        {
-          "step": 22,
-          "recorded_at": null,
-          "loss": 0.0007178309187293052,
-          "mae": 0.02110577955842018
-        },
-        {
-          "step": 23,
-          "recorded_at": null,
-          "loss": 0.0007171252090483903,
-          "mae": 0.021113528087735176
-        },
-        {
-          "step": 24,
-          "recorded_at": null,
-          "loss": 0.0007208850933238864,
-          "mae": 0.021157202646136283
-        },
-        {
-          "step": 25,
-          "recorded_at": null,
-          "loss": 0.0007175248069688678,
-          "mae": 0.021164048835635184
-        },
-        {
-          "step": 26,
-          "recorded_at": null,
-          "loss": 0.0007196271885186434,
-          "mae": 0.021180784702301024
-        },
-        {
-          "step": 27,
-          "recorded_at": null,
-          "loss": 0.0007178254565224051,
-          "mae": 0.021184201315045358
-        },
-        {
-          "step": 28,
-          "recorded_at": null,
-          "loss": 0.0007174212019890547,
-          "mae": 0.021193446293473243
-        },
-        {
-          "step": 29,
-          "recorded_at": null,
-          "loss": 0.0007180951209738851,
-          "mae": 0.021215818896889685
-        },
-        {
-          "step": 30,
-          "recorded_at": null,
-          "loss": 0.0007173915952444076,
-          "mae": 0.021230733692646026
-        }
-      ],
-      "checkpoint": {
-        "step": null,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "expanded-check-20260922",
-        "domain": "technical",
-        "method": "initial_training",
-        "parent_frozen": null,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "a7a263c2f33df870e952d83250bd77078f7a0d2971ccae3afe9ece3574073b69",
-        "source_sha256": "3168d0842dc2132434ecf3ca951c61cebda38ee50822473e9942bd166e560420",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_timestamp",
-        "train_rows": 80,
-        "validation_rows": 25,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": null,
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": null
-      }
     }
   ],
   "pagination": {
-    "total_runs": 751,
+    "total_runs": 752,
     "page_size": 64,
     "pages": [
-      "pages/4777970ad35467b405b8753b26f1b87bf724bbab5701a85454aaf8b83c351cb4.json",
-      "pages/f2b313376e0625b6e470823059e4c32b7b56d69ec501695c1e1eab05f2045012.json",
-      "pages/79411cfe8596bc1c1330fc22b717f41de84974785256a498758594c11071f3fe.json",
-      "pages/c34542b0d774788d74300d2c468462b34943babf801b0d39108f5b064853598a.json",
-      "pages/08a31b4874c4a4ec8e8a4b834a78d45ea3023593f46b62fa7f822946b5268829.json",
-      "pages/cc1690b21954ba8f7aa375129d34943f798474890beb222aebbf18aa2a7f5902.json",
-      "pages/b2bf4386d0226162e14dc84dd2a2142e907a34389baef86b698ce94e70793782.json",
-      "pages/ef3083a11a86227ee8861281fb23469f6d72104b2cd4d91f76a278850d9d5fe4.json",
-      "pages/a9b80c69b14105c1551c59beca87465a163336212e73964803351709a2bdad67.json",
-      "pages/a230a7bc2ac2e26498d58ab70ce7fac6d67cf131105d3a30b9b2d210aba9e5db.json",
-      "pages/49bf4e64a38a10061c038f7266854fde508e573b3343dfbe2057d8713ce0c4e3.json"
+      "pages/6ca1a1fe00a2b8661055e688b8e525dd432e5a0735a50550c467dd6ea14d1f36.json",
+      "pages/9fa96ccd206525dd7261631e0a4111821191b90cc9a6635ff92f74a4415b423e.json",
+      "pages/338f89bb74d6d4cdb0e57eae99639a0bcf0e2db75f10484c2147771be8855c21.json",
+      "pages/77959cc318aeda4a88b2760d610174c1abe2f1585b1f9a80307c1062f64a0a16.json",
+      "pages/1ed95e2eacc60b4f43900333dd52f63a00d308bd229688455f5bb91c657b14ca.json",
+      "pages/65edcee07025afcd3ae261da08cd5408c7862c6bb8ccd33a1825c292c332acb9.json",
+      "pages/f84a453bfeec9f090ddaa6e926c8c61447f123448a7ce3d62a46d86cdd58e0c0.json",
+      "pages/78d09e549e218d58d1d99caa88532eeccb91b4595b13ebcf1270ae9410044e74.json",
+      "pages/5a01aebe8fdc580b765a71d8509449abb28c89512ddcc2b3778ca871862b5754.json",
+      "pages/530a4a8ee5057af67e43bb98e1e49defc5750979df225e5cc6556d67575552a2.json",
+      "pages/5386f87e28e7791acc2749c49f28332538e317bc4580a1358b7e1f2771b7c5a1.json"
     ]
   }
 }
