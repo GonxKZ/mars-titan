@@ -451,3 +451,71 @@ def test_invalid_report_fields_remain_visible_without_aborting_collection(
     result = health.collect("campaign.service", summary=path)
     assert result["summary"] is None
     assert result["errors"]
+
+
+@pytest.mark.parametrize(
+    "failure", [PermissionError(13, "Acceso denegado"), "rchar: no\n", "wchar: 4\n"]
+)
+def test_unavailable_process_io_preserves_cpu_and_reports_the_error(tmp_path, monkeypatch, failure):
+    group, proc = tmp_path / "cgroup/unit", tmp_path / "proc"
+    group.mkdir(parents=True)
+    for name, content in {
+        "cpu.stat": "usage_usec 100\n",
+        "memory.current": "4096\n",
+        "io.stat": "",
+        "cgroup.procs": "20\n",
+    }.items():
+        (group / name).write_text(content)
+    write_process(proc, 20)
+    original_read = health._read
+
+    def limited_read(path, limit):
+        if path == proc / "20/io":
+            if isinstance(failure, str):
+                return failure.encode(), None
+            raise failure
+        return original_read(path, limit)
+
+    monkeypatch.setattr(health, "_read", limited_read)
+    service = sample()["service"] | {"cgroup": "/unit"}
+    before, errors = health.read_resources(service, cgroup_root=group.parent, proc_root=proc)
+    assert before["processes"]["20"] == {"start_ticks": 100, "cpu_ticks": 30, "io_bytes": None}
+    assert any("PID 20" in error and "io" in error for error in errors)
+    initial = health.assess(sample(resources=before, errors=errors))
+    stat_path = proc / "20/stat"
+    stat_path.write_text(stat_path.read_text().replace("20 10", "70 10"))
+    after, errors = health.read_resources(service, cgroup_root=group.parent, proc_root=proc)
+    observed = advance(initial, 1200)
+    observed.update(resources=after, errors=errors)
+    result = health.assess(observed, initial)
+    assert result["activity"]["cpu_ticks"] == 50
+    assert result["activity"]["io_bytes"] == 0
+    assert result["health"] == "ok" and not result["notify"]
+
+
+@pytest.mark.parametrize("before,after", [(None, 500), (500, None), (None, None)])
+def test_unknown_io_values_never_invent_an_increment(before, after):
+    observed = sample()
+    observed["resources"]["processes"]["20"]["io_bytes"] = before
+    initial = health.assess(observed)
+    observed = advance(initial)
+    observed["resources"]["processes"]["20"]["io_bytes"] = after
+    result = health.assess(observed, initial)
+    assert result["activity"]["io_bytes"] == 0
+    assert result["activity"]["comparable"]
+    assert not result["activity"]["baseline_reset"]
+
+
+@pytest.mark.parametrize("failure", [FileNotFoundError(), ProcessLookupError()])
+def test_disappeared_process_is_still_skipped(tmp_path, monkeypatch, failure):
+    write_process(tmp_path, 20)
+    original_read = health._read
+
+    def vanished_io(path, limit):
+        if path == tmp_path / "20/io":
+            raise failure
+        return original_read(path, limit)
+
+    monkeypatch.setattr(health, "_read", vanished_io)
+    with pytest.raises(type(failure)):
+        health._process(20, tmp_path)

@@ -177,7 +177,7 @@ def _process(pid, proc_root, exclude_supervisor=False):
     text = _read(proc_root / str(pid) / "stat", 16384)[0].decode()
     command = text[text.index("(") + 1 : text.rindex(")")]
     if command == "nvidia-smi":
-        return None
+        return None, None
     if exclude_supervisor:
         arguments = _read(proc_root / str(pid) / "cmdline", 4096)[0].split(b"\0")
         for argument in arguments:
@@ -187,17 +187,26 @@ def _process(pid, proc_root, exclude_supervisor=False):
                 b"gpu_supervisor.py",
                 b"mars_titan.training.gpu_supervisor",
             }:
-                return None
+                return None, None
     fields = text[text.rindex(")") + 2 :].split()
-    counters = dict(
-        line.split(": ", 1)
-        for line in _read(proc_root / str(pid) / "io", 4096)[0].decode().splitlines()
-    )
-    return dict(
+    process = dict(
         start_ticks=int(fields[19]),
         cpu_ticks=int(fields[11]) + int(fields[12]),
-        io_bytes=sum(int(counters[key]) for key in ("rchar", "wchar", "read_bytes", "write_bytes")),
+        io_bytes=None,
     )
+    try:
+        counters = dict(
+            line.split(": ", 1)
+            for line in _read(proc_root / str(pid) / "io", 4096)[0].decode().splitlines()
+        )
+        process["io_bytes"] = sum(
+            int(counters[key]) for key in ("rchar", "wchar", "read_bytes", "write_bytes")
+        )
+    except (FileNotFoundError, ProcessLookupError):
+        raise
+    except (OSError, ValueError, KeyError) as error:
+        return process, f"PID {pid} io: {error}"
+    return process, None
 
 
 def read_resources(
@@ -243,9 +252,11 @@ def read_resources(
             if exclude_supervisor and pid == service["pid"]:
                 continue
             try:
-                process = _process(pid, proc_root, exclude_supervisor)
+                process, io_error = _process(pid, proc_root, exclude_supervisor)
                 if process:
                     resources["processes"][str(pid)] = process
+                if io_error:
+                    errors.append(io_error)
             except (FileNotFoundError, ProcessLookupError):
                 continue
             except (OSError, ValueError, KeyError, IndexError) as error:
@@ -355,8 +366,10 @@ def activity_since(sample, previous):
         if old is None or old["start_ticks"] != process["start_ticks"]:
             result["baseline_reset"] = True
             continue
-        result["comparable"] = True
         for counter in ("cpu_ticks", "io_bytes"):
+            if not _number(process.get(counter)) or not _number(old.get(counter)):
+                continue
+            result["comparable"] = True
             delta = process[counter] - old[counter]
             if delta < 0:
                 result["baseline_reset"] = True

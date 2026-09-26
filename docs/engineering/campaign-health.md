@@ -10,6 +10,8 @@ Cada muestra conserva CPU y memoria del cgroup y sus bytes de I/O de almacenamie
 
 Los incrementos de pasos, ajustes completados y particiones confirmadas también cuentan como avance. Una nueva fecha, un cambio de tamaño o un heartbeat no lo hacen. El estado conserva las rutas de origen y los contadores utilizados. Al cambiar la invocación, el PID principal o la identidad de un proceso se establece una referencia nueva. Un reinicio del equipo elimina la referencia anterior.
 
+Si `/proc/PID/io` deniega el acceso o contiene datos inválidos, se conservan la identidad y los ticks CPU ya leídos. `io_bytes` queda a `null` y el error se registra aparte. Solo se comparan contadores conocidos en ambas muestras. Recuperar acceso a I/O establece su referencia y no cuenta los bytes acumulados anteriores como avance nuevo. Los procesos que desaparecen durante la lectura se siguen descartando.
+
 Tras quince minutos sin cambios comparables se emite `possible_inactivity`. Es una advertencia que requiere inspección, no la afirmación de que el proceso está bloqueado. La espera de GPU y las transiciones de arranque o parada quedan fuera de ese umbral. Si faltan contadores, se declara salud desconocida. Una CPU ocupada tampoco demuestra por sí sola que se estén actualizando modelos.
 
 Un fallo explícito avisa incluso en la primera consulta. Un servicio inactivo solo produce aviso de parada cuando el monitor ya lo ha observado en ejecución y no existe una finalización confirmada. Así se evita avisar al instalar el temporizador antes del primer arranque. La finalización del supervisor debe pertenecer a la invocación observada. La del resumen debe corresponder a la ruta de campaña configurada.
