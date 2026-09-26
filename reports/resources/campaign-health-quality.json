@@ -517,5 +517,84 @@
     "No se han medido energía, coste monetario ni VRAM atribuida al monitor.",
     "La prueba funcional de las unidades y la notificación de escritorio en una sesión real corresponden al despliegue posterior. Las pruebas comprueban el aviso con un notificador sustituido.",
     "No se ejecuta la batería científica completa ni se carga una segunda tarea CUDA. El test final permanece cerrado."
-  ]
+  ],
+  "io_permission_fallback": {
+    "observed_at": "2026-09-26T07:23:34.999478+00:00",
+    "source_sha256": "2762632d49a2021153496bf35832ccb8ebb5632a3f11926ee2eb11c5dcf130f2",
+    "tests": {
+      "passed": 43,
+      "command": "uv run --no-sync --with coverage --with lizard coverage run --branch --source=mars_titan.training.campaign_health -m pytest tests/training/test_campaign_health.py -q",
+      "scope": "Pruebas CPU del monitor, con denegación de I/O, contadores inválidos, recuperación de lectura y procesos desaparecidos"
+    },
+    "coverage": {
+      "tool": "coverage.py 7.16.1",
+      "convention": "Sentencias y ramas del proceso principal, sin combinar subprocesos CLI.",
+      "totals": {
+        "covered_lines": 311,
+        "num_statements": 368,
+        "percent_covered": 83.96946564885496,
+        "percent_covered_display": "84",
+        "missing_lines": 57,
+        "excluded_lines": 0,
+        "percent_statements_covered": 84.51086956521739,
+        "percent_statements_covered_display": "85",
+        "num_branches": 156,
+        "num_partial_branches": 13,
+        "covered_branches": 129,
+        "missing_branches": 27,
+        "percent_branches_covered": 82.6923076923077,
+        "percent_branches_covered_display": "83"
+      }
+    },
+    "complexity": {
+      "tool": "lizard 1.24.0",
+      "convention": "CC² × (1 − cobertura de sentencias)³ + CC.",
+      "functions": [
+        {
+          "name": "_process",
+          "complexity": 10,
+          "covered_statements": 22,
+          "missing_statements": 0,
+          "crap": 10.0
+        },
+        {
+          "name": "read_resources",
+          "complexity": 21,
+          "covered_statements": 37,
+          "missing_statements": 5,
+          "crap": 21.744
+        },
+        {
+          "name": "activity_since",
+          "complexity": 11,
+          "covered_statements": 24,
+          "missing_statements": 0,
+          "crap": 11.0
+        }
+      ]
+    },
+    "mutations": [
+      {
+        "name": "descartar_cpu_si_falla_io",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "unavailable_process_io"
+      },
+      {
+        "name": "sustituir_io_desconocido_por_cero",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "unknown_io_values"
+      }
+    ],
+    "verification": {
+      "ruff_check": true,
+      "ruff_format_check": true,
+      "repository_check": true
+    },
+    "limits": [
+      "La comprobación de dos muestras de la unidad instalada queda para el despliegue.",
+      "No se modifica el aislamiento del servicio ni se ejecuta ninguna carga GPU. Las medidas anteriores conservan su revisión original."
+    ]
+  }
 }
