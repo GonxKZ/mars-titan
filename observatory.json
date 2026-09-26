@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-26T18:12:54.421556Z",
+  "generated_at": "2026-09-26T18:13:39.421847Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -103,8 +103,7 @@
         "tabular-original-us"
       ],
       "counts": {
-        "completed": 62,
-        "running": 1,
+        "completed": 63,
         "not_started": 153
       },
       "registered_runs": 63
@@ -333,99 +332,6 @@
     "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes."
   ],
   "runs": [
-    {
-      "run_id": "adaptation-original-us-9c597ea2be33b3f601c2",
-      "attempt_id": "legacy",
-      "model_id": "adaptation",
-      "activity": "predictive_adaptation",
-      "variant_id": "cd3c2efe13a31490",
-      "status": "running",
-      "phase": "validation",
-      "started_at": null,
-      "updated_at": "2026-09-26T18:11:41.194046Z",
-      "heartbeat_at": "2026-09-26T18:12:54.421556Z",
-      "completed_steps": 30245,
-      "total_steps": null,
-      "epoch": 5,
-      "max_epochs": 5,
-      "seed": 44,
-      "fold": "unidentified",
-      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
-      "metrics": {
-        "mae": 0.015088874050448843,
-        "mse": 0.0006159883576324938,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": null,
-        "ram_peak_mib": null,
-        "elapsed_seconds": null,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015085908890492097
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015404654225006706
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015148215287379141
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015285301805321614
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015088874050448843
-        }
-      ],
-      "checkpoint": {
-        "step": 30245,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptation-original-us",
-        "domain": "real",
-        "method": "mae",
-        "parent_frozen": true,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "cd3c2efe13a314900b8aa1330cd9f7c833eef5229ea8b638b5e860824c83d8fd",
-        "source_sha256": "16387098dbb22012f7e408d225a4c7ce3e7d62043729dfbc89bcbaca7e4abc7e",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": 1548307,
-        "validation_rows": 261069,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": null,
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": null
-      }
-    },
     {
       "run_id": "adaptation-check-20260923-08ed7c5ae311fd26270e",
       "attempt_id": "legacy",
@@ -5065,6 +4971,99 @@
         "parent_model": null,
         "configuration_sha256": "08e0982d029149b0365374fc0df1593b8ec18cab5a8920321423506938981ee6",
         "source_sha256": "edf4b67cd70f1afc794c58b97d2411aff5c7f6f066aab76339809f4f65fafce5",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 11050.66796875
+      }
+    },
+    {
+      "run_id": "adaptation-original-us-9c597ea2be33b3f601c2",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "cd3c2efe13a31490",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-26T18:13:39.213961Z",
+      "heartbeat_at": null,
+      "completed_steps": 30245,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.015085908890492097,
+        "mse": 0.0006159418668909972,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.49755859375,
+        "ram_peak_mib": 11050.66796875,
+        "elapsed_seconds": 685.3209146230001,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015085908890492097
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015404654225006706
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015148215287379141
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015285301805321614
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015088874050448843
+        }
+      ],
+      "checkpoint": {
+        "step": 30245,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "cd3c2efe13a314900b8aa1330cd9f7c833eef5229ea8b638b5e860824c83d8fd",
+        "source_sha256": "5b01ac3e0fa2ba2a93ee12cebabdc4a54d8e1d640925330adc1a6d624d781d1e",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
