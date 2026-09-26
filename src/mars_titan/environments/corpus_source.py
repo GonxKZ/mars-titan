@@ -128,7 +128,7 @@ def _partition(dataset, output, partition, report, stop):
         with duckdb.connect(
             config={
                 "threads": 4,
-                "memory_limit": "4GiB",
+                "memory_limit": "8GiB",
                 "temp_directory": str(temporary / "spill"),
                 "max_temp_directory_size": "32GiB",
                 "preserve_insertion_order": True,
