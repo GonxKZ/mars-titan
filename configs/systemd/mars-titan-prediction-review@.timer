@@ -1,0 +1,11 @@
+[Unit]
+Description=Revisar resultados nuevos de MARS-TITAN cada quince minutos
+
+[Timer]
+OnStartupSec=2min
+OnUnitInactiveSec=15min
+AccuracySec=15s
+Unit=mars-titan-prediction-review@%i.service
+
+[Install]
+WantedBy=timers.target
