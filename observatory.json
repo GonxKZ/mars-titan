@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-26T17:13:24.396639Z",
+  "generated_at": "2026-09-26T17:14:54.397253Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -103,11 +103,11 @@
         "tabular-original-us"
       ],
       "counts": {
-        "completed": 57,
+        "completed": 58,
         "running": 1,
-        "not_started": 158
+        "not_started": 157
       },
-      "registered_runs": 58
+      "registered_runs": 59
     },
     {
       "id": "reference-edition-20260922",
@@ -334,26 +334,26 @@
   ],
   "runs": [
     {
-      "run_id": "adaptation-original-us-7dbc353612b6acad4094",
+      "run_id": "adaptation-original-us-97037997d029ab05ad85",
       "attempt_id": "legacy",
       "model_id": "adaptation",
       "activity": "predictive_adaptation",
-      "variant_id": "4f97c0d0714f6e4f",
+      "variant_id": "5392cdb96087c56d",
       "status": "running",
       "phase": "validation",
       "started_at": null,
-      "updated_at": "2026-09-26T17:12:40.836714Z",
-      "heartbeat_at": "2026-09-26T17:13:24.396639Z",
-      "completed_steps": 30245,
+      "updated_at": "2026-09-26T17:14:46.575562Z",
+      "heartbeat_at": "2026-09-26T17:14:54.397253Z",
+      "completed_steps": 0,
       "total_steps": null,
-      "epoch": 5,
+      "epoch": null,
       "max_epochs": 5,
       "seed": 43,
       "fold": "unidentified",
       "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
       "metrics": {
-        "mae": 0.02167041402643098,
-        "mse": 0.0009131703427417118,
+        "mae": null,
+        "mse": null,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -366,40 +366,9 @@
         "elapsed_seconds": null,
         "samples_per_second": null
       },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016519403800351985
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017246191707912754
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017837687441767374
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018806053632763477
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.02167041402643098
-        }
-      ],
+      "history": [],
       "checkpoint": {
-        "step": 30245,
+        "step": 0,
         "saved_at": null,
         "resumable": null
       },
@@ -413,8 +382,8 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "4f97c0d0714f6e4f76c8f81c71ae7062c43d8e56dca234276aa6434c1f3e99c1",
-        "source_sha256": "d410cdc6a400f9d020d7e7d19d38687b5233045769d3304b6c2e292f09c93411",
+        "configuration_sha256": "5392cdb96087c56da26277d0eb4d7ca9c74b8c69521e0e05fd32a54ca6d0f14b",
+        "source_sha256": "8bcf971d88baaad8e342bcb5514b42ed0ce8b2210c2f45b366c52dce74ff1ed0",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
@@ -4333,6 +4302,99 @@
       }
     },
     {
+      "run_id": "adaptation-original-us-7dbc353612b6acad4094",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "4f97c0d0714f6e4f",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-26T17:14:42.171114Z",
+      "heartbeat_at": null,
+      "completed_steps": 30245,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.016519403800351985,
+        "mse": 0.0006770752897840039,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.59375,
+        "ram_peak_mib": 11050.66796875,
+        "elapsed_seconds": 718.2454370299965,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016519403800351985
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017246191707912754
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017837687441767374
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018806053632763477
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02167041402643098
+        }
+      ],
+      "checkpoint": {
+        "step": 30245,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "klpo_exact",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "4f97c0d0714f6e4f76c8f81c71ae7062c43d8e56dca234276aa6434c1f3e99c1",
+        "source_sha256": "5a1523d911da1db600482a0447d6c13cbf5d94e91e6ded167d154ecd3197284f",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 11050.66796875
+      }
+    },
+    {
       "run_id": "adaptation-original-us-80b8bb0d44016773e7b6",
       "attempt_id": "legacy",
       "model_id": "adaptation",
@@ -6191,117 +6253,24 @@
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": 11050.66796875
       }
-    },
-    {
-      "run_id": "adaptation-original-us-f1d7c57706e9b7cb5330",
-      "attempt_id": "legacy",
-      "model_id": "adaptation",
-      "activity": "predictive_adaptation",
-      "variant_id": "946281bf89f2bc30",
-      "status": "completed",
-      "phase": "validation",
-      "started_at": null,
-      "updated_at": "2026-09-26T10:15:00.521654Z",
-      "heartbeat_at": null,
-      "completed_steps": 30245,
-      "total_steps": null,
-      "epoch": 5,
-      "max_epochs": 5,
-      "seed": 43,
-      "fold": "unidentified",
-      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
-      "metrics": {
-        "mae": 0.01576045687174684,
-        "mse": 0.0006446187229542048,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": 72.59423828125,
-        "ram_peak_mib": 11050.66796875,
-        "elapsed_seconds": 597.9912905619931,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016316150605826925
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016252782289780977
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01576045687174684
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01590408447744588
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015909203215723325
-        }
-      ],
-      "checkpoint": {
-        "step": 30245,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptation-original-us",
-        "domain": "real",
-        "method": "klpo_full",
-        "parent_frozen": true,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "946281bf89f2bc3046908a1e6a1273aba37553e84fc5e39ad69868a780e4eb85",
-        "source_sha256": "fdd81f27b61a342528730dc22402f70f96ff23a512e921fd5c48c1370906706b",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": 1548307,
-        "validation_rows": 261069,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": "process_lifetime",
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": 11050.66796875
-      }
     }
   ],
   "pagination": {
-    "total_runs": 771,
+    "total_runs": 772,
     "page_size": 64,
     "pages": [
-      "pages/753f3a76734bbe284151f4780ccb14d6401f6e1595d796927e96eb7d1974ffe9.json",
-      "pages/5865bae6e6a9a6ac0098653f99bb8c0aae0f78c87a22270a07f528685aa0e322.json",
-      "pages/428ff39220f0cfb086701628c1b651d8f81322cd1e5a74f695c7c2766b5653d2.json",
-      "pages/adb8a0bdfca0d89fdbf94d0b21f2f50b803d579400649591425c8c457149ab50.json",
-      "pages/b9534e1d4590b7030bb0eb83d69b04b3f303026e44f4ed52849c02398b35f231.json",
-      "pages/5e0e470bf94f0bfb5df369f2976acca113171c20d3e01a67eb84dcf5177a8034.json",
-      "pages/ba63e071527bd01385e5a554bbcfd5ac822221ac8a4a5e7a6198daf0512a78b9.json",
-      "pages/ff96ce6e1f74888d621077da611a5afdb964f71b804c447c71d88f7435097431.json",
-      "pages/efba5683d88106e0ca78db7159e9832c679df5eb62b9a4d16a392adf0533aab1.json",
-      "pages/f707255d794c55f4c6fa93bd7c73411b3ec34cf3ceb3863333faa29b3de46aae.json",
-      "pages/c271fcc38612f3a57cbfa56ce2cf6493eb3198c957da74e23de12b7e060a2140.json",
-      "pages/656e3bad46cb4520e57f9d95d036ffd7f8ff70763ff908ad51f70916ac32e770.json"
+      "pages/bba6e09c77d96bb9578ef7582dd1241cf41f5614d7d5026120b13f93febb9611.json",
+      "pages/a60f1e19c7b78f9b92a0afb0d92ebe38bd8ea9960357ab21290764cb7d5aeda3.json",
+      "pages/bdb09bacab4a79863e896753ec11d5126b351393174acf5ba8020e822a9a14c7.json",
+      "pages/9b9c765528aebcf7140d03ccd6bc2f5fb89c56d138059326de5ee2c9fd3c25e1.json",
+      "pages/4b45a7a9984407a6b2cfcd3b41449c754ed7af3bc2880bea423439d8dec35a4e.json",
+      "pages/d619be45bab3acef8b1127e6f233fe5e89be3da60908498c0df0d2a86b07f15b.json",
+      "pages/0908c5d6406dd647460158367b4b296fc56832e363d50d8a647dc953f82593a8.json",
+      "pages/4c841a692d6e410a35d1a560b917ab13a0d3de067c8fb1aa0cba170a9aacf24c.json",
+      "pages/e5007aa3fd082ba850eea694749f0cc6cfe681238677e0c4670e553817c49a98.json",
+      "pages/91b70733abe93c4340312aedd4c1ed1eac1bc046d40c94d50a32ee1dc4db463f.json",
+      "pages/76ca8837a998668deba9b2d3644eb4a4a0f6dfd738eacfd995829c9e3aa84b37.json",
+      "pages/60e23207f9836ff35d5c19101167b70f6e2b0d501f16aeba15ce722f71868683.json"
     ]
   }
 }
