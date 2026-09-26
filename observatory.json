@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-26T09:41:54.215828Z",
+  "generated_at": "2026-09-26T09:45:54.217370Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -103,11 +103,11 @@
         "tabular-original-us"
       ],
       "counts": {
-        "completed": 13,
+        "completed": 14,
         "running": 1,
-        "not_started": 202
+        "not_started": 201
       },
-      "registered_runs": 14
+      "registered_runs": 15
     },
     {
       "id": "reference-edition-20260922",
@@ -334,26 +334,26 @@
   ],
   "runs": [
     {
-      "run_id": "adaptation-original-us-9bc0f141cd6643b5e625",
+      "run_id": "adaptation-original-us-473b714a589da423fa66",
       "attempt_id": "legacy",
       "model_id": "adaptation",
       "activity": "predictive_adaptation",
-      "variant_id": "08e0982d029149b0",
+      "variant_id": "eca6581c24b98379",
       "status": "running",
       "phase": "validation",
       "started_at": null,
-      "updated_at": "2026-09-26T09:41:08.686847Z",
-      "heartbeat_at": "2026-09-26T09:41:54.215828Z",
-      "completed_steps": 18147,
+      "updated_at": "2026-09-26T09:45:49.575082Z",
+      "heartbeat_at": "2026-09-26T09:45:54.217370Z",
+      "completed_steps": 0,
       "total_steps": null,
-      "epoch": 3,
+      "epoch": null,
       "max_epochs": 5,
       "seed": 43,
       "fold": "unidentified",
       "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
       "metrics": {
-        "mae": 0.015299001050941839,
-        "mse": 0.0006240956224442953,
+        "mae": null,
+        "mse": null,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -366,28 +366,9 @@
         "elapsed_seconds": null,
         "samples_per_second": null
       },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01556377471436282
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015651886209450364
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015299001050941839
-        }
-      ],
+      "history": [],
       "checkpoint": {
-        "step": 18147,
+        "step": 0,
         "saved_at": null,
         "resumable": null
       },
@@ -396,13 +377,13 @@
       "metadata": {
         "campaign": "adaptation-original-us",
         "domain": "real",
-        "method": "expected",
+        "method": "mae",
         "parent_frozen": true,
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "08e0982d029149b0365374fc0df1593b8ec18cab5a8920321423506938981ee6",
-        "source_sha256": "ebcdde73c01dd2105575bcfa07cbfc961a897ce66a890c7e2406c7501f0a7613",
+        "configuration_sha256": "eca6581c24b98379664a3279aad5a9b5021dbac6dbf3a844609c8766f6aa2694",
+        "source_sha256": "580315180bb5dfea0e29e27a37d064e6a35e14139db7c98d665119d199a0a2f0",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
@@ -1891,6 +1872,99 @@
         "parent_model": null,
         "configuration_sha256": "4c647b670fc6d0cfc727852ecef642dcaa2db632820ce9a25c8e33690530c311",
         "source_sha256": "e97a7624c399da3c4365e8c0f1cad2847aae7516ca67327d1c15744ccd7aa85f",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 11050.66796875
+      }
+    },
+    {
+      "run_id": "adaptation-original-us-9bc0f141cd6643b5e625",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "08e0982d029149b0",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-26T09:45:46.119659Z",
+      "heartbeat_at": null,
+      "completed_steps": 30245,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.015157652215327617,
+        "mse": 0.0006168196391453087,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.49755859375,
+        "ram_peak_mib": 11050.66796875,
+        "elapsed_seconds": 553.8120393189965,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01556377471436282
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015651886209450364
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015299001050941839
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015157652215327617
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015232730498097664
+        }
+      ],
+      "checkpoint": {
+        "step": 30245,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "08e0982d029149b0365374fc0df1593b8ec18cab5a8920321423506938981ee6",
+        "source_sha256": "edf4b67cd70f1afc794c58b97d2411aff5c7f6f066aab76339809f4f65fafce5",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
@@ -10529,266 +10603,23 @@
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": null
       }
-    },
-    {
-      "run_id": "expanded-check-20260922-7310eb066cc92c39c9f5",
-      "attempt_id": "legacy",
-      "model_id": "gru",
-      "activity": "initial_training",
-      "variant_id": "251b6abacb1fa9d8",
-      "status": "completed",
-      "phase": "validation",
-      "started_at": "2026-09-22T06:42:50.202736Z",
-      "updated_at": "2026-09-22T06:43:01.563085Z",
-      "heartbeat_at": null,
-      "completed_steps": null,
-      "total_steps": null,
-      "epoch": 30,
-      "max_epochs": 30,
-      "seed": 42,
-      "fold": "unidentified",
-      "comparison_group": null,
-      "metrics": {
-        "mae": 0.021817998405147584,
-        "mse": 0.0007624481920060612,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": null,
-        "ram_peak_mib": null,
-        "elapsed_seconds": 11.33958566399815,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": 0.0007575611001811921,
-          "mae": 0.08067753076553345
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": 0.000666380679467693,
-          "mae": 0.07143732145428658
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": 0.0007583210209850222,
-          "mae": 0.08083210334181785
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": 0.0005925838416442276,
-          "mae": 0.06425838470458985
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": 0.0004244971415027976,
-          "mae": 0.0471449413895607
-        },
-        {
-          "step": 6,
-          "recorded_at": null,
-          "loss": 0.0004386814252939075,
-          "mae": 0.04886538490653038
-        },
-        {
-          "step": 7,
-          "recorded_at": null,
-          "loss": 0.000379409083398059,
-          "mae": 0.04291815727949142
-        },
-        {
-          "step": 8,
-          "recorded_at": null,
-          "loss": 0.0002676174056250602,
-          "mae": 0.03175458207726479
-        },
-        {
-          "step": 9,
-          "recorded_at": null,
-          "loss": 0.0002886846289038658,
-          "mae": 0.03384056694805622
-        },
-        {
-          "step": 10,
-          "recorded_at": null,
-          "loss": 0.00022422509209718555,
-          "mae": 0.027138168439269066
-        },
-        {
-          "step": 11,
-          "recorded_at": null,
-          "loss": 0.0002168777590850368,
-          "mae": 0.02619432859122753
-        },
-        {
-          "step": 12,
-          "recorded_at": null,
-          "loss": 0.0001977633871138096,
-          "mae": 0.024608785957098006
-        },
-        {
-          "step": 13,
-          "recorded_at": null,
-          "loss": 0.00020562431600410492,
-          "mae": 0.02492405690252781
-        },
-        {
-          "step": 14,
-          "recorded_at": null,
-          "loss": 0.00018451347074005753,
-          "mae": 0.023250472992658616
-        },
-        {
-          "step": 15,
-          "recorded_at": null,
-          "loss": 0.00022905977006303145,
-          "mae": 0.027526383474469184
-        },
-        {
-          "step": 16,
-          "recorded_at": null,
-          "loss": 0.0001766632217913866,
-          "mae": 0.02228923685848713
-        },
-        {
-          "step": 17,
-          "recorded_at": null,
-          "loss": 0.00024500631814589725,
-          "mae": 0.02921628810465336
-        },
-        {
-          "step": 18,
-          "recorded_at": null,
-          "loss": 0.00017166396835818887,
-          "mae": 0.021834140196442604
-        },
-        {
-          "step": 19,
-          "recorded_at": null,
-          "loss": 0.00023744828620692716,
-          "mae": 0.028394824378192424
-        },
-        {
-          "step": 20,
-          "recorded_at": null,
-          "loss": 0.0001772225194144994,
-          "mae": 0.022221961989998817
-        },
-        {
-          "step": 21,
-          "recorded_at": null,
-          "loss": 0.00020151645818259568,
-          "mae": 0.024730962477624418
-        },
-        {
-          "step": 22,
-          "recorded_at": null,
-          "loss": 0.00019282527326140554,
-          "mae": 0.02374903067946434
-        },
-        {
-          "step": 23,
-          "recorded_at": null,
-          "loss": 0.0001919427522807382,
-          "mae": 0.02365476407110691
-        },
-        {
-          "step": 24,
-          "recorded_at": null,
-          "loss": 0.00019235807383665815,
-          "mae": 0.023704042285680772
-        },
-        {
-          "step": 25,
-          "recorded_at": null,
-          "loss": 0.00019756965950364246,
-          "mae": 0.024275831058621408
-        },
-        {
-          "step": 26,
-          "recorded_at": null,
-          "loss": 0.00018279032723512501,
-          "mae": 0.022671206071972847
-        },
-        {
-          "step": 27,
-          "recorded_at": null,
-          "loss": 0.00020303228578995913,
-          "mae": 0.024961786828935146
-        },
-        {
-          "step": 28,
-          "recorded_at": null,
-          "loss": 0.00017662247526459396,
-          "mae": 0.022033279910683632
-        },
-        {
-          "step": 29,
-          "recorded_at": null,
-          "loss": 0.0002057821920607239,
-          "mae": 0.025277079828083516
-        },
-        {
-          "step": 30,
-          "recorded_at": null,
-          "loss": 0.00017400078184437006,
-          "mae": 0.021817866638302805
-        }
-      ],
-      "checkpoint": {
-        "step": null,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "expanded-check-20260922",
-        "domain": "technical",
-        "method": "initial_training",
-        "parent_frozen": null,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "251b6abacb1fa9d86d5d73f4fb95e043acef6bc340c79bbdcfe6c4b374dba757",
-        "source_sha256": "88cd4636da29c081a500e5274fdd6a7f440efcdc79d171314ce1203e8987ad44",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_timestamp",
-        "train_rows": 80,
-        "validation_rows": 25,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": null,
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": null
-      }
     }
   ],
   "pagination": {
-    "total_runs": 727,
+    "total_runs": 728,
     "page_size": 64,
     "pages": [
-      "pages/10896068211fdd32797b4ce8c1113b72b1620f4e2e466e5e757f1fd214aa3e8b.json",
-      "pages/45ebd97173b9386afd56524a42f1d2e5c28cb62155fbfcc6ae8401654a6a9af7.json",
-      "pages/d20443a1de23389a949c9d5d8f170b22939d0b24b86dc62ef835a448fa17432a.json",
-      "pages/367221d2e04c4f0e1bf50c82f1fda5cda10d8d92c8a309e35dedffe6b61d1560.json",
-      "pages/215f5dc8997111fbe6aa344b77b34f413d5f4c0170745c80e7fc33b2fac3aa09.json",
-      "pages/ee10b60911d00da6818b662f7e37fc0ccc417ed5e77a23525212c13422dedd59.json",
-      "pages/5b8ab80c173f02955fb91ff279ac53554c30d174fca089210474ca4fa589aefc.json",
-      "pages/3c06e77ecffeddf58649959243af2dbeff5d2948c06a6c052687ea2ea773242b.json",
-      "pages/d4e2776d8d5c3d820440c5b1d2967d72a11a29fb4a42c0ff500b6d37f9c0c349.json",
-      "pages/71c5969c562cf2e699078239aad9667c4262475c452efb67979e42dae226c7ed.json",
-      "pages/6309fd3163b8b5b9d6794b9361425cdb713252455965f62ad2dc0865c5b082c0.json"
+      "pages/f260433a5890e3329ebe821fd54c7fbc279cc7d30e18588252982561de80894c.json",
+      "pages/768c5eec569ff218ccc03afa830d9cc19702e9bad3d2544029764e3d14bc2254.json",
+      "pages/c651c4e73a947683204611b2e9ea29ccac46666ae8120431d22a069c19e2ee38.json",
+      "pages/869b111c76b08c52005db018bf9108ad9e83e3e400bcf00b99cb1b0469a3cd92.json",
+      "pages/c5b1723e3b6ec95468e53c6a7f27a74ff94517e0ed9cdd4789e64c5cf1489660.json",
+      "pages/994b868cc6b6883a678c748983e91d7b316e419a9c51eaa2a560394f45f0de77.json",
+      "pages/a9e03856fb33b7641f76250d16c9fd306cd59d256c1c34c72184de20a07b5730.json",
+      "pages/c9985a72c235b94141faefcf7e3d2b9fba0e75288435ab47447a7c19ae58b5c3.json",
+      "pages/4e566029cba12e98e949e4dd4e723780267d3f94030ea8c177b37ead68b62cd7.json",
+      "pages/37940cd20cd92e9cc200a380fc2c3daa06f6c4268d256e7c7844ac884138cec9.json",
+      "pages/89f357f8f79d9f093e9dae30a135004a9b96305c5b9deb1a6729a9c1168c1cb5.json"
     ]
   }
 }
