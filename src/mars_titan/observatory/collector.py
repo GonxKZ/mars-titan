@@ -355,7 +355,7 @@ class Collector:
                 if campaign["planned_runs"] is None:
                     campaign["planned_runs"] = len(latest)
                 campaign["counts"]["not_started"] = max(0, campaign["planned_runs"] - len(latest))
-                if campaign["dependencies"] and not members:
+                if campaign["dependencies"] and not members and campaign["status"] == "queued":
                     campaign["status"] = "blocked"
             runs.sort(key=lambda r: (r["status"] != "running", r["run_id"], r["attempt_id"]))
         return dict(

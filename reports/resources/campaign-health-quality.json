@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "domain": "technical",
+  "observed_at": "2026-09-26T07:11:57.033639+00:00",
+  "tests": {
+    "passed": 249,
+    "command": "uv run --no-sync --with coverage --with lizard coverage run --branch --source=mars_titan.training.campaign_health,mars_titan.observatory.collector -m pytest tests/training/test_campaign_health.py tests/training/test_gpu_supervisor.py tests/tooling -q",
+    "scope": "Pruebas CPU del monitor, supervisor y herramientas del repositorio"
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.1",
+    "convention": "Cobertura de sentencias y ramas del proceso principal. Los subprocesos CLI se comprueban, sin sumar su cobertura.",
+    "modules": {
+      "src/mars_titan/training/campaign_health.py": {
+        "sha256": "9c949a9c87576fe2b97350f1bcfb241a9fb4fc1ea9e863ea4f6a1a72e3049ff8",
+        "coverage": {
+          "covered_lines": 300,
+          "num_statements": 357,
+          "percent_covered": 83.30058939096267,
+          "percent_covered_display": "83",
+          "missing_lines": 57,
+          "excluded_lines": 0,
+          "percent_statements_covered": 84.03361344537815,
+          "percent_statements_covered_display": "84",
+          "num_branches": 152,
+          "num_partial_branches": 14,
+          "covered_branches": 124,
+          "missing_branches": 28,
+          "percent_branches_covered": 81.57894736842105,
+          "percent_branches_covered_display": "82"
+        },
+        "functions": [
+          {
+            "name": "_read",
+            "complexity": 3,
+            "covered_statements": 10,
+            "missing_statements": 0,
+            "crap": 3.0
+          },
+          {
+            "name": "_json",
+            "complexity": 3,
+            "covered_statements": 8,
+            "missing_statements": 1,
+            "crap": 3.012
+          },
+          {
+            "name": "_number",
+            "complexity": 4,
+            "covered_statements": 4,
+            "missing_statements": 0,
+            "crap": 4.0
+          },
+          {
+            "name": "read_report",
+            "complexity": 19,
+            "covered_statements": 23,
+            "missing_statements": 6,
+            "crap": 22.197
+          },
+          {
+            "name": "_command",
+            "complexity": 9,
+            "covered_statements": 23,
+            "missing_statements": 0,
+            "crap": 9.0
+          },
+          {
+            "name": "read_service",
+            "complexity": 5,
+            "covered_statements": 4,
+            "missing_statements": 3,
+            "crap": 6.968
+          },
+          {
+            "name": "_process",
+            "complexity": 8,
+            "covered_statements": 15,
+            "missing_statements": 0,
+            "crap": 8.0
+          },
+          {
+            "name": "read_resources",
+            "complexity": 20,
+            "covered_statements": 35,
+            "missing_statements": 5,
+            "crap": 20.781
+          },
+          {
+            "name": "collect",
+            "complexity": 10,
+            "covered_statements": 19,
+            "missing_statements": 10,
+            "crap": 14.1
+          },
+          {
+            "name": "_identity",
+            "complexity": 3,
+            "covered_statements": 3,
+            "missing_statements": 0,
+            "crap": 3.0
+          },
+          {
+            "name": "_service_name",
+            "complexity": 3,
+            "covered_statements": 2,
+            "missing_statements": 0,
+            "crap": 3.0
+          },
+          {
+            "name": "_reports",
+            "complexity": 5,
+            "covered_statements": 2,
+            "missing_statements": 0,
+            "crap": 5.0
+          },
+          {
+            "name": "_progress",
+            "complexity": 7,
+            "covered_statements": 4,
+            "missing_statements": 0,
+            "crap": 7.0
+          },
+          {
+            "name": "activity_since",
+            "complexity": 9,
+            "covered_statements": 22,
+            "missing_statements": 0,
+            "crap": 9.0
+          },
+          {
+            "name": "_current_report",
+            "complexity": 2,
+            "covered_statements": 4,
+            "missing_statements": 0,
+            "crap": 2.0
+          },
+          {
+            "name": "_guard",
+            "complexity": 6,
+            "covered_statements": 8,
+            "missing_statements": 0,
+            "crap": 6.0
+          },
+          {
+            "name": "_phase",
+            "complexity": 25,
+            "covered_statements": 25,
+            "missing_statements": 2,
+            "crap": 25.254
+          },
+          {
+            "name": "assess",
+            "complexity": 27,
+            "covered_statements": 27,
+            "missing_statements": 0,
+            "crap": 27.0
+          },
+          {
+            "name": "atomic_json",
+            "complexity": 3,
+            "covered_statements": 11,
+            "missing_statements": 0,
+            "crap": 3.0
+          },
+          {
+            "name": "check",
+            "complexity": 18,
+            "covered_statements": 31,
+            "missing_statements": 6,
+            "crap": 19.382
+          },
+          {
+            "name": "main",
+            "complexity": 10,
+            "covered_statements": 1,
+            "missing_statements": 23,
+            "crap": 98.014
+          }
+        ]
+      },
+      "src/mars_titan/observatory/collector.py": {
+        "sha256": "f6196ec2f09e7e6be074bebec2696f966a4e6121cd33e1fa2d405193493dc209",
+        "coverage": {
+          "covered_lines": 374,
+          "num_statements": 406,
+          "percent_covered": 89.28571428571429,
+          "percent_covered_display": "89",
+          "missing_lines": 32,
+          "excluded_lines": 0,
+          "percent_statements_covered": 92.11822660098522,
+          "percent_statements_covered_display": "92",
+          "num_branches": 210,
+          "num_partial_branches": 34,
+          "covered_branches": 176,
+          "missing_branches": 34,
+          "percent_branches_covered": 83.80952380952381,
+          "percent_branches_covered_display": "84"
+        },
+        "functions": [
+          {
+            "name": "digest",
+            "complexity": 1,
+            "covered_statements": 2,
+            "missing_statements": 0,
+            "crap": 1.0
+          },
+          {
+            "name": "identifier",
+            "complexity": 3,
+            "covered_statements": 4,
+            "missing_statements": 0,
+            "crap": 3.0
+          },
+          {
+            "name": "finite",
+            "complexity": 4,
+            "covered_statements": 2,
+            "missing_statements": 0,
+            "crap": 4.0
+          },
+          {
+            "name": "utc",
+            "complexity": 3,
+            "covered_statements": 6,
+            "missing_statements": 1,
+            "crap": 3.026
+          },
+          {
+            "name": "planned_runs",
+            "complexity": 34,
+            "covered_statements": 31,
+            "missing_statements": 3,
+            "crap": 34.794
+          },
+          {
+            "name": "_check_sha256",
+            "complexity": 4,
+            "covered_statements": 3,
+            "missing_statements": 0,
+            "crap": 4.0
+          },
+          {
+            "name": "_report_paths",
+            "complexity": 7,
+            "covered_statements": 12,
+            "missing_statements": 1,
+            "crap": 7.022
+          },
+          {
+            "name": "safe_path",
+            "complexity": 5,
+            "covered_statements": 9,
+            "missing_statements": 1,
+            "crap": 5.025
+          },
+          {
+            "name": "lock_held",
+            "complexity": 6,
+            "covered_statements": 14,
+            "missing_statements": 1,
+            "crap": 6.011
+          },
+          {
+            "name": "__init__",
+            "complexity": 1,
+            "covered_statements": 9,
+            "missing_statements": 0,
+            "crap": 1.0
+          },
+          {
+            "name": "__enter__",
+            "complexity": 1,
+            "covered_statements": 2,
+            "missing_statements": 0,
+            "crap": 1.0
+          },
+          {
+            "name": "__exit__",
+            "complexity": 1,
+            "covered_statements": 2,
+            "missing_statements": 0,
+            "crap": 1.0
+          },
+          {
+            "name": "read",
+            "complexity": 14,
+            "covered_statements": 32,
+            "missing_statements": 3,
+            "crap": 14.123
+          },
+          {
+            "name": "collect",
+            "complexity": 33,
+            "covered_statements": 46,
+            "missing_statements": 5,
+            "crap": 34.026
+          },
+          {
+            "name": "_campaign",
+            "complexity": 26,
+            "covered_statements": 37,
+            "missing_statements": 2,
+            "crap": 26.091
+          },
+          {
+            "name": "_resources.peak",
+            "complexity": 5,
+            "covered_statements": 4,
+            "missing_statements": 0,
+            "crap": 5.0
+          },
+          {
+            "name": "_resources",
+            "complexity": 14,
+            "covered_statements": 23,
+            "missing_statements": 2,
+            "crap": 14.1
+          },
+          {
+            "name": "public_run",
+            "complexity": 54,
+            "covered_statements": 58,
+            "missing_statements": 3,
+            "crap": 54.347
+          },
+          {
+            "name": "validation_metrics",
+            "complexity": 16,
+            "covered_statements": 19,
+            "missing_statements": 1,
+            "crap": 16.032
+          },
+          {
+            "name": "validate_record",
+            "complexity": 34,
+            "covered_statements": 28,
+            "missing_statements": 8,
+            "crap": 46.686
+          },
+          {
+            "name": "write_pages",
+            "complexity": 10,
+            "covered_statements": 18,
+            "missing_statements": 1,
+            "crap": 10.015
+          }
+        ]
+      }
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "crap_convention": "CC² × (1 − cobertura de sentencias)³ + CC, por función con las líneas ejecutables dentro de sus límites."
+  },
+  "mutations": {
+    "source_sha256": "9c949a9c87576fe2b97350f1bcfb241a9fb4fc1ea9e863ea4f6a1a72e3049ff8",
+    "mutations": [
+      {
+        "name": "ignorar_fallo_servicio",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "explicit_service_failure",
+        "original": "if service[\"active\"] == \"failed\":",
+        "replacement": "if service[\"active\"] == \"unreachable_failed\":"
+      },
+      {
+        "name": "ignorar_espera_gpu",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "recent_gpu_wait",
+        "original": "if guard.get(\"status\") == \"waiting\":",
+        "replacement": "if guard.get(\"status\") == \"unreachable_waiting\":"
+      },
+      {
+        "name": "contar_supervisor_como_avance",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "heartbeat_and_supervisor",
+        "original": "result[\"baseline_reset\"] = False",
+        "replacement": "result[\"baseline_reset\"] = False\n    result[\"cpu_ticks\"] = max(0, sample[\"resources\"].get(\"cpu_usec\", 0) - before[\"resources\"].get(\"cpu_usec\", 0))"
+      },
+      {
+        "name": "ignorar_reutilizacion_pid",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "reused_child_pid",
+        "original": "old is None or old[\"start_ticks\"] != process[\"start_ticks\"]",
+        "replacement": "old is None"
+      },
+      {
+        "name": "ignorar_avance_semantico",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "semantic_progress_clears",
+        "original": "or activity[\"semantic_progress\"]",
+        "replacement": "or False"
+      },
+      {
+        "name": "repetir_aviso",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "explicit_service_failure",
+        "original": "and (not previous or previous.get(\"alert_key\") != alert_key)",
+        "replacement": "and True"
+      },
+      {
+        "name": "bloquear_preparacion_activa",
+        "detected": true,
+        "returncode": 1,
+        "test_selector": "without_runs_preserves",
+        "original": " and campaign[\"status\"] == \"queued\"",
+        "replacement": ""
+      }
+    ]
+  },
+  "measurement": {
+    "observed_at": "2026-09-26T07:10:54.056719+00:00",
+    "python": "3.12.14",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "uv": "uv 0.12.16 (x86_64-unknown-linux-gnu)",
+    "systemd": "systemd 259 (259.5-0ubuntu3.4)",
+    "repetitions": 5,
+    "warmup": "Una consulta manual anterior, sin calentamiento científico",
+    "concurrent_workload": "Campaña científica activa con casos de ajuste declarados en ejecución",
+    "process_median_seconds": 0.11769953200200689,
+    "process_stdev_seconds": 0.002832372223583943,
+    "peak_rss_bytes": 26087424,
+    "samples": [
+      {
+        "wall_seconds": 0.11,
+        "user_seconds": 0.07,
+        "system_seconds": 0.03,
+        "peak_rss_kib": 25156,
+        "process_seconds": 0.11879143000260228,
+        "phase": "training",
+        "health": "ok",
+        "processes": 3,
+        "cpu_ticks": 6088,
+        "io_counter_change": 17887254068,
+        "unavailable_sources": [
+          "io.stat"
+        ]
+      },
+      {
+        "wall_seconds": 0.11,
+        "user_seconds": 0.06,
+        "system_seconds": 0.04,
+        "peak_rss_kib": 25184,
+        "process_seconds": 0.11864852299913764,
+        "phase": "training",
+        "health": "ok",
+        "processes": 3,
+        "cpu_ticks": 11,
+        "io_counter_change": 32941630,
+        "unavailable_sources": [
+          "io.stat"
+        ]
+      },
+      {
+        "wall_seconds": 0.1,
+        "user_seconds": 0.06,
+        "system_seconds": 0.04,
+        "peak_rss_kib": 25468,
+        "process_seconds": 0.11198024000259466,
+        "phase": "training",
+        "health": "ok",
+        "processes": 3,
+        "cpu_ticks": 11,
+        "io_counter_change": 33701267,
+        "unavailable_sources": [
+          "io.stat"
+        ]
+      },
+      {
+        "wall_seconds": 0.11,
+        "user_seconds": 0.07,
+        "system_seconds": 0.03,
+        "peak_rss_kib": 25264,
+        "process_seconds": 0.1158655559993349,
+        "phase": "training",
+        "health": "ok",
+        "processes": 3,
+        "cpu_ticks": 12,
+        "io_counter_change": 31053325,
+        "unavailable_sources": [
+          "io.stat"
+        ]
+      },
+      {
+        "wall_seconds": 0.11,
+        "user_seconds": 0.06,
+        "system_seconds": 0.03,
+        "peak_rss_kib": 25476,
+        "process_seconds": 0.11769953200200689,
+        "phase": "training",
+        "health": "ok",
+        "processes": 3,
+        "cpu_ticks": 12,
+        "io_counter_change": 40306400,
+        "unavailable_sources": [
+          "io.stat"
+        ]
+      }
+    ]
+  },
+  "verification": {
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "repository_check": true,
+    "systemd_analyze_verify": true,
+    "systemd_warning": "systemd-analyze también informa de una clave StandardError mal ubicada en una unidad del sistema ajena a esta entrega."
+  },
+  "limits": [
+    "Las medidas corresponden a cinco consultas manuales en una campaña activa, fuera de la cuota del servicio propuesto. No permiten estimar latencias de cola.",
+    "io.stat no está disponible en el cgroup de esta máquina. Se conservan los contadores de CPU y los de I/O de los procesos mediante /proc.",
+    "No se han medido energía, coste monetario ni VRAM atribuida al monitor.",
+    "La prueba funcional de las unidades y la notificación de escritorio en una sesión real corresponden al despliegue posterior. Las pruebas comprueban el aviso con un notificador sustituido.",
+    "No se ejecuta la batería científica completa ni se carga una segunda tarea CUDA. El test final permanece cerrado."
+  ]
+}

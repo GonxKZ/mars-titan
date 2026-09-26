@@ -1,0 +1,22 @@
+[Unit]
+Description=Comprobar la salud de la campaña MARS-TITAN
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/mars-titan/campaign-health.env
+Environment=UV_NO_CACHE=1
+ExecStart=%h/.local/bin/uv run --no-project --no-config --offline python %h/.local/lib/mars-titan/campaign-health/%i/campaign_health.py --state %h/.local/state/mars-titan/campaign-health/state.json --guard ${MARS_TITAN_GPU_STATE} --summary ${MARS_TITAN_CAMPAIGN_SUMMARY} --preparation ${MARS_TITAN_PREPARATION_STATE} --probe-gpu --notify $MARS_TITAN_ACTIVITY_ARGS
+StateDirectory=mars-titan/campaign-health
+TimeoutStartSec=30
+MemoryMax=96M
+CPUQuota=10%
+TasksMax=16
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+StandardOutput=journal
+StandardError=journal
+SyslogLevelPrefix=yes
