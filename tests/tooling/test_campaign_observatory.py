@@ -275,3 +275,37 @@ def test_invalid_archive_plan_is_rejected(tmp_path, planned):
     with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
         with pytest.raises(ValueError):
             collector.collect([entry])
+
+
+@pytest.mark.parametrize("status", ["running", "failed", "paused", "completed"])
+def test_campaign_without_runs_preserves_explicit_state_despite_dependencies(tmp_path, status):
+    dump(
+        tmp_path / "private/adaptation/summary.json",
+        {"status": status, "parents": {}, "planned_runs": 216, "completed_runs": 0},
+    )
+    source = {
+        "id": "adaptation",
+        "path": "adaptation",
+        "kind": "adaptation",
+        "domain": "real",
+        "dependencies": ["neural", "tabular"],
+    }
+    with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
+        campaign = collector.collect([source])["campaigns"][0]
+    assert campaign["status"] == status
+    assert campaign["registered_runs"] == 0
+    assert campaign["counts"]["not_started"] == 216
+
+
+def test_unstarted_campaign_with_dependencies_remains_blocked(tmp_path):
+    dump(tmp_path / "private/adaptation/summary.json", {"parents": {}, "planned_runs": 216})
+    source = {
+        "id": "adaptation",
+        "path": "adaptation",
+        "kind": "adaptation",
+        "domain": "real",
+        "dependencies": ["neural", "tabular"],
+    }
+    with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
+        campaign = collector.collect([source])["campaigns"][0]
+    assert campaign["status"] == "blocked"
