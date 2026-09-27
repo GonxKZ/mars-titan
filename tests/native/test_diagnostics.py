@@ -45,7 +45,8 @@ def compile_target(build):
     )
 
 
-def test_correct_cpp_target_compiles_with_strict_options(tmp_path):
+@pytest.mark.parametrize("sanitizer", ["none", "address", "address-undefined"])
+def test_correct_cpp_target_compiles_with_strict_options(tmp_path, sanitizer):
     build, result = configure(
         tmp_path,
         "#include <array>\n#ifndef __STRICT_ANSI__\n"
@@ -53,6 +54,7 @@ def test_correct_cpp_target_compiles_with_strict_options(tmp_path):
         "static_assert(__cplusplus >= 202002L);\n"
         "int main() { const std::array<int,2> x{1,2}; return x[0]-1; }\n",
         "-DMARS_TITAN_WARNINGS_AS_ERRORS=ON",
+        f"-DMARS_TITAN_SANITIZER={sanitizer}",
     )
     assert result.returncode == 0, result.stderr
     built = compile_target(build)
@@ -71,7 +73,8 @@ def test_compiler_warning_becomes_an_error(tmp_path):
     assert "unused" in built.stderr
 
 
-def test_address_sanitizer_detects_invalid_access_at_runtime(tmp_path):
+@pytest.mark.parametrize("sanitizer", ["address", "address-undefined"])
+def test_address_sanitizer_detects_invalid_access_at_runtime(tmp_path, sanitizer):
     source = (
         "int main(int argc, char**) {\n"
         "    int* x = new int[2];\n"
@@ -80,7 +83,7 @@ def test_address_sanitizer_detects_invalid_access_at_runtime(tmp_path):
         "    delete[] x;\n"
         "    return result;\n}\n"
     )
-    build, result = configure(tmp_path, source, "-DMARS_TITAN_SANITIZER=address-undefined")
+    build, result = configure(tmp_path, source, f"-DMARS_TITAN_SANITIZER={sanitizer}")
     assert result.returncode == 0, result.stderr
     built = compile_target(build)
     assert built.returncode == 0, built.stderr
