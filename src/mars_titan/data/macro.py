@@ -16,6 +16,7 @@ from graphlib import CycleError, TopologicalSorter
 from zoneinfo import ZoneInfo
 
 from mars_titan.data.macro_formulas import Formula, MissingCalculation
+from mars_titan.data.macro_model_vintages import model_vintage_contract
 from mars_titan.data.temporal import MarketClock
 
 
@@ -38,7 +39,10 @@ def _exclusion(entry: dict) -> str | None:
     policy = entry.get("vintage_policy")
     if policy == "MODEL_VINTAGES_ONLY":
         return "model_vintages_required"
-    if policy != "ALFRED_OR_RELEASE_ARCHIVE":
+    _, model_exclusion = model_vintage_contract(entry)
+    if model_exclusion:
+        return model_exclusion
+    if policy not in {"ALFRED_OR_RELEASE_ARCHIVE", "ALFRED_MODEL_VINTAGES"}:
         return "vintages_not_admissible"
     return None
 
@@ -106,6 +110,9 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
         original_start = date.fromisoformat(
             row.get("original_realtime_start", row["realtime_start"])
         )
+        model_first, _ = model_vintage_contract(entries[identifier])
+        if model_first is not None and original_start.isoformat() < model_first:
+            raise ValueError(f"La versión del modelo precede al archivo verificado: {identifier}")
         end = date.fromisoformat(row["realtime_end"])
         period = _period(date.fromisoformat(row["period_start"]), entries[identifier]["frequency"])
         timezone = row.get("source_timezone", "America/New_York")

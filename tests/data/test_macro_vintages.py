@@ -374,7 +374,7 @@ EXPECTED_GROUPS = {
     us_real_government_qoq us_fed_funds_change_21d us_treasury_10y_change_21obs
     us_fed_assets_change_4w us_m2_yoy us_business_loans_yoy us_consumer_loans_yoy
     us_bank_credit_change_13w us_broad_dollar_change_21obs cny_per_usd_change_21obs
-    wti_spot_change_21obs cn_private_credit_gdp_change_4q""",
+    wti_spot_change_21obs cn_private_credit_gdp_change_4q us_financial_conditions_change_4w""",
     46.41: """us_cpi_3m_annualized us_core_cpi_3m_annualized us_pce_price_3m_annualized
     us_core_pce_price_3m_annualized us_real_gdp_qoq_annualized""",
     102.5: "us_initial_claims_ma4 us_continued_claims_ma4",
@@ -382,7 +382,7 @@ EXPECTED_GROUPS = {
     0: """us_curve_10y_2y us_curve_10y_3m us_curve_30y_10y us_curve_5y_2y
     us_real_curve_10y_5y us_breakeven_5y us_breakeven_10y us_forward_inflation_5y5y_proxy
     us_effective_target_gap us_sofr_fedfunds_gap brent_wti_spread""",
-    None: "us_financial_conditions_change_4w global_supply_pressure_change_1m",
+    None: "global_supply_pressure_change_1m",
 }
 
 
@@ -439,3 +439,74 @@ def test_model_based_formulas_are_computable_but_require_separate_model_evidence
     # Los valores literales comprueban la matemática sin autorizar la fuente.
     values = {(name, offset): 110 if offset == 0 else 100 for name, offset in formula.references}
     assert formula.calculate(values) == 10
+
+
+def test_catalog_limits_official_model_vintages_to_the_two_verified_series():
+    assert {
+        (entry["id"], entry["series_id"])
+        for entry in CATALOG
+        if entry["vintage_policy"] == "ALFRED_MODEL_VINTAGES"
+    } == {("us_financial_conditions", "NFCI"), ("us_financial_stress", "STLFSI4")}
+
+
+@pytest.mark.parametrize(
+    ("indicator", "first", "next_session", "last"),
+    [
+        ("us_financial_conditions", "2011-05-25", "2011-05-26", "2011-05-27"),
+        ("us_financial_stress", "2022-11-10", "2022-11-11", "2022-11-14"),
+    ],
+)
+def test_official_model_history_enters_only_after_its_real_vintage(
+    indicator, first, next_session, last
+):
+    clock = MarketClock("US", first, last)
+    output = calculate([row(indicator, "2009-01-02", 1.92, first)], catalog_for(indicator), clock)
+    assert output[0]["value"] is None
+    assert output[0]["missing_reason"] == "not_yet_available"
+    admitted = [item for item in output if item["value"] is not None]
+    assert admitted[0]["available_at"] == clock.decision(next_session)
+    assert all(item["value"] == 1.92 and item["source_hashes"] == [HASH_A] for item in admitted)
+    assert all(item["period_start"] == "2009-01-02" for item in admitted)
+
+
+@pytest.mark.parametrize(
+    ("indicator", "first"),
+    [("us_financial_conditions", "2011-05-25"), ("us_financial_stress", "2022-11-10")],
+)
+@pytest.mark.parametrize("shifted_metadata_start", [False, True])
+def test_model_vintages_cannot_be_backdated_even_when_metadata_shifted_the_start(
+    indicator, first, shifted_metadata_start
+):
+    before = (date.fromisoformat(first) - timedelta(days=1)).isoformat()
+    observation = row(
+        indicator,
+        "2009-01-02",
+        1.0,
+        first if shifted_metadata_start else before,
+        original_realtime_start=before,
+    )
+    with pytest.raises(ValueError, match="versión.*modelo|modelo.*versión"):
+        end = (date.fromisoformat(first) + timedelta(days=4)).isoformat()
+        calculate([observation], catalog_for(indicator), MarketClock("US", first, end))
+
+
+def test_nfci_change_uses_both_periods_from_the_known_model_version():
+    identifier = "us_financial_conditions"
+    rows = [
+        row(identifier, "2011-04-22", -0.63, "2011-05-25"),
+        row(identifier, "2011-05-20", -0.60, "2011-05-25"),
+        row(identifier, "2011-05-20", -0.58, "2011-06-02", source_hash=HASH_B),
+    ]
+    clock = MarketClock("US", "2011-05-25", "2011-06-03")
+    result = calculate(rows, catalog_for("us_financial_conditions_change_4w"), clock)
+    changes = {
+        item["prediction_at"]: item
+        for item in result
+        if item["indicator_id"] == "us_financial_conditions_change_4w"
+    }
+    assert changes[clock.decision("2011-05-25")]["value"] is None
+    assert changes[clock.decision("2011-05-26")]["value"] == pytest.approx(0.03)
+    assert changes[clock.decision("2011-06-02")]["value"] == pytest.approx(0.03)
+    revised = changes[clock.decision("2011-06-03")]
+    assert revised["value"] == pytest.approx(0.05)
+    assert revised["source_hashes"] == [HASH_A, HASH_B]

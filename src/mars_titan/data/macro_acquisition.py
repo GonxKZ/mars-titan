@@ -20,6 +20,7 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote, urlsplit
 
+from .macro_model_vintages import model_vintage_contract
 from .storage import outside_source
 
 _ALFRED_HOST = "alfred.stlouisfed.org"
@@ -245,7 +246,13 @@ def _readme_metadata(readme: str) -> list[dict]:
     return records
 
 
-def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> list[dict]:
+def _parse_zip(
+    content: bytes,
+    series_id: str,
+    requested_dates: set[str],
+    *,
+    model_vintage_first: str | None = None,
+) -> list[dict]:
     readme, csv_text = _archive_text(content)
     recorded_dates = _readme_dates(readme)
     if recorded_dates != requested_dates:
@@ -291,9 +298,14 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
             "value": value,
             "source_rows": 1,
         }
+        exclusion = None
         if period > realtime_start:
+            exclusion = "observation_after_realtime_start"
+        elif model_vintage_first is not None and realtime_start < model_vintage_first:
+            exclusion = "model_vintage_before_publication"
+        if exclusion:
             parsed.update(
-                exclusion_reason="observation_after_realtime_start",
+                exclusion_reason=exclusion,
                 row_number=reader.line_num,
                 source_row=row,
             )
@@ -394,6 +406,9 @@ def _exclusion(entry: dict) -> str | None:
         return "gscpi_release_timestamp_unverified"
     if entry.get("vintage_policy") == "MODEL_VINTAGES_ONLY":
         return "model_vintages_only"
+    _, model_exclusion = model_vintage_contract(entry)
+    if model_exclusion:
+        return model_exclusion
     if entry.get("vintage_policy") == "NO_VINTAGES_EXCLUDE":
         return "no_vintages_exclude"
     if entry.get("verification_status") != "verified_metadata_not_ingested":
@@ -404,7 +419,7 @@ def _exclusion(entry: dict) -> str | None:
     source = urlsplit(entry.get("source_url", ""))
     if "FRED" not in entry.get("provider", "") or source.hostname != "fred.stlouisfed.org":
         return "unsupported_provider"
-    if entry.get("vintage_policy") != "ALFRED_OR_RELEASE_ARCHIVE":
+    if entry.get("vintage_policy") not in {"ALFRED_OR_RELEASE_ARCHIVE", "ALFRED_MODEL_VINTAGES"}:
         return "vintages_not_admissible"
     return None
 
@@ -416,6 +431,9 @@ def _batches(values: list[str]) -> list[list[str]]:
 
 
 def _batch_key(entry: dict, selected: list[str], entered: list[str], configuration: str) -> str:
+    model_first, _ = model_vintage_contract(entry)
+    if model_first is not None:
+        configuration += f":ALFRED_MODEL_VINTAGES:{model_first}"
     payload = json.dumps(
         {
             "configuration": configuration,
@@ -570,6 +588,9 @@ def _acquire_series(
     dates, source_observation_start, source_observation_end = _vintage_metadata(page)
     page_digest = _sha256(page)
     _atomic_bytes(destination / "raw" / entry["id"] / f"vintage-list-{page_digest}.html", page)
+    model_first, _ = model_vintage_contract(entry)
+    if model_first is not None and dates[0] < model_first:
+        raise ValueError("La lista de versiones del modelo precede al archivo verificado")
     if realtime_end < dates[0]:
         raise ValueError("La serie de ALFRED empieza después del intervalo de vigencia solicitado")
     effective_realtime_start = max(realtime_start, dates[0])
@@ -620,9 +641,13 @@ def _acquire_series(
         if response_status != 200 or "zip" not in response_type.lower():
             detail = "html_error" if b"<html" in content[:4096].lower() else response_type
             raise ValueError(f"La descarga de ALFRED devolvió HTTP {response_status}: {detail}")
-        parsed = _parse_zip(content, entry["series_id"], requested_dates)
+        parsed = _parse_zip(
+            content, entry["series_id"], requested_dates, model_vintage_first=model_first
+        )
         query = {
             "query_version": _QUERY_VERSION,
+            "vintage_policy": entry["vintage_policy"],
+            "model_vintage_first": model_first,
             "url": url,
             "observation_start": effective_observation_start,
             "observation_end": effective_observation_end,
@@ -661,6 +686,8 @@ def _acquire_series(
     return {
         "indicator_id": entry["id"],
         "series_id": entry["series_id"],
+        "vintage_policy": entry["vintage_policy"],
+        "model_vintage_first": model_first,
         "status": "complete",
         "download_complete": True,
         "all_rows_temporally_admissible": not quarantined,
