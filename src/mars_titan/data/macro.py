@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 from mars_titan.data.macro_formulas import Formula, MissingCalculation
 from mars_titan.data.macro_model_vintages import model_vintage_contract, validate_monthly_bound
+from mars_titan.data.macro_release_contracts import release_exclusion, validate_release_observation
 from mars_titan.data.temporal import MarketClock
 
 
@@ -34,6 +35,8 @@ def _exclusion(entry: dict) -> str | None:
     status = entry.get("acquisition_status")
     if status is not None and status != "complete":
         return f"source_{status}:{entry.get('acquisition_reason') or 'source_not_complete'}"
+    if entry.get("vintage_policy") == "DATED_OFFICIAL_RELEASES":
+        return release_exclusion(entry)
     if not entry.get("series_id") or entry["series_id"] == "no identifier verified":
         return "unverified_identifier"
     policy = entry.get("vintage_policy")
@@ -118,6 +121,7 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
         if model_first is not None and original_start.isoformat() < model_first:
             raise ValueError(f"La versión del modelo precede al archivo verificado: {identifier}")
         validate_monthly_bound(entries[identifier], row, original_start)
+        validate_release_observation(entries[identifier], row, original_start)
         end = date.fromisoformat(row["realtime_end"])
         period = _period(date.fromisoformat(row["period_start"]), entries[identifier]["frequency"])
         timezone = row.get("source_timezone", "America/New_York")

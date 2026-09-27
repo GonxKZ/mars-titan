@@ -64,9 +64,10 @@ Los estados tienen un significado limitado:
 
 - `verified_metadata_not_ingested`: ficha oficial comprobada, observaciones y disponibilidad histórica todavía sin auditar.
 - `provider_verified_identifier_pending`: existe el proveedor y la familia de información, pero no se ha validado un código estable. `series_id` contiene literalmente `no identifier verified` y la serie queda excluida de cualquier ejecución.
+- `verified_official_release_archive`: concepto, unidad y documentos fechados verificados mediante el [lector de comunicados](china-release-archive.md). No se inventa un identificador de API. La admisión depende de ese contrato documental, de sus huellas y de la cobertura del periodo solicitado.
 - `formula_defined_not_computed`: fórmula y dependencias definidas, sin valores calculados ni validación numérica con un panel real.
 
-`core`, `secondary` y `optional` ordenan la auditoría propuesta. No son resultados de selección de variables. Una serie `core` que no supere la auditoría temporal se excluye igualmente. Los índices con estimación retrospectiva y los candidatos chinos sin identificador son optativos.
+`core`, `secondary` y `optional` ordenan la auditoría propuesta. No son resultados de selección de variables. Una serie `core` que no supere la auditoría temporal se excluye igualmente. La puerta de cobertura completa exige los 140 indicadores con independencia de esas prioridades de auditoría.
 
 ## Contrato de cada campo
 
@@ -74,7 +75,7 @@ Los estados tienen un significado limitado:
 
 `frequency` describe el periodo observado, no la frecuencia de publicación. `M` y `Q` son mes y trimestre. `Q_END` es un saldo de fin de trimestre. `D` representa los días con observación del proveedor y `D7` una serie diaria que también puede incluir fines de semana. `W_SAT`, `W_FRI` y `W_WED` indican la referencia semanal. `W_WED_LEVEL` es un saldo del miércoles y `W_WED_AVG` una media semanal terminada en miércoles. Estos últimos no son intercambiables.
 
-`unit` utiliza `million = 10^6` y `billion = 10^9`, evitando la ambigüedad del billón español. `SA` significa ajuste estacional, `NSA` ausencia de ajuste y `SAAR` nivel desestacionalizado expresado a tasa anual. `percent_pa` es un tipo anual cotizado en porcentaje. Las diferencias entre dos porcentajes están en puntos porcentuales, no en porcentaje de variación. Los importes PBOC pendientes se normalizarían a miles de millones de CNY solo después de verificar la unidad del comunicado.
+`unit` utiliza `million = 10^6` y `billion = 10^9`, evitando la ambigüedad del billón español. `SA` significa ajuste estacional, `NSA` ausencia de ajuste y `SAAR` nivel desestacionalizado expresado a tasa anual. `percent_pa` es un tipo anual cotizado en porcentaje. Las diferencias entre dos porcentajes están en puntos porcentuales, no en porcentaje de variación. Los importes PBoC se normalizan a miles de millones de CNY después de verificar la unidad del comunicado. La cifra y unidad originales quedan registradas.
 
 `formula` define exclusivamente derivados. `availability_rule` remite a las reglas siguientes. `vintage_policy` establece el tratamiento obligatorio de las revisiones. `verification_status` y `verified_on` documentan la comprobación realizada, no la actualidad de cada observación.
 
@@ -117,7 +118,8 @@ Las horas habituales de la tabla orientan la búsqueda del comunicado. Siempre p
 | `OECD_RELEASE`, `IMF_COMMODITY` | Edición de OECD o IMF y fecha comprobada de incorporación. Una media mensual alemana o de cobre no es un precio diario ejecutable. Sin archivo histórico de ediciones se excluye del PIT estricto. |
 | `NYFED_GSCPI` | La [página oficial](https://www.newyorkfed.org/research/policy/gscpi) anuncia actualización a las 10:00 del cuarto día hábil del mes. Exigir la versión del indicador y su método que existían en la fecha evaluada. |
 | `NBS_RELEASE`, `NBS_PMI` | Comunicado chino original, calendario y unidad exacta. La traducción inglesa puede publicarse después. Enero y febrero pueden difundirse conjuntamente para algunas magnitudes. No crear un enero mensual inexistente. |
-| `PBOC_RELEASE` | Tabla o comunicado original de M2 o financiación agregada, con fecha y perímetro. Distinguir flujo del mes, acumulado y saldo. Las seis filas chinas pendientes no pasan a admisibles solo por aplicar un desfase. |
+| `PBOC_RELEASE` | Tabla o comunicado original de M2 o financiación agregada, con fecha y perímetro. Distinguir flujo del mes, acumulado y saldo. Un desfase fijo no acredita por sí solo su disponibilidad. |
+| `OFFICIAL_RELEASE_BOUND_THEN_NEXT_SESSION` | Archivo fechado de NBS o PBoC, con cada documento identificado por URL y SHA-256. Se aplica el límite documental contrastado y después la siguiente sesión. El [contrato del archivo](china-release-archive.md) detalla la regla conservadora y las exclusiones. |
 | `MAX_INPUT_AVAILABLE_AT` | El derivado aparece cuando estén disponibles todas las observaciones y versiones de su fórmula, incluidas las de los retardos. Recalcular solo para decisiones posteriores al evento. |
 | `COMMON_PERIOD_MAX_INPUT_AVAILABLE_AT` | Lo anterior, usando además el último periodo común a las dependencias. No restar un TIPS de ayer a un Treasury de hoy y llamarlo diferencial de hoy. |
 
@@ -154,7 +156,7 @@ La comprobación empleó páginas oficiales y descargas públicas, sin claves ap
 | BIS | [Descargas completas](https://data.bis.org/bulkdownload), [metodología de crédito](https://data.bis.org/topics/TOTAL_CREDIT) y fichas de tipos efectivos. | Cumplir [condiciones de uso](https://data.bis.org/help/legal). Las revisiones de rupturas, ponderaciones y PIB requieren ediciones históricas. |
 | ECB, OECD e IMF | Fichas FRED contrastadas para `ECBDFR`, `IRLTLT01DEM156N` y `PCOPPUSDM`, con productor identificado. | No se ha validado una API directa ni una historia completa de ediciones. Comprobar términos y cobertura en el productor antes de una ingesta. |
 | NBS | [Calendario 2026](https://www.stats.gov.cn/english/PressRelease/ReleaseCalendar/202512/t20251226_1962154.html), comunicados originales y traducciones. | Reconstruir archivo por fecha, identificador y unidad. No atribuir un dato a una fecha anterior por usar su traducción posterior. |
-| PBOC | [Portal estadístico](https://www.pbc.gov.cn/en/3688247/3688975/index.html), con tablas de dinero y financiación agregada. | Identificadores estables, condiciones de reutilización y cambios de perímetro pendientes. No hay un panel PIT chino preparado. |
+| PBOC | [Portal estadístico](https://www.pbc.gov.cn/en/3688247/3688975/index.html), con tablas de dinero y financiación agregada. | El [panel de comunicados](china-release-archive.md) cubre el periodo declarado en su manifiesto. No acredita una API estable ni una historia anterior completa. |
 | New York Fed y Chicago Fed | Páginas de índices y tipos de referencia. | Acreditar vintages, versiones del método y derechos de insumos de terceros. Un backcast no fue necesariamente un dato público contemporáneo. |
 
 La comprobación actual no acredita máximos y mínimos históricos, porcentaje de ausencias ni cobertura coincidente con cada activo de FinMultiTime. Esas cifras se medirán tras una ingesta autorizada. La existencia de una serie desde 1959 o de un backcast desde 1997 no prueba que la versión actual estuviera disponible entonces. Por ejemplo, el New York Fed presentó públicamente el GSCPI el [4 de enero de 2022](https://libertystreeteconomics.newyorkfed.org/2022/01/a-new-barometer-of-global-supply-chain-pressures/). Su historia retrospectiva anterior no se admite como indicador público contemporáneo. Desde su presentación siguen siendo necesarias las ediciones que se publicaron en cada fecha.
