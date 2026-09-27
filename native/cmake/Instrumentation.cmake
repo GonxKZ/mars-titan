@@ -69,6 +69,9 @@ if(NOT MARS_TITAN_SANITIZER STREQUAL "none")
     if(NOT ${sanitizer_probe})
         message(FATAL_ERROR "No se pudo compilar y enlazar el runtime ${MARS_TITAN_SANITIZER}")
     endif()
+    # La propiedad conserva los flags al configurar objetivos desde otro directorio.
+    set_property(TARGET mars_titan_native_options PROPERTY
+        MARS_TITAN_SANITIZER_FLAGS "${MARS_TITAN_SANITIZER_FLAGS}")
 endif()
 
 if(MARS_TITAN_BUILD_FUZZER)
@@ -87,6 +90,8 @@ endif()
 
 function(mars_titan_instrument_target target)
     if(NOT MARS_TITAN_SANITIZER STREQUAL "none")
+        get_target_property(MARS_TITAN_SANITIZER_FLAGS mars_titan_native_options
+            MARS_TITAN_SANITIZER_FLAGS)
         target_compile_options(${target} PRIVATE ${MARS_TITAN_SANITIZER_FLAGS})
         target_link_options(${target} PUBLIC ${MARS_TITAN_SANITIZER_FLAGS})
         if(MSVC)
