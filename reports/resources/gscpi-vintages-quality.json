@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-27T21:55:59.887872+00:00",
+  "tests": {
+    "passed": 220,
+    "command": "uv run --no-sync --with coverage --with lizard coverage run --branch --source=mars_titan.data.macro_gscpi,mars_titan.data.macro_model_vintages -m pytest tests/data/test_macro_gscpi.py tests/data/test_macro_vintages.py tests/data/test_macro_acquisition.py tests/data/test_macro_coverage.py -q"
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "convention": "Sentencias y ramas del proceso principal. La descarga real se comprobó aparte.",
+    "modules": {
+      "src/mars_titan/data/macro_gscpi.py": {
+        "sha256": "33f3b1ed8390e8486805a8bb58287b9ab7760eb0834e0fa5d0235013488e6a27",
+        "coverage": {
+          "covered_lines": 136,
+          "num_statements": 163,
+          "percent_covered": 78.9237668161435,
+          "percent_covered_display": "79",
+          "missing_lines": 27,
+          "excluded_lines": 0,
+          "percent_statements_covered": 83.43558282208589,
+          "percent_statements_covered_display": "83",
+          "num_branches": 60,
+          "num_partial_branches": 16,
+          "covered_branches": 40,
+          "missing_branches": 20,
+          "percent_branches_covered": 66.66666666666667,
+          "percent_branches_covered_display": "67"
+        },
+        "functions": [
+          {
+            "name": "_month",
+            "complexity": 3,
+            "covered_statements": 3,
+            "statements": 4,
+            "crap": 3.141
+          },
+          {
+            "name": "_month_end",
+            "complexity": 1,
+            "covered_statements": 2,
+            "statements": 2,
+            "crap": 1.0
+          },
+          {
+            "name": "parse_gscpi_vintages",
+            "complexity": 37,
+            "covered_statements": 46,
+            "statements": 55,
+            "crap": 42.999
+          },
+          {
+            "name": "_download",
+            "complexity": 5,
+            "covered_statements": 1,
+            "statements": 10,
+            "crap": 23.225
+          },
+          {
+            "name": "prepare_gscpi",
+            "complexity": 23,
+            "covered_statements": 46,
+            "statements": 53,
+            "crap": 24.219
+          },
+          {
+            "name": "main",
+            "complexity": 1,
+            "covered_statements": 11,
+            "statements": 11,
+            "crap": 1.0
+          }
+        ]
+      },
+      "src/mars_titan/data/macro_model_vintages.py": {
+        "sha256": "06314a4e5181ac6703cc2f4556990e341b01762b24d51f4be1c9f3814779f1d2",
+        "coverage": {
+          "covered_lines": 27,
+          "num_statements": 27,
+          "percent_covered": 100.0,
+          "percent_covered_display": "100",
+          "missing_lines": 0,
+          "excluded_lines": 0,
+          "percent_statements_covered": 100.0,
+          "percent_statements_covered_display": "100",
+          "num_branches": 14,
+          "num_partial_branches": 0,
+          "covered_branches": 14,
+          "missing_branches": 0,
+          "percent_branches_covered": 100.0,
+          "percent_branches_covered_display": "100"
+        },
+        "functions": [
+          {
+            "name": "model_vintage_contract",
+            "complexity": 12,
+            "covered_statements": 17,
+            "statements": 17,
+            "crap": 12.0
+          },
+          {
+            "name": "validate_monthly_bound",
+            "complexity": 7,
+            "covered_statements": 6,
+            "statements": 6,
+            "crap": 7.0
+          }
+        ]
+      }
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "formula": "CC² × (1 − cobertura de sentencias)³ + CC"
+  },
+  "mutations": [
+    {
+      "name": "retroceder_mes",
+      "selector": "parser_keeps",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "name": "usar_revision_futura",
+      "selector": "parser_keeps",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "name": "permitir_infinito",
+      "selector": "malformed",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "name": "aceptar_hueco_inicial",
+      "selector": "first_regular",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "name": "etiqueta_incompatible",
+      "selector": "mislabeled",
+      "detected": true,
+      "returncode": 1
+    }
+  ],
+  "real_preparation": {
+    "schema_version": 1,
+    "market": "US",
+    "start": "2009-01-01",
+    "end": "2023-12-31",
+    "source_url": "https://www.newyorkfed.org/medialibrary/research/interactives/data/gscpi/gscpi_interactive_data.csv",
+    "retrieved_at_utc": "2026-09-27T21:15:34.806643+00:00",
+    "source_sha256": "723e8dc81728176dea10e7d685478bfe888516ec68d1d2cc1b77d6fea8177c55",
+    "catalog_sha256": "1c173ce488203739351dbb3dab1cccb99473ecd888aba0ae079304e46a030187",
+    "vintage_rows": 5795,
+    "rows": 7548,
+    "decisions": 3774,
+    "last_admitted_vintage": "2023-11",
+    "nonempty_indicators": [
+      "global_supply_pressure",
+      "global_supply_pressure_change_1m"
+    ],
+    "computed_values": 796,
+    "availability_policy": "end_of_vintage_month_then_next_session",
+    "publication_timestamp_verified": false,
+    "source_precision": "as_published_in_monthly_csv",
+    "peak_rss_mib": 132.4140625,
+    "sha256": "a30c9291e09cf6e8cbcc443af1da908d8c2ed72de23871231ab3dc07d7c6bfed",
+    "elapsed_seconds": 0.7049887270004547
+  },
+  "sql_parity": {
+    "checked": 7548,
+    "nonempty": 796,
+    "failures": 0,
+    "reference": "Selección SQL del mes de versión y de los dos últimos periodos publicados. La comparación comprueba la política de límite mensual, no acredita una hora exacta de publicación.",
+    "tolerance": {
+      "absolute": 1e-12,
+      "relative": 1e-12
+    }
+  },
+  "limits": [
+    "La disponibilidad mensual es una regla conservadora basada en la etiqueta de versión, no una certificación de la hora o día de publicación.",
+    "La descarga y preparación se midieron una vez, con la campaña científica pausada. No se midieron energía ni coste monetario.",
+    "No se entrenaron modelos ni se evaluaron resultados del test final. Todavía faltan las seis series chinas para completar el catálogo."
+  ]
+}

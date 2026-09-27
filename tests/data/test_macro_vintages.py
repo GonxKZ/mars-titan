@@ -309,7 +309,10 @@ def test_all_catalog_entries_have_explicit_absence_before_first_vintage():
 
 @pytest.mark.parametrize("indicator", ["global_supply_pressure", "cn_manufacturing_pmi"])
 def test_unverified_model_or_identifier_is_never_automatically_admitted(indicator):
-    result = latest([row(indicator, "2023-12-01", 10)], indicator)
+    catalog = catalog_for(indicator)
+    if indicator == "global_supply_pressure":
+        catalog[0]["vintage_policy"] = "MODEL_VINTAGES_ONLY"
+    result = latest([row(indicator, "2023-12-01", 10)], indicator, catalog)
     assert result["value"] is None
     assert result["missing_reason"] in {"model_vintages_required", "unverified_identifier"}
 
@@ -374,7 +377,8 @@ EXPECTED_GROUPS = {
     us_real_government_qoq us_fed_funds_change_21d us_treasury_10y_change_21obs
     us_fed_assets_change_4w us_m2_yoy us_business_loans_yoy us_consumer_loans_yoy
     us_bank_credit_change_13w us_broad_dollar_change_21obs cny_per_usd_change_21obs
-    wti_spot_change_21obs cn_private_credit_gdp_change_4q us_financial_conditions_change_4w""",
+    wti_spot_change_21obs cn_private_credit_gdp_change_4q us_financial_conditions_change_4w
+    global_supply_pressure_change_1m""",
     46.41: """us_cpi_3m_annualized us_core_cpi_3m_annualized us_pce_price_3m_annualized
     us_core_pce_price_3m_annualized us_real_gdp_qoq_annualized""",
     102.5: "us_initial_claims_ma4 us_continued_claims_ma4",
@@ -382,7 +386,6 @@ EXPECTED_GROUPS = {
     0: """us_curve_10y_2y us_curve_10y_3m us_curve_30y_10y us_curve_5y_2y
     us_real_curve_10y_5y us_breakeven_5y us_breakeven_10y us_forward_inflation_5y5y_proxy
     us_effective_target_gap us_sofr_fedfunds_gap brent_wti_spread""",
-    None: "global_supply_pressure_change_1m",
 }
 
 
@@ -405,10 +408,28 @@ def test_every_catalog_formula_has_a_literal_numeric_or_exclusion_expectation(in
             periods = [date(2023, 12, 30) - timedelta(weeks=i) for i in range(14)][::-1]
         else:
             periods = [date(2024, 1, 5) - timedelta(days=i) for i in range(22)][::-1]
-        rows.extend(
-            row(entry["id"], p.isoformat(), 110 if p == periods[-1] else 100) for p in periods
+        options = (
+            dict(
+                vintage="2024-01-31",
+                availability_precision="month",
+                availability_policy="end_of_vintage_month_then_next_session",
+                publication_timestamp_verified=False,
+                vintage_label="Jan-24",
+            )
+            if entry["id"] == "global_supply_pressure"
+            else {}
         )
-    result = latest(rows, indicator)
+        rows.extend(
+            row(entry["id"], p.isoformat(), 110 if p == periods[-1] else 100, **options)
+            for p in periods
+        )
+    if indicator == "global_supply_pressure_change_1m":
+        clock = MarketClock("US", "2024-02-01", "2024-02-05")
+        result = next(
+            r for r in reversed(calculate(rows, catalog, clock)) if r["indicator_id"] == indicator
+        )
+    else:
+        result = latest(rows, indicator)
     if expected is None:
         assert result["value"] is None
         assert result["missing_reason"]
