@@ -1,0 +1,895 @@
+{
+  "schema_version": 1,
+  "domain": "technical",
+  "observed_at": "2026-09-27T18:02:35.452735+00:00",
+  "source_sha256": "74587e1d1caf53df84077327f204bfadb587840fadf20410e7b23e7c61babe3d",
+  "software": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43"
+  },
+  "tests": {
+    "passed": 164,
+    "command": "uv run --no-sync --with coverage --with lizard coverage run --branch --source=mars_titan.evaluation.prediction_review -m pytest tests/evaluation tests/training/test_campaign_health.py tests/training/test_evaluation_io.py -q",
+    "scope": "Evaluador, agregación de métricas, monitor de salud y lectura de evaluación en CPU"
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.1",
+    "convention": "Cobertura de sentencias y ramas del proceso principal. La CLI se prueba tanto directamente como en subprocesos, sin sumar cobertura de estos últimos.",
+    "summary": {
+      "covered_lines": 203,
+      "num_statements": 220,
+      "percent_covered": 90.06211180124224,
+      "percent_covered_display": "90",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.27272727272727,
+      "percent_statements_covered_display": "92",
+      "num_branches": 102,
+      "num_partial_branches": 15,
+      "covered_branches": 87,
+      "missing_branches": 15,
+      "percent_branches_covered": 85.29411764705883,
+      "percent_branches_covered_display": "85"
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "convention": "CC² × (1 − cobertura de sentencias)³ + CC",
+    "functions": [
+      {
+        "name": "_json",
+        "complexity": 3,
+        "covered_statements": 7,
+        "statements": 9,
+        "crap": 3.099
+      },
+      {
+        "name": "_inside",
+        "complexity": 3,
+        "covered_statements": 6,
+        "statements": 6,
+        "crap": 3.0
+      },
+      {
+        "name": "_signature",
+        "complexity": 1,
+        "covered_statements": 3,
+        "statements": 3,
+        "crap": 1.0
+      },
+      {
+        "name": "_sources",
+        "complexity": 7,
+        "covered_statements": 9,
+        "statements": 11,
+        "crap": 7.295
+      },
+      {
+        "name": "_confirmed",
+        "complexity": 20,
+        "covered_statements": 34,
+        "statements": 38,
+        "crap": 20.467
+      },
+      {
+        "name": "_metrics",
+        "complexity": 38,
+        "covered_statements": 54,
+        "statements": 56,
+        "crap": 38.066
+      },
+      {
+        "name": "_evaluate",
+        "complexity": 3,
+        "covered_statements": 8,
+        "statements": 8,
+        "crap": 3.0
+      },
+      {
+        "name": "review_campaigns",
+        "complexity": 25,
+        "covered_statements": 53,
+        "statements": 59,
+        "crap": 25.657
+      },
+      {
+        "name": "main",
+        "complexity": 6,
+        "covered_statements": 11,
+        "statements": 11,
+        "crap": 6.0
+      }
+    ]
+  },
+  "mutations": [
+    {
+      "name": "ignorar_huella",
+      "selector": "cache_skips",
+      "returncode": 1,
+      "detected": true
+    },
+    {
+      "name": "permitir_fecha_futura",
+      "selector": "other_partition_dates",
+      "returncode": 1,
+      "detected": true
+    },
+    {
+      "name": "invertir_delta",
+      "selector": "equal_session_weights",
+      "returncode": 1,
+      "detected": true
+    },
+    {
+      "name": "sobrescribir_fuente",
+      "selector": "cannot_overwrite",
+      "returncode": 1,
+      "detected": true
+    },
+    {
+      "name": "ignorar_poblacion",
+      "selector": "declared_population",
+      "returncode": 1,
+      "detected": true
+    }
+  ],
+  "validation_recalculation": {
+    "source_sha256": "376ff008c62d6d5e0ae1eadd81867d997a8fe7f7ffe995e3d1cc1b713754916a",
+    "confirmed": 159,
+    "verified": 159,
+    "failed": 0,
+    "hashed_bytes": 1955042570,
+    "elapsed_seconds": 74.13466925200191,
+    "process_seconds": 74.36,
+    "peak_rss_bytes": 140890112,
+    "final_test_opened": false,
+    "tolerances": {
+      "absolute": 1e-12,
+      "relative": 1e-10
+    },
+    "observed_at": "2026-09-26T18:11:25.896853+00:00"
+  },
+  "verification": {
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "repository_check": true,
+    "systemd_analyze_verify": true
+  },
+  "limits": [
+    "La primera revisión de validación usó una versión previa a las defensas adicionales de rutas y población. Se conserva su identidad exacta.",
+    "Las medidas se obtuvieron con la campaña científica activa y sin ocupar la GPU. No miden inferencia, energía ni coste monetario.",
+    "Los bytes de archivos comprobados por SHA no equivalen a bytes físicos del dispositivo. Arrow lee además las columnas seleccionadas.",
+    "La batería completa con CUDA oculta no pasó. Su clasificación y los resultados de las comprobaciones posteriores se registran por separado."
+  ],
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "physical_cores": 8,
+    "logical_cpus": 16,
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "review_gpu_used": false
+  },
+  "whole_suite": {
+    "command": "CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 uv run --no-sync pytest -q",
+    "passed": 1718,
+    "failed": 139,
+    "skipped": 37,
+    "warnings": 2,
+    "elapsed_seconds": 137.39,
+    "log_sha256": "57e9aa98a179b2087956a8b9e3eed927f5bc60b0ed56c0854d1bf0862e270db8",
+    "categories": {
+      "cuda_hidden_guard": 113,
+      "native_asan_probe": 1,
+      "native_fifo_timeout": 3,
+      "native_corrupt_receipt_accepted": 16,
+      "native_corrupt_receipt_modified": 1,
+      "native_comparison_missing_rss": 4,
+      "cuda_required_explicit_failure": 1
+    },
+    "failures": [
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_external_initialization_keeps_torch_matmul_valid_in_fresh_process",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_external_gpu_fit_consumes_all_rows_and_restores_predictions",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_incomplete_factory_does_not_claim_full_training",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_oversized_batch_is_rejected_before_copying_to_gpu",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_nonfinite_values_do_not_become_missing_values_silently",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_repeated_passes_may_change_batch_boundaries_but_not_rows",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_changed_values_between_passes_are_rejected",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_external_boosting.py::test_round_checkpoint_resumes_identical_predictions_and_parameters",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-rnn]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-lstm]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-gru]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-dlinear]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-rnn]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-lstm]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-gru]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-dlinear]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[rnn]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[lstm]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[gru]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[dlinear]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_multimodal_reference.py::test_capacity_changes_with_width_and_depth_and_preserves_input_contract",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_predictive_adaptation.py::test_enumerating_actions_matches_the_exact_expected_gradient[cuda:0]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_predictive_adaptation.py::test_supervised_control_has_same_loss_scale_and_sampling_is_reproducible",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_predictive_adaptation.py::test_zero_residual_preserves_parent_float64_then_learns_all_features",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/models/test_predictive_adaptation.py::test_adapter_does_not_backpropagate_into_parent_or_input_encoders",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/native/test_diagnostics.py::test_address_sanitizer_detects_invalid_access_at_runtime",
+        "category": "native_asan_probe"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_named_pipes_are_rejected_without_waiting_for_a_writer[manifest.json]",
+        "category": "native_fifo_timeout"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_named_pipes_are_rejected_without_waiting_for_a_writer[market.parquet]",
+        "category": "native_fifo_timeout"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_named_pipes_are_rejected_without_waiting_for_a_writer[checkpoint]",
+        "category": "native_fifo_timeout"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[domain-real]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[schema_version-9]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[model-unknown]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[activity-rl]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[partition-test]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[currency-EUR]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[cost_bps-999]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[total_steps-99]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[global_step-99]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[status-unknown]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[total_seconds-broken]",
+        "category": "native_corrupt_receipt_modified"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[total_seconds--1]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[started_at_utc-2026-02-31T00:00:00Z]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[updated_at_utc-broken]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[attempt_seconds--1]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[executable_peak_rss_bytes--1]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_corrupt_receipt_is_rejected_before_changing_any_confirmed_file[timing_scope-unknown]",
+        "category": "native_corrupt_receipt_accepted"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_comparisons_have_the_same_results_for_every_worker_budget[1]",
+        "category": "native_comparison_missing_rss"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_comparisons_have_the_same_results_for_every_worker_budget[2]",
+        "category": "native_comparison_missing_rss"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_comparisons_have_the_same_results_for_every_worker_budget[4]",
+        "category": "native_comparison_missing_rss"
+      },
+      {
+        "node_id": "tests/simulation/test_native_runner.py::test_comparisons_have_the_same_results_for_every_worker_budget[8]",
+        "category": "native_comparison_missing_rss"
+      },
+      {
+        "node_id": "tests/training/test_checkpoint_recovery.py::test_resume_reproduces_optimizer_rng_and_next_update_exactly[cuda:0]",
+        "category": "cuda_required_explicit_failure"
+      },
+      {
+        "node_id": "tests/training/test_corpus_reference_campaign.py::test_completed_case_is_not_retrained_after_campaign_pause",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_corpus_reference_campaign.py::test_campaign_cannot_mix_completed_cases_with_a_new_model_environment[source]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_corpus_reference_campaign.py::test_campaign_cannot_mix_completed_cases_with_a_new_model_environment[environment]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_corpus_tabular.py::test_tabular_fit_and_predictions_use_the_whole_neural_population[ridge-cuda:0]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_corpus_tabular.py::test_validation_targets_do_not_change_ridge_fit",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_corpus_tabular.py::test_existing_tabular_run_is_not_overwritten",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_external_corpus.py::test_racing_creation_does_not_replace_another_run",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_external_corpus.py::test_full_tabular_population_has_persistent_model_and_session_errors",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_external_corpus.py::test_paused_tree_round_resumes_without_changing_predictions",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_full_corpus_benchmark.py::test_step_counts_rows_and_uses_all_modalities_on_cuda",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_full_corpus_benchmark.py::test_incomplete_source_cannot_produce_a_full_corpus_profile",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_queue.py::test_cuda_queue_resumes_after_one_parent_and_confirms_all_rows",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[queue]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[study]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[ordered]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[case]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[cache]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_changed_configuration_after_last_child_cannot_be_completed[queue]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_recovery.py::test_changed_configuration_after_last_child_cannot_be_completed[study]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_study.py::test_klpo_cuda_uses_complete_population_and_records_sampler[klpo_full]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_study.py::test_klpo_cuda_uses_complete_population_and_records_sampler[klpo_mc]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_study.py::test_klpo_cuda_uses_complete_population_and_records_sampler[klpo_exact]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_klpo_study.py::test_klpo_cuda_resume_restores_both_sampling_streams",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_inputs.py::test_every_row_and_modality_survives_epoch_shuffle_and_resume",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_inputs.py::test_scaler_uses_training_only_and_preserves_constant_columns",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_inputs.py::test_batches_own_their_arrays_and_reader_closure_is_explicit",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_inputs.py::test_closing_a_reader_also_stops_an_existing_iterator",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_cache_aligns_every_prediction_without_copying_modalities",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[missing]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[duplicate]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_target]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_asset]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_time]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_market]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[nan]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[manifest]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[checkpoint]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[status]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[test]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[model]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_cached_values_are_read_only_and_changed_cache_is_rejected",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_parents.py::test_parent_cache_recovers_confirmed_partition_after_interruption",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_predictive_controls_visit_every_row_and_record_all_readouts[reinforce]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_predictive_controls_visit_every_row_and_record_all_readouts[expected]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_predictive_controls_visit_every_row_and_record_all_readouts[mae]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_resume_preserves_sampling_optimizer_and_next_update_exactly",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_checkpoint_is_confirmed_before_validation_can_be_interrupted",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_resume_rejects_changed_matmul_policy",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_simultaneous_resume_cannot_write_the_same_training_run",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_failed_cuda_initialization_can_resume_same_preparation",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_precomputed_training_normalization_is_reused_for_paired_controls",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_failed_initial_checkpoint_can_restart_without_changing_predictions",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_run.py::test_missing_confirmed_initial_checkpoint_cannot_silently_restart",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_predictive_study.py::test_study_resumes_paired_controls_and_reuses_parent_preparation",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[rnn]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[lstm]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[gru]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[dlinear]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[rnn-None]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[rnn-architecture1]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[lstm-None]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[lstm-architecture1]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[gru-None]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[gru-architecture1]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[dlinear-None]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[dlinear-architecture1]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_scientific_configuration_changes_capacity_and_rejects_other_parent_architecture",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_evaluation_averages_sessions_without_company_count_weighting",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_resume_rejects_changed_corpus_and_loss",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_posttraining_requires_same_parent_population_and_architecture",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_stop_already_requested_does_not_apply_an_extra_update",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_nonfinite_prediction_does_not_publish_completed_run",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_code_change_during_training_cannot_confirm_a_new_state",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_completed_case_rejects_corrupt_final_checkpoint",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_resume_rejects_changed_numerical_backend_policy",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_parent_final_checkpoint_cannot_fall_back_to_another_epoch",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_run.py::test_changed_price_transformation_cannot_resume_checkpoint",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_search.py::test_search_resumes_without_retraining_confirmed_cases_and_reuses_seed42",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_search.py::test_resume_publishes_running_status_before_applying_new_updates",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_search.py::test_resume_rejects_altered_summary_contract[changes0]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_search.py::test_resume_rejects_altered_summary_contract[changes1]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_search.py::test_resume_rejects_altered_summary_contract[changes2]",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_reference_search.py::test_failed_output_verification_does_not_count_as_a_completed_trial",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_selection.py::test_early_stop_preserves_latest_state_but_predicts_from_selected_epoch",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_selection.py::test_pause_during_selected_prediction_keeps_coherent_latest_optimizer_state",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_selection.py::test_initial_checkpoint_failure_is_reported_as_failed",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_selection.py::test_resume_rejects_best_pointer_redirected_to_another_valid_epoch",
+        "category": "cuda_hidden_guard"
+      },
+      {
+        "node_id": "tests/training/test_tabular_search_cuda.py::test_real_backends_share_the_population_and_reuse_finished_models",
+        "category": "cuda_hidden_guard"
+      }
+    ],
+    "native_runner_recheck": {
+      "passed": 24,
+      "elapsed_seconds": 2.12,
+      "reason": "El ejecutable previo era anterior a las fuentes. Los mismos casos pasan después de reconstruir el perfil existente."
+    },
+    "native_asan_issue": "https://github.com/GonxKZ/mars-titan/issues/168",
+    "cuda_limit": "Las 114 pruebas que requieren CUDA se detienen ante la GPU oculta. La campaña activa conserva el uso exclusivo de la GPU y no se ha ejecutado otra carga científica para hacer pasar estas pruebas."
+  },
+  "full_recalculation": {
+    "schema_version": 1,
+    "reviewer_sha256": [
+      "74587e1d1caf53df84077327f204bfadb587840fadf20410e7b23e7c61babe3d",
+      "6fab04d73ff8d43a2d7029f95e667faa4a0f4d3fc541ce8c48d32b8f3d435115"
+    ],
+    "checked_at_utc": "2026-09-26T18:16:33.642633+00:00",
+    "final_test_opened": false,
+    "processed_jobs": 320,
+    "hashed_bytes": 14447841121,
+    "source_errors": {},
+    "counts": {
+      "confirmed": 320,
+      "verified": 320,
+      "failed": 0,
+      "pending": 0
+    },
+    "elapsed_seconds": 777.6797580909988,
+    "tolerances": {
+      "absolute": 1e-12,
+      "relative": 1e-10
+    },
+    "process_seconds": 778.04,
+    "peak_rss_bytes": 194408448,
+    "executions": 160,
+    "partitions": [
+      "train",
+      "validation"
+    ],
+    "gpu_used": false
+  },
+  "incremental_benchmark": {
+    "warmup": 1,
+    "repetitions": 5,
+    "samples": [
+      {
+        "repetition": 0,
+        "process_seconds": 0.2757084400000167,
+        "internal_seconds": 0.08401747199991405,
+        "processed_jobs": 0,
+        "hashed_bytes": 0,
+        "counts": {
+          "confirmed": 322,
+          "verified": 322,
+          "failed": 0,
+          "pending": 0
+        }
+      },
+      {
+        "repetition": 1,
+        "process_seconds": 0.23524675199996636,
+        "internal_seconds": 0.08419854200008103,
+        "processed_jobs": 0,
+        "hashed_bytes": 0,
+        "counts": {
+          "confirmed": 322,
+          "verified": 322,
+          "failed": 0,
+          "pending": 0
+        }
+      },
+      {
+        "repetition": 2,
+        "process_seconds": 0.2375833370000464,
+        "internal_seconds": 0.0846471439999732,
+        "processed_jobs": 0,
+        "hashed_bytes": 0,
+        "counts": {
+          "confirmed": 322,
+          "verified": 322,
+          "failed": 0,
+          "pending": 0
+        }
+      },
+      {
+        "repetition": 3,
+        "process_seconds": 0.24360443900002338,
+        "internal_seconds": 0.08327373600002375,
+        "processed_jobs": 0,
+        "hashed_bytes": 0,
+        "counts": {
+          "confirmed": 322,
+          "verified": 322,
+          "failed": 0,
+          "pending": 0
+        }
+      },
+      {
+        "repetition": 4,
+        "process_seconds": 0.24199867499999073,
+        "internal_seconds": 0.08365255699993668,
+        "processed_jobs": 0,
+        "hashed_bytes": 0,
+        "counts": {
+          "confirmed": 322,
+          "verified": 322,
+          "failed": 0,
+          "pending": 0
+        }
+      },
+      {
+        "repetition": 5,
+        "process_seconds": 0.271634511000002,
+        "internal_seconds": 0.08326949699994657,
+        "processed_jobs": 0,
+        "hashed_bytes": 0,
+        "counts": {
+          "confirmed": 322,
+          "verified": 322,
+          "failed": 0,
+          "pending": 0
+        }
+      }
+    ],
+    "process_median_seconds": 0.24199867499999073,
+    "process_stdev_seconds": 0.014708408394838205,
+    "children_peak_rss_bytes": 67530752,
+    "concurrent_workload": "Campaña científica activa, un proceso CUDA. Medidas manuales fuera de la unidad systemd, con caché de archivos ya utilizada."
+  },
+  "deployment": {
+    "enabled": true,
+    "service_result": "success",
+    "last_observation": "2026-09-27T18:00:27.472525+00:00",
+    "counts": {
+      "confirmed": 322,
+      "verified": 322,
+      "failed": 0,
+      "pending": 0
+    },
+    "elapsed_seconds": 0.10006566100003056,
+    "processed_jobs": 0,
+    "hashed_bytes": 0,
+    "post_boot_verified": true,
+    "module_sha256": "74587e1d1caf53df84077327f204bfadb587840fadf20410e7b23e7c61babe3d",
+    "memory_limit_bytes": 536870912,
+    "maximum_jobs_per_cycle": 8,
+    "interval_minutes": 15,
+    "health_interval_minutes": 5
+  }
+}
