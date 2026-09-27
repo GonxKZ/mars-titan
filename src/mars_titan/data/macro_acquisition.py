@@ -260,7 +260,7 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
     if reader.fieldnames != expected:
         raise ValueError("El CSV de ALFRED tiene una cabecera inesperada")
     result: list[dict] = []
-    seen: dict[tuple[str, str], tuple[str, float | None]] = {}
+    seen: dict[tuple[str, str], dict] = {}
     for row in reader:
         period = date.fromisoformat(row["period_start_date"]).isoformat()
         realtime_start = date.fromisoformat(row["realtime_start_date"]).isoformat()
@@ -268,7 +268,7 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
         realtime_end = (
             "9999-12-31" if raw_end in {"", "."} else date.fromisoformat(raw_end).isoformat()
         )
-        if realtime_end < realtime_start or period > realtime_start:
+        if realtime_end < realtime_start:
             raise ValueError("El CSV de ALFRED contiene un intervalo temporal no válido")
         raw_value = row[series_id].strip()
         if raw_value in {"", "."}:
@@ -278,20 +278,27 @@ def _parse_zip(content: bytes, series_id: str, requested_dates: set[str]) -> lis
             if not math.isfinite(value):
                 raise ValueError("El CSV de ALFRED contiene un valor no finito")
         key = period, realtime_start
-        payload = realtime_end, value
         if key in seen:
-            if seen[key] != payload:
+            previous = seen[key]
+            if (previous["realtime_end"], previous["value"]) != (realtime_end, value):
                 raise ValueError("El CSV de ALFRED contiene versiones en conflicto")
+            previous["source_rows"] += 1
             continue
-        seen[key] = payload
-        result.append(
-            {
-                "period_start": period,
-                "realtime_start": realtime_start,
-                "realtime_end": realtime_end,
-                "value": value,
-            }
-        )
+        parsed = {
+            "period_start": period,
+            "realtime_start": realtime_start,
+            "realtime_end": realtime_end,
+            "value": value,
+            "source_rows": 1,
+        }
+        if period > realtime_start:
+            parsed.update(
+                exclusion_reason="observation_after_realtime_start",
+                row_number=reader.line_num,
+                source_row=row,
+            )
+        seen[key] = parsed
+        result.append(parsed)
     return result
 
 
@@ -339,6 +346,12 @@ def _connect(destination: Path) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS archive_metadata (
             source_hash TEXT PRIMARY KEY,
             intervals_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS batch_admission (
+            indicator_id TEXT NOT NULL,
+            batch_key TEXT NOT NULL,
+            report_json TEXT NOT NULL,
+            PRIMARY KEY (indicator_id, batch_key)
         );
         """
     )
@@ -417,20 +430,23 @@ def _batch_key(entry: dict, selected: list[str], entered: list[str], configurati
     return hashlib.sha256(payload.encode()).hexdigest()[:20]
 
 
-def _completed_batch(destination: Path, indicator_id: str, key: str) -> tuple[str, int] | None:
+def _completed_batch(
+    destination: Path, indicator_id: str, key: str
+) -> tuple[str, int, dict] | None:
     with _connect(destination) as connection:
         row = connection.execute(
-            "SELECT raw_path,source_hash,row_count FROM batches "
-            "WHERE indicator_id=? AND batch_key=? AND status='complete'",
+            "SELECT b.raw_path,b.source_hash,b.row_count,a.report_json FROM batches b "
+            "JOIN batch_admission a ON a.indicator_id=b.indicator_id AND a.batch_key=b.batch_key "
+            "WHERE b.indicator_id=? AND b.batch_key=? AND b.status='complete'",
             (indicator_id, key),
         ).fetchone()
     if not row:
         return None
-    raw_path, digest, count = row
+    raw_path, digest, count, report_json = row
     path = destination / raw_path
     if not path.is_file() or _sha256(path.read_bytes()) != digest:
         return None
-    return digest, count
+    return digest, count, json.loads(report_json)
 
 
 def _store_batch(
@@ -443,7 +459,7 @@ def _store_batch(
     rows: list[dict],
     realtime_start: str,
     realtime_end: str,
-) -> tuple[str, int]:
+) -> tuple[str, int, dict]:
     digest = _sha256(content)
     metadata = _readme_metadata(_archive_text(content)[0])
     relative = Path("raw") / entry["id"] / f"{key}.zip"
@@ -451,8 +467,31 @@ def _store_batch(
     admitted = [
         row
         for row in rows
-        if row["realtime_start"] <= realtime_end and row["realtime_end"] >= realtime_start
+        if not row.get("exclusion_reason")
+        and row["realtime_start"] <= realtime_end
+        and row["realtime_end"] >= realtime_start
     ]
+    quarantined = [
+        {
+            "row_number": row["row_number"],
+            "reason": row["exclusion_reason"],
+            "source_row": row["source_row"],
+            "source_hash": digest,
+            "raw_path": relative.as_posix(),
+        }
+        for row in rows
+        if row.get("exclusion_reason")
+    ]
+    audit = {
+        "counts": {
+            "source_rows": sum(row["source_rows"] for row in rows),
+            "duplicate_rows": sum(row["source_rows"] - 1 for row in rows),
+            "admitted_rows": len(admitted),
+            "quarantined_rows": len(quarantined),
+            "outside_realtime_rows": len(rows) - len(admitted) - len(quarantined),
+        },
+        "quarantined_observations": quarantined,
+    }
     retrieved_at = datetime.now(UTC).isoformat()
     with _connect(destination) as connection:
         connection.execute("BEGIN IMMEDIATE")
@@ -500,7 +539,11 @@ def _store_batch(
                 len(admitted),
             ),
         )
-    return digest, len(admitted)
+        connection.execute(
+            "INSERT OR REPLACE INTO batch_admission VALUES (?,?,?)",
+            (entry["id"], key, json.dumps(audit, sort_keys=True)),
+        )
+    return digest, len(admitted), audit
 
 
 def _acquire_series(
@@ -539,6 +582,7 @@ def _acquire_series(
     selected = [value for value in dates if realtime_start <= value <= realtime_end]
     batches = _batches(selected)
     source_hashes: list[str] = []
+    audits = []
     rows = 0
     resumed = 0
     for index, batch in enumerate(batches):
@@ -555,8 +599,9 @@ def _acquire_series(
         key = _batch_key(entry, batch, entered, batch_configuration)
         completed = _completed_batch(destination, entry["id"], key)
         if completed:
-            digest, count = completed
+            digest, count, audit = completed
             source_hashes.append(digest)
+            audits.append(audit)
             rows += count
             resumed += 1
             continue
@@ -587,7 +632,7 @@ def _acquire_series(
             "entered_vintage_dates": entered,
             "output_type": 1,
         }
-        digest, count = _store_batch(
+        digest, count, audit = _store_batch(
             destination,
             entry,
             key,
@@ -599,8 +644,13 @@ def _acquire_series(
             realtime_end,
         )
         source_hashes.append(digest)
+        audits.append(audit)
         rows += count
-    if rows == 0:
+    admission = {
+        field: sum(audit["counts"][field] for audit in audits) for field in audits[0]["counts"]
+    }
+    quarantined = [row for audit in audits for row in audit["quarantined_observations"]]
+    if rows == 0 and not quarantined:
         raise ValueError("La serie de ALFRED no devolvió filas en los intervalos solicitados")
     updated_at = datetime.now(UTC).isoformat()
     with _connect(destination) as connection:
@@ -612,6 +662,10 @@ def _acquire_series(
         "indicator_id": entry["id"],
         "series_id": entry["series_id"],
         "status": "complete",
+        "download_complete": True,
+        "all_rows_temporally_admissible": not quarantined,
+        "admission": admission,
+        "quarantined_observations": quarantined,
         "vintage_dates_available": len(dates),
         "vintage_dates_selected": len(selected),
         "vintage_date_first": selected[0] if selected else None,
@@ -642,7 +696,13 @@ def acquire_catalog(
     realtime_end,
     workers=2,
 ) -> dict:
-    """Audita el catálogo y adquiere las series originales admisibles de ALFRED."""
+    """Descarga series y audita por separado sus observaciones temporalmente admisibles.
+
+    ``complete`` y ``download_complete`` describen la descarga. Las filas con un
+    periodo posterior a su supuesta publicación quedan en cuarentena sin corregir
+    sus datos. Los recuentos incluyen repeticiones entre lotes, identificados por
+    su ZIP y huella. La disponibilidad de unidades y valores se comprueba después.
+    """
     if type(workers) is not int or not 1 <= workers <= 2:
         raise ValueError("El número de trabajadores debe ser uno o dos")
     destination = Path(destination)
@@ -731,6 +791,9 @@ def acquire_catalog(
         "failed_series": len(failures),
         "excluded_entries": len(excluded),
         "complete": not failures and len(results) == len(eligible),
+        "download_complete": not failures and len(results) == len(eligible),
+        "all_rows_temporally_admissible": not failures
+        and all(result["all_rows_temporally_admissible"] for result in results),
         "observation_start": observation_start,
         "observation_end": observation_end,
         "realtime_start": realtime_start,

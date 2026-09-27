@@ -628,6 +628,13 @@ def test_identical_duplicate_vintage_is_counted_once(tmp_path, monkeypatch):
     )
 
     assert report["series"][0]["rows"] == 1
+    assert report["series"][0]["admission"] == {
+        "source_rows": 2,
+        "duplicate_rows": 1,
+        "admitted_rows": 1,
+        "quarantined_rows": 0,
+        "outside_realtime_rows": 0,
+    }
     assert len(list(macro_acquisition.iter_vintages(tmp_path))) == 1
 
 
@@ -683,7 +690,7 @@ def test_conflicting_duplicate_vintage_marks_series_as_error(tmp_path, monkeypat
     assert list(macro_acquisition.iter_vintages(tmp_path)) == []
 
 
-def test_observation_after_realtime_start_is_rejected(tmp_path, monkeypatch):
+def test_download_with_only_quarantined_observations_has_no_usable_rows(tmp_path, monkeypatch):
     from mars_titan.data import macro_acquisition
 
     page = b'<select id="form_selected_vintage_dates"><option value="2020-02-13"/></select>'
@@ -727,9 +734,121 @@ def test_observation_after_realtime_start_is_rejected(tmp_path, monkeypatch):
         workers=1,
     )
 
-    assert report["complete"] is False
-    assert "intervalo temporal no válido" in report["series"][0]["error"]
+    assert report["download_complete"] is True
+    assert report["all_rows_temporally_admissible"] is False
+    assert report["series"][0]["rows"] == 0
     assert list(macro_acquisition.iter_vintages(tmp_path)) == []
+
+
+@pytest.mark.parametrize(
+    ("series_id", "indicator_id", "original_value"),
+    [("DCOILWTICO", "wti_spot", "90.91"), ("DCOILBRENTEU", "brent_spot", "110.04")],
+)
+def test_future_observation_is_quarantined_until_a_valid_revision(
+    tmp_path, monkeypatch, series_id, indicator_id, original_value
+):
+    from mars_titan.data import macro_acquisition as acquisition
+    from mars_titan.data.macro import calculate_macro
+    from mars_titan.data.temporal import MarketClock
+
+    page = b'<select id="form_selected_vintage_dates"><option value="2012-12-26"/></select>'
+    original_row = f"2012-12-27,{original_value},2012-12-26,"
+    content = _alfred_zip(
+        series_id,
+        ["2012-12-26", "2013-01-02"],
+        [original_row, "2012-12-26,80,2012-12-26,", "2012-12-27,91,2012-12-28,"],
+        metadata=(
+            "Units\nDollars per Barrel 1986-01-02 Current\n"
+            "Seasonal Adjustment\nNot Seasonally Adjusted 1986-01-02 Current\n"
+        ),
+    )
+
+    def request(url, *, fields=None):
+        return (
+            (page, "text/html", url, 200)
+            if fields is None
+            else (content, "application/zip", url, 200)
+        )
+
+    monkeypatch.setattr(acquisition, "_request", request)
+    catalog = [
+        {
+            "id": indicator_id,
+            "kind": "raw",
+            "provider": "EIA via FRED",
+            "series_id": series_id,
+            "source_url": f"https://fred.stlouisfed.org/series/{series_id}",
+            "vintage_policy": "ALFRED_OR_RELEASE_ARCHIVE",
+            "verification_status": "verified_metadata_not_ingested",
+            "frequency": "D",
+        }
+    ]
+    arguments = {
+        "observation_start": "2012-12-26",
+        "observation_end": "2012-12-27",
+        "realtime_start": "2012-12-26",
+        "realtime_end": "2013-01-02",
+        "workers": 1,
+    }
+
+    report = acquisition.acquire_catalog(catalog, tmp_path, **arguments)
+
+    assert report["download_complete"] is True
+    assert report["all_rows_temporally_admissible"] is False
+    series = report["series"][0]
+    assert series["admission"] == {
+        "source_rows": 3,
+        "duplicate_rows": 0,
+        "admitted_rows": 2,
+        "quarantined_rows": 1,
+        "outside_realtime_rows": 0,
+    }
+    (excluded,) = series["quarantined_observations"]
+    assert excluded["row_number"] == 2
+    assert excluded["reason"] == "observation_after_realtime_start"
+    assert excluded["source_row"] == {
+        "period_start_date": "2012-12-27",
+        series_id: original_value,
+        "realtime_start_date": "2012-12-26",
+        "realtime_end_date": "",
+    }
+    assert excluded["source_hash"] == hashlib.sha256(content).hexdigest()
+    assert (tmp_path / excluded["raw_path"]).read_bytes() == content
+    vintages = list(acquisition.iter_vintages(tmp_path))
+    assert len(vintages) == 2
+    assert all(row["period_start"] <= row["realtime_start"] for row in vintages)
+    output = calculate_macro(
+        vintages,
+        acquisition.execution_catalog(catalog, tmp_path),
+        MarketClock("US", "2012-12-26", "2013-01-02"),
+    )
+    by_date = {row["prediction_at"].date().isoformat(): row for row in output}
+    assert by_date["2012-12-27"]["value"] == 80
+    assert by_date["2012-12-28"]["value"] == 80
+    assert by_date["2012-12-31"]["value"] == 91
+    assert by_date["2012-12-31"]["period_start"] == "2012-12-27"
+    assert all(row["value"] != float(original_value) for row in output)
+
+    resumed = acquisition.acquire_catalog(catalog, tmp_path, **arguments)["series"][0]
+    assert resumed["resumed_batches"] == 1
+    assert resumed["admission"] == series["admission"]
+    assert resumed["quarantined_observations"] == series["quarantined_observations"]
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        ["2012-12-27,90.91,2012-12-26,2012-12-25"],
+        ["2012-12-27,inf,2012-12-26,"],
+        ["2012-12-27,90.91,2012-12-26,", "2012-12-27,999,2012-12-26,"],
+    ],
+)
+def test_quarantine_does_not_accept_reversed_intervals_nonfinite_values_or_conflicts(rows):
+    from mars_titan.data.macro_acquisition import _parse_zip
+
+    content = _alfred_zip("DCOILWTICO", ["2012-12-26"], rows)
+    with pytest.raises(ValueError):
+        _parse_zip(content, "DCOILWTICO", {"2012-12-26"})
 
 
 def test_html_download_error_is_not_reported_as_success(tmp_path, monkeypatch):
