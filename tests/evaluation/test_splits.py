@@ -173,3 +173,28 @@ def test_malformed_time_metadata_is_rejected(defect):
         module().assign_partitions(
             pred, available, maturity, module().build_folds(config)[0], clock, config
         )
+
+
+def test_label_at_exact_boundary_is_not_mature_in_the_previous_partition():
+    config = configuration()
+    config["gap_sessions"] = 0
+    clock = MarketClock("US", "2021-12-01", "2024-01-08")
+    prediction = micros("2021-12-30T21:05:00")
+    maturity = micros("2022-01-01T00:00:00")
+    result = module().assign_partitions(
+        prediction, prediction, maturity, module().build_folds(config)[0], clock, config
+    )
+    assert result["partition"].tolist() == ["excluded"]
+
+
+def test_two_session_margin_excludes_an_already_mature_training_example():
+    config = configuration()
+    config["gap_sessions"] = 2
+    clock = MarketClock("US", "2021-12-01", "2024-01-08")
+    prediction = micros("2021-12-30T21:05:00")
+    maturity = micros("2021-12-31T21:05:00")
+    result = module().assign_partitions(
+        prediction, prediction, maturity, module().build_folds(config)[0], clock, config
+    )
+    assert result["partition"].tolist() == ["excluded"]
+    assert result["reason"].tolist() == ["session_gap"]
