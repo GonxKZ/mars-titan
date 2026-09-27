@@ -312,6 +312,8 @@ def test_unverified_model_or_identifier_is_never_automatically_admitted(indicato
     catalog = catalog_for(indicator)
     if indicator == "global_supply_pressure":
         catalog[0]["vintage_policy"] = "MODEL_VINTAGES_ONLY"
+    else:
+        catalog[0]["vintage_policy"] = "NO_VINTAGES_EXCLUDE"
     result = latest([row(indicator, "2023-12-01", 10)], indicator, catalog)
     assert result["value"] is None
     assert result["missing_reason"] in {"model_vintages_required", "unverified_identifier"}

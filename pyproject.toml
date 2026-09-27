@@ -27,6 +27,7 @@ data = [
     "duckdb>=1.2,<2",
     "beautifulsoup4>=4.14,<5",
     "protego>=0.5,<1",
+    "lxml>=6,<7",
 ]
 research = ["scikit-learn>=1.6,<2", "matplotlib>=3.9,<4", "scipy>=1.14,<2"]
 cuda = ["torch>=2.8,<3; sys_platform == 'linux' and platform_machine == 'x86_64'"]
