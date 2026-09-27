@@ -1,9 +1,11 @@
 """Adquisición reproducible de versiones históricas macro desde el formulario ALFRED."""
 
+import csv
 import hashlib
 import io
 import zipfile
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -28,6 +30,124 @@ def _alfred_zip(
         archive.writestr("README.txt", readme)
         archive.writestr("obs._by_real-time_period.csv", header + "\n".join(rows) + "\n")
     return stream.getvalue()
+
+
+def _model_entry(identifier):
+    with Path("data/catalogs/macro-indicators.csv").open() as stream:
+        return next(entry for entry in csv.DictReader(stream) if entry["id"] == identifier)
+
+
+@pytest.mark.parametrize(
+    ("identifier", "first"),
+    [("us_financial_conditions", "2011-05-25"), ("us_financial_stress", "2022-11-10")],
+)
+def test_official_model_acquisition_quarantines_backdating_and_preserves_real_history(
+    tmp_path, monkeypatch, identifier, first
+):
+    from mars_titan.data import macro_acquisition as acquisition
+
+    entry = _model_entry(identifier)
+    before = (date.fromisoformat(first) - timedelta(days=1)).isoformat()
+    page = (
+        '<select id="form_selected_vintage_dates">'
+        f'<option value="{first}">{first}</option></select>'
+    ).encode()
+    payload = None
+
+    def request(url, *, fields=None):
+        nonlocal payload
+        if fields is None:
+            return page, "text/html", url, 200
+        assert fields["form[entered_vintage_dates]"] == first
+        payload = _alfred_zip(
+            entry["series_id"],
+            [first],
+            [f"2009-01-02,99,{before},{before}", f"2009-01-02,1.92,{first},"],
+            metadata=(
+                f"Units\nIndex  {first}  Current\n"
+                f"Seasonal Adjustment\nNot Seasonally Adjusted  {first}  Current\n"
+            ),
+        )
+        return payload, "application/zip", url, 200
+
+    monkeypatch.setattr(acquisition, "_request", request)
+    arguments = dict(
+        observation_start="2009-01-01",
+        observation_end="2009-01-31",
+        realtime_start="2009-01-01",
+        realtime_end=first,
+        workers=1,
+    )
+    report = acquisition.acquire_catalog([entry], tmp_path, **arguments)
+    assert report["completed_series"] == 1
+    series = report["series"][0]
+    assert series["vintage_policy"] == "ALFRED_MODEL_VINTAGES"
+    assert series["model_vintage_first"] == first
+    assert series["effective_realtime_start"] == first
+    assert series["coverage_limited_at_start"] is True
+    assert series["all_rows_temporally_admissible"] is False
+    assert series["admission"]["quarantined_rows"] == 1
+    assert series["quarantined_observations"][0]["reason"] == "model_vintage_before_publication"
+    (observation,) = acquisition.iter_vintages(tmp_path)
+    assert observation["value"] == 1.92
+    assert observation["realtime_start"] == first
+    assert observation["source_hash"] == hashlib.sha256(payload).hexdigest()
+    assert observation["native_unit"] == "Index"
+    assert observation["seasonal_adjustment"] == "Not Seasonally Adjusted"
+    resumed = acquisition.acquire_catalog([entry], tmp_path, **arguments)["series"][0]
+    assert resumed["resumed_batches"] == 1
+    assert resumed["admission"] == series["admission"]
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"id": "unverified_model"},
+        {"series_id": "STLFSI3"},
+        {"source_url": "https://fred.stlouisfed.org/series/STLFSI3"},
+        {"source_url": "http://fred.stlouisfed.org/series/STLFSI4"},
+        {"provider": "Unverified via FRED"},
+        {"frequency": "M"},
+        {"vintage_policy": "MODEL_VINTAGES_ONLY"},
+        {"vintage_policy": "ALFRED_OR_RELEASE_ARCHIVE"},
+    ],
+)
+def test_model_policy_cannot_authorize_another_series_or_provider(override):
+    from mars_titan.data import macro, macro_acquisition
+
+    entry = _model_entry("us_financial_stress") | override
+    assert macro_acquisition._exclusion(entry) is not None
+    assert macro._exclusion(entry) is not None
+
+
+def test_earlier_model_vintage_list_requires_review_before_downloading(tmp_path, monkeypatch):
+    from mars_titan.data import macro_acquisition as acquisition
+
+    calls = []
+
+    def request(url, *, fields=None):
+        calls.append(fields)
+        page = (
+            b'<select id="form_selected_vintage_dates">'
+            b'<option value="2009-01-02">2009-01-02</option></select>'
+        )
+        return page, "text/html", url, 200
+
+    monkeypatch.setattr(acquisition, "_request", request)
+    report = acquisition.acquire_catalog(
+        [_model_entry("us_financial_stress")],
+        tmp_path,
+        observation_start="2009-01-01",
+        observation_end="2024-01-31",
+        realtime_start="2009-01-01",
+        realtime_end="2024-01-31",
+        workers=1,
+    )
+    assert report["complete"] is False
+    assert report["failed_series"] == 1
+    assert "modelo precede" in report["series"][0]["error"]
+    assert calls == [None]
+    assert list(acquisition.iter_vintages(tmp_path)) == []
 
 
 def test_acquire_catalog_preserves_real_intervals_carry_in_and_na(tmp_path, monkeypatch):
