@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "training": {
+    "total_transitions": 32,
+    "rollout_transitions": 16,
+    "workers": 1,
+    "seed": 42,
+    "rollout_bytes": 134217728
+  },
+  "environments": 2,
+  "hyperparameters": {
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip": 0.2,
+    "entropy": 0.01,
+    "value_weight": 0.5,
+    "gradient_norm": 1.0,
+    "epochs": 2,
+    "minibatch_size": 8
+  },
+  "environment": {
+    "capital": 10000,
+    "cost_bps": 10,
+    "participation": 0.01,
+    "score_scale": 0.01,
+    "ruin_penalty": -20
+  },
+  "checkpoint_transitions": 8,
+  "selection": {
+    "min_delta": 0.0001,
+    "patience": 5,
+    "early_stopping": false,
+    "metric": "ruin_count_then_mean_log_growth"
+  },
+  "final_test_opened": false
+}

@@ -178,6 +178,56 @@
       "cacheVariables": {
         "MARS_TITAN_ENABLE_STATIC_ANALYZER": "ON"
       }
+    },
+    {
+      "name": "native-ppo-release",
+      "displayName": "PPO C++20 con LibTorch",
+      "inherits": "native-release",
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_PPO": "ON",
+        "MARS_TITAN_BUILD_RUNNER": "ON",
+        "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"
+      }
+    },
+    {
+      "name": "native-ppo-debug",
+      "displayName": "PPO con símbolos y diagnósticos",
+      "inherits": "native-debug",
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_PPO": "ON",
+        "MARS_TITAN_BUILD_RUNNER": "ON",
+        "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"
+      }
+    },
+    {
+      "name": "native-ppo-asan-ubsan",
+      "displayName": "PPO con ASan y UBSan",
+      "inherits": "native-asan-ubsan",
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_PPO": "ON",
+        "MARS_TITAN_BUILD_RUNNER": "ON",
+        "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"
+      }
+    },
+    {
+      "name": "native-ppo-static-analysis",
+      "displayName": "PPO con análisis estático",
+      "inherits": "native-static-analysis",
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_PPO": "ON",
+        "MARS_TITAN_BUILD_RUNNER": "ON",
+        "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"
+      }
+    },
+    {
+      "name": "native-ppo-coverage",
+      "displayName": "Cobertura del PPO nativo",
+      "inherits": "native-coverage",
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_PPO": "ON",
+        "MARS_TITAN_BUILD_RUNNER": "ON",
+        "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -198,7 +248,12 @@
     {"name":"native-msvc-release","inherits":"native-build","configurePreset":"native-msvc-release"},
     {"name":"native-msvc-asan","inherits":"native-build","configurePreset":"native-msvc-asan"},
     {"name":"native-msvc-analysis","inherits":"native-build","configurePreset":"native-msvc-analysis","targets":["all","static-analysis"]},
-    {"name":"native-coverage","inherits":"native-build","configurePreset":"native-coverage"}
+    {"name":"native-coverage","inherits":"native-build","configurePreset":"native-coverage"},
+    {"name":"native-ppo-release","inherits":"native-build","configurePreset":"native-ppo-release","jobs":1},
+    {"name":"native-ppo-debug","inherits":"native-build","configurePreset":"native-ppo-debug","jobs":1},
+    {"name":"native-ppo-asan-ubsan","inherits":"native-build","configurePreset":"native-ppo-asan-ubsan","jobs":1},
+    {"name":"native-ppo-static-analysis","inherits":"native-build","configurePreset":"native-ppo-static-analysis","jobs":1,"targets":["all","static-analysis"]},
+    {"name":"native-ppo-coverage","inherits":"native-build","configurePreset":"native-ppo-coverage","jobs":1}
   ],
   "testPresets": [
     {"name":"native-test","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""}},
@@ -218,6 +273,11 @@
     {"name":"native-msvc-release","inherits":"native-test","configurePreset":"native-msvc-release"},
     {"name":"native-msvc-asan","inherits":"native-test","configurePreset":"native-msvc-asan"},
     {"name":"native-msvc-analysis","inherits":"native-test","configurePreset":"native-msvc-analysis"},
-    {"name":"native-coverage","inherits":"native-test","configurePreset":"native-coverage"}
+    {"name":"native-coverage","inherits":"native-test","configurePreset":"native-coverage"},
+    {"name":"native-ppo-release","inherits":"native-test","configurePreset":"native-ppo-release"},
+    {"name":"native-ppo-debug","inherits":"native-test","configurePreset":"native-ppo-debug"},
+    {"name":"native-ppo-asan-ubsan","inherits":"native-test","configurePreset":"native-ppo-asan-ubsan"},
+    {"name":"native-ppo-static-analysis","inherits":"native-test","configurePreset":"native-ppo-static-analysis"},
+    {"name":"native-ppo-coverage","inherits":"native-test","configurePreset":"native-ppo-coverage"}
   ]
 }

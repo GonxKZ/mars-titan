@@ -213,6 +213,44 @@ void mixed_endings_keep_final_observations() {
             "Un reinicio ajeno ha alterado el entorno que continuaba");
 }
 
+void active_mask_and_rejected_consumer_preserve_state() {
+    const auto data = tape();
+    FinancialBatch batch({{data, {}, {}}, {data, {}, {}}}, 2);
+    const std::array<uint8_t, 2> buy{full_action, full_action};
+    const auto initial = batch.snapshot();
+    rejected([&] {
+        static_cast<void>(batch.step_checked(buy, {}, [&](auto observation, const auto& result) {
+            require(observation.size() == 2 * base_observation_width && result.reward_valid[0],
+                    "El consumidor necesita las observaciones provisionales completas");
+            batch.reset(std::array<std::size_t, 1>{0});
+        }));
+    });
+    same_state(batch.snapshot().sessions[0], initial.sessions[0]);
+    same_state(batch.snapshot().sessions[1], initial.sessions[1]);
+    const auto& outcome = batch.step_active(buy, std::array<uint8_t, 2>{1, 0});
+    require(outcome.reward_valid == std::vector<uint8_t>({1, 0}) && outcome.rewards[1] == 0,
+            "Una pausa de entorno no debe generar una transición");
+    same_state(batch.snapshot().sessions[1], initial.sessions[1]);
+    require(batch.snapshot().sessions[0].cursor == 1, "La máscara pausó el entorno equivocado");
+    rejected([&] { static_cast<void>(batch.step_active(buy, std::array<uint8_t, 2>{1, 2})); });
+    rejected([&] { static_cast<void>(batch.step_active(buy, std::array<uint8_t, 1>{1})); });
+    const auto paused = batch.snapshot();
+    static_cast<void>(batch.step_active(buy, std::array<uint8_t, 2>{0, 0}));
+    same_state(batch.snapshot().sessions[0], paused.sessions[0]);
+    same_state(batch.snapshot().sessions[1], paused.sessions[1]);
+}
+
+void caller_mask_changes_cannot_change_the_commit() {
+    const auto data = tape();
+    FinancialBatch batch({{data, {}, {}}, {data, {}, {}}}, 1);
+    std::array<uint8_t, 2> active{1, 0};
+    static_cast<void>(batch.step_checked(std::array<uint8_t, 2>{full_action, full_action}, active,
+        [&](auto, const auto&) { active = {0, 1}; }));
+    const auto state = batch.snapshot();
+    require(state.sessions[0].cursor == 1 && state.sessions[0].positions[0].quantity > 0 &&
+                state.sessions[1].cursor == 0, "La máscara cambió entre preparar y confirmar");
+}
+
 void context_is_causal_and_bounded() {
     const auto data = tape();
     ContextTape context;
@@ -270,6 +308,8 @@ int main() {
         }
         failed_lane_does_not_commit_any_lane();
         mixed_endings_keep_final_observations();
+        active_mask_and_rejected_consumer_preserve_state();
+        caller_mask_changes_cannot_change_the_commit();
         context_is_causal_and_bounded();
         std::cout << "Lotes, contexto temporal y recuperación comprobados\n";
     } catch (const std::exception& error) {

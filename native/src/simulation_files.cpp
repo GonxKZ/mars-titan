@@ -70,37 +70,6 @@ class FileDescriptor {
     int value_;
 };
 
-class OutputLock {
-  public:
-    OutputLock(const std::filesystem::path& directory, bool resume)
-        : descriptor_(open_directory(directory, resume)) {
-        if (::flock(descriptor_.get(), LOCK_EX | LOCK_NB) != 0) {
-            io_error("La salida ya tiene otra ejecución activa");
-        }
-    }
-
-  private:
-    static int open_directory(const std::filesystem::path& directory, bool resume) {
-        require_safe_path(directory);
-        if (resume) {
-            if (!std::filesystem::is_directory(directory) ||
-                !std::filesystem::is_regular_file(directory / "identity.json")) {
-                throw std::invalid_argument(
-                    "La recuperación necesita una salida con identidad confirmada");
-            }
-        } else if (std::filesystem::exists(directory) ||
-                   !std::filesystem::create_directories(directory)) {
-            throw std::invalid_argument("La salida debe ser nueva o usar --resume explícito");
-        }
-        require_safe_path(directory / ".run.lock");
-        // POSIX requiere open con su argumento mode_t al crear el archivo.
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-        return ::open((directory / ".run.lock").c_str(), O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
-                      S_IRUSR | S_IWUSR);
-    }
-    FileDescriptor descriptor_;
-};
-
 bool valid_digest(std::string_view value) {
     return value.size() == sha_characters && std::ranges::all_of(value, [](char ch) {
                return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
@@ -553,6 +522,43 @@ Json event_json(const StepOutcome& outcome) {
 }
 } // namespace
 
+struct OutputLock::Impl {
+    Impl(const std::filesystem::path& directory, bool resume)
+        : descriptor(open_directory(directory, resume)) {
+        if (::flock(descriptor.get(), LOCK_EX | LOCK_NB) != 0) {
+            io_error("La salida ya tiene otra ejecución activa");
+        }
+    }
+
+    static int open_directory(const std::filesystem::path& directory, bool resume) {
+        require_safe_path(directory);
+        if (resume) {
+            if (!std::filesystem::is_directory(directory) ||
+                !std::filesystem::is_regular_file(directory / "identity.json")) {
+                throw std::invalid_argument(
+                    "La recuperación necesita una salida con identidad confirmada");
+            }
+        } else if (std::filesystem::exists(directory) ||
+                   !std::filesystem::create_directories(directory)) {
+            throw std::invalid_argument("La salida debe ser nueva o usar --resume explícito");
+        }
+        require_safe_path(directory / ".run.lock");
+        // POSIX requiere open con su argumento mode_t al crear el archivo.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+        return ::open((directory / ".run.lock").c_str(), O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                      S_IRUSR | S_IWUSR);
+    }
+    FileDescriptor descriptor;
+};
+
+OutputLock::OutputLock(const std::filesystem::path& directory, bool resume)
+    : impl_(std::make_unique<Impl>(directory, resume)) {}
+OutputLock::~OutputLock() = default;
+
+std::size_t process_memory_high_water() {
+    return executable_peak_rss();
+}
+
 void require_safe_path(const std::filesystem::path& path) {
     auto prefix = std::filesystem::absolute(path).root_path();
     for (const auto& component : std::filesystem::absolute(path).relative_path()) {
@@ -662,21 +668,29 @@ void atomic_json_file(const std::filesystem::path& path, const Json& value, std:
     if (bytes.size() > maximum) {
         throw std::invalid_argument("El JSON excede el presupuesto de escritura");
     }
+    atomic_binary_file(path, bytes, maximum);
+}
+
+void atomic_binary_file(const std::filesystem::path& path, std::string_view bytes,
+                        std::size_t maximum, bool replace_existing) {
+    require_safe_path(path);
+    if (bytes.size() > maximum) {
+        throw std::invalid_argument("El archivo excede el presupuesto de escritura");
+    }
     std::string pattern =
         (path.parent_path() / ("." + path.filename().string() + ".pending-XXXXXX")).string();
     const FileDescriptor file(::mkstemp(pattern.data()));
     const std::filesystem::path pending(pattern);
     try {
         std::size_t written = 0;
-        const std::string_view view(bytes);
         while (written < bytes.size()) {
-            const auto remaining = view.substr(written);
+            const auto remaining = bytes.substr(written);
             const auto count = ::write(file.get(), remaining.data(), remaining.size());
             if (count < 0) {
                 if (errno == EINTR) {
                     continue;
                 }
-                io_error("No se puede escribir el JSON");
+                io_error("No se puede escribir el archivo");
             }
             if (count == 0) {
                 throw std::runtime_error("La escritura no avanza");
@@ -684,9 +698,16 @@ void atomic_json_file(const std::filesystem::path& path, const Json& value, std:
             written += static_cast<std::size_t>(count);
         }
         if (::fsync(file.get()) != 0) {
-            io_error("No se puede confirmar el JSON");
+            io_error("No se puede confirmar el archivo");
         }
-        std::filesystem::rename(pending, path);
+        if (replace_existing) {
+            std::filesystem::rename(pending, path);
+        } else {
+            if (::link(pending.c_str(), path.c_str()) != 0) {
+                io_error("No se puede publicar un archivo nuevo sin sustituir otro");
+            }
+            std::filesystem::remove(pending);
+        }
         // La sincronización del directorio necesita un descriptor POSIX con O_DIRECTORY.
         const FileDescriptor directory(
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
