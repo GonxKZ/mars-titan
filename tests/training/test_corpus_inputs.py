@@ -100,6 +100,60 @@ def batches(manifest, **kwargs):
     )
 
 
+def test_bounded_input_cache_preserves_batches_and_avoids_repeated_table_decoding(
+    tmp_path, monkeypatch
+):
+    path = corpus(tmp_path, assets=2, rows=7)
+    api = module()
+    original = api.read_bounded_table
+    reads = []
+
+    def observed(path, **kwargs):
+        reads.append(str(path))
+        return original(path, **kwargs)
+
+    monkeypatch.setattr(api, "read_bounded_table", observed)
+    reader = api.CorpusDataset(path, cache_bytes=1024**2)
+    first = list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    read_count = len(reads)
+    second = list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    assert len(reads) == read_count
+    assert 0 < reader.cached_bytes <= 1024**2
+    for a, b in zip(first, second, strict=True):
+        assert a["sample_ids"] == b["sample_ids"]
+        for name in a["inputs"]:
+            np.testing.assert_array_equal(a["inputs"][name], b["inputs"][name])
+    uncached = api.CorpusDataset(path, cache_bytes=0)
+    reference = list(uncached.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    assert uncached.cached_bytes == 0
+    for a, b in zip(first, reference, strict=True):
+        np.testing.assert_array_equal(a["target"], b["target"])
+        for name in a["inputs"]:
+            np.testing.assert_array_equal(a["inputs"][name], b["inputs"][name])
+
+
+@pytest.mark.parametrize(
+    "folder,name", [("labels", "labels.parquet"), ("prepared", "prices.parquet")]
+)
+def test_input_cache_does_not_hide_changed_labels_or_prices(tmp_path, folder, name):
+    path = corpus(tmp_path, assets=1)
+    reader = module().CorpusDataset(path, cache_bytes=1024**2)
+    list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    labels = tmp_path / folder / "US/A0000" / name
+    labels.write_bytes(b"corrupt")
+    with pytest.raises(ValueError):
+        list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+
+
+def test_input_cache_evicts_buffers_without_changing_epoch_population(tmp_path):
+    path = corpus(tmp_path, assets=4, rows=7)
+    reader = module().CorpusDataset(path, cache_bytes=240)
+    for epoch in range(2):
+        observed = list(reader.batches(partition="train", batch_size=4, epoch=epoch, seed=42))
+        assert sum(len(batch["target"]) for batch in observed) == 28
+        assert 0 < reader.cached_bytes <= 240
+
+
 def test_all_assets_and_last_partial_batch_are_visited_once(tmp_path):
     manifest = corpus(tmp_path, assets=130)
     observed = list(batches(manifest))

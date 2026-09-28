@@ -2,6 +2,7 @@
 
 import hashlib
 import re
+from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
@@ -38,7 +39,7 @@ def _random(seed, epoch, key):
     return np.random.default_rng(number)
 
 
-def _availability(table):
+def _availability(table, *, macro_override=None):
     if "input_availability" not in table.column_names:
         return None, None
     column = table["input_availability"].combine_chunks()
@@ -53,6 +54,11 @@ def _availability(table):
     valid = ~column.is_null().to_numpy(zero_copy_only=False)
     bounds = np.zeros(len(column), dtype=np.int64)
     for name in sorted(names):
+        if name == "macro" and macro_override is not None:
+            available, observed = macro_override
+            bounds = np.maximum(bounds, available)
+            valid &= observed
+            continue
         field = (
             column.field(name) if name in fields else table["macro_available_at"].combine_chunks()
         )
@@ -102,12 +108,27 @@ def _price_contexts(prices, ends, context):
 class CorpusDataset:
     """Validar una edición y reutilizar sus huellas mientras no cambien los archivos."""
 
-    def __init__(self, manifest: Path):
+    def __init__(self, manifest: Path, *, cache_bytes: int = 1024**3):
+        if type(cache_bytes) is not int or not 0 <= cache_bytes <= 4 * 1024**3:
+            raise ValueError("La caché de entrada debe estar entre cero y cuatro GiB")
+        self.cache_limit = cache_bytes
+        self.cached_bytes = 0
+        self._cache = OrderedDict()
         self.path = Path(manifest)
         if self.path.is_symlink() or self.path.stat().st_size > 8 * 1024**2:
             raise ValueError("El manifiesto no es regular o supera 8 MiB")
         self.manifest, self.identity = read_manifest(self.path, 8 * 1024**2)
         meta = self.manifest
+        self.temporal = None
+        if "temporal_view" in meta:
+            from .temporal_corpus import TemporalInputs
+
+            self.temporal = TemporalInputs(meta["temporal_view"])
+        self.partitions = (
+            ("train", "validation", "calibration", "evaluation")
+            if self.temporal
+            else ("train", "validation")
+        )
         self.cohort = cohort_identity(meta)
         if (
             meta.get("schema_version") not in {1, 2}
@@ -126,7 +147,7 @@ class CorpusDataset:
         self.roots = {key: Path(value).resolve() for key, value in meta["roots"].items()}
         self.assets = meta["assets"]
         self.verified = {}
-        identities, counts = set(), {"train": 0, "validation": 0}
+        identities, counts = set(), dict.fromkeys(self.partitions, 0)
         for asset in self.assets:
             symbol, market = asset["symbol"], asset["market"]
             if (
@@ -176,10 +197,49 @@ class CorpusDataset:
             raise ValueError("La cabecera final de Parquet no es válida o excede su presupuesto")
         return path
 
+    def _cached(self, key, signature):
+        if key not in self._cache:
+            return None
+        previous, arrays, size = self._cache[key]
+        if previous != signature:
+            self._cache.pop(key)
+            self.cached_bytes -= size
+            return None
+        self._cache.move_to_end(key)
+        return arrays
+
+    def _remember(self, key, signature, arrays):
+        size = sum(array.nbytes for array in arrays)
+        if self.cache_limit == 0 or size > self.cache_limit:
+            return
+        if key in self._cache:
+            _, _, previous_size = self._cache.pop(key)
+            self.cached_bytes -= previous_size
+        while self._cache and (
+            self.cached_bytes + size > self.cache_limit or len(self._cache) >= 8192
+        ):
+            _, (_, _, previous_size) = self._cache.popitem(last=False)
+            self.cached_bytes -= previous_size
+        for array in arrays:
+            array.flags.writeable = False
+        self._cache[key] = signature, arrays, size
+        self.cached_bytes += size
+
+    @staticmethod
+    def _partition_labels(arrays, partition):
+        positions, prediction, values, maturity, partitions = arrays
+        selected = np.flatnonzero(partitions == partition)
+        selected = selected[np.argsort(positions[selected])]
+        return positions[selected], prediction[selected], values[selected], maturity[selected]
+
     def _labels(self, asset, partition, sample_rows):
-        table = read_bounded_table(
-            self._file(asset, "labels"), max_rows=1_000_000, max_bytes=MAX_TABLE_BYTES
-        )
+        path = self._file(asset, "labels")
+        signature = self.verified[path], sample_rows, tuple(sorted(asset["counts"].items()))
+        key = "labels", path
+        cached = self._cached(key, signature)
+        if cached is not None:
+            return self._partition_labels(cached, partition)
+        table = read_bounded_table(path, max_rows=1_000_000, max_bytes=MAX_TABLE_BYTES)
         validate_cohort_rows(table, self.cohort)
         if not pa.types.is_integer(table["sample_row"].type) or table["sample_row"].null_count:
             raise ValueError("La etiqueta necesita una posición entera de muestra")
@@ -208,6 +268,10 @@ class CorpusDataset:
             "outside_label_calendar",
             "final_test_reserved",
         }
+        if self.temporal:
+            from .temporal_corpus import VIEW_REASONS
+
+            allowed |= VIEW_REASONS
         if not set(reasons) <= allowed:
             raise ValueError("Hay un motivo de exclusión de etiqueta desconocido")
         partition_values = table["partition"].to_pylist()
@@ -223,7 +287,15 @@ class CorpusDataset:
         if not len(table):
             if any(asset["counts"].values()):
                 raise ValueError("La partición no concilia con sus etiquetas")
-            return positions, prediction, np.empty(0, dtype=np.float64), prediction.copy()
+            arrays = (
+                positions,
+                prediction,
+                np.empty(0, dtype=np.float64),
+                prediction.copy(),
+                np.empty(0, dtype="U11"),
+            )
+            self._remember(key, signature, arrays)
+            return self._partition_labels(arrays, partition)
         maturity = _times(table["target_available_at"])
         if np.any(maturity <= prediction):
             raise ValueError("La etiqueta debe madurar después de su predicción")
@@ -233,16 +305,38 @@ class CorpusDataset:
         partitions = np.asarray(table["partition"].to_pylist())
         years = prediction.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
         mature_years = maturity.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
-        valid = ((partitions == "train") & (years <= 2022) & (mature_years <= 2022)) | (
-            (partitions == "validation") & (years == 2023) & (mature_years == 2023)
-        )
+        if self.temporal:
+            _, available, eligible = self.temporal.lookup(prediction)
+            assigned = self.temporal.assign(prediction, available, maturity, eligible)
+            valid = (assigned["partition"] == partitions) & (assigned["reason"] == "accepted")
+        else:
+            valid = ((partitions == "train") & (years <= 2022) & (mature_years <= 2022)) | (
+                (partitions == "validation") & (years == 2023) & (mature_years == 2023)
+            )
         if not valid.all() or any(
-            int(np.sum(partitions == p)) != asset["counts"][p] for p in ("train", "validation")
+            int(np.sum(partitions == p)) != asset["counts"][p] for p in self.partitions
         ):
             raise ValueError("Una etiqueta cruza la partición o sus recuentos no concilian")
-        selected = np.flatnonzero(partitions == partition)
-        selected = selected[np.argsort(positions[selected])]
-        return positions[selected], prediction[selected], values[selected], maturity[selected]
+        arrays = positions, prediction, values, maturity, partitions
+        self._remember(key, signature, arrays)
+        return self._partition_labels(arrays, partition)
+
+    def _prices(self, asset):
+        path = self._file(asset, "prices")
+        signature = self.verified[path]
+        key = "prices", path
+        cached = self._cached(key, signature)
+        if cached is not None:
+            return cached
+        table = read_bounded_table(path, max_rows=200_000, max_bytes=MAX_TABLE_BYTES)
+        prices = np.column_stack(
+            [table[c].to_numpy() for c in ("open", "high", "low", "close", "volume")]
+        )
+        available = _times(table["available_at"])
+        if np.any(np.diff(available) <= 0):
+            raise ValueError("Los precios necesitan un orden temporal único")
+        self._remember(key, signature, (prices, available))
+        return prices, available
 
     def _blocks(self, partition, epoch, seed, cursor):
         order = _random(seed, epoch, "assets").permutation(len(self.assets))
@@ -255,15 +349,7 @@ class CorpusDataset:
                 positions, prediction, target, maturity = self._labels(
                     asset, partition, file.metadata.num_rows
                 )
-                price_table = read_bounded_table(
-                    self._file(asset, "prices"), max_rows=200_000, max_bytes=MAX_TABLE_BYTES
-                )
-                prices = np.column_stack(
-                    [price_table[c].to_numpy() for c in ("open", "high", "low", "close", "volume")]
-                )
-                available = _times(price_table["available_at"])
-                if np.any(np.diff(available) <= 0):
-                    raise ValueError("Los precios necesitan un orden temporal único")
+                prices, available = self._prices(asset)
                 groups = _random(seed, epoch, key + "/groups").permutation(file.num_row_groups)
                 offsets = np.cumsum(
                     [0] + [file.metadata.row_group(g).num_rows for g in range(file.num_row_groups)]
@@ -312,10 +398,16 @@ class CorpusDataset:
                     if table.nbytes > MAX_TABLE_BYTES:
                         raise ValueError("El grupo decodificado supera el presupuesto")
                     timestamps = _times(table["prediction_at"])
-                    availability, availability_valid = _availability(table)
+                    macro = self.temporal.lookup(timestamps) if self.temporal else None
+                    availability, availability_valid = _availability(
+                        table, macro_override=macro[1:] if macro else None
+                    )
                     ends = table["price_end_index"].to_numpy()
                     vectors = {}
                     for name in VECTORS:
+                        if name == "macro" and macro is not None:
+                            vectors[name] = macro[0]
+                            continue
                         column = table[name].combine_chunks()
                         if not (
                             pa.types.is_list(column.type)
@@ -374,7 +466,7 @@ class CorpusDataset:
 
     def batches(self, *, partition, batch_size, epoch, seed, cursor=None):
         if (
-            partition not in {"train", "validation"}
+            partition not in self.partitions
             or type(batch_size) is not int
             or not 1 <= batch_size <= 4096
             or type(epoch) is not int
@@ -385,6 +477,8 @@ class CorpusDataset:
             raise ValueError("La partición, el lote, la época o la semilla no son válidos")
         if sha256(self.path) != self.identity:
             raise ValueError("El manifiesto ha cambiado desde su confirmación")
+        if self.temporal:
+            self.temporal.verify()
         identity = {
             "manifest_sha256": self.identity,
             "partition": partition,

@@ -1,5 +1,6 @@
 """Épocas completas de referencias multimodales con cursor y estado recuperables."""
 
+import importlib.metadata
 import json
 import math
 import os
@@ -50,6 +51,12 @@ def scientific_identity():
         "training/selection.py",
         "training/checkpoints.py",
         "training/corpus_inputs.py",
+        "training/temporal_corpus.py",
+        "evaluation/splits.py",
+        "evaluation/split_readiness.py",
+        "data/cohort_contexts.py",
+        "data/samples.py",
+        "data/temporal.py",
         "profiling.py",
         "models/baselines/dlinear.py",
         "models/baselines/multimodal.py",
@@ -68,6 +75,7 @@ def scientific_identity():
         cuda=torch.version.cuda,
         numpy=np.__version__,
         pyarrow=pa.__version__,
+        exchange_calendars=importlib.metadata.version("exchange-calendars"),
         python=platform.python_version(),
         gpu=torch.cuda.get_device_name(0),
         cublas_workspace=os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
