@@ -14,7 +14,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import session_metrics
+from mars_titan.evaluation import session_metrics, splits
 
 METRICS = ("samples", "session_count", "session_mae", "session_mse", "mae", "mse")
 PARTITIONS = ("validation", "train")
@@ -57,6 +57,66 @@ def _sources(sources):
         seen.add(name)
         if not isinstance(source["summary"], str):
             raise ValueError("La fuente necesita una ruta de resumen")
+        if "manifest" in source and (
+            not isinstance(source["manifest"], str) or not source["manifest"]
+        ):
+            raise ValueError("El manifiesto temporal necesita una ruta explícita")
+
+
+def _temporal_contract(source, summary):
+    if "manifest" not in source:
+        return None
+    path = Path(source["manifest"])
+    if path.is_symlink():
+        raise ValueError("El manifiesto temporal no puede ser un enlace simbólico")
+    manifest, digest = _json(path)
+    if (
+        not isinstance(summary.get("identity"), dict)
+        or summary["identity"].get("manifest_sha256") != digest
+        or manifest.get("kind") != "corpus_supervision"
+        or manifest.get("cohort_complete") is not True
+        or manifest.get("final_test_opened") is not False
+    ):
+        raise ValueError("El resumen y el manifiesto temporal no conservan su contrato y huella")
+    view = manifest["temporal_view"]
+    protocol, fold = view["protocol"], view["fold"]
+    if view["schema_version"] != 1 or fold not in splits.build_folds(protocol):
+        raise ValueError("La ventana temporal no pertenece al protocolo confirmado")
+    # Las ventanas no pueden ampliar la reserva final vigente del proyecto.
+    if protocol["final_test_start"] > "2024-01-01":
+        raise ValueError("El protocolo temporal invade el test reservado")
+    return dict(
+        manifest_sha256=digest, fold=fold["id"], windows={p: fold[p] for p in PARTITIONS}, view=view
+    )
+
+
+def _run_manifest(folder, run, report, temporal, views):
+    if not isinstance(report.get("identity"), dict):
+        raise ValueError("La ejecución no contiene una identidad temporal válida")
+    expected = report["identity"].get("manifest_sha256")
+    if expected == temporal["manifest_sha256"]:
+        return expected
+    arm = run.get("arm")
+    if arm not in {"US", "CN", "US+CN"}:
+        raise ValueError("La ejecución no conserva el manifiesto temporal del resumen")
+    if arm not in views:
+        path = folder / "views" / f"{arm}.json"
+        if path.is_symlink():
+            raise ValueError("La vista del mercado no puede ser un enlace simbólico")
+        view, digest = _json(_inside(folder, path.relative_to(folder)))
+        if (
+            view.get("source_manifest_sha256") != temporal["manifest_sha256"]
+            or view.get("temporal_view") != temporal["view"]
+            or view.get("selected_arm") != arm
+            or view.get("kind") != "corpus_supervision"
+            or view.get("final_test_opened") is not False
+            or view.get("cohort_complete") is not True
+        ):
+            raise ValueError("La vista del mercado no conserva el origen y contrato temporal")
+        views[arm] = digest
+    if expected != views[arm]:
+        raise ValueError("La ejecución no conserva la huella de su vista temporal")
+    return expected
 
 
 def _confirmed(source, partitions):
@@ -64,10 +124,11 @@ def _confirmed(source, partitions):
     summary, _ = _json(summary_path)
     if summary.get("final_test_opened") is not False:
         raise ValueError("La fuente no acredita que el test permanezca cerrado")
+    temporal = _temporal_contract(source, summary)
     runs = summary["runs"]
     if not isinstance(runs, list) or len(runs) > MAX_JOBS:
         raise ValueError("El resumen supera el presupuesto de ejecuciones")
-    seen = set()
+    seen, views = set(), {}
     for run in runs:
         run_id = run["id"]
         if not isinstance(run_id, str) or len(run_id) > 256 or run_id in seen:
@@ -82,6 +143,9 @@ def _confirmed(source, partitions):
         report, digest = _json(folder / "run.json")
         if digest != run["report_sha256"]:
             raise ValueError(f"La huella del informe confirmado no coincide: {run_id}")
+        manifest = (
+            _run_manifest(summary_path.parent, run, report, temporal, views) if temporal else None
+        )
         if (
             report.get("status") != "completed"
             or report.get("final_test_opened") is not False
@@ -106,10 +170,20 @@ def _confirmed(source, partitions):
                 report_sha256=digest,
                 artifact=artifact,
                 partition=partition,
+                temporal_contract=(
+                    dict(
+                        manifest_sha256=temporal["manifest_sha256"],
+                        run_manifest_sha256=manifest,
+                        fold=temporal["fold"],
+                        bounds=temporal["windows"][partition],
+                    )
+                    if temporal
+                    else None
+                ),
             )
 
 
-def _metrics(path, partition, declared):
+def _metrics(path, partition, declared, temporal_contract=None):
     nested = "median" in declared
     columns = {"median" if nested else "prediction": "prediction"}
     if nested:
@@ -119,6 +193,13 @@ def _metrics(path, partition, declared):
     columns.setdefault("zero", "zero")
     accumulators = {key: session_metrics.SessionErrors() for key in columns}
     minimum, maximum = None, None
+    bounds = (
+        temporal_contract["bounds"]
+        if temporal_contract
+        else ([None, "2023-01-01"] if partition == "train" else ["2023-01-01", "2024-01-01"])
+    )
+    start = np.datetime64(bounds[0], "us") if bounds[0] is not None else None
+    end = np.datetime64(bounds[1], "us")
     with pq.ParquetFile(path, pre_buffer=False) as parquet:
         names = parquet.schema_arrow.names
         required = ["market", "prediction_at", "target", *columns.values()]
@@ -138,11 +219,7 @@ def _metrics(path, partition, declared):
                     raise ValueError("Las predicciones contienen valores ausentes")
                 times = batch.column("prediction_at").to_numpy(zero_copy_only=False)
                 lower, upper = times.min(), times.max()
-                split = np.datetime64("2023-01-01", "us")
-                end = np.datetime64("2024-01-01", "us")
-                if (partition == "train" and upper >= split) or (
-                    partition == "validation" and (lower < split or upper >= end)
-                ):
+                if np.isnat(times).any() or upper >= end or (start is not None and lower < start):
                     raise ValueError("Las predicciones incumplen la partición temporal")
                 minimum = lower if minimum is None else min(minimum, lower)
                 maximum = upper if maximum is None else max(maximum, upper)
@@ -197,7 +274,10 @@ def _evaluate(job, max_file_bytes):
     digest = sha256(path)
     if digest != job["artifact"]["sha256"]:
         raise ValueError("La huella de las predicciones no coincide con el informe")
-    return _metrics(path, job["partition"], job["artifact"]["metrics"])
+    result = _metrics(path, job["partition"], job["artifact"]["metrics"], job["temporal_contract"])
+    if job["temporal_contract"]:
+        result["temporal_contract"] = job["temporal_contract"]
+    return result
 
 
 def review_campaigns(
@@ -217,8 +297,11 @@ def review_campaigns(
     state_path = Path(state_path)
     for source in sources:
         outside_source(Path(source["summary"]).parent, state_path)
+        if "manifest" in source:
+            outside_source(Path(source["manifest"]).parent, state_path)
     previous = _json(state_path)[0] if state_path.exists() else {}
-    version = [sha256(Path(__file__)), sha256(Path(session_metrics.__file__))]
+    version = [sha256(Path(module.__file__)) for module in (session_metrics, splits)]
+    version.insert(0, sha256(Path(__file__)))
     entries = previous.get("entries", {}) if previous.get("reviewer_sha256") == version else {}
     state = dict(
         schema_version=1,
@@ -250,7 +333,13 @@ def review_campaigns(
             signature = _signature(path)
         except OSError:
             signature = None
-        fingerprint = [job["report_sha256"], signature, job["artifact"]["sha256"], max_file_bytes]
+        fingerprint = [
+            job["report_sha256"],
+            signature,
+            job["artifact"]["sha256"],
+            max_file_bytes,
+            job["temporal_contract"],
+        ]
         cached = entries.get(key)
         if cached is None or cached.get("fingerprint") != fingerprint:
             if state["processed_jobs"] >= max_jobs:
