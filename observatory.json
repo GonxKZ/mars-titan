@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-28T11:57:00.611203Z",
+  "generated_at": "2026-09-28T11:59:00.611989Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -272,11 +272,11 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 14,
+        "completed": 15,
         "running": 1,
-        "not_started": 25
+        "not_started": 24
       },
-      "registered_runs": 15
+      "registered_runs": 16
     }
   ],
   "models": [
@@ -383,23 +383,23 @@
   ],
   "runs": [
     {
-      "run_id": "neural-strict140-us-fold-003-11c947230f17c9f5c69f",
+      "run_id": "neural-strict140-us-fold-003-cb5ea286f81b29b48caa",
       "attempt_id": "legacy",
       "model_id": "rnn",
       "activity": "supervised_continuation",
-      "variant_id": "2a77f7ce1a2719e4",
+      "variant_id": "c79099fa9fa5ec85",
       "status": "running",
       "phase": "validation",
-      "started_at": "2026-09-28T11:56:55.110525Z",
-      "updated_at": "2026-09-28T11:56:55.110593Z",
-      "heartbeat_at": "2026-09-28T11:57:00.611203Z",
-      "completed_steps": 0,
+      "started_at": null,
+      "updated_at": null,
+      "heartbeat_at": "2026-09-28T11:59:00.611989Z",
+      "completed_steps": null,
       "total_steps": null,
       "epoch": null,
       "max_epochs": 5,
       "seed": 44,
       "fold": "US",
-      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "comparison_group": null,
       "metrics": {
         "mae": null,
         "mse": null,
@@ -417,7 +417,7 @@
       },
       "history": [],
       "checkpoint": {
-        "step": 0,
+        "step": null,
         "saved_at": null,
         "resumable": null
       },
@@ -431,12 +431,12 @@
         "currency": null,
         "condition": null,
         "parent_model": "rnn",
-        "configuration_sha256": "2a77f7ce1a2719e4bf5c6ac37684020c70631ccacdb663896d5e8f384393ce40",
-        "source_sha256": "80af5457194c9e88606cb82343f21d21efe25c26adee1bfeada3707f4d1fd8a6",
+        "configuration_sha256": "c79099fa9fa5ec856a272386ea94225ca3b4e1078e2ad81408616148e004add0",
+        "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
-        "train_rows": 187246,
-        "validation_rows": 41544,
+        "train_rows": null,
+        "validation_rows": null,
         "parent": "d88fb556432057e9f03435432d1ff03ed8dd5931d3f3c95709ed2fcd5efe1d7e",
         "error_type": null,
         "ram_peak_scope": null,
@@ -6274,7 +6274,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 922,
+    "total_runs": 923,
     "page_size": 64,
     "pages": [
       "pages/b83ad82935b6889f31ebf6717d31068d3e67898d14b8bd3ec6b21c56a2b83ade.json",
@@ -6284,13 +6284,13 @@
       "pages/9b7531084a875f78baf54b959130475ca971c9555005ef02c5f4b21bbb1864f8.json",
       "pages/9b766064286616739c7dcbd1da23f07096405592e198ab154fac147759420d22.json",
       "pages/5a985b967a19b911ffad664150fb6336dc3af5f5fbc4a40e216bce0cdc636c8b.json",
-      "pages/533ec269addcc8c9425179bd0c74da00c5989179815de6d79aceb562f6be4755.json",
-      "pages/ac6379e59cdaff59e823a988d33f34fa42d80bc9079d29ee46517b806b25cbe6.json",
-      "pages/2e874b01a6696e97e4f60e81c4779cdf9af6373f169fabd8d490e11d26c46387.json",
-      "pages/75c70050c5c67ab073147231eea9b539f481cd41a50095844ef4b6ec8ac4811d.json",
-      "pages/03b5314d71c6504f90db8e030de8931f3091b58aae24a6b97725fba818cc43ee.json",
-      "pages/894bf27613835da0a54607dd2295a6ebe6062f7ec74bdce9bbd049c59a2fb68a.json",
-      "pages/ceaa5e00a4649e396e55176d939024972c7f9d44ee420953c7ace169a0d9d0cd.json"
+      "pages/810d59865f9391ac98012c66a8b659c02bd1fd5d46a790cc52158af924b2733b.json",
+      "pages/a6d98455119fab2a83f99d6d64ac797aa33241beae2d8dd35714251ac2c2cb1e.json",
+      "pages/4c1458badb820071e2105603d968141ccaed3261b51c6251b337743537244149.json",
+      "pages/20682640f282c8199d97123c40be68ba31da1ebcaa1bf1db3d419ea76092ecea.json",
+      "pages/a6af87bd1d8eca15496d43a94478114e712d32b15ebadf537ff30cd243640102.json",
+      "pages/c9c44f8a8e0e1e3fcbbec4a180b75cd6dbc32c88b679b6661fa64c5e37089fd2.json",
+      "pages/05dd83d84857003cd9d193931274858e21a7f7248b4083f030d5d42ad4a8b5d5.json"
     ]
   }
 }
