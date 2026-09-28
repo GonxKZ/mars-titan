@@ -45,6 +45,8 @@ La huella de fuentes incluye `accurate_sum.hpp` y los módulos de CMake que prep
 
 `native-asan` conserva el nombre del perfil anterior y equivale a `native-asan-ubsan`. Los perfiles `native-msvc-debug`, `native-msvc-release`, `native-msvc-asan` y `native-msvc-analysis` están disponibles en Windows, desde un entorno de desarrollo de MSVC con Ninja. Incluyen las opciones compatibles `/W4`, `/permissive-`, `/sdl`, `/fp:strict` y `/analyze` cuando se solicita. Estos perfiles de Windows no se han probado en este equipo.
 
+La sesión pura incluye `FinancialBatch`, observaciones contiguas y contexto externo fechado, y `MarkovFilter`, un filtro causal con parámetros congelados. Las pruebas `financial_batch` y `markov_filter` utilizan los mismos perfiles de diagnóstico. `mars-titan-batch-benchmark` compara hasta 4096 entornos con la ejecución secuencial, sin Python ni GPU. La [guía de entornos por lotes](../docs/engineering/batched-rl-environments.md) describe reinicio, recuperación, límites y el alcance técnico de sus medidas.
+
 CMake comprueba el soporte de los avisos antes de activarlos. Incluye conversiones, cambios de signo, ocultación de nombres, formatos, desreferencias nulas y otros diagnósticos de C++. En Clang intenta primero Lifetime Safety y después la combinación experimental `-Xclang -fexperimental-lifetime-safety -Wexperimental-lifetime-safety`. GCC utiliza los avisos de referencias y punteros colgantes que admita.
 
 libstdc++ utiliza `_GLIBCXX_ASSERTIONS`. Cuando se detecta libc++ con modos de endurecimiento, Release utiliza el modo rápido y los perfiles de verificación el extensivo. Las opciones se aplican a los objetivos propios mediante `mars_titan_configure_target`.

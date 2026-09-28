@@ -1,7 +1,7 @@
 # Regímenes de Markov como contexto de memoria
 
-Revisión del 21 de septiembre de 2026. Esta nota propone un contraste para O3.
-No hay un detector implementado ni resultados propios con HMM sobre FinMultiTime.
+Diseño del 21 de septiembre de 2026, actualizado el 28. Esta nota propone un contraste para O3.
+Existe un [filtro HMM causal C++20](../engineering/batched-rl-environments.md) comprobado con distribuciones controladas. No hay un detector ajustado ni resultados propios con HMM sobre FinMultiTime.
 
 ## Qué aporta el PDF
 
