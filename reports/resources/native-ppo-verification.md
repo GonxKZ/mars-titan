@@ -52,3 +52,13 @@ Las medianas por combinación están entre 0,449 y 0,470 segundos de proceso y e
 Esta carga pequeña no muestra una mejora consistente al aumentar el lote. Cambiar el número de entornos también modifica el horizonte de cada recorrido y las trayectorias de acciones, aunque conserve las 32 muestras globales y los pasos de Adam. Por eso las cifras no se presentan como aceleración de un cálculo numéricamente equivalente ni se utilizan para cambiar los valores de producción.
 
 La campaña científica y otras tareas locales siguieron activas. No se midieron energía, transferencias, asignaciones ni bytes físicos de E/S. `perf_event_paranoid=4` impidió acceder a los contadores solicitados y se conservó la configuración del sistema. Se descartó una primera tanda porque la espera del medidor añadía retardos por sondeo. El registro publicado usa finalización mediante pipes y conserva las huellas del ejecutable, la biblioteca contable y el instrumento. El rendimiento CUDA y las cargas largas quedan pendientes de una medición con admisión GPU disponible.
+
+El [instrumento reutilizable](../../scripts/benchmark_native_ppo.py) reproduce los ocho SHA-256 de las fuentes del registro. Su huella se identifica por separado de la versión medida. La copia publicada añade comprobaciones de salida y disponibilidad de `perf`, sin modificar las cifras anteriores. Pasan tres pruebas permanentes que comprueban la protección de artefactos y el tratamiento de `perf` ausente. Para repetir el protocolo con directorios nuevos:
+
+```bash
+uv run python scripts/benchmark_native_ppo.py \
+  --root . \
+  --binary build/native/native-ppo-release/mars-titan-ppo \
+  --private artifacts/native/ppo-benchmark-work-v1 \
+  --output artifacts/native/ppo-benchmark-v1.json
+```

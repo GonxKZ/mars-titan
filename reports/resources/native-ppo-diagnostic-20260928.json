@@ -6578,5 +6578,10 @@
     "Se conservan dos observaciones de proceso de 0,973 y 0,719 segundos. Las cargas concurrentes quedaron registradas, pero no se midió su contribución causal a esos tiempos."
   ],
   "benchmark_wall_seconds": 36.48760196699732,
-  "finished_at": "2026-09-28T06:40:33.078693+00:00"
+  "finished_at": "2026-09-28T06:40:33.078693+00:00",
+  "reusable_instrument": {
+    "path": "scripts/benchmark_native_ppo.py",
+    "sha256": "d90a2291fc54e85de0d31dd19c3518cc92d1b8db82800cd9d45b8857caa2ee5b",
+    "note": "El instrumento medido conserva la huella harness_sha256. Esta copia tiene otra huella por el formato Ruff, las importaciones diferidas y las comprobaciones de salida y disponibilidad de perf. Las fuentes regeneradas conservan los SHA256 del informe. No se han repetido las mediciones al incorporar la copia al repositorio."
+  }
 }
