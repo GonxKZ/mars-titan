@@ -1,0 +1,538 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-28T01:28:37.160194+00:00",
+  "tests": {
+    "input_temporal_evaluation_passed": 213,
+    "cuda_training_recovery_passed": 31,
+    "cuda_command": "CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/training/test_reference_run.py tests/training/test_corpus_reference_campaign.py -q"
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "convention": "Sentencias y ramas del proceso principal.",
+    "modules": {
+      "src/mars_titan/training/corpus_inputs.py": {
+        "sha256": "cd7cedc66c1e1d259aaabaad2722f73c08acb50555ff5a1113f73b0f4bac338f",
+        "coverage": {
+          "covered_lines": 321,
+          "num_statements": 368,
+          "percent_covered": 84.06593406593407,
+          "percent_covered_display": "84",
+          "missing_lines": 47,
+          "excluded_lines": 0,
+          "percent_statements_covered": 87.22826086956522,
+          "percent_statements_covered_display": "87",
+          "num_branches": 178,
+          "num_partial_branches": 38,
+          "covered_branches": 138,
+          "missing_branches": 40,
+          "percent_branches_covered": 77.52808988764045,
+          "percent_branches_covered_display": "78"
+        },
+        "functions": [
+          {
+            "name": "_unique",
+            "complexity": 3,
+            "covered_statements": 6,
+            "statements": 7,
+            "crap": 3.026
+          },
+          {
+            "name": "_times",
+            "complexity": 4,
+            "covered_statements": 3,
+            "statements": 4,
+            "crap": 4.25
+          },
+          {
+            "name": "_random",
+            "complexity": 1,
+            "covered_statements": 3,
+            "statements": 3,
+            "crap": 1.0
+          },
+          {
+            "name": "_availability",
+            "complexity": 14,
+            "covered_statements": 23,
+            "statements": 27,
+            "crap": 14.637
+          },
+          {
+            "name": "_price_contexts",
+            "complexity": 14,
+            "covered_statements": 15,
+            "statements": 15,
+            "crap": 14.0
+          },
+          {
+            "name": "__init__",
+            "complexity": 32,
+            "covered_statements": 31,
+            "statements": 35,
+            "crap": 33.529
+          },
+          {
+            "name": "_file",
+            "complexity": 10,
+            "covered_statements": 17,
+            "statements": 20,
+            "crap": 10.338
+          },
+          {
+            "name": "_cached",
+            "complexity": 3,
+            "covered_statements": 7,
+            "statements": 10,
+            "crap": 3.243
+          },
+          {
+            "name": "_remember",
+            "complexity": 9,
+            "covered_statements": 12,
+            "statements": 14,
+            "crap": 9.236
+          },
+          {
+            "name": "_partition_labels",
+            "complexity": 1,
+            "covered_statements": 5,
+            "statements": 5,
+            "crap": 1.0
+          },
+          {
+            "name": "_labels",
+            "complexity": 24,
+            "covered_statements": 46,
+            "statements": 57,
+            "crap": 28.14
+          },
+          {
+            "name": "_prices",
+            "complexity": 4,
+            "covered_statements": 13,
+            "statements": 14,
+            "crap": 4.006
+          },
+          {
+            "name": "_blocks",
+            "complexity": 43,
+            "covered_statements": 67,
+            "statements": 77,
+            "crap": 47.05
+          },
+          {
+            "name": "batches",
+            "complexity": 27,
+            "covered_statements": 34,
+            "statements": 38,
+            "crap": 27.85
+          },
+          {
+            "name": "_new_batch",
+            "complexity": 2,
+            "covered_statements": 2,
+            "statements": 2,
+            "crap": 2.0
+          },
+          {
+            "name": "_fill_batch",
+            "complexity": 11,
+            "covered_statements": 19,
+            "statements": 20,
+            "crap": 11.015
+          },
+          {
+            "name": "supervised_batches",
+            "complexity": 1,
+            "covered_statements": 2,
+            "statements": 2,
+            "crap": 1.0
+          },
+          {
+            "name": "prepare_corpus_targets",
+            "complexity": 1,
+            "covered_statements": 1,
+            "statements": 3,
+            "crap": 1.296
+          }
+        ]
+      },
+      "src/mars_titan/training/temporal_corpus.py": {
+        "sha256": "2a9109178528002a7aa4fcbea06b35f6d65f932faf463f15900825086d58f88d",
+        "coverage": {
+          "covered_lines": 195,
+          "num_statements": 226,
+          "percent_covered": 81.16883116883118,
+          "percent_covered_display": "81",
+          "missing_lines": 31,
+          "excluded_lines": 0,
+          "percent_statements_covered": 86.28318584070796,
+          "percent_statements_covered_display": "86",
+          "num_branches": 82,
+          "num_partial_branches": 25,
+          "covered_branches": 55,
+          "missing_branches": 27,
+          "percent_branches_covered": 67.07317073170732,
+          "percent_branches_covered_display": "67"
+        },
+        "functions": [
+          {
+            "name": "__init__",
+            "complexity": 19,
+            "covered_statements": 35,
+            "statements": 45,
+            "crap": 22.962
+          },
+          {
+            "name": "verify",
+            "complexity": 3,
+            "covered_statements": 4,
+            "statements": 4,
+            "crap": 3.0
+          },
+          {
+            "name": "lookup",
+            "complexity": 1,
+            "covered_statements": 8,
+            "statements": 8,
+            "crap": 1.0
+          },
+          {
+            "name": "assign",
+            "complexity": 3,
+            "covered_statements": 14,
+            "statements": 14,
+            "crap": 3.0
+          },
+          {
+            "name": "_sample_state",
+            "complexity": 19,
+            "covered_statements": 32,
+            "statements": 40,
+            "crap": 21.888
+          },
+          {
+            "name": "prepare_temporal_corpus",
+            "complexity": 22,
+            "covered_statements": 76,
+            "statements": 81,
+            "crap": 22.114
+          },
+          {
+            "name": "main",
+            "complexity": 2,
+            "covered_statements": 1,
+            "statements": 8,
+            "crap": 4.68
+          }
+        ]
+      }
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "crap_convention": "CC² × (1 − cobertura de sentencias)³ + CC"
+  },
+  "mutations": [
+    {
+      "mutation": "truncar_exclusiones",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "omitir_catalogo_origen",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "aceptar_particion_falsificada",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "permitir_cache_sin_limite",
+      "detected": true,
+      "returncode": 1
+    }
+  ],
+  "views": {
+    "folds": [
+      {
+        "id": "fold-000",
+        "counts": {
+          "train": 121190,
+          "validation": 39462,
+          "calibration": 24391,
+          "evaluation": 19716
+        },
+        "manifest_sha256": "1f3fed0e8ba4a233ceab80165c5721f27affc46295ec7e9cf735258dd8ab4537",
+        "has_all_partitions": true
+      },
+      {
+        "id": "fold-001",
+        "counts": {
+          "train": 141272,
+          "validation": 44959,
+          "calibration": 19716,
+          "evaluation": 20839
+        },
+        "manifest_sha256": "a0c4ccf9a89c0521ef053033db557087f4b0712caa93ef209bd273a2ee161336",
+        "has_all_partitions": true
+      },
+      {
+        "id": "fold-002",
+        "counts": {
+          "train": 161673,
+          "validation": 45089,
+          "calibration": 20839,
+          "evaluation": 20454
+        },
+        "manifest_sha256": "fffceb382f2e04e2e7cb7ed8022e814dcd177670f55c94a45a1ffc8eb11bca16",
+        "has_all_partitions": true
+      },
+      {
+        "id": "fold-003",
+        "counts": {
+          "train": 187246,
+          "validation": 41544,
+          "calibration": 20454,
+          "evaluation": 11653
+        },
+        "manifest_sha256": "1f19dc706f19c73ee75ec4ba5fad29d0be24e0282e870b39dcb009a0576dea5c",
+        "has_all_partitions": true
+      }
+    ],
+    "parent_sha256": "075ee37832f09f0fe3c4df44e2748e3eceaa988fd6d3bb2a42e2f1ca87029cd2",
+    "macro_sha256": "06d6c38f56fb4a44fe9c271bb3f45c36b3523f7cff676d5915a7b8a5e74f902b",
+    "protocol_sha256": "0cc735afa953fcd455de49372e3ca14dcd72d4ad177a23a26ab6f8e9cbcc8f5f",
+    "admission_sha256": "24cab965ab6a7bb9c5cd5efa009b9c494813b46b2704120388ec43776f0d0ec1",
+    "audited_partition_rows": 940497,
+    "final_test_opened": false,
+    "build_seconds_before_cache": 80.27013756400265,
+    "build_peak_rss_mib_before_cache": 238.3203125
+  },
+  "input_benchmarks": [
+    {
+      "without_cache": {
+        "cache_bytes": 0,
+        "constructor_seconds": 9.116310720997717,
+        "total_seconds": 73.2151521550004,
+        "partitions": [
+          {
+            "partition": "train",
+            "samples": 121190,
+            "seconds": 18.59955285900287,
+            "sha256": "84b0c2a5b76d6ec1a3c32c73993a71bc5d63ec30232aeb37030114119731fa0a"
+          },
+          {
+            "partition": "validation",
+            "samples": 39462,
+            "seconds": 15.588122540000768,
+            "sha256": "7ba83f6b30c3cb8fac7e60be7eb59fdd3ffe4d8db4333782b8d576b72ecf24d5"
+          },
+          {
+            "partition": "calibration",
+            "samples": 24391,
+            "seconds": 14.984049194998079,
+            "sha256": "1010d86b3e1147fe803c436d7a141df0708f0b47838ea57dcd8f2b4b99a8cec4"
+          },
+          {
+            "partition": "evaluation",
+            "samples": 19716,
+            "seconds": 14.926942568999948,
+            "sha256": "d4b88b408199abf42d6a5cb37bfb7896fc70b2730b3a5c76554f0bfce51419b4"
+          }
+        ],
+        "cached_buffer_bytes": 0,
+        "peak_rss_mib": 235.390625
+      },
+      "with_cache": {
+        "cache_bytes": 1073741824,
+        "constructor_seconds": 9.02325424800074,
+        "total_seconds": 47.81938208399879,
+        "partitions": [
+          {
+            "partition": "train",
+            "samples": 121190,
+            "seconds": 20.13042656700054,
+            "sha256": "84b0c2a5b76d6ec1a3c32c73993a71bc5d63ec30232aeb37030114119731fa0a"
+          },
+          {
+            "partition": "validation",
+            "samples": 39462,
+            "seconds": 6.685868423999636,
+            "sha256": "7ba83f6b30c3cb8fac7e60be7eb59fdd3ffe4d8db4333782b8d576b72ecf24d5"
+          },
+          {
+            "partition": "calibration",
+            "samples": 24391,
+            "seconds": 6.212598127000092,
+            "sha256": "1010d86b3e1147fe803c436d7a141df0708f0b47838ea57dcd8f2b4b99a8cec4"
+          },
+          {
+            "partition": "evaluation",
+            "samples": 19716,
+            "seconds": 5.767088802000217,
+            "sha256": "d4b88b408199abf42d6a5cb37bfb7896fc70b2730b3a5c76554f0bfce51419b4"
+          }
+        ],
+        "cached_buffer_bytes": 473467404,
+        "peak_rss_mib": 738.328125
+      },
+      "exact_batch_parity": true
+    },
+    {
+      "without_cache": {
+        "cache_bytes": 0,
+        "constructor_seconds": 8.92840567500025,
+        "total_seconds": 73.4563528860017,
+        "partitions": [
+          {
+            "partition": "train",
+            "samples": 121190,
+            "seconds": 18.808345626999653,
+            "sha256": "84b0c2a5b76d6ec1a3c32c73993a71bc5d63ec30232aeb37030114119731fa0a"
+          },
+          {
+            "partition": "validation",
+            "samples": 39462,
+            "seconds": 15.974476471001253,
+            "sha256": "7ba83f6b30c3cb8fac7e60be7eb59fdd3ffe4d8db4333782b8d576b72ecf24d5"
+          },
+          {
+            "partition": "calibration",
+            "samples": 24391,
+            "seconds": 15.182358952002687,
+            "sha256": "1010d86b3e1147fe803c436d7a141df0708f0b47838ea57dcd8f2b4b99a8cec4"
+          },
+          {
+            "partition": "evaluation",
+            "samples": 19716,
+            "seconds": 14.562610618999315,
+            "sha256": "d4b88b408199abf42d6a5cb37bfb7896fc70b2730b3a5c76554f0bfce51419b4"
+          }
+        ],
+        "cached_buffer_bytes": 0,
+        "peak_rss_mib": 238.84375
+      },
+      "with_cache": {
+        "cache_bytes": 1073741824,
+        "constructor_seconds": 8.875712109002052,
+        "total_seconds": 45.23786221699993,
+        "partitions": [
+          {
+            "partition": "train",
+            "samples": 121190,
+            "seconds": 18.57872308000151,
+            "sha256": "84b0c2a5b76d6ec1a3c32c73993a71bc5d63ec30232aeb37030114119731fa0a"
+          },
+          {
+            "partition": "validation",
+            "samples": 39462,
+            "seconds": 6.471667844001786,
+            "sha256": "7ba83f6b30c3cb8fac7e60be7eb59fdd3ffe4d8db4333782b8d576b72ecf24d5"
+          },
+          {
+            "partition": "calibration",
+            "samples": 24391,
+            "seconds": 5.928724441997474,
+            "sha256": "1010d86b3e1147fe803c436d7a141df0708f0b47838ea57dcd8f2b4b99a8cec4"
+          },
+          {
+            "partition": "evaluation",
+            "samples": 19716,
+            "seconds": 5.3828836970023985,
+            "sha256": "d4b88b408199abf42d6a5cb37bfb7896fc70b2730b3a5c76554f0bfce51419b4"
+          }
+        ],
+        "cached_buffer_bytes": 473467404,
+        "peak_rss_mib": 705.75
+      },
+      "exact_batch_parity": true
+    }
+  ],
+  "cuda_end_to_end": {
+    "workload": "GRU, 52.609 parámetros, una época completa, 121.190 muestras de entrenamiento y 39.462 de validación. Incluye dos evaluaciones finales y checkpoints.",
+    "case": {
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 1,
+      "huber_delta": 0.01,
+      "architecture": {
+        "hidden_size": 32,
+        "layers": 1,
+        "dropout": 0.0
+      },
+      "selection": {
+        "metric": "session_mae",
+        "patience": 5,
+        "min_delta": 1e-05
+      }
+    },
+    "batch_size": 512,
+    "torch_cpu_threads": 4,
+    "runtime_override": "Solo la capacidad de caché de CorpusDataset, mediante una factoría de comparación.",
+    "device": "cuda:0",
+    "environment": {
+      "torch": "2.14.0+cu130",
+      "cuda": "13.0",
+      "numpy": "2.5.3",
+      "pyarrow": "25.0.1",
+      "python": "3.12.14",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "cublas_workspace": ":4096:8",
+      "numerics": {
+        "float32_matmul_precision": "highest",
+        "cuda_matmul_allow_tf32": false,
+        "cudnn_allow_tf32": true,
+        "cudnn_version": 92400,
+        "deterministic_algorithms": true
+      }
+    },
+    "repetitions": [
+      {
+        "without_cache_seconds": 80.63129490099891,
+        "with_cache_seconds": 53.951062813001045,
+        "rss_without_cache_mib": 1621.26953125,
+        "rss_with_cache_mib": 2060.92578125,
+        "peak_vram_without_cache_bytes": 193849856,
+        "peak_vram_with_cache_bytes": 193849856,
+        "prediction_sha256": {
+          "train": "aa6b0cac92f2cbba6274a497faee72c1252467e342e2cabe798181f7edd4ad65",
+          "validation": "defcfc51c2eb58579b04727f1ac87ac43c53b2dd8eabbeedb00df5b698ffea12"
+        },
+        "exact_prediction_parity": true
+      },
+      {
+        "without_cache_seconds": 80.55377557199972,
+        "with_cache_seconds": 53.5324731360015,
+        "rss_without_cache_mib": 1584.40234375,
+        "rss_with_cache_mib": 2075.2734375,
+        "peak_vram_without_cache_bytes": 193849856,
+        "peak_vram_with_cache_bytes": 193849856,
+        "prediction_sha256": {
+          "train": "aa6b0cac92f2cbba6274a497faee72c1252467e342e2cabe798181f7edd4ad65",
+          "validation": "defcfc51c2eb58579b04727f1ac87ac43c53b2dd8eabbeedb00df5b698ffea12"
+        },
+        "exact_prediction_parity": true
+      }
+    ]
+  },
+  "profile": {
+    "tool": "cProfile",
+    "baseline_seconds": 86.888,
+    "bounded_table_read_cumulative_seconds": 28.1,
+    "label_read_cumulative_seconds": 17.467,
+    "file_validation_cumulative_seconds": 16.661,
+    "parquet_row_group_read_cumulative_seconds": 11.496
+  },
+  "limits": [
+    "Las sondas CUDA verifican rendimiento y paridad. No se usan para elegir configuraciones ni como resultados de la campaña científica.",
+    "Había servicios de observación y algunas comprobaciones locales concurrentes. Se conserva el modo energético del equipo.",
+    "La caché limita bytes de buffers y número de entradas. El RSS incluye bibliotecas, temporales y otras estructuras.",
+    "No se midieron energía, FLOPs ni contadores de hardware.",
+    "La reserva final de 2024 permanece sin evaluación."
+  ]
+}

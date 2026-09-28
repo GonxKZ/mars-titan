@@ -28,13 +28,13 @@ def campaign_views(manifest: Path, arms: list[str]) -> dict:
         if any(
             sum(a["counts"][p] for a in assets if a["market"] == market) == 0
             for market in markets
-            for p in ("train", "validation")
+            for p in source.partitions
         ):
             raise ValueError(f"Falta población de ajuste o validación para el brazo {arm}")
         views[arm] = {
             **source.manifest,
             "assets": assets,
-            "counts": {p: sum(a["counts"][p] for a in assets) for p in ("train", "validation")},
+            "counts": {p: sum(a["counts"][p] for a in assets) for p in source.partitions},
             "selected_arm": arm,
             "source_manifest_sha256": source.identity,
         }

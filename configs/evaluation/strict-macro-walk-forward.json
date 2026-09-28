@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "market": "US",
+  "train_start": "2022-11-01",
+  "first_validation_start": "2023-06-01",
+  "validation_months": 2,
+  "calibration_months": 1,
+  "evaluation_months": 1,
+  "step_months": 1,
+  "minimum_train_months": 6,
+  "gap_sessions": 1,
+  "final_test_start": "2024-01-01",
+  "final_test_end": "2025-01-01",
+  "primary_metric": "session_mae",
+  "seeds": [42, 43, 44]
+}
