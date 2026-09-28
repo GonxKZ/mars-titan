@@ -1,5 +1,7 @@
 """Objetivos y redes auxiliares de los comparadores financieros."""
 
+from numbers import Real
+
 import numpy as np
 import torch
 from torch import nn
@@ -42,14 +44,35 @@ def ppo_objective(log_probabilities, old_log_probabilities, advantages, *, clip=
 def generalized_advantage(
     rewards, values, next_values, terminated, truncated, *, gamma=0.99, lam=0.95
 ):
+    """Acumula GAE en el eje temporal de [tiempo] o [tiempo, entorno].
+
+    Una truncación conserva el bootstrap y corta el arrastre del siguiente episodio.
+    Las entradas deben ser finitas, incluso en transiciones terminales.
+    """
+    if any(
+        isinstance(value, (bool, np.bool_)) or not isinstance(value, Real) or not 0 <= value <= 1
+        for value in (gamma, lam)
+    ):
+        raise ValueError("gamma y lambda deben ser números finitos entre cero y uno")
     arrays = [np.asarray(x) for x in (rewards, values, next_values, terminated, truncated)]
-    if any(x.shape != arrays[0].shape or x.ndim != 1 for x in arrays) or not len(arrays[0]):
+    if (
+        arrays[0].ndim not in (1, 2)
+        or not arrays[0].size
+        or any(x.shape != arrays[0].shape for x in arrays)
+    ):
         raise ValueError("El recorrido PPO no conserva sus dimensiones")
-    rewards, values, next_values, terminated, truncated = arrays
-    result = np.empty(len(rewards), dtype=np.float64)
-    carry = 0.0
-    for i in range(len(result) - 1, -1, -1):
-        delta = rewards[i] + gamma * (not terminated[i]) * next_values[i] - values[i]
-        carry = delta + gamma * lam * (not (terminated[i] or truncated[i])) * carry
-        result[i] = carry
-    return result, result + values
+    if any(x.dtype.kind != "b" for x in arrays[3:]):
+        raise ValueError("Las máscaras de terminación y truncación deben ser booleanas")
+    if any(x.dtype.kind not in "iuf" for x in arrays[:3]):
+        raise ValueError("Las recompensas y valores deben ser números reales")
+    if any(not np.isfinite(x).all() for x in arrays[:3]):
+        raise ValueError("Las recompensas y valores deben ser finitos")
+    gamma, lam = float(gamma), float(lam)
+    terminated, truncated = arrays[3:]
+    with np.errstate(over="raise", invalid="raise"):
+        rewards, values, next_values = (x.astype(np.float64, copy=False) for x in arrays[:3])
+        result = rewards + gamma * (~terminated) * next_values - values
+        continuation = gamma * lam * (~(terminated | truncated))
+        for i in range(len(result) - 2, -1, -1):
+            result[i] += continuation[i] * result[i + 1]
+        return result, result + values

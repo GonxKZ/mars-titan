@@ -12,7 +12,7 @@ from mars_titan.training import experiment_resources as resources
 def cuda_fixture(monkeypatch, tmp_path):
     limits = []
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path))
-    monkeypatch.setattr(resources.subprocess, "run", lambda *a, **kw: SimpleNamespace(stdout=""))
+    monkeypatch.setattr(resources, "read_gpu", lambda: SimpleNamespace(compute_pids=()))
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
     monkeypatch.setattr(
         torch.cuda, "mem_get_info", lambda _device: (3 * resources.GIB, 8 * resources.GIB)
@@ -40,10 +40,13 @@ def test_legacy_calls_cannot_expand_the_granted_budget(cuda_fixture):
 
 def test_native_compute_is_excluded_and_lock_is_released(cuda_fixture, monkeypatch):
     monkeypatch.setattr(
-        resources.subprocess,
-        "run",
-        lambda *a, **kw: SimpleNamespace(stdout="123456, /opt/train_native\n"),
+        resources,
+        "read_gpu",
+        lambda: SimpleNamespace(compute_pids=(123456,)),
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="otra carga"):
         with resources.GpuLease():
             pass
+    monkeypatch.setattr(resources, "read_gpu", lambda: SimpleNamespace(compute_pids=()))
+    with resources.GpuLease() as lease:
+        assert lease.handle is not None

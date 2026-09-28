@@ -160,6 +160,22 @@ class FinancialEnv(gym.Env):
         ):
             raise ValueError("La acción financiera debe estar entre cero y cinco")
         exposure = ACTIONS[int(action)]
+        confirmed = vars(self.book).copy()
+        cursor, done = self.cursor, self.done
+        # Aislar las órdenes. advance ya prepara el resto del estado por separado.
+        if exposure is not None:
+            if self.backend == "native":
+                self.book._positions = self.book._positions.copy()
+            else:
+                self.book._state = dict(self.book._state)
+        try:
+            return self._transition(exposure)
+        except BaseException:
+            vars(self.book).update(confirmed)
+            self.cursor, self.done = cursor, done
+            raise
+
+    def _transition(self, exposure):
         if exposure is not None:
             self.book.submit(self._targets(exposure), decision_at=self.book.clock)
         previous = self.book.nav[self.tape.currency]

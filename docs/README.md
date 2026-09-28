@@ -30,6 +30,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Consultar el avance de los entrenamientos | [Observatorio](https://gonxkz.github.io/mars-titan/), [contrato de publicación](engineering/observatory.md) y [frontend](../site/README.md). |
 | Consultar las comprobaciones iniciales | [Verificación de la preparación](engineering/research-verification.md) y [registro de la base inicial](engineering/verification.md), con sus fechas y límites. |
 | Consultar el estado del arte | [Bibliografía y biblioteca](references/README.md), [finanzas](references/finance-review.md), [memoria neural](references/neural-review.md), [libros](references/books-review.md). |
+| Contrastar especialistas y contexto externo | [Fuentes, hipótesis y falsaciones](research/contextual-experts.md), [regímenes](research/markov-regimes.md) y [entornos C++20 por lotes](engineering/batched-rl-environments.md). |
 | Contrastar cerebro, recurrencia y eficiencia | [Aprendizaje y memoria](references/brain-review.md), [antecedentes recientes](references/frontier-review.md), [sistemas](references/systems-review.md) y [DeepSeek](references/deepseek-review.md). |
 | Dimensionar y retomar el trabajo | [Dataset por bloques](engineering/full-dataset-training.md), [latencia](engineering/latency-budget.md), [plan de cómputo](engineering/compute-plan.md) y [checkpoints](engineering/checkpoint-recovery.md). |
 | Evaluar ruido y fiabilidad | [Controles y límites](research/noise-and-reliability.md). |

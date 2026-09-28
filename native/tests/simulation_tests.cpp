@@ -78,6 +78,29 @@ int main() {
         trades[1].reason != MT_ORDER_RESTRICTED) {
         return fail("Compras, costes o cuentas separados no concilian");
     }
+    // Añadir una cuenta sin operaciones no cambia los movimientos de la primera.
+    currencies.fill(0);
+    if (step() != MT_SIM_OK) {
+        return fail(error.data());
+    }
+    const auto padded_positions = next_positions;
+    const auto padded_account = next_accounts[0];
+    const auto padded_trades = trades;
+    if (mt_simulation_step_v1(
+            assets, 1, currencies.data(), lots.data(), retired.data(), prices.data(),
+            positions.data(), accounts.data(), rate, participation, 1, 2, 3,
+            next_positions.data(), next_accounts.data(), trades.data(), error.data(),
+            error.size()) != MT_SIM_OK || next_accounts[0].cash != padded_account.cash ||
+        next_accounts[0].nav != padded_account.nav ||
+        next_accounts[0].costs != padded_account.costs ||
+        next_accounts[0].turnover != padded_account.turnover ||
+        next_positions[0].quantity != padded_positions[0].quantity ||
+        next_positions[1].quantity != padded_positions[1].quantity ||
+        trades[0].quantity != padded_trades[0].quantity ||
+        trades[1].cost != padded_trades[1].cost) {
+        return fail("La ruta de una cuenta difiere de la referencia con cuentas adicionales");
+    }
+    currencies = {0, 1};
     positions[0] = sale_order;
     accounts[0] = bought_accounts[0];
     prices[0] = sale_price;

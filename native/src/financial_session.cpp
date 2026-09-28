@@ -427,11 +427,23 @@ std::span<const double> MarketTape::predictions(std::size_t session) const & {
 }
 
 FinancialSession::FinancialSession(std::shared_ptr<const MarketTape> tape, Parameters parameters)
+    : FinancialSession(validate_tape(std::move(tape)), parameters, ValidatedTape{}) {}
+
+std::shared_ptr<const MarketTape>
+FinancialSession::validate_tape(std::shared_ptr<const MarketTape> tape) {
+    if (!tape) {
+        throw std::invalid_argument("La sesión necesita una cinta de mercado");
+    }
+    tape->validate();
+    return tape;
+}
+
+FinancialSession::FinancialSession(std::shared_ptr<const MarketTape> tape, Parameters parameters,
+                                   ValidatedTape)
     : tape_(std::move(tape)), parameters_(parameters) {
     if (!tape_) {
         throw std::invalid_argument("La sesión necesita una cinta de mercado");
     }
-    tape_->validate();
     validate_parameters(parameters_);
     const auto count = tape_->assets.size();
     state_.source_sha256 = tape_->source_sha256;
@@ -463,6 +475,12 @@ FinancialSession::FinancialSession(std::shared_ptr<const MarketTape> tape, Param
 }
 
 StepOutcome FinancialSession::step(uint8_t action) {
+    auto result = prepare_step(action);
+    commit_step();
+    return result;
+}
+
+StepOutcome FinancialSession::prepare_step(uint8_t action) {
     if (state_.done || action >= exposures.size()) {
         throw std::invalid_argument("El episodio ha terminado o la decisión no está admitida");
     }
@@ -532,23 +550,38 @@ StepOutcome FinancialSession::step(uint8_t action) {
     result.trades = trades_;
     staged_.cursor = following;
     staged_.done = result.terminated || result.truncated;
-    std::swap(state_, staged_);
     return result;
 }
 
+void FinancialSession::commit_step() noexcept {
+    std::swap(state_, staged_);
+}
+
 std::vector<float> FinancialSession::observation() const {
-    const auto prices = tape_->frame(state_.cursor);
-    const auto previous = tape_->frame(state_.cursor == 0 ? 0 : state_.cursor - 1);
-    const auto scores = tape_->predictions(state_.cursor);
     std::vector<float> result(state_.positions.size() * observation_width + 2);
+    observation_into(result);
+    return result;
+}
+
+void FinancialSession::observation_into(std::span<float> destination) const {
+    observe_state(state_, destination);
+}
+
+void FinancialSession::observe_state(const SessionSnapshot& state,
+                                      std::span<float> destination) const {
+    if (destination.size() != state.positions.size() * observation_width + 2) {
+        throw std::invalid_argument("El buffer de observación tiene una dimensión incorrecta");
+    }
+    const auto prices = tape_->frame(state.cursor);
+    const auto previous = tape_->frame(state.cursor == 0 ? 0 : state.cursor - 1);
+    const auto scores = tape_->predictions(state.cursor);
     std::array<char, error_capacity> error{};
     const int status = mt_simulation_observation_v1(
-        static_cast<uint32_t>(state_.positions.size()), prices.data(), previous.data(),
+        static_cast<uint32_t>(state.positions.size()), prices.data(), previous.data(),
         scores.data(),
-        state_.retired.data(), state_.positions.data(), state_.account.nav, state_.account.cash,
-        parameters_.score_scale, result.data(), error.data(), error.size());
+        state.retired.data(), state.positions.data(), state.account.nav, state.account.cash,
+        parameters_.score_scale, destination.data(), error.data(), error.size());
     check_native(status, error);
-    return result;
 }
 
 SessionSnapshot FinancialSession::snapshot() const {

@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "domain": "technical",
+  "date": "2026-09-28",
+  "python": {
+    "passed": 2071,
+    "skipped": 37,
+    "deselected": 120,
+    "warnings": 2,
+    "seconds": 145.3,
+    "gpu_executed": false,
+    "gpu_reason": "La campaña científica mantiene la admisión exclusiva. CUDA se ocultó expresamente a la verificación.",
+    "warnings_detail": [
+      "Gymnasium avisa de los límites infinitos del espacio de observación predictivo existente."
+    ],
+    "initial_attempt": {
+      "passed": 2069,
+      "skipped": 37,
+      "cuda_unavailable_failures": 120,
+      "obsolete_fixture_errors": 2
+    },
+    "fixture_repair": "read_gpu sustituye al acceso eliminado a resources.subprocess. Se conserva la comprobación de exclusión y liberación del bloqueo.",
+    "deferred_cuda_nodes": [
+      "tests/models/test_external_boosting.py::test_external_initialization_keeps_torch_matmul_valid_in_fresh_process",
+      "tests/models/test_external_boosting.py::test_external_gpu_fit_consumes_all_rows_and_restores_predictions",
+      "tests/models/test_external_boosting.py::test_incomplete_factory_does_not_claim_full_training",
+      "tests/models/test_external_boosting.py::test_oversized_batch_is_rejected_before_copying_to_gpu",
+      "tests/models/test_external_boosting.py::test_nonfinite_values_do_not_become_missing_values_silently",
+      "tests/models/test_external_boosting.py::test_repeated_passes_may_change_batch_boundaries_but_not_rows",
+      "tests/models/test_external_boosting.py::test_changed_values_between_passes_are_rejected",
+      "tests/models/test_external_boosting.py::test_round_checkpoint_resumes_identical_predictions_and_parameters",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-rnn]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-lstm]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-gru]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[1-dlinear]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-rnn]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-lstm]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-gru]",
+      "tests/models/test_multimodal_reference.py::test_every_modality_receives_gradients_with_explicit_architecture[2-dlinear]",
+      "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[rnn]",
+      "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[lstm]",
+      "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[gru]",
+      "tests/models/test_multimodal_reference.py::test_windows_do_not_retain_hidden_state_and_evaluation_disables_dropout[dlinear]",
+      "tests/models/test_multimodal_reference.py::test_capacity_changes_with_width_and_depth_and_preserves_input_contract",
+      "tests/models/test_predictive_adaptation.py::test_enumerating_actions_matches_the_exact_expected_gradient[cuda:0]",
+      "tests/models/test_predictive_adaptation.py::test_supervised_control_has_same_loss_scale_and_sampling_is_reproducible",
+      "tests/models/test_predictive_adaptation.py::test_zero_residual_preserves_parent_float64_then_learns_all_features",
+      "tests/models/test_predictive_adaptation.py::test_adapter_does_not_backpropagate_into_parent_or_input_encoders",
+      "tests/training/test_checkpoint_recovery.py::test_resume_reproduces_optimizer_rng_and_next_update_exactly[cuda:0]",
+      "tests/training/test_corpus_reference_campaign.py::test_completed_case_is_not_retrained_after_campaign_pause",
+      "tests/training/test_corpus_reference_campaign.py::test_campaign_cannot_mix_completed_cases_with_a_new_model_environment[source]",
+      "tests/training/test_corpus_reference_campaign.py::test_campaign_cannot_mix_completed_cases_with_a_new_model_environment[environment]",
+      "tests/training/test_corpus_tabular.py::test_tabular_fit_and_predictions_use_the_whole_neural_population[ridge-cuda:0]",
+      "tests/training/test_corpus_tabular.py::test_validation_targets_do_not_change_ridge_fit",
+      "tests/training/test_corpus_tabular.py::test_existing_tabular_run_is_not_overwritten",
+      "tests/training/test_external_corpus.py::test_racing_creation_does_not_replace_another_run",
+      "tests/training/test_external_corpus.py::test_full_tabular_population_has_persistent_model_and_session_errors",
+      "tests/training/test_external_corpus.py::test_paused_tree_round_resumes_without_changing_predictions",
+      "tests/training/test_full_corpus_benchmark.py::test_step_counts_rows_and_uses_all_modalities_on_cuda",
+      "tests/training/test_full_corpus_benchmark.py::test_incomplete_source_cannot_produce_a_full_corpus_profile",
+      "tests/training/test_klpo_queue.py::test_cuda_queue_resumes_after_one_parent_and_confirms_all_rows",
+      "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[queue]",
+      "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[study]",
+      "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[ordered]",
+      "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[case]",
+      "tests/training/test_klpo_recovery.py::test_initial_receipt_failure_can_resume_without_discarding_other_files[cache]",
+      "tests/training/test_klpo_recovery.py::test_changed_configuration_after_last_child_cannot_be_completed[queue]",
+      "tests/training/test_klpo_recovery.py::test_changed_configuration_after_last_child_cannot_be_completed[study]",
+      "tests/training/test_klpo_study.py::test_klpo_cuda_uses_complete_population_and_records_sampler[klpo_full]",
+      "tests/training/test_klpo_study.py::test_klpo_cuda_uses_complete_population_and_records_sampler[klpo_mc]",
+      "tests/training/test_klpo_study.py::test_klpo_cuda_uses_complete_population_and_records_sampler[klpo_exact]",
+      "tests/training/test_klpo_study.py::test_klpo_cuda_resume_restores_both_sampling_streams",
+      "tests/training/test_predictive_inputs.py::test_every_row_and_modality_survives_epoch_shuffle_and_resume",
+      "tests/training/test_predictive_inputs.py::test_scaler_uses_training_only_and_preserves_constant_columns",
+      "tests/training/test_predictive_inputs.py::test_batches_own_their_arrays_and_reader_closure_is_explicit",
+      "tests/training/test_predictive_inputs.py::test_closing_a_reader_also_stops_an_existing_iterator",
+      "tests/training/test_predictive_parents.py::test_parent_cache_aligns_every_prediction_without_copying_modalities",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[missing]",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[duplicate]",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_target]",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_asset]",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_time]",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[wrong_market]",
+      "tests/training/test_predictive_parents.py::test_parent_join_rejects_incomplete_duplicate_or_different_labels[nan]",
+      "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[manifest]",
+      "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[checkpoint]",
+      "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[status]",
+      "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[test]",
+      "tests/training/test_predictive_parents.py::test_parent_contract_must_match_completed_reference[model]",
+      "tests/training/test_predictive_parents.py::test_cached_values_are_read_only_and_changed_cache_is_rejected",
+      "tests/training/test_predictive_parents.py::test_parent_cache_recovers_confirmed_partition_after_interruption",
+      "tests/training/test_predictive_run.py::test_predictive_controls_visit_every_row_and_record_all_readouts[reinforce]",
+      "tests/training/test_predictive_run.py::test_predictive_controls_visit_every_row_and_record_all_readouts[expected]",
+      "tests/training/test_predictive_run.py::test_predictive_controls_visit_every_row_and_record_all_readouts[mae]",
+      "tests/training/test_predictive_run.py::test_resume_preserves_sampling_optimizer_and_next_update_exactly",
+      "tests/training/test_predictive_run.py::test_checkpoint_is_confirmed_before_validation_can_be_interrupted",
+      "tests/training/test_predictive_run.py::test_resume_rejects_changed_matmul_policy",
+      "tests/training/test_predictive_run.py::test_simultaneous_resume_cannot_write_the_same_training_run",
+      "tests/training/test_predictive_run.py::test_failed_cuda_initialization_can_resume_same_preparation",
+      "tests/training/test_predictive_run.py::test_precomputed_training_normalization_is_reused_for_paired_controls",
+      "tests/training/test_predictive_run.py::test_failed_initial_checkpoint_can_restart_without_changing_predictions",
+      "tests/training/test_predictive_run.py::test_missing_confirmed_initial_checkpoint_cannot_silently_restart",
+      "tests/training/test_predictive_study.py::test_study_resumes_paired_controls_and_reuses_parent_preparation",
+      "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[rnn]",
+      "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[lstm]",
+      "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[gru]",
+      "tests/training/test_reference_run.py::test_every_epoch_and_prediction_include_all_admissible_rows[dlinear]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[rnn-None]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[rnn-architecture1]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[lstm-None]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[lstm-architecture1]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[gru-None]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[gru-architecture1]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[dlinear-None]",
+      "tests/training/test_reference_run.py::test_interruption_resumes_exact_next_batch_and_final_weights[dlinear-architecture1]",
+      "tests/training/test_reference_run.py::test_scientific_configuration_changes_capacity_and_rejects_other_parent_architecture",
+      "tests/training/test_reference_run.py::test_evaluation_averages_sessions_without_company_count_weighting",
+      "tests/training/test_reference_run.py::test_resume_rejects_changed_corpus_and_loss",
+      "tests/training/test_reference_run.py::test_posttraining_requires_same_parent_population_and_architecture",
+      "tests/training/test_reference_run.py::test_stop_already_requested_does_not_apply_an_extra_update",
+      "tests/training/test_reference_run.py::test_resume_recovers_directory_created_before_initial_report",
+      "tests/training/test_reference_run.py::test_resume_without_report_does_not_adopt_unrelated_artifacts",
+      "tests/training/test_reference_run.py::test_nonfinite_prediction_does_not_publish_completed_run",
+      "tests/training/test_reference_run.py::test_code_change_during_training_cannot_confirm_a_new_state",
+      "tests/training/test_reference_run.py::test_completed_case_rejects_corrupt_final_checkpoint",
+      "tests/training/test_reference_run.py::test_resume_rejects_changed_numerical_backend_policy",
+      "tests/training/test_reference_run.py::test_parent_final_checkpoint_cannot_fall_back_to_another_epoch",
+      "tests/training/test_reference_run.py::test_changed_price_transformation_cannot_resume_checkpoint",
+      "tests/training/test_reference_search.py::test_search_resumes_without_retraining_confirmed_cases_and_reuses_seed42",
+      "tests/training/test_reference_search.py::test_search_recovers_initial_view_files_without_a_summary",
+      "tests/training/test_reference_search.py::test_resume_publishes_running_status_before_applying_new_updates",
+      "tests/training/test_reference_search.py::test_resume_rejects_altered_summary_contract[changes0]",
+      "tests/training/test_reference_search.py::test_resume_rejects_altered_summary_contract[changes1]",
+      "tests/training/test_reference_search.py::test_resume_rejects_altered_summary_contract[changes2]",
+      "tests/training/test_reference_search.py::test_failed_output_verification_does_not_count_as_a_completed_trial",
+      "tests/training/test_selection.py::test_supervised_continuation_can_keep_parent_and_bound_checkpoint_retention",
+      "tests/training/test_selection.py::test_parent_baseline_is_recovered_after_pause_without_counting_an_epoch",
+      "tests/training/test_selection.py::test_early_stop_preserves_latest_state_but_predicts_from_selected_epoch",
+      "tests/training/test_selection.py::test_pause_during_selected_prediction_keeps_coherent_latest_optimizer_state",
+      "tests/training/test_selection.py::test_initial_checkpoint_failure_is_reported_as_failed",
+      "tests/training/test_selection.py::test_resume_rejects_best_pointer_redirected_to_another_valid_epoch",
+      "tests/training/test_tabular_search_cuda.py::test_real_backends_share_the_population_and_reuse_finished_models",
+      "tests/training/test_temporal_search.py::test_strict_search_runs_prespecified_candidates_and_selects_parent_for_paired_controls"
+    ]
+  },
+  "native": {
+    "ctest_passed": {
+      "release": 6,
+      "gcc_release": 6,
+      "static_analysis": 6,
+      "asan_ubsan_leaks": 6,
+      "tsan": 6,
+      "msan": 6,
+      "fuzz": 8
+    },
+    "compiler": "Clang 21.1.8",
+    "standard": "C++20",
+    "static_tools": [
+      "clang-tidy 21.1.6",
+      "Clang Static Analyzer",
+      "Lifetime Safety experimental"
+    ],
+    "msan_scope": "Núcleo y sesión con libc++ y libc++abi instrumentadas. Sin Arrow precompilado.",
+    "fuzz_scope": "Núcleo contable y sesión, 1000 entradas por ejecutable. No es una campaña de fuzzing del nuevo filtro.",
+    "coverage_warning": "LLVM informa de cuatro mapas con hash cero sin perfil para CashMovements::add y CashMovements::reconciled, repetidos en dos ejecutables. Se conserva el aviso y la cobertura se usa como diagnóstico.",
+    "other_platforms_tested": false,
+    "vectorization": "Clang informa de bucles contables no vectorizados con aritmética estricta. No se activó fast-math para forzarlos."
+  },
+  "mutations": {
+    "batch": [
+      {
+        "mutation": "future_context",
+        "compiled": true,
+        "detected": true,
+        "returncode": 1,
+        "error": "Se aceptó una entrada inválida"
+      },
+      {
+        "mutation": "mixed_actions",
+        "compiled": true,
+        "detected": true,
+        "returncode": 1,
+        "error": "Cambió un campo del estado confirmado"
+      },
+      {
+        "mutation": "context_identity",
+        "compiled": true,
+        "detected": true,
+        "returncode": 1,
+        "error": "Se aceptó una entrada inválida"
+      },
+      {
+        "mutation": "partial_commit",
+        "compiled": true,
+        "detected": true,
+        "returncode": 1,
+        "error": "Cambió un campo del estado confirmado"
+      }
+    ],
+    "markov_initial": [
+      {
+        "name": "aceptar_futuro",
+        "detected": true,
+        "message": "Una variable futura debe rechazarse"
+      },
+      {
+        "name": "invertir_cambio",
+        "detected": true,
+        "message": "La probabilidad de cambio no corresponde a las transiciones posteriores"
+      },
+      {
+        "name": "consumir_ausentes",
+        "detected": true,
+        "message": "La densidad de emisión excede el rango numérico disponible"
+      },
+      {
+        "name": "transicionar_prior",
+        "detected": true,
+        "message": "El filtro difiere de la enumeración exacta de trayectorias"
+      },
+      {
+        "name": "recuperar_otro_modelo",
+        "detected": true,
+        "message": "La recuperación debe rechazar estados inválidos"
+      },
+      {
+        "name": "aceptar_fila_incompleta",
+        "detected": true,
+        "message": "Los parámetros inválidos deben fallar"
+      }
+    ],
+    "markov_relative": [
+      {
+        "name": "restar_densidades_absolutas",
+        "detected": true,
+        "message": "Las medias cercanas deben conservar una razón de emisiones de exp(1)"
+      },
+      {
+        "name": "perder_centrado_compensado",
+        "detected": true,
+        "message": "La suma centrada no puede perder el término pequeño entre medias grandes"
+      },
+      {
+        "name": "aceptar_cancelacion_no_resuelta",
+        "detected": true,
+        "message": "La cancelación sin precisión suficiente debe rechazarse de forma explícita"
+      }
+    ]
+  },
+  "adversarial_review": {
+    "additional_batch_cases": 36,
+    "backends": [
+      "Release",
+      "ASan/UBSan"
+    ],
+    "fixed_findings": [
+      "Diferencias gaussianas extremas perdidas antes de normalizar. Se añaden referencias analíticas y pruebas de cancelación.",
+      "Identidad incompleta del instrumento. Se registran hashes de ejecutable, backend y fuente del benchmark."
+    ]
+  },
+  "limits": [
+    "No se entrenaron especialistas ni el candidato MARS-TITAN.",
+    "No se ejecutó una comparación científica de PPO o Double DQN con miles de entornos.",
+    "El test final sigue sellado y la validación histórica de ajustes OHLC permanece pendiente."
+  ]
+}
