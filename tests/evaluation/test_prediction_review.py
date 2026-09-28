@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -359,3 +360,227 @@ def test_cli_main_propagates_real_status_and_does_not_print_entries(tmp_path, ca
     assert "entries" not in output
     prediction.write_bytes(b"bad")
     assert reviewer().main(args) == 1
+
+
+def temporal_fixture(tmp_path):
+    from mars_titan.evaluation.splits import build_folds
+
+    source, report_path, prediction = fixture_run(tmp_path / "source")
+    report = json.loads(report_path.read_text())
+    table = pq.read_table(prediction)
+    for partition, month in (("train", 1), ("validation", 2)):
+        times = pa.array(
+            [datetime(2023, month, day, tzinfo=UTC) for day in (2, 2, 3)],
+            type=pa.timestamp("us", tz="UTC"),
+        )
+        rows = table.set_column(
+            table.schema.get_field_index("prediction_at"), "prediction_at", times
+        )
+        path = prediction.with_name(f"{partition}-predictions.parquet")
+        pq.write_table(rows, path, row_group_size=2)
+        report["predictions"][partition] = dict(
+            report["predictions"]["validation"], path=path.name, sha256=sha256(path)
+        )
+    protocol = dict(
+        schema_version=1,
+        market="US",
+        train_start="2022-01-01",
+        first_validation_start="2023-02-01",
+        validation_months=2,
+        calibration_months=1,
+        evaluation_months=1,
+        step_months=1,
+        minimum_train_months=6,
+        gap_sessions=1,
+        final_test_start="2024-01-01",
+        final_test_end="2025-01-01",
+        primary_metric="session_mae",
+        seeds=[42, 43, 44],
+    )
+    manifest = tmp_path / "view" / "manifest.json"
+    atomic_json(
+        manifest,
+        dict(
+            kind="corpus_supervision",
+            cohort_complete=True,
+            final_test_opened=False,
+            temporal_view=dict(schema_version=1, protocol=protocol, fold=build_folds(protocol)[0]),
+        ),
+    )
+    report["identity"] = dict(manifest_sha256=sha256(manifest))
+    atomic_json(report_path, report)
+    summary = json.loads(source.read_text())
+    summary["identity"] = report["identity"]
+    summary["runs"][0]["report_sha256"] = sha256(report_path)
+    atomic_json(source, summary)
+    return dict(id="fold", summary=str(source), manifest=str(manifest))
+
+
+def test_temporal_manifest_accepts_train_rows_in_2023_and_separate_validation(tmp_path):
+    source = temporal_fixture(tmp_path)
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert result["counts"] == dict(confirmed=2, verified=2, failed=0, pending=0)
+    entry = result["entries"]["fold/case/train"]
+    assert entry["temporal_contract"]["fold"] == "fold-000"
+    assert entry["temporal_contract"]["bounds"] == ["2022-01-01", "2023-02-01"]
+    assert entry["temporal_contract"]["manifest_sha256"] == sha256(Path(source["manifest"]))
+    repeated = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert repeated["processed_jobs"] == repeated["hashed_bytes"] == 0
+
+
+@pytest.mark.parametrize("partition,month", [("train", 2), ("validation", 1), ("validation", 4)])
+def test_temporal_manifest_rejects_rows_outside_its_own_window(tmp_path, partition, month):
+    source = temporal_fixture(tmp_path)
+    folder = Path(source["summary"]).parent / "runs/case"
+    path = folder / f"{partition}-predictions.parquet"
+    table = pq.read_table(path)
+    times = pa.array([datetime(2023, month, 1, tzinfo=UTC)] * 3, type=pa.timestamp("us", tz="UTC"))
+    table = table.set_column(table.schema.get_field_index("prediction_at"), "prediction_at", times)
+    pq.write_table(table, path)
+    report = json.loads((folder / "run.json").read_text())
+    report["predictions"][partition]["sha256"] = sha256(path)
+    atomic_json(folder / "run.json", report)
+    summary = json.loads(Path(source["summary"]).read_text())
+    summary["runs"][0]["report_sha256"] = sha256(folder / "run.json")
+    atomic_json(Path(source["summary"]), summary)
+    result = reviewer().review_campaigns(
+        [source], tmp_path / "review.json", partitions=(partition,)
+    )
+    assert result["counts"]["failed"] == 1
+    assert "temporal" in result["entries"][f"fold/case/{partition}"]["error"]
+
+
+@pytest.mark.parametrize("defect", ["manifest_hash", "report_hash", "fold", "test_opened", "kind"])
+def test_invalid_temporal_contract_fails_before_reading_predictions(tmp_path, defect, monkeypatch):
+    source = temporal_fixture(tmp_path)
+    manifest_path = Path(source["manifest"])
+    manifest = json.loads(manifest_path.read_text())
+    if defect == "manifest_hash":
+        manifest_path.write_text(manifest_path.read_text() + " ")
+    elif defect == "report_hash":
+        folder = Path(source["summary"]).parent / "runs/case"
+        report = json.loads((folder / "run.json").read_text())
+        report["identity"]["manifest_sha256"] = "a" * 64
+        atomic_json(folder / "run.json", report)
+        summary = json.loads(Path(source["summary"]).read_text())
+        summary["runs"][0]["report_sha256"] = sha256(folder / "run.json")
+        atomic_json(Path(source["summary"]), summary)
+    else:
+        if defect == "fold":
+            manifest["temporal_view"]["fold"]["validation"][1] = "2024-02-01"
+        elif defect == "test_opened":
+            manifest["final_test_opened"] = True
+        else:
+            manifest["kind"] = "unverified"
+        atomic_json(manifest_path, manifest)
+        summary = json.loads(Path(source["summary"]).read_text())
+        summary["identity"]["manifest_sha256"] = sha256(manifest_path)
+        atomic_json(Path(source["summary"]), summary)
+    monkeypatch.setattr(
+        reviewer(), "_evaluate", lambda *_: pytest.fail("Se leyó un Parquet sin contrato")
+    )
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert result["source_errors"]
+    assert result["processed_jobs"] == 0
+
+
+def test_adding_temporal_contract_invalidates_a_legacy_cached_failure(tmp_path):
+    source = temporal_fixture(tmp_path)
+    legacy = {key: value for key, value in source.items() if key != "manifest"}
+    state = tmp_path / "review.json"
+    first = reviewer().review_campaigns([legacy], state, partitions=("train",))
+    assert first["counts"]["failed"] == 1
+    second = reviewer().review_campaigns([source], state, partitions=("train",))
+    assert second["processed_jobs"] == second["counts"]["verified"] == 1
+
+
+def test_reviewer_cannot_overwrite_the_temporal_manifest(tmp_path):
+    source = temporal_fixture(tmp_path)
+    manifest = Path(source["manifest"])
+    before = manifest.read_bytes()
+    with pytest.raises(ValueError, match="salida|origen|fuente"):
+        reviewer().review_campaigns([source], manifest)
+    assert manifest.read_bytes() == before
+
+
+def test_temporal_protocol_cannot_move_the_reserved_test_boundary(tmp_path):
+    source = temporal_fixture(tmp_path)
+    manifest = Path(source["manifest"])
+    value = json.loads(manifest.read_text())
+    value["temporal_view"]["protocol"].update(
+        final_test_start="2025-01-01", final_test_end="2026-01-01"
+    )
+    atomic_json(manifest, value)
+    summary_path = Path(source["summary"])
+    summary = json.loads(summary_path.read_text())
+    summary["identity"]["manifest_sha256"] = sha256(manifest)
+    atomic_json(summary_path, summary)
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert "reservado" in result["source_errors"]["fold"]
+    assert result["processed_jobs"] == 0
+
+
+def derived_temporal_fixture(tmp_path, defect=None):
+    source = temporal_fixture(tmp_path)
+    summary_path = Path(source["summary"])
+    manifest = json.loads(Path(source["manifest"]).read_text())
+    view = dict(
+        manifest, source_manifest_sha256=sha256(Path(source["manifest"])), selected_arm="US"
+    )
+    if defect == "source":
+        view["source_manifest_sha256"] = "a" * 64
+    elif defect == "window":
+        view["temporal_view"]["fold"]["train"][1] = "2023-03-01"
+    elif defect == "test":
+        view["final_test_opened"] = True
+    elif defect == "arm":
+        view["selected_arm"] = "CN"
+    path = summary_path.parent / "views/US.json"
+    atomic_json(path, view)
+    report_path = summary_path.parent / "runs/case/run.json"
+    report = json.loads(report_path.read_text())
+    report["identity"]["manifest_sha256"] = sha256(path)
+    atomic_json(report_path, report)
+    summary = json.loads(summary_path.read_text())
+    summary["runs"][0].update(arm="US", report_sha256=sha256(report_path))
+    atomic_json(summary_path, summary)
+    return source
+
+
+def test_confirms_the_derived_market_view_used_by_the_actual_training(tmp_path):
+    source = derived_temporal_fixture(tmp_path)
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert result["counts"] == dict(confirmed=2, verified=2, failed=0, pending=0)
+
+
+@pytest.mark.parametrize("defect", ["source", "window", "test", "arm"])
+def test_rejects_a_derived_view_that_changes_lineage_or_temporal_contract(tmp_path, defect):
+    source = derived_temporal_fixture(tmp_path, defect)
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert result["source_errors"]
+    assert result["processed_jobs"] == 0
+
+
+@pytest.mark.parametrize("target", ["summary", "manifest", "report"])
+def test_malformed_temporal_objects_are_reported_without_losing_the_cycle(tmp_path, target):
+    source = temporal_fixture(tmp_path)
+    summary_path = Path(source["summary"])
+    summary = json.loads(summary_path.read_text())
+    if target == "summary":
+        summary["identity"] = None
+    elif target == "manifest":
+        manifest_path = Path(source["manifest"])
+        manifest = json.loads(manifest_path.read_text())
+        manifest["temporal_view"] = []
+        atomic_json(manifest_path, manifest)
+        summary["identity"]["manifest_sha256"] = sha256(manifest_path)
+    else:
+        report_path = summary_path.parent / "runs/case/run.json"
+        report = json.loads(report_path.read_text())
+        report["identity"] = None
+        atomic_json(report_path, report)
+        summary["runs"][0]["report_sha256"] = sha256(report_path)
+    atomic_json(summary_path, summary)
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert result["source_errors"]
+    assert result["processed_jobs"] == 0
