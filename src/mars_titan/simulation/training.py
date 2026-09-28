@@ -346,6 +346,15 @@ class FinancialTrainer:
             or len(state["rollout"]) > self.config.rollout_steps
         ):
             raise ValueError("El estado de entrenamiento excede su presupuesto")
+        # La copia de recuperación queda en CPU y solo existe durante la restauración.
+        confirmed = self.snapshot()
+        try:
+            self._restore(state)
+        except BaseException:
+            self._restore(confirmed)
+            raise
+
+    def _restore(self, state):
         self.env.restore(state["environment"])
         self.network.load_state_dict(state["network"])
         if self.target is not None:

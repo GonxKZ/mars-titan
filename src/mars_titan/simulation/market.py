@@ -112,12 +112,16 @@ class MarketTape:
             raise ValueError("El calendario de apertura necesita instantes no negativos")
         self.domain, self.currency, self.partition = domain, currency, partition
         self.actions = tuple(actions)
+        ids = set()
         for action in self.actions:
             if not isinstance(action, CorporateAction):
                 raise ValueError("La acción corporativa no tiene un contrato válido")
             action.validate()
+            if action.id in ids:
+                raise ValueError("La acción corporativa está duplicada")
             if action.asset not in self.assets or action.effective_at not in self.open_times:
                 raise ValueError("La acción corporativa no pertenece al calendario")
+            ids.add(action.id)
         self.identity = dict(
             domain=domain,
             currency=currency,

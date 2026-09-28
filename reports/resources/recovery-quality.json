@@ -1,0 +1,319 @@
+{
+  "coverage_tool": "coverage.py 7.16.2",
+  "complexity_tool": "radon 6.0.1",
+  "coverage_convention": "Sentencias ejecutables y ramas informadas por separado. CRAP utiliza cobertura de sentencias por función.",
+  "crap_formula": "CC^2 * (1 - statement_coverage)^3 + CC",
+  "tests": {
+    "command": "CUDA_VISIBLE_DEVICES= uv run --no-sync --with coverage --with radon python -m coverage run --branch --source=mars_titan.simulation.training,mars_titan.simulation.environment,mars_titan.simulation.market -m pytest tests/simulation -q --tb=short",
+    "passed": 223,
+    "seconds": 11.54,
+    "new_regressions_passed": 17,
+    "red_before_change": {
+      "failed": 16,
+      "passed": 1
+    }
+  },
+  "totals": {
+    "covered_lines": 423,
+    "num_statements": 451,
+    "percent_covered": 90.28006589785832,
+    "percent_covered_display": "90",
+    "missing_lines": 28,
+    "excluded_lines": 0,
+    "percent_statements_covered": 93.79157427937916,
+    "percent_statements_covered_display": "94",
+    "num_branches": 156,
+    "num_partial_branches": 29,
+    "covered_branches": 125,
+    "missing_branches": 31,
+    "percent_branches_covered": 80.12820512820512,
+    "percent_branches_covered_display": "80"
+  },
+  "functions": [
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer.run",
+      "complexity": 22,
+      "statement_coverage": 0.9444444444444444,
+      "branch_coverage": 0.8571428571428571,
+      "crap": 22.08299039780521
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer.__init__",
+      "complexity": 20,
+      "statement_coverage": 1.0,
+      "branch_coverage": 0.8333333333333334,
+      "crap": 20.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "TrainConfig.validate",
+      "complexity": 14,
+      "statement_coverage": 0.6666666666666666,
+      "branch_coverage": 0.6666666666666666,
+      "crap": 21.25925925925926
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer._ppo_update",
+      "complexity": 9,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 9.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer.advance",
+      "complexity": 9,
+      "statement_coverage": 0.875,
+      "branch_coverage": 0.6428571428571429,
+      "crap": 9.158203125
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "_cpu",
+      "complexity": 8,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 8.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer._double_update",
+      "complexity": 4,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer.restore",
+      "complexity": 4,
+      "statement_coverage": 0.875,
+      "branch_coverage": 0.5,
+      "crap": 4.03125
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer._action",
+      "complexity": 3,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer.snapshot",
+      "complexity": 3,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer._restore",
+      "complexity": 3,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer._optimize",
+      "complexity": 2,
+      "statement_coverage": 0.8571428571428571,
+      "branch_coverage": 0.5,
+      "crap": 2.011661807580175
+    },
+    {
+      "file": "src/mars_titan/simulation/training.py",
+      "function": "FinancialTrainer._tensor",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv._transition",
+      "complexity": 16,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 16.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv._observation",
+      "complexity": 14,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 14.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.restore",
+      "complexity": 11,
+      "statement_coverage": 0.8666666666666667,
+      "branch_coverage": 0.6666666666666666,
+      "crap": 11.286814814814814
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.__init__",
+      "complexity": 10,
+      "statement_coverage": 0.8571428571428571,
+      "branch_coverage": 0.6666666666666666,
+      "crap": 10.291545189504374
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.step",
+      "complexity": 10,
+      "statement_coverage": 0.8947368421052632,
+      "branch_coverage": 0.8,
+      "crap": 10.116635077999709
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv._targets",
+      "complexity": 9,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 9.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv._new_book",
+      "complexity": 3,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.snapshot",
+      "complexity": 2,
+      "statement_coverage": 0.6666666666666666,
+      "branch_coverage": 0.5,
+      "crap": 2.1481481481481484
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.reset",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.pause",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/simulation/environment.py",
+      "function": "FinancialEnv.resume",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/simulation/market.py",
+      "function": "MarketTape.__init__",
+      "complexity": 52,
+      "statement_coverage": 0.8222222222222222,
+      "branch_coverage": 0.7142857142857143,
+      "crap": 67.1928449931413
+    },
+    {
+      "file": "src/mars_titan/simulation/market.py",
+      "function": "MarketTape.from_world",
+      "complexity": 8,
+      "statement_coverage": 0.8823529411764706,
+      "branch_coverage": 0.8,
+      "crap": 8.104213311622226
+    },
+    {
+      "file": "src/mars_titan/simulation/market.py",
+      "function": "_times",
+      "complexity": 6,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "file": "src/mars_titan/simulation/market.py",
+      "function": "MarketTape.quotes",
+      "complexity": 4,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/simulation/market.py",
+      "function": "MarketTape.__len__",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "branch_coverage": 1.0,
+      "crap": 1.0
+    }
+  ],
+  "mutation_testing": {
+    "method": "Mutación dirigida en memoria, un proceso por mutante. Los archivos de producción no se modifican.",
+    "cases": [
+      {
+        "mutation": "trainer_rollback",
+        "source": "src/mars_titan/simulation/training.py",
+        "test": "test_rejected_checkpoint_preserves_complete_trainer_state[ppo-network]",
+        "pytest_exit_code": 1,
+        "killed": true
+      },
+      {
+        "mutation": "environment_rollback",
+        "source": "src/mars_titan/simulation/environment.py",
+        "test": "test_failed_observation_preserves_the_next_successful_transition[python]",
+        "pytest_exit_code": 1,
+        "killed": true
+      },
+      {
+        "mutation": "python_orders",
+        "source": "src/mars_titan/simulation/environment.py",
+        "test": "test_failed_corporate_action_preserves_pending_orders_and_cursor[python]",
+        "pytest_exit_code": 1,
+        "killed": true
+      },
+      {
+        "mutation": "native_orders",
+        "source": "src/mars_titan/simulation/environment.py",
+        "test": "test_failed_corporate_action_preserves_pending_orders_and_cursor[native]",
+        "pytest_exit_code": 1,
+        "killed": true
+      },
+      {
+        "mutation": "duplicate_actions",
+        "source": "src/mars_titan/simulation/market.py",
+        "test": "test_market_rejects_duplicate_corporate_action_ids_before_trading[2]",
+        "pytest_exit_code": 1,
+        "killed": true
+      }
+    ]
+  },
+  "files": {
+    "src/mars_titan/simulation/training.py": "58e607bb8f9e504a3ab2584c2946c666ebde2c7da7e82a20c9f862cbe44f56e9",
+    "src/mars_titan/simulation/environment.py": "4340f967698e78f3169ec53e4610b2e1664fec01421a32d14524930c76543f2d",
+    "src/mars_titan/simulation/market.py": "efb4ad2516bc6b7394b373b68b5f49593364d70291a6864ef6d194e1ed6e44f4",
+    "tests/simulation/test_recovery_atomicity.py": "d9152d927bd6467a1e980c1f2438e7d65648a290d299b7dc1ef53cf9d9c009ba"
+  },
+  "limits": [
+    "La suite general del repositorio se reserva a la integración.",
+    "La comprobación ejecutada es CPU diagnóstica, sin CUDA.",
+    "CRAP es diagnóstico por función. MarketTape.__init__ mantiene complejidad previa y cobertura parcial.",
+    "No se han probado fallos de hardware u OOM durante el propio rollback.",
+    "La exclusión mutua entre llamadas concurrentes a una misma instancia no forma parte del contrato de FinancialEnv."
+  ]
+}
