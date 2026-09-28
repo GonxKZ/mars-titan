@@ -1,0 +1,6582 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "measured_at": "2026-09-28T06:39:56.568216+00:00",
+  "domain": "technical",
+  "device": "cpu",
+  "diagnostic": true,
+  "binary_sha256": "f7b92f2e48c7bdf4de5fcd2644cc22aa61d6177d2aa3f414f7eabd33d484dfa0",
+  "backend_sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+  "build": {
+    "type": "Release",
+    "sanitizer": "none",
+    "coverage": "OFF",
+    "pgo": "off",
+    "native_source_sha256": "bc4de46dce3fd1f9da9378b2a483f8d43551fddcd8933b394bc6e82edce7ea30",
+    "native_build_sha256": "e06fbadd660c6ae6240a37953c65993b70ad16904ce1aedcf5b5e696756c81ea",
+    "torch_version": "2.14.0",
+    "source_file_sha256": {
+      "native/src/ppo_training.cpp": "59c4fff2683bf28a0817a5d2cd436d2a3e3ce3dcddfc7e1756d44c5fd1c978b1"
+    },
+    "source_commit": "7d69c21ee9f69060494931b7fee0f22848256f21"
+  },
+  "harness_sha256": "1d55e4e00d04ead848a8db291628f7d5e6aa8d0a54646ff77594353aae2d7ce3",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "hardware": {
+    "Architecture": "x86_64",
+    "CPU(s)": "16",
+    "Model name": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "Thread(s) per core": "2",
+    "Core(s) per socket": "8",
+    "Socket(s)": "1",
+    "NUMA node(s)": "1"
+  },
+  "software": {
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "python": "3.12.14",
+    "compiler": "Ubuntu clang version 21.1.8 (6ubuntu1)"
+  },
+  "protocol": {
+    "environments": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "policy_seeds": [
+      42,
+      43,
+      44
+    ],
+    "training_transitions": 32,
+    "rollout_transitions": 16,
+    "workers": 1,
+    "torch_threads": 1,
+    "repetitions_per_case": 5,
+    "warmup_runs_per_case": 1,
+    "base_configuration": {
+      "schema_version": 1,
+      "training": {
+        "total_transitions": 32,
+        "rollout_transitions": 16,
+        "workers": 1,
+        "seed": 42,
+        "rollout_bytes": 134217728
+      },
+      "environments": 2,
+      "hyperparameters": {
+        "learning_rate": 0.0003,
+        "gamma": 0.99,
+        "gae_lambda": 0.95,
+        "clip": 0.2,
+        "entropy": 0.01,
+        "value_weight": 0.5,
+        "gradient_norm": 1.0,
+        "epochs": 2,
+        "minibatch_size": 8
+      },
+      "environment": {
+        "capital": 10000,
+        "cost_bps": 10,
+        "participation": 0.01,
+        "score_scale": 0.01,
+        "ruin_penalty": -20
+      },
+      "checkpoint_transitions": 8,
+      "selection": {
+        "min_delta": 0.0001,
+        "patience": 5,
+        "early_stopping": false,
+        "metric": "ruin_count_then_mean_log_growth"
+      },
+      "final_test_opened": false
+    },
+    "order_seed": 20260928,
+    "validation_fixed": true,
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "sources": [
+    {
+      "partition": "train",
+      "generator_seed": 1701,
+      "sessions": 65,
+      "assets": 8,
+      "context_fields": 2,
+      "files": [
+        {
+          "name": "context.json",
+          "bytes": 442,
+          "sha256": "36a2e66992f69437535c5eab55e0e18c569af10457d6b4720b5ac8a262b4a7b7"
+        },
+        {
+          "name": "context.parquet",
+          "bytes": 9571,
+          "sha256": "195ff8c9dc2cb5f002859d6a94ade400d2fe027f2f2818fe7b4e523ab03cd8ad"
+        },
+        {
+          "name": "manifest.json",
+          "bytes": 738,
+          "sha256": "bacc4e1d09f0a63fa2eb4ee8787a326d775fafd5ef9b27baa8a617767b9e3029"
+        },
+        {
+          "name": "market.parquet",
+          "bytes": 34867,
+          "sha256": "aca3db88181a81014cc57cab3a2d7b5c064567883b94c7386501ff97912f860e"
+        }
+      ]
+    },
+    {
+      "partition": "validation",
+      "generator_seed": 2701,
+      "sessions": 9,
+      "assets": 8,
+      "context_fields": 2,
+      "files": [
+        {
+          "name": "context.json",
+          "bytes": 442,
+          "sha256": "1cab87140ea8e090508e6e9f5b561d86f968582d0e31b836ef8ba799333676d1"
+        },
+        {
+          "name": "context.parquet",
+          "bytes": 2497,
+          "sha256": "666c95468ffda113ff7873baf0706b7c92f032cabb631624b27c63b65c053109"
+        },
+        {
+          "name": "manifest.json",
+          "bytes": 741,
+          "sha256": "3674425dc6e50d07f084065a1240467408002ec7576a701de3b2a833167abe91"
+        },
+        {
+          "name": "market.parquet",
+          "bytes": 6441,
+          "sha256": "2a75d7555af07d4646b967219687d675fe33e3634e8b5a8cf20e370e4256a195"
+        }
+      ]
+    }
+  ],
+  "source_definition": {
+    "kind": "fixture_synthetic",
+    "market_rows": "OHLC diarios de ocho activos con retornos normales de desviación 0,004, recortados a ±0,01. Volumen fijo de 100000.",
+    "scores": "Valores normales de media 0,003 y desviación 0,002, congelados en la cinta. No proceden de un modelo entrenado.",
+    "context": "Dos valores normales por sesión, disponibles al cierre y sin ausencias."
+  },
+  "measurement": {
+    "process_seconds": "perf_counter alrededor del lanzamiento y communicate con pipes de stdout y stderr. Los logs se escriben después de terminar el intervalo medido.",
+    "measurement_validation": "Se descartó una tanda previa cuya espera con timeout y descriptores de archivo añadía retardos por sondeo. La espera con pipes eliminó esa cuantización en una comprobación independiente.",
+    "internal_seconds": "invocation_seconds del recibo nativo, desde run_ppo_experiment hasta antes de publicar el recibo final.",
+    "rss": "VmHWM de procfs leído por el ejecutable nativo.",
+    "warmup": "Un proceso completo descartado por cada combinación N y semilla. Calienta la caché de archivos, cada repetición sigue arrancando un proceso nuevo.",
+    "bytes": "Tamaños reales de archivos retenidos. output_allocated_bytes suma st_blocks multiplicado por 512."
+  },
+  "perf": {
+    "returncode": 1,
+    "status": "blocked",
+    "events_requested": [
+      "task-clock",
+      "cycles",
+      "instructions"
+    ],
+    "perf_event_paranoid": "4",
+    "reason": "Los permisos existentes impiden medir los eventos solicitados."
+  },
+  "gpu_observations": [
+    {
+      "observed_at": "2026-09-28T06:39:56.704559+00:00",
+      "total_mib": 8188,
+      "free_mib": 6846,
+      "compute_process_count": 1
+    },
+    {
+      "observed_at": "2026-09-28T06:40:09.124017+00:00",
+      "total_mib": 8188,
+      "free_mib": 6846,
+      "compute_process_count": 1
+    },
+    {
+      "observed_at": "2026-09-28T06:40:21.155475+00:00",
+      "total_mib": 8188,
+      "free_mib": 6846,
+      "compute_process_count": 1
+    },
+    {
+      "observed_at": "2026-09-28T06:40:33.076951+00:00",
+      "total_mib": 8188,
+      "free_mib": 6846,
+      "compute_process_count": 1
+    }
+  ],
+  "warmups": [
+    {
+      "ordinal": 0,
+      "environments": 2,
+      "seed": 42,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.45713611700193724,
+      "internal_seconds": 0.122156121,
+      "training_transitions_per_process_second": 70.0010320992957,
+      "peak_rss_bytes": 434614272,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b56890594af68de0d080ffcd171149676651c04145a7b7d185170ea332e2a986",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:56.725705+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 110.0,
+            "rss_bytes": 53235712
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2283257856
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 63.8,
+            "rss_bytes": 121573376
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538120192
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6600,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 272464,
+      "output_allocated_bytes": 290816,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 1,
+      "environments": 1,
+      "seed": 42,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4543928670027526,
+      "internal_seconds": 0.121546827,
+      "training_transitions_per_process_second": 70.42364069461978,
+      "peak_rss_bytes": 434450432,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d7dc3381073e34ed7b92d1be98828cd76754017a48e4fc84f3283bb38cddd050",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:57.208481+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 124801024
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281967616
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 31.5,
+            "rss_bytes": 121585664
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538112000
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6414,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403545,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 2,
+      "environments": 8,
+      "seed": 42,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4578019190012128,
+      "internal_seconds": 0.123983853,
+      "training_transitions_per_process_second": 69.8992264379635,
+      "peak_rss_bytes": 434712576,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b0129d69d0a22bb367fabd8e527188c169c8910b3ba6d3b8d456eba4366751c2",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:57.690904+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 106.0,
+            "rss_bytes": 78053376
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282901504
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 21.6,
+            "rss_bytes": 121589760
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539033600
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 20540,
+        "policy": 253186,
+        "rollout": 7718
+      },
+      "output_file_bytes": 286406,
+      "output_allocated_bytes": 307200,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 3,
+      "environments": 4,
+      "seed": 42,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.45870561800256837,
+      "internal_seconds": 0.124633804,
+      "training_transitions_per_process_second": 69.76151750515693,
+      "peak_rss_bytes": 434651136,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "e68606e4167ca42fd4c5276696a339ac5c288b6ba70981d81ec0f9b3b018c2bc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:58.175181+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 86482944
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282213376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 16.1,
+            "rss_bytes": 121593856
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539062272
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11182,
+        "policy": 253570,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277301,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 24,
+      "environments": 4,
+      "seed": 43,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4642147089980426,
+      "internal_seconds": 0.130980067,
+      "training_transitions_per_process_second": 68.93361924930933,
+      "peak_rss_bytes": 434671616,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "97c5fc2b028a8063cb7c9d2b0548ffba6f683dcb3012f00f922b0f355f781d68",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:09.143056+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 186011648
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 0
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277556224
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539250688
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 3.3,
+            "rss_bytes": 121765888
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 16604,
+        "policy": 306361,
+        "rollout": 11385
+      },
+      "output_file_bytes": 339739,
+      "output_allocated_bytes": 368640,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 25,
+      "environments": 2,
+      "seed": 43,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4572567840004922,
+      "internal_seconds": 0.124700687,
+      "training_transitions_per_process_second": 69.9825592964096,
+      "peak_rss_bytes": 434544640,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "cc0bd7f43be73d25f085574a6f18459c42eba596eb3a238131f2753dab1b9adb",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:09.635987+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 220495872
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 101597184
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 104783872
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278359040
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539291648
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 9794,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 333057,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 26,
+      "environments": 8,
+      "seed": 43,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.45535048600140726,
+      "internal_seconds": 0.127204128,
+      "training_transitions_per_process_second": 70.27553716040418,
+      "peak_rss_bytes": 434704384,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "121a0b8201428779675d0111dc7cc42001554111afc46a5aea87386e3ed53ffc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:10.121293+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 256602112
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 145575936
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4403200
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2276089856
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 98.9,
+            "rss_bytes": 112467968
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 30216,
+        "policy": 306361,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353545,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 27,
+      "environments": 1,
+      "seed": 43,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.5067600719994516,
+      "internal_seconds": 0.122494305,
+      "training_transitions_per_process_second": 63.14625355889252,
+      "peak_rss_bytes": 434421760,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d1d74ab9c0b8552b6a77cbd6f8750d9420fd372e19d540a55908e6a98fadeb79",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:10.605085+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 291971072
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 188461056
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278187008
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 99.3,
+            "rss_bytes": 123514880
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 536576000
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6387,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 329650,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 48,
+      "environments": 4,
+      "seed": 44,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4672145099975751,
+      "internal_seconds": 0.129052336,
+      "training_transitions_per_process_second": 68.4910235347059,
+      "peak_rss_bytes": 434667520,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1fcf486e09e3fc5134abfaa63bb4d3592c60069fd4a80d79991148174e879142",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:21.175482+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 259293184
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 432672768
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 449662976
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282045440
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 22.5,
+            "rss_bytes": 616906752
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11322,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277185,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 49,
+      "environments": 2,
+      "seed": 44,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4668485240035807,
+      "internal_seconds": 0.123447051,
+      "training_transitions_per_process_second": 68.54471708633818,
+      "peak_rss_bytes": 434614272,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d4124a4fbee949f0459f1afccf5a3c372d38d7a54bd8f2832db2f5942fa2b88c",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:21.671185+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 468029440
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 293806080
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 264265728
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4456448
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282295296
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 21.4,
+            "rss_bytes": 616910848
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 10017,
+        "policy": 379779,
+        "rollout": 11385
+      },
+      "output_file_bytes": 406572,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 50,
+      "environments": 8,
+      "seed": 44,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4721692870007246,
+      "internal_seconds": 0.130911338,
+      "training_transitions_per_process_second": 67.77230302984721,
+      "peak_rss_bytes": 434769920,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b9ed171a32f79cb90fe65cc472eb0c940d060b40f7001b6958df889814aa0bb6",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:22.169640+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 105.0,
+            "rss_bytes": 350740480
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 323469312
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 508522496
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282467328
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 20.6,
+            "rss_bytes": 616910848
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 29866,
+        "policy": 306745,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353579,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 51,
+      "environments": 1,
+      "seed": 44,
+      "repetition": 0,
+      "warmup": true,
+      "process_seconds": 0.4655621509955381,
+      "internal_seconds": 0.125504955,
+      "training_transitions_per_process_second": 68.7341097887201,
+      "peak_rss_bytes": 434421760,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1d12855512ce0d4237b2d6f3713a00c67bd0290d6919d032096625a7209c3153",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:22.671781+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 543502336
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 350015488
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 0
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2286055424
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 19.7,
+            "rss_bytes": 616910848
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6475,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403606,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    }
+  ],
+  "records": [
+    {
+      "ordinal": 4,
+      "environments": 4,
+      "seed": 42,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.45956527200178243,
+      "internal_seconds": 0.125949895,
+      "training_transitions_per_process_second": 69.63102294612872,
+      "peak_rss_bytes": 434606080,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "e68606e4167ca42fd4c5276696a339ac5c288b6ba70981d81ec0f9b3b018c2bc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:58.661086+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 109.0,
+            "rss_bytes": 69869568
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4403200
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282758144
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 12.8,
+            "rss_bytes": 121602048
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11182,
+        "policy": 253570,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277301,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 5,
+      "environments": 8,
+      "seed": 42,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.43726977000187617,
+      "internal_seconds": 0.117563899,
+      "training_transitions_per_process_second": 73.18136810569526,
+      "peak_rss_bytes": 434794496,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b0129d69d0a22bb367fabd8e527188c169c8910b3ba6d3b8d456eba4366751c2",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:59.148272+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279006208
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 11.0,
+            "rss_bytes": 121606144
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539533312
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 20540,
+        "policy": 253314,
+        "rollout": 7718
+      },
+      "output_file_bytes": 286534,
+      "output_allocated_bytes": 307200,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 6,
+      "environments": 1,
+      "seed": 42,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.43810913599736523,
+      "internal_seconds": 0.118228067,
+      "training_transitions_per_process_second": 73.04116114162122,
+      "peak_rss_bytes": 434442240,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d7dc3381073e34ed7b92d1be98828cd76754017a48e4fc84f3283bb38cddd050",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:39:59.611866+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281787392
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 9.5,
+            "rss_bytes": 121614336
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539521024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6414,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403545,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 7,
+      "environments": 2,
+      "seed": 42,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.4397641859977739,
+      "internal_seconds": 0.120339782,
+      "training_transitions_per_process_second": 72.7662711491517,
+      "peak_rss_bytes": 434626560,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b56890594af68de0d080ffcd171149676651c04145a7b7d185170ea332e2a986",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:00.075977+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281353216
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 8.6,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539521024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6600,
+        "policy": 253186,
+        "rollout": 7590
+      },
+      "output_file_bytes": 272336,
+      "output_allocated_bytes": 290816,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 8,
+      "environments": 2,
+      "seed": 42,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.44543165800132556,
+      "internal_seconds": 0.124472072,
+      "training_transitions_per_process_second": 71.84042585474418,
+      "peak_rss_bytes": 434495488,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b56890594af68de0d080ffcd171149676651c04145a7b7d185170ea332e2a986",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:00.542891+00:00",
+        "load_average": [
+          3.18603515625,
+          2.4814453125,
+          2.390625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2284199936
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 7.9,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539521024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6600,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 272464,
+      "output_allocated_bytes": 290816,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 9,
+      "environments": 1,
+      "seed": 42,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.4477731870065327,
+      "internal_seconds": 0.119865843,
+      "training_transitions_per_process_second": 71.46475253225277,
+      "peak_rss_bytes": 434417664,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d7dc3381073e34ed7b92d1be98828cd76754017a48e4fc84f3283bb38cddd050",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:01.015153+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2283630592
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 7.1,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539090944
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6414,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403545,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 10,
+      "environments": 8,
+      "seed": 42,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.4549520869986736,
+      "internal_seconds": 0.130658699,
+      "training_transitions_per_process_second": 70.33707705596984,
+      "peak_rss_bytes": 434765824,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b0129d69d0a22bb367fabd8e527188c169c8910b3ba6d3b8d456eba4366751c2",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:01.489840+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4419584
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2285441024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.4,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539090944
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 20540,
+        "policy": 253314,
+        "rollout": 7718
+      },
+      "output_file_bytes": 286534,
+      "output_allocated_bytes": 307200,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 11,
+      "environments": 4,
+      "seed": 42,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.9733403729987913,
+      "internal_seconds": 0.616192622,
+      "training_transitions_per_process_second": 32.87647454857987,
+      "peak_rss_bytes": 434769920,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "e68606e4167ca42fd4c5276696a339ac5c288b6ba70981d81ec0f9b3b018c2bc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:01.971850+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4362240
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2285449216
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539090944
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11182,
+        "policy": 253186,
+        "rollout": 7590
+      },
+      "output_file_bytes": 276917,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 12,
+      "environments": 2,
+      "seed": 42,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.7187709380013985,
+      "internal_seconds": 0.37912531,
+      "training_transitions_per_process_second": 44.52044219953943,
+      "peak_rss_bytes": 434589696,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b56890594af68de0d080ffcd171149676651c04145a7b7d185170ea332e2a986",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:02.973784+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2284875776
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539090944
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 5.2,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6600,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 272463,
+      "output_allocated_bytes": 290816,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 13,
+      "environments": 1,
+      "seed": 42,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.4578060819985694,
+      "internal_seconds": 0.128628528,
+      "training_transitions_per_process_second": 69.89859081885241,
+      "peak_rss_bytes": 434577408,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d7dc3381073e34ed7b92d1be98828cd76754017a48e4fc84f3283bb38cddd050",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:03.720632+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282258432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539090944
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 4.8,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6414,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403545,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 14,
+      "environments": 8,
+      "seed": 42,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.44632798100064974,
+      "internal_seconds": 0.124328464,
+      "training_transitions_per_process_second": 71.69615476102857,
+      "peak_rss_bytes": 434688000,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b0129d69d0a22bb367fabd8e527188c169c8910b3ba6d3b8d456eba4366751c2",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:04.204344+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279673856
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539090944
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 4.5,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 20540,
+        "policy": 253442,
+        "rollout": 7718
+      },
+      "output_file_bytes": 286662,
+      "output_allocated_bytes": 307200,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 15,
+      "environments": 4,
+      "seed": 42,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.4425373429985484,
+      "internal_seconds": 0.121797572,
+      "training_transitions_per_process_second": 72.31028184689255,
+      "peak_rss_bytes": 434688000,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "e68606e4167ca42fd4c5276696a339ac5c288b6ba70981d81ec0f9b3b018c2bc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:04.677479+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280435712
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538611712
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 4.3,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11182,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277045,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 16,
+      "environments": 4,
+      "seed": 42,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.4496667210041778,
+      "internal_seconds": 0.121587108,
+      "training_transitions_per_process_second": 71.16381645619421,
+      "peak_rss_bytes": 434708480,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "e68606e4167ca42fd4c5276696a339ac5c288b6ba70981d81ec0f9b3b018c2bc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:05.147131+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277478400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409894912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538611712
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 4.2,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11182,
+        "policy": 253186,
+        "rollout": 7590
+      },
+      "output_file_bytes": 276917,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 17,
+      "environments": 2,
+      "seed": 42,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.4490591220019269,
+      "internal_seconds": 0.121943226,
+      "training_transitions_per_process_second": 71.26010458788251,
+      "peak_rss_bytes": 434511872,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b56890594af68de0d080ffcd171149676651c04145a7b7d185170ea332e2a986",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:05.622895+00:00",
+        "load_average": [
+          3.1708984375,
+          2.490234375,
+          2.39404296875
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279788544
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538406912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 4.1,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6600,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 272464,
+      "output_allocated_bytes": 290816,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 18,
+      "environments": 1,
+      "seed": 42,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.45108467600221047,
+      "internal_seconds": 0.123961256,
+      "training_transitions_per_process_second": 70.94011768168154,
+      "peak_rss_bytes": 434577408,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d7dc3381073e34ed7b92d1be98828cd76754017a48e4fc84f3283bb38cddd050",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:06.100267+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279575552
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538411008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 3.9,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6414,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403545,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 19,
+      "environments": 8,
+      "seed": 42,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.45463890099927085,
+      "internal_seconds": 0.125956222,
+      "training_transitions_per_process_second": 70.38552998800981,
+      "peak_rss_bytes": 434683904,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b0129d69d0a22bb367fabd8e527188c169c8910b3ba6d3b8d456eba4366751c2",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:06.580733+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4370432
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279600128
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538411008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 3.8,
+            "rss_bytes": 121618432
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 20540,
+        "policy": 253314,
+        "rollout": 7718
+      },
+      "output_file_bytes": 286534,
+      "output_allocated_bytes": 307200,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 20,
+      "environments": 2,
+      "seed": 42,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.453906768001616,
+      "internal_seconds": 0.1234308,
+      "training_transitions_per_process_second": 70.49905896068523,
+      "peak_rss_bytes": 434630656,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b56890594af68de0d080ffcd171149676651c04145a7b7d185170ea332e2a986",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:07.062319+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277851136
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538411008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 3.7,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6600,
+        "policy": 253442,
+        "rollout": 7590
+      },
+      "output_file_bytes": 272590,
+      "output_allocated_bytes": 290816,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 21,
+      "environments": 1,
+      "seed": 42,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4521453109991853,
+      "internal_seconds": 0.122390908,
+      "training_transitions_per_process_second": 70.77370752620203,
+      "peak_rss_bytes": 434507776,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d7dc3381073e34ed7b92d1be98828cd76754017a48e4fc84f3283bb38cddd050",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:07.543799+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 1078509568
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280005632
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538378240
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 3.6,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6414,
+        "policy": 379779,
+        "rollout": 11385
+      },
+      "output_file_bytes": 402969,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 22,
+      "environments": 4,
+      "seed": 42,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.458872445000452,
+      "internal_seconds": 0.125317243,
+      "training_transitions_per_process_second": 69.7361551094411,
+      "peak_rss_bytes": 434597888,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "e68606e4167ca42fd4c5276696a339ac5c288b6ba70981d81ec0f9b3b018c2bc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:08.024250+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 0
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2275610624
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 538378240
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 3.4,
+            "rss_bytes": 121618432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11182,
+        "policy": 253186,
+        "rollout": 7590
+      },
+      "output_file_bytes": 276917,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 23,
+      "environments": 8,
+      "seed": 42,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4617721690010512,
+      "internal_seconds": 0.127150476,
+      "training_transitions_per_process_second": 69.2982430474868,
+      "peak_rss_bytes": 434782208,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b0129d69d0a22bb367fabd8e527188c169c8910b3ba6d3b8d456eba4366751c2",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:08.510563+00:00",
+        "load_average": [
+          3.15673828125,
+          2.4990234375,
+          2.3974609375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 325861376
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4378624
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278760448
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 97.8,
+            "rss_bytes": 130023424
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 539250688
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 20540,
+        "policy": 253442,
+        "rollout": 7718
+      },
+      "output_file_bytes": 286662,
+      "output_allocated_bytes": 307200,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 28,
+      "environments": 4,
+      "seed": 43,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.46895822000078624,
+      "internal_seconds": 0.128521703,
+      "training_transitions_per_process_second": 68.23635589529991,
+      "peak_rss_bytes": 434552832,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "97c5fc2b028a8063cb7c9d2b0548ffba6f683dcb3012f00f922b0f355f781d68",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:11.139141+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 407.0,
+            "rss_bytes": 89067520
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 226435072
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 327020544
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277679104
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 537120768
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 16604,
+        "policy": 306361,
+        "rollout": 11385
+      },
+      "output_file_bytes": 339739,
+      "output_allocated_bytes": 368640,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 29,
+      "environments": 2,
+      "seed": 43,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.47331054400274297,
+      "internal_seconds": 0.134235282,
+      "training_transitions_per_process_second": 67.60888893236773,
+      "peak_rss_bytes": 434601984,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "cc0bd7f43be73d25f085574a6f18459c42eba596eb3a238131f2753dab1b9adb",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:11.636887+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 160.0,
+            "rss_bytes": 130674688
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 353390592
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 261529600
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278031360
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 96.9,
+            "rss_bytes": 451084288
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 9794,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 333057,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 30,
+      "environments": 8,
+      "seed": 43,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.45173528200393775,
+      "internal_seconds": 0.118553916,
+      "training_transitions_per_process_second": 70.83794707830914,
+      "peak_rss_bytes": 434614272,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "121a0b8201428779675d0111dc7cc42001554111afc46a5aea87386e3ed53ffc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:12.140398+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 381730816
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4407296
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278019072
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 99.6,
+            "rss_bytes": 296366080
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 96.0,
+            "rss_bytes": 130678784
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 85.7,
+            "rss_bytes": 244060160
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 30216,
+        "policy": 306617,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353801,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 31,
+      "environments": 1,
+      "seed": 43,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.480517449999752,
+      "internal_seconds": 0.136288818,
+      "training_transitions_per_process_second": 66.59487600297662,
+      "peak_rss_bytes": 434507776,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d1d74ab9c0b8552b6a77cbd6f8750d9420fd372e19d540a55908e6a98fadeb79",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:12.621178+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4399104
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278125568
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 99.7,
+            "rss_bytes": 410034176
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 99.6,
+            "rss_bytes": 328015872
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 78.8,
+            "rss_bytes": 442568704
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6387,
+        "policy": 306617,
+        "rollout": 11385
+      },
+      "output_file_bytes": 329778,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 32,
+      "environments": 8,
+      "seed": 43,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.4632587539963424,
+      "internal_seconds": 0.124045459,
+      "training_transitions_per_process_second": 69.07586683241101,
+      "peak_rss_bytes": 434757632,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "121a0b8201428779675d0111dc7cc42001554111afc46a5aea87386e3ed53ffc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:13.130107+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 444829696
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 354672640
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4399104
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277195776
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 83.1,
+            "rss_bytes": 580300800
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 44.4,
+            "rss_bytes": 25042944
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 30216,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353673,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 33,
+      "environments": 1,
+      "seed": 43,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.46951003299909644,
+      "internal_seconds": 0.132576028,
+      "training_transitions_per_process_second": 68.15615801773842,
+      "peak_rss_bytes": 434421760,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d1d74ab9c0b8552b6a77cbd6f8750d9420fd372e19d540a55908e6a98fadeb79",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:13.620377+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 108.0,
+            "rss_bytes": 325681152
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 383422464
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 477310976
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277924864
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 81.3,
+            "rss_bytes": 610934784
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6387,
+        "policy": 306745,
+        "rollout": 11385
+      },
+      "output_file_bytes": 329906,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 34,
+      "environments": 2,
+      "seed": 43,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.4614509610037203,
+      "internal_seconds": 0.127125733,
+      "training_transitions_per_process_second": 69.34648035057837,
+      "peak_rss_bytes": 434618368,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "cc0bd7f43be73d25f085574a6f18459c42eba596eb3a238131f2753dab1b9adb",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:14.118897+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 412065792
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 517763072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 438968320
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277498880
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 69.1,
+            "rss_bytes": 610963456
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 9794,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 333057,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 35,
+      "environments": 4,
+      "seed": 43,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.4639522389988997,
+      "internal_seconds": 0.127534682,
+      "training_transitions_per_process_second": 68.9726168129903,
+      "peak_rss_bytes": 434708480,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "97c5fc2b028a8063cb7c9d2b0548ffba6f683dcb3012f00f922b0f355f781d68",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:14.609192+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 166.0,
+            "rss_bytes": 174714880
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 548610048
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 443883520
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277564416
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 60.0,
+            "rss_bytes": 610963456
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 16604,
+        "policy": 306361,
+        "rollout": 11385
+      },
+      "output_file_bytes": 339739,
+      "output_allocated_bytes": 368640,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 36,
+      "environments": 8,
+      "seed": 43,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.46165691100031836,
+      "internal_seconds": 0.126211307,
+      "training_transitions_per_process_second": 69.3155441573752,
+      "peak_rss_bytes": 434757632,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "121a0b8201428779675d0111dc7cc42001554111afc46a5aea87386e3ed53ffc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:15.101685+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 576540672
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 358113280
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4423680
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277412864
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 99.8,
+            "rss_bytes": 477765632
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 52.9,
+            "rss_bytes": 610967552
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 30216,
+        "policy": 306617,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353801,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 37,
+      "environments": 4,
+      "seed": 43,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.4634810860006837,
+      "internal_seconds": 0.126811414,
+      "training_transitions_per_process_second": 69.04273112010615,
+      "peak_rss_bytes": 434675712,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "97c5fc2b028a8063cb7c9d2b0548ffba6f683dcb3012f00f922b0f355f781d68",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:15.594802+00:00",
+        "load_average": [
+          3.3046875,
+          2.541015625,
+          2.41162109375
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 103.0,
+            "rss_bytes": 0
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 616022016
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 515796992
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278187008
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 47.4,
+            "rss_bytes": 610967552
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 16604,
+        "policy": 306361,
+        "rollout": 11385
+      },
+      "output_file_bytes": 339739,
+      "output_allocated_bytes": 368640,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 38,
+      "environments": 1,
+      "seed": 43,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.4819405710004503,
+      "internal_seconds": 0.133949278,
+      "training_transitions_per_process_second": 66.3982281748388,
+      "peak_rss_bytes": 434520064,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d1d74ab9c0b8552b6a77cbd6f8750d9420fd372e19d540a55908e6a98fadeb79",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:16.088043+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 445337600
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 544129024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 296611840
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277769216
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 43.1,
+            "rss_bytes": 610975744
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6387,
+        "policy": 306617,
+        "rollout": 11385
+      },
+      "output_file_bytes": 329778,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 39,
+      "environments": 2,
+      "seed": 43,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.471359131995996,
+      "internal_seconds": 0.124952073,
+      "training_transitions_per_process_second": 67.88878760976637,
+      "peak_rss_bytes": 434532352,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "cc0bd7f43be73d25f085574a6f18459c42eba596eb3a238131f2753dab1b9adb",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:16.600582+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 104.0,
+            "rss_bytes": 417300480
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 102.0,
+            "rss_bytes": 76029952
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 571035648
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280452096
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 39.3,
+            "rss_bytes": 610975744
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 9794,
+        "policy": 306617,
+        "rollout": 11385
+      },
+      "output_file_bytes": 333185,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 40,
+      "environments": 2,
+      "seed": 43,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.46161286199640017,
+      "internal_seconds": 0.12782049,
+      "training_transitions_per_process_second": 69.3221585325964,
+      "peak_rss_bytes": 434487296,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "cc0bd7f43be73d25f085574a6f18459c42eba596eb3a238131f2753dab1b9adb",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:17.101971+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 603144192
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 120885248
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 276135936
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4427776
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2278133760
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 36.4,
+            "rss_bytes": 610983936
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 9794,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 333056,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 41,
+      "environments": 4,
+      "seed": 43,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.4756439200064051,
+      "internal_seconds": 0.130070004,
+      "training_transitions_per_process_second": 67.27721863777651,
+      "peak_rss_bytes": 434692096,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "97c5fc2b028a8063cb7c9d2b0548ffba6f683dcb3012f00f922b0f355f781d68",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:17.595088+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 104.0,
+            "rss_bytes": 413626368
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 406736896
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 159956992
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281664512
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 33.7,
+            "rss_bytes": 610983936
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 16604,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 339867,
+      "output_allocated_bytes": 368640,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 42,
+      "environments": 8,
+      "seed": 43,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.47755797599529615,
+      "internal_seconds": 0.135789144,
+      "training_transitions_per_process_second": 67.00757103534418,
+      "peak_rss_bytes": 434696192,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "121a0b8201428779675d0111dc7cc42001554111afc46a5aea87386e3ed53ffc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:18.101150+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 125.0,
+            "rss_bytes": 202309632
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 197521408
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 413147136
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279165952
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 31.5,
+            "rss_bytes": 610988032
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 30216,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353673,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 43,
+      "environments": 1,
+      "seed": 43,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.4678187089957646,
+      "internal_seconds": 0.129793265,
+      "training_transitions_per_process_second": 68.4025657475142,
+      "peak_rss_bytes": 434524160,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d1d74ab9c0b8552b6a77cbd6f8750d9420fd372e19d540a55908e6a98fadeb79",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:18.610023+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 125.0,
+            "rss_bytes": 211140608
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 104.0,
+            "rss_bytes": 391593984
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 233009152
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281357312
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 29.6,
+            "rss_bytes": 610988032
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6387,
+        "policy": 306617,
+        "rollout": 11385
+      },
+      "output_file_bytes": 329778,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 44,
+      "environments": 1,
+      "seed": 43,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.46900483799981885,
+      "internal_seconds": 0.134373347,
+      "training_transitions_per_process_second": 68.22957335892633,
+      "peak_rss_bytes": 434454528,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d1d74ab9c0b8552b6a77cbd6f8750d9420fd372e19d540a55908e6a98fadeb79",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:19.106458+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 268898304
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 103673856
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280267776
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 27.8,
+            "rss_bytes": 611090432
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409829376
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 535183360
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6387,
+        "policy": 306745,
+        "rollout": 11385
+      },
+      "output_file_bytes": 329906,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 45,
+      "environments": 8,
+      "seed": 43,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4640778559987666,
+      "internal_seconds": 0.126727529,
+      "training_transitions_per_process_second": 68.95394724475939,
+      "peak_rss_bytes": 434806784,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "121a0b8201428779675d0111dc7cc42001554111afc46a5aea87386e3ed53ffc",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:19.603968+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 101.0,
+            "rss_bytes": 143310848
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 309149696
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 325701632
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2283278336
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 26.3,
+            "rss_bytes": 616697856
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 48230400
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 30216,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353673,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 46,
+      "environments": 2,
+      "seed": 43,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4569431209965842,
+      "internal_seconds": 0.124860234,
+      "training_transitions_per_process_second": 70.03059796634778,
+      "peak_rss_bytes": 434593792,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "cc0bd7f43be73d25f085574a6f18459c42eba596eb3a238131f2753dab1b9adb",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:20.096589+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 101.0,
+            "rss_bytes": 185360384
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 344608768
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 429432832
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282532864
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 25.0,
+            "rss_bytes": 616759296
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 9794,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 333057,
+      "output_allocated_bytes": 356352,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 47,
+      "environments": 4,
+      "seed": 43,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.45578719100012677,
+      "internal_seconds": 0.121899293,
+      "training_transitions_per_process_second": 70.20820381060489,
+      "peak_rss_bytes": 434679808,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "97c5fc2b028a8063cb7c9d2b0548ffba6f683dcb3012f00f922b0f355f781d68",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:20.582526+00:00",
+        "load_average": [
+          3.44091796875,
+          2.58203125,
+          2.42578125
+        ],
+        "top_processes": [
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 114.0,
+            "rss_bytes": 269373440
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 218001408
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 380616704
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282799104
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 23.8,
+            "rss_bytes": 616902656
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 16604,
+        "policy": 306489,
+        "rollout": 11385
+      },
+      "output_file_bytes": 339867,
+      "output_allocated_bytes": 368640,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 52,
+      "environments": 2,
+      "seed": 44,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.46137310600170167,
+      "internal_seconds": 0.122372774,
+      "training_transitions_per_process_second": 69.358182312174,
+      "peak_rss_bytes": 434569216,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d4124a4fbee949f0459f1afccf5a3c372d38d7a54bd8f2832db2f5942fa2b88c",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:23.166074+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 573784064
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 378363904
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280370176
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 19.2,
+            "rss_bytes": 616988672
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 533901312
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 10017,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 407148,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 53,
+      "environments": 4,
+      "seed": 44,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.46137656299833907,
+      "internal_seconds": 0.124438994,
+      "training_transitions_per_process_second": 69.3576626260385,
+      "peak_rss_bytes": 434720768,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1fcf486e09e3fc5134abfaa63bb4d3592c60069fd4a80d79991148174e879142",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:23.656095+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 402423808
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 603561984
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 24625152
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281156608
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 19.0,
+            "rss_bytes": 617041920
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11322,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277185,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 54,
+      "environments": 8,
+      "seed": 44,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.4727433509979164,
+      "internal_seconds": 0.129247795,
+      "training_transitions_per_process_second": 67.6900054383653,
+      "peak_rss_bytes": 434712576,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b9ed171a32f79cb90fe65cc472eb0c940d060b40f7001b6958df889814aa0bb6",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:24.146918+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 732270592
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 432742400
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282283008
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 18.6,
+            "rss_bytes": 617074688
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 533901312
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 29866,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353323,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 55,
+      "environments": 1,
+      "seed": 44,
+      "repetition": 1,
+      "warmup": false,
+      "process_seconds": 0.4575236599994241,
+      "internal_seconds": 0.12632667,
+      "training_transitions_per_process_second": 69.941738095119,
+      "peak_rss_bytes": 434552832,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1d12855512ce0d4237b2d6f3713a00c67bd0290d6919d032096625a7209c3153",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:24.652044+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 462589952
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 905551872
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282299392
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 19.1,
+            "rss_bytes": 623742976
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 533901312
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6475,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403605,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 56,
+      "environments": 8,
+      "seed": 44,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.46343374999560183,
+      "internal_seconds": 0.121916619,
+      "training_transitions_per_process_second": 69.04978327604258,
+      "peak_rss_bytes": 434774016,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b9ed171a32f79cb90fe65cc472eb0c940d060b40f7001b6958df889814aa0bb6",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:25.140160+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 497139712
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 898125824
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282205184
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 20.6,
+            "rss_bytes": 624807936
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409899008
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 533905408
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 29866,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353323,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 57,
+      "environments": 2,
+      "seed": 44,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.46232416800194187,
+      "internal_seconds": 0.125011822,
+      "training_transitions_per_process_second": 69.21550335189397,
+      "peak_rss_bytes": 434593792,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d4124a4fbee949f0459f1afccf5a3c372d38d7a54bd8f2832db2f5942fa2b88c",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:25.633241+00:00",
+        "load_average": [
+          3.64599609375,
+          2.63916015625,
+          2.4453125
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 898748416
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 527220736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282213376
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 14.2,
+            "rss_bytes": 19857408
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 11.1,
+            "rss_bytes": 8142848
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 10017,
+        "policy": 379971,
+        "rollout": 11385
+      },
+      "output_file_bytes": 406764,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 58,
+      "environments": 4,
+      "seed": 44,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.4576533189974725,
+      "internal_seconds": 0.128466389,
+      "training_transitions_per_process_second": 69.92192271236806,
+      "peak_rss_bytes": 434671616,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1fcf486e09e3fc5134abfaa63bb4d3592c60069fd4a80d79991148174e879142",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:26.125020+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 900567040
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 555982848
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281811968
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 518119424
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11322,
+        "policy": 253186,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277057,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 59,
+      "environments": 1,
+      "seed": 44,
+      "repetition": 2,
+      "warmup": false,
+      "process_seconds": 0.462484540999867,
+      "internal_seconds": 0.133224243,
+      "training_transitions_per_process_second": 69.19150190581009,
+      "peak_rss_bytes": 434536448,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1d12855512ce0d4237b2d6f3713a00c67bd0290d6919d032096625a7209c3153",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:26.610628+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 584912896
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4411392
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2281992192
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 901074944
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 518119424
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6475,
+        "policy": 380355,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403606,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 60,
+      "environments": 4,
+      "seed": 44,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.44840761899831705,
+      "internal_seconds": 0.119320024,
+      "training_transitions_per_process_second": 71.36364023315157,
+      "peak_rss_bytes": 434622464,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1fcf486e09e3fc5134abfaa63bb4d3592c60069fd4a80d79991148174e879142",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:27.102198+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 901214208
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 406179840
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4386816
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279387136
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 518119424
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11322,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277185,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 61,
+      "environments": 1,
+      "seed": 44,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.46250401999714086,
+      "internal_seconds": 0.132390469,
+      "training_transitions_per_process_second": 69.18858780989152,
+      "peak_rss_bytes": 434495488,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1d12855512ce0d4237b2d6f3713a00c67bd0290d6919d032096625a7209c3153",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:27.579323+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 407556096
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 902598656
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280022016
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 518098944
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6475,
+        "policy": 380163,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403414,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 62,
+      "environments": 2,
+      "seed": 44,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.46812403600051766,
+      "internal_seconds": 0.122344775,
+      "training_transitions_per_process_second": 68.35795118190559,
+      "peak_rss_bytes": 434585600,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d4124a4fbee949f0459f1afccf5a3c372d38d7a54bd8f2832db2f5942fa2b88c",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:28.075530+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 905056256
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 67481600
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279391232
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 518103040
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 10017,
+        "policy": 380163,
+        "rollout": 11385
+      },
+      "output_file_bytes": 406956,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 63,
+      "environments": 8,
+      "seed": 44,
+      "repetition": 3,
+      "warmup": false,
+      "process_seconds": 0.46845254200161435,
+      "internal_seconds": 0.130646815,
+      "training_transitions_per_process_second": 68.31001463514254,
+      "peak_rss_bytes": 434675712,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b9ed171a32f79cb90fe65cc472eb0c940d060b40f7001b6958df889814aa0bb6",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:28.573847+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 905138176
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 423165952
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279661568
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 518103040
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 29866,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353323,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 64,
+      "environments": 8,
+      "seed": 44,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.44166253699950175,
+      "internal_seconds": 0.115120831,
+      "training_transitions_per_process_second": 72.45350764272791,
+      "peak_rss_bytes": 434741248,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b9ed171a32f79cb90fe65cc472eb0c940d060b40f7001b6958df889814aa0bb6",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:29.072648+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 905396224
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 127700992
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4390912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2277265408
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 517750784
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 29866,
+        "policy": 306489,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353323,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 65,
+      "environments": 4,
+      "seed": 44,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.45427747599751456,
+      "internal_seconds": 0.12751803,
+      "training_transitions_per_process_second": 70.44152900104402,
+      "peak_rss_bytes": 434786304,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1fcf486e09e3fc5134abfaa63bb4d3592c60069fd4a80d79991148174e879142",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:29.544864+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 101.0,
+            "rss_bytes": 173088768
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 909996032
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2283110400
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 517754880
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11322,
+        "policy": 253442,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277312,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 66,
+      "environments": 2,
+      "seed": 44,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.45247737799945753,
+      "internal_seconds": 0.11951389,
+      "training_transitions_per_process_second": 70.72176766379327,
+      "peak_rss_bytes": 434667520,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d4124a4fbee949f0459f1afccf5a3c372d38d7a54bd8f2832db2f5942fa2b88c",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:30.028796+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 206110720
+          },
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 910127104
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2283122688
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 40.0,
+            "rss_bytes": 24666112
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 517758976
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 10017,
+        "policy": 379971,
+        "rollout": 11385
+      },
+      "output_file_bytes": 406763,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 67,
+      "environments": 1,
+      "seed": 44,
+      "repetition": 4,
+      "warmup": false,
+      "process_seconds": 0.45905261499865446,
+      "internal_seconds": 0.124517897,
+      "training_transitions_per_process_second": 69.70878490713706,
+      "peak_rss_bytes": 434544640,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1d12855512ce0d4237b2d6f3713a00c67bd0290d6919d032096625a7209c3153",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:30.512795+00:00",
+        "load_average": [
+          3.7548828125,
+          2.6787109375,
+          2.45947265625
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 910524416
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 240070656
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4390912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280685568
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 517758976
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6475,
+        "policy": 380163,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403414,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 68,
+      "environments": 8,
+      "seed": 44,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4647693429942592,
+      "internal_seconds": 0.126742454,
+      "training_transitions_per_process_second": 68.8513570921894,
+      "peak_rss_bytes": 434786304,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "b9ed171a32f79cb90fe65cc472eb0c940d060b40f7001b6958df889814aa0bb6",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:31.001246+00:00",
+        "load_average": [
+          3.77490234375,
+          2.70068359375,
+          2.4677734375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 910540800
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 274481152
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4390912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280701952
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 45953024
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 515579904
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 29866,
+        "policy": 306617,
+        "rollout": 11577
+      },
+      "output_file_bytes": 353451,
+      "output_allocated_bytes": 380928,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 69,
+      "environments": 1,
+      "seed": 44,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4644061110011535,
+      "internal_seconds": 0.122556915,
+      "training_transitions_per_process_second": 68.90520869980654,
+      "peak_rss_bytes": 434401280,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1d12855512ce0d4237b2d6f3713a00c67bd0290d6919d032096625a7209c3153",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:31.495182+00:00",
+        "load_average": [
+          3.77490234375,
+          2.70068359375,
+          2.4677734375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 910540800
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 307875840
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2279862272
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 46084096
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 515579904
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 6475,
+        "policy": 379971,
+        "rollout": 11385
+      },
+      "output_file_bytes": 403222,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    },
+    {
+      "ordinal": 70,
+      "environments": 4,
+      "seed": 44,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4713346240023384,
+      "internal_seconds": 0.136556385,
+      "training_transitions_per_process_second": 67.89231762409469,
+      "peak_rss_bytes": 434733056,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "1fcf486e09e3fc5134abfaa63bb4d3592c60069fd4a80d79991148174e879142",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:31.990638+00:00",
+        "load_average": [
+          3.77490234375,
+          2.70068359375,
+          2.4677734375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 910540800
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 4390912
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2282778624
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 99.7,
+            "rss_bytes": 338735104
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 46084096
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 515584000
+          }
+        ]
+      },
+      "retained_bundles": 2,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 11322,
+        "policy": 253314,
+        "rollout": 7590
+      },
+      "output_file_bytes": 277185,
+      "output_allocated_bytes": 299008,
+      "output_file_count": 12
+    },
+    {
+      "ordinal": 71,
+      "environments": 2,
+      "seed": 44,
+      "repetition": 5,
+      "warmup": false,
+      "process_seconds": 0.4663747289960156,
+      "internal_seconds": 0.131411313,
+      "training_transitions_per_process_second": 68.61435238759128,
+      "peak_rss_bytes": 434524160,
+      "rss_method": "procfs_VmHWM",
+      "training_transitions": 32,
+      "optimizer_steps": 8,
+      "evaluations": 3,
+      "validation_transitions": 24,
+      "invalid_transitions": 0,
+      "identity_sha256": "d4124a4fbee949f0459f1afccf5a3c372d38d7a54bd8f2832db2f5942fa2b88c",
+      "concurrent_workload": {
+        "observed_at": "2026-09-28T06:40:32.491409+00:00",
+        "load_average": [
+          3.77490234375,
+          2.70068359375,
+          2.4677734375
+        ],
+        "top_processes": [
+          {
+            "category": "análisis estático",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 910540800
+          },
+          {
+            "category": "compilación nativa",
+            "lifetime_cpu_percent": 100.0,
+            "rss_bytes": 366125056
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 99.9,
+            "rss_bytes": 2280648704
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 9.7,
+            "rss_bytes": 226947072
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 409972736
+          },
+          {
+            "category": "procesos Python",
+            "lifetime_cpu_percent": 6.1,
+            "rss_bytes": 46084096
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 5.4,
+            "rss_bytes": 515584000
+          },
+          {
+            "category": "otros procesos",
+            "lifetime_cpu_percent": 2.3,
+            "rss_bytes": 8867840
+          }
+        ]
+      },
+      "retained_bundles": 3,
+      "recent_bundles": 2,
+      "selected_best_present": true,
+      "retained_payload_bytes": {
+        "metadata": 10017,
+        "policy": 379971,
+        "rollout": 11385
+      },
+      "output_file_bytes": 406764,
+      "output_allocated_bytes": 430080,
+      "output_file_count": 16
+    }
+  ],
+  "summaries": [
+    {
+      "environments": 1,
+      "seed": 42,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.45108467600221047,
+        "minimum": 0.43810913599736523,
+        "maximum": 0.4578060819985694,
+        "mean": 0.44938367840077265,
+        "stdev_sample": 0.007265773853314693
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.122390908,
+        "minimum": 0.118228067,
+        "maximum": 0.128628528,
+        "mean": 0.12261492040000001,
+        "stdev_sample": 0.004025797646872016
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 70.94011768168154,
+        "minimum": 69.89859081885241,
+        "maximum": 73.04116114162122,
+        "mean": 71.22366594012199,
+        "stdev_sample": 1.1619055274104164
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434507776,
+        "minimum": 434417664,
+        "maximum": 434577408,
+        "mean": 434504499.2,
+        "stdev_sample": 74260.8301811931
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 403545,
+        "minimum": 402969,
+        "maximum": 403545,
+        "mean": 403429.8,
+        "stdev_sample": 257.59503100797576
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 430080,
+        "minimum": 430080,
+        "maximum": 430080,
+        "mean": 430080,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 2,
+      "seed": 42,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.4490591220019269,
+        "minimum": 0.4397641859977739,
+        "maximum": 0.7187709380013985,
+        "mean": 0.5013865344008082,
+        "stdev_sample": 0.12163133565209985
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.1234308,
+        "minimum": 0.120339782,
+        "maximum": 0.37912531,
+        "mean": 0.173862238,
+        "stdev_sample": 0.11475613738103581
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 71.26010458788251,
+        "minimum": 44.52044219953943,
+        "maximum": 72.7662711491517,
+        "mean": 66.17726055040062,
+        "stdev_sample": 12.13484165559523
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434589696,
+        "minimum": 434495488,
+        "maximum": 434630656,
+        "mean": 434570854.4,
+        "stdev_sample": 63626.5842301785
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 272464,
+        "minimum": 272336,
+        "maximum": 272590,
+        "mean": 272463.4,
+        "stdev_sample": 89.8042315261369
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 290816,
+        "minimum": 290816,
+        "maximum": 290816,
+        "mean": 290816,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        2
+      ]
+    },
+    {
+      "environments": 4,
+      "seed": 42,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.458872445000452,
+        "minimum": 0.4425373429985484,
+        "maximum": 0.9733403729987913,
+        "mean": 0.5567964308007504,
+        "stdev_sample": 0.23296124939825355
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.125317243,
+        "minimum": 0.121587108,
+        "maximum": 0.616192622,
+        "mean": 0.222168888,
+        "stdev_sample": 0.2202749045238603
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 69.7361551094411,
+        "minimum": 32.87647454857987,
+        "maximum": 72.31028184689255,
+        "mean": 63.14355018144729,
+        "stdev_sample": 16.955819432564503
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434688000,
+        "minimum": 434597888,
+        "maximum": 434769920,
+        "mean": 434674073.6,
+        "stdev_sample": 72442.48176864181
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 276917,
+        "minimum": 276917,
+        "maximum": 277301,
+        "mean": 277019.4,
+        "stdev_sample": 166.8915815731878
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 299008,
+        "minimum": 299008,
+        "maximum": 299008,
+        "mean": 299008,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        2
+      ]
+    },
+    {
+      "environments": 8,
+      "seed": 42,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.45463890099927085,
+        "minimum": 0.43726977000187617,
+        "maximum": 0.4617721690010512,
+        "mean": 0.4509921816003043,
+        "stdev_sample": 0.00942399714571249
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.125956222,
+        "minimum": 0.117563899,
+        "maximum": 0.130658699,
+        "mean": 0.125131552,
+        "stdev_sample": 0.004827520350822924
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 70.38552998800981,
+        "minimum": 69.2982430474868,
+        "maximum": 73.18136810569526,
+        "mean": 70.97967459163806,
+        "stdev_sample": 1.49615754547321
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434765824,
+        "minimum": 434683904,
+        "maximum": 434794496,
+        "mean": 434742886.4,
+        "stdev_sample": 52979.50770628206
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 286534,
+        "minimum": 286534,
+        "maximum": 286662,
+        "mean": 286585.2,
+        "stdev_sample": 70.10848736066126
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 307200,
+        "minimum": 307200,
+        "maximum": 307200,
+        "mean": 307200,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        2
+      ]
+    },
+    {
+      "environments": 1,
+      "seed": 43,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.46951003299909644,
+        "minimum": 0.4678187089957646,
+        "maximum": 0.4819405710004503,
+        "mean": 0.47375832019897646,
+        "stdev_sample": 0.006865813539516702
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.133949278,
+        "minimum": 0.129793265,
+        "maximum": 0.136288818,
+        "mean": 0.1333961472,
+        "stdev_sample": 0.002412559488255517
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 68.15615801773842,
+        "minimum": 66.3982281748388,
+        "maximum": 68.4025657475142,
+        "mean": 67.55628026039888,
+        "stdev_sample": 0.974007036041978
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434507776,
+        "minimum": 434421760,
+        "maximum": 434524160,
+        "mean": 434485657.6,
+        "stdev_sample": 45297.38973495051
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 329778,
+        "minimum": 329778,
+        "maximum": 329906,
+        "mean": 329829.2,
+        "stdev_sample": 70.10848736066126
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 356352,
+        "minimum": 356352,
+        "maximum": 356352,
+        "mean": 356352,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 2,
+      "seed": 43,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.46161286199640017,
+        "minimum": 0.4569431209965842,
+        "maximum": 0.47331054400274297,
+        "mean": 0.4649353239990887,
+        "stdev_sample": 0.007043870870600637
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.127125733,
+        "minimum": 0.124860234,
+        "maximum": 0.134235282,
+        "mean": 0.1277987624,
+        "stdev_sample": 0.0038282115576574846
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 69.3221585325964,
+        "minimum": 67.60888893236773,
+        "maximum": 70.03059796634778,
+        "mean": 68.83938267833133,
+        "stdev_sample": 1.0400673392020605
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434593792,
+        "minimum": 434487296,
+        "maximum": 434618368,
+        "mean": 434566758.4,
+        "stdev_sample": 55075.590353622174
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 333057,
+        "minimum": 333056,
+        "maximum": 333185,
+        "mean": 333082.4,
+        "stdev_sample": 57.35677815219401
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 356352,
+        "minimum": 356352,
+        "maximum": 356352,
+        "mean": 356352,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 4,
+      "seed": 43,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.4639522389988997,
+        "minimum": 0.45578719100012677,
+        "maximum": 0.4756439200064051,
+        "mean": 0.4655645312013803,
+        "stdev_sample": 0.007342475975643474
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.127534682,
+        "minimum": 0.121899293,
+        "maximum": 0.130070004,
+        "mean": 0.1269674192,
+        "stdev_sample": 0.003085200903423902
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 68.9726168129903,
+        "minimum": 67.27721863777651,
+        "maximum": 70.20820381060489,
+        "mean": 68.74742525535555,
+        "stdev_sample": 1.0833386091180444
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434679808,
+        "minimum": 434552832,
+        "maximum": 434708480,
+        "mean": 434661785.6,
+        "stdev_sample": 62226.85475580459
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 339739,
+        "minimum": 339739,
+        "maximum": 339867,
+        "mean": 339790.2,
+        "stdev_sample": 70.10848736066126
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 368640,
+        "minimum": 368640,
+        "maximum": 368640,
+        "mean": 368640,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 8,
+      "seed": 43,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.4632587539963424,
+        "minimum": 0.45173528200393775,
+        "maximum": 0.47755797599529615,
+        "mean": 0.46365735579893225,
+        "stdev_sample": 0.009215483826477104
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.126211307,
+        "minimum": 0.118553916,
+        "maximum": 0.135789144,
+        "mean": 0.126265471,
+        "stdev_sample": 0.006231238090126193
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 69.07586683241101,
+        "minimum": 67.00757103534418,
+        "maximum": 70.83794707830914,
+        "mean": 69.03817526963978,
+        "stdev_sample": 1.36454943420742
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434757632,
+        "minimum": 434614272,
+        "maximum": 434806784,
+        "mean": 434726502.4,
+        "stdev_sample": 73989.22611299566
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 353673,
+        "minimum": 353673,
+        "maximum": 353801,
+        "mean": 353724.2,
+        "stdev_sample": 70.10848736066126
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 380928,
+        "minimum": 380928,
+        "maximum": 380928,
+        "mean": 380928,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 1,
+      "seed": 44,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.462484540999867,
+        "minimum": 0.4575236599994241,
+        "maximum": 0.4644061110011535,
+        "mean": 0.461194189399248,
+        "stdev_sample": 0.0028176333514774617
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.12632667,
+        "minimum": 0.122556915,
+        "maximum": 0.133224243,
+        "mean": 0.1278032388,
+        "stdev_sample": 0.004767798418101817
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 69.19150190581009,
+        "minimum": 68.90520869980654,
+        "maximum": 69.941738095119,
+        "mean": 69.38716428355283,
+        "stdev_sample": 0.4245555042187309
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434536448,
+        "minimum": 434401280,
+        "maximum": 434552832,
+        "mean": 434506137.6,
+        "stdev_sample": 62629.969669480124
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 403414,
+        "minimum": 403222,
+        "maximum": 403606,
+        "mean": 403452.2,
+        "stdev_sample": 160.40012468823085
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 430080,
+        "minimum": 430080,
+        "maximum": 430080,
+        "mean": 430080,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 2,
+      "seed": 44,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.46232416800194187,
+        "minimum": 0.45247737799945753,
+        "maximum": 0.46812403600051766,
+        "mean": 0.46213468339992686,
+        "stdev_sample": 0.006077207075971203
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.122372774,
+        "minimum": 0.11951389,
+        "maximum": 0.131411313,
+        "mean": 0.1241309148,
+        "stdev_sample": 0.004510500745681094
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 69.21550335189397,
+        "minimum": 68.35795118190559,
+        "maximum": 70.72176766379327,
+        "mean": 69.25355137947162,
+        "stdev_sample": 0.9190660214491053
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434585600,
+        "minimum": 434524160,
+        "maximum": 434667520,
+        "mean": 434588057.6,
+        "stdev_sample": 51940.12257205406
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 406764,
+        "minimum": 406763,
+        "maximum": 407148,
+        "mean": 406879,
+        "stdev_sample": 171.89822570346675
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 430080,
+        "minimum": 430080,
+        "maximum": 430080,
+        "mean": 430080,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    },
+    {
+      "environments": 4,
+      "seed": 44,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.4576533189974725,
+        "minimum": 0.44840761899831705,
+        "maximum": 0.4713346240023384,
+        "mean": 0.4586099201987963,
+        "stdev_sample": 0.00856365149438361
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.12751803,
+        "minimum": 0.119320024,
+        "maximum": 0.136556385,
+        "mean": 0.1272599644,
+        "stdev_sample": 0.006303689826100291
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 69.92192271236806,
+        "minimum": 67.89231762409469,
+        "maximum": 71.36364023315157,
+        "mean": 69.79541443933937,
+        "stdev_sample": 1.2948170380995965
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434720768,
+        "minimum": 434622464,
+        "maximum": 434786304,
+        "mean": 434706841.6,
+        "stdev_sample": 62361.51592769374
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 277185,
+        "minimum": 277057,
+        "maximum": 277312,
+        "mean": 277184.8,
+        "stdev_sample": 90.15653054549071
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 299008,
+        "minimum": 299008,
+        "maximum": 299008,
+        "mean": 299008,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        2
+      ]
+    },
+    {
+      "environments": 8,
+      "seed": 44,
+      "process_seconds": {
+        "count": 5,
+        "median": 0.4647693429942592,
+        "minimum": 0.44166253699950175,
+        "maximum": 0.4727433509979164,
+        "mean": 0.46221230459777873,
+        "stdev_sample": 0.012043326198586243
+      },
+      "internal_seconds": {
+        "count": 5,
+        "median": 0.126742454,
+        "minimum": 0.115120831,
+        "maximum": 0.130646815,
+        "mean": 0.1247349028,
+        "stdev_sample": 0.0063190241304106574
+      },
+      "training_transitions_per_process_second": {
+        "count": 5,
+        "median": 68.8513570921894,
+        "minimum": 67.6900054383653,
+        "maximum": 72.45350764272791,
+        "mean": 69.27093361689354,
+        "stdev_sample": 1.8558305794448817
+      },
+      "peak_rss_bytes": {
+        "count": 5,
+        "median": 434741248,
+        "minimum": 434675712,
+        "maximum": 434786304,
+        "mean": 434737971.2,
+        "stdev_sample": 45186.139326125216
+      },
+      "output_file_bytes": {
+        "count": 5,
+        "median": 353323,
+        "minimum": 353323,
+        "maximum": 353451,
+        "mean": 353348.6,
+        "stdev_sample": 57.243340223994615
+      },
+      "output_allocated_bytes": {
+        "count": 5,
+        "median": 380928,
+        "minimum": 380928,
+        "maximum": 380928,
+        "mean": 380928,
+        "stdev_sample": 0.0
+      },
+      "retained_bundle_counts": [
+        3
+      ]
+    }
+  ],
+  "limits": [
+    "Son ejecuciones técnicas de 32 transiciones de entrenamiento. No miden calidad de aprendizaje ni rendimiento científico o CUDA.",
+    "Cambiar N cambia el horizonte temporal del recorrido y las trayectorias, aunque se conserven fuentes, muestras globales y pasos de Adam. No se interpreta como aceleración de un trabajo numéricamente equivalente.",
+    "La validación realiza ocho transiciones por evaluación y permanece fija. Sus transiciones se registran aparte del presupuesto de entrenamiento.",
+    "Cinco repeticiones por caso describen dispersión local, no latencias de cola estables.",
+    "No se vaciaron cachés, fijaron afinidades, alteraron permisos o detuvieron aplicaciones ajenas.",
+    "La CPU compartió el equipo con los procesos observados. Los porcentajes de ps son medias de vida del proceso, no uso durante la ejecución medida.",
+    "No se midieron energía, coste monetario, asignaciones, bytes de E/S físicos ni transferencias CPU/GPU.",
+    "Se conservan dos observaciones de proceso de 0,973 y 0,719 segundos. Las cargas concurrentes quedaron registradas, pero no se midió su contribución causal a esos tiempos."
+  ],
+  "benchmark_wall_seconds": 36.48760196699732,
+  "finished_at": "2026-09-28T06:40:33.078693+00:00"
+}

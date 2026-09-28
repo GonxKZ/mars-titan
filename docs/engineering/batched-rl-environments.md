@@ -26,7 +26,7 @@ El límite configurable de 512 MiB comprueba el volumen previsto de buffers, con
 
 `reset(indices)` reinicia exclusivamente los entornos solicitados y rechaza índices repetidos o inexistentes. No hay reinicio automático al terminar. La observación final sigue disponible para calcular el bootstrap de una truncación. Un cierre ausente produce una recompensa inválida, la ruina es una terminación y el límite de la cinta es una truncación. La pausa administrativa consiste en dejar de llamar a `step` y conservar el snapshot, sin introducir una transición ficticia.
 
-`snapshot` conserva todas las carteras y los identificadores de contexto. `restore` valida todos los candidatos y sus observaciones antes de sustituir una cartera. Esta interfaz es una recuperación en memoria. La persistencia de un entrenamiento completo también necesita política, optimizador, RNG, rollout y los manifiestos verificados del consumidor. El lote no crea checkpoints de disco por paso ni sustituye ese contrato.
+`snapshot` conserva todas las carteras y los identificadores de contexto. `restore` valida todos los candidatos y sus observaciones antes de sustituir una cartera. Esta interfaz es una recuperación en memoria. El [ejecutor PPO nativo](native-ppo.md) añade política, optimizador, RNG, rollout parcial y manifiestos verificados para recuperar un entrenamiento. El lote no crea checkpoints de disco por paso.
 
 ## Información externa y estado oculto
 
@@ -42,6 +42,8 @@ El filtro no ajusta parámetros, no suaviza con observaciones futuras y no conoc
 
 `generalized_advantage` admite `[tiempo]` y `[tiempo, entorno]`, calcula en `float64` y mantiene separadas las recurrencias de cada entorno. Una terminación anula el bootstrap y el arrastre. Una truncación solo corta el arrastre entre episodios. Las máscaras deben ser booleanas y recompensas y valores deben ser finitos. No se aplana el lote antes de calcular las ventajas.
 
-El entrenador financiero existente sigue recogiendo decisiones de un entorno. Esta entrega prepara el motor nativo y la primitiva de ventajas, pero no afirma que PPO o Double DQN estén entrenando miles de entornos ni que haya aumentado su calidad. Su integración necesita medir inferencia por lotes, transferencias, recuperación conjunta y presupuesto de actualizaciones. La campaña GPU activa se ejecuta desde su versión congelada.
+El [entrenador PPO C++20](native-ppo.md) ya recoge decisiones por lotes con LibTorch, calcula el bootstrap antes de confirmar la contabilidad y conserva recorridos parciales. Valida el estado inicial y las actualizaciones con una política greedy sobre fuentes sintéticas separadas. Double DQN conserva su implementación previa. Las medidas del motor siguen sin acreditar una aceleración del entrenamiento completo, que incluye inferencia, transferencias, optimizador, validación y persistencia. La campaña GPU activa se ejecuta desde su versión congelada.
+
+El contexto fechado puede entrar en el entrenador mediante los archivos `context.json` y `context.parquet` de cada cinta. El filtro HMM no se conecta automáticamente a la política. Sus probabilidades necesitarían un productor de contexto que respete el corte temporal y acredite sus parámetros y fuentes.
 
 La [revisión de expertos y contexto](../research/contextual-experts.md) propone comparar dos especialistas con un modelo de capacidad equivalente, una media y una mezcla constante. Registra controles para separar el efecto del contexto, la memoria y el coste adicional. El candidato MARS-TITAN, sus especialistas y su posible transferencia siguen pendientes de implementación y validación.
