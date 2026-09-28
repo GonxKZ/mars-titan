@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <stop_token>
 #include <thread>
@@ -53,6 +54,8 @@ struct BatchSnapshot {
     std::vector<std::string> context_sources;
 };
 
+using BatchValidator = std::function<void(std::span<const float>, const BatchTransition&)>;
+
 // Un único controlador por lote. Los trabajadores solo preparan estados independientes.
 class FinancialBatch {
 public:
@@ -65,6 +68,12 @@ public:
     ~FinancialBatch();
 
     [[nodiscard]] const BatchTransition& step(std::span<const uint8_t> actions);
+    [[nodiscard]] const BatchTransition& step_active(std::span<const uint8_t> actions,
+                                                     std::span<const uint8_t> active);
+    // El validador ve el resultado provisional y no puede modificar este lote.
+    [[nodiscard]] const BatchTransition& step_checked(std::span<const uint8_t> actions,
+                                                      std::span<const uint8_t> active,
+                                                      const BatchValidator& validate);
     [[nodiscard]] std::span<const float> observations() const & noexcept;
     std::span<const float> observations() const && = delete;
     [[nodiscard]] std::size_t size() const noexcept;
@@ -72,6 +81,7 @@ public:
     [[nodiscard]] std::size_t workers() const noexcept;
     [[nodiscard]] std::size_t reserved_payload_bytes() const noexcept;
     [[nodiscard]] BatchSnapshot snapshot() const;
+    [[nodiscard]] FinancialMetrics metrics(std::size_t lane) const;
     void restore(const BatchSnapshot& state);
     void reset(std::span<const std::size_t> indices);
 
@@ -93,6 +103,8 @@ private:
     BatchTransition transition_;
     BatchTransition staged_transition_;
     std::span<const uint8_t> actions_;
+    std::vector<uint8_t> active_;
+    bool stepping_ = false;
     std::vector<std::exception_ptr> errors_;
     std::mutex mutex_;
     std::condition_variable_any work_;

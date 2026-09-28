@@ -45,6 +45,23 @@ std::string context_source(const BatchInput& input) {
     }
     return {};
 }
+
+class StepGuard {
+public:
+    explicit StepGuard(bool& active) : active_(active) {
+        if (active_) {
+            throw std::logic_error("El lote no admite una operación reentrante");
+        }
+        active_ = true;
+    }
+    StepGuard(const StepGuard&) = delete;
+    StepGuard& operator=(const StepGuard&) = delete;
+    StepGuard(StepGuard&&) = delete;
+    StepGuard& operator=(StepGuard&&) = delete;
+    ~StepGuard() { active_ = false; }
+private:
+    bool& active_;
+};
 }
 
 void ContextTape::validate(const MarketTape& market) const {
@@ -94,6 +111,7 @@ FinancialBatch::FinancialBatch(std::vector<BatchInput> inputs, std::size_t worke
              context_components * context_width;
     account_bytes(size(), 2 * width_ * sizeof(float), memory_budget, payload_bytes_);
     account_bytes(size(), 2 * (sizeof(double) + 3 * sizeof(uint8_t)), memory_budget, payload_bytes_);
+    account_bytes(size(), sizeof(uint8_t), memory_budget, payload_bytes_);
     std::unordered_set<const MarketTape*> validated_tapes;
     for (const auto& input : inputs_) {
         if (!input.tape || input.tape->assets != first.tape->assets ||
@@ -129,6 +147,7 @@ FinancialBatch::FinancialBatch(std::vector<BatchInput> inputs, std::size_t worke
                                              FinancialSession::ValidatedTape{}));
     }
     observations_.resize(size() * width_);
+    active_.assign(size(), 1);
     staged_observations_.resize(observations_.size());
     resize_transition(transition_, size());
     resize_transition(staged_transition_, size());
@@ -175,6 +194,15 @@ void FinancialBatch::prepare_range(std::size_t worker) {
     const auto end = size() * (worker + 1) / workers_;
     for (std::size_t lane = begin; lane < end; ++lane) {
         auto& session = sessions_[lane];
+        if (active_[lane] == 0) {
+            std::copy_n(observations_.begin() + static_cast<std::ptrdiff_t>(lane * width_), width_,
+                        staged_observations_.begin() + static_cast<std::ptrdiff_t>(lane * width_));
+            staged_transition_.rewards[lane] = 0;
+            staged_transition_.reward_valid[lane] = 0;
+            staged_transition_.terminated[lane] = 0;
+            staged_transition_.truncated[lane] = 0;
+            continue;
+        }
         const auto outcome = session.prepare_step(actions_[lane]);
         observe(lane, session, session.staged_,
                 std::span<float>(staged_observations_).subspan(lane * width_, width_));
@@ -209,11 +237,30 @@ void FinancialBatch::worker_loop(const std::stop_token& stop, std::size_t worker
 }
 
 const BatchTransition& FinancialBatch::step(std::span<const uint8_t> actions) {
-    if (actions.size() != size()) {
+    return step_checked(actions, {}, {});
+}
+
+const BatchTransition& FinancialBatch::step_active(std::span<const uint8_t> actions,
+                                                   std::span<const uint8_t> active) {
+    return step_checked(actions, active, {});
+}
+
+const BatchTransition& FinancialBatch::step_checked(std::span<const uint8_t> actions,
+                                                    std::span<const uint8_t> active,
+                                                    const BatchValidator& validate) {
+    const StepGuard guard(stepping_);
+    if (actions.size() != size() || (!active.empty() && active.size() != size()) ||
+        std::any_of(active.begin(), active.end(), [](uint8_t value) { return value > 1; })) {
         throw std::invalid_argument("El lote de acciones no corresponde a los entornos");
     }
+    if (active.empty()) {
+        std::fill(active_.begin(), active_.end(), 1);
+    } else {
+        std::copy(active.begin(), active.end(), active_.begin());
+    }
     for (std::size_t lane = 0; lane < size(); ++lane) {
-        if (actions[lane] >= action_count || sessions_[lane].done()) {
+        if (active_[lane] != 0 &&
+            (actions[lane] >= action_count || sessions_[lane].done())) {
             throw std::invalid_argument("La acción no está admitida o falta reiniciar un entorno finalizado");
         }
     }
@@ -241,8 +288,13 @@ const BatchTransition& FinancialBatch::step(std::span<const uint8_t> actions) {
             }
         }
     }
-    for (auto& session : sessions_) {
-        session.commit_step();
+    if (validate) {
+        validate(staged_observations_, staged_transition_);
+    }
+    for (std::size_t lane = 0; lane < size(); ++lane) {
+        if (active_[lane] != 0) {
+            sessions_[lane].commit_step();
+        }
     }
     observations_.swap(staged_observations_);
     std::swap(transition_, staged_transition_);
@@ -266,8 +318,15 @@ BatchSnapshot FinancialBatch::snapshot() const {
     return result;
 }
 
+FinancialMetrics FinancialBatch::metrics(std::size_t lane) const {
+    return sessions_.at(lane).metrics();
+}
+
 void FinancialBatch::replace(std::span<const std::size_t> indices,
                              const std::vector<SessionSnapshot>* snapshots) {
+    if (stepping_) {
+        throw std::logic_error("El lote no admite una operación reentrante");
+    }
     std::unordered_set<std::size_t> unique;
     for (const auto lane : indices) {
         if (lane >= size() || !unique.insert(lane).second) {

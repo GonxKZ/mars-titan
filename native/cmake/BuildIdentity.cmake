@@ -32,6 +32,9 @@ function(mars_titan_build_identity source_hash)
                 CMAKE_INTERPROCEDURAL_OPTIMIZATION
                 MARS_TITAN_SANITIZER MARS_TITAN_ENABLE_IPO MARS_TITAN_PGO
                 MARS_TITAN_ENABLE_COVERAGE MARS_TITAN_PROFILE MARS_TITAN_BUILD_FUZZER
+                MARS_TITAN_BUILD_PPO MARS_TITAN_LIBTORCH_ENABLE_CUDA
+                MARS_TITAN_TORCH_VERSION MARS_TITAN_TORCH_CUDA_VERSION
+                MARS_TITAN_TORCH_CXX11_ABI MARS_TITAN_TORCH_CPU_CAPABILITY
                 MARS_TITAN_ENABLE_CUDA MARS_TITAN_ENABLE_LIFETIME
                 MARS_TITAN_ENABLE_CLANG_TIDY MARS_TITAN_ENABLE_STATIC_ANALYZER
                 MARS_TITAN_WARNINGS_AS_ERRORS MARS_TITAN_MSAN_STDLIB_ROOT
@@ -60,8 +63,14 @@ function(mars_titan_build_identity source_hash)
         # Las expresiones de CMake se conservan junto a la configuración que las selecciona.
         set(targets mars_titan_native_options mars_titan_simulation mars_titan_financial)
         if(TARGET mars-titan-sim)
-            list(APPEND targets mars-titan-sim mars_titan::arrow mars_titan::parquet
+            list(APPEND targets mars-titan-sim)
+        endif()
+        if(TARGET mars_titan_simulation_files)
+            list(APPEND targets mars_titan_simulation_files mars_titan::arrow mars_titan::parquet
                 OpenSSL::Crypto Threads::Threads nlohmann_json::nlohmann_json)
+        endif()
+        if(TARGET mars_titan_ppo)
+            list(APPEND targets mars_titan_ppo mars_titan_ppo_files mars-titan-ppo mars_titan::torch)
         endif()
         foreach(target IN LISTS targets)
             foreach(property TYPE COMPILE_FEATURES COMPILE_FLAGS COMPILE_OPTIONS COMPILE_DEFINITIONS
@@ -85,7 +94,7 @@ function(mars_titan_build_identity source_hash)
                 endif()
                 mars_titan_identity_value("${target}.${property}" "${value}")
             endforeach()
-            if(target MATCHES "^(mars_titan_simulation|mars_titan_financial|mars-titan-sim)$")
+            if(target MATCHES "^(mars_titan_simulation|mars_titan_financial|mars_titan_simulation_files|mars_titan_ppo|mars_titan_ppo_files|mars-titan-sim|mars-titan-ppo)$")
                 get_target_property(sources "${target}" SOURCES)
                 foreach(source IN LISTS sources)
                     foreach(property COMPILE_FLAGS COMPILE_OPTIONS COMPILE_DEFINITIONS

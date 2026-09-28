@@ -21,6 +21,7 @@ option(MARS_TITAN_ENABLE_COVERAGE "Instrumentar cobertura de líneas y ramas con
 option(MARS_TITAN_BUILD_SIMULATION "Compilar la biblioteca de simulación" ON)
 option(MARS_TITAN_BUILD_FINANCIAL "Compilar la sesión financiera pura y sus pruebas" OFF)
 option(MARS_TITAN_BUILD_RUNNER "Compilar el ejecutable financiero autónomo" OFF)
+option(MARS_TITAN_BUILD_PPO "Compilar PPO nativo con LibTorch" OFF)
 option(MARS_TITAN_BUILD_FUZZER "Compilar el ejecutable de libFuzzer" OFF)
 set(MARS_TITAN_SANITIZER "none" CACHE STRING "Instrumentación independiente de memoria o hilos")
 set_property(CACHE MARS_TITAN_SANITIZER PROPERTY STRINGS none address address-undefined thread memory)
@@ -39,6 +40,12 @@ include(cmake/Coverage.cmake)
 
 if(MARS_TITAN_BUILD_RUNNER)
     set(MARS_TITAN_BUILD_FINANCIAL ON)
+endif()
+if(MARS_TITAN_BUILD_PPO)
+    set(MARS_TITAN_BUILD_FINANCIAL ON)
+    if(MARS_TITAN_SANITIZER STREQUAL "memory" OR MARS_TITAN_SANITIZER STREQUAL "thread")
+        message(FATAL_ERROR "PPO necesita un runtime LibTorch instrumentado para MSan o TSan. El núcleo conserva sus perfiles independientes")
+    endif()
 endif()
 if(MARS_TITAN_BUILD_FINANCIAL AND NOT MARS_TITAN_BUILD_SIMULATION)
     message(FATAL_ERROR "La sesión financiera necesita el núcleo de simulación")
@@ -137,7 +144,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
         endif()
     endif()
 
-    if(MARS_TITAN_BUILD_RUNNER)
+    if(MARS_TITAN_BUILD_RUNNER OR MARS_TITAN_BUILD_PPO)
         if(MARS_TITAN_SANITIZER STREQUAL "memory")
             message(STATUS "MSan verifica núcleo y sesión pura. El ejecutable con Arrow/OpenSSL precompilados queda excluido")
         elseif(NOT UNIX)
@@ -148,14 +155,66 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_find_arrow()
             find_package(OpenSSL REQUIRED COMPONENTS Crypto)
             find_package(Threads REQUIRED)
-            add_executable(mars-titan-sim src/simulation_main.cpp src/financial_parquet.cpp src/simulation_files.cpp)
-            target_link_libraries(mars-titan-sim PRIVATE mars_titan_financial mars_titan::parquet
+            add_library(mars_titan_simulation_files STATIC src/financial_parquet.cpp src/simulation_files.cpp)
+            target_include_directories(mars_titan_simulation_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+            target_link_libraries(mars_titan_simulation_files PUBLIC mars_titan_financial mars_titan::parquet
                 OpenSSL::Crypto Threads::Threads nlohmann_json::nlohmann_json)
-            mars_titan_configure_target(mars-titan-sim)
+            mars_titan_configure_target(mars_titan_simulation_files)
+            if(MARS_TITAN_BUILD_RUNNER)
+                add_executable(mars-titan-sim src/simulation_main.cpp)
+                target_link_libraries(mars-titan-sim PRIVATE mars_titan_simulation_files)
+                mars_titan_configure_target(mars-titan-sim)
+                list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_main.cpp")
+            endif()
             list(APPEND mars_analysis_sources
-                "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_main.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_parquet.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/simulation_files.cpp")
+        endif()
+    endif()
+
+    if(MARS_TITAN_BUILD_PPO)
+        include(cmake/TorchDependencies.cmake)
+        mars_titan_find_torch()
+        add_library(mars_titan_ppo STATIC src/ppo_policy.cpp src/ppo_training.cpp)
+        target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch)
+        mars_titan_configure_target(mars_titan_ppo)
+        add_library(mars_titan_ppo_files STATIC src/ppo_checkpoints.cpp src/ppo_inputs.cpp)
+        target_include_directories(mars_titan_ppo_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_link_libraries(mars_titan_ppo_files PUBLIC mars_titan_simulation_files)
+        mars_titan_configure_target(mars_titan_ppo_files)
+        add_executable(mars-titan-ppo src/ppo_main.cpp src/ppo_experiment.cpp)
+        target_link_libraries(mars-titan-ppo PRIVATE mars_titan_ppo mars_titan_ppo_files)
+        mars_titan_configure_target(mars-titan-ppo)
+        list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_training.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_checkpoints.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_inputs.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_main.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp")
+        if(BUILD_TESTING)
+            add_executable(ppo_policy_tests tests/ppo_policy_tests.cpp)
+            target_link_libraries(ppo_policy_tests PRIVATE mars_titan_ppo)
+            mars_titan_configure_target(ppo_policy_tests)
+            add_test(NAME ppo_policy COMMAND ppo_policy_tests)
+            set_tests_properties(ppo_policy PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+            mars_titan_sanitizer_test_environment(ppo_policy)
+            set_property(TEST ppo_policy APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            foreach(component training checkpoint inputs)
+                add_executable(ppo_${component}_tests tests/ppo_${component}_tests.cpp)
+                if(component STREQUAL "training")
+                    target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo)
+                else()
+                    target_link_libraries(ppo_${component}_tests PRIVATE mars_titan_ppo_files)
+                endif()
+                mars_titan_configure_target(ppo_${component}_tests)
+                add_test(NAME ppo_${component} COMMAND ppo_${component}_tests)
+                set_tests_properties(ppo_${component} PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+                mars_titan_sanitizer_test_environment(ppo_${component})
+                set_property(TEST ppo_${component} APPEND PROPERTY ENVIRONMENT
+                    "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            endforeach()
         endif()
     endif()
 
@@ -172,8 +231,16 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Coverage.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildIdentity.cmake"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunnerDependencies.cmake")
-        if(TARGET mars-titan-sim)
+        if(TARGET mars_titan_simulation_files)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation_files.hpp")
+        endif()
+        if(MARS_TITAN_BUILD_PPO)
+            list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_policy.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_training.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_checkpoints.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_inputs.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_experiment.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TorchDependencies.cmake")
         endif()
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${identity_files})
         set(identity_content "")

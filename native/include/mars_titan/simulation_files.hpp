@@ -37,11 +37,28 @@ struct ComparisonOptions {
     std::size_t workers = 1;
 };
 
+class OutputLock {
+  public:
+    OutputLock(const std::filesystem::path& directory, bool resume);
+    OutputLock(const OutputLock&) = delete;
+    OutputLock& operator=(const OutputLock&) = delete;
+    OutputLock(OutputLock&&) = delete;
+    OutputLock& operator=(OutputLock&&) = delete;
+    ~OutputLock();
+
+  private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
 void require_safe_path(const std::filesystem::path& path);
 [[nodiscard]] std::string read_bounded_file(const std::filesystem::path& path, std::size_t maximum);
 [[nodiscard]] std::string content_sha256(std::string_view bytes);
+[[nodiscard]] std::size_t process_memory_high_water();
 [[nodiscard]] nlohmann::json parse_bounded_json(std::string_view bytes);
 [[nodiscard]] int64_t read_json_int64(const nlohmann::json& value);
+void atomic_binary_file(const std::filesystem::path& path, std::string_view bytes,
+                        std::size_t maximum, bool replace_existing = true);
 void atomic_json_file(const std::filesystem::path& path, const nlohmann::json& value,
                       std::size_t maximum = maximum_manifest_bytes);
 [[nodiscard]] std::shared_ptr<const MarketTape>
