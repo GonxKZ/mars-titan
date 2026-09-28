@@ -45,6 +45,42 @@
     {"id": "expanded-check-20260922", "path": "data/interim/expanded-reference-campaign-20260922", "kind": "archive", "domain": "technical"},
     {"id": "recurrent-check-20260922", "path": "data/interim/recurrent-campaign-20260922", "kind": "archive", "domain": "technical"},
     {"id": "adaptation-check-20260923", "path": "data/interim/predictive-adaptation-verified-check-20260923", "kind": "archive", "domain": "technical"},
-    {"id": "klpo-check-20260924", "path": "data/interim/klpo-verified-check-20260924", "kind": "archive", "domain": "technical"}
+    {"id": "klpo-check-20260924", "path": "data/interim/klpo-verified-check-20260924", "kind": "archive", "domain": "technical"},
+    {
+      "id": "neural-strict140-us-fold-000",
+      "path": "data/interim/strict140-us-temporal-search-20260928/fold-000",
+      "kind": "neural",
+      "domain": "real",
+      "configuration": "configs/baselines/strict-temporal-search-us.json",
+      "configuration_snapshot": "data/interim/strict140-configurations-20260928/strict-temporal-search-us.json",
+      "configuration_sha256": "7db9f4bda33e04eed6cf8c37c82ebd89ae3e88eb170a89e8770156fd414b7e7f"
+    },
+    {
+      "id": "neural-strict140-us-fold-001",
+      "path": "data/interim/strict140-us-temporal-search-20260928/fold-001",
+      "kind": "neural",
+      "domain": "real",
+      "configuration": "configs/baselines/strict-temporal-search-us.json",
+      "configuration_snapshot": "data/interim/strict140-configurations-20260928/strict-temporal-search-us.json",
+      "configuration_sha256": "7db9f4bda33e04eed6cf8c37c82ebd89ae3e88eb170a89e8770156fd414b7e7f"
+    },
+    {
+      "id": "neural-strict140-us-fold-002",
+      "path": "data/interim/strict140-us-temporal-search-20260928/fold-002",
+      "kind": "neural",
+      "domain": "real",
+      "configuration": "configs/baselines/strict-temporal-search-us.json",
+      "configuration_snapshot": "data/interim/strict140-configurations-20260928/strict-temporal-search-us.json",
+      "configuration_sha256": "7db9f4bda33e04eed6cf8c37c82ebd89ae3e88eb170a89e8770156fd414b7e7f"
+    },
+    {
+      "id": "neural-strict140-us-fold-003",
+      "path": "data/interim/strict140-us-temporal-search-20260928/fold-003",
+      "kind": "neural",
+      "domain": "real",
+      "configuration": "configs/baselines/strict-temporal-search-us.json",
+      "configuration_snapshot": "data/interim/strict140-configurations-20260928/strict-temporal-search-us.json",
+      "configuration_sha256": "7db9f4bda33e04eed6cf8c37c82ebd89ae3e88eb170a89e8770156fd414b7e7f"
+    }
   ]
 }

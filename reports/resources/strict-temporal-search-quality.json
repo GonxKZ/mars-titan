@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-28T02:08:49.926111+00:00",
+  "tests": {
+    "command": "CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/training/test_reference_search.py tests/training/test_temporal_search.py tests/training/test_selection.py tests/training/test_reference_run.py tests/training/test_checkpoint_recovery.py tests/posttraining/test_continuation_selection.py tests/tooling/test_campaign_observatory.py tests/tooling/test_observatory_experiments.py -q",
+    "passed": 153,
+    "additional_controller_cases": 7,
+    "additional_controller_suite_passed": 16,
+    "gpu_admission_cases": 3
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "convention": "Sentencias y ramas del proceso principal, incluidas pruebas CUDA.",
+    "modules": {
+      "src/mars_titan/training/reference_design.py": {
+        "sha256": "73c44f5324753509016075945791edd4fe52408262f008d4bc088955a654d27c",
+        "coverage": {
+          "covered_lines": 19,
+          "num_statements": 21,
+          "percent_covered": 87.87878787878788,
+          "percent_covered_display": "88",
+          "missing_lines": 2,
+          "excluded_lines": 0,
+          "percent_statements_covered": 90.47619047619048,
+          "percent_statements_covered_display": "90",
+          "num_branches": 12,
+          "num_partial_branches": 2,
+          "covered_branches": 10,
+          "missing_branches": 2,
+          "percent_branches_covered": 83.33333333333333,
+          "percent_branches_covered_display": "83"
+        },
+        "functions": [
+          {
+            "name": "candidate_indices",
+            "complexity": 11,
+            "covered_statements": 7,
+            "statements": 7,
+            "crap": 11.0
+          },
+          {
+            "name": "design_cases",
+            "complexity": 11,
+            "covered_statements": 11,
+            "statements": 13,
+            "crap": 11.441
+          }
+        ]
+      },
+      "src/mars_titan/training/reference_search.py": {
+        "sha256": "3f4f4987f272987a9e6d42939d61fc303b5f49baa6e37865d3875f4a13ae8b45",
+        "coverage": {
+          "covered_lines": 178,
+          "num_statements": 213,
+          "percent_covered": 80.85808580858085,
+          "percent_covered_display": "81",
+          "missing_lines": 35,
+          "excluded_lines": 0,
+          "percent_statements_covered": 83.5680751173709,
+          "percent_statements_covered_display": "84",
+          "num_branches": 90,
+          "num_partial_branches": 21,
+          "covered_branches": 67,
+          "missing_branches": 23,
+          "percent_branches_covered": 74.44444444444444,
+          "percent_branches_covered_display": "74"
+        },
+        "functions": [
+          {
+            "name": "_configuration",
+            "complexity": 38,
+            "covered_statements": 16,
+            "statements": 17,
+            "crap": 38.294
+          },
+          {
+            "name": "__init__",
+            "complexity": 3,
+            "covered_statements": 7,
+            "statements": 8,
+            "crap": 3.018
+          },
+          {
+            "name": "save",
+            "complexity": 3,
+            "covered_statements": 5,
+            "statements": 5,
+            "crap": 3.0
+          },
+          {
+            "name": "execute",
+            "complexity": 28,
+            "covered_statements": 42,
+            "statements": 59,
+            "crap": 46.755
+          },
+          {
+            "name": "_task",
+            "complexity": 2,
+            "covered_statements": 3,
+            "statements": 3,
+            "crap": 2.0
+          },
+          {
+            "name": "_execute_design",
+            "complexity": 15,
+            "covered_statements": 24,
+            "statements": 25,
+            "crap": 15.014
+          },
+          {
+            "name": "run_search",
+            "complexity": 51,
+            "covered_statements": 61,
+            "statements": 68,
+            "crap": 53.837
+          },
+          {
+            "name": "main",
+            "complexity": 3,
+            "covered_statements": 1,
+            "statements": 8,
+            "crap": 9.029
+          }
+        ]
+      },
+      "src/mars_titan/training/selection.py": {
+        "sha256": "0a9d348a04217b66fea9927e45792e7d4e7cece3e0ddf085e35974205d266312",
+        "coverage": {
+          "covered_lines": 19,
+          "num_statements": 19,
+          "percent_covered": 100.0,
+          "percent_covered_display": "100",
+          "missing_lines": 0,
+          "excluded_lines": 0,
+          "percent_statements_covered": 100.0,
+          "percent_statements_covered_display": "100",
+          "num_branches": 8,
+          "num_partial_branches": 0,
+          "covered_branches": 8,
+          "missing_branches": 0,
+          "percent_branches_covered": 100.0,
+          "percent_branches_covered_display": "100"
+        },
+        "functions": [
+          {
+            "name": "validate_selection",
+            "complexity": 9,
+            "covered_statements": 3,
+            "statements": 3,
+            "crap": 9.0
+          },
+          {
+            "name": "advance_selection",
+            "complexity": 13,
+            "covered_statements": 11,
+            "statements": 11,
+            "crap": 13.0
+          },
+          {
+            "name": "initial_selection",
+            "complexity": 1,
+            "covered_statements": 4,
+            "statements": 4,
+            "crap": 1.0
+          }
+        ]
+      },
+      "src/mars_titan/training/temporal_search.py": {
+        "sha256": "b318dc789bff9ce7b7eaeca80c7f7514168e9121ea27595941cca81d057f53a6",
+        "coverage": {
+          "covered_lines": 97,
+          "num_statements": 119,
+          "percent_covered": 79.04191616766467,
+          "percent_covered_display": "79",
+          "missing_lines": 22,
+          "excluded_lines": 0,
+          "percent_statements_covered": 81.5126050420168,
+          "percent_statements_covered_display": "82",
+          "num_branches": 48,
+          "num_partial_branches": 11,
+          "covered_branches": 35,
+          "missing_branches": 13,
+          "percent_branches_covered": 72.91666666666667,
+          "percent_branches_covered_display": "73"
+        },
+        "functions": [
+          {
+            "name": "_inputs",
+            "complexity": 32,
+            "covered_statements": 27,
+            "statements": 31,
+            "crap": 34.2
+          },
+          {
+            "name": "run_temporal_search.save",
+            "complexity": 2,
+            "covered_statements": 4,
+            "statements": 4,
+            "crap": 2.0
+          },
+          {
+            "name": "run_temporal_search.observe",
+            "complexity": 3,
+            "covered_statements": 4,
+            "statements": 5,
+            "crap": 3.072
+          },
+          {
+            "name": "run_temporal_search",
+            "complexity": 40,
+            "covered_statements": 55,
+            "statements": 64,
+            "crap": 44.449
+          },
+          {
+            "name": "main",
+            "complexity": 3,
+            "covered_statements": 1,
+            "statements": 9,
+            "crap": 9.321
+          }
+        ]
+      }
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "crap_convention": "CC² × (1 − cobertura de sentencias)³ + CC"
+  },
+  "mutations": [
+    {
+      "mutation": "perder_padre_inicial",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "omitir_comparacion_inicial",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "ignorar_vista_temporal",
+      "detected": true,
+      "returncode": 1
+    }
+  ],
+  "real_preflight": {
+    "folds": 4,
+    "runs_per_fold": 40,
+    "total_runs": 160,
+    "config_sha256": "7db9f4bda33e04eed6cf8c37c82ebd89ae3e88eb170a89e8770156fd414b7e7f",
+    "case_indices": [
+      0,
+      10
+    ],
+    "macro_policy": "all_catalog_indicators_valid",
+    "final_test_opened": false
+  },
+  "limits": [
+    "Las pruebas de orquestación usan estudios simulados para comprobar progreso y fallos. La integración neuronal ejecuta cuatro casos técnicos reales en CUDA.",
+    "La precomprobación real confirma las cuatro vistas y el presupuesto. No declara ejecutadas las 160 configuraciones.",
+    "La selección del padre evita exportar un ajuste peor según el criterio de validación. No garantiza la mejora fuera de esa validación."
+  ],
+  "real_gpu_admission": {
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "free_vram_bytes": 7775846400,
+    "max_vram_bytes": 6442450944,
+    "max_ram_bytes": 12884901888,
+    "reserved_margin_bytes": 1073741824,
+    "classification": "Clasificación del supervisor compartida por la admisión. Los clientes gráficos y mixtos no bloquean la reserva científica y su memoria ocupada reduce el presupuesto disponible."
+  }
+}

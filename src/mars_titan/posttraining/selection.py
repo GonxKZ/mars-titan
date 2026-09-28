@@ -1,6 +1,6 @@
 """Política versionada de selección para ajustes con presupuesto fijo o paciencia."""
 
-from mars_titan.training.selection import advance_selection, validate_selection
+from mars_titan.training.selection import advance_selection, initial_selection, validate_selection
 
 
 def selection_policy(case):
@@ -32,8 +32,6 @@ def select_epoch(previous, score, epoch, policy, epochs):
     initial = type(epoch) is int and epoch == 0
     if initial and previous is not None:
         raise ValueError("La validación inicial ya está confirmada")
-    result = advance_selection(previous, score, 1 if initial else epoch, _options(policy, epochs))
     if initial:
-        # La evaluación inicial no consume una época de ajuste ni paciencia.
-        result.update(last_epoch=0, best_epoch=0)
-    return result
+        return initial_selection(score, _options(policy, epochs))
+    return advance_selection(previous, score, epoch, _options(policy, epochs))

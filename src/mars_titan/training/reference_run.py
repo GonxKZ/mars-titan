@@ -29,7 +29,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .corpus_inputs import CorpusDataset
-from .selection import advance_selection, validate_selection
+from .selection import advance_selection, initial_selection, validate_selection
 
 
 class _Pause(Exception):
@@ -328,7 +328,7 @@ def run_reference_case(
     )
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])
     report_path = output / "run.json"
-    if resume:
+    if resume and report_path.exists():
         report = read_json(report_path)
         if report["identity"] != identity:
             raise ValueError("La identidad o configuración de la ejecución ha cambiado")
@@ -339,7 +339,12 @@ def run_reference_case(
                     raise ValueError("Han cambiado las predicciones confirmadas")
             return report
     else:
-        output.mkdir(parents=True, exist_ok=False)
+        if resume and any(
+            not (p.name.startswith(".run.json.") and p.is_file() and not p.is_symlink())
+            for p in output.iterdir()
+        ):
+            raise ValueError("El inicio interrumpido contiene artefactos desconocidos")
+        output.mkdir(parents=True, exist_ok=resume)
         report = dict(
             schema_version=1,
             status="running",
@@ -368,6 +373,8 @@ def run_reference_case(
         epoch, cursor, step = state["epoch"], state["confirmed_cursor"], state["global_step"]
         statistics, history = state["statistics"], state["history"]
         selection = state.get("selection")
+        if state.get("initial_validation") is not None:
+            report["initial_validation"] = state["initial_validation"]
     report["selection"] = selection
     stop = stop or StopRequest()
     last_saved = time.perf_counter()
@@ -389,6 +396,7 @@ def run_reference_case(
             statistics=statistics,
             history=history,
             selection=selection,
+            initial_validation=report.get("initial_validation"),
         )
         path = save_training_state(
             output / "checkpoints", state, identity=identity, pin=pin, best=best
@@ -401,6 +409,12 @@ def run_reference_case(
     torch.cuda.reset_peak_memory_stats(0)
     try:
         save()
+        if initialization is not None and selection_options and selection is None:
+            baseline = _evaluate(model, dataset, batch_size, stop=stop)
+            report["initial_validation"] = baseline
+            selection = initial_selection(baseline["session_mae"], selection_options)
+            save(best=True)
+            atomic_json(report_path, report)
         while epoch < case["epochs"] and not (selection and selection["should_stop"]):
             if stop.requested:
                 raise _Pause

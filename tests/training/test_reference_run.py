@@ -231,6 +231,25 @@ def test_stop_already_requested_does_not_apply_an_extra_update(tmp_path):
     assert report["status"] == "paused" and report["global_step"] == 0
 
 
+def test_resume_recovers_directory_created_before_initial_report(tmp_path):
+    manifest = training_corpus(tmp_path / "data")
+    output = tmp_path / "run"
+    output.mkdir()
+    (output / ".run.json.interrupted").write_text('{"schema_version":')
+    result = module().run_reference_case(manifest, output, case(), resume=True, batch_size=5)
+    assert result["status"] == "completed"
+
+
+def test_resume_without_report_does_not_adopt_unrelated_artifacts(tmp_path):
+    manifest = training_corpus(tmp_path / "data")
+    output = tmp_path / "run"
+    output.mkdir()
+    (output / "unrelated.json").write_text("{}")
+    with pytest.raises(ValueError):
+        module().run_reference_case(manifest, output, case(), resume=True)
+    assert not (output / "run.json").exists()
+
+
 def test_nonfinite_prediction_does_not_publish_completed_run(tmp_path, monkeypatch):
     manifest = training_corpus(tmp_path / "data")
     engine = module()

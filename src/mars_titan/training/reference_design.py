@@ -3,6 +3,24 @@
 from .selection import validate_selection
 
 
+def candidate_indices(config):
+    """Compartir el recuento del diseño con los lectores de registros, sin importar CUDA."""
+    if config.get("schema_version", 1) == 1:
+        return list(range(12))
+    indices = config.get("case_indices")
+    if (
+        config.get("schema_version") != 2
+        or not isinstance(indices, list)
+        or not 1 <= len(indices) <= 3
+        or any(type(i) is not int or not 0 <= i < 12 for i in indices)
+        or len(set(indices)) != len(indices)
+        or indices != sorted(indices)
+        or len(indices) * len(config["models"]) > 10
+    ):
+        raise ValueError("Los candidatos deben ser índices distintos y acotados antes de comparar")
+    return indices
+
+
 def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0):
     if (
         not isinstance(models, list)

@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.storage import atomic_json
+from mars_titan.training.reference_design import candidate_indices
 
 from .activities import CONDITIONS, FINANCIAL, PREDICTIVE, classify, financial_validation
 
@@ -98,10 +99,11 @@ def planned_runs(kind, config, *, parents=1):
     if kind == "neural":
         arms = sum(len(config["pooled_weightings"]) if a == "US+CN" else 1 for a in config["arms"])
         seeds = len(config["finalist_seeds"])
+        candidates = len(candidate_indices(config))
         return (
             arms
             * len(config["models"])
-            * (12 + seeds - 1 + seeds * len(config["posttraining_losses"]))
+            * (candidates + seeds - 1 + seeds * len(config["posttraining_losses"]))
         )
     if kind == "tabular":
         return (

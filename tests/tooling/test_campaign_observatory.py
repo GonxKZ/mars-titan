@@ -47,6 +47,7 @@ def test_counts_follow_existing_configurations():
         return json.loads((root / "configs/baselines" / name).read_text())
 
     assert planned_runs("neural", load("scientific-search-us.json")) == 80
+    assert planned_runs("neural", load("strict-temporal-search-us.json")) == 40
     assert planned_runs("tabular", load("tabular-search-us.json")) == 17
     assert planned_runs("adaptation", load("klpo-adaptation.json"), parents=6) == 216
 

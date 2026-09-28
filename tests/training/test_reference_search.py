@@ -45,6 +45,52 @@ def setup(tmp_path):
     return config, manifest
 
 
+def strict_configuration(tmp_path):
+    config, manifest = setup(tmp_path)
+    plan = json.loads(config.read_text())
+    plan.update(
+        schema_version=2,
+        case_indices=[0, 10],
+        continuation_selection=dict(metric="session_mae", patience=1, min_delta=0.0),
+    )
+    config.write_text(json.dumps(plan))
+    return config, manifest
+
+
+def test_strict_search_prespecifies_a_bounded_subset_and_posttraining_selection(tmp_path):
+    config, _ = strict_configuration(tmp_path)
+    plan, cases, digest = module()._configuration(config)
+    assert [c["id"] for c in cases] == ["rnn-00-s42", "rnn-10-s42"]
+    assert plan["continuation_selection"]["metric"] == "session_mae"
+    assert len(digest) == 64
+
+
+@pytest.mark.parametrize("indices", [[], [0, 0], [12], [-1], [True], [1.5], [0, 1, 2, 3]])
+def test_strict_search_rejects_unknown_duplicate_or_unbounded_candidates(tmp_path, indices):
+    config, _ = strict_configuration(tmp_path)
+    plan = json.loads(config.read_text())
+    plan["case_indices"] = indices
+    config.write_text(json.dumps(plan))
+    with pytest.raises(ValueError):
+        module()._configuration(config)
+
+
+def test_strict_search_cannot_accept_the_legacy_macro_population(tmp_path):
+    config, manifest = strict_configuration(tmp_path)
+    with pytest.raises(ValueError, match="temporal|macro"):
+        module().run_search(config, manifest, tmp_path / "study")
+    assert not (tmp_path / "study").exists()
+
+
+def test_paired_neural_continuations_keep_the_same_update_budget(tmp_path):
+    config, _ = strict_configuration(tmp_path)
+    plan = json.loads(config.read_text())
+    plan["posttraining_epochs"] = 5
+    config.write_text(json.dumps(plan))
+    with pytest.raises(ValueError, match="presupuesto|paciencia"):
+        module()._configuration(config)
+
+
 def test_search_resumes_without_retraining_confirmed_cases_and_reuses_seed42(tmp_path, monkeypatch):
     config, manifest = setup(tmp_path)
     engine = module()
@@ -121,6 +167,25 @@ def test_declared_context_must_match_the_frozen_population(tmp_path):
     with pytest.raises(ValueError, match="contexto"):
         module().run_search(config, manifest, tmp_path / "study")
     assert not (tmp_path / "study").exists()
+
+
+def test_search_recovers_initial_view_files_without_a_summary(tmp_path, monkeypatch):
+    config, manifest = setup(tmp_path)
+    engine = module()
+    output = tmp_path / "study"
+    (output / "views").mkdir(parents=True)
+    views = engine.campaign_views(manifest, ["US"])
+    (output / "views/US.json").write_text(json.dumps(views["US"]))
+    real = engine.run_reference_case
+
+    def interrupt(*args, **kwargs):
+        result = real(*args, **kwargs)
+        kwargs["stop"].request_stop()
+        return result
+
+    monkeypatch.setattr(engine, "run_reference_case", interrupt)
+    result = engine.run_search(config, manifest, output, resume=True)
+    assert result["status"] == "paused" and result["completed_runs"] == 1
 
 
 def pause_after_case(tmp_path, monkeypatch):

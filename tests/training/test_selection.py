@@ -51,6 +51,93 @@ def test_minimum_improvement_is_measured_against_the_last_accepted_best():
     assert state["best_epoch"] == 3 and state["stale_epochs"] == 0
 
 
+def test_initial_parent_selection_does_not_consume_patience():
+    engine = importlib.import_module("mars_titan.training.selection")
+    policy = dict(metric="session_mae", patience=2, min_delta=0.01)
+    state = engine.initial_selection(0.2, policy)
+    assert state["last_epoch"] == state["best_epoch"] == state["stale_epochs"] == 0
+    state = engine.advance_selection(state, 0.21, 1, policy)
+    assert state["best_epoch"] == 0 and state["stale_epochs"] == 1
+    assert state["should_stop"] is False
+
+
+def test_supervised_continuation_can_keep_parent_and_bound_checkpoint_retention(tmp_path):
+    engine = importlib.import_module("mars_titan.training.reference_run")
+    manifest = training_corpus(tmp_path / "data")
+    base = {**case(), "epochs": 1}
+    parent = engine.run_reference_case(manifest, tmp_path / "parent", base, batch_size=5)
+    options = {
+        **base,
+        "epochs": 6,
+        "loss": "mae",
+        "selection": dict(metric="session_mae", patience=2, min_delta=100.0),
+    }
+    report = engine.run_reference_case(
+        manifest, tmp_path / "child", options, batch_size=5, initialize_from=tmp_path / "parent"
+    )
+    assert report["selection"]["best_epoch"] == 0
+    assert (
+        report["selection"]["best_score"]
+        == parent["predictions"]["validation"]["metrics"]["session_mae"]
+    )
+    assert len(report["epochs"]) == 2 and report["stopped_early"]
+    assert pq.read_table(tmp_path / "parent/validation-predictions.parquet").equals(
+        pq.read_table(tmp_path / "child/validation-predictions.parquet")
+    )
+    state = load_training_state(
+        tmp_path / "child/checkpoints", expected_identity=report["identity"], selection="best"
+    )
+    assert state["epoch"] == state["global_step"] == 0
+    assert state["initial_validation"]["session_mae"] == report["initial_validation"]["session_mae"]
+    assert sum(p.name.startswith("state-") for p in (tmp_path / "child/checkpoints").iterdir()) <= 3
+
+
+def test_parent_baseline_is_recovered_after_pause_without_counting_an_epoch(tmp_path, monkeypatch):
+    from mars_titan.training.checkpoints import StopRequest
+
+    engine = importlib.import_module("mars_titan.training.reference_run")
+    manifest = training_corpus(tmp_path / "data")
+    base = {**case(), "epochs": 1}
+    engine.run_reference_case(manifest, tmp_path / "parent", base, batch_size=5)
+    options = {
+        **base,
+        "epochs": 2,
+        "selection": dict(metric="session_mae", patience=2, min_delta=100.0),
+    }
+    stop = StopRequest()
+    real = engine._evaluate
+
+    def stop_after_complete_validation(*args, **kwargs):
+        result = real(*args, **kwargs)
+        stop.request_stop()
+        return result
+
+    monkeypatch.setattr(engine, "_evaluate", stop_after_complete_validation)
+    paused = engine.run_reference_case(
+        manifest,
+        tmp_path / "child",
+        options,
+        batch_size=5,
+        initialize_from=tmp_path / "parent",
+        stop=stop,
+    )
+    assert paused["status"] == "paused" and paused["global_step"] == 0
+    assert paused["selection"]["stale_epochs"] == 0
+    baseline = paused["initial_validation"]["session_mae"]
+    monkeypatch.setattr(engine, "_evaluate", real)
+    completed = engine.run_reference_case(
+        manifest,
+        tmp_path / "child",
+        options,
+        batch_size=5,
+        initialize_from=tmp_path / "parent",
+        resume=True,
+    )
+    assert completed["selection"]["best_epoch"] == 0
+    assert completed["initial_validation"]["session_mae"] == baseline
+    assert len(completed["epochs"]) == 2
+
+
 def test_best_checkpoint_is_loaded_without_using_latest_as_a_substitute(tmp_path):
     identity = dict(experiment="selection_test")
     first = save_training_state(
