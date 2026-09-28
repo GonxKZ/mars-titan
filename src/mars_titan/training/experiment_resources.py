@@ -1,12 +1,11 @@
 """Admisión de una única carga científica CUDA, con márgenes de RAM y VRAM."""
 
-import csv
 import fcntl
-import io
 import os
 import resource
-import subprocess
 from pathlib import Path
+
+from .gpu_supervisor import read_gpu
 
 GIB = 1024**3
 
@@ -33,17 +32,11 @@ class GpuLease:
         self.handle = (runtime / "mars-titan-scientific-gpu.lock").open("a")
         try:
             fcntl.flock(self.handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            processes = subprocess.run(
-                ["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader"],
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
+            snapshot = read_gpu()
             if not torch.cuda.is_available():
                 raise RuntimeError("CUDA no está disponible. No se cambia a CPU")
-            for pid, _name in csv.reader(io.StringIO(processes.stdout), skipinitialspace=True):
-                if int(pid) != os.getpid():
+            for pid in snapshot.compute_pids:
+                if pid != os.getpid():
                     raise RuntimeError("Hay otra carga de cómputo activa en CUDA")
             free, total = torch.cuda.mem_get_info(0)
             budget = min(self.max_vram, free - self.reserve)

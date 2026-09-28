@@ -46,3 +46,10 @@ def advance_selection(previous, score, epoch, options):
         should_stop=stale >= options["patience"],
         last_improved=improved,
     )
+
+
+def initial_selection(score, options):
+    """Registrar el padre antes del ajuste sin consumir una época ni paciencia."""
+    state = advance_selection(None, score, 1, options)
+    state.update(last_epoch=0, best_epoch=0)
+    return state

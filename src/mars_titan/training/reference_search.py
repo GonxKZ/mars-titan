@@ -15,8 +15,9 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 
 from .checkpoints import StopRequest
 from .reference_campaign import _check_finished, campaign_views
-from .reference_design import design_cases
+from .reference_design import candidate_indices, design_cases
 from .reference_run import _confirmed_state, read_json, run_reference_case, scientific_identity
+from .selection import validate_selection
 
 
 class _Paused(Exception):
@@ -44,11 +45,16 @@ def _configuration(path):
         "pooled_weightings",
         "final_test_opened",
     }
+    extra = (
+        {"case_indices", "continuation_selection"}
+        if isinstance(plan, dict) and plan.get("schema_version") == 2
+        else set()
+    )
     if (
         not isinstance(plan, dict)
-        or set(plan) != keys
+        or set(plan) != keys | extra
         or type(plan["schema_version"]) is not int
-        or plan["schema_version"] != 1
+        or plan["schema_version"] not in {1, 2}
         or plan["scope"] not in {"development_snapshot", "full_corpus"}
         or not isinstance(plan["arms"], list)
         or not plan["arms"]
@@ -87,13 +93,21 @@ def _configuration(path):
         patience=plan["patience"],
         min_delta=plan["min_delta"],
     )
+    if plan["schema_version"] == 2:
+        indices = candidate_indices(plan)
+        validate_selection(plan["continuation_selection"])
+        if plan["continuation_selection"]["patience"] < plan["posttraining_epochs"]:
+            raise ValueError(
+                "La paciencia no puede romper el presupuesto de los controles pareados"
+            )
+        cases = [case for index, case in enumerate(cases) if index % 12 in indices]
     return plan, cases, digest
 
 
 class _Study:
     """Confirmar casos identificados y volver a comprobar los que ya terminaron."""
 
-    def __init__(self, output, plan, views, summary, stop, sources):
+    def __init__(self, output, plan, views, summary, stop, sources, progress=None):
         self.output, self.plan, self.views, self.summary, self.stop = (
             output,
             plan,
@@ -103,6 +117,7 @@ class _Study:
         )
         self.by_id = {item["id"]: item for item in summary["runs"]}
         self.sources = sources
+        self.progress = progress
         self.visited = set()
         if len(self.by_id) != len(summary["runs"]):
             raise ValueError("Hay casos duplicados en la búsqueda")
@@ -112,6 +127,8 @@ class _Study:
             r["status"] == "completed" for r in self.summary["runs"]
         )
         atomic_json(self.output / "summary.json", self.summary)
+        if self.progress is not None:
+            self.progress(self.summary)
 
     def execute(self, task):
         self.visited.add(task["id"])
@@ -250,6 +267,8 @@ def _execute_design(study, cases):
                             epochs=plan["posttraining_epochs"],
                             learning_rate=plan["posttraining_learning_rate"],
                         )
+                        if plan["schema_version"] == 2:
+                            case["selection"] = dict(plan["continuation_selection"])
                         study.execute(
                             _task(
                                 arm,
@@ -265,10 +284,12 @@ def _execute_design(study, cases):
     summary.update(finalists=finalists, selected=selected)
 
 
-def run_search(config: Path, manifest: Path, output: Path, *, resume=False):
+def run_search(config: Path, manifest: Path, output: Path, *, resume=False, progress=None):
     plan, cases, config_hash = _configuration(config)
     views = campaign_views(manifest, plan["arms"])
     first = next(iter(views.values()))
+    if plan["schema_version"] == 2 and "temporal_view" not in first:
+        raise ValueError("La búsqueda estricta necesita una vista temporal con admisión macro")
     if first["context_sessions"] != plan["context_sessions"]:
         raise ValueError("El contexto de la edición no coincide con el diseño de búsqueda")
     source_hash = first["source_manifest_sha256"]
@@ -285,10 +306,9 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False):
     if (output.exists() and not resume) or (resume and not output.is_dir()):
         raise ValueError("Usa un estudio nuevo o solicita continuar uno existente")
     arms = sum(len(plan["pooled_weightings"]) if arm == "US+CN" else 1 for arm in plan["arms"])
-    planned = (
-        arms
-        * len(plan["models"])
-        * (12 + len(plan["finalist_seeds"]) - 1 + len(plan["finalist_seeds"]) * 2)
+    planned = arms * (
+        len(cases)
+        + len(plan["models"]) * (len(plan["finalist_seeds"]) - 1 + len(plan["finalist_seeds"]) * 2)
     )
     if planned > 512:
         raise ValueError("La búsqueda supera el presupuesto de 512 ejecuciones")
@@ -308,9 +328,25 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False):
     descriptor = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        marker = output / "summary.json"
+        if resume and not marker.exists():
+            allowed = {".lock", "views"}
+            if any(
+                p.name not in allowed
+                and not (p.name.startswith(".summary.json.") and p.is_file() and not p.is_symlink())
+                for p in output.iterdir()
+            ):
+                raise ValueError("El inicio interrumpido contiene artefactos desconocidos")
+            folder = output / "views"
+            if folder.exists() and any(
+                p.name not in {f"{arm}.json" for arm in views}
+                and not any(p.name.startswith(f".{arm}.json.") for arm in views)
+                for p in folder.iterdir()
+            ):
+                raise ValueError("El inicio contiene vistas ajenas a la búsqueda")
         summary = (
-            read_json(output / "summary.json")
-            if resume
+            read_json(marker)
+            if resume and marker.exists()
             else dict(
                 schema_version=1,
                 kind="reference_search",
@@ -358,7 +394,13 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False):
                 atomic_json(path, view)
         with StopRequest() as stop:
             study = _Study(
-                output, plan, views, summary, stop, {config: config_hash, manifest: source_hash}
+                output,
+                plan,
+                views,
+                summary,
+                stop,
+                {config: config_hash, manifest: source_hash},
+                progress,
             )
             summary["status"] = "running"
             study.save()
