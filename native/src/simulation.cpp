@@ -130,14 +130,15 @@ extern "C" mt_layout_v1 mt_simulation_layout_v1() {
     return {1, sizeof(mt_position_v1), sizeof(mt_account_v1), sizeof(mt_trade_v1)};
 }
 
-extern "C" int mt_simulation_step_v1(
+namespace {
+template<std::size_t AccountCapacity> int step_accounts(
     uint32_t asset_count, uint32_t account_count, const uint32_t *currencies, const double *lots,
     const uint8_t *retired, const double *prices, const mt_position_v1 *previous_positions,
     const mt_account_v1 *previous_accounts, double cost_rate, double participation,
     int64_t previous_close, int64_t open_at, int64_t close_at, mt_position_v1 *next_positions,
     mt_account_v1 *next_accounts, mt_trade_v1 *trades, char *error, std::size_t error_capacity) {
     if (asset_count == 0 || asset_count > max_assets || account_count == 0 ||
-        account_count > max_accounts || currencies == nullptr || lots == nullptr ||
+        account_count > AccountCapacity || currencies == nullptr || lots == nullptr ||
         retired == nullptr || prices == nullptr || previous_positions == nullptr ||
         previous_accounts == nullptr || next_positions == nullptr || next_accounts == nullptr ||
         trades == nullptr || previous_positions == next_positions ||
@@ -166,8 +167,8 @@ extern "C" int mt_simulation_step_v1(
     }
     std::copy(origin_positions.begin(), origin_positions.end(), positions.begin());
     std::copy(origin_accounts.begin(), origin_accounts.end(), accounts.begin());
-    std::array<CashMovements, max_accounts> movement_storage{};
-    std::array<AccurateSum, max_accounts> request_storage{};
+    std::array<CashMovements, AccountCapacity> movement_storage{};
+    std::array<AccurateSum, AccountCapacity> request_storage{};
     const std::span movements{movement_storage};
     const std::span requested{request_storage};
     for (std::size_t currency = 0; currency < accounts.size(); ++currency) {
@@ -217,7 +218,7 @@ extern "C" int mt_simulation_step_v1(
             }
         }
     }
-    std::array<double, max_accounts> scale_storage{};
+    std::array<double, AccountCapacity> scale_storage{};
     const std::span scales{scale_storage};
     for (std::size_t currency = 0; currency < accounts.size(); ++currency) {
         const double required = requested[currency].value();
@@ -258,8 +259,8 @@ extern "C" int mt_simulation_step_v1(
             }
         }
     }
-    std::array<AccurateSum, max_accounts> invested_storage{};
-    std::array<bool, max_accounts> unvalued_storage{};
+    std::array<AccurateSum, AccountCapacity> invested_storage{};
+    std::array<bool, AccountCapacity> unvalued_storage{};
     const std::span invested{invested_storage};
     const std::span unvalued{unvalued_storage};
     for (std::size_t index = 0; index < positions.size(); ++index) {
@@ -287,6 +288,24 @@ extern "C" int mt_simulation_step_v1(
                        error_capacity);
     }
     return failure(MT_SIM_OK, {}, error, error_capacity);
+}
+} // namespace
+
+extern "C" int mt_simulation_step_v1(
+    uint32_t asset_count, uint32_t account_count, const uint32_t *currencies, const double *lots,
+    const uint8_t *retired, const double *prices, const mt_position_v1 *previous_positions,
+    const mt_account_v1 *previous_accounts, double cost_rate, double participation,
+    int64_t previous_close, int64_t open_at, int64_t close_at, mt_position_v1 *next_positions,
+    mt_account_v1 *next_accounts, mt_trade_v1 *trades, char *error, std::size_t error_capacity) {
+    // La cartera habitual tiene una moneda. Evitar inicializar parciales de 31 cuentas ajenas.
+    if (account_count == 1) {
+        return step_accounts<1>(asset_count, account_count, currencies, lots, retired, prices,
+            previous_positions, previous_accounts, cost_rate, participation, previous_close,
+            open_at, close_at, next_positions, next_accounts, trades, error, error_capacity);
+    }
+    return step_accounts<max_accounts>(asset_count, account_count, currencies, lots, retired, prices,
+        previous_positions, previous_accounts, cost_rate, participation, previous_close,
+        open_at, close_at, next_positions, next_accounts, trades, error, error_capacity);
 }
 
 extern "C" int mt_simulation_observation_v1(uint32_t asset_count, const double *prices,

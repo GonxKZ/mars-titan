@@ -103,11 +103,18 @@ if(MARS_TITAN_BUILD_SIMULATION)
     endif()
 
     if(MARS_TITAN_BUILD_FINANCIAL)
-        add_library(mars_titan_financial STATIC src/financial_session.cpp)
+        find_package(Threads REQUIRED)
+        add_library(mars_titan_financial STATIC src/financial_session.cpp src/financial_batch.cpp
+            src/markov_filter.cpp)
         target_include_directories(mars_titan_financial PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-        target_link_libraries(mars_titan_financial PUBLIC mars_titan_simulation)
+        target_link_libraries(mars_titan_financial PUBLIC mars_titan_simulation Threads::Threads)
         mars_titan_configure_target(mars_titan_financial)
-        list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_session.cpp")
+        add_executable(mars-titan-batch-benchmark benchmarks/batch_rollout.cpp)
+        target_link_libraries(mars-titan-batch-benchmark PRIVATE mars_titan_financial)
+        mars_titan_configure_target(mars-titan-batch-benchmark)
+        list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_session.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/financial_batch.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/markov_filter.cpp")
         if(BUILD_TESTING)
             add_executable(financial_session_tests tests/financial_session_tests.cpp)
             target_link_libraries(financial_session_tests PRIVATE mars_titan_financial)
@@ -115,6 +122,18 @@ if(MARS_TITAN_BUILD_SIMULATION)
             add_test(NAME financial_session COMMAND financial_session_tests)
             set_tests_properties(financial_session PROPERTIES TIMEOUT 60 LABELS "unit;integration;financial")
             mars_titan_sanitizer_test_environment(financial_session)
+            add_executable(financial_batch_tests tests/financial_batch_tests.cpp)
+            target_link_libraries(financial_batch_tests PRIVATE mars_titan_financial)
+            mars_titan_configure_target(financial_batch_tests)
+            add_test(NAME financial_batch COMMAND financial_batch_tests)
+            set_tests_properties(financial_batch PROPERTIES TIMEOUT 60 LABELS "unit;integration;financial;concurrency")
+            mars_titan_sanitizer_test_environment(financial_batch)
+            add_executable(markov_filter_tests tests/markov_filter_tests.cpp)
+            target_link_libraries(markov_filter_tests PRIVATE mars_titan_financial)
+            mars_titan_configure_target(markov_filter_tests)
+            add_test(NAME markov_filter COMMAND markov_filter_tests)
+            set_tests_properties(markov_filter PROPERTIES TIMEOUT 60 LABELS "unit;integration;markov")
+            mars_titan_sanitizer_test_environment(markov_filter)
         endif()
     endif()
 
@@ -144,6 +163,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         set(identity_files ${mars_analysis_sources}
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_session.hpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_batch.hpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/markov_filter.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/accurate_sum.hpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Diagnostics.cmake"

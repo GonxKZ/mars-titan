@@ -129,6 +129,7 @@ public:
 
     [[nodiscard]] StepOutcome step(uint8_t action);
     [[nodiscard]] std::vector<float> observation() const;
+    void observation_into(std::span<float> destination) const;
     [[nodiscard]] SessionSnapshot snapshot() const;
     void restore(const SessionSnapshot& snapshot);
     [[nodiscard]] FinancialMetrics metrics() const;
@@ -136,6 +137,14 @@ public:
     [[nodiscard]] std::size_t cursor() const noexcept;
 
 private:
+    friend class FinancialBatch;
+    struct ValidatedTape {};
+    FinancialSession(std::shared_ptr<const MarketTape> tape, Parameters parameters, ValidatedTape);
+    [[nodiscard]] static std::shared_ptr<const MarketTape>
+    validate_tape(std::shared_ptr<const MarketTape> tape);
+    [[nodiscard]] StepOutcome prepare_step(uint8_t action);
+    void commit_step() noexcept;
+    void observe_state(const SessionSnapshot& state, std::span<float> destination) const;
     std::shared_ptr<const MarketTape> tape_;
     Parameters parameters_;
     SessionSnapshot state_;

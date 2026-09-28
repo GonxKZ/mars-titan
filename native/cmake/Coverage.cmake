@@ -44,7 +44,7 @@ function(mars_titan_coverage_report)
     set(objects "")
     set(targets "")
     foreach(target mars_titan_simulation simulation_tests threaded_simulation c_abi_test
-                   financial_session_tests mars-titan-sim)
+                   financial_session_tests financial_batch_tests markov_filter_tests mars-titan-sim)
         if(TARGET ${target})
             list(APPEND objects "$<TARGET_FILE:${target}>")
             list(APPEND targets ${target})
