@@ -339,3 +339,84 @@ def test_child_that_ignores_pause_is_killed_and_reaped_within_the_bound(setup):
             except subprocess.TimeoutExpired:
                 child.kill()
                 child.wait(timeout=5)
+
+
+def test_owned_legacy_lock_is_hardened_only_after_exclusive_admission(setup):
+    lock = Path(setup[1]["XDG_RUNTIME_DIR"]) / LOCK_NAME
+    lock.touch(mode=0o664)
+    lock.chmod(0o664)
+    with lock.open("a") as occupied:
+        fcntl.flock(occupied, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        assert execute(setup).returncode != 0
+        assert lock.stat().st_mode & 0o777 == 0o664
+    result = execute(setup)
+    assert result.returncode == 0, result.stderr
+    assert lock.stat().st_mode & 0o777 == 0o600
+
+
+def test_gpu_pressure_pauses_the_owned_group_and_preserves_code_two(setup):
+    setup[1]["NATIVE_MODE"] = "wait"
+    probe = Path(setup[1]["PATH"].split(os.pathsep)[0]) / "nvidia-smi"
+    executable(
+        probe,
+        "import os\nfrom pathlib import Path\n"
+        "from time import sleep\n"
+        "sleep(0.02)\n"
+        "started = Path(os.environ['NATIVE_RECORD']).exists()\n"
+        "xml = os.environ['GPU_XML']\n"
+        "print(xml.replace('7400 MiB','512 MiB') if started else xml)\n",
+    )
+    result = execute(setup, "--poll-seconds", "0.02", "--watch-state", str(setup[2] / "watch.json"))
+    assert result.returncode == 2, result.stderr
+    assert record(setup)["signal"] == signal.SIGTERM
+    assert Path(setup[1]["NATIVE_RECORD"] + ".stopped").exists()
+    status = json.loads((setup[2] / "watch.json").read_text())
+    assert status["status"] == "paused" and status["reason"] == "memoria_insuficiente"
+    assert status["returncode"] == 2
+
+
+def test_watcher_does_not_classify_the_native_child_as_foreign_cuda(setup):
+    setup[1]["NATIVE_MODE"] = "wait"
+    probe = Path(setup[1]["PATH"].split(os.pathsep)[0]) / "nvidia-smi"
+    executable(
+        probe,
+        """import json,os
+from pathlib import Path
+path=Path(os.environ['NATIVE_RECORD'])
+xml=os.environ['GPU_XML']
+if path.exists():
+    child=json.loads(path.read_text())['pid']
+    xml=xml.replace('<processes></processes>',f'<processes><process_info><pid>{child}</pid><type>C</type></process_info></processes>')
+print(xml)
+""",
+    )
+    child = subprocess.Popen(
+        command([*setup[0], "--poll-seconds", "0.02"]),
+        env=setup[1],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        wait_until_ready(child, Path(setup[1]["NATIVE_RECORD"]))
+        time.sleep(0.15)
+        assert child.poll() is None
+        child.send_signal(signal.SIGTERM)
+        _, error = child.communicate(timeout=5)
+        assert child.returncode == 2, error
+    finally:
+        if child.poll() is None:
+            child.terminate()
+            child.wait(timeout=5)
+
+
+@pytest.mark.parametrize("location", ["configuration", "output", "source"])
+def test_watch_state_cannot_overwrite_scientific_inputs_or_output(setup, location):
+    args, _, directory = setup
+    path = {
+        "configuration": Path(args[args.index("--config") + 1]),
+        "output": Path(args[args.index("--output") + 1]) / "watch.json",
+        "source": Path(args[args.index("--train-tape") + 1]) / "watch.json",
+    }[location]
+    result = execute(setup, "--watch-state", str(path))
+    assert result.returncode == 2
+    assert not Path(setup[1]["NATIVE_RECORD"]).exists()

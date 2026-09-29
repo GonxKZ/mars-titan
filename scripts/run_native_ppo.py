@@ -2,15 +2,17 @@
 
 import argparse
 import fcntl
+import math
 import os
 import signal
 import stat
 import subprocess
 import sys
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from mars_titan.training.gpu_supervisor import memory_reason, read_gpu
+from mars_titan.training.gpu_supervisor import _Status, memory_reason, read_gpu
 
 MIB = 1024**2
 RESERVE_MIB = 1024
@@ -48,13 +50,15 @@ def gpu_admission():
             not stat.S_ISREG(metadata.st_mode)
             or metadata.st_uid != os.getuid()
             or metadata.st_nlink != 1
-            or metadata.st_mode & 0o022
         ):
             raise ValueError("El bloqueo GPU debe ser un archivo regular privado del usuario")
         try:
             fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as error:
             raise RuntimeError("Otra carga científica mantiene el bloqueo GPU") from error
+        # Las versiones anteriores creaban el bloqueo con umask. Solo su dueño,
+        # dentro del directorio protegido y tras adquirirlo, normaliza los permisos.
+        os.fchmod(descriptor, 0o600)
         current = path.lstat()
         if (current.st_dev, current.st_ino) != (metadata.st_dev, metadata.st_ino):
             raise RuntimeError("El archivo de bloqueo GPU cambió durante la admisión")
@@ -96,8 +100,11 @@ def stop_child(child, signum):
         return 75
 
 
-def run_child(command, descriptor=None):
+def run_child(command, descriptor=None, *, poll_seconds=5, state=None):
     requested = None
+    reason = None
+    snapshot = None
+    status = _Status(state) if state is not None else None
 
     def request(signum, _frame):
         nonlocal requested
@@ -112,6 +119,9 @@ def run_child(command, descriptor=None):
             pass_fds=() if descriptor is None else (descriptor,),
             start_new_session=True,
         )
+        next_probe = time.monotonic() + poll_seconds
+        if status:
+            status.save("running", 1, 0)
         while True:
             if requested is not None:
                 code = stop_child(child, requested)
@@ -120,7 +130,24 @@ def run_child(command, descriptor=None):
                 code = child.wait(timeout=0.1)
                 break
             except subprocess.TimeoutExpired:
-                continue
+                pass
+            if descriptor is not None and time.monotonic() >= next_probe:
+                try:
+                    snapshot = read_gpu()
+                    reason = memory_reason(snapshot, RESERVE_MIB, child.pid)
+                except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+                    reason = "lectura_gpu_fallida"
+                if reason:
+                    if status:
+                        status.save("pausing", 1, 0, reason, snapshot)
+                    code = stop_child(child, signal.SIGTERM)
+                    break
+                if status:
+                    status.save("running", 1, 0, snapshot=snapshot)
+                next_probe = time.monotonic() + poll_seconds
+        if status:
+            phase = "completed" if code == 0 else "paused" if code == 2 else "failed"
+            status.save(phase, 1, int(code == 2), reason, snapshot, code)
         return code if code >= 0 else 128 - code
     finally:
         try:
@@ -140,6 +167,8 @@ def main(argv=None):
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--stop-after", type=int)
+    parser.add_argument("--poll-seconds", type=float, default=5)
+    parser.add_argument("--watch-state", type=Path)
     parser.add_argument(
         "--diagnostic", action="store_true", help="Diagnóstico CPU de hasta 32 transiciones"
     )
@@ -148,6 +177,15 @@ def main(argv=None):
         parser.error("Se admiten como máximo 12 fuentes por partición")
     if args.stop_after is not None and not 0 <= args.stop_after <= 2**63 - 1:
         parser.error("La parada debe ser un número entero no negativo de 64 bits")
+    if not math.isfinite(args.poll_seconds) or not 0.01 <= args.poll_seconds <= 60:
+        parser.error("La consulta de recursos debe estar entre 0,01 y 60 segundos")
+    if args.watch_state is not None:
+        watched = args.watch_state.resolve()
+        if watched == args.config.resolve() or any(
+            watched.is_relative_to(path.resolve())
+            for path in [args.output, *args.train_tape, *args.validation_tape]
+        ):
+            parser.error("El estado de vigilancia debe quedar fuera de las fuentes y de la salida")
     try:
         binary = args.binary.resolve(strict=True)
         if not binary.is_file() or not os.access(binary, os.X_OK):
@@ -163,9 +201,11 @@ def main(argv=None):
             command.append("--resume")
         if args.stop_after is not None:
             command.extend(("--stop-after", str(args.stop_after)))
+        if args.watch_state is not None:
+            args.watch_state.parent.mkdir(parents=True, exist_ok=True)
         if args.diagnostic:
             print("Diagnóstico explícito en CPU, limitado a 32 transiciones", file=sys.stderr)
-            return run_child([*command, "--device", "cpu", "--diagnostic"])
+            return run_child([*command, "--device", "cpu", "--diagnostic"], state=args.watch_state)
         with gpu_admission() as (descriptor, budget, total):
             return run_child(
                 [
@@ -180,6 +220,8 @@ def main(argv=None):
                     str(total),
                 ],
                 descriptor,
+                poll_seconds=args.poll_seconds,
+                state=args.watch_state,
             )
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"Error: {error}", file=sys.stderr)
