@@ -74,12 +74,25 @@ try {
       const failures = [];
       for (const width of [1440, 1024, 768, 390, 320]) {
         await page.setViewportSize({width, height: 1000});
+        await page.evaluate(() => {
+          for (const phase of document.querySelectorAll("#phase-list li")) phase.removeAttribute("aria-current");
+          document.querySelector('#phase-list [data-phase="train"]').setAttribute("aria-current", "step");
+        });
         const result = await page.evaluate(() => {
           const bounds = node => { const range = document.createRange(); range.selectNodeContents(node); return range.getBoundingClientRect(); };
           const overlaps = [...document.querySelectorAll(".model-item")].filter(row => {
             const spans = [...row.children];
             return spans.some((span, index) => index && bounds(spans[index - 1]).right > bounds(span).left + 1);
           }).map(row => row.textContent);
+          const phases = [...document.querySelectorAll("#phase-list li > span:last-child")];
+          for (let index = 1; index < phases.length; index++) {
+            const previous = bounds(phases[index - 1]);
+            const current = bounds(phases[index]);
+            const sameRow = phases[index - 1].parentElement.getBoundingClientRect().top === phases[index].parentElement.getBoundingClientRect().top;
+            if (sameRow && previous.right + 4 > current.left) {
+              overlaps.push(`${phases[index - 1].textContent} / ${phases[index].textContent}`);
+            }
+          }
           return {overflow: document.documentElement.scrollWidth > innerWidth, overlaps};
         });
         if (result.overflow || result.overlaps.length) failures.push({width, ...result});
