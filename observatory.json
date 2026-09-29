@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-29T13:17:05.273104Z",
+  "generated_at": "2026-09-29T13:17:49.261761Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -284,9 +284,9 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 43,
-        "running": 1,
-        "queued": 19,
+        "completed": 44,
+        "paused": 1,
+        "queued": 18,
         "not_started": 0
       },
       "registered_runs": 63
@@ -436,68 +436,6 @@
     "Los entornos de adaptaci\u00f3n RL son escenarios t\u00e9cnicos con 3 conceptos macro simulados. No equivalen al corpus real con 140 indicadores."
   ],
   "runs": [
-    {
-      "run_id": "adaptive-rl-20260929-10d44ecba6bf91a0e4b8",
-      "attempt_id": "legacy",
-      "model_id": "ppo",
-      "activity": "evaluation",
-      "variant_id": "auditoria",
-      "status": "running",
-      "phase": "evaluation",
-      "started_at": null,
-      "updated_at": null,
-      "heartbeat_at": "2026-09-29T13:17:05.057056Z",
-      "completed_steps": null,
-      "total_steps": null,
-      "epoch": null,
-      "max_epochs": null,
-      "seed": 43,
-      "fold": "unidentified",
-      "comparison_group": null,
-      "metrics": {
-        "mae": null,
-        "mse": null,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": null,
-        "ram_peak_mib": null,
-        "elapsed_seconds": null,
-        "samples_per_second": null
-      },
-      "history": [],
-      "checkpoint": {
-        "step": null,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptive-rl-20260929",
-        "domain": "synthetic",
-        "method": "evaluation",
-        "parent_frozen": null,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "f613685e44f4e4d9d2d46d48eebee8015b3c5161858964b56a620f57f0cc656c",
-        "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "history_axis": "none",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": null,
-        "validation_rows": null,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": null,
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": null
-      }
-    },
     {
       "run_id": "adaptation-check-20260923-08ed7c5ae311fd26270e",
       "attempt_id": "legacy",
@@ -6325,13 +6263,106 @@
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": 11050.66796875
       }
+    },
+    {
+      "run_id": "adaptation-original-us-ad20a8c8d33b1ce871bb",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "c79c3a730b63afa6",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-26T12:16:55.103129Z",
+      "heartbeat_at": null,
+      "completed_steps": 30245,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.015910961262814865,
+        "mse": 0.0006507549522658399,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.59423828125,
+        "ram_peak_mib": 11050.66796875,
+        "elapsed_seconds": 729.5150121580009,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01594773556117583
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015910961262814865
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015941205267616908
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015949745856429262
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016172942780658704
+        }
+      ],
+      "checkpoint": {
+        "step": 30245,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "c79c3a730b63afa6071fb85fea5499bb2415e1bf28086c52567d3234119e1886",
+        "source_sha256": "5172279a30523c5ce34b991cdde4f54200e3d2cd4fedce2ff6262d8d1bcb4b5d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 11050.66796875
+      }
     }
   ],
   "pagination": {
     "total_runs": 1010,
     "page_size": 64,
     "pages": [
-      "pages/0d23df5a0d596dc8110e0484990486c8f5bc32bbaafcd3c8681d0bbcc8ae63bd.json",
+      "pages/313bc853c111e674b36f46b29f97946634095d0dad13ab01928967c7f2a09483.json",
       "pages/e83dfea03177434b64ef4d29fc3973be2c802497c51bc305aa05b9d75215eb8a.json",
       "pages/ff018490ff7e11e5db75c290b718ad4ecb2b270e4fc1f2f3dd627ddb38581714.json",
       "pages/85c1feeb62f2b7fda9c0d30c8772c491a09b32708a9eef94674afe5745c6038a.json",
