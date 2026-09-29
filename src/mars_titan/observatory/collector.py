@@ -637,7 +637,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         updated = utc(datetime.fromtimestamp(report_path.stat().st_mtime, UTC).isoformat())
     # Una escritura puede confirmarse después de comenzar el recorrido del recolector.
     now = now or utc(datetime.now(UTC).isoformat())
-    if updated is not None and updated > now:
+    if updated is not None and datetime.fromisoformat(updated) > datetime.fromisoformat(now):
         raise ValueError("Recibo con fecha posterior a la observación")
     saved = checkpoint.get("latest", [])
     recovery = report.get("checkpoint", {})

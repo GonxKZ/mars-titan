@@ -210,7 +210,10 @@ def test_waiting_for_gpu_remains_registered_without_claiming_activity(tmp_path, 
     assert runs[0]["completed_steps"] == (32 if report else None)
 
 
-def test_report_written_during_collection_uses_the_actual_observation_time(tmp_path, monkeypatch):
+@pytest.mark.parametrize(("second", "microsecond"), [(1, 500000), (2, 0)])
+def test_report_written_during_collection_uses_the_actual_observation_time(
+    tmp_path, monkeypatch, second, microsecond
+):
     from datetime import UTC, datetime
 
     from mars_titan.observatory import collector as module
@@ -227,7 +230,7 @@ def test_report_written_during_collection_uses_the_actual_observation_time(tmp_p
     def read(self, path, **kwargs):
         result = original_read(self, path, **kwargs)
         if path.name == "run.json":
-            Clock.current = datetime(2026, 9, 29, 12, 0, 2, tzinfo=UTC)
+            Clock.current = datetime(2026, 9, 29, 12, 0, second, microsecond, tzinfo=UTC)
         return result
 
     monkeypatch.setattr(module, "datetime", Clock)
@@ -237,8 +240,9 @@ def test_report_written_during_collection_uses_the_actual_observation_time(tmp_p
     report.update(status="running", updated_at="2026-09-29T12:00:01Z")
     snapshot = native_registry(tmp_path, report=report, status="running")
     assert snapshot["runs"][0]["updated_at"] == "2026-09-29T12:00:01Z"
-    assert snapshot["runs"][0]["heartbeat_at"] == "2026-09-29T12:00:02Z"
-    assert snapshot["generated_at"] == "2026-09-29T12:00:02Z"
+    observed = module.utc(Clock.current.isoformat())
+    assert snapshot["runs"][0]["heartbeat_at"] == observed
+    assert snapshot["generated_at"] == observed
 
 
 def test_native_registry_still_rejects_a_future_receipt(tmp_path):
