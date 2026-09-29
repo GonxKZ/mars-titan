@@ -15,7 +15,14 @@ from pathlib import Path
 from mars_titan.data.storage import atomic_json
 from mars_titan.training.reference_design import candidate_indices
 
-from .activities import CONDITIONS, FINANCIAL, PREDICTIVE, classify, financial_validation
+from .activities import (
+    ADAPTIVE_VARIANTS,
+    CONDITIONS,
+    FINANCIAL,
+    PREDICTIVE,
+    classify,
+    financial_validation,
+)
 
 METRICS = (
     "mae",
@@ -59,6 +66,13 @@ KINDS = {
         ("factor_world", "Generador de mundos sintéticos"),
         ("ppo", "PPO"),
         ("double_dqn", "Double DQN"),
+        ("ppo_window", "PPO con ventana temporal"),
+        ("ppo_gru", "PPO con GRU"),
+        ("ppo_episodic", "PPO con memoria episódica"),
+        ("ppo_hmm", "PPO con HMM"),
+        ("ppo_episodic_hmm", "PPO con memoria episódica y HMM"),
+        ("ppo_recent_aux", "PPO con consolidación reciente"),
+        ("ppo_replay_aux", "PPO con consolidación histórica"),
         ("simulator", "Simulador financiero"),
         ("cash", "Mantener efectivo"),
         ("hold_initial", "Conservar posiciones iniciales"),
@@ -184,7 +198,7 @@ def _report_paths(folder, maximum):
                 if entries_seen > maximum * 16:
                     raise ValueError("El recorrido de informes supera su presupuesto")
                 if entry.is_dir(follow_symlinks=False):
-                    if entry.name not in {"private", "checkpoints"}:
+                    if entry.name not in {"private", "checkpoints", "trace"}:
                         pending.append(Path(entry.path))
                 elif entry.name == "run.json":
                     yield safe_path(folder, Path(entry.path).relative_to(folder))
@@ -372,11 +386,11 @@ class Collector:
                 dict(
                     id=k,
                     name=v,
-                    kind={
+                    kind="reinforcement"
+                    if k in ADAPTIVE_VARIANTS
+                    else {
                         "factor_world": "generator",
                         "simulator": "simulation",
-                        "ppo": "reinforcement",
-                        "double_dqn": "reinforcement",
                         "cash": "financial_baseline",
                         "hold_initial": "financial_baseline",
                         "rebalance_50": "financial_baseline",
@@ -392,6 +406,8 @@ class Collector:
                 "La observación del proceso no acredita nuevo progreso.",
                 "El historial conserva comprobaciones técnicas y campañas con poblaciones "
                 "distintas. Los grupos de comparación dependen de sus fuentes.",
+                "Los entornos de adaptación RL son escenarios técnicos con 3 conceptos macro "
+                "simulados. No equivalen al corpus real con 140 indicadores.",
             ],
         )
 
