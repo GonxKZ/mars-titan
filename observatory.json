@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-29T12:49:19.968838Z",
+  "generated_at": "2026-09-29T12:53:17.451957Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -284,9 +284,9 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 36,
+        "completed": 37,
         "running": 1,
-        "queued": 5,
+        "queued": 4,
         "not_started": 0
       },
       "registered_runs": 42
@@ -437,7 +437,7 @@
   ],
   "runs": [
     {
-      "run_id": "adaptive-rl-20260929-118a0e957b8880bc4555",
+      "run_id": "adaptive-rl-20260929-9ba4c04f151c316c51a9",
       "attempt_id": "legacy",
       "model_id": "ppo_hmm",
       "activity": "rl",
@@ -445,13 +445,13 @@
       "status": "running",
       "phase": "train",
       "started_at": null,
-      "updated_at": "2026-09-29T12:49:18Z",
-      "heartbeat_at": "2026-09-29T12:49:19.654093Z",
-      "completed_steps": 14336,
+      "updated_at": "2026-09-29T12:53:16Z",
+      "heartbeat_at": "2026-09-29T12:53:17.163650Z",
+      "completed_steps": 0,
       "total_steps": 524288,
       "epoch": null,
       "max_epochs": null,
-      "seed": 42,
+      "seed": 43,
       "fold": "unidentified",
       "comparison_group": null,
       "metrics": {
@@ -465,7 +465,7 @@
         "latency_p95_ms": null,
         "latency_p99_ms": null,
         "vram_peak_mib": null,
-        "ram_peak_mib": 1301.70703125,
+        "ram_peak_mib": 615.25,
         "elapsed_seconds": null,
         "samples_per_second": null
       },
@@ -485,8 +485,8 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "b5b97e2ffc0a61b3d81f8d6f24cde0400fae339a7fec1761264bf64d1953cc8c",
-        "source_sha256": "a4312eb9654353f5f4fa278865d383158b1cf2fd12f957bad20d66acea3f4584",
+        "configuration_sha256": "fe33f7a3213f79185770aecea0b638ff14f043f2ca325b3ce66e174da65e5926",
+        "source_sha256": "2e3f82a7b0bd69209924ead02a3c099f48837ab2e804112666c59a37cc893b20",
         "history_axis": "none",
         "progress_time_source": "receipt_timestamp",
         "train_rows": null,
@@ -494,7 +494,7 @@
         "parent": null,
         "error_type": null,
         "ram_peak_scope": "executable",
-        "executable_peak_rss_mib": 1301.70703125,
+        "executable_peak_rss_mib": 615.25,
         "process_lifetime_peak_rss_mib": null
       }
     },
@@ -6331,7 +6331,7 @@
     "total_runs": 989,
     "page_size": 64,
     "pages": [
-      "pages/e8cbd97799b53e34a8d00c1a05d682a96df424087d4457b2accdbc2b8f52bcdd.json",
+      "pages/c54235831ccdd554b8a24531ac56d10f98ce07e23f880c55288bb5e76842b9d0.json",
       "pages/4933259ff405d403278d738182f416816eff9b271719bdc371365c6ebc680452.json",
       "pages/cc4e4bf67c95b20fc96421fda7375c5997af09a91999be9b131aa68e1303b2d4.json",
       "pages/c9dd9a581c65b9362050eeba026ae28fa67083056a1f7065e4eb42e218e4c96b.json",
