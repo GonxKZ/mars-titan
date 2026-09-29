@@ -22,6 +22,7 @@ from .activities import (
     PREDICTIVE,
     classify,
     financial_validation,
+    native_adaptation,
 )
 
 METRICS = (
@@ -50,6 +51,39 @@ STATUS = {
     "blocked": "blocked",
     "queued": "queued",
 }
+
+ADAPTIVE_STAGES = {
+    "pilot": "piloto",
+    "main": "comparacion",
+    "auxiliary": "consolidacion",
+    "audit": "auditoria",
+}
+
+
+def adaptive_task(item, relative):
+    stage, model, seed = item.get("stage"), item.get("variant"), item.get("seed")
+    configuration = item.get("config_sha256")
+    if (
+        stage not in ADAPTIVE_STAGES
+        or model not in ADAPTIVE_VARIANTS
+        or type(seed) is not int
+        or seed not in {42, 43, 44}
+        or str(relative) != f"{stage}/{model}-{seed}/run.json"
+        or not isinstance(configuration, str)
+        or not re.fullmatch(r"[a-f0-9]{64}", configuration)
+    ):
+        raise ValueError(
+            "El registro adaptativo no conserva etapa, modelo, semilla o configuración"
+        )
+    return dict(
+        kind=model,
+        activity="evaluation" if stage == "audit" else "rl",
+        phase="evaluation" if stage == "audit" else "train",
+        variant_id=f"{ADAPTIVE_STAGES[stage]}.{model}",
+        native_registry=True,
+    )
+
+
 KINDS = {
     name: label
     for name, label in (
@@ -78,6 +112,7 @@ KINDS = {
         ("hold_initial", "Conservar posiciones iniciales"),
         ("rebalance_50", "Reequilibrar al 50 %"),
         ("financial_comparison", "Resumen de comparación financiera"),
+        ("adaptive_comparison", "Campaña de adaptación RL"),
         ("unknown", "Modelo no identificado"),
     )
 }
@@ -395,6 +430,7 @@ class Collector:
                         "hold_initial": "financial_baseline",
                         "rebalance_50": "financial_baseline",
                         "financial_comparison": "summary",
+                        "adaptive_comparison": "summary",
                     }.get(k, "baseline"),
                 )
                 for k, v in KINDS.items()
@@ -413,6 +449,9 @@ class Collector:
 
     def _campaign(self, source, folder, summary, now, live):
         tasks = {}
+        adaptive = summary.get("kind") == "adaptive_campaign"
+        if adaptive and summary.get("schema_version") != 1:
+            raise ValueError("La versión del registro adaptativo no está admitida")
         runs = summary.get("runs", [])
         if len(runs) > self.max_files:
             raise ValueError("Demasiados recibos en el resumen de campaña")
@@ -436,9 +475,13 @@ class Collector:
                         if item.get("attempts")
                         else item.get("attempt_id", "legacy"),
                     }
+                    if adaptive:
+                        tasks[str(relative)].update(adaptive_task(item, relative))
         if folder.exists():
             for path in _report_paths(folder, self.max_files):
                 relative = str(path.relative_to(folder))
+                if adaptive and relative == "run.json":
+                    continue
                 if relative not in tasks and len(tasks) >= self.max_files:
                     raise ValueError("Demasiados recibos en la campaña")
                 tasks.setdefault(relative, {})
@@ -456,6 +499,16 @@ class Collector:
             ):
                 continue
             report = report or {}
+            if (
+                report
+                and task.get("native_registry")
+                and (
+                    report.get("model") != task["kind"]
+                    or report.get("activity") != task["activity"]
+                    or report.get("seed") != task["seed"]
+                )
+            ):
+                raise ValueError("El recibo nativo no corresponde a su caso registrado")
             recovery = report.get("checkpoint", {})
             checkpoint = (
                 {}
@@ -473,6 +526,19 @@ def _resources(report):
     if not isinstance(attempts, list) or any(not isinstance(row, dict) for row in attempts):
         raise ValueError("Los intentos deben conservar una lista de medidas")
     records = [report, *attempts]
+    if native_adaptation(report):
+        resource = report.get("resources", {})
+        field = (
+            "executable_peak_rss_bytes"
+            if resource.get("ram_peak_method") == "procfs_VmHWM"
+            else "process_lifetime_peak_rss_bytes"
+        )
+        records.append(
+            {
+                field: resource.get("ram_peak_bytes"),
+                "peak_vram_allocated_bytes": resource.get("vram_peak_bytes"),
+            }
+        )
 
     def peak(field):
         values = [finite(row.get(field)) for row in records]
@@ -532,7 +598,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     )
     status = STATUS.get(report.get("status", task.get("status")))
     # Un recibo de error del coordinador puede ser posterior al último punto del hijo.
-    if task.get("status") in {"failed", "paused", "interrupted"}:
+    if task.get("status") in {"failed", "paused", "interrupted", "blocked", "cancelled"}:
         status = STATUS[task["status"]]
     epochs = report.get("epochs", [])
     epochs = epochs if isinstance(epochs, list) else []
@@ -632,11 +698,12 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         attempt_id=identifier(report.get("attempt_id", task.get("attempt_id", "legacy"))),
         model_id=model,
         activity=activity,
-        variant_id=digest(case)[:16] if case else None,
+        variant_id=task.get("variant_id") or (digest(case)[:16] if case else None),
         status=status,
         phase=report.get(
             "phase",
-            {
+            task.get("phase")
+            or {
                 "synthetic_generation": "prepare",
                 "rl": "train",
             }.get(activity, "validation"),
@@ -645,10 +712,15 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         updated_at=updated,
         heartbeat_at=now if live and status == "running" else None,
         completed_steps=max(progress) if progress else None,
-        total_steps=report.get("total_steps"),
+        total_steps=report.get(
+            "total_steps",
+            task.get("planned_transitions")
+            if task.get("native_registry") and activity == "rl"
+            else None,
+        ),
         epoch=epochs[-1]["epoch"] if epochs and predictive else None,
         max_epochs=finite(case.get("epochs")),
-        seed=case.get("seed", report.get("seed")),
+        seed=case.get("seed", report.get("seed", task.get("seed"))),
         fold=task.get("arm") if task.get("arm") in {"US", "CN", "US+CN"} else "unidentified",
         comparison_group=fingerprint if manifest else None,
         metrics=metrics,
@@ -664,7 +736,11 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             currency=currency,
             condition=condition,
             parent_model=parent_model,
-            configuration_sha256=digest(case) if case else None,
+            configuration_sha256=task.get("config_sha256")
+            if task.get("native_registry")
+            else digest(case)
+            if case
+            else None,
             source_sha256=digest(report),
             history_axis="epoch" if predictive else "none",
             progress_time_source="receipt_timestamp" if observed_time else "receipt_mtime",

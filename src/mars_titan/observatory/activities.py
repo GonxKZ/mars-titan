@@ -61,6 +61,7 @@ def classify(report, task, case):
             "hold_initial",
             "rebalance_50",
             "financial_comparison",
+            "adaptive_comparison",
         }
         and "activity" not in report
     ):
@@ -75,7 +76,7 @@ def classify(report, task, case):
         if task.get("stage") == "posttraining"
         else "initial_training"
     )
-    activity = report.get("activity", inferred)
+    activity = report.get("activity", task.get("activity", inferred))
     valid_mode = mode in ADAPTATION_METHODS or (
         mode in NEURAL_CONTROLS and activity == "supervised_continuation"
     )

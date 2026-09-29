@@ -107,3 +107,92 @@ def test_native_audit_exposes_only_status(tmp_path):
     assert run["status"] == "completed"
     assert run["financial_validation"] is None
     assert all(value is None for value in run["metrics"].values())
+
+
+def test_campaign_summary_does_not_turn_cases_into_optimizer_steps(tmp_path):
+    report = native_report("adaptive_comparison")
+    report.update(schema_version=1, kind="adaptive_campaign", completed_cases=21)
+    del report["global_step"]
+    del report["total_steps"]
+    snapshot = collect(tmp_path, report)
+    run = snapshot["runs"][0]
+    assert run["model_id"] == "adaptive_comparison"
+    assert run["completed_steps"] is None
+    assert run["total_steps"] is None
+    assert (
+        next(row for row in snapshot["models"] if row["id"] == "adaptive_comparison")["kind"]
+        == "summary"
+    )
+
+
+def native_registry(tmp_path, *, report=None, status="pending"):
+    folder = tmp_path / "campaign"
+    folder.mkdir()
+    registry = dict(
+        schema_version=1,
+        kind="adaptive_campaign",
+        status="running",
+        planned_runs=1,
+        runs=[
+            dict(
+                path="pilot/ppo_gru-42",
+                stage="pilot",
+                variant="ppo_gru",
+                seed=42,
+                status=status,
+                planned_transitions=8192,
+                transitions=0,
+                config_sha256="a" * 64,
+            )
+        ],
+    )
+    (folder / "registry.json").write_text(json.dumps(registry))
+    aggregate = native_report("adaptive_comparison")
+    aggregate.update(schema_version=1, kind="adaptive_campaign")
+    (folder / "run.json").write_text(json.dumps(aggregate))
+    if report is not None:
+        child = folder / "pilot" / "ppo_gru-42"
+        child.mkdir(parents=True)
+        (child / "run.json").write_text(json.dumps(report))
+    source = dict(
+        id="adaptive", path="campaign", kind="archive", domain="synthetic", summary="registry.json"
+    )
+    with Collector(tmp_path, tmp_path / "cache.sqlite") as collector:
+        return collector.collect([source])
+
+
+def test_native_registry_imports_planned_cases_without_duplicating_the_coordinator(tmp_path):
+    snapshot = native_registry(tmp_path)
+    assert len(snapshot["runs"]) == 1
+    run = snapshot["runs"][0]
+    assert (run["model_id"], run["seed"], run["activity"], run["status"]) == (
+        "ppo_gru",
+        42,
+        "rl",
+        "queued",
+    )
+    assert run["variant_id"] == "piloto.ppo_gru"
+    assert run["completed_steps"] is None
+    assert run["total_steps"] == 8192
+    assert run["metadata"]["configuration_sha256"] == "a" * 64
+    assert snapshot["campaigns"][0]["planned_runs"] == 1
+
+
+def test_native_registry_keeps_confirmed_progress_and_a_blocking_verdict(tmp_path):
+    report = native_report("ppo_gru")
+    report["status"] = "running"
+    report["resources"] = dict(
+        ram_peak_bytes=16 * 1024**2, ram_peak_method="procfs_VmHWM", vram_peak_bytes=None
+    )
+    report["invocation_seconds"] = 9.5
+    run = native_registry(tmp_path, report=report, status="blocked")["runs"][0]
+    assert run["status"] == "blocked"
+    assert run["completed_steps"] == 32
+    assert run["metrics"]["ram_peak_mib"] == 16
+    assert run["metrics"]["vram_peak_mib"] is None
+    assert run["metrics"]["elapsed_seconds"] is None
+
+
+def test_native_registry_rejects_a_different_model_in_the_same_case(tmp_path):
+    with pytest.raises(ValueError):
+        native_registry(tmp_path, report=native_report("ppo_window"))
