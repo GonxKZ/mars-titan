@@ -271,6 +271,9 @@ td.numeric, th.numeric { text-align: right; white-space: nowrap; }
   h2 { font-size: 26px; }
 }
 @media (max-width: 430px) {
+  .phase-track ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .phase-track li:nth-child(3)::before { display: block; }
+  .phase-track li:nth-child(2n)::before { display: none; }
   .page-width { width: calc(100% - 28px); }
   .masthead { flex-wrap: wrap; padding-block: 20px 15px; gap: 16px; }
   .brand-detail { font-size: 11px; }
