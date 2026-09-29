@@ -208,3 +208,41 @@ def test_waiting_for_gpu_remains_registered_without_claiming_activity(tmp_path, 
     assert runs[0]["status"] == "queued"
     assert runs[0]["heartbeat_at"] is None
     assert runs[0]["completed_steps"] == (32 if report else None)
+
+
+def test_report_written_during_collection_uses_the_actual_observation_time(tmp_path, monkeypatch):
+    from datetime import UTC, datetime
+
+    from mars_titan.observatory import collector as module
+
+    class Clock(datetime):
+        current = datetime(2026, 9, 29, 12, tzinfo=UTC)
+
+        @classmethod
+        def now(cls, tz=None):
+            return cls.current
+
+    original_read = Collector.read
+
+    def read(self, path, **kwargs):
+        result = original_read(self, path, **kwargs)
+        if path.name == "run.json":
+            Clock.current = datetime(2026, 9, 29, 12, 0, 2, tzinfo=UTC)
+        return result
+
+    monkeypatch.setattr(module, "datetime", Clock)
+    monkeypatch.setattr(module, "lock_held", lambda folder: True)
+    monkeypatch.setattr(Collector, "read", read)
+    report = native_report("ppo_gru")
+    report.update(status="running", updated_at="2026-09-29T12:00:01Z")
+    snapshot = native_registry(tmp_path, report=report, status="running")
+    assert snapshot["runs"][0]["updated_at"] == "2026-09-29T12:00:01Z"
+    assert snapshot["runs"][0]["heartbeat_at"] == "2026-09-29T12:00:02Z"
+    assert snapshot["generated_at"] == "2026-09-29T12:00:02Z"
+
+
+def test_native_registry_still_rejects_a_future_receipt(tmp_path):
+    report = native_report("ppo_gru")
+    report["updated_at"] = "2099-01-01T00:00:00Z"
+    with pytest.raises(ValueError, match="posterior"):
+        native_registry(tmp_path, report=report)

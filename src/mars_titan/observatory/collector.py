@@ -338,7 +338,10 @@ class Collector:
         return raw
 
     def collect(self, sources, *, now=None):
-        now = utc(now or datetime.now(UTC).isoformat())
+        if now is not None:
+            now = utc(now)
+            if now is None:
+                raise ValueError("La fecha de observación no es válida")
         self.bytes_read = 0
         campaigns, seen = [], set()
         with self.db:
@@ -413,7 +416,7 @@ class Collector:
         return dict(
             schema_version=2,
             project="MARS-TITAN",
-            generated_at=now,
+            generated_at=now or utc(datetime.now(UTC).isoformat()),
             source_status="available" if runs else "no_runs_registered",
             poll_interval_seconds=60,
             stale_after_seconds=900,
@@ -632,6 +635,8 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     updated = utc(observed_time)
     if updated is None and report_path.exists():
         updated = utc(datetime.fromtimestamp(report_path.stat().st_mtime, UTC).isoformat())
+    # Una escritura puede confirmarse después de comenzar el recorrido del recolector.
+    now = now or utc(datetime.now(UTC).isoformat())
     if updated is not None and updated > now:
         raise ValueError("Recibo con fecha posterior a la observación")
     saved = checkpoint.get("latest", [])
@@ -778,6 +783,7 @@ def validation_metrics(measures, mode):
 
 def validate_record(record, now):
     """Rechazar progreso y cronología que el navegador no pueda interpretar."""
+    now = now or utc(datetime.now(UTC).isoformat())
     counters = [
         record[key] for key in ("completed_steps", "total_steps", "epoch", "max_epochs", "seed")
     ]
