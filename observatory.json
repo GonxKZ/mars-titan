@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-28T13:29:45.649085Z",
+  "generated_at": "2026-09-29T10:53:19.945766Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -276,6 +276,20 @@
         "not_started": 0
       },
       "registered_runs": 40
+    },
+    {
+      "id": "adaptive-rl-20260929",
+      "domain": "synthetic",
+      "planned_runs": 42,
+      "status": "running",
+      "dependencies": [],
+      "counts": {
+        "completed": 22,
+        "running": 1,
+        "queued": 19,
+        "not_started": 0
+      },
+      "registered_runs": 42
     }
   ],
   "models": [
@@ -345,6 +359,41 @@
       "kind": "reinforcement"
     },
     {
+      "id": "ppo_window",
+      "name": "PPO con ventana temporal",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_gru",
+      "name": "PPO con GRU",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_episodic",
+      "name": "PPO con memoria epis\u00f3dica",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_hmm",
+      "name": "PPO con HMM",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_episodic_hmm",
+      "name": "PPO con memoria epis\u00f3dica y HMM",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_recent_aux",
+      "name": "PPO con consolidaci\u00f3n reciente",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_replay_aux",
+      "name": "PPO con consolidaci\u00f3n hist\u00f3rica",
+      "kind": "reinforcement"
+    },
+    {
       "id": "simulator",
       "name": "Simulador financiero",
       "kind": "simulation"
@@ -370,6 +419,11 @@
       "kind": "summary"
     },
     {
+      "id": "adaptive_comparison",
+      "name": "Campa\u00f1a de adaptaci\u00f3n RL",
+      "kind": "summary"
+    },
+    {
       "id": "unknown",
       "name": "Modelo no identificado",
       "kind": "baseline"
@@ -378,9 +432,72 @@
   "notes": [
     "El test final permanece sellado. MARS-TITAN no est\u00e1 implementado.",
     "Las curvas sin fechas originales utilizan \u00e9pocas. La observaci\u00f3n del proceso no acredita nuevo progreso.",
-    "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes."
+    "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes.",
+    "Los entornos de adaptaci\u00f3n RL son escenarios t\u00e9cnicos con 3 conceptos macro simulados. No equivalen al corpus real con 140 indicadores."
   ],
   "runs": [
+    {
+      "run_id": "adaptive-rl-20260929-d367ae9531496bbe495b",
+      "attempt_id": "legacy",
+      "model_id": "ppo",
+      "activity": "rl",
+      "variant_id": "comparacion",
+      "status": "running",
+      "phase": "train",
+      "started_at": null,
+      "updated_at": "2026-09-29T10:53:18Z",
+      "heartbeat_at": null,
+      "completed_steps": 276480,
+      "total_steps": 524288,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": null,
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 1308.96875,
+        "elapsed_seconds": null,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptive-rl-20260929",
+        "domain": "synthetic",
+        "method": "rl",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "f613685e44f4e4d9d2d46d48eebee8015b3c5161858964b56a620f57f0cc656c",
+        "source_sha256": "4f6d3295aacf7fa09412bb2c15f92fd6139e4133e49e6e37e15e58c021327f4d",
+        "history_axis": "none",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": null,
+        "validation_rows": null,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "executable",
+        "executable_peak_rss_mib": 1308.96875,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
     {
       "run_id": "adaptation-check-20260923-08ed7c5ae311fd26270e",
       "attempt_id": "legacy",
@@ -6208,119 +6325,27 @@
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": 11050.66796875
       }
-    },
-    {
-      "run_id": "adaptation-original-us-ad20a8c8d33b1ce871bb",
-      "attempt_id": "legacy",
-      "model_id": "adaptation",
-      "activity": "predictive_adaptation",
-      "variant_id": "c79c3a730b63afa6",
-      "status": "completed",
-      "phase": "validation",
-      "started_at": null,
-      "updated_at": "2026-09-26T12:16:55.103129Z",
-      "heartbeat_at": null,
-      "completed_steps": 30245,
-      "total_steps": null,
-      "epoch": 5,
-      "max_epochs": 5,
-      "seed": 44,
-      "fold": "unidentified",
-      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
-      "metrics": {
-        "mae": 0.015910961262814865,
-        "mse": 0.0006507549522658399,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": 72.59423828125,
-        "ram_peak_mib": 11050.66796875,
-        "elapsed_seconds": 729.5150121580009,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01594773556117583
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015910961262814865
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015941205267616908
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015949745856429262
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016172942780658704
-        }
-      ],
-      "checkpoint": {
-        "step": 30245,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptation-original-us",
-        "domain": "real",
-        "method": "klpo_full",
-        "parent_frozen": true,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "c79c3a730b63afa6071fb85fea5499bb2415e1bf28086c52567d3234119e1886",
-        "source_sha256": "5172279a30523c5ce34b991cdde4f54200e3d2cd4fedce2ff6262d8d1bcb4b5d",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": 1548307,
-        "validation_rows": 261069,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": "process_lifetime",
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": 11050.66796875
-      }
     }
   ],
   "pagination": {
-    "total_runs": 947,
+    "total_runs": 989,
     "page_size": 64,
     "pages": [
-      "pages/a2956baf1ae4c9b749e8df39798215f54841fa4e76e06799aabfa6caaffc2a7a.json",
-      "pages/31a8fedcdfc04deec28ccdb8e6a96fe319f5f4e9846587b63e8e738aeead2d1e.json",
-      "pages/f26bd49d608ea5dc80bee7bf3bde92273b747fa47056efa0286a1c1de9831509.json",
-      "pages/1f96d66849b6c99f1d722bfc7ff3f07f5983129bf47868b219aa0a9a70ca5583.json",
-      "pages/d6b1cf0a8535693fe0107f81bca0a53f9e98a3651e2b9ad850f1cad6116f7cc8.json",
-      "pages/7136f0131c704eee3cc07610ce0e8323a8f7af206074c81420354967d657c079.json",
-      "pages/a3a2392c62d8d647760311e63a16aee12b13969cba8f88ab9b1ed096b54be6a2.json",
-      "pages/5c14cdadb8793514aa54726952bb4c232e273cac21aef2f5b7df1832c7362ffe.json",
-      "pages/83aabafae6e2e73ebb0d26fddb05a629ea4b8e9378df95dc59487fedac14805c.json",
-      "pages/edfa52565a2815464bbd3dc51521a303be4a50afa4eeff5f7bc25293c778ae74.json",
-      "pages/5c6fee677d33dfc32153895f56bfdeb93cec1c7fbaab79202a3d343c50c80910.json",
-      "pages/f377c80d0ba7304643f778ea20e7b6afc0056041c372597ddd6aa7d5e01f20af.json",
-      "pages/a6c6a7b2457ae4461562b91c8a330cfbb8a5c069a5d063a9403999a611c4068e.json",
-      "pages/0ec29c8fd8ce0d9afd99b8188256b4c9e8fc5a51c4f3f50736eb3541c88cf650.json"
+      "pages/865a994cefb1fb8a77687428538c533bad3808b79740c4f4a7419df6a85c3f18.json",
+      "pages/4933259ff405d403278d738182f416816eff9b271719bdc371365c6ebc680452.json",
+      "pages/cc4e4bf67c95b20fc96421fda7375c5997af09a91999be9b131aa68e1303b2d4.json",
+      "pages/c9dd9a581c65b9362050eeba026ae28fa67083056a1f7065e4eb42e218e4c96b.json",
+      "pages/112100e3ff94017b1ccffa56f2f9645c7b9d03df2cbeff2fd86f283ce7718c8e.json",
+      "pages/daff57c2b94e1c9f3d859feb889a2ec24248c0d82780ed2fc2003cfb298946cd.json",
+      "pages/c5fd6083cc40ca535add00b6578c01030de839cd5882062b6f031781a09276cd.json",
+      "pages/5b92afd1fa8efec67104626e8d8265190de4a821fb9819ce3e3b0b719c3531f6.json",
+      "pages/31d563dc840e55ccb7d11886d814ff7c570c08be9398e5979e23a35983448112.json",
+      "pages/8f483272f4f270d24a517059236b130c9085aa42e910c57c278b19382077b7a5.json",
+      "pages/01c6c1552f32bf4101e99be56f6fe781b55877826d19d791490d5fd16576e86c.json",
+      "pages/68cf5fd7ccb9699776888d07fc15cdd528c2405a85882040b9db79133f00c791.json",
+      "pages/1eb890182b27e3210dc719f03af10e8d6a6b79f4accb1d0b5dfc1a042eca5b7c.json",
+      "pages/2476f031cd98ae67e7274f4d28fbdff6c2ce92d6c95689b2e1605eef8892d927.json",
+      "pages/a939d50c889f0d4c5afcb7836df4c933e7d4fd343a8d932cf167cdc278a3b032.json"
     ]
   }
 }
