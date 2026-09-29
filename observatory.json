@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-29T13:32:19.051923Z",
+  "generated_at": "2026-09-29T13:33:21.071344Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -284,9 +284,8 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 61,
+        "completed": 62,
         "running": 1,
-        "queued": 1,
         "not_started": 0
       },
       "registered_runs": 63
@@ -437,7 +436,7 @@
   ],
   "runs": [
     {
-      "run_id": "adaptive-rl-20260929-1e1255d6711440f9a9f7",
+      "run_id": "adaptive-rl-20260929-d1cd220a11e69a48a5de",
       "attempt_id": "legacy",
       "model_id": "ppo_episodic_hmm",
       "activity": "evaluation",
@@ -446,12 +445,12 @@
       "phase": "evaluation",
       "started_at": null,
       "updated_at": null,
-      "heartbeat_at": "2026-09-29T13:32:18.759175Z",
+      "heartbeat_at": "2026-09-29T13:33:20.852837Z",
       "completed_steps": null,
       "total_steps": null,
       "epoch": null,
       "max_epochs": null,
-      "seed": 43,
+      "seed": 44,
       "fold": "unidentified",
       "comparison_group": null,
       "metrics": {
@@ -485,7 +484,7 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "49d96bf8f0b0713de54d8d5c9833dd27de71e4d74f5e547caca9160f22c7e08c",
+        "configuration_sha256": "66b25c007381364b2b55e3dd811b3094bbab07797dfe01e6b88d6ad7137e52b5",
         "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
         "history_axis": "none",
         "progress_time_source": "receipt_mtime",
@@ -6331,8 +6330,8 @@
     "total_runs": 1010,
     "page_size": 64,
     "pages": [
-      "pages/1427baa1f618b93a8d90085459e715e5c81b7743dfe10497bbcbe379ee68a798.json",
-      "pages/db514791d0224063ae15154ac6171e14cddb84d57b804bd1c0c074494f70db4a.json",
+      "pages/98b172ce6dc904dd9536d56dc44b9326237946d1522ad0f38380f0d40fccfdaa.json",
+      "pages/04eca648ed39308b39a3eb17cbdac9c46b8154a7269c4c4060856d8068ec6d90.json",
       "pages/ff018490ff7e11e5db75c290b718ad4ecb2b270e4fc1f2f3dd627ddb38581714.json",
       "pages/85c1feeb62f2b7fda9c0d30c8772c491a09b32708a9eef94674afe5745c6038a.json",
       "pages/bfddaeec392dc0cee7cd108234373936e2b96c7fce9d01f3105dfbfd23eed763.json",
