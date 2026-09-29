@@ -171,7 +171,7 @@ def test_native_registry_imports_planned_cases_without_duplicating_the_coordinat
         "rl",
         "queued",
     )
-    assert run["variant_id"] == "piloto.ppo_gru"
+    assert run["variant_id"] == "piloto"
     assert run["completed_steps"] is None
     assert run["total_steps"] == 8192
     assert run["metadata"]["configuration_sha256"] == "a" * 64

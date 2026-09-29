@@ -79,7 +79,7 @@ def adaptive_task(item, relative):
         kind=model,
         activity="evaluation" if stage == "audit" else "rl",
         phase="evaluation" if stage == "audit" else "train",
-        variant_id=f"{ADAPTIVE_STAGES[stage]}.{model}",
+        variant_id=ADAPTIVE_STAGES[stage],
         native_registry=True,
     )
 
