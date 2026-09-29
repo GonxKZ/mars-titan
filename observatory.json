@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-29T13:29:05.575393Z",
+  "generated_at": "2026-09-29T13:29:50.262222Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -284,9 +284,9 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 57,
+        "completed": 58,
         "running": 1,
-        "queued": 5,
+        "queued": 4,
         "not_started": 0
       },
       "registered_runs": 63
@@ -437,7 +437,7 @@
   ],
   "runs": [
     {
-      "run_id": "adaptive-rl-20260929-7a4da7c8adcb7b442e40",
+      "run_id": "adaptive-rl-20260929-b458c2dcbb8d483e2049",
       "attempt_id": "legacy",
       "model_id": "ppo_hmm",
       "activity": "evaluation",
@@ -446,12 +446,12 @@
       "phase": "evaluation",
       "started_at": null,
       "updated_at": null,
-      "heartbeat_at": "2026-09-29T13:29:05.361616Z",
+      "heartbeat_at": "2026-09-29T13:29:49.968772Z",
       "completed_steps": null,
       "total_steps": null,
       "epoch": null,
       "max_epochs": null,
-      "seed": 42,
+      "seed": 43,
       "fold": "unidentified",
       "comparison_group": null,
       "metrics": {
@@ -485,7 +485,7 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "b5b97e2ffc0a61b3d81f8d6f24cde0400fae339a7fec1761264bf64d1953cc8c",
+        "configuration_sha256": "fe33f7a3213f79185770aecea0b638ff14f043f2ca325b3ce66e174da65e5926",
         "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
         "history_axis": "none",
         "progress_time_source": "receipt_mtime",
@@ -6331,7 +6331,7 @@
     "total_runs": 1010,
     "page_size": 64,
     "pages": [
-      "pages/ffc1acafeecaf9b666660dfaaaa942f23e3ee9e3d8e5fd22a7979a0fd0feaeeb.json",
+      "pages/e5e66da894b9578a5d776acd3186214020a8384100fc8217ecca6735f056ce7b.json",
       "pages/db514791d0224063ae15154ac6171e14cddb84d57b804bd1c0c074494f70db4a.json",
       "pages/ff018490ff7e11e5db75c290b718ad4ecb2b270e4fc1f2f3dd627ddb38581714.json",
       "pages/85c1feeb62f2b7fda9c0d30c8772c491a09b32708a9eef94674afe5745c6038a.json",
