@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-29T10:55:35.536205Z",
+  "generated_at": "2026-09-29T10:59:32.652505Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -284,9 +284,9 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 23,
+        "completed": 24,
         "running": 1,
-        "queued": 18,
+        "queued": 17,
         "not_started": 0
       },
       "registered_runs": 42
@@ -437,21 +437,21 @@
   ],
   "runs": [
     {
-      "run_id": "adaptive-rl-20260929-b9e1c3df0211f290569e",
+      "run_id": "adaptive-rl-20260929-d47e871bacc1c7f442bf",
       "attempt_id": "legacy",
-      "model_id": "ppo",
+      "model_id": "double_dqn",
       "activity": "rl",
       "variant_id": "comparacion",
       "status": "running",
       "phase": "train",
       "started_at": null,
-      "updated_at": "2026-09-29T10:55:34Z",
+      "updated_at": "2026-09-29T10:59:31Z",
       "heartbeat_at": null,
-      "completed_steps": 22528,
+      "completed_steps": 4096,
       "total_steps": 524288,
       "epoch": null,
       "max_epochs": null,
-      "seed": 44,
+      "seed": 42,
       "fold": "unidentified",
       "comparison_group": null,
       "metrics": {
@@ -465,7 +465,7 @@
         "latency_p95_ms": null,
         "latency_p99_ms": null,
         "vram_peak_mib": null,
-        "ram_peak_mib": 1303.2578125,
+        "ram_peak_mib": 1262.67578125,
         "elapsed_seconds": null,
         "samples_per_second": null
       },
@@ -485,8 +485,8 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "7d42ed5315d7251f24c45904cb838d25e2362a3c432abab4bd34245748bd3202",
-        "source_sha256": "5d9fbecdbbdf778b1ecc805099c75758ab5f7d3b9769662384d357b3fe721d38",
+        "configuration_sha256": "f1d4f50f4269d5e8294694fbaf4387855d42131d2e5d7c54dc64ba0fff4d3e67",
+        "source_sha256": "98d19b6dc686c6fbfe4ff9be4517e3c04f1f9926748dba49fb98a898644e3345",
         "history_axis": "none",
         "progress_time_source": "receipt_timestamp",
         "train_rows": null,
@@ -494,7 +494,7 @@
         "parent": null,
         "error_type": null,
         "ram_peak_scope": "executable",
-        "executable_peak_rss_mib": 1303.2578125,
+        "executable_peak_rss_mib": 1262.67578125,
         "process_lifetime_peak_rss_mib": null
       }
     },
@@ -6331,7 +6331,7 @@
     "total_runs": 989,
     "page_size": 64,
     "pages": [
-      "pages/469033138e8b0af17a6edbe118fb3684fbe384347d60676e33400c47b7724426.json",
+      "pages/11394682356f1606f5f2ef4eb591e06787f77b7a4f0c46256976eeefd694ee30.json",
       "pages/4933259ff405d403278d738182f416816eff9b271719bdc371365c6ebc680452.json",
       "pages/cc4e4bf67c95b20fc96421fda7375c5997af09a91999be9b131aa68e1303b2d4.json",
       "pages/c9dd9a581c65b9362050eeba026ae28fa67083056a1f7065e4eb42e218e4c96b.json",
