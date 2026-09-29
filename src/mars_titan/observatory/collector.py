@@ -42,6 +42,7 @@ METRICS = (
 )
 STATUS = {
     "pending": "queued",
+    "waiting": "queued",
     "interrupted": "paused",
     "running": "running",
     "completed": "completed",
@@ -598,7 +599,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     )
     status = STATUS.get(report.get("status", task.get("status")))
     # Un recibo de error del coordinador puede ser posterior al último punto del hijo.
-    if task.get("status") in {"failed", "paused", "interrupted", "blocked", "cancelled"}:
+    if task.get("status") in {"failed", "paused", "interrupted", "blocked", "cancelled", "waiting"}:
         status = STATUS[task["status"]]
     epochs = report.get("epochs", [])
     epochs = epochs if isinstance(epochs, list) else []

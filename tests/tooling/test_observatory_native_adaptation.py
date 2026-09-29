@@ -196,3 +196,15 @@ def test_native_registry_keeps_confirmed_progress_and_a_blocking_verdict(tmp_pat
 def test_native_registry_rejects_a_different_model_in_the_same_case(tmp_path):
     with pytest.raises(ValueError):
         native_registry(tmp_path, report=native_report("ppo_window"))
+
+
+@pytest.mark.parametrize("previous_status", [None, "running", "paused"])
+def test_waiting_for_gpu_remains_registered_without_claiming_activity(tmp_path, previous_status):
+    report = native_report("ppo_gru") if previous_status else None
+    if report:
+        report["status"] = previous_status
+    runs = native_registry(tmp_path, report=report, status="waiting")["runs"]
+    assert len(runs) == 1
+    assert runs[0]["status"] == "queued"
+    assert runs[0]["heartbeat_at"] is None
+    assert runs[0]["completed_steps"] == (32 if report else None)
