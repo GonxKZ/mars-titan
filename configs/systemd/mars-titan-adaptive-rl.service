@@ -1,0 +1,19 @@
+[Unit]
+Description=Ejecutar y recuperar la comparación de RL nativo
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/mars-titan/adaptive-rl.env
+Environment=OMP_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
+ExecStart=%h/.local/bin/uv run --no-sync --project ${MARS_TITAN_RUNTIME} python ${MARS_TITAN_RUNTIME}/scripts/run_adaptive_campaign.py --scenarios ${MARS_TITAN_SCENARIOS} --binary ${MARS_TITAN_BINARY} --config ${MARS_TITAN_CAMPAIGN_CONFIG} --output ${MARS_TITAN_OUTPUT} --resume
+KillMode=control-group
+TimeoutStopSec=90
+Restart=no
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
