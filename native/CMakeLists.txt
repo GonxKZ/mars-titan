@@ -175,11 +175,12 @@ if(MARS_TITAN_BUILD_SIMULATION)
     if(MARS_TITAN_BUILD_PPO)
         include(cmake/TorchDependencies.cmake)
         mars_titan_find_torch()
-        add_library(mars_titan_ppo STATIC src/ppo_policy.cpp src/ppo_training.cpp)
+        add_library(mars_titan_ppo STATIC src/ppo_policy.cpp src/ppo_training.cpp
+            src/episodic_memory.cpp src/policy_context.cpp src/learning_replay.cpp)
         target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch)
         mars_titan_configure_target(mars_titan_ppo)
-        add_library(mars_titan_ppo_files STATIC src/ppo_checkpoints.cpp src/ppo_inputs.cpp)
+        add_library(mars_titan_ppo_files STATIC src/ppo_checkpoints.cpp src/ppo_inputs.cpp src/decision_trace.cpp)
         target_include_directories(mars_titan_ppo_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo_files PUBLIC mars_titan_simulation_files)
         mars_titan_configure_target(mars_titan_ppo_files)
@@ -188,8 +189,12 @@ if(MARS_TITAN_BUILD_SIMULATION)
         mars_titan_configure_target(mars-titan-ppo)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_training.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_memory.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/policy_context.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_replay.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_checkpoints.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_inputs.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/decision_trace.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_main.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp")
         if(BUILD_TESTING)
@@ -213,6 +218,20 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 set_tests_properties(ppo_${component} PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
                 mars_titan_sanitizer_test_environment(ppo_${component})
                 set_property(TEST ppo_${component} APPEND PROPERTY ENVIRONMENT
+                    "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            endforeach()
+            foreach(component episodic_memory policy_context decision_trace learning_replay)
+                add_executable(${component}_tests tests/${component}_tests.cpp)
+                if(component STREQUAL "decision_trace")
+                    target_link_libraries(${component}_tests PRIVATE mars_titan_ppo_files)
+                else()
+                    target_link_libraries(${component}_tests PRIVATE mars_titan_ppo)
+                endif()
+                mars_titan_configure_target(${component}_tests)
+                add_test(NAME ${component} COMMAND ${component}_tests)
+                set_tests_properties(${component} PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
+                mars_titan_sanitizer_test_environment(${component})
+                set_property(TEST ${component} APPEND PROPERTY ENVIRONMENT
                     "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             endforeach()
         endif()
@@ -240,6 +259,10 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_checkpoints.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_inputs.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_experiment.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_memory.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/policy_context.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/learning_replay.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/decision_trace.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TorchDependencies.cmake")
         endif()
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${identity_files})

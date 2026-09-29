@@ -62,13 +62,19 @@ def setup(tmp_path):
     )
     native = executable(
         bin_dir / "native ppo",
-        """import fcntl
+        """import ctypes
+import fcntl
 import json
 import os
 import signal
 import sys
 import time
 from pathlib import Path
+
+if '--parent-pid' in sys.argv:
+    parent = int(sys.argv[sys.argv.index('--parent-pid') + 1])
+    if ctypes.CDLL(None).prctl(1, signal.SIGKILL, 0, 0, 0) != 0 or os.getppid() != parent:
+        raise SystemExit(1)
 
 record = {'args': sys.argv[1:], 'pid': os.getpid(),
           'launcher_pid': int(os.environ['LAUNCHER_PID'])}
@@ -205,8 +211,8 @@ def test_unavailable_gpu_is_rejected_without_starting_a_cpu_fallback(setup, prob
     if problem == "process":
         setup[1]["GPU_XML"] = gpu_xml(compute=True)
     result = execute(setup)
-    assert result.returncode != 0
-    assert result.stderr.startswith("Error: ")
+    assert result.returncode == (1 if problem == "invalid_xml" else 3)
+    assert result.stderr.startswith("Error: " if problem == "invalid_xml" else "Espera: ")
     assert not Path(setup[1]["NATIVE_RECORD"]).exists()
 
 
@@ -214,7 +220,7 @@ def test_existing_scientific_lease_rejects_before_gpu_probe(setup):
     with (Path(setup[1]["XDG_RUNTIME_DIR"]) / LOCK_NAME).open("a") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         result = execute(setup)
-    assert result.returncode != 0 and result.stderr.startswith("Error: ")
+    assert result.returncode == 3 and result.stderr.startswith("Espera: ")
     assert not Path(setup[1]["GPU_PROBED"]).exists()
     assert not Path(setup[1]["NATIVE_RECORD"]).exists()
 
@@ -420,3 +426,246 @@ def test_watch_state_cannot_overwrite_scientific_inputs_or_output(setup, locatio
     result = execute(setup, "--watch-state", str(path))
     assert result.returncode == 2
     assert not Path(setup[1]["NATIVE_RECORD"]).exists()
+
+
+def test_busy_gpu_has_a_distinct_waiting_status_without_active_time(setup):
+    setup[1]["GPU_XML"] = gpu_xml(compute=True)
+    watch = setup[2] / "watch.json"
+    result = execute(setup, "--watch-state", str(watch))
+    assert result.returncode == 3, result.stderr
+    status = json.loads(watch.read_text())
+    assert status["status"] == "waiting" and status["child_active"] is False
+    assert status["active_seconds"] == status["budget_seconds"] == 0
+    assert not Path(setup[1]["NATIVE_RECORD"]).exists()
+
+
+def test_short_budget_does_not_start_a_child(setup):
+    watch = setup[2] / "watch.json"
+    result = execute(setup, "--watch-state", str(watch), "--active-seconds-limit", "1")
+    assert result.returncode == 4, result.stderr
+    status = json.loads(watch.read_text())
+    assert status["status"] == "budget_exhausted"
+    assert status["starts"] == 0 and status["budget_seconds"] == 0
+    assert not Path(setup[1]["NATIVE_RECORD"]).exists()
+
+
+def test_watch_accumulates_completed_attempts_and_ignores_resume_flag(setup):
+    watch = setup[2] / "watch.json"
+    first = execute(setup, "--watch-state", str(watch), "--active-seconds-limit", "100")
+    assert first.returncode == 0, first.stderr
+    before = json.loads(watch.read_text())
+    second = execute(setup, "--watch-state", str(watch), "--resume", "--active-seconds-limit", "90")
+    assert second.returncode == 0, second.stderr
+    after = json.loads(watch.read_text())
+    assert after["identity_sha256"] == before["identity_sha256"]
+    assert after["starts"] == 2 and after["child_active"] is False
+    assert after["active_seconds"] > before["active_seconds"] > 0
+    assert after["budget_seconds"] == after["active_seconds"]
+
+
+def test_watch_rejects_changed_configuration_before_starting_another_child(setup):
+    watch = setup[2] / "watch.json"
+    assert execute(setup, "--watch-state", str(watch)).returncode == 0
+    prior_record = Path(setup[1]["NATIVE_RECORD"]).read_bytes()
+    config = Path(setup[0][setup[0].index("--config") + 1])
+    config.write_text('{"schema_version":2}')
+    result = execute(setup, "--watch-state", str(watch), "--resume")
+    assert result.returncode == 1 and "identidad" in result.stderr
+    assert Path(setup[1]["NATIVE_RECORD"]).read_bytes() == prior_record
+
+
+def test_interrupted_previous_boot_charges_a_bounded_reserve_not_downtime(setup):
+    watch = setup[2] / "watch.json"
+    assert execute(setup, "--watch-state", str(watch)).returncode == 0
+    previous = json.loads(watch.read_text())
+    previous.update(child_active=True, boot_id="previous-boot", observed_at="2000-01-01T00:00:00Z")
+    watch.write_text(json.dumps(previous))
+    result = execute(setup, "--watch-state", str(watch), "--resume")
+    assert result.returncode == 0, result.stderr
+    actual = json.loads(watch.read_text())
+    assert actual["uncertain_attempts"] == 1
+    assert actual["active_seconds"] < 8
+    assert actual["budget_seconds"] - actual["active_seconds"] == pytest.approx(
+        previous["unobserved_reserve_seconds"]
+    )
+
+
+@pytest.mark.parametrize("previous_boot", [False, True])
+def test_unobserved_child_without_parent_guard_blocks_without_a_new_launch(setup, previous_boot):
+    watch = setup[2] / "watch.json"
+    assert execute(setup, "--watch-state", str(watch)).returncode == 0
+    previous = json.loads(watch.read_text())
+    previous.update(child_active=True, status="running", parent_death_signal=None)
+    if previous_boot:
+        previous["boot_id"] = "previous-boot"
+    watch.write_text(json.dumps(previous))
+    prior_record = Path(setup[1]["NATIVE_RECORD"]).read_bytes()
+    result = execute(setup, "--watch-state", str(watch), "--resume")
+    assert result.returncode == 1 and "observación" in result.stderr
+    actual = json.loads(watch.read_text())
+    assert actual["status"] == "blocked" and actual["budget_complete"] is False
+    assert actual["starts"] == previous["starts"]
+    assert Path(setup[1]["NATIVE_RECORD"]).read_bytes() == prior_record
+
+
+def test_killing_wrapper_ends_only_its_guarded_child_and_charges_uncertainty_once(setup):
+    args, env, directory = setup
+    env["NATIVE_MODE"] = "wait"
+    watch = directory / "watch.json"
+    wrapper = subprocess.Popen(
+        command([*args, "--diagnostic", "--watch-state", str(watch)]),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(10)"])
+    native_pid = None
+    try:
+        observed = wait_until_ready(wrapper, Path(env["NATIVE_RECORD"]))
+        native_pid = observed["pid"]
+        before = json.loads(watch.read_text())
+        assert before["child_active"] and before["parent_death_signal"] == "SIGKILL"
+        wrapper.kill()
+        wrapper.communicate(timeout=5)
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            status = Path(f"/proc/{native_pid}/stat")
+            try:
+                stopped = status.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+            except (FileNotFoundError, ProcessLookupError):
+                stopped = True
+            if stopped:
+                break
+            time.sleep(0.01)
+        else:
+            pytest.fail("El hijo protegido sobrevivió a la muerte del lanzador")
+        assert unrelated.poll() is None
+        assert not Path(env["NATIVE_RECORD"] + ".stopped").exists()
+        env["NATIVE_MODE"] = "exit"
+        result = execute(setup, "--diagnostic", "--watch-state", str(watch), "--resume")
+        assert result.returncode == 0, result.stderr
+        recovered = json.loads(watch.read_text())
+        assert recovered["uncertain_attempts"] == 1
+        assert recovered["reserved_seconds"] == before["unobserved_reserve_seconds"]
+        assert recovered["starts"] == 2 and recovered["budget_complete"] is True
+        assert (
+            execute(setup, "--diagnostic", "--watch-state", str(watch), "--resume").returncode == 0
+        )
+        assert json.loads(watch.read_text())["reserved_seconds"] == recovered["reserved_seconds"]
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait(timeout=5)
+        if native_pid is not None:
+            try:
+                os.kill(native_pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        unrelated.terminate()
+        unrelated.wait(timeout=5)
+
+
+def test_version_two_forwards_a_large_catalog_without_changing_version_one_limit(setup):
+    config = Path(setup[0][setup[0].index("--config") + 1])
+    config.write_text('{"schema_version":2}')
+    additional = [value for index in range(255) for value in ("--train-tape", f"train-{index}")]
+    result = execute(setup, "--diagnostic", *additional)
+    assert result.returncode == 0, result.stderr
+    assert record(setup)["args"].count("--train-tape") == 256
+
+
+def test_active_budget_requests_pause_with_shutdown_time_reserved(setup):
+    setup[1]["NATIVE_MODE"] = "wait"
+    watch = setup[2] / "watch.json"
+    harness = HARNESS.replace(
+        "runpy.run_path(sys.argv[0], run_name='__main__')",
+        "namespace = runpy.run_path(sys.argv[0])\n"
+        "namespace['main'].__globals__['PAUSE_TIMEOUT'] = 0.5\n"
+        "namespace['main'].__globals__['KILL_TIMEOUT'] = 0.1\n"
+        "namespace['main'].__globals__['GPU_PROBE_TIMEOUT'] = 0.01\n"
+        "raise SystemExit(namespace['main']())",
+    )
+    result = subprocess.run(
+        command(
+            [
+                *setup[0],
+                "--watch-state",
+                str(watch),
+                "--poll-seconds",
+                "0.02",
+                "--active-seconds-limit",
+                "1.2",
+            ],
+            harness,
+        ),
+        env=setup[1],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 2, result.stderr
+    status = json.loads(watch.read_text())
+    assert status["reason"] == "active_budget_exhausted"
+    assert status["recoverable_checkpoint"] is True
+    assert 0 < status["active_seconds"] < 1.7
+    assert status["budget_seconds"] == status["active_seconds"]
+    assert record(setup)["signal"] == signal.SIGTERM
+
+
+def test_audit_uses_the_same_launcher_without_training_arguments(setup):
+    args = setup[0]
+    config = Path(args[args.index("--config") + 1])
+    config.write_text('{"schema_version":2}')
+    native = args[args.index("--binary") + 1]
+    setup[0][:] = [
+        *args[:4],
+        "--binary",
+        native,
+        "--audit-run",
+        str(setup[2] / "frozen-run"),
+        "--audit-tape",
+        str(setup[2] / "audit-a"),
+    ]
+    result = execute(setup, "--diagnostic")
+    assert result.returncode == 0, result.stderr
+    actual = record(setup)["args"]
+    assert "--audit-run" in actual and "--audit-tape" in actual
+    assert "--train-tape" not in actual and "--validation-tape" not in actual
+
+
+def test_relative_command_paths_do_not_reuse_watch_from_another_working_directory(setup):
+    args, env, directory = setup
+    watch = directory / "watch.json"
+    relative = [
+        "--config",
+        "parameters.json",
+        "--output",
+        "run",
+        "--train-tape",
+        "train",
+        "--validation-tape",
+        "validation",
+        "--binary",
+        args[args.index("--binary") + 1],
+        "--diagnostic",
+        "--watch-state",
+        str(watch),
+    ]
+    first = subprocess.run(
+        command(relative), env=env, cwd=directory, capture_output=True, text=True, timeout=8
+    )
+    assert first.returncode == 0, first.stderr
+    prior = Path(env["NATIVE_RECORD"]).read_bytes()
+    elsewhere = directory / "another"
+    elsewhere.mkdir()
+    (elsewhere / "parameters.json").write_bytes((directory / "parameters.json").read_bytes())
+    second = subprocess.run(
+        command([*relative, "--resume"]),
+        env=env,
+        cwd=elsewhere,
+        capture_output=True,
+        text=True,
+        timeout=8,
+    )
+    assert second.returncode == 1 and "identidad" in second.stderr
+    assert Path(env["NATIVE_RECORD"]).read_bytes() == prior

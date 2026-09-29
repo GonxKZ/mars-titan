@@ -3,10 +3,14 @@
 
 #include "mars_titan/financial_batch.hpp"
 #include "mars_titan/ppo_policy.hpp"
+#include "mars_titan/policy_context.hpp"
+#include "mars_titan/decision_trace.hpp"
+#include "mars_titan/learning_replay.hpp"
 
 #include <string_view>
 
 namespace mars_titan::learning {
+using PpoDecisionObserver = std::function<void(std::span<const DecisionRecord>)>;
 
 inline constexpr std::size_t ppo_default_total_transitions = 8192;
 inline constexpr std::size_t ppo_default_rollout_transitions = 1024;
@@ -35,12 +39,18 @@ struct PpoTrainingState {
     simulation::BatchSnapshot environment;
     PpoRollout rollout;
     std::string policy_archive;
+    PpoLearningOptions learning;
+    std::vector<std::size_t> source_indices;
+    std::size_t next_source = 0;
+    std::size_t observed_transitions = 0;
+    std::string adaptive_archive;
 };
 
 class PpoTrainer {
 public:
     PpoTrainer(std::vector<simulation::BatchInput> inputs, PpoTrainingConfig config,
-               PpoHyperparameters hyperparameters, std::string device, bool diagnostic);
+               PpoHyperparameters hyperparameters, std::string device, bool diagnostic,
+               PpoLearningOptions learning = {});
     PpoTrainer(const PpoTrainer&) = delete;
     PpoTrainer& operator=(const PpoTrainer&) = delete;
     PpoTrainer(PpoTrainer&&) = delete;
@@ -48,7 +58,7 @@ public:
     ~PpoTrainer() = default;
 
     // Una llamada confirma N decisiones. La pausa se solicita entre llamadas.
-    bool advance();
+    bool advance(const PpoDecisionObserver& observer = {});
     [[nodiscard]] PpoTrainingState snapshot() const;
     void restore(const PpoTrainingState& state);
     [[nodiscard]] const PpoPolicy& policy() const noexcept;
@@ -57,6 +67,8 @@ public:
     [[nodiscard]] std::size_t invalid_transitions() const noexcept;
     [[nodiscard]] std::size_t partial_ticks() const noexcept;
     [[nodiscard]] const PpoUpdateStats& last_update() const noexcept;
+    [[nodiscard]] std::size_t observed_transitions() const noexcept;
+    [[nodiscard]] std::size_t auxiliary_samples() const noexcept;
 
 private:
     std::vector<simulation::BatchInput> inputs_;
@@ -76,6 +88,21 @@ private:
     std::size_t episodes_ = 0;
     bool failed_ = false;
     PpoUpdateStats last_update_;
+    PpoLearningOptions learning_;
+    std::vector<simulation::BatchInput> active_inputs_;
+    std::vector<std::size_t> source_indices_;
+    std::size_t next_source_ = 0;
+    std::size_t observed_transitions_ = 0;
+    std::size_t collector_ticks_ = 0;
+    std::unique_ptr<PolicyContext> context_;
+    at::Tensor hidden_;
+    at::Tensor history_;
+    at::Tensor history_lengths_;
+    std::unique_ptr<LearningReplay> replay_;
+    std::size_t auxiliary_samples_ = 0;
+
+    void reset_pending();
+    void rebuild_hidden();
 };
 
 struct PpoEvaluation {
@@ -90,8 +117,13 @@ struct PpoEvaluation {
 [[nodiscard]] PpoEvaluation evaluate_policy(const PpoPolicy& policy,
                                             std::vector<simulation::BatchInput> inputs,
                                             std::size_t workers,
-                                            const std::function<bool()>& stop = {});
+                                            const std::function<bool()>& stop = {},
+                                            const PpoLearningOptions& learning = {},
+                                            const PpoDecisionObserver& observer = {},
+                                            bool memory_sensitivity = false);
 [[nodiscard]] std::string serialize_rollout(const PpoRollout& rollout);
 [[nodiscard]] PpoRollout deserialize_rollout(std::string_view bytes);
+[[nodiscard]] std::string serialize_training_buffer(const PpoTrainingState& state);
+void restore_training_buffer(std::string_view bytes, PpoTrainingState& state);
 }
 #endif
