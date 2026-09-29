@@ -253,7 +253,7 @@ def safe_path(root, relative):
 
 
 def lock_held(folder):
-    for name in (".lock", ".queue.lock", ".study.lock", ".run.lock"):
+    for name in (".lock", ".queue.lock", ".study.lock", ".run.lock", ".campaign.lock"):
         try:
             fd = os.open(folder / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         except FileNotFoundError:
