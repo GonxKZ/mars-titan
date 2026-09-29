@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-29T11:13:22.782818+00:00",
+  "site": "https://gonxkz.github.io/mars-titan/",
+  "frontend_commit": "c21993d2a37aa09b1ad2121e7617dd900c15db09",
+  "deployment_observed_after_browser": {
+    "frontend_sha": "c21993d2a37aa09b1ad2121e7617dd900c15db09",
+    "data_sha": "e0e5c17a939f42a7c57eee27b5039425898a230a",
+    "packaged_at": "2026-09-29T11:11:06Z",
+    "files": {
+      "index.html": "8d1b3db1c9e011b2d01167f1bcaa45bc454d26f06e64c40c325913e06b8dd4ab",
+      "styles.css": "3f38550c7000e6e6cdd822c1f95115aafde6cad5a84eea9266976efa4b710d55",
+      "app.js": "b4e88096ceb6f293a3389c04d7c4673fdae6694a293597633bbd5fe027006aea",
+      "state.mjs": "75d54e12f625180945f2cc1bfec8ca3ece5aa8f1b8a9be4f606ebae64faf3cdf"
+    }
+  },
+  "local_contract_tests": 27,
+  "local_browser_tests": 8,
+  "browser": {
+    "viewports": [
+      {
+        "width": 1440,
+        "overflow": false,
+        "overlaps": []
+      },
+      {
+        "width": 1024,
+        "overflow": false,
+        "overlaps": []
+      },
+      {
+        "width": 768,
+        "overflow": false,
+        "overlaps": []
+      },
+      {
+        "width": 390,
+        "overflow": false,
+        "overlaps": []
+      },
+      {
+        "width": 320,
+        "overflow": false,
+        "overlaps": []
+      }
+    ],
+    "pages": 16,
+    "rows": 989,
+    "duplicate_keys": [],
+    "page_errors": [],
+    "network_errors": []
+  },
+  "scope": "Chrome local sobre Pages publicado. Sin pruebas en Actions. El índice puede cambiar después del recorrido mientras continúa el entrenamiento.",
+  "regressions": [
+    "Etiquetas de fases contiguas con Entrenamiento activo a 320 px.",
+    "Espera de GPU sin perder registros ni inventar actividad.",
+    "Comparación temporal de recibos con segundos y microsegundos.",
+    "Observación del bloqueo real del coordinador."
+  ],
+  "final_test_opened": false
+}
