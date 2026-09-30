@@ -127,3 +127,26 @@ def test_tabular_inference_contract_rejects_changed_code(kind):
     hashes[paths[-1]] = "b" * 64
     with pytest.raises(ValueError, match="inferencia"):
         _inference_contract(report, kind)
+
+
+@pytest.mark.parametrize("kind", ["ridge", "xgboost_external_cuda"])
+def test_temporal_parent_requires_the_partition_implementation(kind):
+    paths = [
+        "training/corpus_inputs.py",
+        "models/baselines/inputs.py",
+        f"models/baselines/{'ridge' if kind == 'ridge' else 'external_boosting'}.py",
+    ]
+    hashes = {name: sha256(Path("src/mars_titan") / name) for name in paths}
+    report = dict(code=hashes, samples=dict(train=2, validation=1, calibration=1, evaluation=1))
+    with pytest.raises(ValueError, match="inferencia"):
+        _inference_contract(report, kind)
+    for name in (
+        "training/temporal_corpus.py",
+        "evaluation/splits.py",
+        "evaluation/split_readiness.py",
+    ):
+        hashes[name] = sha256(Path("src/mars_titan") / name)
+    _inference_contract(report, kind)
+    hashes["evaluation/splits.py"] = "f" * 64
+    with pytest.raises(ValueError, match="inferencia"):
+        _inference_contract(report, kind)

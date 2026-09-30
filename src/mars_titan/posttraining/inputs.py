@@ -10,14 +10,13 @@ from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
 from mars_titan.environments.cohorts import (
-    FINAL_TEST_START_US,
-    VALIDATION_START_US,
     read_cohort,
     shapes_contract,
 )
 from mars_titan.episodes.augmentation import training_visits
 from mars_titan.episodes.windows import EpisodeView
 from mars_titan.models.baselines.inputs import MODALITIES
+from mars_titan.training.partition_contract import LEGACY_BOUNDS
 
 CONDITIONS = ("real", "real_resampled", "real_synthetic")
 MAX_BYTES = 64 * 1024**2
@@ -78,6 +77,12 @@ class PairedInputs:
         self.counts = {
             source.partition: sum(row[1] for row in source.index) for source in (train, validation)
         }
+        self.population_counts = dict(getattr(train, "population_counts", self.counts))
+        if (
+            getattr(validation, "population_counts", self.population_counts)
+            != self.population_counts
+        ):
+            raise ValueError("Las fuentes no conservan la misma población temporal")
 
     def _visits(self, partition, condition, epoch, seed):
         if partition not in {"train", "validation"} or condition not in CONDITIONS:
@@ -160,12 +165,11 @@ class PairedInputs:
                     current_episode = visit.episode
                 raw = view(visit.cohort - self.windows[visit.episode].decision_start)
             raw = read_cohort(raw, self.shapes, source.max_assets, MAX_BYTES)
-            low, high = (
-                (0, VALIDATION_START_US)
-                if partition == "train"
-                else (VALIDATION_START_US, FINAL_TEST_START_US)
-            )
-            if not low <= raw["prediction_at"] < high or (raw["target_available_at"] >= high).any():
+            low, high, cutoff = getattr(source, "bounds", LEGACY_BOUNDS[partition])
+            if (
+                not low <= raw["prediction_at"] < cutoff
+                or (raw["target_available_at"] >= high).any()
+            ):
                 raise ValueError("Una etiqueta u observación cruza la partición")
             if len(raw["target"]) != sizes[position]:
                 raise ValueError("La cohorte ha cambiado su número de filas")
