@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-09-30T04:58:53.217408Z",
+  "generated_at": "2026-09-30T05:04:02.470358Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -104,7 +104,7 @@
       ],
       "counts": {
         "completed": 73,
-        "paused": 1,
+        "running": 1,
         "not_started": 142
       },
       "registered_runs": 74
@@ -434,6 +434,81 @@
     "Los entornos de adaptaci\u00f3n RL son escenarios t\u00e9cnicos con 3 conceptos macro simulados. No equivalen al corpus real con 140 indicadores."
   ],
   "runs": [
+    {
+      "run_id": "adaptation-original-us-76ee5fb8ba18cff589ce",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "4c647b670fc6d0cf",
+      "status": "running",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-09-30T05:03:10.263446Z",
+      "heartbeat_at": "2026-09-30T05:03:59.062762Z",
+      "completed_steps": 12098,
+      "total_steps": null,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.01534071819160125,
+        "mse": 0.0006234304390105413,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.271484375,
+        "ram_peak_mib": 2488.24609375,
+        "elapsed_seconds": 50.37015213799987,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015114797285738422
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01534071819160125
+        }
+      ],
+      "checkpoint": {
+        "step": 12098,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "4c647b670fc6d0cfc727852ecef642dcaa2db632820ce9a25c8e33690530c311",
+        "source_sha256": "fa90c4b5315dfd3a59e761e0573056e25c46cdd35a70acaecdfe9d2d8de92df1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 2488.24609375
+      }
+    },
     {
       "run_id": "adaptation-check-20260923-08ed7c5ae311fd26270e",
       "attempt_id": "legacy",
@@ -4803,68 +4878,6 @@
         "ram_peak_scope": "process_lifetime",
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": 11050.66796875
-      }
-    },
-    {
-      "run_id": "adaptation-original-us-76ee5fb8ba18cff589ce",
-      "attempt_id": "legacy",
-      "model_id": "adaptation",
-      "activity": "predictive_adaptation",
-      "variant_id": "4c647b670fc6d0cf",
-      "status": "paused",
-      "phase": "validation",
-      "started_at": null,
-      "updated_at": "2026-09-27T19:41:02.374317Z",
-      "heartbeat_at": null,
-      "completed_steps": 2804,
-      "total_steps": null,
-      "epoch": null,
-      "max_epochs": 5,
-      "seed": 42,
-      "fold": "unidentified",
-      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
-      "metrics": {
-        "mae": null,
-        "mse": null,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": 72.271484375,
-        "ram_peak_mib": 2488.24609375,
-        "elapsed_seconds": 50.37015213799987,
-        "samples_per_second": null
-      },
-      "history": [],
-      "checkpoint": {
-        "step": 2804,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptation-original-us",
-        "domain": "real",
-        "method": "expected",
-        "parent_frozen": true,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "4c647b670fc6d0cfc727852ecef642dcaa2db632820ce9a25c8e33690530c311",
-        "source_sha256": "4d5d16687d54b45fb85da851c14a5dc4dcb14d44e9448d529c97b3199b70527b",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": 1548307,
-        "validation_rows": 261069,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": "process_lifetime",
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": 2488.24609375
       }
     },
     {
