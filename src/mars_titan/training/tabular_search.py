@@ -17,6 +17,7 @@ from mars_titan.budget_training import seed_run
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.models.baselines.boosting_selection import BoostingSelection
 
 from .checkpoints import StopRequest
 from .external_corpus import run_external_reference
@@ -40,6 +41,7 @@ def _code():
         "models/baselines/ridge.py",
         "models/baselines/boosting.py",
         "models/baselines/external_boosting.py",
+        "models/baselines/boosting_selection.py",
         "models/baselines/inputs.py",
         "evaluation/session_metrics.py",
         "data/streaming.py",
@@ -115,10 +117,13 @@ def _configuration(path):
         "checkpoint_interval",
         "final_test_opened",
     }
+    convergence = config.get("schema_version") == 2
+    if convergence:
+        keys.update({"selection", "max_validation_cache_bytes"})
     if (
         set(config) != keys
         or type(config["schema_version"]) is not int
-        or config["schema_version"] != 1
+        or config["schema_version"] not in (1, 2)
         or not _numbers(config["ridge_alphas"], 1e-12, 1e12)
         or not _numbers(config["depths"], 1, 12, integers=True)
         or not _numbers(config["bins"], 2, 512, integers=True)
@@ -127,7 +132,7 @@ def _configuration(path):
         or type(config["search_seed"]) is not int
         or config["search_seed"] not in config["finalist_seeds"]
         or type(config["rounds"]) is not int
-        or not 1 <= config["rounds"] <= 1000
+        or not 1 <= config["rounds"] <= (2000 if convergence else 1000)
         or type(config["batch_size"]) is not int
         or not 1 <= config["batch_size"] <= 4096
         or type(config["max_batch_bytes"]) is not int
@@ -140,6 +145,13 @@ def _configuration(path):
         or config["final_test_opened"] is not False
     ):
         raise ValueError("La configuración tabular no cumple el diseño o los presupuestos")
+    if convergence:
+        BoostingSelection(config["selection"], config["rounds"])
+        if (
+            type(config["max_validation_cache_bytes"]) is not int
+            or not 1 <= config["max_validation_cache_bytes"] <= 32 * 1024**3
+        ):
+            raise ValueError("El presupuesto de caché de validación no es válido")
     common = {
         key: config[key]
         for key in (
@@ -151,6 +163,9 @@ def _configuration(path):
             "checkpoint_interval",
         )
     }
+    if convergence:
+        common["selection"] = config["selection"]
+        common["max_validation_cache_bytes"] = config["max_validation_cache_bytes"]
     cases = [
         dict(
             id=f"ridge-a{float(alpha)!r}",
@@ -217,8 +232,28 @@ def _completed(folder, task, source, source_hash):
     if task["kind"] == "ridge":
         if any(report.get(key) != value for key, value in options.items()):
             raise ValueError("Ridge no conserva los parámetros del caso")
-    elif identity.get("options") != options or report.get("completed_rounds") != options["rounds"]:
-        raise ValueError("El boosting no conserva parámetros y rondas completas")
+    else:
+        if identity.get("options") != options:
+            raise ValueError("El boosting no conserva los parámetros del caso")
+        if "selection" in options:
+            state = BoostingSelection(
+                options["selection"], options["rounds"], state=report.get("selection")
+            ).state
+            if (
+                report.get("schema_version") != 2
+                or state["stop_reason"] is None
+                or report.get("completed_rounds") != state["completed_rounds"]
+                or report.get("selected_round") != state["selected_round"]
+                or report.get("stop_reason") != state["stop_reason"]
+                or report.get("checkpoint", {}).get("rounds") != state["selected_round"]
+                or report.get("recovery_checkpoint", {}).get("rounds") != state["completed_rounds"]
+                or report.get("consumed_training_rows")
+                != source["counts"]["train"] * state["completed_rounds"]
+            ):
+                raise ValueError("El boosting no concilia la parada y sus rondas evaluadas")
+            _artifact(folder, report.get("recovery_checkpoint"))
+        elif report.get("completed_rounds") != options["rounds"]:
+            raise ValueError("El boosting no conserva parámetros y rondas completas")
     _artifact(folder, report["checkpoint"])
     for partition, artifact in report["predictions"].items():
         _artifact(folder, artifact)
@@ -227,6 +262,8 @@ def _completed(folder, task, source, source_hash):
     score = report["predictions"]["validation"]["metrics"]["session_mae"]
     if type(score) not in (int, float) or not math.isfinite(score) or score < 0:
         raise ValueError("El MAE por sesión no es finito y no negativo")
+    if "selection" in options and score != report["selection"]["best_session_mae"]:
+        raise ValueError("La métrica final no corresponde al modelo seleccionado")
     return report, digest, score
 
 
