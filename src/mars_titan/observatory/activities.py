@@ -17,26 +17,56 @@ INVALID_REASONS = {None, "none", "missing_close", "ruined", "incomplete"}
 ADAPTATION_METHODS = {"reinforce", "expected", "mae", "klpo_full", "klpo_mc", "klpo_exact"}
 NEURAL_CONTROLS = {"neural_mae", "neural_mse"}
 CONDITIONS = {"real", "real_resampled", "real_synthetic"}
+ADAPTIVE_VARIANTS = {
+    "ppo",
+    "double_dqn",
+    "ppo_window",
+    "ppo_gru",
+    "ppo_episodic",
+    "ppo_hmm",
+    "ppo_episodic_hmm",
+    "ppo_recent_aux",
+    "ppo_replay_aux",
+}
+
+
+def native_adaptation(report):
+    """Reconocer el contrato técnico explícito, sin ampliar otras versiones de productor."""
+    audit = report.get("kind") == "native_ppo_audit"
+    return (
+        report.get("schema_version") == 2
+        and report.get("kind") in {"native_ppo", "native_ppo_audit"}
+        and report.get("activity") == ("evaluation" if audit else "rl")
+        and report.get("model") in ADAPTIVE_VARIANTS
+        and report.get("backend") == "native_libtorch"
+        and report.get("domain") in {"synthetic", "technical"}
+        and report.get("analysis_domain") == "technical"
+        and report.get("final_test_opened") is False
+        and report.get("macro_coverage") == dict(simulated_concepts=3, catalog_concepts=140)
+        and (
+            not audit or report.get("phase") == "evaluation" and report.get("partition") == "audit"
+        )
+    )
 
 
 def classify(report, task, case):
     """Los informes anteriores conservan la actividad que acredita su coordinador."""
     if (
         report.get("model")
-        in {
+        in ADAPTIVE_VARIANTS
+        | {
             "factor_world",
-            "ppo",
-            "double_dqn",
             "simulator",
             "cash",
             "hold_initial",
             "rebalance_50",
             "financial_comparison",
+            "adaptive_comparison",
         }
         and "activity" not in report
     ):
         raise ValueError("El productor necesita declarar su actividad")
-    if "activity" in report and report.get("schema_version") != 1:
+    if "activity" in report and report.get("schema_version") != 1 and not native_adaptation(report):
         raise ValueError("Versión del productor no admitida")
     mode = case.get("mode")
     inferred = (
@@ -46,7 +76,7 @@ def classify(report, task, case):
         if task.get("stage") == "posttraining"
         else "initial_training"
     )
-    activity = report.get("activity", inferred)
+    activity = report.get("activity", task.get("activity", inferred))
     valid_mode = mode in ADAPTATION_METHODS or (
         mode in NEURAL_CONTROLS and activity == "supervised_continuation"
     )

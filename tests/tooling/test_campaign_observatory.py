@@ -121,7 +121,8 @@ def test_symlink_source_is_rejected(tmp_path):
             collector.collect([{**entry, "path": "link"}])
 
 
-def test_only_a_held_campaign_lock_confirms_a_running_process(tmp_path):
+@pytest.mark.parametrize("lock_name", [".lock", ".campaign.lock"])
+def test_only_a_held_campaign_lock_confirms_a_running_process(tmp_path, lock_name):
     import fcntl
 
     entry = source(tmp_path)
@@ -131,7 +132,7 @@ def test_only_a_held_campaign_lock_confirms_a_running_process(tmp_path):
     dump(report, raw)
     with Collector(tmp_path / "private", tmp_path / "cache.sqlite") as collector:
         assert collector.collect([entry])["runs"][0]["heartbeat_at"] is None
-        with (report.parents[2] / ".lock").open("w") as lock:
+        with (report.parents[2] / lock_name).open("w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             observed = collector.collect([entry])["runs"][0]
             assert observed["heartbeat_at"] is not None

@@ -47,6 +47,7 @@ struct BatchTransition {
     std::vector<uint8_t> reward_valid;
     std::vector<uint8_t> terminated;
     std::vector<uint8_t> truncated;
+    std::vector<double> costs = {};
 };
 
 struct BatchSnapshot {
@@ -82,6 +83,7 @@ public:
     [[nodiscard]] std::size_t reserved_payload_bytes() const noexcept;
     [[nodiscard]] BatchSnapshot snapshot() const;
     [[nodiscard]] FinancialMetrics metrics(std::size_t lane) const;
+    [[nodiscard]] std::size_t cursor(std::size_t lane) const;
     void restore(const BatchSnapshot& state);
     void reset(std::span<const std::size_t> indices);
 

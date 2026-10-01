@@ -4,6 +4,8 @@
 
 El ejecutable admite fuentes sintéticas de entrenamiento y validación. La comprobación CPU es un diagnóstico limitado a 32 transiciones de ajuste. La ruta de ejecución CUDA exige `cuda:0`, admisión exclusiva y presupuesto de VRAM. Esta herramienta permite comprobar el recorrido de aprendizaje y recuperación, pero no constituye una ejecución del candidato MARS-TITAN ni una comparación científica sobre FinMultiTime.
 
+Esta guía describe el esquema 1, con MLP y réplicas equilibradas de hasta doce fuentes por partición. El [esquema 2 de adaptación](adaptive-rl.md) añade un catálogo de mundos rotatorio, calentamiento sin operaciones, controles de ventana y GRU, memoria episódica, HMM, consolidación auxiliar y Double DQN. Tiene su propio contrato de recuperación, trazas y auditoría final.
+
 ## Política y recorrido de aprendizaje
 
 `PpoPolicy` utiliza dos capas densas de 64 unidades con activación `tanh`. Una salida compartida produce seis logits de acción y un valor del crítico. Los parámetros y las observaciones son FP32. La estimación de ventajas y el cociente de probabilidades del objetivo recortado se calculan en FP64.
@@ -21,7 +23,7 @@ Las decisiones conservan el contrato de la [simulación financiera](persistent-s
 
 El motor distribuye la exposición entre el cuartil superior de las predicciones positivas, con pesos iguales y desempate por identificador. La política no elige pesos libres para cada empresa. Decide al cierre y la orden se ejecuta en la apertura siguiente, con las restricciones de efectivo, costes y volumen conocido del simulador. La exposición realizada puede diferir de la solicitada.
 
-`PpoTrainer` mantiene el rollout en CPU con forma `[tiempo, entorno, característica]` y realiza inferencia para todo el lote. Durante el ajuste muestrea acciones de la distribución categórica. Conserva observaciones, acciones, probabilidades anteriores, valores, recompensas y máscaras. Al completar el recorrido, lo lleva al dispositivo de la política y aplica minibatches con objetivo PPO recortado, pérdida del crítico, entropía y recorte de la norma del gradiente.
+`PpoTrainer` mantiene el rollout en CPU con forma `[tiempo, entorno, característica]` y realiza inferencia para todo el lote. Durante el ajuste muestrea acciones de la distribución categórica. Conserva observaciones, acciones, probabilidades anteriores, valores, recompensas y máscaras. La MLP calcula GAE en FP64 con ATen en CPU y selecciona las filas válidas antes del traslado. La conversión a FP32 de los objetivos y su normalización siguen en el dispositivo de la política. La ruta recurrente traslada el recorrido y su prefijo. Ambas aplican minibatches con objetivo PPO recortado, pérdida del crítico, entropía y recorte de la norma del gradiente.
 
 Las ventajas se calculan antes de aplanar tiempo y entorno. Una terminación por ruina anula el bootstrap y corta la recurrencia. Una truncación conserva el valor de la observación final y corta la recurrencia entre episodios. Una recompensa inválida se excluye del objetivo. Los reinicios se registran y se aplican después de conservar la observación final. La contabilidad y el bootstrap se validan antes de confirmar cada paso del lote.
 
@@ -37,7 +39,7 @@ El lector limita el contexto a 512 campos, 64 MiB de archivo y 128 MiB decodific
 
 El estado interno permite reanudar la contabilidad sobre una cinta, mientras que la política recibe una observación parcial. Esa recuperabilidad no demuestra que la observación financiera cumpla la propiedad de Markov. En un modelo POMDP, el estado de creencia depende del modelo de transición y observación asumido. La [revisión de observabilidad y contexto](../research/contextual-experts.md) recoge esta distinción y la referencia de Kaelbling, Littman y Cassandra.
 
-El [filtro HMM existente](batched-rl-environments.md#información-externa-y-estado-oculto) calcula probabilidades filtradas con parámetros congelados. No se ejecuta automáticamente dentro de PPO. Incorporar sus probabilidades exigiría producir un contexto fechado y verificar su procedencia. El [contraste de regímenes](../research/markov-regimes.md) conserva la separación entre filtrado con pasado, suavizado con futuro y una hipótesis de utilidad que todavía debe evaluarse.
+El [filtro HMM](batched-rl-environments.md#información-externa-y-estado-oculto) calcula probabilidades filtradas con parámetros congelados. El esquema 1 no lo ejecuta automáticamente. El [esquema 2](adaptive-rl.md#variantes-implementadas) sí lo integra en sus variantes HMM, tras verificar parámetros ajustados exclusivamente con entrenamiento. El [contraste de regímenes](../research/markov-regimes.md) conserva la separación entre filtrado con pasado, suavizado con futuro y una hipótesis de utilidad que todavía debe evaluarse.
 
 ## Validación y selección
 

@@ -15,7 +15,15 @@ from pathlib import Path
 from mars_titan.data.storage import atomic_json
 from mars_titan.training.reference_design import candidate_indices
 
-from .activities import CONDITIONS, FINANCIAL, PREDICTIVE, classify, financial_validation
+from .activities import (
+    ADAPTIVE_VARIANTS,
+    CONDITIONS,
+    FINANCIAL,
+    PREDICTIVE,
+    classify,
+    financial_validation,
+    native_adaptation,
+)
 
 METRICS = (
     "mae",
@@ -34,6 +42,7 @@ METRICS = (
 )
 STATUS = {
     "pending": "queued",
+    "waiting": "queued",
     "interrupted": "paused",
     "running": "running",
     "completed": "completed",
@@ -43,6 +52,39 @@ STATUS = {
     "blocked": "blocked",
     "queued": "queued",
 }
+
+ADAPTIVE_STAGES = {
+    "pilot": "piloto",
+    "main": "comparacion",
+    "auxiliary": "consolidacion",
+    "audit": "auditoria",
+}
+
+
+def adaptive_task(item, relative):
+    stage, model, seed = item.get("stage"), item.get("variant"), item.get("seed")
+    configuration = item.get("config_sha256")
+    if (
+        stage not in ADAPTIVE_STAGES
+        or model not in ADAPTIVE_VARIANTS
+        or type(seed) is not int
+        or seed not in {42, 43, 44}
+        or str(relative) != f"{stage}/{model}-{seed}/run.json"
+        or not isinstance(configuration, str)
+        or not re.fullmatch(r"[a-f0-9]{64}", configuration)
+    ):
+        raise ValueError(
+            "El registro adaptativo no conserva etapa, modelo, semilla o configuración"
+        )
+    return dict(
+        kind=model,
+        activity="evaluation" if stage == "audit" else "rl",
+        phase="evaluation" if stage == "audit" else "train",
+        variant_id=ADAPTIVE_STAGES[stage],
+        native_registry=True,
+    )
+
+
 KINDS = {
     name: label
     for name, label in (
@@ -59,11 +101,19 @@ KINDS = {
         ("factor_world", "Generador de mundos sintéticos"),
         ("ppo", "PPO"),
         ("double_dqn", "Double DQN"),
+        ("ppo_window", "PPO con ventana temporal"),
+        ("ppo_gru", "PPO con GRU"),
+        ("ppo_episodic", "PPO con memoria episódica"),
+        ("ppo_hmm", "PPO con HMM"),
+        ("ppo_episodic_hmm", "PPO con memoria episódica y HMM"),
+        ("ppo_recent_aux", "PPO con consolidación reciente"),
+        ("ppo_replay_aux", "PPO con consolidación histórica"),
         ("simulator", "Simulador financiero"),
         ("cash", "Mantener efectivo"),
         ("hold_initial", "Conservar posiciones iniciales"),
         ("rebalance_50", "Reequilibrar al 50 %"),
         ("financial_comparison", "Resumen de comparación financiera"),
+        ("adaptive_comparison", "Campaña de adaptación RL"),
         ("unknown", "Modelo no identificado"),
     )
 }
@@ -184,7 +234,7 @@ def _report_paths(folder, maximum):
                 if entries_seen > maximum * 16:
                     raise ValueError("El recorrido de informes supera su presupuesto")
                 if entry.is_dir(follow_symlinks=False):
-                    if entry.name not in {"private", "checkpoints"}:
+                    if entry.name not in {"private", "checkpoints", "trace"}:
                         pending.append(Path(entry.path))
                 elif entry.name == "run.json":
                     yield safe_path(folder, Path(entry.path).relative_to(folder))
@@ -203,7 +253,7 @@ def safe_path(root, relative):
 
 
 def lock_held(folder):
-    for name in (".lock", ".queue.lock", ".study.lock", ".run.lock"):
+    for name in (".lock", ".queue.lock", ".study.lock", ".run.lock", ".campaign.lock"):
         try:
             fd = os.open(folder / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         except FileNotFoundError:
@@ -288,7 +338,10 @@ class Collector:
         return raw
 
     def collect(self, sources, *, now=None):
-        now = utc(now or datetime.now(UTC).isoformat())
+        if now is not None:
+            now = utc(now)
+            if now is None:
+                raise ValueError("La fecha de observación no es válida")
         self.bytes_read = 0
         campaigns, seen = [], set()
         with self.db:
@@ -363,7 +416,7 @@ class Collector:
         return dict(
             schema_version=2,
             project="MARS-TITAN",
-            generated_at=now,
+            generated_at=now or utc(datetime.now(UTC).isoformat()),
             source_status="available" if runs else "no_runs_registered",
             poll_interval_seconds=60,
             stale_after_seconds=900,
@@ -372,15 +425,16 @@ class Collector:
                 dict(
                     id=k,
                     name=v,
-                    kind={
+                    kind="reinforcement"
+                    if k in ADAPTIVE_VARIANTS
+                    else {
                         "factor_world": "generator",
                         "simulator": "simulation",
-                        "ppo": "reinforcement",
-                        "double_dqn": "reinforcement",
                         "cash": "financial_baseline",
                         "hold_initial": "financial_baseline",
                         "rebalance_50": "financial_baseline",
                         "financial_comparison": "summary",
+                        "adaptive_comparison": "summary",
                     }.get(k, "baseline"),
                 )
                 for k, v in KINDS.items()
@@ -392,11 +446,16 @@ class Collector:
                 "La observación del proceso no acredita nuevo progreso.",
                 "El historial conserva comprobaciones técnicas y campañas con poblaciones "
                 "distintas. Los grupos de comparación dependen de sus fuentes.",
+                "Los entornos de adaptación RL son escenarios técnicos con 3 conceptos macro "
+                "simulados. No equivalen al corpus real con 140 indicadores.",
             ],
         )
 
     def _campaign(self, source, folder, summary, now, live):
         tasks = {}
+        adaptive = summary.get("kind") == "adaptive_campaign"
+        if adaptive and summary.get("schema_version") != 1:
+            raise ValueError("La versión del registro adaptativo no está admitida")
         runs = summary.get("runs", [])
         if len(runs) > self.max_files:
             raise ValueError("Demasiados recibos en el resumen de campaña")
@@ -420,9 +479,13 @@ class Collector:
                         if item.get("attempts")
                         else item.get("attempt_id", "legacy"),
                     }
+                    if adaptive:
+                        tasks[str(relative)].update(adaptive_task(item, relative))
         if folder.exists():
             for path in _report_paths(folder, self.max_files):
                 relative = str(path.relative_to(folder))
+                if adaptive and relative == "run.json":
+                    continue
                 if relative not in tasks and len(tasks) >= self.max_files:
                     raise ValueError("Demasiados recibos en la campaña")
                 tasks.setdefault(relative, {})
@@ -440,6 +503,16 @@ class Collector:
             ):
                 continue
             report = report or {}
+            if (
+                report
+                and task.get("native_registry")
+                and (
+                    report.get("model") != task["kind"]
+                    or report.get("activity") != task["activity"]
+                    or report.get("seed") != task["seed"]
+                )
+            ):
+                raise ValueError("El recibo nativo no corresponde a su caso registrado")
             recovery = report.get("checkpoint", {})
             checkpoint = (
                 {}
@@ -457,6 +530,19 @@ def _resources(report):
     if not isinstance(attempts, list) or any(not isinstance(row, dict) for row in attempts):
         raise ValueError("Los intentos deben conservar una lista de medidas")
     records = [report, *attempts]
+    if native_adaptation(report):
+        resource = report.get("resources", {})
+        field = (
+            "executable_peak_rss_bytes"
+            if resource.get("ram_peak_method") == "procfs_VmHWM"
+            else "process_lifetime_peak_rss_bytes"
+        )
+        records.append(
+            {
+                field: resource.get("ram_peak_bytes"),
+                "peak_vram_allocated_bytes": resource.get("vram_peak_bytes"),
+            }
+        )
 
     def peak(field):
         values = [finite(row.get(field)) for row in records]
@@ -516,7 +602,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     )
     status = STATUS.get(report.get("status", task.get("status")))
     # Un recibo de error del coordinador puede ser posterior al último punto del hijo.
-    if task.get("status") in {"failed", "paused", "interrupted"}:
+    if task.get("status") in {"failed", "paused", "interrupted", "blocked", "cancelled", "waiting"}:
         status = STATUS[task["status"]]
     epochs = report.get("epochs", [])
     epochs = epochs if isinstance(epochs, list) else []
@@ -549,7 +635,9 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     updated = utc(observed_time)
     if updated is None and report_path.exists():
         updated = utc(datetime.fromtimestamp(report_path.stat().st_mtime, UTC).isoformat())
-    if updated is not None and updated > now:
+    # Una escritura puede confirmarse después de comenzar el recorrido del recolector.
+    now = now or utc(datetime.now(UTC).isoformat())
+    if updated is not None and datetime.fromisoformat(updated) > datetime.fromisoformat(now):
         raise ValueError("Recibo con fecha posterior a la observación")
     saved = checkpoint.get("latest", [])
     recovery = report.get("checkpoint", {})
@@ -616,11 +704,12 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         attempt_id=identifier(report.get("attempt_id", task.get("attempt_id", "legacy"))),
         model_id=model,
         activity=activity,
-        variant_id=digest(case)[:16] if case else None,
+        variant_id=task.get("variant_id") or (digest(case)[:16] if case else None),
         status=status,
         phase=report.get(
             "phase",
-            {
+            task.get("phase")
+            or {
                 "synthetic_generation": "prepare",
                 "rl": "train",
             }.get(activity, "validation"),
@@ -629,10 +718,15 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         updated_at=updated,
         heartbeat_at=now if live and status == "running" else None,
         completed_steps=max(progress) if progress else None,
-        total_steps=report.get("total_steps"),
+        total_steps=report.get(
+            "total_steps",
+            task.get("planned_transitions")
+            if task.get("native_registry") and activity == "rl"
+            else None,
+        ),
         epoch=epochs[-1]["epoch"] if epochs and predictive else None,
         max_epochs=finite(case.get("epochs")),
-        seed=case.get("seed", report.get("seed")),
+        seed=case.get("seed", report.get("seed", task.get("seed"))),
         fold=task.get("arm") if task.get("arm") in {"US", "CN", "US+CN"} else "unidentified",
         comparison_group=fingerprint if manifest else None,
         metrics=metrics,
@@ -648,7 +742,11 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
             currency=currency,
             condition=condition,
             parent_model=parent_model,
-            configuration_sha256=digest(case) if case else None,
+            configuration_sha256=task.get("config_sha256")
+            if task.get("native_registry")
+            else digest(case)
+            if case
+            else None,
             source_sha256=digest(report),
             history_axis="epoch" if predictive else "none",
             progress_time_source="receipt_timestamp" if observed_time else "receipt_mtime",
@@ -685,6 +783,7 @@ def validation_metrics(measures, mode):
 
 def validate_record(record, now):
     """Rechazar progreso y cronología que el navegador no pueda interpretar."""
+    now = now or utc(datetime.now(UTC).isoformat())
     counters = [
         record[key] for key in ("completed_steps", "total_steps", "epoch", "max_epochs", "seed")
     ]
