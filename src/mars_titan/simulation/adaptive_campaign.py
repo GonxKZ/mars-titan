@@ -16,6 +16,7 @@ import time
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from decimal import Decimal
+from itertools import pairwise
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
@@ -906,12 +907,36 @@ class Campaign:
         selection = config["selection"]
         minimum = selection["min_transitions"]
         interval = config["evaluation_transitions"]
-        evaluations = 1 + math.ceil(transitions / interval)
+        history = progress.get("evaluation_cursors")
+        _require(
+            isinstance(history, list)
+            and 1 <= len(history) <= 4096
+            and history == receipt.get("evaluation_cursors"),
+            "El selector no conserva una historia de validaciones completa y acotada",
+        )
+        history = [
+            _integer(cursor, "cursor de validación", maximum=transitions) for cursor in history
+        ]
+        _require(
+            history[0] == 0
+            and history[-1] == transitions
+            and all(
+                0 < current - previous < interval + config["environments"]
+                and (
+                    current - previous >= interval
+                    or current == config["training"]["total_transitions"]
+                )
+                for previous, current in pairwise(history)
+            ),
+            "Los cursores no respetan la programación de validaciones completas",
+        )
+        evaluations = len(history)
         best = receipt["best"]
         best_transition = _integer(
             best.get("transitions"), "transiciones seleccionadas", maximum=transitions
         )
-        eligible = max(0, math.ceil((transitions - max(minimum, best_transition)) / interval))
+        _require(best_transition in history, "El mejor estado no tiene una validación completa")
+        eligible = sum(cursor > max(minimum, best_transition) for cursor in history)
         stale = _integer(receipt.get("stale_evaluations"), "paciencia", maximum=eligible)
         _require(
             receipt.get("schema_version") == 3
@@ -926,10 +951,6 @@ class Campaign:
             and progress.get("stale_evaluations") == stale == eligible
             and progress.get("best") == best
             and progress.get("status") == ("early_stopped" if early else "completed")
-            and (
-                transitions % interval == 0
-                or transitions == config["training"]["total_transitions"]
-            )
             and (
                 not early
                 or (

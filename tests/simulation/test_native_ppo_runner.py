@@ -994,3 +994,86 @@ def test_convergence_resume_preserves_consumed_patience(adaptive_inputs, tmp_pat
     result = read(output / "run.json")
     assert result["stale_evaluations"] == 2 and result["transitions"] == 32
     assert result["stopping_reason"] == "budget_exhausted"
+
+
+def heterogeneous_convergence_inputs(adaptive_inputs, tmp_path, patience):
+    from mars_titan.simulation.adaptation_scenarios import prepare_adaptation_scenarios
+
+    config, paths = adaptive_inputs
+    settings = dict(
+        schema_version=1,
+        families=["known_signal"],
+        generator=dict(assets=2, sessions=12, warmup_sessions=5, regime_sessions=4),
+        worlds=dict(train=1, validation=1, audit=1),
+        seed_base=191,
+        final_test_opened=False,
+    )
+    other = tmp_path / "heterogeneous"
+    catalog = prepare_adaptation_scenarios(settings, other)
+    paths["train"][0] = other / next(
+        row["path"] for row in catalog["records"] if row["split"] == "train"
+    )
+    convergence_config(adaptive_inputs, minimum=16, patience=patience)
+    return config, paths
+
+
+@pytest.mark.parametrize("pending_validation", [False, True])
+def test_convergence_recovers_heterogeneous_warmup_cursor(
+    adaptive_inputs, tmp_path, pending_validation
+):
+    import torch
+
+    inputs = heterogeneous_convergence_inputs(adaptive_inputs, tmp_path, patience=8)
+    output, full = tmp_path / "heterogeneous-resumed", tmp_path / "heterogeneous-full"
+    execute_adaptive(inputs, output, "--stop-after", "16", paused=True)
+    paused = read(output / "run.json")
+    assert paused["transitions"] == 31 and paused["evaluations"] == 2
+    assert paused["stale_evaluations"] == 1
+    if pending_validation:
+        replace_confirmed_progress(
+            output,
+            evaluations=1,
+            stale_evaluations=0,
+            evaluated_transitions=0,
+            evaluated_optimizer_steps=0,
+            evaluation_cursors=[0],
+        )
+    execute_adaptive(inputs, output, "--resume")
+    execute_adaptive(inputs, full)
+    resumed = read(output / "run.json")
+    assert resumed["evaluation_cursors"] == [0, 31, 32]
+    assert resumed["stale_evaluations"] == 2 and resumed["stopping_reason"] == "budget_exhausted"
+    first = torch.jit.load(str(latest(output) / "policy.pt"), map_location="cpu").state_dict()
+    second = torch.jit.load(str(latest(full) / "policy.pt"), map_location="cpu").state_dict()
+    assert all(torch.equal(first[key], second[key]) for key in first)
+    from mars_titan.simulation.adaptive_campaign import Campaign
+
+    campaign = object.__new__(Campaign)
+    campaign.validate_convergence_receipt(
+        output, resumed, read(inputs[0]), resumed["identity_sha256"]
+    )
+
+
+def test_convergence_admits_heterogeneous_plateau_and_audit(adaptive_inputs, tmp_path):
+    from mars_titan.simulation.adaptive_campaign import Campaign
+
+    inputs = heterogeneous_convergence_inputs(adaptive_inputs, tmp_path, patience=1)
+    output = tmp_path / "heterogeneous-plateau"
+    execute_adaptive(inputs, output)
+    report = read(output / "run.json")
+    assert report["transitions"] == 31 and report["stopping_reason"] == "early_stop"
+    campaign = object.__new__(Campaign)
+    campaign.validate_convergence_receipt(
+        output, report, read(inputs[0]), report["identity_sha256"]
+    )
+    execute_adaptive(inputs, output, "--resume")
+    execute_audit(inputs, output, tmp_path / "heterogeneous-audit")
+
+
+def test_convergence_rejects_unbounded_history_before_runtime(adaptive_inputs, tmp_path):
+    config = convergence_config(adaptive_inputs)
+    config["training"]["total_transitions"] = 65536
+    adaptive_inputs[0].write_text(json.dumps(config))
+    result = execute_adaptive(adaptive_inputs, tmp_path / "oversized-selector", success=False)
+    assert "4096" in result.stderr
+    assert not (tmp_path / "oversized-selector").exists()

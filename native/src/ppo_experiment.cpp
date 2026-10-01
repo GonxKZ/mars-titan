@@ -49,6 +49,7 @@ constexpr std::size_t macro_catalog_concepts = 140;
 constexpr std::size_t market_numeric_columns = 6;
 constexpr std::size_t maximum_catalog_bytes = std::size_t{512} * 1024 * 1024;
 constexpr std::size_t maximum_transitions = std::size_t{1} << 20;
+constexpr std::size_t maximum_selection_evaluations = 4096;
 constexpr std::size_t maximum_rollout = 16384;
 constexpr std::size_t diagnostic_transitions = 32;
 constexpr std::size_t minimum_vram_bytes = std::size_t{256} * 1024 * 1024;
@@ -254,10 +255,12 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
     require(result.schema_version != 3 ||
                 (result.min_transitions <= result.training.total_transitions &&
                  result.min_transitions % result.evaluation_transitions == 0 &&
+                 1 + (result.training.total_transitions + result.evaluation_transitions - 1) /
+                         result.evaluation_transitions <= maximum_selection_evaluations &&
                  (result.early_stopping || result.min_transitions == 0) &&
                  (!result.early_stopping || result.learning.variant != "double_dqn" ||
                   result.min_transitions >= dqn_learning_warmup)),
-            "El mínimo debe respetar el intervalo, el presupuesto y el calentamiento del agente");
+            "El selector debe respetar mínimo, intervalo, presupuesto, calentamiento y hasta 4096 evaluaciones");
     require(result.environments > 0 && result.environments <= simulation::maximum_environments &&
                 result.training.total_transitions >= result.environments &&
                 result.training.total_transitions <= maximum_transitions &&
@@ -778,13 +781,14 @@ struct Progress {
     std::string status = "running";
     std::size_t evaluations = 0;
     std::size_t stale_evaluations = 0;
+    std::vector<std::size_t> evaluation_cursors;
     std::optional<std::size_t> evaluated_optimizer_steps;
     std::optional<std::size_t> evaluated_transitions;
     std::string pause_reason = "requested_pause";
     Json best = nullptr;
 };
 
-Json progress_json(const Progress& progress, bool adaptive) {
+Json progress_json(const Progress& progress, const ExperimentConfig& config) {
     Json result{{"status", progress.status},
                 {"evaluations", progress.evaluations},
                 {"stale_evaluations", progress.stale_evaluations},
@@ -792,10 +796,13 @@ Json progress_json(const Progress& progress, bool adaptive) {
                 {"evaluated_optimizer_steps", progress.evaluated_optimizer_steps
                                                   ? Json(*progress.evaluated_optimizer_steps)
                                                   : Json(nullptr)}};
-    if (adaptive) {
+    if (config.learning.enabled) {
         result["evaluated_transitions"] =
             progress.evaluated_transitions ? Json(*progress.evaluated_transitions) : Json(nullptr);
         result["pause_reason"] = progress.pause_reason;
+    }
+    if (config.schema_version == 3) {
+        result["evaluation_cursors"] = progress.evaluation_cursors;
     }
     return result;
 }
@@ -829,7 +836,7 @@ Json state_json(const PpoTrainingState& state, const ExperimentConfig& config,
                 {"reset_lanes", state.reset_lanes},
                 {"sessions", sessions},
                 {"context_sources", state.environment.context_sources},
-                {"progress", progress_json(progress, config.learning.enabled)}};
+                {"progress", progress_json(progress, config)}};
     if (config.learning.enabled) {
         result["source_indices"] = state.source_indices;
         result["next_source"] = state.next_source;
@@ -911,9 +918,11 @@ void validate_convergence_progress(const Json& progress, const ExperimentConfig&
     const auto evaluations = count(progress.at("evaluations"));
     const auto stale = count(progress.at("stale_evaluations"));
     const auto& cursor = progress.at("evaluated_transitions");
-    require(transitions <= config.training.total_transitions &&
-                cursor.is_null() == (evaluations == 0),
-            "El selector no conserva un cursor de validación completo");
+    const auto& history = progress.at("evaluation_cursors");
+    require(transitions <= config.training.total_transitions && history.is_array() &&
+                history.size() <= maximum_selection_evaluations && history.size() == evaluations &&
+                cursor.is_null() == history.empty(),
+            "El selector no conserva sus cursores de validación completos y acotados");
     if (cursor.is_null()) {
         require(transitions == 0 && stale == 0 && progress.at("best").is_null() &&
                     progress.at("status") != "completed" && progress.at("status") != "early_stopped",
@@ -922,16 +931,25 @@ void validate_convergence_progress(const Json& progress, const ExperimentConfig&
     }
     const auto evaluated = count(cursor);
     const auto interval = config.evaluation_transitions;
-    require(evaluated <= transitions &&
-                (evaluated % interval == 0 || evaluated == config.training.total_transitions) &&
-                evaluations == 1 + evaluated / interval + (evaluated % interval != 0 ? 1 : 0),
-            "El selector no conserva las validaciones completas del intervalo");
+    require(count(history.front()) == 0 && count(history.back()) == evaluated &&
+                evaluated <= transitions && transitions - evaluated < interval + config.environments,
+            "El selector no conserva los cursores inicial y confirmado de validación");
     const auto best_transition = count(progress.at("best").at("transitions"));
-    const auto anchor = std::max(config.min_transitions, best_transition);
-    const auto eligible = evaluated > anchor ? (evaluated - anchor + interval - 1) / interval : 0;
-    require(best_transition <= evaluated && stale == eligible &&
-                (best_transition % interval == 0 ||
-                 best_transition == config.training.total_transitions),
+    std::size_t eligible = 0;
+    std::size_t previous = 0;
+    bool selected = false;
+    for (std::size_t index = 0; index < history.size(); ++index) {
+        const auto current = count(history.at(index));
+        require(current <= evaluated &&
+                    (index == 0 ||
+                     (current > previous && current - previous < interval + config.environments &&
+                      (current - previous >= interval || current == config.training.total_transitions))),
+                "Los cursores no respetan el orden y la programación de validaciones completas");
+        selected = selected || current == best_transition;
+        eligible += current > std::max(config.min_transitions, best_transition) ? 1 : 0;
+        previous = current;
+    }
+    require(selected && stale == eligible,
             "La paciencia incluye validaciones anteriores al mínimo o a la mejor selección");
     const auto status = progress.at("status").get<std::string>();
     if (status == "completed" || status == "early_stopped") {
@@ -948,7 +966,11 @@ void validate_convergence_progress(const Json& progress, const ExperimentConfig&
 Progress restore_progress(const Json& value, const PpoTrainingState& state,
                           const ExperimentConfig& config,
                           std::span<const simulation::BatchInput> validation) {
-    if (config.learning.enabled) {
+    if (config.schema_version == 3) {
+        require_fields(value,
+                       {"status", "evaluations", "stale_evaluations", "best", "evaluation_cursors",
+                        "evaluated_optimizer_steps", "evaluated_transitions", "pause_reason"});
+    } else if (config.learning.enabled) {
         require_fields(value,
                        {"status", "evaluations", "stale_evaluations", "best",
                         "evaluated_optimizer_steps", "evaluated_transitions", "pause_reason"});
@@ -964,6 +986,11 @@ Progress restore_progress(const Json& value, const PpoTrainingState& state,
             "El estado del experimento PPO no está admitido");
     progress.evaluations = count(value.at("evaluations"));
     progress.stale_evaluations = count(value.at("stale_evaluations"));
+    if (config.schema_version == 3) {
+        for (const auto& cursor : value.at("evaluation_cursors")) {
+            progress.evaluation_cursors.push_back(count(cursor));
+        }
+    }
     if (config.learning.enabled) {
         progress.pause_reason = value.at("pause_reason").get<std::string>();
         require(progress.pause_reason == "requested_pause" ||
@@ -1280,6 +1307,11 @@ class ExperimentRun {
             (evaluation.ruined == count(progress_.best.at("ruin_count")) &&
              evaluation.mean_log_growth >
                  finite_number(progress_.best.at("mean_log_growth")) + config_.min_delta);
+        if (config_.schema_version == 3) {
+            require(progress_.evaluation_cursors.size() < maximum_selection_evaluations,
+                    "El selector supera el límite de cursores de validación");
+            progress_.evaluation_cursors.push_back(trainer_.transitions());
+        }
         ++progress_.evaluations;
         progress_.evaluated_optimizer_steps = trainer_.optimizer_steps();
         progress_.evaluated_transitions = trainer_.transitions();
@@ -1405,6 +1437,9 @@ class ExperimentRun {
             if (progress_.status == "paused") {
                 report["stopping_reason"] = progress_.pause_reason;
             }
+        }
+        if (config_.schema_version == 3) {
+            report["evaluation_cursors"] = progress_.evaluation_cursors;
         }
         atomic_json_file(options_.output / "run.json", report);
         return report;

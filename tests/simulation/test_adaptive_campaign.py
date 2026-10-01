@@ -914,6 +914,7 @@ def convergence_receipt(tmp_path, *, early=True):
         selection=dict(config["selection"], policy="greedy_argmax"),
         stopping_reason="early_stop" if early else "budget_exhausted",
         evaluations=1 + transitions // 16384,
+        evaluation_cursors=list(range(0, transitions + 1, 16384)),
         stale_evaluations=(transitions - 131072) // 16384,
         best=best,
     )
@@ -928,6 +929,7 @@ def convergence_receipt(tmp_path, *, early=True):
             evaluated_transitions=transitions,
             evaluated_optimizer_steps=256,
             evaluations=report["evaluations"],
+            evaluation_cursors=report["evaluation_cursors"],
             stale_evaluations=report["stale_evaluations"],
         ),
     )
@@ -1033,4 +1035,15 @@ def test_convergence_receipt_waits_for_declared_patience(tmp_path):
     seal_convergence_checkpoint(tmp_path, metadata)
     campaign = object.__new__(adaptive_campaign.Campaign)
     with pytest.raises(ValueError, match="paciencia"):
+        campaign.validate_convergence_receipt(tmp_path, report, config, "a" * 64)
+
+
+@pytest.mark.parametrize("cursors", [[0, 16384, 16384], [0, 1, 262144], [0, 262144], [0] * 4097])
+def test_convergence_receipt_rejects_forged_cursor_history(tmp_path, cursors):
+    config, report, metadata = convergence_receipt(tmp_path)
+    report["evaluation_cursors"] = metadata["progress"]["evaluation_cursors"] = cursors
+    report["evaluations"] = metadata["progress"]["evaluations"] = len(cursors)
+    seal_convergence_checkpoint(tmp_path, metadata)
+    campaign = object.__new__(adaptive_campaign.Campaign)
+    with pytest.raises(ValueError):
         campaign.validate_convergence_receipt(tmp_path, report, config, "a" * 64)
