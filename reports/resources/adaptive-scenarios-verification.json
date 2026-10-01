@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-29T07:38:41.071157+00:00",
+  "scope": "Verificación técnica de escenarios, trazas y ejecutor adaptativo. No es una campaña comparativa.",
+  "device": "cpu",
+  "cuda_visible_devices": "-1",
+  "scientific_campaign_started": false,
+  "final_test_opened": false,
+  "tools": {
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "torch": "2.14.0+cu130",
+    "hmmlearn": "0.3.3"
+  },
+  "native_tools": {
+    "compiler": "Clang 21.1.8",
+    "standard": "C++20",
+    "clang_tidy": "21.1.6",
+    "static_analyzer": "Clang Static Analyzer 21"
+  },
+  "checks": [
+    {
+      "name": "Escenarios, explicaciones y almacenamiento",
+      "passed": 39,
+      "pytest_reported_seconds": 2.15,
+      "files": [
+        "tests/simulation/test_adaptation_scenarios.py",
+        "tests/simulation/test_decision_explanations.py",
+        "tests/simulation/test_financial_storage.py"
+      ]
+    },
+    {
+      "name": "Integración del ejecutor y auditoría",
+      "passed": 41,
+      "pytest_reported_seconds": 23.42,
+      "files": [
+        "tests/simulation/test_native_ppo_runner.py"
+      ],
+      "binary": "build/native/native-ppo-integration/mars-titan-ppo",
+      "budget": "Cada ejecución de entrenamiento diagnóstico admite hasta 32 transiciones de aprendizaje. El calentamiento se cuenta aparte.",
+      "binary_sha256": "56ac3cec2274731c146f9064a7d6a94d61a402a6314b4703aa2bc172cc6ddd1f",
+      "scope": "Las 41 integraciones CPU y su huella de binario corresponden a la revisión anterior al cambio de publicación del índice. La huella observada se conserva, sin sustituirla por la de otro binario."
+    },
+    {
+      "name": "Persistencia y sensibilidad de trazas C++",
+      "cases": 10,
+      "passed": true,
+      "files": [
+        "native/src/decision_trace.cpp",
+        "native/tests/decision_trace_tests.cpp"
+      ],
+      "instrumentation": [
+        "AddressSanitizer",
+        "UndefinedBehaviorSanitizer",
+        "LeakSanitizer"
+      ],
+      "method": "Compilación aislada con avisos estrictos, análisis de lifetime y bibliotecas propias de contabilidad y archivos instrumentadas.",
+      "verified_at": "2026-09-29T08:14:42.535682+00:00",
+      "source_sha256": {
+        "native/src/decision_trace.cpp": "2472aa46c9f738494146146e32b57ac654631b0c23d320d8972f80af86e499c5",
+        "native/include/mars_titan/decision_trace.hpp": "c0687e852cfcb74eb73ebc2a3588828bb2f93392cc19a79086202f894d3342ac",
+        "native/tests/decision_trace_tests.cpp": "729483854ff56a63bf9a97576638da70194e4497aa51d90e2d395aef2cae0047"
+      },
+      "revision": "Índice publicado al hacer flush, con contabilidad incremental de bloques admitidos.",
+      "scope": "Diez casos de la revisión final de TraceWriter, compilados y ejecutados con sanitizadores. No se ha vuelto a medir la cobertura Python para este cambio.",
+      "verified_behaviors": [
+        "Ocho bloques completos quedan fuera del índice hasta flush y se retiran al recuperar el último cursor confirmado.",
+        "El rechazo de un cursor imposible conserva la cola antes de validar el checkpoint.",
+        "Un corte después de flush y antes del checkpoint conserva el prefijo anterior.",
+        "Un fallo de escritura o publicación conserva las decisiones admitidas para recuperar o reintentar.",
+        "La reserva incremental rechaza un bloque completo antes de crear su archivo y concuerda con los bytes confirmados.",
+        "La recuperación conserva los archivos ajenos y rechaza corrupción e identidades incompatibles.",
+        "La sensibilidad valida las distribuciones registradas y su distancia L1."
+      ]
+    },
+    {
+      "name": "Análisis estático nativo",
+      "passed": true,
+      "tools": [
+        "clang-tidy",
+        "Clang Static Analyzer"
+      ],
+      "files": [
+        "native/src/decision_trace.cpp",
+        "native/tests/decision_trace_tests.cpp",
+        "native/src/ppo_experiment.cpp",
+        "native/src/ppo_main.cpp"
+      ],
+      "trace_revision_verified_at": "2026-09-29T08:17:39.433594+00:00",
+      "trace_source_sha256": {
+        "native/src/decision_trace.cpp": "2472aa46c9f738494146146e32b57ac654631b0c23d320d8972f80af86e499c5",
+        "native/include/mars_titan/decision_trace.hpp": "c0687e852cfcb74eb73ebc2a3588828bb2f93392cc19a79086202f894d3342ac",
+        "native/tests/decision_trace_tests.cpp": "729483854ff56a63bf9a97576638da70194e4497aa51d90e2d395aef2cae0047"
+      },
+      "scope": "clang-tidy y Clang Static Analyzer se repitieron para TraceWriter y sus diez casos. Las comprobaciones del ejecutor y CLI corresponden a la revisión anterior identificada por las integraciones CPU."
+    },
+    {
+      "name": "Ruff",
+      "passed": true,
+      "checks": [
+        "check",
+        "format --check"
+      ],
+      "files": [
+        "src/mars_titan/simulation/adaptation_scenarios.py",
+        "scripts/prepare_adaptation_scenarios.py",
+        "scripts/explain_rl_decisions.py",
+        "tests/simulation/test_adaptation_scenarios.py",
+        "tests/simulation/test_decision_explanations.py",
+        "tests/simulation/test_native_ppo_runner.py"
+      ]
+    }
+  ],
+  "recovery_observations": [
+    "Las trazas y los parámetros de la ejecución continua coinciden exactamente con los de una pausa y recuperación CPU.",
+    "Una cola Parquet escrita antes del checkpoint no se explica y se descarta al recuperar.",
+    "La auditoría recupera el tercer coste pendiente después de confirmar los dos primeros y produce las mismas métricas y filas de decisión.",
+    "La auditoría no modifica el índice ni el informe de selección de la ejecución original.",
+    "El guard de padre acepta el PID supervisor real y rechaza un PID ajeno antes de crear la salida. Las dos variantes auxiliares completan 32 transiciones CPU y publican contadores reales de pasos y muestras."
+  ],
+  "volatility_check": {
+    "seeds": [
+      26260929,
+      26260930,
+      26260931,
+      26260932,
+      26260933,
+      26260934,
+      26260935,
+      26260936
+    ],
+    "assets": 16,
+    "sessions_per_world": 256,
+    "residual_definition": "Retorno intradiario menos retorno esperado conocido por el evaluador.",
+    "mean_pairwise_correlation_before": 0.9434379016635888,
+    "mean_pairwise_correlation_after": 0.3839586059386873,
+    "residual_std_before": 0.002088367417647736,
+    "residual_std_after": 0.017049259366122026,
+    "jump_count_after": 17,
+    "phase_sessions": 128
+  },
+  "directed_mutations": [
+    {
+      "mutation": "constant_correlation",
+      "source_sha256": "8207b75a5c9d6e8b0008873b3988a4eff0afee21553faf5f076a97d924e12659",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "missing_jumps",
+      "source_sha256": "8207b75a5c9d6e8b0008873b3988a4eff0afee21553faf5f076a97d924e12659",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "dividend_price",
+      "source_sha256": "8207b75a5c9d6e8b0008873b3988a4eff0afee21553faf5f076a97d924e12659",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "unconfirmed_trace",
+      "source_sha256": "df5bb514077944967d00f893c75f3c0344360c14fbca384c80f0580eaa4ff101",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "foreign_trace_identity",
+      "source_sha256": "df5bb514077944967d00f893c75f3c0344360c14fbca384c80f0580eaa4ff101",
+      "detected": true,
+      "returncode": 1
+    }
+  ],
+  "coverage": {
+    "tool": "7.16.2",
+    "complexity_tool": "Lizard 1.24.0",
+    "crap_convention": "CC² × (1 − cobertura de líneas ejecutables)^3 + CC, por función",
+    "files": {
+      "scripts/explain_rl_decisions.py": {
+        "sha256": "df5bb514077944967d00f893c75f3c0344360c14fbca384c80f0580eaa4ff101",
+        "summary": {
+          "covered_lines": 128,
+          "num_statements": 171,
+          "percent_covered": 72.41379310344827,
+          "percent_covered_display": "72",
+          "missing_lines": 43,
+          "excluded_lines": 0,
+          "percent_statements_covered": 74.85380116959064,
+          "percent_statements_covered_display": "75",
+          "num_branches": 90,
+          "num_partial_branches": 25,
+          "covered_branches": 61,
+          "missing_branches": 29,
+          "percent_branches_covered": 67.77777777777777,
+          "percent_branches_covered_display": "68"
+        },
+        "functions": [
+          {
+            "name": "_read",
+            "cc": 4,
+            "covered_fraction": 0.7777777777777778,
+            "crap": 4.175582990397805
+          },
+          {
+            "name": "_json.object_hook",
+            "cc": 3,
+            "covered_fraction": 0.8571428571428571,
+            "crap": 3.0262390670553936
+          },
+          {
+            "name": "_json",
+            "cc": 1,
+            "covered_fraction": 0.8888888888888888,
+            "crap": 1.0013717421124828
+          },
+          {
+            "name": "_count",
+            "cc": 3,
+            "covered_fraction": 0.75,
+            "crap": 3.140625
+          },
+          {
+            "name": "_digest",
+            "cc": 3,
+            "covered_fraction": 0.75,
+            "crap": 3.140625
+          },
+          {
+            "name": "_time",
+            "cc": 2,
+            "covered_fraction": 0.6,
+            "crap": 2.2560000000000002
+          },
+          {
+            "name": "_describe",
+            "cc": 45,
+            "covered_fraction": 0.7333333333333333,
+            "crap": 83.40000000000002
+          },
+          {
+            "name": "explain",
+            "cc": 40,
+            "covered_fraction": 0.8363636363636363,
+            "crap": 47.01066867017281
+          },
+          {
+            "name": "main",
+            "cc": 1,
+            "covered_fraction": 0.09090909090909091,
+            "crap": 1.7513148009015778
+          }
+        ]
+      },
+      "src/mars_titan/simulation/adaptation_scenarios.py": {
+        "sha256": "8207b75a5c9d6e8b0008873b3988a4eff0afee21553faf5f076a97d924e12659",
+        "summary": {
+          "covered_lines": 169,
+          "num_statements": 185,
+          "percent_covered": 89.36170212765957,
+          "percent_covered_display": "89",
+          "missing_lines": 16,
+          "excluded_lines": 0,
+          "percent_statements_covered": 91.35135135135135,
+          "percent_statements_covered_display": "91",
+          "num_branches": 50,
+          "num_partial_branches": 9,
+          "covered_branches": 41,
+          "missing_branches": 9,
+          "percent_branches_covered": 82.0,
+          "percent_branches_covered_display": "82"
+        },
+        "functions": [
+          {
+            "name": "cases",
+            "cc": 27,
+            "covered_fraction": 0.8666666666666667,
+            "crap": 28.727999999999998
+          },
+          {
+            "name": "generate_scenario",
+            "cc": 48,
+            "covered_fraction": 0.9764705882352941,
+            "crap": 48.0300134337472
+          },
+          {
+            "name": "_write_context",
+            "cc": 1,
+            "covered_fraction": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "fit_hmm",
+            "cc": 16,
+            "covered_fraction": 0.8846153846153846,
+            "crap": 16.393263541192535
+          },
+          {
+            "name": "prepare_adaptation_scenarios",
+            "cc": 12,
+            "covered_fraction": 0.7631578947368421,
+            "crap": 13.913106866890216
+          }
+        ]
+      }
+    },
+    "scope": "Medición anterior de los dos módulos Python identificados por sus huellas. Se conserva sin recalcular y no mide cobertura de TraceWriter ni del cambio posterior de publicación del índice."
+  },
+  "limits": [
+    "No mide mejora predictiva, rentabilidad, eficiencia CUDA ni consumo energético.",
+    "Los diagnósticos financieros usan fuentes ficticias con tres conceptos macro de los 140, sin acreditar cuatro modalidades reales.",
+    "La cobertura Python corresponde solo a los dos módulos declarados. Los caminos no ejecutados y las expresiones de validación mantienen funciones con CRAP alto.",
+    "Los resultados de cobertura y mutación no demuestran ausencia de errores.",
+    "Arrow y otras bibliotecas de terceros están precompiladas y no comparten toda la instrumentación de las fuentes propias.",
+    "hmmlearn emitió avisos de deprecación relacionados con NumPy 2.5. La carga de archivos Torch de las pruebas emitió un aviso de deprecación de torch.jit.load.",
+    "La publicación diferida del índice conserva formato y API. Sus bytes lógicos proyectados no son tiempos, latencias ni medidas físicas de disco. Las medidas del recorrido completo se documentan por separado."
+  ],
+  "updated_at": "2026-09-29T09:39:18.861179+00:00"
+}

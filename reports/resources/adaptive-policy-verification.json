@@ -1,0 +1,1023 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-29T09:47:23.186768+00:00",
+  "scope": "Verificación CPU de la política nativa con validadores agrupados, salida temprana sin etiquetas y preparación MLP desde un rollout CPU. Sin medidas de rendimiento CUDA en este informe.",
+  "sources": [
+    {
+      "path": "native/include/mars_titan/ppo_policy.hpp",
+      "source_sha256": "e7636ac93628bcd6bbb8d07a6ca3dda78f41a37195a7cd3cdcdb5279d96e968d",
+      "lines": 2,
+      "covered_lines": 2,
+      "branches": 0,
+      "covered_branches": 0
+    },
+    {
+      "path": "native/src/ppo_policy.cpp",
+      "source_sha256": "b0d54ed761c0fc6cdabdfc3330e7164364e92555f35edad5484b663f4dab3217",
+      "lines": 1041,
+      "covered_lines": 1023,
+      "branches": 564,
+      "covered_branches": 433
+    }
+  ],
+  "test_source": {
+    "path": "native/tests/ppo_policy_tests.cpp",
+    "sha256": "6087399571bdbebef1928db2c8837c6a321973840d27457969b89826d604a1d0"
+  },
+  "baseline_source_sha256": "674ad9aeaa47d82a394668ebebcce5124f6d30877aa829188bd8f1eb40e4a03a",
+  "changes": [
+    "Validar definición, disposición, forma, dispositivo y precisión antes de omitir la reducción de finitud de un tensor vacío.",
+    "Comprobar conjuntamente la finitud de recompensas, Q online y Q objetivo, conservando la validación de los objetivos calculados.",
+    "Terminar la actualización MLP sin calcular GAE cuando no hay recompensas válidas, después de validar todo el rollout.",
+    "Añadir update_from_cpu exclusivamente para PPO MLP, reutilizando ppo_gae de ATen en CPU FP64.",
+    "Seleccionar filas válidas antes de trasladar observaciones, acciones, logprobabilidades, ventajas y retornos. Convertir precisión y normalizar después del traslado.",
+    "Compartir el bucle PPO existente y conservar Adam, sus RNG, la ruta update y el formato de checkpoints. Rechazar GRU y Double DQN en la entrada nueva."
+  ],
+  "tools": {
+    "coverage": "LLVM 21 LCOV export",
+    "complexity": "lizard 1.17.31",
+    "compiler": "Clang 21.1.8",
+    "standard": "C++20",
+    "libtorch": "2.14.0+cu130",
+    "clang_tidy": "21.1.6",
+    "static_analyzer": "Clang 21.1.8",
+    "lifetime_analysis": "Lifetime Safety experimental"
+  },
+  "execution": {
+    "device": "cpu",
+    "compile_jobs": 1,
+    "numerical_threads": 1,
+    "cuda_visible_devices": "-1",
+    "cuda_backend_compiled": false,
+    "strict_warnings_as_errors": true,
+    "floating_point_flags": [
+      "-fno-fast-math",
+      "-ffp-contract=off"
+    ],
+    "asan_options": "detect_leaks=1:halt_on_error=1",
+    "ubsan_options": "print_stacktrace=1:halt_on_error=1"
+  },
+  "tests": {
+    "count": 46,
+    "names": [
+      "clipped_objective_matches_signed_analytic_values",
+      "clipped_objective_keeps_large_finite_log_ratios",
+      "gae_cuts_each_lane_at_the_correct_boundary",
+      "inference_uses_only_its_own_observation",
+      "update_increases_probability_for_a_positive_advantage",
+      "constant_advantages_leave_actor_unchanged",
+      "invalid_rewards_do_not_update_actor_critic_or_rng",
+      "masked_transitions_match_a_rollout_containing_only_valid_steps",
+      "policy_sampling_does_not_consume_global_random_state",
+      "random_state_restoration_is_atomic",
+      "checkpoint_preserves_sampling_optimizer_and_next_update",
+      "malformed_or_different_device_checkpoints_are_rejected",
+      "invalid_rollout_fails_before_mutation",
+      "non_finite_float_gradients_fail_before_the_optimizer_step",
+      "hyperparameters_reject_non_finite_values_and_invalid_ranges",
+      "checkpoint_rejects_inconsistent_adam_steps",
+      "architectures_count_parameters_and_keep_legacy_defaults",
+      "recurrent_inference_retains_history_and_resets_only_selected_lanes",
+      "recurrent_update_reconstructs_prefix_after_each_epoch",
+      "recurrent_update_replays_recorded_probabilities_and_excludes_padding",
+      "recurrent_checkpoint_restores_architecture_state_and_next_update",
+      "recurrent_rollout_rejects_missing_or_inconsistent_history",
+      "legacy_checkpoint_keeps_the_original_mlp_and_next_update",
+      "recurrent_gate_order_matches_an_analytic_recurrence",
+      "recurrent_update_respects_episode_boundaries_inside_the_rollout",
+      "gru_prefix_padding_does_not_affect_training",
+      "gae_does_not_cross_an_explicit_episode_start",
+      "architectures_and_recurrent_states_fail_fast",
+      "consolidation_reduces_scalar_mae_without_advancing_ppo",
+      "auxiliary_checkpoint_restores_both_optimizers_and_sampling",
+      "history_reconstruction_matches_independent_lanes_without_sampling",
+      "auxiliary_and_ppo_optimizers_modify_only_their_own_heads",
+      "consolidation_rejects_invalid_targets_before_consuming_rng",
+      "model_size_is_bounded_by_checkpoint_capacity",
+      "double_dqn_uses_online_choice_and_target_value",
+      "double_dqn_targets_keep_exact_values_with_mixed_precision_and_strides",
+      "double_dqn_targets_reject_nonfinite_and_malformed_inputs",
+      "empty_mlp_state_preserves_inference_and_still_validates_its_schema",
+      "epsilon_greedy_probabilities_and_packed_values_match_q_values",
+      "double_dqn_update_syncs_at_environment_steps_and_restores_exactly",
+      "double_dqn_excludes_invalid_rewards_and_rejects_cursor_changes",
+      "double_dqn_smooth_l1_matches_an_analytic_target",
+      "double_dqn_mask_matches_a_batch_containing_only_valid_rows",
+      "double_dqn_checkpoint_rejects_an_incoherent_sync_cursor",
+      "cpu_rollout_update_matches_existing_precision_rng_and_steps",
+      "cpu_rollout_update_rejects_invalid_rows_and_other_architectures"
+    ],
+    "retained_release_exit_code": 0,
+    "retained_asan_ubsan_lsan_exit_code": 0,
+    "retained_coverage_exit_code": 0,
+    "cpu_entry_red_exit_code": 1,
+    "validation_cases": {
+      "mixed_fp32_fp64_combinations": 8,
+      "nan_positive_inf_negative_inf_cases": 18,
+      "checks": [
+        "Igualdad exacta de objetivos analíticos con vistas no contiguas.",
+        "Rechazo de tensores indefinidos y esquemas incompatibles.",
+        "Rechazo de tensores Meta donde se exige CPU, sin ejecutar CUDA.",
+        "Igualdad exacta de logits y valores con estado MLP vacío explícito.",
+        "Conservación de la comprobación de forma, precisión y dispositivo del estado vacío."
+      ],
+      "cpu_entry_mlp_architectures": 3,
+      "cpu_entry_precisions": [
+        "float32",
+        "float64"
+      ],
+      "cpu_entry_successive_updates": 2,
+      "cpu_entry_temporal_steps": 3,
+      "cpu_entry_checks": [
+        "Igualdad exacta de seis métricas, seis tensores de parámetros PPO, pasos de Adam y ambos RNG entre update y update_from_cpu.",
+        "Máscaras parciales, terminación y truncación dentro del rollout.",
+        "Rechazo de NaN e infinito en filas sin etiqueta válida, esquemas incompatibles y datos Meta.",
+        "Rechazo explícito de GRU y Double DQN."
+      ],
+      "empty_rollout_checks": [
+        "Seis estadísticas nulas e idénticas al control sin etiquetas.",
+        "Actor, crítico y RNG de acciones y minibatches sin cambios.",
+        "NaN y acciones con forma incompatible rechazados antes del retorno vacío."
+      ]
+    }
+  },
+  "static_analysis": {
+    "clang_tidy_exit_code": 0,
+    "clang_static_analyzer_exit_code": 0,
+    "own_diagnostics": 0,
+    "configuration": "native/.clang-tidy",
+    "tidy_scope": [
+      "native/src/ppo_policy.cpp",
+      "native/tests/ppo_policy_tests.cpp"
+    ],
+    "analyzer_scope": [
+      "native/src/ppo_policy.cpp"
+    ]
+  },
+  "coverage": {
+    "convention": "LF/LH y BRF/BRH de LLVM LCOV, solo fuentes y cabeceras propias.",
+    "totals": {
+      "lines": 1043,
+      "covered_lines": 1025,
+      "branches": 564,
+      "covered_branches": 433
+    },
+    "files": [
+      {
+        "path": "native/include/mars_titan/ppo_policy.hpp",
+        "source_sha256": "e7636ac93628bcd6bbb8d07a6ca3dda78f41a37195a7cd3cdcdb5279d96e968d",
+        "lines": 2,
+        "covered_lines": 2,
+        "branches": 0,
+        "covered_branches": 0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "source_sha256": "b0d54ed761c0fc6cdabdfc3330e7164364e92555f35edad5484b663f4dab3217",
+        "lines": 1041,
+        "covered_lines": 1023,
+        "branches": 564,
+        "covered_branches": 433
+      }
+    ]
+  },
+  "crap": {
+    "convention": "CCN² × (1 − cobertura de líneas de la función)³ + CCN.",
+    "functions": [
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoHyperparameters::validate() const",
+        "start_line": 750,
+        "end_line": 761,
+        "cyclomatic_complexity": 25,
+        "executable_lines": 12,
+        "covered_lines": 12,
+        "coverage_fraction": 1.0,
+        "crap": 25.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::load( std :: istream & source , std :: string_view device_name)",
+        "start_line": 903,
+        "end_line": 991,
+        "cyclomatic_complexity": 25,
+        "executable_lines": 89,
+        "covered_lines": 89,
+        "coverage_fraction": 1.0,
+        "crap": 25.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::validate_rollout( const PpoRollout & rollout , const at :: Device & expected_device) const",
+        "start_line": 496,
+        "end_line": 536,
+        "cyclomatic_complexity": 23,
+        "executable_lines": 41,
+        "covered_lines": 41,
+        "coverage_fraction": 1.0,
+        "crap": 23.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::update_double_dqn( const DqnBatch & batch , std :: size_t environment_step , std :: size_t target_interval)",
+        "start_line": 1162,
+        "end_line": 1221,
+        "cyclomatic_complexity": 18,
+        "executable_lines": 59,
+        "covered_lines": 59,
+        "coverage_fraction": 1.0,
+        "crap": 18.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::recurrent_sequences( const PpoRollout & rollout)",
+        "start_line": 372,
+        "end_line": 415,
+        "cyclomatic_complexity": 14,
+        "executable_lines": 44,
+        "covered_lines": 44,
+        "coverage_fraction": 1.0,
+        "crap": 14.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoArchitecture::validate() const",
+        "start_line": 1016,
+        "end_line": 1023,
+        "cyclomatic_complexity": 13,
+        "executable_lines": 8,
+        "covered_lines": 8,
+        "coverage_fraction": 1.0,
+        "crap": 13.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::state_from_history( const at :: Tensor & observations , const at :: Tensor & lengths) const",
+        "start_line": 1105,
+        "end_line": 1125,
+        "cyclomatic_complexity": 11,
+        "executable_lines": 20,
+        "covered_lines": 20,
+        "coverage_fraction": 1.0,
+        "crap": 11.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::require_resources( std :: size_t width , int64_t samples , std :: size_t budget , const PpoArchitecture & architecture)",
+        "start_line": 114,
+        "end_line": 135,
+        "cyclomatic_complexity": 9,
+        "executable_lines": 20,
+        "covered_lines": 20,
+        "coverage_fraction": 1.0,
+        "crap": 9.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::validate_optimizer( torch :: optim :: Adam & selected_optimizer)",
+        "start_line": 715,
+        "end_line": 744,
+        "cyclomatic_complexity": 8,
+        "executable_lines": 30,
+        "covered_lines": 30,
+        "coverage_fraction": 1.0,
+        "crap": 8.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::double_dqn_targets( const at :: Tensor & rewards , const at :: Tensor & terminated , const at :: Tensor & online_next , const at :: Tensor & target_next , double gamma)",
+        "start_line": 1126,
+        "end_line": 1143,
+        "cyclomatic_complexity": 7,
+        "executable_lines": 17,
+        "covered_lines": 17,
+        "coverage_fraction": 1.0,
+        "crap": 7.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::update_recurrent( const PpoRollout & rollout)",
+        "start_line": 661,
+        "end_line": 713,
+        "cyclomatic_complexity": 6,
+        "executable_lines": 53,
+        "covered_lines": 51,
+        "coverage_fraction": 0.9622641509433962,
+        "crap": 6.001934482828107
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::require_float_shape( const at :: Tensor & tensor , at :: IntArrayRef shape , const at :: Device & device)",
+        "start_line": 91,
+        "end_line": 96,
+        "cyclomatic_complexity": 6,
+        "executable_lines": 6,
+        "covered_lines": 6,
+        "coverage_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::adam_steps( const torch :: optim :: Adam & optimizer)",
+        "start_line": 430,
+        "end_line": 441,
+        "cyclomatic_complexity": 6,
+        "executable_lines": 12,
+        "covered_lines": 12,
+        "coverage_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::validate_observations( const at :: Tensor & observations , bool allow_cpu = false) const",
+        "start_line": 486,
+        "end_line": 494,
+        "cyclomatic_complexity": 6,
+        "executable_lines": 9,
+        "covered_lines": 9,
+        "coverage_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::ppo_clipped_objective( const at :: Tensor & log_probabilities , const at :: Tensor & old_log_probabilities , const at :: Tensor & advantages , double clip)",
+        "start_line": 762,
+        "end_line": 776,
+        "cyclomatic_complexity": 6,
+        "executable_lines": 13,
+        "covered_lines": 13,
+        "coverage_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::reconstruct_prefix( const PpoRollout & rollout , std :: span<const RecurrentSequence> sequences) const",
+        "start_line": 565,
+        "end_line": 590,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 25,
+        "covered_lines": 22,
+        "coverage_fraction": 0.88,
+        "crap": 5.0432
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::require_mask( const at :: Tensor & mask , at :: IntArrayRef shape , const at :: Device & device)",
+        "start_line": 108,
+        "end_line": 112,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 5,
+        "covered_lines": 5,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::validate( int64_t width , const at :: Device & device) const",
+        "start_line": 270,
+        "end_line": 294,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 25,
+        "covered_lines": 25,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::validate_gae( const PpoRollout & rollout)",
+        "start_line": 355,
+        "end_line": 370,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 16,
+        "covered_lines": 16,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::consolidate( const at :: Tensor & observations , const at :: Tensor & matured_rewards , int64_t steps)",
+        "start_line": 1065,
+        "end_line": 1101,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 36,
+        "covered_lines": 36,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::act_double_dqn( const at :: Tensor & observations , double epsilon)",
+        "start_line": 1145,
+        "end_line": 1160,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 16,
+        "covered_lines": 16,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::model_parameters( std :: size_t width , const PpoArchitecture & architecture)",
+        "start_line": 76,
+        "end_line": 83,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 8,
+        "covered_lines": 8,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::PolicyNetwork( int64_t width , PpoArchitecture architecture , at :: Generator generator)",
+        "start_line": 167,
+        "end_line": 195,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 28,
+        "covered_lines": 28,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::Impl( std :: size_t observation_width , PpoHyperparameters hyperparameters , uint64_t seed , std :: string_view device , std :: size_t memory_budget , PpoArchitecture selected_architecture)",
+        "start_line": 461,
+        "end_line": 484,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 22,
+        "covered_lines": 22,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::ppo_gae( const PpoRollout & rollout , const PpoHyperparameters & parameters)",
+        "start_line": 777,
+        "end_line": 802,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 26,
+        "covered_lines": 26,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::save( std :: ostream & destination) const",
+        "start_line": 859,
+        "end_line": 901,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 43,
+        "covered_lines": 43,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::infer( const at :: Tensor & observations , const at :: Tensor & state , const at :: Tensor & episode_starts) const",
+        "start_line": 1034,
+        "end_line": 1047,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 13,
+        "covered_lines": 13,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::forward( const at :: Tensor & observations) const",
+        "start_line": 197,
+        "end_line": 206,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 10,
+        "covered_lines": 6,
+        "coverage_fraction": 0.6,
+        "crap": 3.576
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::make_sampler( const at :: Device & device , uint64_t seed)",
+        "start_line": 137,
+        "end_line": 151,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 8,
+        "covered_lines": 6,
+        "coverage_fraction": 0.75,
+        "crap": 3.140625
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::restore_generator( at :: Generator & generator , const at :: Tensor & state)",
+        "start_line": 158,
+        "end_line": 163,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 6,
+        "covered_lines": 6,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::validate_stream( std :: istream & source)",
+        "start_line": 345,
+        "end_line": 353,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 9,
+        "covered_lines": 9,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::update_feedforward( const PpoRollout & rollout , const PpoAdvantages & gae , const at :: Tensor & indices)",
+        "start_line": 624,
+        "end_line": 659,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 35,
+        "covered_lines": 35,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::PpoPolicy( std :: size_t width , const PpoHyperparameters & parameters , uint64_t seed , std :: string_view device_name , std :: size_t memory_budget , PpoArchitecture architecture)",
+        "start_line": 803,
+        "end_line": 813,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 10,
+        "covered_lines": 10,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::update( const PpoRollout & rollout)",
+        "start_line": 836,
+        "end_line": 847,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 12,
+        "covered_lines": 12,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::update_from_cpu( const PpoRollout & rollout)",
+        "start_line": 848,
+        "end_line": 857,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 10,
+        "covered_lines": 10,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::initial_state( std :: size_t batch_size) const",
+        "start_line": 1025,
+        "end_line": 1032,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 8,
+        "covered_lines": 8,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::prefix_state( const PrefixBatch & prefix) const",
+        "start_line": 226,
+        "end_line": 240,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 15,
+        "covered_lines": 13,
+        "coverage_fraction": 0.8666666666666667,
+        "crap": 2.0094814814814814
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::require( bool condition , std :: string_view message)",
+        "start_line": 85,
+        "end_line": 89,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 5,
+        "covered_lines": 5,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::require_finite( const at :: Tensor & tensor)",
+        "start_line": 98,
+        "end_line": 101,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 4,
+        "covered_lines": 4,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::infer( const at :: Tensor & observations , const at :: Tensor & state) const",
+        "start_line": 215,
+        "end_line": 224,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 10,
+        "covered_lines": 10,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::policy_parameters() const",
+        "start_line": 246,
+        "end_line": 252,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 7,
+        "covered_lines": 7,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::copy_parameters( const PolicyNetwork & source)",
+        "start_line": 258,
+        "end_line": 268,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 11,
+        "covered_lines": 11,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::read_hyperparameters( torch :: serialize :: InputArchive & archive)",
+        "start_line": 331,
+        "end_line": 343,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 13,
+        "covered_lines": 13,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::recurrent_minibatch( const PpoRollout & rollout , std :: span<const RecurrentSequence> sequences , const at :: Tensor & normalized , const at :: Tensor & returns)",
+        "start_line": 592,
+        "end_line": 622,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 29,
+        "covered_lines": 29,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::act( const at :: Tensor & observations , bool deterministic)",
+        "start_line": 823,
+        "end_line": 832,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 10,
+        "covered_lines": 10,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::device() const",
+        "start_line": 1009,
+        "end_line": 1011,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 0,
+        "coverage_fraction": 0.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::act_recurrent( const at :: Tensor & observations , const at :: Tensor & state , const at :: Tensor & episode_starts , bool deterministic)",
+        "start_line": 1049,
+        "end_line": 1060,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 11,
+        "covered_lines": 11,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::auxiliary_steps() const",
+        "start_line": 1102,
+        "end_line": 1104,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::long_tensor( std :: span<const int64_t> values , const at :: Device & device)",
+        "start_line": 70,
+        "end_line": 74,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 5,
+        "covered_lines": 5,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::require_float( const at :: Tensor & tensor , at :: IntArrayRef shape , const at :: Device & device)",
+        "start_line": 103,
+        "end_line": 106,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 4,
+        "covered_lines": 4,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::generator_state( at :: Generator generator)",
+        "start_line": 153,
+        "end_line": 156,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 4,
+        "covered_lines": 4,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::sequence( const at :: Tensor & observations , const at :: Tensor & state) const",
+        "start_line": 208,
+        "end_line": 213,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 6,
+        "covered_lines": 6,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::predict_auxiliary( const at :: Tensor & observations) const",
+        "start_line": 242,
+        "end_line": 244,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::auxiliary_parameters() const",
+        "start_line": 254,
+        "end_line": 256,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PolicyNetwork::shared_features( const at :: Tensor & observations) const",
+        "start_line": 297,
+        "end_line": 300,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 4,
+        "covered_lines": 4,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::read_integer( torch :: serialize :: InputArchive & archive , const std :: string & key)",
+        "start_line": 324,
+        "end_line": 329,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 6,
+        "covered_lines": 6,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::update_statistics( at :: Tensor totals , PpoUpdateStats result , int64_t epochs)",
+        "start_line": 417,
+        "end_line": 428,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 12,
+        "covered_lines": 12,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::optimize( const PpoForward & output , const LossBatch & batch)",
+        "start_line": 538,
+        "end_line": 563,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 26,
+        "covered_lines": 26,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::Impl::optimizer_step_count() const",
+        "start_line": 746,
+        "end_line": 748,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::forward( const at :: Tensor & observations) const",
+        "start_line": 817,
+        "end_line": 821,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 5,
+        "covered_lines": 5,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::values( const at :: Tensor & observations) const",
+        "start_line": 834,
+        "end_line": 834,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 1,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::random_state() const",
+        "start_line": 992,
+        "end_line": 994,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::restore_random_state( const PpoRandomState & state)",
+        "start_line": 996,
+        "end_line": 1003,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 8,
+        "covered_lines": 8,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::observation_width() const",
+        "start_line": 1005,
+        "end_line": 1005,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 1,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::hyperparameters() const",
+        "start_line": 1006,
+        "end_line": 1008,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::seed() const",
+        "start_line": 1012,
+        "end_line": 1012,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 1,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::optimizer_steps() const",
+        "start_line": 1013,
+        "end_line": 1015,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::architecture() const",
+        "start_line": 1061,
+        "end_line": 1063,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::parameter_count() const",
+        "start_line": 1064,
+        "end_line": 1064,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 1,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::dqn_environment_step() const",
+        "start_line": 1223,
+        "end_line": 1223,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 1,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "function": "mars_titan::learning::PpoPolicy::target_sync_step() const",
+        "start_line": 1224,
+        "end_line": 1224,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 1,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      }
+    ]
+  },
+  "targeted_mutations": [
+    {
+      "mutation": "empty_before_cpu_validation",
+      "compiled": true,
+      "exit_code": 1,
+      "killed": true,
+      "output": "Se aceptó una entrada inválida\n"
+    },
+    {
+      "mutation": "cpu_admits_gru",
+      "compiled": true,
+      "exit_code": 1,
+      "killed": true,
+      "output": "Se aceptó una entrada inválida\n"
+    }
+  ],
+  "limits": [
+    "CRAP une las líneas DA ejecutadas de las instancias en el intervalo de Lizard.",
+    "Las lambdas pueden compartir líneas con la función que las contiene.",
+    "Una función sin líneas instrumentadas conserva cobertura cero en este diagnóstico.",
+    "CRAP combina complejidad y recorridos observados, no demuestra ausencia de errores.",
+    "El código CUDA queda fuera de esta configuración y de sus contadores.",
+    "LibTorch precompilado no queda instrumentado íntegramente por estos sanitizadores.",
+    "La cobertura y las mutaciones seleccionadas no demuestran ausencia de defectos.",
+    "La medición del recorrido completo y la paridad CUDA se documentan por separado."
+  ],
+  "previous_validation": {
+    "source_sha256": "e1a1593547e1cc267409287535f2b75639482744d1cb2fac44da900963c9c4e9",
+    "test_count": 44,
+    "coverage": {
+      "lines": 1029,
+      "covered_lines": 1011,
+      "branches": 552,
+      "covered_branches": 422
+    },
+    "targeted_mutations": [
+      {
+        "mutation": "skip_joint_finiteness",
+        "compiled": true,
+        "exit_code": 1,
+        "killed": true,
+        "output": "Se aceptó una entrada inválida\n"
+      },
+      {
+        "mutation": "empty_before_schema",
+        "compiled": true,
+        "exit_code": 1,
+        "killed": true,
+        "output": "Se aceptó una entrada inválida\n"
+      }
+    ],
+    "scope": "Pasada anterior de 44 pruebas sobre los validadores, antes de añadir la entrada CPU. Sus métricas no se mezclan con las de la revisión final."
+  }
+}

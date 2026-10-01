@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -26,6 +27,9 @@ constexpr std::size_t digest_size = 64;
 constexpr std::size_t observation_width = 8;
 constexpr std::size_t full_exposure = 5;
 constexpr std::size_t paused_transitions = 6;
+constexpr double equal_prior = 0.5;
+constexpr double persistence = 0.9;
+constexpr double switching = 0.1;
 
 void require(bool condition, const char* reason) {
     if (!condition) {
@@ -316,6 +320,372 @@ void tiny_positive_nav_keeps_a_finite_logarithm() {
 }
 }
 
+namespace {
+std::vector<BatchInput> learning_sources() {
+    std::vector<BatchInput> result;
+    constexpr std::size_t sessions = 6;
+    for (const char digest : {'a', 'b', 'c'}) {
+        auto market = tape(sessions, "train", digest);
+        ContextTape context;
+        context.source_sha256.assign(digest_size, digest);
+        context.fields = {{"trading_enabled", "indicador"}, {"signal", "indicador"}};
+        for (std::size_t session = 0; session < sessions; ++session) {
+            context.values.push_back({session == 0 ? 0.F : 1.F, true, market->close_times[session]});
+            context.values.push_back({static_cast<float>(session), true, market->close_times[session]});
+        }
+        result.push_back({std::move(market), {}, std::move(context)});
+    }
+    return result;
+}
+
+void adaptive_catalog_and_warmup_resume_exactly() {
+    for (const auto* variant : {"ppo", "double_dqn", "ppo_window", "ppo_gru", "ppo_episodic",
+                                "ppo_hmm", "ppo_episodic_hmm", "ppo_recent_aux", "ppo_replay_aux"}) {
+        PpoLearningOptions options;
+        options.enabled = true;
+        options.environments = 2;
+        options.trading_field = 0;
+        options.variant = variant;
+        options.markov = MarkovParameters{2, 1, {equal_prior, equal_prior},
+            {persistence, switching, switching, persistence}, {0, 2}, {1, 1}};
+        options.markov_fields = {1};
+        auto parameters = hyperparameters();
+        parameters.minibatch_size = ppo_sequence_length;
+        PpoTrainer continuous(learning_sources(), config(), parameters, "cpu", true, options);
+        PpoTrainer interrupted(learning_sources(), config(), parameters, "cpu", true, options);
+        require(interrupted.advance() && interrupted.transitions() == 0 &&
+                    interrupted.observed_transitions() == 2,
+                "El calentamiento ha contado como aprendizaje");
+        require(interrupted.advance() && interrupted.advance(), "Falta progreso adaptativo");
+        auto state = interrupted.snapshot();
+        require(state.source_indices == std::vector<std::size_t>{0, 1},
+                "El catálogo no conserva sus fuentes activas");
+        const auto encoded = serialize_training_buffer(state);
+        state.rollout = {};
+        state.adaptive_archive.clear();
+        restore_training_buffer(encoded, state);
+        PpoTrainer recovered(learning_sources(), config(), parameters, "cpu", true, options);
+        recovered.restore(state);
+        while (continuous.advance()) {}
+        while (recovered.advance()) {}
+        const auto expected = continuous.snapshot();
+        const auto actual = recovered.snapshot();
+        require(actual.transitions == total_transitions &&
+                    actual.observed_transitions > actual.transitions &&
+                    actual.observed_transitions == expected.observed_transitions &&
+                    actual.source_indices == expected.source_indices &&
+                    actual.next_source == expected.next_source,
+                "La recuperación cambia la secuencia de mundos o su presupuesto");
+        const auto observation = at::ones({2, static_cast<int64_t>(continuous.policy().observation_width())}, at::kFloat);
+        require(at::equal(continuous.policy().forward(observation).logits,
+                          recovered.policy().forward(observation).logits),
+                "La recuperación adaptativa altera los pesos finales");
+        if (continuous.policy().architecture().auxiliary) {
+            require(continuous.policy().auxiliary_steps() > 0 &&
+                        continuous.policy().auxiliary_steps() == recovered.policy().auxiliary_steps() &&
+                        continuous.auxiliary_samples() == recovered.auxiliary_samples() &&
+                        continuous.auxiliary_samples() > continuous.policy().auxiliary_steps(),
+                    "La consolidación no se ejecutó o su recuperación cambió el presupuesto");
+        } else if (continuous.policy().architecture().double_dqn) {
+            require(actual.optimizer_steps == 0 && continuous.policy().dqn_environment_step() == 0,
+                    "Double DQN actualizó antes de reunir su calentamiento de 256 decisiones");
+        }
+        auto corrupted = actual;
+        corrupted.source_indices[0] = learning_sources().size();
+        rejected([&] { recovered.restore(corrupted); });
+    }
+}
+
+void recovered_episode_count_must_match_context_resets() {
+    PpoLearningOptions options;
+    options.enabled = true;
+    options.environments = 2;
+    options.trading_field = 0;
+    PpoTrainer trainer(learning_sources(), config(), hyperparameters(), "cpu", true, options);
+    // Antes del final, con reinicios pendientes y después de aplicarlos.
+    constexpr std::array<std::size_t, 3> checkpoint_steps{1, 5, 6};
+    std::size_t advanced = 0;
+    for (const auto checkpoint : checkpoint_steps) {
+        while (advanced < checkpoint) {
+            require(trainer.advance(), "Falta una transición para comprobar el cursor de episodios");
+            ++advanced;
+        }
+        const auto confirmed = trainer.snapshot();
+        auto corrupted = confirmed;
+        ++corrupted.episodes;
+        ++corrupted.next_source;
+        rejected([&] { trainer.restore(corrupted); });
+        const auto after = trainer.snapshot();
+        require(after.episodes == confirmed.episodes && after.next_source == confirmed.next_source &&
+                    after.source_indices == confirmed.source_indices &&
+                    after.adaptive_archive == confirmed.adaptive_archive,
+                "El rechazo de episodios inventados alteró la fuente o el contexto confirmado");
+        trainer.restore(confirmed);
+    }
+}
+
+void recurrent_history_must_fit_the_rollout_budget_before_allocation() {
+    PpoLearningOptions options;
+    options.enabled = true;
+    options.environments = 2;
+    options.trading_field = 0;
+    options.variant = "ppo_gru";
+    auto parameters = hyperparameters();
+    parameters.minibatch_size = ppo_sequence_length;
+    auto limited = config();
+    constexpr std::size_t small_budget = std::size_t{32} * 1024;
+    limited.rollout_bytes = small_budget;
+    rejected([&] {
+        PpoTrainer oversized(learning_sources(), limited, parameters, "cpu", true, options);
+    });
+    options.variant = "ppo";
+    PpoTrainer feedforward(learning_sources(), limited, parameters, "cpu", true, options);
+    require(!feedforward.snapshot().rollout.prefix_observations.defined(),
+            "La reserva recurrente cambió el contrato del control sin recurrencia");
+    options.variant = "ppo_gru";
+    PpoTrainer admitted(learning_sources(), config(), parameters, "cpu", true, options);
+    const auto prefix = admitted.snapshot().rollout.prefix_observations;
+    const auto prefix_bytes = static_cast<std::size_t>(prefix.numel()) * sizeof(float);
+    require(prefix_bytes > small_budget && prefix_bytes < config().rollout_bytes,
+            "La prueba no distingue el prefijo recurrente del presupuesto insuficiente");
+}
+
+void observed_decisions_must_match_complete_ticks_and_the_final_partial_batch() {
+    auto sources = learning_sources();
+    auto& context = sources.at(1).context;
+    if (!context) {
+        throw std::runtime_error("La prueba necesita el contexto de calentamiento");
+    }
+    context->values.at(context->fields.size()).value = 0;
+    PpoLearningOptions options;
+    options.enabled = true;
+    options.environments = 2;
+    options.trading_field = 0;
+    PpoTrainer trainer(sources, config(), hyperparameters(), "cpu", true, options);
+    require(trainer.advance() && trainer.advance(), "Faltan ticks para comprobar sus decisiones");
+    const auto confirmed = trainer.snapshot();
+    auto missing_decision = confirmed;
+    --missing_decision.observed_transitions;
+    rejected([&] { trainer.restore(missing_decision); });
+    require(trainer.observed_transitions() == confirmed.observed_transitions,
+            "Un contador de decisiones falso modificó el estado confirmado");
+    trainer.restore(confirmed);
+    while (trainer.advance()) {}
+    const auto completed = trainer.snapshot();
+    require(completed.observed_transitions % options.environments != 0,
+            "El calentamiento desigual no produjo el lote final parcial de la prueba");
+    PpoTrainer recovered(sources, config(), hyperparameters(), "cpu", true, options);
+    recovered.restore(completed);
+    require(recovered.observed_transitions() == completed.observed_transitions &&
+                !recovered.advance(),
+            "La recuperación rechazó o repitió el último lote parcial válido");
+    auto missing_tick = completed;
+    missing_tick.observed_transitions -= options.environments;
+    rejected([&] { recovered.restore(missing_tick); });
+}
+
+void audit_sensitivity_keeps_policy_rng_and_actual_trajectory() {
+    PpoLearningOptions options;
+    options.enabled = true;
+    options.environments = 2;
+    options.trading_field = 0;
+    options.variant = "ppo_episodic";
+    auto parameters = hyperparameters();
+    parameters.minibatch_size = ppo_sequence_length;
+    PpoTrainer trainer(learning_sources(), config(), parameters, "cpu", true, options);
+    while (trainer.advance()) {}
+    auto validation = learning_sources();
+    for (auto& input : validation) {
+        auto market = std::make_shared<MarketTape>(*input.tape);
+        market->partition = "validation";
+        input.tape = std::move(market);
+    }
+    const auto rng = trainer.policy().random_state();
+    const auto expected = evaluate_policy(trainer.policy(), validation, 1, {}, options);
+    std::vector<DecisionRecord> records;
+    const auto traced = evaluate_policy(trainer.policy(), validation, 1, {}, options,
+        [&](std::span<const DecisionRecord> batch) { records.insert(records.end(), batch.begin(), batch.end()); }, true);
+    require(traced.mean_log_growth == expected.mean_log_growth && traced.incomplete == 0 &&
+                traced.episodes == validation.size() &&
+                records.size() == validation.size() * (validation.front().tape->close_times.size() - 1),
+            "La sensibilidad cambia la trayectoria real o pierde decisiones al paginar mundos");
+    require(at::equal(rng.sampling, trainer.policy().random_state().sampling) &&
+                at::equal(rng.shuffle, trainer.policy().random_state().shuffle),
+            "La auditoría consume el RNG del entrenamiento");
+    bool recalled = false;
+    for (std::size_t index = 0; index < records.size(); ++index) {
+        const auto& record = records[index];
+        require(record.decision_id == index + 1 && record.outcome_at > record.decision_at &&
+                    !record.learning_allowed && record.memory_sensitivity.has_value(),
+                "La traza de auditoría pierde su identidad, tiempo o sensibilidad");
+        if (!record.memory_sensitivity) {
+            throw std::runtime_error("Falta el resultado de sensibilidad");
+        }
+        const auto& sensitivity = record.memory_sensitivity.value();
+        require(sensitivity.probability_l1 >= 0 && sensitivity.probability_l1 <= 2 &&
+                    sensitivity.action_changed == (sensitivity.action != record.action),
+                "La sensibilidad no conserva su diferencia de distribución y acción");
+        if (record.mode == "warmup") {
+            require(record.action == 1 && record.probabilities[1] == 1 &&
+                        sensitivity.probability_l1 == 0,
+                    "El calentamiento registra una acción no ejecutada");
+        }
+        for (std::size_t neighbor = 0; neighbor < record.retrieved_count; ++neighbor) {
+            require(record.matured_at.at(neighbor) <= record.decision_at,
+                    "La explicación consulta un resultado futuro");
+            recalled = true;
+        }
+    }
+    require(recalled, "La auditoría no ha ejercitado la recuperación de recuerdos");
+}
+
+void sensitivity_preserves_argmax_when_softmax_rounds_nearly_tied_logits() {
+    for (const auto* variant : {"ppo", "double_dqn"}) {
+        PpoLearningOptions options;
+        options.enabled = true;
+        options.environments = 2;
+        options.trading_field = 0;
+        options.variant = variant;
+        PpoTrainer trainer(learning_sources(), config(), hyperparameters(), "cpu", true, options);
+        const auto bytes = edit_network(trainer.snapshot().policy_archive, [](const auto& network) {
+            for (std::size_t index = 0; index < network->type()->numAttributes(); ++index) {
+                network->getSlot(index).toTensor().zero_();
+            }
+            constexpr float margin = 1e-8F;
+            network->getAttr("output_bias").toTensor()[2].fill_(margin);
+        });
+        std::istringstream archive(bytes);
+        const auto policy = PpoPolicy::load(archive);
+        auto validation = learning_sources();
+        for (auto& input : validation) {
+            auto market = std::make_shared<MarketTape>(*input.tape);
+            market->partition = "validation";
+            input.tape = std::move(market);
+        }
+        std::size_t checked = 0;
+        static_cast<void>(evaluate_policy(policy, validation, 1, {}, options,
+            [&](std::span<const DecisionRecord> records) {
+                for (const auto& record : records) {
+                    if (record.mode == "warmup") {
+                        continue;
+                    }
+                    if (!record.memory_sensitivity) {
+                        throw std::runtime_error("Falta la sensibilidad de la política controlada");
+                    }
+                    const auto& sensitivity = *record.memory_sensitivity;
+                    require(record.action == 2 && sensitivity.action == record.action &&
+                                !sensitivity.action_changed && sensitivity.probability_l1 == 0,
+                            "El redondeo del softmax inventó un cambio de acción sin cambiar los logits");
+                    ++checked;
+                }
+            }, true));
+        require(checked > 0, "Faltan decisiones posteriores al calentamiento en la prueba");
+    }
+}
+
+void sensitivity_rejects_nonfinite_logits_even_with_finite_probabilities() {
+    PpoLearningOptions options;
+    options.enabled = true;
+    options.environments = 2;
+    options.trading_field = 0;
+    options.variant = "ppo_episodic";
+    PpoTrainer trainer(learning_sources(), config(), hyperparameters(), "cpu", true, options);
+    constexpr std::size_t memory_tail_fields = 4;
+    const auto presence = static_cast<int64_t>(trainer.policy().observation_width() - memory_tail_fields);
+    const auto bytes = edit_network(trainer.snapshot().policy_archive, [&](const auto& network) {
+        for (std::size_t index = 0; index < network->type()->numAttributes(); ++index) {
+            network->getSlot(index).toTensor().zero_();
+        }
+        auto first = network->getAttr("first_weight").toTensor();
+        first.select(1, static_cast<int64_t>(observation_width)).fill_(1);
+        first.select(1, presence).fill_(-1);
+        network->getAttr("second_weight").toTensor().copy_(at::eye(first.size(0)));
+        network->getAttr("output_weight").toTensor()[0].fill_(-std::numeric_limits<float>::max());
+    });
+    std::istringstream archive(bytes);
+    const auto policy = PpoPolicy::load(archive);
+    auto validation = learning_sources();
+    for (auto& input : validation) {
+        auto market = std::make_shared<MarketTape>(*input.tape);
+        market->partition = "validation";
+        input.tape = std::move(market);
+    }
+    const auto complete = evaluate_policy(policy, validation, 1, {}, options);
+    require(!complete.paused && complete.incomplete == 0,
+            "La trayectoria real del caso de desbordamiento debe permanecer finita");
+    rejected([&] {
+        static_cast<void>(evaluate_policy(policy, validation, 1, {}, options,
+            [](std::span<const DecisionRecord>) {}, true));
+    });
+}
+
+void recovered_context_must_match_the_confirmed_financial_observation() {
+    PpoLearningOptions options;
+    options.enabled = true;
+    options.environments = 2;
+    options.trading_field = 0;
+    PpoTrainer trainer(learning_sources(), config(), hyperparameters(), "cpu", true, options);
+    require(trainer.advance() && trainer.advance(), "Faltan observaciones antes de recuperar");
+    const auto confirmed = trainer.snapshot();
+    auto corrupted = confirmed;
+    const auto encoded = [](torch::serialize::InputArchive& input) {
+        torch::serialize::OutputArchive output;
+        for (const auto& name : input.keys()) {
+            c10::IValue value;
+            input.read(name, value);
+            if (value.isTensor()) output.write(name, value.toTensor(), true);
+            else output.write(name, value);
+        }
+        std::ostringstream stream;
+        output.save_to(stream);
+        return std::move(stream).str();
+    };
+    torch::serialize::InputArchive adaptive;
+    std::istringstream adaptive_source(corrupted.adaptive_archive);
+    adaptive.load_from(adaptive_source, at::Device(at::kCPU));
+    at::Tensor context_bytes;
+    adaptive.read("context", context_bytes, true);
+    std::string context_content(static_cast<std::size_t>(context_bytes.numel()), '\0');
+    std::memcpy(context_content.data(), context_bytes.const_data_ptr<uint8_t>(), context_content.size());
+    torch::serialize::InputArchive context_archive;
+    std::istringstream context_source(context_content);
+    context_archive.load_from(context_source, at::Device(at::kCPU));
+    at::Tensor raw, history;
+    context_archive.read("raw", raw, true);
+    context_archive.read("history", history, true);
+    // El archivo conserva su coherencia interna, pero describe otra observación financiera.
+    raw[0][0].add_(1);
+    history[0][-1][0].add_(1);
+    const auto changed_context = encoded(context_archive);
+    auto active = learning_sources();
+    active.resize(options.environments);
+    FinancialBatch batch(active);
+    batch.restore(confirmed.environment);
+    PolicyContext independent(active, options, config().seed, batch.observations());
+    independent.restore({changed_context});
+    require(independent.cursor(0) == batch.cursor(0) &&
+                independent.observations()[0][0].item<float>() != batch.observations()[0],
+            "La reproducción no conserva los cursores y la discrepancia de observación");
+    torch::serialize::OutputArchive edited;
+    for (const auto& name : adaptive.keys()) {
+        at::Tensor value;
+        adaptive.read(name, value, true);
+        if (name == "context") {
+            value = at::empty({static_cast<int64_t>(changed_context.size())}, at::kByte);
+            std::memcpy(value.data_ptr<uint8_t>(), changed_context.data(), changed_context.size());
+        }
+        edited.write(name, value, true);
+    }
+    std::ostringstream destination;
+    edited.save_to(destination);
+    corrupted.adaptive_archive = std::move(destination).str();
+    rejected([&] { trainer.restore(corrupted); });
+    require(trainer.snapshot().adaptive_archive == confirmed.adaptive_archive &&
+                at::equal(trainer.snapshot().rollout.observations, confirmed.rollout.observations),
+            "La recuperación incompatible modificó el estado confirmado");
+}
+}
+
 int main() {
     try {
         paused_rollout_resumes_exactly_and_is_owned();
@@ -326,6 +696,14 @@ int main() {
         bootstrap_failure_rolls_back_the_environment_and_sampler();
         partial_optimizer_failure_requires_a_confirmed_checkpoint();
         tiny_positive_nav_keeps_a_finite_logarithm();
+        adaptive_catalog_and_warmup_resume_exactly();
+        recovered_episode_count_must_match_context_resets();
+        recurrent_history_must_fit_the_rollout_budget_before_allocation();
+        observed_decisions_must_match_complete_ticks_and_the_final_partial_batch();
+        audit_sensitivity_keeps_policy_rng_and_actual_trajectory();
+        sensitivity_preserves_argmax_when_softmax_rounds_nearly_tied_logits();
+        sensitivity_rejects_nonfinite_logits_even_with_finite_probabilities();
+        recovered_context_must_match_the_confirmed_financial_observation();
         std::cout << "Recorridos PPO, recuperación y evaluación separados comprobados\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

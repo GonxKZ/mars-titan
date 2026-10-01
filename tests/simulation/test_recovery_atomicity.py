@@ -62,6 +62,7 @@ def assert_state_equal(actual, expected):
     ],
 )
 def test_rejected_checkpoint_preserves_complete_trainer_state(algorithm, corrupt):
+    cuda_initialized = torch.cuda.is_initialized()
     config = TrainConfig(
         total_steps=16,
         batch_size=2,
@@ -105,7 +106,8 @@ def test_rejected_checkpoint_preserves_complete_trainer_state(algorithm, corrupt
 
     assert_state_equal(trainer.snapshot(), confirmed)
     np.testing.assert_array_equal(trainer.observation, observation)
-    assert not torch.cuda.is_initialized()
+    # Otras pruebas de la suite pueden haber abierto CUDA antes de este diagnóstico CPU.
+    assert torch.cuda.is_initialized() == cuda_initialized
 
 
 @pytest.mark.parametrize("effective_at", [2, 4])

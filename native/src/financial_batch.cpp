@@ -37,6 +37,7 @@ void resize_transition(BatchTransition& transition, std::size_t size) {
     transition.reward_valid.resize(size);
     transition.terminated.resize(size);
     transition.truncated.resize(size);
+    transition.costs.resize(size);
 }
 
 std::string context_source(const BatchInput& input) {
@@ -111,6 +112,7 @@ FinancialBatch::FinancialBatch(std::vector<BatchInput> inputs, std::size_t worke
              context_components * context_width;
     account_bytes(size(), 2 * width_ * sizeof(float), memory_budget, payload_bytes_);
     account_bytes(size(), 2 * (sizeof(double) + 3 * sizeof(uint8_t)), memory_budget, payload_bytes_);
+    account_bytes(size(), 2 * sizeof(double), memory_budget, payload_bytes_);
     account_bytes(size(), sizeof(uint8_t), memory_budget, payload_bytes_);
     std::unordered_set<const MarketTape*> validated_tapes;
     for (const auto& input : inputs_) {
@@ -201,6 +203,7 @@ void FinancialBatch::prepare_range(std::size_t worker) {
             staged_transition_.reward_valid[lane] = 0;
             staged_transition_.terminated[lane] = 0;
             staged_transition_.truncated[lane] = 0;
+            staged_transition_.costs[lane] = 0;
             continue;
         }
         const auto outcome = session.prepare_step(actions_[lane]);
@@ -210,6 +213,7 @@ void FinancialBatch::prepare_range(std::size_t worker) {
         staged_transition_.reward_valid[lane] = static_cast<uint8_t>(outcome.reward_valid);
         staged_transition_.terminated[lane] = static_cast<uint8_t>(outcome.terminated);
         staged_transition_.truncated[lane] = static_cast<uint8_t>(outcome.truncated);
+        staged_transition_.costs[lane] = session.staged_.account.costs - session.state_.account.costs;
     }
 }
 
@@ -320,6 +324,10 @@ BatchSnapshot FinancialBatch::snapshot() const {
 
 FinancialMetrics FinancialBatch::metrics(std::size_t lane) const {
     return sessions_.at(lane).metrics();
+}
+
+std::size_t FinancialBatch::cursor(std::size_t lane) const {
+    return sessions_.at(lane).cursor();
 }
 
 void FinancialBatch::replace(std::span<const std::size_t> indices,

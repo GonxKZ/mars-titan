@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-29T06:24:35.860777+00:00",
+  "kind": "technical_cuda_recovery",
+  "binary_sha256": "f7b92f2e48c7bdf4de5fcd2644cc22aa61d6177d2aa3f414f7eabd33d484dfa0",
+  "backend_sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+  "checks": [
+    {
+      "paused_at": 8,
+      "device": "cuda:0",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "torch": "2.14.0+cu130",
+      "parameters_equal_after_resume": true,
+      "runs": [
+        {
+          "transitions": 32,
+          "optimizer_steps": 8,
+          "invalid_transitions": 0,
+          "device": "cuda:0",
+          "final_test_opened": false
+        },
+        {
+          "transitions": 32,
+          "optimizer_steps": 8,
+          "invalid_transitions": 0,
+          "device": "cuda:0",
+          "final_test_opened": false
+        }
+      ]
+    },
+    {
+      "paused_at": 24,
+      "device": "cuda:0",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "torch": "2.14.0+cu130",
+      "parameters_equal_after_resume": true,
+      "runs": [
+        {
+          "transitions": 32,
+          "optimizer_steps": 8,
+          "invalid_transitions": 0,
+          "device": "cuda:0",
+          "final_test_opened": false
+        },
+        {
+          "transitions": 32,
+          "optimizer_steps": 8,
+          "invalid_transitions": 0,
+          "device": "cuda:0",
+          "final_test_opened": false
+        }
+      ]
+    }
+  ],
+  "launcher_tests": 25,
+  "supervisor_tests": 18,
+  "limits": [
+    "Pruebas de 32 transiciones sobre datos ficticios. No constituyen una campaña de eficacia.",
+    "Se compararon exactamente los parámetros finales tras recuperar un rollout parcial antes y después de una actualización de Adam.",
+    "La GRU, la memoria episódica y Double DQN requieren su propia comprobación CUDA.",
+    "No se midió el pico de VRAM del proceso en estas pruebas."
+  ]
+}

@@ -93,6 +93,7 @@ void parity_and_restore(std::size_t workers) {
     FinancialSession reference(data);
     std::vector<uint8_t> actions(environments, full_action);
     for (std::size_t at = 0; at + 1 < sessions; ++at) {
+        const auto previous_costs = reference.snapshot().account.costs;
         const auto expected = reference.step(actions.front());
         const auto& got = batch.step(actions);
         const auto observation = reference.observation();
@@ -101,7 +102,8 @@ void parity_and_restore(std::size_t workers) {
             require(got.rewards[lane] == expected.reward &&
                         got.terminated[lane] == expected.terminated &&
                         got.truncated[lane] == expected.truncated &&
-                        got.reward_valid[lane] == expected.reward_valid,
+                        got.reward_valid[lane] == expected.reward_valid &&
+                        got.costs[lane] == reference.snapshot().account.costs - previous_costs,
                     "La transición paralela difiere de la referencia");
             require(std::equal(observation.begin(), observation.end(),
                                batch.observations().begin() +
