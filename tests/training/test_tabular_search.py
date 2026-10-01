@@ -8,6 +8,8 @@ import pytest
 
 from mars_titan.data.storage import sha256
 from mars_titan.training.checkpoints import StopRequest
+from tests.training.test_temporal_corpus import inputs as inputs
+from tests.training.test_temporal_corpus import prepare
 
 
 def module():
@@ -109,6 +111,42 @@ def test_search_selects_seeds_after_all_cases_and_does_not_repeat_completed(tmp_
     assert result["selected"]["ridge"] == "ridge-a0.1"
     assert engine.run_tabular_search(config, manifest, output, resume=True)["status"] == "completed"
     assert len(calls) == 5
+
+
+def test_tabular_search_admits_verified_temporal_counts_without_reading_holdouts(
+    inputs, tmp_path, monkeypatch
+):
+    (tmp_path / "search").mkdir()
+    engine, config, _, _, _ = setup(tmp_path / "search", monkeypatch)
+    views = tmp_path / "temporal-views"
+    prepare(inputs, views)
+    source = views / "fold-000/manifest.json"
+    meta = json.loads(source.read_text())
+    meta.update(scope="full_corpus", cohort_complete=True)
+    source.write_text(json.dumps(meta))
+    events = []
+
+    def pause_after_admission(*args, **kwargs):
+        events.append(kwargs.get("kind", "xgboost"))
+        return dict(status="paused")
+
+    monkeypatch.setattr(engine, "run_tabular_reference", pause_after_admission)
+    monkeypatch.setattr(engine, "run_external_reference", pause_after_admission)
+    result = engine.run_tabular_search(config, source, tmp_path / "study")
+    assert result["status"] == "paused"
+    assert result["counts"] == meta["counts"]
+    assert result["final_test_opened"] is False
+    assert events == ["ridge"]
+
+
+def test_four_partitions_without_verified_temporal_origin_are_rejected(tmp_path, monkeypatch):
+    engine, config, manifest, calls, _ = setup(tmp_path, monkeypatch)
+    source = json.loads(manifest.read_text())
+    source["counts"].update(calibration=3, evaluation=3)
+    manifest.write_text(json.dumps(source))
+    with pytest.raises(ValueError):
+        engine.run_tabular_search(config, manifest, tmp_path / "study")
+    assert not calls
 
 
 def test_pause_between_cases_resumes_without_losing_completed_work(tmp_path, monkeypatch):

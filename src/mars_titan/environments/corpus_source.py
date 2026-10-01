@@ -22,10 +22,11 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.partition_contract import ordered_bounds
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .actions import ActionGrid
-from .cohorts import FINAL_TEST_START_US, VALIDATION_START_US, read_cohort, shapes_contract
+from .cohorts import read_cohort, shapes_contract
 
 MAX_BLOCK_BYTES = 64 * 1024**2
 
@@ -39,6 +40,10 @@ def _code():
             "environments/cohorts.py",
             "environments/actions.py",
             "training/corpus_inputs.py",
+            "training/partition_contract.py",
+            "training/temporal_corpus.py",
+            "evaluation/splits.py",
+            "evaluation/split_readiness.py",
             "training/cohort_contract.py",
             "training/run_receipts.py",
             "data/streaming.py",
@@ -153,18 +158,14 @@ def _partition(dataset, output, partition, report, stop):
                     [str(ordered)],
                 ).fetchall()
             )
-        lower, upper = (
-            (0, VALIDATION_START_US)
-            if partition == "train"
-            else (VALIDATION_START_US, FINAL_TEST_START_US)
-        )
+        lower, upper, cutoff = ordered_bounds(report)[partition]
         if not 1 <= len(index) <= 100_000 or sum(row[1] for row in index) != count:
             raise ValueError("El índice temporal no concilia o supera el presupuesto de cohortes")
         for at, rows, distinct, available_min, available_max, mature_min, mature_max in index:
             if not (
                 1 <= rows == distinct <= 4096
                 and 0 <= available_min <= available_max <= at < mature_min <= mature_max < upper
-                and lower <= at
+                and lower <= at < cutoff
             ):
                 raise ValueError("Las claves, disponibilidad o fechas de una cohorte son inválidas")
         maximum = max(row[1] for row in index)
@@ -273,6 +274,10 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
         cohort_id=dataset.cohort,
         news_content_policy=dataset.manifest.get("news_content_policy"),
     )
+    if getattr(dataset, "temporal", None) is not None:
+        identity["source_manifest"] = dict(
+            path=str(dataset.path.resolve()), sha256=dataset.identity
+        )
     output.mkdir(parents=True, exist_ok=resume)
     lock = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
@@ -280,7 +285,9 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
         confirmed = initialize_receipt(output, identity, record="progress.json", lock=".lock")
         if confirmed:
             report = read_manifest(output / "progress.json")[0]
-            if report["identity"] != identity:
+            if report["identity"] != identity or report.get("source_manifest") != identity.get(
+                "source_manifest"
+            ):
                 raise ValueError("La identidad de datos, versiones o código ha cambiado")
             if report["status"] == "completed":
                 final = output / "manifest.json"
@@ -309,6 +316,8 @@ def prepare_causal_corpus(manifest, output, *, batch_size=256, resume=False, sto
                 shapes={name: list(value.shape[1:]) for name, value in first["inputs"].items()},
                 partitions={},
             )
+            if "source_manifest" in identity:
+                report["source_manifest"] = identity["source_manifest"]
         report["status"] = "running"
         atomic_json(output / "progress.json", report)
         try:
@@ -364,6 +373,7 @@ class ParquetCohortSource:
         ):
             raise ValueError("El manifiesto o el presupuesto de lectura no es válido")
         record = meta["partitions"][partition]
+        self.population_counts = dict(meta["counts"])
         self.cohort_id = meta.get("cohort_id")
         self.news_content_policy = meta.get("news_content_policy")
         if (
@@ -381,11 +391,8 @@ class ParquetCohortSource:
         self.max_assets, self.max_cache_bytes = record["max_assets"], max_cache_bytes
         self.source_sha256, self.partition = meta["source_sha256"], partition
         self.index = record["cohorts"]
-        low, high = (
-            (0, VALIDATION_START_US)
-            if partition == "train"
-            else (VALIDATION_START_US, FINAL_TEST_START_US)
-        )
+        self.bounds = ordered_bounds(meta)[partition]
+        low, high, cutoff = self.bounds
         if (
             not isinstance(self.index, list)
             or not 1 <= len(self.index) <= 100_000
@@ -393,7 +400,7 @@ class ParquetCohortSource:
                 not isinstance(row, list)
                 or len(row) != 2
                 or any(type(v) is not int for v in row)
-                or not low <= row[0] < high
+                or not low <= row[0] < cutoff
                 or not 1 <= row[1] <= self.max_assets
                 for row in self.index
             )
@@ -486,7 +493,7 @@ class ParquetCohortSource:
             target=table["target"].to_numpy(),
         )
         checked = read_cohort(raw, self.shapes, self.max_assets, MAX_BLOCK_BYTES)
-        upper = VALIDATION_START_US if self.partition == "train" else FINAL_TEST_START_US
+        upper = self.bounds[1]
         if np.any(checked["target_available_at"] >= upper):
             raise ValueError("La etiqueta cruza la partición declarada")
         if self._signature() != self.signature:

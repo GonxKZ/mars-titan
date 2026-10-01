@@ -119,6 +119,9 @@ def run_tabular_reference(
     sources = (
         "training/tabular_corpus.py",
         "training/corpus_inputs.py",
+        "training/temporal_corpus.py",
+        "evaluation/splits.py",
+        "evaluation/split_readiness.py",
         "data/streaming.py",
         "data/batches.py",
         "models/baselines/inputs.py",

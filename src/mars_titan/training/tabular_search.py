@@ -20,6 +20,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 
 from .checkpoints import StopRequest
 from .external_corpus import run_external_reference
+from .partition_contract import supervision_bounds
 from .tabular_corpus import run_tabular_reference
 
 
@@ -30,6 +31,10 @@ def _code():
         "training/tabular_corpus.py",
         "training/external_corpus.py",
         "training/corpus_inputs.py",
+        "training/partition_contract.py",
+        "training/temporal_corpus.py",
+        "evaluation/splits.py",
+        "evaluation/split_readiness.py",
         "training/cohort_contract.py",
         "training/checkpoints.py",
         "models/baselines/ridge.py",
@@ -344,12 +349,11 @@ def run_tabular_search(
         or source.get("scope") not in {"full_corpus", "development_snapshot"}
         or (source["scope"] == "full_corpus" and source.get("cohort_complete") is not True)
         or source.get("final_test_opened", False) is not False
-        or set(source.get("counts", {})) != {"train", "validation"}
-        or any(type(v) is not int or v < 1 for v in source["counts"].values())
     ):
         raise ValueError(
             "La campaña necesita dos particiones admitidas y una población identificada"
         )
+    supervision_bounds(source)
     safe_destination(output)
     for root in (*source["roots"].values(), manifest.parent, config_path):
         outside_source(Path(root), output)

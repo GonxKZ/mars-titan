@@ -69,6 +69,10 @@ def code_identity():
         "models/baselines/inputs.py",
         "training/predictive_parents.py",
         "training/corpus_inputs.py",
+        "training/partition_contract.py",
+        "training/temporal_corpus.py",
+        "evaluation/splits.py",
+        "evaluation/split_readiness.py",
         "training/experiment_resources.py",
         "data/embeddings.py",
         "data/cohort_files.py",
@@ -209,7 +213,7 @@ def _validate_run(
         raise ValueError("La continuación necesita los mismos pesos verificados del padre")
     if not diagnostic and (
         parent.identity.get("source_sha256") != dataset.train.source_sha256
-        or parent.identity.get("counts") != dataset.counts
+        or parent.identity.get("counts") != dataset.population_counts
     ):
         raise ValueError("El padre no acredita la misma población completa")
     budget = dataset.budget(case["condition"], batch_size)

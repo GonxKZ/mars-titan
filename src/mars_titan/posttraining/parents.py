@@ -84,6 +84,10 @@ class FrozenParent:
 def _inference_contract(report, kind):
     contract = report.get("identity", {})
     names = ["training/corpus_inputs.py"]
+    if set(report.get("samples", {})) == {"train", "validation", "calibration", "evaluation"}:
+        names.extend(
+            ("training/temporal_corpus.py", "evaluation/splits.py", "evaluation/split_readiness.py")
+        )
     if kind in NEURAL:
         names.extend(
             (
