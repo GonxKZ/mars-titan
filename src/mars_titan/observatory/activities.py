@@ -34,7 +34,7 @@ def native_adaptation(report):
     """Reconocer el contrato técnico explícito, sin ampliar otras versiones de productor."""
     audit = report.get("kind") == "native_ppo_audit"
     return (
-        report.get("schema_version") == 2
+        report.get("schema_version") in ({2} if audit else {2, 3})
         and report.get("kind") in {"native_ppo", "native_ppo_audit"}
         and report.get("activity") == ("evaluation" if audit else "rl")
         and report.get("model") in ADAPTIVE_VARIANTS

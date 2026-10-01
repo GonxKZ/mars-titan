@@ -47,14 +47,16 @@ def _configuration(path):
     }
     extra = (
         {"case_indices", "continuation_selection"}
-        if isinstance(plan, dict) and plan.get("schema_version") == 2
+        if isinstance(plan, dict) and plan.get("schema_version") in {2, 3}
         else set()
     )
+    if isinstance(plan, dict) and plan.get("schema_version") == 3:
+        extra.add("minimum_epochs")
     if (
         not isinstance(plan, dict)
         or set(plan) != keys | extra
         or type(plan["schema_version"]) is not int
-        or plan["schema_version"] not in {1, 2}
+        or plan["schema_version"] not in {1, 2, 3}
         or plan["scope"] not in {"development_snapshot", "full_corpus"}
         or not isinstance(plan["arms"], list)
         or not plan["arms"]
@@ -86,16 +88,23 @@ def _configuration(path):
         or plan["search_seed"] not in seeds
     ):
         raise ValueError("La semilla de búsqueda debe ser uno de los finalistas, sin duplicados")
+    if plan["schema_version"] == 3 and (
+        type(plan["minimum_epochs"]) is not int or plan["posttraining_epochs"] != 5
+    ):
+        raise ValueError("La edición con mínimo mantiene cinco épocas en los controles pareados")
     cases = design_cases(
         plan["models"],
         seed=plan["search_seed"],
         epochs=plan["max_epochs"],
         patience=plan["patience"],
         min_delta=plan["min_delta"],
+        minimum_epochs=plan.get("minimum_epochs"),
     )
-    if plan["schema_version"] == 2:
+    if plan["schema_version"] in {2, 3}:
         indices = candidate_indices(plan)
         validate_selection(plan["continuation_selection"])
+        if "minimum_epochs" in plan["continuation_selection"]:
+            raise ValueError("Los controles pareados conservan su política de presupuesto fijo")
         if plan["continuation_selection"]["patience"] < plan["posttraining_epochs"]:
             raise ValueError(
                 "La paciencia no puede romper el presupuesto de los controles pareados"
@@ -267,7 +276,7 @@ def _execute_design(study, cases):
                             epochs=plan["posttraining_epochs"],
                             learning_rate=plan["posttraining_learning_rate"],
                         )
-                        if plan["schema_version"] == 2:
+                        if plan["schema_version"] in {2, 3}:
                             case["selection"] = dict(plan["continuation_selection"])
                         study.execute(
                             _task(
@@ -288,7 +297,7 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False, prog
     plan, cases, config_hash = _configuration(config)
     views = campaign_views(manifest, plan["arms"])
     first = next(iter(views.values()))
-    if plan["schema_version"] == 2 and "temporal_view" not in first:
+    if plan["schema_version"] in {2, 3} and "temporal_view" not in first:
         raise ValueError("La búsqueda estricta necesita una vista temporal con admisión macro")
     if first["context_sessions"] != plan["context_sessions"]:
         raise ValueError("El contexto de la edición no coincide con el diseño de búsqueda")

@@ -50,7 +50,11 @@ marcan la parada sin tomar bloqueos desde el manejador. Se completa la operació
 en curso y, si ya comenzó, la espera local restante del intervalo de 15 segundos.
 Una fuente corrupta conserva el índice público
 anterior. Las lecturas admiten hasta 2 MiB por JSON, 4096 fuentes y 64 MiB de
-contenido acumulado. Si se supera el presupuesto se informa del error.
+contenido acumulado por defecto. `--max-files` permite declarar hasta 65.536
+fuentes y registros y `--max-bytes` hasta 1 GiB de contenido acumulado. El límite
+individual de 2 MiB por JSON se mantiene. Estas opciones permiten ampliar el
+historial con un presupuesto explícito. Si se supera, se informa del error y se
+conserva la última publicación válida.
 
 El recorrido excluye los directorios `private` y `checkpoints`. Los estados
 privados tampoco se admiten como rutas de lectura explícitas. Solo se consultan

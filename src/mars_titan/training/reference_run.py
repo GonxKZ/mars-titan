@@ -119,7 +119,7 @@ def _options(case, batch_size, checkpoint_seconds, checkpoint_steps):
             raise ValueError("La arquitectura necesita anchura, profundidad y regularización")
         validate_architecture(**architecture)
     if "selection" in case:
-        validate_selection(case["selection"])
+        validate_selection(case["selection"], epochs=case["epochs"])
     validate_loss(case["loss"], case["huber_delta"])
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
         raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
@@ -503,6 +503,13 @@ def run_reference_case(
             global_step=step,
             finished_at_utc=datetime.now(UTC).isoformat(),
         )
+        if selection_options and "minimum_epochs" in selection_options:
+            report.update(
+                stop_reason=(
+                    "validation_plateau" if selection["should_stop"] else "budget_exhausted"
+                ),
+                last_epoch_improved=selection["last_improved"],
+            )
         return report
     except _Pause:
         if not evaluating_selected:

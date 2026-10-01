@@ -49,6 +49,7 @@ constexpr std::size_t macro_catalog_concepts = 140;
 constexpr std::size_t market_numeric_columns = 6;
 constexpr std::size_t maximum_catalog_bytes = std::size_t{512} * 1024 * 1024;
 constexpr std::size_t maximum_transitions = std::size_t{1} << 20;
+constexpr std::size_t maximum_selection_evaluations = 4096;
 constexpr std::size_t maximum_rollout = 16384;
 constexpr std::size_t diagnostic_transitions = 32;
 constexpr std::size_t minimum_vram_bytes = std::size_t{256} * 1024 * 1024;
@@ -100,6 +101,7 @@ struct ExperimentConfig {
     double min_delta = 0;
     std::size_t patience = 0;
     bool early_stopping = false;
+    std::size_t min_transitions = 0;
     int64_t schema_version = 1;
     PpoLearningOptions learning;
     std::size_t evaluation_transitions = 0;
@@ -187,7 +189,7 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
         parse_bounded_json(read_bounded_file(path, simulation::maximum_manifest_bytes));
     const auto& document = result.document;
     result.schema_version = read_json_int64(document.at("schema_version"));
-    if (result.schema_version == 2) {
+    if (result.schema_version == 2 || result.schema_version == 3) {
         require_fields(document, {"schema_version", "training", "environments", "hyperparameters",
                                   "environment", "checkpoint_transitions", "selection",
                                   "final_test_opened", "agent", "evaluation_transitions"});
@@ -197,7 +199,7 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
                        {"schema_version", "training", "environments", "hyperparameters",
                         "environment", "checkpoint_transitions", "selection", "final_test_opened"});
     }
-    require((result.schema_version == 1 || result.schema_version == 2) &&
+    require((result.schema_version >= 1 && result.schema_version <= 3) &&
                 !boolean(document.at("final_test_opened")),
             "La versión PPO o el cierre del test no es válido");
     const auto& training = document.at("training");
@@ -226,7 +228,13 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
                           finite_number(environment.at("score_scale")),
                           finite_number(environment.at("ruin_penalty"))};
     const auto& selection = document.at("selection");
-    require_fields(selection, {"min_delta", "patience", "early_stopping", "metric"});
+    if (result.schema_version == 3) {
+        require_fields(selection,
+                       {"min_delta", "patience", "early_stopping", "metric", "min_transitions"});
+        result.min_transitions = count(selection.at("min_transitions"));
+    } else {
+        require_fields(selection, {"min_delta", "patience", "early_stopping", "metric"});
+    }
     require(selection.at("metric") == selection_metric,
             "La métrica de selección PPO no está admitida");
     result.min_delta = finite_number(selection.at("min_delta"));
@@ -244,6 +252,15 @@ ExperimentConfig configuration(const std::filesystem::path& path) {
                 result.evaluation_transitions % result.training.rollout_transitions == 0,
             "La evaluación adaptativa necesita 16 entornos y un intervalo múltiplo del recorrido");
     }
+    require(result.schema_version != 3 ||
+                (result.min_transitions <= result.training.total_transitions &&
+                 result.min_transitions % result.evaluation_transitions == 0 &&
+                 1 + (result.training.total_transitions + result.evaluation_transitions - 1) /
+                         result.evaluation_transitions <= maximum_selection_evaluations &&
+                 (result.early_stopping || result.min_transitions == 0) &&
+                 (!result.early_stopping || result.learning.variant != "double_dqn" ||
+                  result.min_transitions >= dqn_learning_warmup)),
+            "El selector debe respetar mínimo, intervalo, presupuesto, calentamiento y hasta 4096 evaluaciones");
     require(result.environments > 0 && result.environments <= simulation::maximum_environments &&
                 result.training.total_transitions >= result.environments &&
                 result.training.total_transitions <= maximum_transitions &&
@@ -764,13 +781,14 @@ struct Progress {
     std::string status = "running";
     std::size_t evaluations = 0;
     std::size_t stale_evaluations = 0;
+    std::vector<std::size_t> evaluation_cursors;
     std::optional<std::size_t> evaluated_optimizer_steps;
     std::optional<std::size_t> evaluated_transitions;
     std::string pause_reason = "requested_pause";
     Json best = nullptr;
 };
 
-Json progress_json(const Progress& progress, bool adaptive) {
+Json progress_json(const Progress& progress, const ExperimentConfig& config) {
     Json result{{"status", progress.status},
                 {"evaluations", progress.evaluations},
                 {"stale_evaluations", progress.stale_evaluations},
@@ -778,10 +796,13 @@ Json progress_json(const Progress& progress, bool adaptive) {
                 {"evaluated_optimizer_steps", progress.evaluated_optimizer_steps
                                                   ? Json(*progress.evaluated_optimizer_steps)
                                                   : Json(nullptr)}};
-    if (adaptive) {
+    if (config.learning.enabled) {
         result["evaluated_transitions"] =
             progress.evaluated_transitions ? Json(*progress.evaluated_transitions) : Json(nullptr);
         result["pause_reason"] = progress.pause_reason;
+    }
+    if (config.schema_version == 3) {
+        result["evaluation_cursors"] = progress.evaluation_cursors;
     }
     return result;
 }
@@ -815,7 +836,7 @@ Json state_json(const PpoTrainingState& state, const ExperimentConfig& config,
                 {"reset_lanes", state.reset_lanes},
                 {"sessions", sessions},
                 {"context_sources", state.environment.context_sources},
-                {"progress", progress_json(progress, config.learning.enabled)}};
+                {"progress", progress_json(progress, config)}};
     if (config.learning.enabled) {
         result["source_indices"] = state.source_indices;
         result["next_source"] = state.next_source;
@@ -889,10 +910,67 @@ PpoTrainingState restore_state(const PpoCheckpointBundle& bundle, const Experime
     return state;
 }
 
+void validate_convergence_progress(const Json& progress, const ExperimentConfig& config,
+                                  std::size_t transitions, std::size_t optimizer_steps) {
+    if (config.schema_version != 3) {
+        return;
+    }
+    const auto evaluations = count(progress.at("evaluations"));
+    const auto stale = count(progress.at("stale_evaluations"));
+    const auto& cursor = progress.at("evaluated_transitions");
+    const auto& history = progress.at("evaluation_cursors");
+    require(transitions <= config.training.total_transitions && history.is_array() &&
+                history.size() <= maximum_selection_evaluations && history.size() == evaluations &&
+                cursor.is_null() == history.empty(),
+            "El selector no conserva sus cursores de validación completos y acotados");
+    if (cursor.is_null()) {
+        require(transitions == 0 && stale == 0 && progress.at("best").is_null() &&
+                    progress.at("status") != "completed" && progress.at("status") != "early_stopped",
+                "El selector vacío contiene resultados o un estado terminal");
+        return;
+    }
+    const auto evaluated = count(cursor);
+    const auto interval = config.evaluation_transitions;
+    require(count(history.front()) == 0 && count(history.back()) == evaluated &&
+                evaluated <= transitions && transitions - evaluated < interval + config.environments,
+            "El selector no conserva los cursores inicial y confirmado de validación");
+    const auto best_transition = count(progress.at("best").at("transitions"));
+    std::size_t eligible = 0;
+    std::size_t previous = 0;
+    bool selected = false;
+    for (std::size_t index = 0; index < history.size(); ++index) {
+        const auto current = count(history.at(index));
+        require(current <= evaluated &&
+                    (index == 0 ||
+                     (current > previous && current - previous < interval + config.environments &&
+                      (current - previous >= interval || current == config.training.total_transitions))),
+                "Los cursores no respetan el orden y la programación de validaciones completas");
+        selected = selected || current == best_transition;
+        eligible += current > std::max(config.min_transitions, best_transition) ? 1 : 0;
+        previous = current;
+    }
+    require(selected && stale == eligible,
+            "La paciencia incluye validaciones anteriores al mínimo o a la mejor selección");
+    const auto status = progress.at("status").get<std::string>();
+    if (status == "completed" || status == "early_stopped") {
+        require(evaluated == transitions &&
+                    count(progress.at("evaluated_optimizer_steps")) == optimizer_steps,
+                "La selección terminal tiene una validación pendiente");
+    }
+    require(status != "early_stopped" ||
+                (config.early_stopping && optimizer_steps > 0 && evaluated > config.min_transitions &&
+                 transitions < config.training.total_transitions && stale >= config.patience),
+            "La parada no cumple el mínimo y la paciencia declarados");
+}
+
 Progress restore_progress(const Json& value, const PpoTrainingState& state,
                           const ExperimentConfig& config,
                           std::span<const simulation::BatchInput> validation) {
-    if (config.learning.enabled) {
+    if (config.schema_version == 3) {
+        require_fields(value,
+                       {"status", "evaluations", "stale_evaluations", "best", "evaluation_cursors",
+                        "evaluated_optimizer_steps", "evaluated_transitions", "pause_reason"});
+    } else if (config.learning.enabled) {
         require_fields(value,
                        {"status", "evaluations", "stale_evaluations", "best",
                         "evaluated_optimizer_steps", "evaluated_transitions", "pause_reason"});
@@ -900,6 +978,7 @@ Progress restore_progress(const Json& value, const PpoTrainingState& state,
         require_fields(value, {"status", "evaluations", "stale_evaluations", "best",
                                "evaluated_optimizer_steps"});
     }
+    validate_convergence_progress(value, config, state.transitions, state.optimizer_steps);
     Progress progress;
     progress.status = value.at("status").get<std::string>();
     require(progress.status == "running" || progress.status == "paused" ||
@@ -907,6 +986,11 @@ Progress restore_progress(const Json& value, const PpoTrainingState& state,
             "El estado del experimento PPO no está admitido");
     progress.evaluations = count(value.at("evaluations"));
     progress.stale_evaluations = count(value.at("stale_evaluations"));
+    if (config.schema_version == 3) {
+        for (const auto& cursor : value.at("evaluation_cursors")) {
+            progress.evaluation_cursors.push_back(count(cursor));
+        }
+    }
     if (config.learning.enabled) {
         progress.pause_reason = value.at("pause_reason").get<std::string>();
         require(progress.pause_reason == "requested_pause" ||
@@ -921,7 +1005,7 @@ Progress restore_progress(const Json& value, const PpoTrainingState& state,
     require(!config.learning.enabled ||
                 progress.evaluated_transitions.has_value() == (progress.evaluations != 0),
             "Falta el cursor de la última evaluación adaptativa completa");
-    require(progress.evaluations <= state.optimizer_steps + 1 &&
+    require((config.schema_version == 3 || progress.evaluations <= state.optimizer_steps + 1) &&
                 progress.stale_evaluations <= progress.evaluations,
             "La selección PPO contiene contadores de evaluación incoherentes");
     if (!value.at("evaluated_optimizer_steps").is_null()) {
@@ -1071,7 +1155,10 @@ class ExperimentRun {
             if (!evaluate_pending()) {
                 return pause();
             }
-            if (config_.early_stopping && progress_.stale_evaluations >= config_.patience) {
+            if (config_.early_stopping && progress_.stale_evaluations >= config_.patience &&
+                (config_.schema_version != 3 ||
+                 (trainer_.optimizer_steps() > 0 &&
+                  trainer_.transitions() < config_.training.total_transitions))) {
                 progress_.status = "early_stopped";
                 return save(false);
             }
@@ -1091,7 +1178,10 @@ class ExperimentRun {
                 if (!evaluate_pending()) {
                     return pause();
                 }
-                if (config_.early_stopping && progress_.stale_evaluations >= config_.patience) {
+                if (config_.early_stopping && progress_.stale_evaluations >= config_.patience &&
+                    (config_.schema_version != 3 ||
+                     (trainer_.optimizer_steps() > 0 &&
+                      trainer_.transitions() < config_.training.total_transitions))) {
                     progress_.status = "early_stopped";
                     return save(false);
                 }
@@ -1153,8 +1243,11 @@ class ExperimentRun {
     }
 
     bool evaluate_pending() {
-        if (progress_.evaluated_optimizer_steps &&
-            *progress_.evaluated_optimizer_steps == trainer_.optimizer_steps()) {
+        if (config_.schema_version == 3
+                ? progress_.evaluated_transitions &&
+                      *progress_.evaluated_transitions == trainer_.transitions()
+                : progress_.evaluated_optimizer_steps &&
+                      *progress_.evaluated_optimizer_steps == trainer_.optimizer_steps()) {
             return true;
         }
         if (config_.learning.enabled && progress_.evaluations != 0) {
@@ -1214,6 +1307,11 @@ class ExperimentRun {
             (evaluation.ruined == count(progress_.best.at("ruin_count")) &&
              evaluation.mean_log_growth >
                  finite_number(progress_.best.at("mean_log_growth")) + config_.min_delta);
+        if (config_.schema_version == 3) {
+            require(progress_.evaluation_cursors.size() < maximum_selection_evaluations,
+                    "El selector supera el límite de cursores de validación");
+            progress_.evaluation_cursors.push_back(trainer_.transitions());
+        }
         ++progress_.evaluations;
         progress_.evaluated_optimizer_steps = trainer_.optimizer_steps();
         progress_.evaluated_transitions = trainer_.transitions();
@@ -1228,8 +1326,10 @@ class ExperimentRun {
                 progress_.best["validation_metrics"] = std::move(validation_metrics);
             }
             progress_.stale_evaluations = 0;
-        } else {
+        } else if (config_.schema_version != 3 || trainer_.transitions() > config_.min_transitions) {
             ++progress_.stale_evaluations;
+        } else {
+            progress_.stale_evaluations = 0;
         }
         save(improved);
         return true;
@@ -1338,6 +1438,9 @@ class ExperimentRun {
                 report["stopping_reason"] = progress_.pause_reason;
             }
         }
+        if (config_.schema_version == 3) {
+            report["evaluation_cursors"] = progress_.evaluation_cursors;
+        }
         atomic_json_file(options_.output / "run.json", report);
         return report;
     }
@@ -1436,7 +1539,7 @@ Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& conf
     const auto record = parse_bounded_json(read_bounded_file(*options.audit_run / "identity.json",
                                                              simulation::maximum_manifest_bytes));
     const auto& selected_identity = record.at("identity");
-    require(selected_identity.at("schema_version") == 2 &&
+    require(selected_identity.at("schema_version") == config.schema_version &&
                 selected_identity.at("configuration") == config.document &&
                 selected_identity.at("markov") == config.markov_identity &&
                 selected_identity.at("device") == options.device &&
@@ -1449,6 +1552,8 @@ Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& conf
     PpoCheckpointStore frozen(*options.audit_run, selected_identity, true);
     const auto latest = frozen.load_latest();
     const auto& progress = latest.metadata.at("progress");
+    validate_convergence_progress(progress, config, count(latest.metadata.at("transitions")),
+                                  count(latest.metadata.at("optimizer_steps")));
     const auto status = progress.at("status").get<std::string>();
     require((status == "completed" &&
              count(latest.metadata.at("transitions")) == config.training.total_transitions) ||
@@ -1460,7 +1565,7 @@ Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& conf
             "La selección cerrada conserva una evaluación pendiente");
     const auto selected = frozen.load_best();
     require(selected.metadata.at("configuration") == config.document &&
-                selected.metadata.at("schema_version") == 2 &&
+                selected.metadata.at("schema_version") == config.schema_version &&
                 selected.metadata.at("device") == options.device &&
                 selected.metadata.at("diagnostic") == options.diagnostic &&
                 selected.metadata.at("progress").at("best") == progress.at("best") &&
