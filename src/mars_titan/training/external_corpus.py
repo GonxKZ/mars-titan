@@ -300,9 +300,7 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
             ):
                 observed_memory()
                 _confirm_selection(output, report, model)
-            if stop.requested:
-                raise _Paused
-            return
+            return stop.requested
         path = output / "checkpoints" / f"attempt-{len(report['attempts']):04}-round-{count:04}.ubj"
         digest = model.save(path)
         report.update(
@@ -352,7 +350,9 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
                 )
                 attempt["validation_cache_bytes"] = cached.bytes
                 validation_options = dict(
-                    validation_factory=cached, validation_rows=report["samples"]["validation"]
+                    validation_factory=cached,
+                    validation_rows=report["samples"]["validation"],
+                    stop_requested=lambda: stop.requested,
                 )
             model = fit_external_boosting(
                 factory,
@@ -368,6 +368,14 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
                 **validation_options,
             )
         attempt["fit_seconds"] = time.perf_counter() - fit_start
+        if "selection" in options:
+            attempt["replayed_rounds"] = model.audit.get("replayed_rounds", 0)
+            attempt["replay_seconds"] = model.audit.get("replay_seconds", 0.0)
+            attempt["replayed_training_rows"] = (
+                attempt["replayed_rounds"] * report["samples"]["train"]
+            )
+        if stop.requested:
+            raise _Paused
         if "selection" not in options and report["completed_rounds"] != options["rounds"]:
             confirm(model)
         restored = _load(output, report["checkpoint"], report["samples"]["train"])

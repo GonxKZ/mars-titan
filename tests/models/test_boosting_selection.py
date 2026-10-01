@@ -144,9 +144,58 @@ def test_partial_validation_cannot_advance_a_round_or_publish_a_model():
         pytest.fail("No se puede confirmar una evaluación incompleta")
 
     callback = module().selection_callback(xgb, selection, interrupted, unexpected)
+    model = xgb.train(
+        dict(device="cpu", nthread=1),
+        xgb.DMatrix(np.array([[0.0], [1.0]]), label=[0.0, 1.0], nthread=1),
+        1,
+    )
     with pytest.raises(InterruptedError):
-        callback.after_iteration(None, 0, {})
+        callback.after_iteration(model, 0, {})
     assert selection.state == before
+
+
+def test_callback_can_pause_after_confirmation_without_raising_inside_xgboost():
+    xgb = pytest.importorskip("xgboost")
+    control = module().BoostingSelection(policy(), 8)
+    data = xgb.DMatrix(np.arange(8, dtype=np.float32).reshape(8, 1), label=np.arange(8), nthread=1)
+    callback = module().selection_callback(
+        xgb,
+        control,
+        lambda model: 1.0,
+        lambda model, state: state["completed_rounds"] == 3,
+    )
+    model = xgb.train(dict(device="cpu", nthread=1), data, 8, callbacks=[callback])
+    assert model.num_boosted_rounds() == control.state["completed_rounds"] == 3
+    assert control.state["stop_reason"] is None
+
+
+@pytest.mark.parametrize("mode", ["continue", "pause", "mismatch"])
+def test_replay_verifies_prefix_without_repeating_selection_or_confirmation(mode):
+    xgb = pytest.importorskip("xgboost")
+    data = xgb.DMatrix(np.arange(8, dtype=np.float32).reshape(8, 1), label=np.arange(8), nthread=1)
+    params = dict(device="cpu", nthread=1, max_depth=1)
+    parent = xgb.train(params, data, 3)
+    control = module().BoostingSelection(policy(), 8)
+    for count in range(1, 4):
+        control.observe(count, 1.0)
+    confirmed = []
+    callback = module().selection_callback(
+        xgb,
+        control,
+        lambda model: 1.0,
+        lambda model, state: confirmed.append(state["completed_rounds"]),
+        replay_model=parent,
+        stop_requested=lambda: mode == "pause" and callback.replayed_rounds == 2,
+    )
+    if mode == "mismatch":
+        with pytest.raises(ValueError, match="prefijo"):
+            xgb.train(dict(params, learning_rate=0.1), data, 8, callbacks=[callback])
+        assert confirmed == []
+    else:
+        model = xgb.train(params, data, 8, callbacks=[callback])
+        assert model.num_boosted_rounds() == (2 if mode == "pause" else 5)
+        assert confirmed == ([] if mode == "pause" else [4, 5])
+        assert control.state["completed_rounds"] == (3 if mode == "pause" else 5)
 
 
 def test_external_resume_rejects_changed_selection_before_loading_cuda(tmp_path, monkeypatch):

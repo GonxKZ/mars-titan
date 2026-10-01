@@ -1,6 +1,8 @@
 """Selección temporal de boosting tras evaluaciones completas por sesión."""
 
+import hashlib
 import math
+import time
 from pathlib import Path
 
 import numpy as np
@@ -151,14 +153,40 @@ def session_validation(model, factory, *, expected_rows):
     return result["session_mae"]
 
 
-def selection_callback(xgb, selection, evaluate, confirm):
+def selection_callback(
+    xgb, selection, evaluate, confirm, *, replay_model=None, stop_requested=None
+):
     """Usar la barrera de ronda de XGBoost sin consumir evaluaciones parciales."""
 
     class EvaluateRound(xgb.callback.TrainingCallback):
+        replayed_rounds = 0
+        replay_seconds = 0.0
+
+        def before_training(self, model):
+            self.started = time.perf_counter()
+            return model
+
         def after_iteration(self, model, epoch, evals_log):
+            count = model.num_boosted_rounds()
+            if replay_model is not None and count <= replay_model.num_boosted_rounds():
+                self.replayed_rounds = count
+                if count == replay_model.num_boosted_rounds():
+                    # Solo normalizar los dos atributos de auditoría escritos por save().
+                    model.set_attr(
+                        **{
+                            key: replay_model.attr(key)
+                            for key in ("mars_external_schema", "mars_external_contract")
+                        }
+                    )
+                    expected = hashlib.sha256(replay_model.save_raw(raw_format="ubj")).digest()
+                    actual = hashlib.sha256(model.save_raw(raw_format="ubj")).digest()
+                    if actual != expected:
+                        raise ValueError("El prefijo reconstruido difiere del booster confirmado")
+                self.replay_seconds = time.perf_counter() - self.started
+                return bool(stop_requested and stop_requested())
             score = evaluate(model)
-            selection.observe(model.num_boosted_rounds(), score)
-            confirm(model, dict(selection.state))
-            return selection.state["stop_reason"] is not None
+            selection.observe(count, score)
+            paused = confirm(model, dict(selection.state))
+            return bool(paused) or selection.state["stop_reason"] is not None
 
     return EvaluateRound()

@@ -220,6 +220,7 @@ def fit_external_boosting(
     selection=None,
     validation_factory=None,
     validation_rows=None,
+    stop_requested=None,
 ):
     """Ajustar todas las filas mediante ExtMemQuantileDMatrix, sin concatenación global."""
     for value, low, high in (
@@ -242,6 +243,7 @@ def fit_external_boosting(
         or not 0 < learning_rate <= 1
         or (resume is not None and not isinstance(resume, ExternalBoostingModel))
         or (checkpoint is not None and not callable(checkpoint))
+        or (stop_requested is not None and not callable(stop_requested))
     ):
         raise ValueError("La factoría o la tasa de aprendizaje no son válidas")
     selector = None
@@ -409,6 +411,7 @@ def fit_external_boosting(
                     raise ValueError("La continuación cambió de datos, parámetros o presupuesto")
 
             features = iterator.features
+            recovery_callback = None
 
             def wrap(booster):
                 selection_audit = (
@@ -416,6 +419,13 @@ def fit_external_boosting(
                     if selector
                     else {}
                 )
+                if selector:
+                    selection_audit["replayed_rounds"] = (
+                        recovery_callback.replayed_rounds if recovery_callback else 0
+                    )
+                    selection_audit["replay_seconds"] = (
+                        recovery_callback.replay_seconds if recovery_callback else 0.0
+                    )
                 return ExternalBoostingModel(
                     booster,
                     expected_rows,
@@ -440,28 +450,33 @@ def fit_external_boosting(
 
             callbacks = [SaveRound()]
             if selector:
-                callbacks = [
-                    selection_callback(
-                        xgb,
-                        selector,
-                        lambda booster: session_validation(
-                            wrap(booster), validation_factory, expected_rows=validation_rows
-                        ),
-                        lambda booster, state: checkpoint(wrap(booster)) if checkpoint else None,
-                    )
-                ]
+                recovery_callback = selection_callback(
+                    xgb,
+                    selector,
+                    lambda booster: session_validation(
+                        wrap(booster), validation_factory, expected_rows=validation_rows
+                    ),
+                    lambda booster, state: checkpoint(wrap(booster)) if checkpoint else None,
+                    replay_model=resume.booster if resume is not None else None,
+                    stop_requested=stop_requested,
+                )
+                callbacks = [recovery_callback]
             booster = (
                 resume.booster
                 if completed == rounds or selector and selector.state["stop_reason"]
                 else xgb.train(
                     params,
                     data,
-                    num_boost_round=rounds - completed,
-                    xgb_model=resume.booster if resume is not None else None,
+                    num_boost_round=rounds if selector else rounds - completed,
+                    xgb_model=resume.booster if resume is not None and not selector else None,
                     callbacks=callbacks,
                 )
             )
             if selector:
+                if booster.num_boosted_rounds() < completed:
+                    if not stop_requested or not stop_requested():
+                        raise ValueError("La reconstrucción no alcanza el prefijo confirmado")
+                    booster = resume.booster
                 booster = booster[: selector.state["selected_round"]]
             return wrap(booster)
     finally:

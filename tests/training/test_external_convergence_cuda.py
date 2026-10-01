@@ -10,6 +10,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import sha256
+from mars_titan.models.baselines import external_boosting
 from mars_titan.models.baselines.external_boosting import ExternalBoostingModel, _device
 from mars_titan.training import external_corpus
 from mars_titan.training.checkpoints import StopRequest
@@ -46,7 +47,9 @@ def _validation_disagrees_with_training(directory):
     return manifest
 
 
-def test_cuda_selection_recovers_patience_best_model_and_session_metric(tmp_path, monkeypatch):
+def test_cuda_selection_recovers_patience_best_model_and_session_metric(
+    tmp_path, monkeypatch, recwarn
+):
     require_cuda()
     manifest = _validation_disagrees_with_training(tmp_path / "data")
     options = dict(
@@ -88,10 +91,43 @@ def test_cuda_selection_recovers_patience_best_model_and_session_metric(tmp_path
     assert paused["status"] == "paused" and paused["completed_rounds"] == 3
     assert paused["selected_round"] == 1
     assert paused["selection"]["rounds_without_improvement"] == 1
+    checkpoint_before = dict(paused["recovery_checkpoint"])
+    selection_before = dict(paused["selection"])
+    replay_stop = StopRequest()
+    create_callback = external_boosting.selection_callback
+
+    def pause_replay(*args, **kwargs):
+        callback = create_callback(*args, **kwargs)
+        after_iteration = callback.after_iteration
+
+        def after(model, epoch, log):
+            requested = after_iteration(model, epoch, log)
+            if callback.replayed_rounds == 2:
+                replay_stop.request_stop()
+                return True
+            return requested
+
+        callback.after_iteration = after
+        return callback
+
+    with monkeypatch.context() as instrumentation:
+        instrumentation.setattr(external_boosting, "selection_callback", pause_replay)
+        rebuilding = external_corpus.run_external_reference(
+            manifest, interrupted, resume=True, stop=replay_stop, **options
+        )
+    assert rebuilding["status"] == "paused"
+    assert rebuilding["completed_rounds"] == 3
+    assert rebuilding["selection"] == selection_before
+    assert rebuilding["recovery_checkpoint"] == checkpoint_before
+    assert sha256(interrupted / checkpoint_before["path"]) == checkpoint_before["sha256"]
+    assert rebuilding["attempts"][-1]["replayed_rounds"] == 2
+    assert rebuilding["attempts"][-1]["replayed_training_rows"] == 48
     resumed = external_corpus.run_external_reference(manifest, interrupted, resume=True, **options)
     assert resumed["status"] == "completed" and resumed["completed_rounds"] == 4
     assert resumed["selection"] == continuous["selection"]
     assert resumed["predictions"] == continuous["predictions"]
+    assert resumed["attempts"][-1]["replayed_rounds"] == 3
+    assert resumed["attempts"][-1]["replayed_training_rows"] == 72
 
     for folder, report in ((full, continuous), (interrupted, resumed)):
         keep = {
@@ -136,3 +172,6 @@ def test_cuda_selection_recovers_patience_best_model_and_session_metric(tmp_path
         external_corpus.run_external_reference(manifest, interrupted, resume=True, **options)
         == resumed
     )
+    assert not [
+        warning for warning in recwarn if "External memory cache file" in str(warning.message)
+    ]
