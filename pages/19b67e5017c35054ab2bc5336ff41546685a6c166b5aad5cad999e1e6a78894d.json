@@ -1,0 +1,6524 @@
+{
+  "schema_version": 2,
+  "project": "MARS-TITAN",
+  "generated_at": "2026-10-01T15:23:41.442456Z",
+  "source_status": "available",
+  "poll_interval_seconds": 60,
+  "stale_after_seconds": 900,
+  "models": [
+    {
+      "id": "rnn",
+      "name": "RNN",
+      "kind": "baseline"
+    },
+    {
+      "id": "gru",
+      "name": "GRU",
+      "kind": "baseline"
+    },
+    {
+      "id": "lstm",
+      "name": "LSTM",
+      "kind": "baseline"
+    },
+    {
+      "id": "dlinear",
+      "name": "DLinear",
+      "kind": "baseline"
+    },
+    {
+      "id": "ridge",
+      "name": "Ridge",
+      "kind": "baseline"
+    },
+    {
+      "id": "xgboost",
+      "name": "XGBoost",
+      "kind": "baseline"
+    },
+    {
+      "id": "mlp",
+      "name": "MLP",
+      "kind": "baseline"
+    },
+    {
+      "id": "boosting",
+      "name": "Boosting",
+      "kind": "baseline"
+    },
+    {
+      "id": "zero",
+      "name": "Residual cero",
+      "kind": "baseline"
+    },
+    {
+      "id": "adaptation",
+      "name": "Adaptaci\u00f3n predictiva",
+      "kind": "baseline"
+    },
+    {
+      "id": "factor_world",
+      "name": "Generador de mundos sint\u00e9ticos",
+      "kind": "generator"
+    },
+    {
+      "id": "ppo",
+      "name": "PPO",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "double_dqn",
+      "name": "Double DQN",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_window",
+      "name": "PPO con ventana temporal",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_gru",
+      "name": "PPO con GRU",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_episodic",
+      "name": "PPO con memoria epis\u00f3dica",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_hmm",
+      "name": "PPO con HMM",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_episodic_hmm",
+      "name": "PPO con memoria epis\u00f3dica y HMM",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_recent_aux",
+      "name": "PPO con consolidaci\u00f3n reciente",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_replay_aux",
+      "name": "PPO con consolidaci\u00f3n hist\u00f3rica",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "simulator",
+      "name": "Simulador financiero",
+      "kind": "simulation"
+    },
+    {
+      "id": "cash",
+      "name": "Mantener efectivo",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "hold_initial",
+      "name": "Conservar posiciones iniciales",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "rebalance_50",
+      "name": "Reequilibrar al 50 %",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "financial_comparison",
+      "name": "Resumen de comparaci\u00f3n financiera",
+      "kind": "summary"
+    },
+    {
+      "id": "adaptive_comparison",
+      "name": "Campa\u00f1a de adaptaci\u00f3n RL",
+      "kind": "summary"
+    },
+    {
+      "id": "unknown",
+      "name": "Modelo no identificado",
+      "kind": "baseline"
+    }
+  ],
+  "notes": [
+    "El test final permanece sellado. MARS-TITAN no est\u00e1 implementado.",
+    "Las curvas sin fechas originales utilizan \u00e9pocas. La observaci\u00f3n del proceso no acredita nuevo progreso.",
+    "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes.",
+    "Los entornos de adaptaci\u00f3n RL son escenarios t\u00e9cnicos con 3 conceptos macro simulados. No equivalen al corpus real con 140 indicadores."
+  ],
+  "runs": [
+    {
+      "run_id": "neural-strict140-us-fold-003-42561e61dafce558ed58",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "bcb6989a9a05123c",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:03:42.834815Z",
+      "updated_at": "2026-09-28T12:05:52.848431Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014509655897712895,
+        "mse": 0.0004827641873684135,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 138.8412551280053,
+        "samples_per_second": 6606.393473910886
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014728841159126168
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014695085167921406
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014875688435622895
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014541261690375026
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014509655897712895
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
+        "configuration_sha256": "bcb6989a9a05123cb1de5e08a987d3e3a4c8afa2ac728a198b2ce79b5b19ce0f",
+        "source_sha256": "2dea509706bbe801b1b0f4d7ee00661b6661e377756718e69e1e62b945ee5d3c",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "34c17537d42df6c909afca546441b9818e44bb70f4cae2426d26303de239fb91",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-5539c551cf67b0fae5a3",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "250c27f430aaf7dd",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T13:04:11.241789Z",
+      "updated_at": "2026-09-28T13:11:54.995996Z",
+      "heartbeat_at": null,
+      "completed_steps": 8784,
+      "total_steps": null,
+      "epoch": 24,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014599914043281799,
+        "mse": 0.0004869197181267428,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 472.57411728799343,
+        "samples_per_second": 6746.414532791964
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01955776981609596
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018832174961049754
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015715087655254402
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015662995179804278
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01543144751091228
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014973146740600568
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014845521107063466
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014739766491826827
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015501862363385733
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015308357050007815
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014971909053242787
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014749114307243709
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014627613532895482
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015292264816776683
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014671445207846568
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014911224919547248
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014615908834915904
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014709047010256314
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014599914043281799
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014658784337189446
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014742176232360332
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014597481142168928
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015098030806948295
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014625054913228852
+        }
+      ],
+      "checkpoint": {
+        "step": 8784,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "250c27f430aaf7ddb257153962b76823b35d7fedcd5fa7e0a815b5b64ae87ed1",
+        "source_sha256": "efbc3838b6ef557ecae0f3c5c38720e320a8fa1fba42c57683d52a3000d0062a",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-5622c725eaf0818eef0c",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "3eb622d70877168e",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:43:49.470487Z",
+      "updated_at": "2026-09-28T11:45:52.844828Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014680885580007123,
+        "mse": 0.0004909576948107583,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 144.84228515625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 132.15911652399518,
+        "samples_per_second": 6594.35172583993
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014667546621075557
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01479446309960104
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014798858143607247
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014772314102343804
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01479608799631796
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
+        "configuration_sha256": "3eb622d70877168e2ca53517d8881bd87f293d0458dda62acdbbf6e4f144a485",
+        "source_sha256": "12c9593987eed29a40821ea6feff2e1adb774ee6d5494d75610263e339a442c6",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "e2fcdad55b5905b94ac34be2a0df2eb8316b5522b6dc07eac5cdd4f7d2e161d5",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-65bab34896c86460696d",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "b0684e6b192993c3",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:01:25.220255Z",
+      "updated_at": "2026-09-28T12:03:33.939916Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.01449688352943966,
+        "mse": 0.00048317764725649146,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 137.53839410899673,
+        "samples_per_second": 6569.276808022494
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014635907648972369
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014890164515693655
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014591615552466096
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01449688352943966
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014529197623119074
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
+        "configuration_sha256": "b0684e6b192993c320cff371048a3f84515e57c753a13cc2fd567d1dc4db92d0",
+        "source_sha256": "151579566335de53df379a95177e32f8f177763941707241a0821fe6cbe9c3fd",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "34c17537d42df6c909afca546441b9818e44bb70f4cae2426d26303de239fb91",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-6b0da1f9fcc4ddb293ed",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "supervised_continuation",
+      "variant_id": "7f96e9b3196a4c00",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T13:14:16.240628Z",
+      "updated_at": "2026-09-28T13:16:20.653199Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014599914043281799,
+        "mse": 0.0004869197181267428,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 133.2153160970047,
+        "samples_per_second": 6733.768127918989
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01472084666858509
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014847357527548882
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014956773793182445
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0146015011338061
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014790527614900656
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
+        "configuration_sha256": "7f96e9b3196a4c0063df9e52325c76b8f4696025a14dc34357815e62ac4407b7",
+        "source_sha256": "6aaf1179ab242c987cf2fcb4b0850ecbb256f279672699885508278ebea08bef",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "5539c551cf67b0fae5a382860e28f5d25d75f0495e1390fc99bb2c488529da50",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-6f97454b81da27df0d3f",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "supervised_continuation",
+      "variant_id": "a6795f519e4b7947",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:59:46.875008Z",
+      "updated_at": "2026-09-28T13:01:50.487907Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014605423322858028,
+        "mse": 0.00048368818983462916,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 132.51635327600525,
+        "samples_per_second": 6520.958611189009
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014662934246622369
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014779150728732463
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014736721860943089
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0148417865089243
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0147298823207509
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
+        "configuration_sha256": "a6795f519e4b79478fbc266a5354267065a0cf93bd011895b69b0bec0b8042fd",
+        "source_sha256": "7fadc01f67d4d7f80b63abda4c2c11dbbef72d3ec6a19a738ef79d8c6b317ffa",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "170d6f5a4d47886cd355848eb81194d2745f5de03eae150dcdc366558433536d",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-76ad81fe269bf7f1b943",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "29414922b2beffb1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:45:30.379512Z",
+      "updated_at": "2026-09-28T12:55:06.403228Z",
+      "heartbeat_at": null,
+      "completed_steps": 10614,
+      "total_steps": null,
+      "epoch": 29,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014272660154670708,
+        "mse": 0.00047260385741329806,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 184.5126953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 584.8273692899966,
+        "samples_per_second": 6717.126254591034
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01711283641732681
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016121592426943047
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01541956699355908
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01543250449433063
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01496009804363259
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01474574669284438
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014782016335511251
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014987154289606463
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014554464825721649
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014655102226536482
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014887559405343606
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014661556722194304
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014461875797046279
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014516159046000161
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014413272669479366
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014392679524189758
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014427756938977302
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014364406941401757
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01447586767338402
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014526787284327039
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01436615591775392
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014347607569537039
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014414337745043016
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014272660154670708
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01433099326792876
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014441706312485415
+        },
+        {
+          "step": 27,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014428035028254458
+        },
+        {
+          "step": 28,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014447395243990224
+        },
+        {
+          "step": 29,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01433909337512412
+        }
+      ],
+      "checkpoint": {
+        "step": 10614,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "29414922b2beffb11de9dafce2355c82b6b7d676bcf392035a089d39b882d2ed",
+        "source_sha256": "b71a1644248ded563a21f17b1686665633bf64c2b71ad6b82ca71f0471217446",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-78605c3b55cd9bcea0a5",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "a9b7aa5e0ca1fe3c",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:27:13.667526Z",
+      "updated_at": "2026-09-28T12:29:21.836234Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014396107205867571,
+        "mse": 0.0004793376164962363,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 136.9660186109977,
+        "samples_per_second": 6682.234602631798
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015063708440520164
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01446710399709084
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01443033671851832
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01489959686922303
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014396107205867571
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
+        "configuration_sha256": "a9b7aa5e0ca1fe3c5fd87d38cd539dade7297ca76fe7cc74fc0850fb44dd212a",
+        "source_sha256": "1bc016d2b20ebbc8d1383192cd59a96ba3f14a6ce4e88735d43c7e20c0acf4f9",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "b6ffb8f7007e0c9ade3244f7846ecbd407695f2caae3dd1c481223e4a376a44f",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-7eb3ba780095fa9a7844",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "supervised_continuation",
+      "variant_id": "fbdc8c0195ea20e3",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T13:27:36.283879Z",
+      "updated_at": "2026-09-28T13:29:41.383618Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014606673573327433,
+        "mse": 0.0004846812047431511,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 133.93853285801015,
+        "samples_per_second": 6656.425750940764
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015137638024656702
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015143261491161073
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015069044537305778
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014808413689160886
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014808552638657744
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
+        "configuration_sha256": "fbdc8c0195ea20e3326023b680634ba2e91ab7607211dc8a391091047cc36202",
+        "source_sha256": "6fa62fbc94db3e22f5d2c55d94a64ca6e310ebcdca283c3ca143d4023fa8b715",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "3bf7d59da47a024531307c962771c42e93ea132fc80276faad86edf99810da63",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-90df2e173233ddccdbfa",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "7f78bd70900a2b17",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:13:34.107111Z",
+      "updated_at": "2026-09-28T12:15:40.868940Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014460266056391452,
+        "mse": 0.00047970535460608243,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 135.54908429000352,
+        "samples_per_second": 6632.3120353356635
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014598911446641915
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01453246943479661
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014598329854581005
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014458019941277087
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014570744806955867
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
+        "configuration_sha256": "7f78bd70900a2b17c3fa9a88eb0dd5075c83ca19698f8589ce3fcbc55a3bdead",
+        "source_sha256": "c50afcddbb16981a8610284433004ed2a518d9f83997bb637c77975ab3849c04",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "9fcc797d21921c8a022a656dca486af6a4a695bab0238cf703c352cd008f6c33",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-9f7b055a6e47c24eaac3",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "8cba93a6da2ef4ac",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T10:50:30.402213Z",
+      "updated_at": "2026-09-28T10:57:50.170319Z",
+      "heartbeat_at": null,
+      "completed_steps": 8052,
+      "total_steps": null,
+      "epoch": 22,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014596158666528494,
+        "mse": 0.00048567044027767765,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 213.986328125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 448.5680364699947,
+        "samples_per_second": 6635.048211961122
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019957483010874796
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01790657604317824
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018789049126472987
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01929539311921876
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015784543566086162
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01577803816269931
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01565645560533963
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016187989558394254
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015214961363237557
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01564613269095941
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015588452317116443
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014865711722747605
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01685661058076177
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015113747724856932
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01730492324439469
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014661739284259347
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014596158666528494
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015544658344962638
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015971669645733867
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016307203098815573
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014890400657849882
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014665399973891808
+        }
+      ],
+      "checkpoint": {
+        "step": 8052,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "8cba93a6da2ef4ac2bdd80909119c73123b1f6f73c6c1535c3a05d4065a78afe",
+        "source_sha256": "fe58345805cc968296349e5e80f67ba2771ceb498eb1a4c69b6ab0012a7dc368",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-9fcc797d21921c8a022a",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "e2033b727616d445",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:06:01.818706Z",
+      "updated_at": "2026-09-28T12:13:25.249699Z",
+      "heartbeat_at": null,
+      "completed_steps": 8052,
+      "total_steps": null,
+      "epoch": 22,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014460266056391452,
+        "mse": 0.00047970535460608243,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 452.33283355500316,
+        "samples_per_second": 6679.903573708196
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01814795403459522
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016089598308262794
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01547231336781513
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01535254871261347
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01515626988626743
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015019749401157164
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014764654296227114
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014730018898567131
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015042375120157419
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015370940170144004
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014762921427779461
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014538457428702004
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015540210968475946
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015603939615316215
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014573252372787233
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014569229439812537
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014460266056391452
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014537532322532073
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015017095400842236
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014802144920388328
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01461499207526595
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014521536309139528
+        }
+      ],
+      "checkpoint": {
+        "step": 8052,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "e2033b727616d4459e6ddad35b67fd3410e794e1cce571a37598d61c1bfbc687",
+        "source_sha256": "2de1023114a4f0a8b17287de745f27a10421d70b93c774ca74a839e09e6e8ecd",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-a4262b744df137978947",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "33706ac43acfabc5",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:10:29.382386Z",
+      "updated_at": "2026-09-28T11:15:42.547163Z",
+      "heartbeat_at": null,
+      "completed_steps": 5490,
+      "total_steps": null,
+      "epoch": 15,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014630513678637085,
+        "mse": 0.0004882928628111242,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 184.5126953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 321.9512015270011,
+        "samples_per_second": 6644.649775947544
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017312404810032732
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.018833516924706094
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01625161634485835
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015434864341505214
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015618303096889389
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015151163654432944
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015825611770131715
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015845465193554384
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014686864264121984
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014630513678637085
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014926016081382427
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01516604763816079
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014677672139272261
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014789816730866705
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014737143259559549
+        }
+      ],
+      "checkpoint": {
+        "step": 5490,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "33706ac43acfabc5eb1851c92c3ccee0f22d8a6070a7f0978429e9dcedc34362",
+        "source_sha256": "d4ca3cee00777c3c8fe5bd910bd55991be82fcbc2c710ac8e8f8b9e6001c6325",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-a4d35f653299a60fb267",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "initial_training",
+      "variant_id": "4c70ef3b511c90d2",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:29:36.273506Z",
+      "updated_at": "2026-09-28T11:33:42.204012Z",
+      "heartbeat_at": null,
+      "completed_steps": 4392,
+      "total_steps": null,
+      "epoch": 12,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014760917415861136,
+        "mse": 0.0004915589999286978,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.08251953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 254.75274951499887,
+        "samples_per_second": 6682.577688325093
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01803267121584046
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016875192217464183
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015444974428703715
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01564272118963727
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014864794466467499
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0171442468170455
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014760917415861136
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.020788059129202348
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015076022317846733
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01580171509147294
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01549026852820827
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015324286297626515
+        }
+      ],
+      "checkpoint": {
+        "step": 4392,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "4c70ef3b511c90d22f4139e930c68ddd309f03938ba5e2b6aab9f9ce4cf71edc",
+        "source_sha256": "6fabc427e0fe8ff7dd3d775b8e8705cdf64c74782cc4429f5777335eb7caf778",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-a9f65dafb534e9828e43",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "supervised_continuation",
+      "variant_id": "b8be79ce85ad698d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:40:56.402640Z",
+      "updated_at": "2026-09-28T12:43:06.051951Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.01443759955097109,
+        "mse": 0.0004801770010451873,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 184.5126953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 138.60058010699868,
+        "samples_per_second": 6721.957803953238
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01452776939433292
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014472341788061137
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014716547277551898
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01448732204104233
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014640446589987682
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "gru",
+        "configuration_sha256": "b8be79ce85ad698ddd23ad0aa6507b94f6eff9946eaf9c60d6b6eb809936ff8e",
+        "source_sha256": "50d353165d44743c3ba34abfdcbb0a75251276dd9649cc7e70e386a72607f74d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "e98f834d4b42bf4cae5955b86b4a0a8851946df8a41d94c82639a83f76931d5b",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-b6ffb8f7007e0c9ade32",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "initial_training",
+      "variant_id": "b74951552a4634c7",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:18:05.074911Z",
+      "updated_at": "2026-09-28T12:24:49.007819Z",
+      "heartbeat_at": null,
+      "completed_steps": 7320,
+      "total_steps": null,
+      "epoch": 20,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.01446205091029329,
+        "mse": 0.0004820442032246557,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 412.73819234900293,
+        "samples_per_second": 6635.941822623626
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019235800598070354
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02357856514953083
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016372837378319356
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01629602419111437
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01623579723936734
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015763242656875877
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015109735905516732
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014820813587110872
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014643787857665222
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014995017005021542
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014607982623716537
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0146802203735836
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014665952242988627
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015018174404251797
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01446205091029329
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01463893573304125
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01499176186753075
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014473534384877406
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014529911320707741
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014469678695616947
+        }
+      ],
+      "checkpoint": {
+        "step": 7320,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "b74951552a4634c790cd70524682ed580eb9d98342f49c984cf6ae3c70701367",
+        "source_sha256": "141dbcf3df41538f05ce40c87217aa9b93d5d4ba6a267b216a15a2044a2cf9b1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-b876847799c96eb16032",
+      "attempt_id": "legacy",
+      "model_id": "dlinear",
+      "activity": "supervised_continuation",
+      "variant_id": "1f0ca1bb8f8ff74f",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T13:25:20.522620Z",
+      "updated_at": "2026-09-28T13:27:27.378846Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014606673573327433,
+        "mse": 0.0004846812047431511,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 70.3955078125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 135.71818651800277,
+        "samples_per_second": 6621.449070842419
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015002346370286202
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014669915616895055
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014777966467411613
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014774587802460675
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014789684951757462
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "dlinear",
+        "configuration_sha256": "1f0ca1bb8f8ff74ff456041de56837b68e5959bb5da61f110bc9c9fb66cabc0c",
+        "source_sha256": "2255043fac6432ff59dd176de5ebff804bfb1f093b7d6ed71d7fe727a36be050",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "3bf7d59da47a024531307c962771c42e93ea132fc80276faad86edf99810da63",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-cb5ea286f81b29b48caa",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "c79099fa9fa5ec85",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:59:08.127478Z",
+      "updated_at": "2026-09-28T12:01:16.321959Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014704505909522183,
+        "mse": 0.0004891888629381875,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 144.84228515625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 137.04632678199414,
+        "samples_per_second": 6572.447131226874
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015169283940024541
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015478918981786402
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015024384893739112
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014914547966456448
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014772638844893092
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
+        "configuration_sha256": "c79099fa9fa5ec856a272386ea94225ca3b4e1078e2ad81408616148e004add0",
+        "source_sha256": "fee225af160cc32ffafa83af2f5b19eac64589afde69b8daa0d977abeb92f635",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "d88fb556432057e9f03435432d1ff03ed8dd5931d3f3c95709ed2fcd5efe1d7e",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-d88fb556432057e9f034",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "34d1dcbf2a0cb7e0",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:48:16.297667Z",
+      "updated_at": "2026-09-28T11:56:46.230833Z",
+      "heartbeat_at": null,
+      "completed_steps": 9516,
+      "total_steps": null,
+      "epoch": 26,
+      "max_epochs": 30,
+      "seed": 44,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014704505909522183,
+        "mse": 0.0004891888629381875,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 144.84228515625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 518.8589441470031,
+        "samples_per_second": 6842.8488309513405
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01978854674411695
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016650443277037023
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016111806013177073
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015620370452101812
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016190327553866568
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015454783651646289
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01542984431894818
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015221718087213378
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015371831288578624
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015145478891051277
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015334481930896423
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015066316985856238
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015012179080955918
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015041858596661878
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015012126168845903
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015320470410843917
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014813522169345502
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014800741712686562
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014988525930647105
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014774641163477695
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014704505909522183
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014925474432668256
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014738774027811655
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014749104242352165
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01471358894257017
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014826679336828158
+        }
+      ],
+      "checkpoint": {
+        "step": 9516,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "34d1dcbf2a0cb7e038e78903dfbd708bd6c91708b6975171d274faeef0f9fed4",
+        "source_sha256": "193eade34a3deef2aab76650edce70435697f5e34e035a4c5c5aee533a7d95a6",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-db5382ee052ec729d64d",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "c2faecb793fa74c6",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:15:49.746053Z",
+      "updated_at": "2026-09-28T12:17:56.201979Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014460266056391452,
+        "mse": 0.00047970535460608243,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.2177734375,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 135.27031595200242,
+        "samples_per_second": 6668.077317713545
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014577518302815189
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014584900624998868
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014519884326046437
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014609959603626587
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014755940376699916
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "lstm",
+        "configuration_sha256": "c2faecb793fa74c62b81a0600fb6861dc00f6af6cd6dc2724660b4a92f5c5a13",
+        "source_sha256": "ebcd42f55718c8b97ee77e5d5e94be9f625368cd7d918f5be4a27b663fb18424",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "9fcc797d21921c8a022a656dca486af6a4a695bab0238cf703c352cd008f6c33",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-e2947651d5bb04c7a66d",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "supervised_continuation",
+      "variant_id": "66d1a2920fb006eb",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:29:30.714529Z",
+      "updated_at": "2026-09-28T12:31:37.075667Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014625600127332015,
+        "mse": 0.00048721129241003735,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 184.5126953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 135.1661334429955,
+        "samples_per_second": 6609.181585320295
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014687691716700792
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014954277179349796
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014724184453899131
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014625600127332015
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01509922132040309
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "gru",
+        "configuration_sha256": "66d1a2920fb006ebf5b22eaf8e74f5ba10e80134525ae4faab5362fe433b2071",
+        "source_sha256": "7cb497da1d860cd409c6c044e6c8426b902a1f03e3e78a6646a0412a9dc14737",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "a4262b744df137978947a2452b6656f04f775306671424d35493bd725dd6b30a",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-e2fcdad55b5905b94ac3",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "5f9c099cd6038e04",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:38:17.548233Z",
+      "updated_at": "2026-09-28T11:43:40.611793Z",
+      "heartbeat_at": null,
+      "completed_steps": 5856,
+      "total_steps": null,
+      "epoch": 16,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014680885580007123,
+        "mse": 0.0004909576948107583,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 144.84228515625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 331.89553687100124,
+        "samples_per_second": 6889.862129493377
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.022431129345003863
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019166839057111865
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01685233156805497
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01620373535894557
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01579493631293402
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015737193478583204
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0166382789113862
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01498157785623929
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015248011154771321
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014919204616062012
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014680885580007123
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015388773558061572
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014731315030491304
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014790466619907143
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01477045283283398
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01469141891612394
+        }
+      ],
+      "checkpoint": {
+        "step": 5856,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "5f9c099cd6038e04e14019c515eea1b08114c47047b16443c0ceb61a917b92d8",
+        "source_sha256": "7823eaf9a2f9f4ab0b1fd1e3eb416d7435a9bb03748d8f76f520013c19b09bda",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-e98f834d4b42bf4cae59",
+      "attempt_id": "legacy",
+      "model_id": "gru",
+      "activity": "initial_training",
+      "variant_id": "f45bdabdfc466f4f",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T12:34:02.094631Z",
+      "updated_at": "2026-09-28T12:40:47.376671Z",
+      "heartbeat_at": null,
+      "completed_steps": 7320,
+      "total_steps": null,
+      "epoch": 20,
+      "max_epochs": 30,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.01443759955097109,
+        "mse": 0.0004801770010451873,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 184.5126953125,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 414.10794973500015,
+        "samples_per_second": 6798.607854575288
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01828445777671447
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01586232265624589
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015320686295121237
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015044688256224178
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014920476191412986
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014758666924149172
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015055976042268968
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015176452605253788
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014525695512787293
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014694632194565255
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014509710548647105
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014458169986775212
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014493685902925484
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014853870390187639
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01443759955097109
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014548707141012711
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014514489921073459
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014481792392445158
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014598123471352852
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01452960549876273
+        }
+      ],
+      "checkpoint": {
+        "step": 7320,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "f45bdabdfc466f4fb2eb1382299dc9521fe447bbc32a27ecbd9e0310ac2cd6e9",
+        "source_sha256": "b764b0afbf15ef3b733cf631f6b6a5ac45bbb16bb9aa9d5ab46be2f0254a39ca",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-f3bf981a4922cd1a3a1d",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "initial_training",
+      "variant_id": "e4625132972b5922",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T10:44:18.356600Z",
+      "updated_at": "2026-09-28T10:50:21.534265Z",
+      "heartbeat_at": null,
+      "completed_steps": 6588,
+      "total_steps": null,
+      "epoch": 18,
+      "max_epochs": 30,
+      "seed": 42,
+      "fold": "US",
+      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "metrics": {
+        "mae": 0.014484645848074398,
+        "mse": 0.0004825201848172282,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 144.84228515625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 371.93864425700303,
+        "samples_per_second": 6700.795743300644
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01905568598260062
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016676825443227804
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017077479312455932
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016576614480611485
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01514420390552961
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015039285981993163
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015410825440588388
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014939004085617762
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014734723052142488
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017156855731726997
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014711518243733774
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017816776288888576
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014484645848074398
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014510075271853759
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015110996293110867
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015441035096722329
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01560972034062406
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014765384796357882
+        }
+      ],
+      "checkpoint": {
+        "step": 6588,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "e4625132972b5922f3e4725aff7652aefa842414d354aeea90ed40b079bd23ae",
+        "source_sha256": "3df351188734f907003c7fa337a189085229df64ad0aa7b5e74fbb5d7ee3a998",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "neural-strict140-us-fold-003-fcc6928b728fd32420a6",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "67e69a443020f254",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-09-28T11:46:01.724966Z",
+      "updated_at": "2026-09-28T11:48:07.304707Z",
+      "heartbeat_at": null,
+      "completed_steps": 1830,
+      "total_steps": null,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "US",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
+      "metrics": {
+        "mae": 0.014680885580007123,
+        "mse": 0.0004909576948107583,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 144.84228515625,
+        "ram_peak_mib": null,
+        "elapsed_seconds": 134.39457396400394,
+        "samples_per_second": 6616.849005553741
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014706092274952403
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014668374690248167
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014684222829516496
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015139313223010218
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014972667650743968
+        }
+      ],
+      "checkpoint": {
+        "step": 1830,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "neural-strict140-us-fold-003",
+        "domain": "real",
+        "method": "supervised_continuation",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": "rnn",
+        "configuration_sha256": "67e69a443020f254a98b231ebcc2375faf11cd39b5feca83e6a124e6e6305f6d",
+        "source_sha256": "2b143d1d05dbaa41a76fdf090b08e9e1776c806870375456a1fdeb477aacd889",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 187246,
+        "validation_rows": 41544,
+        "parent": "e2fcdad55b5905b94ac34be2a0df2eb8316b5522b6dc07eac5cdd4f7d2e161d5",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-048649b5f6dc6f4f6ca2",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "00b408203150d93b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:02:05.725045Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015088584147660542,
+        "mse": 0.0005304842858202895,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 31.928523323033005,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015088584147660542
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015207540255489817
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015153957373913288
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "00b408203150d93be22562d6b5d9106a1d75854bf9c6a0b8792152533760fa46",
+        "source_sha256": "8b0c39fabadf0a06d538a58f35dda995f2d76e8ffb5cefb3a4eb4644a82599df",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-0d1bcc2b43c6c0e66700",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "064d06b28ea01d8d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:04:47.425776Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.87870083801681,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015207624412436723
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01523625199577557
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "064d06b28ea01d8df928ce8eb0aacb989cf7671c8ad3e932a3e2057ddf7cf8c2",
+        "source_sha256": "41caf98fec3a6b1a5812d49f35fe34c6de836d57d2064713d16ee69cdaad1b4d",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-111eb96575e5b96dfe1f",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "2b56906fff2413e8",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:09:43.739926Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 108.82275390625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.175507831037976,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01751168511551282
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015712349632537967
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "2b56906fff2413e8a16692c85ca6fe3393f4c4f14840e58d723170b92f07ea63",
+        "source_sha256": "49a4dfa936abcd0f0520da02801f49703851de3f24d2ed97bf7599bceae662b0",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-136b54786078ea960338",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "249016d0ced6fbd1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:05:08.499763Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.064087888982613,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015154905430696454
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015198937314751942
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "249016d0ced6fbd1a8fd2096f109de1c7c6fc6916f0231fd3b0c536daadcc51f",
+        "source_sha256": "4981e596910ad715907cdc96bba482d1e43145baa826676c16e84abab930e066",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-184ab601bae4846fec4d",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "8ffb56f9f7368787",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:06:43.742753Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 108.82275390625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 24.272172858996782,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017721300316591096
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017016642235802574
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "8ffb56f9f73687876306a65ed609ed13a1ed59a4be30e75c024a392da798f098",
+        "source_sha256": "6976d6331d3e98cb0ace6cb65db272e058469c185cb7f1bb1a75cc81a04cf5ee",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-1f001403881c40762858",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "80793e38a28ecc92",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:01:33.788138Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.01513032811214805,
+        "mse": 0.0005312169044257512,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 31.13654634600971,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01513032811214805
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015222022996479213
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015226966511754212
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "80793e38a28ecc92a638f008e0bf0021f46a6493fbeb796e76001b0c501bed35",
+        "source_sha256": "6a04737e211b8b3425be2f6655b690fe6a4c2233417e3c5100e09e880a0bfc60",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-37730f4205405081f73a",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "b117058f63d0b843",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:03:18.152886Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.867514606041368,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015660533082636357
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01586899513334115
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_exact",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "b117058f63d0b8431cc294906e60b6c04b0ad31508fbb95993bb3e34b1c97c2c",
+        "source_sha256": "015327b59dd40a1068a26c7d48c30c1ec9e74cc7ba10ef343f4eec1211ed2822",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-39dbbf8d755a1b04ff46",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "c3c4771fd2ed3040",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:08:11.086809Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.11806768696988,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015205330843723292
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015184505419151418
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "c3c4771fd2ed30409e24aa7bd6e37f54af51eaacf061231434a735b518be8840",
+        "source_sha256": "053bbe61cc0f7e68da0b02255f908cd21f38834798b0f611eabd6ced7a26f3ec",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-430df80675daffb3f71a",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "6513041e3957804b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:05:31.637753Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 23.12972167902626,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01573310653648949
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016135796960438768
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_full",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "6513041e3957804bf35eb5dd60c729ec57d3e13eac00e93f0334347c74190dbb",
+        "source_sha256": "fef29876702be9b8d68386569f70aea6a7c2be65a9d75ede78f6f87ffd856c70",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-43e72a1bfe2e67f64f14",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "2b56906fff2413e8",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:21:56.891056Z",
+      "heartbeat_at": null,
+      "completed_steps": 2164,
+      "total_steps": 2705,
+      "epoch": 4,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.01523795331401587,
+        "mse": 0.0005429387020925444,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.5458984375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 45.54817225900479,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01719827930716109
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01523795331401587
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015845196882990315
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016473920919896627
+        }
+      ],
+      "checkpoint": {
+        "step": 2164,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "2b56906fff2413e8a16692c85ca6fe3393f4c4f14840e58d723170b92f07ea63",
+        "source_sha256": "c3299788338b8eea85b4710b31a789593e71f1939e0e98906a68300ef9dc54c2",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-4e3b89cfead4b4b4b5b0",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "96c83d8c196d067b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:10:37.965018Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 163.60595703125,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 24.08557206596015,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015317096446229382
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01576471403513272
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "reinforce",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "96c83d8c196d067b98f2a169c0bafaea5c69c3967d52de670a4b449393289ecd",
+        "source_sha256": "015e306762c1f4a2d1464cec82bb385f22fcfadf5cad8a008225e14205ef639f",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-4e96885725fcf5869e04",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "af17e0b8b7622152",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:02:55.277929Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 24.642749095975887,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015407904779791544
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015818078535563676
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_mc",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "af17e0b8b76221525753a6b2c6d961fb30fe5cba5a2634b14283ed81a5b9e94a",
+        "source_sha256": "d9d93b802d55b165dde7b5429a910002ba2f8c160bb60aa585d7b1d7f4c59483",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-56bbf2d58ad3dd11ee2f",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "ad4de7cbaa0808e3",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:14:46.114607Z",
+      "heartbeat_at": null,
+      "completed_steps": 2705,
+      "total_steps": 2705,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.01501847990012939,
+        "mse": 0.0005327448531446896,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.5458984375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 56.73806478304323,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015491037224754688
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015303678616983857
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01501847990012939
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015169562735345147
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.0150365244855953
+        }
+      ],
+      "checkpoint": {
+        "step": 2705,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mse",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "ad4de7cbaa0808e3800b9e05be1a3acc6f48f725e8edf8644a9c19b3df520b24",
+        "source_sha256": "244ce6ff6050ba54703a40c749d99abe9d0920027b4a261402fd1883fe6f7d79",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-5d28a1ca1d9be844d0bc",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "a2a22d550187aaed",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:06:19.461748Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.562423950002994,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015891192995740978
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016004238769154966
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_exact",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "a2a22d550187aaed8462862058132f3b3ec3edee3b2f909e25045b08ab4c35c4",
+        "source_sha256": "f6727a4fa5e315fd33084d9c3041536f929f920598582d7ed59d0bd7839962d7",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-5fc4cb713a79604d7fa9",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "249016d0ced6fbd1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:16:11.736861Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.08700487401802,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015342883849613242
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015325184234294274
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "249016d0ced6fbd1a8fd2096f109de1c7c6fc6916f0231fd3b0c536daadcc51f",
+        "source_sha256": "d74d7b46245ecc3ae1bb2ad3825ea484e194138fbb1794b2691038370e4dba34",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-626c190ac27b66721c5c",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "b117058f63d0b843",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:12:52.481307Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 23.457010479003657,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015627021769480737
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016442008590646505
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_exact",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "b117058f63d0b8431cc294906e60b6c04b0ad31508fbb95993bb3e34b1c97c2c",
+        "source_sha256": "7823e72043ba3b2918e7d38637f2552025a258a6ebc1df943150f7f31134789a",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-632e4907c9a1a0c6aa66",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "898b4cc88d3480ce",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:08:35.182834Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 24.08762913895771,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015518120434257241
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016043913052840426
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_full",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "898b4cc88d3480cefd02991ef65b07abef9bf84f1f1e430ebb10b31d06230afc",
+        "source_sha256": "e056f0acb743c3bb0392d69ca74f23c029a6e08b565c0f1e0df9e754da48f9f4",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-66145d9ce2ec1403a5c2",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "bc72ce96e8ef2ec9",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:19:30.565522Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.761310633039102,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015517670414789889
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01566350421806136
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "bc72ce96e8ef2ec92c25979f68524859a13b211736b84922ed3e351d4fe769a8",
+        "source_sha256": "46a0ec622218df935c9949a125a947d3d89a06e336356bc0226580bc05f738bd",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-687815f8d1d28885dec3",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "064d06b28ea01d8d",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:15:50.640797Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.731284283974674,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015392227307548483
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015361183584526698
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "064d06b28ea01d8df928ce8eb0aacb989cf7671c8ad3e932a3e2057ddf7cf8c2",
+        "source_sha256": "c79204a2b353e935c4e1a6831d2a2a291adaa113989f7aaabbb0bc0402e470f3",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-6cac4ace75dcf9f1b0f4",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "f9b4790dcddbd175",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:02:30.625983Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 24.891378088039346,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015410671356209936
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015800936504892456
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_full",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "f9b4790dcddbd175921218e43101ec31889882bde78d8e10536e8e58b81e2561",
+        "source_sha256": "7b08f5da8407f6b994f385e3c11383e7129d60cb435fec35b0fd7ac6d26a11ae",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-75f0920f21aefd8810cf",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "af17e0b8b7622152",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:12:29.016250Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 23.78888118104078,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015858290755326493
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016619978580448946
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_mc",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "af17e0b8b76221525753a6b2c6d961fb30fe5cba5a2634b14283ed81a5b9e94a",
+        "source_sha256": "854895a1053d2368c2234b0a9adbb67718525f6aed6a5e7dcc4f1e2b588914f0",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-7bb3d6a1df01b2d45018",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "00b408203150d93b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:11:40.291141Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015238453496666441,
+        "mse": 0.0005382822180313906,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 30.727691092994064,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015238453496666441
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015521848986696807
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015317933650890809
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "00b408203150d93be22562d6b5d9106a1d75854bf9c6a0b8792152533760fa46",
+        "source_sha256": "c1f320488c77f6fbb964a40221348eb67c9ea08a11f547b4921ab81fa12c7218",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-7e324210ccd08aa70e58",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "80793e38a28ecc92",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:11:09.555078Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015238074185378645,
+        "mse": 0.000538719518015419,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 31.5804267799831,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015238074185378645
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01552478315903888
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015352684920267158
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "80793e38a28ecc92a638f008e0bf0021f46a6493fbeb796e76001b0c501bed35",
+        "source_sha256": "f3924364fe46b968e3d0d667960c07d52c3bba59e575d5ee05ab3b5e39cb1db9",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-7e34eb4713b97dc4eeb0",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "96c83d8c196d067b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:01:02.643244Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.01514198848786162,
+        "mse": 0.0005334627022287301,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 35.25289779197192,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01514198848786162
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015331776215264974
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015254886776565777
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "reinforce",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "96c83d8c196d067b98f2a169c0bafaea5c69c3967d52de670a4b449393289ecd",
+        "source_sha256": "8c7e018e81a4ec56dc9f6ea2aaf666349baec3c4cbbcddf8cb6cf67d8fdd6189",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-8ced93a0b7e7b3b82b93",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "249016d0ced6fbd1",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:16:11.736861Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.08700487401802,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015342883849613242
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015325184234294274
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "249016d0ced6fbd1a8fd2096f109de1c7c6fc6916f0231fd3b0c536daadcc51f",
+        "source_sha256": "d74d7b46245ecc3ae1bb2ad3825ea484e194138fbb1794b2691038370e4dba34",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-8e89d245be1d2558a654",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "8ffb56f9f7368787",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:17:48.135171Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.5458984375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 25.052332846040372,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01582843520492494
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01575666228897728
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "8ffb56f9f73687876306a65ed609ed13a1ed59a4be30e75c024a392da798f098",
+        "source_sha256": "676c82d11d3a38a8f8bbd8c0692c2f87ddaa0029dcc98304c20f22faa4261d3c",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-8f37edb414e8a791a75c",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "88d4242e03fba311",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:03:40.546850Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 108.82275390625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.385873026039917,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016899897913082468
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015737452816561363
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "88d4242e03fba3113dc3177bd12e619bbd510b2f14b077918e61bf4ebf8a34af",
+        "source_sha256": "5493838c9bbedf37547548412fa4c4e2e89af96c61ba7c872538c1c068d3cdd8",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-8fcc6a2872436b01954f",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "a2a22d550187aaed",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:17:23.074088Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 23.000246133946348,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01622586661471618
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016146125860679084
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_exact",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "a2a22d550187aaed8462862058132f3b3ec3edee3b2f909e25045b08ab4c35c4",
+        "source_sha256": "ce625a7ac434e9099294f97df2cc63a3843177536f19ac470334f88739f1a596",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-997f7e9cc816cb65f388",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "00b408203150d93b",
+      "status": "paused",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:23:41.442456Z",
+      "heartbeat_at": null,
+      "completed_steps": 330,
+      "total_steps": 2705,
+      "epoch": null,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.73193359375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 6.386275814962573,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": 330,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "gru",
+        "configuration_sha256": "00b408203150d93be22562d6b5d9106a1d75854bf9c6a0b8792152533760fa46",
+        "source_sha256": "b05840df2bca812707fb014ca96cf65b9c8348ab56043ab8b141eacf3de0eac3",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "8b6b36b3f003dfe26cb2aab6c4cff34bcc1eba21d9fbe589d9e2822a7c93a984",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-9c828c4fa765bb4670cf",
+      "attempt_id": "legacy",
+      "model_id": "rnn",
+      "activity": "supervised_continuation",
+      "variant_id": "cca8db27c43164bb",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:10:06.178962Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 108.82275390625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.42907675297465,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015397582882251204
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01678368884133478
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mse",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "cca8db27c43164bb3a0aabc14bf27fc388846ec3eaa20ff706aebf23a02fe45c",
+        "source_sha256": "3f1edfe8ccc3c42b4d840413c4515aef055efb426456d87d88c976d9adc860b1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-9dc1641f39fc12b89bef",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "01f875cb1b74d658",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:18:45.084364Z",
+      "heartbeat_at": null,
+      "completed_steps": 2705,
+      "total_steps": 2705,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.014987098635095222,
+        "mse": 0.0005314285499693639,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.5458984375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 56.94089302205248,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.02610238899444915
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015289428323529274
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015963578368865416
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014997152455475725
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014987098635095222
+        }
+      ],
+      "checkpoint": {
+        "step": 2705,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mse",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "01f875cb1b74d6589142fb128706c31c050a298e784defc02c73510228f1b804",
+        "source_sha256": "0ea420584978f4833b13855bd462a7aecf9a9132c3fa1411cda97a297ded38f8",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-9dc5f9e8191cecf54dc8",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "96c83d8c196d067b",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:23:03.250309Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015033056991076361,
+        "mse": 0.0005312438856993739,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 143.19677734375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 33.85081687697675,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015033056991076361
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01542620033404579
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015191569210321972
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "reinforce",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "gru",
+        "configuration_sha256": "96c83d8c196d067b98f2a169c0bafaea5c69c3967d52de670a4b449393289ecd",
+        "source_sha256": "d2ff2778f642dca1dda9d966a2d2c96fb6b590be8a97104a708a531d592c6ed9",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "8b6b36b3f003dfe26cb2aab6c4cff34bcc1eba21d9fbe589d9e2822a7c93a984",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-a4097c7a98902eaf5e74",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "88d4242e03fba311",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:13:49.367451Z",
+      "heartbeat_at": null,
+      "completed_steps": 2705,
+      "total_steps": 2705,
+      "epoch": 5,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.014986414348805441,
+        "mse": 0.0005313345206546451,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.5458984375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 56.876535816001706,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015269126489401933
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015179792368425912
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01511924552741107
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01519685642853682
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014986414348805441
+        }
+      ],
+      "checkpoint": {
+        "step": 2705,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "88d4242e03fba3113dc3177bd12e619bbd510b2f14b077918e61bf4ebf8a34af",
+        "source_sha256": "77f0fe01be17459e570245833ef933675052d197040a515c2a0e4d9179ced2b2",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-a8f388406dc7e0155f8e",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "103a5babad3d02fa",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:09:21.555893Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.585885545006022,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015688250767877426
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016125600522176545
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_exact",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "103a5babad3d02fa8f3f1799d9d1132b7846356cc6d7c78f21c4e032fcdc6b9c",
+        "source_sha256": "a80a6968c09215229742589473d99831ebe88ede1bdcea68954162627104d9a1",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-aa60b2e2c33bb17bb89f",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "bc72ce96e8ef2ec9",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:07:49.959790Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015153271423237623,
+        "mse": 0.0005363556764575977,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.4697265625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 21.859832326008473,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015245350067525735
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01527278261123266
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "bc72ce96e8ef2ec92c25979f68524859a13b211736b84922ed3e351d4fe769a8",
+        "source_sha256": "9e8399a4ac0fd2457fff595ff7b92c28744465cf2115c4f017990403642bf7bd",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b34573a6e85bb459f1990f8605f8ed3fb269339686218bee8147e3ec9b73e22a",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-ad76630cc0e97168e27a",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "80793e38a28ecc92",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:23:35.047431Z",
+      "heartbeat_at": null,
+      "completed_steps": 1623,
+      "total_steps": 2705,
+      "epoch": 3,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.01501809973576313,
+        "mse": 0.0005287231798497045,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.74169921875,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 31.78715423203539,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01501809973576313
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015332052613239796
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015113743136059983
+        }
+      ],
+      "checkpoint": {
+        "step": 1623,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "expected",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "gru",
+        "configuration_sha256": "80793e38a28ecc92a638f008e0bf0021f46a6493fbeb796e76001b0c501bed35",
+        "source_sha256": "b2670233b3963c1869ef7c5ac43c191d2904dfdf9508ca5b200f3385207fafcf",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "8b6b36b3f003dfe26cb2aab6c4cff34bcc1eba21d9fbe589d9e2822a7c93a984",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-b291b503e50125349f9e",
+      "attempt_id": "legacy",
+      "model_id": "lstm",
+      "activity": "supervised_continuation",
+      "variant_id": "2b56906fff2413e8",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:21:56.891056Z",
+      "heartbeat_at": null,
+      "completed_steps": 2164,
+      "total_steps": 2705,
+      "epoch": 4,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "2297cdd80605d3ac7d255e4efefccd6f4e1a3baffa93e77b870a65be4a4c5310",
+      "metrics": {
+        "mae": 0.01523795331401587,
+        "mse": 0.0005429387020925444,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 192.5458984375,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 45.54817225900479,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01719827930716109
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01523795331401587
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015845196882990315
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016473920919896627
+        }
+      ],
+      "checkpoint": {
+        "step": 2164,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "neural_mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "2b56906fff2413e8a16692c85ca6fe3393f4c4f14840e58d723170b92f07ea63",
+        "source_sha256": "c3299788338b8eea85b4710b31a789593e71f1939e0e98906a68300ef9dc54c2",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-be1431a0dcb8b8ed1fb7",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "f804686fa324d77e",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:19:07.795442Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 44,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 22.698715755948797,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015382454322333736
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015485121854382045
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "reinforce",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "f804686fa324d77e2a91c389a69445433f0bf8b244eeeabfcd03981babeeddce",
+        "source_sha256": "992e4b6dd8cfec11601128f009dc67e54d7cb6a7e527fd983df0308c30544815",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    },
+    {
+      "run_id": "posttraining-strict140-us-fold-000-bebee1aafcb3b0945693",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "ab63c0251bc4daad",
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T15:17:00.065014Z",
+      "heartbeat_at": null,
+      "completed_steps": 1082,
+      "total_steps": 2705,
+      "epoch": 2,
+      "max_epochs": 5,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "62a313641d7c3bff853d54b1130014a0111cc47ad572fb425f1177da3c9cceb3",
+      "metrics": {
+        "mae": 0.015306587253883402,
+        "mse": 0.0005415342047098798,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.7587890625,
+        "ram_peak_mib": 4225.4921875,
+        "elapsed_seconds": 23.800283159012906,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016081782790772967
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015764425845803478
+        }
+      ],
+      "checkpoint": {
+        "step": 1082,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-strict140-us-fold-000",
+        "domain": "real",
+        "method": "klpo_mc",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "lstm",
+        "configuration_sha256": "ab63c0251bc4daad01c0c562e222df7ae0b6d35963860a47bbdc4d28e6ab2eeb",
+        "source_sha256": "2b8097aa60c6c220b7ae1bf443a632113cf20615242c2c96526a8535172a399b",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "b2cf55c549a336a8a675b79f74dc0d717f3be9d24185d0a5a625b0d843751f68",
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 4225.4921875
+      }
+    }
+  ]
+}
