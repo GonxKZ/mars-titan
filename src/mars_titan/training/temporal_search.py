@@ -19,7 +19,7 @@ from .reference_search import _configuration, run_search
 
 def _inputs(config, views):
     plan, cases, config_hash = _configuration(config)
-    if plan["schema_version"] != 2 or plan["arms"] != ["US"]:
+    if plan["schema_version"] not in {2, 3} or plan["arms"] != ["US"]:
         raise ValueError("La campaña temporal requiere el diseño estricto estadounidense")
     report, report_hash = read_manifest(views / "report.json", 1024**2)
     if (

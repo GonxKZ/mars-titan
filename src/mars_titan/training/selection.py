@@ -3,10 +3,12 @@
 import math
 
 
-def validate_selection(options):
+def validate_selection(options, *, epochs=None):
     if (
         not isinstance(options, dict)
-        or set(options) != {"metric", "patience", "min_delta"}
+        or not {"metric", "patience", "min_delta"}
+        <= set(options)
+        <= {"metric", "patience", "min_delta", "minimum_epochs"}
         or options["metric"] != "session_mae"
         or type(options["patience"]) is not int
         or not 1 <= options["patience"] <= 1000
@@ -15,6 +17,14 @@ def validate_selection(options):
         or options["min_delta"] < 0
     ):
         raise ValueError("La selección necesita MAE por sesión, paciencia y mejora mínima válidos")
+    if "minimum_epochs" in options and (
+        type(options["minimum_epochs"]) is not int
+        or not 0 <= options["minimum_epochs"] < 1000
+        or (epochs is not None and options["minimum_epochs"] >= epochs)
+    ):
+        raise ValueError(
+            "El mínimo de épocas debe dejar evaluaciones posteriores en el presupuesto"
+        )
 
 
 def advance_selection(previous, score, epoch, options):
@@ -37,7 +47,9 @@ def advance_selection(previous, score, epoch, options):
     improved = (
         previous["best_score"] is None or score < previous["best_score"] - options["min_delta"]
     )
-    stale = 0 if improved else previous["stale_epochs"] + 1
+    stale = (
+        0 if improved or epoch <= options.get("minimum_epochs", 0) else previous["stale_epochs"] + 1
+    )
     return dict(
         last_epoch=epoch,
         best_epoch=epoch if improved else previous["best_epoch"],

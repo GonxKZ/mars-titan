@@ -9,7 +9,7 @@ def candidate_indices(config):
         return list(range(12))
     indices = config.get("case_indices")
     if (
-        config.get("schema_version") != 2
+        config.get("schema_version") not in {2, 3}
         or not isinstance(indices, list)
         or not 1 <= len(indices) <= 3
         or any(type(i) is not int or not 0 <= i < 12 for i in indices)
@@ -21,7 +21,7 @@ def candidate_indices(config):
     return indices
 
 
-def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0):
+def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0, minimum_epochs=None):
     if (
         not isinstance(models, list)
         or not models
@@ -33,11 +33,13 @@ def design_cases(models, *, seed=42, epochs=30, patience=5, min_delta=0.0):
         type(seed) is not int
         or not 0 <= seed < 2**32
         or type(epochs) is not int
-        or not 2 <= epochs <= 30
+        or not 2 <= epochs <= (30 if minimum_epochs is None else 100)
     ):
         raise ValueError("La semilla o el presupuesto de épocas no son válidos")
     selection = dict(metric="session_mae", patience=patience, min_delta=min_delta)
-    validate_selection(selection)
+    if minimum_epochs is not None:
+        selection["minimum_epochs"] = minimum_epochs
+    validate_selection(selection, epochs=epochs)
     cases = []
     for kind in models:
         for index in range(12):
