@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "base_config": "adaptive-ppo-convergence.json",
+  "variants": [
+    "ppo",
+    "double_dqn",
+    "ppo_window",
+    "ppo_gru",
+    "ppo_episodic",
+    "ppo_hmm",
+    "ppo_episodic_hmm"
+  ],
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "budgets_hours": {
+    "pilot": 12,
+    "main": 108,
+    "auxiliary": 36,
+    "reserve": 12
+  },
+  "initial_reserve_seconds": 0,
+  "pilot_transitions": 8192,
+  "transition_grid": [
+    1048576
+  ],
+  "prediction_margin": 1.25,
+  "evaluation_transitions": 16384,
+  "cooldown_seconds": 30,
+  "max_pause_retries": 3,
+  "auxiliary_gate": {
+    "minimum_log_growth_gain": 0.001,
+    "maximum_drawdown_increase": 0.02
+  },
+  "audit_cost_bps": [
+    0,
+    10,
+    25
+  ],
+  "final_test_opened": false
+}

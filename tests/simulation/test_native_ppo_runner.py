@@ -982,3 +982,15 @@ def test_convergence_audit_accepts_confirmed_plateau(adaptive_inputs, tmp_path):
     output = tmp_path / "selected-convergence"
     execute_adaptive(adaptive_inputs, output)
     execute_audit(adaptive_inputs, output, tmp_path / "audit-convergence")
+
+
+def test_convergence_resume_preserves_consumed_patience(adaptive_inputs, tmp_path):
+    convergence_config(adaptive_inputs, minimum=0, patience=2)
+    output = tmp_path / "consumed-patience"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "16", paused=True)
+    paused = read(output / "run.json")
+    assert paused["stale_evaluations"] == 1 and paused["transitions"] == 16
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    result = read(output / "run.json")
+    assert result["stale_evaluations"] == 2 and result["transitions"] == 32
+    assert result["stopping_reason"] == "budget_exhausted"

@@ -890,3 +890,147 @@ def test_registry_exposes_pending_cases_before_first_execution_and_updates_on_st
         for row in registry["runs"]
     )
     assert str(tmp_path) not in (output / "registry.json").read_text()
+
+
+def test_convergence_settings_keep_fixed_pilot_and_admit_only_declared_ceiling():
+    path = ROOT / "configs/simulation/adaptive-convergence-campaign.json"
+    config, base, _ = adaptive_campaign._settings(path)
+    assert config["schema_version"] == 2 and config["pilot_transitions"] == 8192
+    assert base["schema_version"] == 3
+    assert base["selection"]["min_transitions"] == 131072
+    assert select_grid(pilot_costs(10), config)["transitions"] == 1048576
+    with pytest.raises(ValueError, match="1048576"):
+        select_grid(pilot_costs(2000), config)
+
+
+def convergence_receipt(tmp_path, *, early=True):
+    config = read(ROOT / "configs/simulation/adaptive-ppo-convergence.json")
+    transitions = 262144 if early else 1048576
+    best = dict(transitions=0, optimizer_steps=0)
+    report = dict(
+        schema_version=3,
+        transitions=transitions,
+        optimizer_steps=256,
+        selection=dict(config["selection"], policy="greedy_argmax"),
+        stopping_reason="early_stop" if early else "budget_exhausted",
+        evaluations=1 + transitions // 16384,
+        stale_evaluations=(transitions - 131072) // 16384,
+        best=best,
+    )
+    metadata = dict(
+        schema_version=3,
+        configuration=config,
+        transitions=transitions,
+        optimizer_steps=256,
+        progress=dict(
+            status="early_stopped" if early else "completed",
+            best=best,
+            evaluated_transitions=transitions,
+            evaluated_optimizer_steps=256,
+            evaluations=report["evaluations"],
+            stale_evaluations=report["stale_evaluations"],
+        ),
+    )
+    seal_convergence_checkpoint(tmp_path, metadata)
+    return config, report, metadata
+
+
+def seal_convergence_checkpoint(directory, metadata):
+    temporary = directory / "pending"
+    temporary.mkdir(exist_ok=True)
+    digest = write(temporary / "metadata.json", metadata)
+    manifest = dict(
+        identity_sha256="a" * 64,
+        files={
+            "metadata.json": dict(sha256=digest, bytes=(temporary / "metadata.json").stat().st_size)
+        },
+    )
+    digest = write(temporary / "manifest.json", manifest)
+    bundle = "ppo-" + digest
+    temporary.rename(directory / bundle)
+    index = dict(identity_sha256="a" * 64, recent=[dict(bundle=bundle, sha256=digest)])
+    write(
+        directory / "ppo-index.json", dict(payload=index, sha256=adaptive_campaign._digest(index))
+    )
+
+
+@pytest.mark.parametrize("early", [True, False])
+def test_convergence_receipt_requires_confirmed_terminal_selection(tmp_path, early):
+    config, report, _ = convergence_receipt(tmp_path, early=early)
+    campaign = object.__new__(adaptive_campaign.Campaign)
+    campaign.validate_convergence_receipt(tmp_path, report, config, "a" * 64)
+
+
+@pytest.mark.parametrize("corruption", ["minimum", "patience", "pending", "best", "schema", "seal"])
+def test_convergence_receipt_rejects_forged_stopping_state(tmp_path, corruption):
+    config, report, metadata = convergence_receipt(tmp_path)
+    if corruption == "minimum":
+        report["transitions"] = metadata["transitions"] = 131072
+        report["evaluations"] = metadata["progress"]["evaluations"] = 9
+        metadata["progress"]["evaluated_transitions"] = 131072
+    elif corruption == "patience":
+        report["stale_evaluations"] = metadata["progress"]["stale_evaluations"] = 7
+    elif corruption == "pending":
+        metadata["progress"]["evaluated_transitions"] -= 16384
+    elif corruption == "best":
+        report["best"]["transitions"] = 262144
+    elif corruption == "schema":
+        report["schema_version"] = 2
+    else:
+        index = read(tmp_path / "ppo-index.json")
+        index["sha256"] = "b" * 64
+        write(tmp_path / "ppo-index.json", index)
+    if corruption in {"minimum", "patience", "pending"}:
+        seal_convergence_checkpoint(tmp_path, metadata)
+    campaign = object.__new__(adaptive_campaign.Campaign)
+    with pytest.raises(ValueError):
+        campaign.validate_convergence_receipt(tmp_path, report, config, "a" * 64)
+
+
+def test_convergence_generated_pilot_disables_stopping_and_keeps_8192(tmp_path):
+    from types import SimpleNamespace
+
+    path = ROOT / "configs/simulation/adaptive-convergence-campaign.json"
+    config, base, _ = adaptive_campaign._settings(path)
+    campaign = object.__new__(adaptive_campaign.Campaign)
+    campaign.inputs = SimpleNamespace(settings=config, base=base)
+    campaign.output = tmp_path
+    campaign.state = dict(cases=[])
+    campaign.add_cases("pilot", ["ppo", "double_dqn"], 8192)
+    campaign.add_cases("main", ["ppo"], 1048576)
+    for case in campaign.state["cases"]:
+        generated = read(tmp_path / case["config"])
+        assert generated["training"]["seed"] in (42, 43, 44)
+        if case["stage"] == "pilot":
+            assert generated["training"]["total_transitions"] == 8192
+            assert generated["selection"]["early_stopping"] is False
+            assert generated["selection"]["min_transitions"] == 0
+        else:
+            assert generated["selection"] == base["selection"]
+
+
+def test_v1_campaign_rejects_early_stop_receipt(catalog, tmp_path):
+    runner = SimulatedExecutor(catalog)
+
+    def premature(command, stop):
+        code = runner(command, stop)
+        output = Path(command[command.index("--output") + 1])
+        receipt = read(output / "run.json")
+        receipt.update(stopping_reason="early_stop", transitions=4096)
+        write(output / "run.json", receipt)
+        return code
+
+    with pytest.raises(ValueError, match="presupuesto"):
+        run_adaptive_campaign(
+            catalog[0], catalog[1], tmp_path / "premature", executor=premature, sleep=lambda _: None
+        )
+
+
+def test_convergence_receipt_waits_for_declared_patience(tmp_path):
+    config, report, metadata = convergence_receipt(tmp_path)
+    config["selection"]["patience"] = 9
+    report["selection"]["patience"] = 9
+    seal_convergence_checkpoint(tmp_path, metadata)
+    campaign = object.__new__(adaptive_campaign.Campaign)
+    with pytest.raises(ValueError, match="paciencia"):
+        campaign.validate_convergence_receipt(tmp_path, report, config, "a" * 64)

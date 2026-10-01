@@ -152,12 +152,13 @@ def _settings(path):
     _require(
         set(settings) in (expected, expected | {"initial_reserve_seconds"})
         and type(settings["schema_version"]) is int
-        and settings["schema_version"] == 1
+        and settings["schema_version"] in (1, 2)
         and settings["variants"] == list(VARIANTS)
         and settings["seeds"] == list(SEEDS)
         and settings["budgets_hours"] == dict(pilot=12, main=108, auxiliary=36, reserve=12)
         and settings["pilot_transitions"] == 8192
-        and settings["transition_grid"] == [65536, 262144, 524288]
+        and settings["transition_grid"]
+        == ([65536, 262144, 524288] if settings["schema_version"] == 1 else [1048576])
         and settings["prediction_margin"] == 1.25
         and settings["evaluation_transitions"] == 16384
         and settings["cooldown_seconds"] == 30
@@ -177,14 +178,26 @@ def _settings(path):
     base_path = _relative(path.parent, settings["base_config"])
     base, base_digest = _json(base_path, 1024**2)
     _require(
-        base.get("schema_version") == 2
+        base.get("schema_version") == (2 if settings["schema_version"] == 1 else 3)
         and base.get("environments") == 16
         and base["training"]["rollout_transitions"] == 1024
         and base["hyperparameters"]["minibatch_size"] == 64
-        and base["selection"]["early_stopping"] is False
+        and (
+            base["selection"]["early_stopping"] is False
+            if settings["schema_version"] == 1
+            else base["selection"]
+            == dict(
+                early_stopping=True,
+                min_transitions=131072,
+                patience=8,
+                min_delta=0.0001,
+                metric="ruin_count_then_mean_log_growth",
+            )
+            and base["training"]["total_transitions"] == 1048576
+        )
         and base["agent"]["hmm_file"] is None
         and base.get("final_test_opened") is False,
-        "La base de campaña necesita esquema 2, N16, rollout1024, minibatch64 y presupuesto fijo",
+        "La base de campaña no conserva la edición de selección, N16, rollout1024 y minibatch64",
     )
     return settings, base, {"campaign": digest, "base": base_digest}
 
@@ -226,7 +239,8 @@ def select_grid(costs, settings):
     ]
     _require(
         admitted,
-        "El piloto no permite completar ni 65536 transiciones en las 108 horas principales",
+        f"El piloto no permite completar ni {settings['transition_grid'][0]} transiciones "
+        "en las 108 horas principales",
     )
     return dict(
         **admitted[-1],
@@ -635,6 +649,8 @@ class Campaign:
                     continue
                 config = copy.deepcopy(self.inputs.base)
                 config["training"].update(seed=seed, total_transitions=transitions)
+                if stage == "pilot" and self.inputs.settings["schema_version"] == 2:
+                    config["selection"].update(early_stopping=False, min_transitions=0)
                 config["evaluation_transitions"] = self.inputs.settings["evaluation_transitions"]
                 config["agent"].update(variant=variant, markov_fields=[], hmm_file=None)
                 if variant in {"ppo_hmm", "ppo_episodic_hmm", *AUXILIARY}:
@@ -761,6 +777,7 @@ class Campaign:
                         "optimizer_steps",
                         "auxiliary_steps",
                         "auxiliary_samples",
+                        "stopping_reason",
                     )
                     if field in case
                 },
@@ -861,6 +878,70 @@ class Campaign:
             command.append("--resume")
         return command
 
+    def validate_convergence_receipt(self, directory, receipt, config, identity_hash):
+        """Contrastar el recibo con el último estado confirmado de selección."""
+        envelope, _ = _json(directory / "ppo-index.json")
+        index = envelope["payload"]
+        _require(
+            envelope.get("sha256") == _digest(index)
+            and index.get("identity_sha256") == identity_hash,
+            "El índice de selección no conserva su identidad y sello",
+        )
+        record = index["recent"][0]
+        bundle = _relative(directory, "ppo-" + _hash(record["sha256"]))
+        _require(record.get("bundle") == bundle.name, "El checkpoint reciente no es canónico")
+        manifest, digest = _json(bundle / "manifest.json")
+        metadata, metadata_digest = _json(bundle / "metadata.json")
+        description = manifest["files"]["metadata.json"]
+        _require(
+            digest == record["sha256"]
+            and manifest.get("identity_sha256") == identity_hash
+            and metadata_digest == description["sha256"]
+            and (bundle / "metadata.json").stat().st_size == description["bytes"],
+            "El estado confirmado no conserva sus hashes",
+        )
+        progress = metadata["progress"]
+        early = receipt.get("stopping_reason") == "early_stop"
+        transitions = _integer(receipt.get("transitions"), "transiciones")
+        selection = config["selection"]
+        minimum = selection["min_transitions"]
+        interval = config["evaluation_transitions"]
+        evaluations = 1 + math.ceil(transitions / interval)
+        best = receipt["best"]
+        best_transition = _integer(
+            best.get("transitions"), "transiciones seleccionadas", maximum=transitions
+        )
+        eligible = max(0, math.ceil((transitions - max(minimum, best_transition)) / interval))
+        stale = _integer(receipt.get("stale_evaluations"), "paciencia", maximum=eligible)
+        _require(
+            receipt.get("schema_version") == 3
+            and receipt.get("selection") == dict(selection, policy="greedy_argmax")
+            and metadata.get("schema_version") == 3
+            and metadata.get("configuration") == config
+            and metadata.get("transitions") == transitions
+            and metadata.get("optimizer_steps") == receipt["optimizer_steps"]
+            and progress.get("evaluated_transitions") == transitions
+            and progress.get("evaluated_optimizer_steps") == receipt["optimizer_steps"]
+            and progress.get("evaluations") == receipt.get("evaluations") == evaluations
+            and progress.get("stale_evaluations") == stale == eligible
+            and progress.get("best") == best
+            and progress.get("status") == ("early_stopped" if early else "completed")
+            and (
+                transitions % interval == 0
+                or transitions == config["training"]["total_transitions"]
+            )
+            and (
+                not early
+                or (
+                    selection["early_stopping"] is True
+                    and receipt["optimizer_steps"] > 0
+                    and minimum < transitions < config["training"]["total_transitions"]
+                    and stale >= selection["patience"]
+                )
+            ),
+            "El recibo no acredita el mínimo, la paciencia y la selección terminal confirmada",
+        )
+
     def validate_training_receipt(self, case, expected_status):
         directory = self.output / case["output"]
         receipt, digest = _json(directory / "run.json")
@@ -912,12 +993,27 @@ class Campaign:
             **counters,
         )
         if expected_status == "completed":
-            _require(
+            convergent = self.inputs.settings["schema_version"] == 2 and case["stage"] in {
+                "main",
+                "auxiliary",
+            }
+            budget_complete = (
                 receipt.get("transitions") == case["transitions"]
-                and receipt.get("total_steps") == case["transitions"]
-                and receipt.get("stopping_reason") == "budget_exhausted",
-                "El caso terminó sin completar su presupuesto fijo",
+                and receipt.get("stopping_reason") == "budget_exhausted"
             )
+            _require(
+                receipt.get("total_steps") == case["transitions"]
+                and (
+                    budget_complete
+                    or (convergent and receipt.get("stopping_reason") == "early_stop")
+                ),
+                "El caso terminó sin completar su presupuesto o una parada validada",
+            )
+            if self.inputs.settings["schema_version"] == 2:
+                self.validate_convergence_receipt(
+                    directory, receipt, config, identity_record["sha256"]
+                )
+                case["stopping_reason"] = receipt["stopping_reason"]
             best = receipt["best"]
             _require(
                 best.get("episodes") == len(self.inputs.partitions["validation"]),
@@ -1326,7 +1422,13 @@ class Campaign:
                     dict(
                         seed=seed,
                         **{
-                            f"same_{field}": first[field] == second[field]
+                            f"same_{field}": (
+                                first.get("confirmed_transitions", 0)
+                                == second.get("confirmed_transitions", 0)
+                                if field == "transitions"
+                                and self.inputs.settings["schema_version"] == 2
+                                else first[field] == second[field]
+                            )
                             for field in (
                                 "transitions",
                                 "optimizer_steps",
