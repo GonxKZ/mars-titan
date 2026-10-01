@@ -418,18 +418,18 @@ def main(argv=None):
         document, _ = read_manifest(args.config, 4 * MIB)
     except (OSError, ValueError) as error:
         parser.error(str(error))
-    maximum_sources = 512 if document.get("schema_version") == 2 else 12
+    maximum_sources = 512 if document.get("schema_version") in (2, 3) else 12
     if max(len(args.train_tape), len(args.validation_tape), len(args.audit_tape)) > maximum_sources:
         parser.error(f"Se admiten como máximo {maximum_sources} fuentes por partición")
     if args.audit_run is not None:
         if (
-            document.get("schema_version") != 2
+            document.get("schema_version") not in (2, 3)
             or not args.audit_tape
             or args.train_tape
             or args.validation_tape
         ):
             parser.error(
-                "La auditoría necesita esquema 2, --audit-run y --audit-tape, "
+                "La auditoría necesita esquema 2 o 3, --audit-run y --audit-tape, "
                 "sin fuentes de entrenamiento"
             )
     elif args.audit_tape or not args.train_tape or not args.validation_tape:

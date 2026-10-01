@@ -877,3 +877,108 @@ def test_nine_complete_drawdowns_keep_the_selected_checkpoint_recoverable(
     assert all(row["max_drawdown"] == 1 for row in report["best"]["validation_metrics"])
     execute_adaptive(adaptive_inputs, output, "--resume", "--stop-after", "0", paused=True)
     assert read(output / "run.json")["best"]["mean_max_drawdown"] == 1
+
+
+def convergence_config(adaptive_inputs, *, minimum=16, patience=1, variant="ppo"):
+    config, _ = adaptive_inputs
+    document = read(config)
+    document.update(schema_version=3, evaluation_transitions=16)
+    document["training"].update(total_transitions=32, rollout_transitions=16)
+    document["selection"].update(
+        early_stopping=True, min_transitions=minimum, patience=patience, min_delta=1000
+    )
+    document["agent"]["variant"] = variant
+    config.write_text(json.dumps(document))
+    return document
+
+
+@pytest.mark.parametrize("variant", ["ppo"])
+def test_convergence_minimum_inclusive_and_budget_preserve_initial_candidate(
+    adaptive_inputs, tmp_path, variant
+):
+    convergence_config(adaptive_inputs, variant=variant)
+    output = tmp_path / "minimum"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "16", paused=True)
+    paused = read(output / "run.json")
+    assert paused["transitions"] == 16 and paused["stale_evaluations"] == 0
+    assert paused["evaluations"] == 2 and paused["best"]["transitions"] == 0
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    report = read(output / "run.json")
+    assert report["schema_version"] == 3
+    assert report["transitions"] == 32 and report["stale_evaluations"] == 1
+    assert report["stopping_reason"] == "budget_exhausted"
+    assert report["best"]["transitions"] == 0
+    assert read(latest(output) / "metadata.json")["progress"]["status"] == "completed"
+
+
+@pytest.mark.parametrize("variant", ["ppo"])
+def test_convergence_plateau_before_budget_recovers_without_extra_updates(
+    adaptive_inputs, tmp_path, variant
+):
+    convergence_config(adaptive_inputs, minimum=0, variant=variant)
+    output = tmp_path / "plateau"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "0", paused=True)
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    report = read(output / "run.json")
+    assert report["transitions"] == 16 and report["stale_evaluations"] == 1
+    assert report["stopping_reason"] == "early_stop"
+    assert report["best"]["transitions"] == 0
+    before = (output / "ppo-index.json").read_bytes()
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    assert (output / "ppo-index.json").read_bytes() == before
+
+
+@pytest.mark.parametrize("minimum", [-1, 1, 48, True])
+def test_convergence_rejects_invalid_minimum(adaptive_inputs, tmp_path, minimum):
+    convergence_config(adaptive_inputs, minimum=minimum)
+    execute_adaptive(adaptive_inputs, tmp_path / "invalid", success=False)
+
+
+def test_convergence_dqn_rejects_minimum_before_learning_warmup(adaptive_inputs, tmp_path):
+    convergence_config(adaptive_inputs, minimum=0, variant="double_dqn")
+    result = execute_adaptive(adaptive_inputs, tmp_path / "untrained", success=False)
+    assert "calentamiento" in result.stderr
+
+
+def replace_confirmed_progress(output, **changes):
+    envelope = read(output / "ppo-index.json")
+    record = envelope["payload"]["recent"][0]
+    source = output / record["bundle"]
+    pending = output / "tampered"
+    shutil.copytree(source, pending)
+    metadata = read(pending / "metadata.json")
+    metadata["progress"].update(changes)
+    (pending / "metadata.json").write_text(json.dumps(metadata))
+    manifest = read(pending / "manifest.json")
+    data = (pending / "metadata.json").read_bytes()
+    manifest["files"]["metadata.json"] = dict(
+        bytes=len(data), sha256=hashlib.sha256(data).hexdigest()
+    )
+    data = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    (pending / "manifest.json").write_bytes(data)
+    digest = hashlib.sha256(data).hexdigest()
+    record.update(bundle=f"ppo-{digest}", sha256=digest)
+    pending.rename(output / record["bundle"])
+    data = json.dumps(envelope["payload"], sort_keys=True, separators=(",", ":")).encode()
+    envelope["sha256"] = hashlib.sha256(data).hexdigest()
+    (output / "ppo-index.json").write_text(json.dumps(envelope))
+
+
+@pytest.mark.parametrize("audit", [False, True])
+def test_convergence_rejects_patience_counted_at_minimum(adaptive_inputs, tmp_path, audit):
+    convergence_config(adaptive_inputs)
+    output = tmp_path / "tampered-state"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "16", paused=True)
+    replace_confirmed_progress(output, status="early_stopped", stale_evaluations=1)
+    if audit:
+        result = execute_audit(adaptive_inputs, output, tmp_path / "audit", success=False)
+    else:
+        result = execute_adaptive(adaptive_inputs, output, "--resume", success=False)
+    assert "paciencia" in result.stderr
+
+
+def test_convergence_audit_accepts_confirmed_plateau(adaptive_inputs, tmp_path):
+    convergence_config(adaptive_inputs, minimum=0)
+    output = tmp_path / "selected-convergence"
+    execute_adaptive(adaptive_inputs, output)
+    execute_audit(adaptive_inputs, output, tmp_path / "audit-convergence")
