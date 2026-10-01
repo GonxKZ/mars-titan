@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-01T19:04:00.642058Z",
+  "generated_at": "2026-10-01T19:05:19.141875Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -411,11 +411,11 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 1,
+        "completed": 2,
         "running": 1,
-        "not_started": 38
+        "not_started": 37
       },
-      "registered_runs": 2
+      "registered_runs": 3
     },
     {
       "id": "tabular-convergence-20261001-fold-000",
@@ -711,26 +711,26 @@
   ],
   "runs": [
     {
-      "run_id": "neural-convergence-20261001-fold-000-9f7b055a6e47c24eaac3",
+      "run_id": "neural-convergence-20261001-fold-000-34c17537d42df6c909af",
       "attempt_id": "legacy",
-      "model_id": "rnn",
+      "model_id": "lstm",
       "activity": "initial_training",
-      "variant_id": "f85113abaa785723",
+      "variant_id": "7244ec78f32681e2",
       "status": "running",
       "phase": "validation",
-      "started_at": "2026-10-01T18:48:09.671156Z",
-      "updated_at": "2026-10-01T19:04:00.044735Z",
-      "heartbeat_at": "2026-10-01T19:04:00.323777Z",
-      "completed_steps": 12798,
+      "started_at": null,
+      "updated_at": null,
+      "heartbeat_at": "2026-10-01T19:05:18.425969Z",
+      "completed_steps": null,
       "total_steps": null,
-      "epoch": 54,
+      "epoch": null,
       "max_epochs": 100,
       "seed": 42,
       "fold": "US",
-      "comparison_group": "30f5aeb0ed6bce567488c5e240a88a4f38c6ae601c99ce190e60bcae0b2d1266",
+      "comparison_group": null,
       "metrics": {
-        "mae": 0.015385832712379482,
-        "mse": 0.0005504753826485125,
+        "mae": null,
+        "mse": null,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -741,336 +741,11 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": 5906.809458047312
+        "samples_per_second": null
       },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.02261096496063859
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.019348734516802014
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018947433098750178
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018122979376978206
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.020216570677990868
-        },
-        {
-          "step": 6,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017409998163472894
-        },
-        {
-          "step": 7,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017217556571361932
-        },
-        {
-          "step": 8,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018173340941918702
-        },
-        {
-          "step": 9,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01775515749749138
-        },
-        {
-          "step": 10,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01687140851691609
-        },
-        {
-          "step": 11,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.0165802835013112
-        },
-        {
-          "step": 12,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018240575694454978
-        },
-        {
-          "step": 13,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.0167613988025817
-        },
-        {
-          "step": 14,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018065450874416192
-        },
-        {
-          "step": 15,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016523982038963388
-        },
-        {
-          "step": 16,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01634793874663088
-        },
-        {
-          "step": 17,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017156349206742243
-        },
-        {
-          "step": 18,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016685630357962614
-        },
-        {
-          "step": 19,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01652673917678379
-        },
-        {
-          "step": 20,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017188612342388044
-        },
-        {
-          "step": 21,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017678910377606525
-        },
-        {
-          "step": 22,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01626707177696334
-        },
-        {
-          "step": 23,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016208171591273874
-        },
-        {
-          "step": 24,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01630514525870341
-        },
-        {
-          "step": 25,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018100493686304182
-        },
-        {
-          "step": 26,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016844894778535704
-        },
-        {
-          "step": 27,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015878787888950602
-        },
-        {
-          "step": 28,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01928427876132227
-        },
-        {
-          "step": 29,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01721834618279066
-        },
-        {
-          "step": 30,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016024865185857082
-        },
-        {
-          "step": 31,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01582152214260742
-        },
-        {
-          "step": 32,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016227943114276208
-        },
-        {
-          "step": 33,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015659679464677875
-        },
-        {
-          "step": 34,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015649991478689125
-        },
-        {
-          "step": 35,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015514328149469717
-        },
-        {
-          "step": 36,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01603700259300709
-        },
-        {
-          "step": 37,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015707532281857495
-        },
-        {
-          "step": 38,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015341576658141705
-        },
-        {
-          "step": 39,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015341108691869583
-        },
-        {
-          "step": 40,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015342761691448369
-        },
-        {
-          "step": 41,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01535332315295238
-        },
-        {
-          "step": 42,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015587924672005963
-        },
-        {
-          "step": 43,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015347102648603502
-        },
-        {
-          "step": 44,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015363739239727541
-        },
-        {
-          "step": 45,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015298080213450608
-        },
-        {
-          "step": 46,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01538391027558339
-        },
-        {
-          "step": 47,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015097534642673202
-        },
-        {
-          "step": 48,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015132222047980192
-        },
-        {
-          "step": 49,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015164962157423443
-        },
-        {
-          "step": 50,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015205073876292285
-        },
-        {
-          "step": 51,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015223098182525192
-        },
-        {
-          "step": 52,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015210788825435646
-        },
-        {
-          "step": 53,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01513734772080223
-        },
-        {
-          "step": 54,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015385832712379482
-        }
-      ],
+      "history": [],
       "checkpoint": {
-        "step": 12798,
+        "step": null,
         "saved_at": null,
         "resumable": null
       },
@@ -1084,12 +759,12 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "f85113abaa785723adb9b2cf15c0afc2849c42def80c2620217c0fa549978e08",
-        "source_sha256": "3db7438ff25b92d8e318ecb477c45ee9fa93bb262dd9eac42a7491517018fa7a",
+        "configuration_sha256": "7244ec78f32681e27babee58ebeaab6795660ca901667da88fae7503efff278d",
+        "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
-        "train_rows": 121190,
-        "validation_rows": 39462,
+        "train_rows": null,
+        "validation_rows": null,
         "parent": null,
         "error_type": null,
         "ram_peak_scope": null,
@@ -5470,7 +5145,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 1272,
+    "total_runs": 1273,
     "page_size": 64,
     "pages": [
       "pages/8e91f90c160594b959665069d89c92c3246b7b0689c74f9c16d4876e1ad7db2f.json",
@@ -5481,17 +5156,17 @@
       "pages/5b16cae6bd490e92ad1f08e91c803bc9f5fce7db74d54b39effed6d494852c33.json",
       "pages/29598926eb070f3b50ed0ba1d56bd9f1f738ccfebdcc151be84fe87f22a599f3.json",
       "pages/f9030348a47a7b821bf313c443820df3dd62407a7ea5cc1f22228ac41a3bba51.json",
-      "pages/7a01ffbb8099b6051bce624be401be12517895a63fa4f705cad7904ed49065a8.json",
-      "pages/2537e28a745559a09868c60156100deeb96aba3e424987359fe396eac0149b78.json",
-      "pages/cdaa14569e759940ef63a84c31cdc2c238e9b3fae731c236c15b400b5ff871f1.json",
-      "pages/ae7e9888795c52f91676585fb2777f05fd7de376f0aba118bbab0022058b3884.json",
-      "pages/32cbcf2870d71e6ef322ce22025b9a361fc862ec577ec5da1d098ce3847a0a1c.json",
-      "pages/a1a278f9ceffb8b8dd09531ed2169898f4b9570979a1ad1a524ea1c0bb5ea01e.json",
-      "pages/cea165699dd477df6d59b33ab53e2daad56849c0a993d5cd97bb8a4f6a600fb7.json",
-      "pages/896fdb6b607f63bbfb5c67b7baee2f01a68223376cd792b5135033e4f6d5a8a8.json",
-      "pages/11cfbff4e340eaa39679b8af03c7b9742b21c806525c966ac0163276ff4ef8ed.json",
-      "pages/dad0620fa59151b39b1156fd05f870626f42c6d6fec88890fd0081981600f777.json",
-      "pages/bebe7ad574a07e961ae4cff92c29225bca2002e681d4ddef4ccefbcf3d89cc42.json"
+      "pages/fa78b63797312b5055df0eab3c821b9c9372a769dda92604bf3a1291ced027af.json",
+      "pages/f6f2a839a8d6fb915f1fa03ac6c784ae36542cc0813a3d34d91b34679e757bae.json",
+      "pages/662aa129f4813d1563146b00675caf523019ea18724239aeb7dc55b5f05d2763.json",
+      "pages/902ed9f35644a5b7e166293c9eeb212154b24087dcd8b6ee030a69fd0863b191.json",
+      "pages/2d683470573664cc4b795345932d8d9f7569f44e9cd4ee6a58c581ab2f468ad2.json",
+      "pages/45e7b1c118118704219e0c2ec5cbc61e01cd911581fdcaf262916392c33667e3.json",
+      "pages/3bcac286c72ec4a016be32f7cf2ed5c54f94e548aab0a70a70a81b3485c3ebda.json",
+      "pages/b372b8e3a90736d91512de412752c6e486b1a4b4e1c003fea8fc336670908076.json",
+      "pages/d2bd9d75bebe8097e9c1b6a0cb9f5d39c61a90d7b0b7fcbac16ded050e580f62.json",
+      "pages/9aa88ff020698af7444118ef3f51df7b1167bbd325f42c6c66d83a70feaf92c7.json",
+      "pages/abe98b657dbbf50eae013e43a699f40d3319f0ad4f56561278bc615a56d8579e.json"
     ]
   }
 }
