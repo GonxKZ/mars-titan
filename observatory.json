@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-01T03:20:55.250611Z",
+  "generated_at": "2026-10-01T03:26:16.861105Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -97,14 +97,14 @@
       "id": "adaptation-original-us",
       "domain": "real",
       "planned_runs": 216,
-      "status": "running",
+      "status": "paused",
       "dependencies": [
         "neural-original-us",
         "tabular-original-us"
       ],
       "counts": {
         "completed": 183,
-        "running": 1,
+        "paused": 1,
         "not_started": 32
       },
       "registered_runs": 184
@@ -546,81 +546,6 @@
     "Los entornos de adaptaci\u00f3n RL son escenarios t\u00e9cnicos con 3 conceptos macro simulados. No equivalen al corpus real con 140 indicadores."
   ],
   "runs": [
-    {
-      "run_id": "adaptation-original-us-2424b9ebf6d6012de4f0",
-      "attempt_id": "legacy",
-      "model_id": "adaptation",
-      "activity": "predictive_adaptation",
-      "variant_id": "64e0d1b9980b87d9",
-      "status": "running",
-      "phase": "validation",
-      "started_at": null,
-      "updated_at": "2026-10-01T03:20:43.576329Z",
-      "heartbeat_at": "2026-10-01T03:20:51.827028Z",
-      "completed_steps": 15254,
-      "total_steps": null,
-      "epoch": 2,
-      "max_epochs": 5,
-      "seed": 42,
-      "fold": "unidentified",
-      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
-      "metrics": {
-        "mae": 0.017652731205017667,
-        "mse": 0.0007235635274142136,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": null,
-        "ram_peak_mib": null,
-        "elapsed_seconds": null,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01864282839133178
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017652731205017667
-        }
-      ],
-      "checkpoint": {
-        "step": 15254,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptation-original-us",
-        "domain": "real",
-        "method": "klpo_full",
-        "parent_frozen": true,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "64e0d1b9980b87d934f3549773a3eaea865079c074abd57769fbc8a8c8761c9f",
-        "source_sha256": "f0239a40b33789629dfbe93583c38e39f7a0de15e2a47414aead6d646f4ea368",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": 1548307,
-        "validation_rows": 261069,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": null,
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": null
-      }
-    },
     {
       "run_id": "adaptation-check-20260923-08ed7c5ae311fd26270e",
       "attempt_id": "legacy",
@@ -3865,6 +3790,93 @@
         "parent_model": null,
         "configuration_sha256": "361c54a71f930e31f8368cdbc2fe7339fa23137a0bb9dd10d04b8170c4185441",
         "source_sha256": "0864aaeeed670a5f70c728bb15b2a0cf5c20fc3e13641dab9b8e9c124d0d3924",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 1548307,
+        "validation_rows": 261069,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1926.80859375
+      }
+    },
+    {
+      "run_id": "adaptation-original-us-2424b9ebf6d6012de4f0",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "64e0d1b9980b87d9",
+      "status": "paused",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T03:25:19.240731Z",
+      "heartbeat_at": null,
+      "completed_steps": 28767,
+      "total_steps": null,
+      "epoch": 4,
+      "max_epochs": 5,
+      "seed": 42,
+      "fold": "unidentified",
+      "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
+      "metrics": {
+        "mae": 0.019215946495997227,
+        "mse": 0.0008034097236080745,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 72.59423828125,
+        "ram_peak_mib": 1926.80859375,
+        "elapsed_seconds": 580.280869949027,
+        "samples_per_second": null
+      },
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01864282839133178
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017652731205017667
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01929414534770005
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019215946495997227
+        }
+      ],
+      "checkpoint": {
+        "step": 28767,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "adaptation-original-us",
+        "domain": "real",
+        "method": "klpo_full",
+        "parent_frozen": true,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": "64e0d1b9980b87d934f3549773a3eaea865079c074abd57769fbc8a8c8761c9f",
+        "source_sha256": "a3d00f88e7e8f4988b55acffa4013089814d49ebc9d5b07af774f548d17de9a0",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
