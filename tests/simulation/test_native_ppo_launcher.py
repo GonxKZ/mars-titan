@@ -565,9 +565,12 @@ def test_killing_wrapper_ends_only_its_guarded_child_and_charges_uncertainty_onc
         unrelated.wait(timeout=5)
 
 
-def test_version_two_forwards_a_large_catalog_without_changing_version_one_limit(setup):
+@pytest.mark.parametrize("schema_version", [2, 3])
+def test_adaptive_versions_forward_large_catalog_without_changing_version_one_limit(
+    setup, schema_version
+):
     config = Path(setup[0][setup[0].index("--config") + 1])
-    config.write_text('{"schema_version":2}')
+    config.write_text(json.dumps(dict(schema_version=schema_version)))
     additional = [value for index in range(255) for value in ("--train-tape", f"train-{index}")]
     result = execute(setup, "--diagnostic", *additional)
     assert result.returncode == 0, result.stderr
@@ -612,10 +615,11 @@ def test_active_budget_requests_pause_with_shutdown_time_reserved(setup):
     assert record(setup)["signal"] == signal.SIGTERM
 
 
-def test_audit_uses_the_same_launcher_without_training_arguments(setup):
+@pytest.mark.parametrize("schema_version", [2, 3])
+def test_audit_uses_the_same_launcher_without_training_arguments(setup, schema_version):
     args = setup[0]
     config = Path(args[args.index("--config") + 1])
-    config.write_text('{"schema_version":2}')
+    config.write_text(json.dumps(dict(schema_version=schema_version)))
     native = args[args.index("--binary") + 1]
     setup[0][:] = [
         *args[:4],

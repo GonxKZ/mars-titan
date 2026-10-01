@@ -877,3 +877,203 @@ def test_nine_complete_drawdowns_keep_the_selected_checkpoint_recoverable(
     assert all(row["max_drawdown"] == 1 for row in report["best"]["validation_metrics"])
     execute_adaptive(adaptive_inputs, output, "--resume", "--stop-after", "0", paused=True)
     assert read(output / "run.json")["best"]["mean_max_drawdown"] == 1
+
+
+def convergence_config(adaptive_inputs, *, minimum=16, patience=1, variant="ppo"):
+    config, _ = adaptive_inputs
+    document = read(config)
+    document.update(schema_version=3, evaluation_transitions=16)
+    document["training"].update(total_transitions=32, rollout_transitions=16)
+    document["selection"].update(
+        early_stopping=True, min_transitions=minimum, patience=patience, min_delta=1000
+    )
+    document["agent"]["variant"] = variant
+    config.write_text(json.dumps(document))
+    return document
+
+
+@pytest.mark.parametrize("variant", ["ppo"])
+def test_convergence_minimum_inclusive_and_budget_preserve_initial_candidate(
+    adaptive_inputs, tmp_path, variant
+):
+    convergence_config(adaptive_inputs, variant=variant)
+    output = tmp_path / "minimum"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "16", paused=True)
+    paused = read(output / "run.json")
+    assert paused["transitions"] == 16 and paused["stale_evaluations"] == 0
+    assert paused["evaluations"] == 2 and paused["best"]["transitions"] == 0
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    report = read(output / "run.json")
+    assert report["schema_version"] == 3
+    assert report["transitions"] == 32 and report["stale_evaluations"] == 1
+    assert report["stopping_reason"] == "budget_exhausted"
+    assert report["best"]["transitions"] == 0
+    assert read(latest(output) / "metadata.json")["progress"]["status"] == "completed"
+
+
+@pytest.mark.parametrize("variant", ["ppo"])
+def test_convergence_plateau_before_budget_recovers_without_extra_updates(
+    adaptive_inputs, tmp_path, variant
+):
+    convergence_config(adaptive_inputs, minimum=0, variant=variant)
+    output = tmp_path / "plateau"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "0", paused=True)
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    report = read(output / "run.json")
+    assert report["transitions"] == 16 and report["stale_evaluations"] == 1
+    assert report["stopping_reason"] == "early_stop"
+    assert report["best"]["transitions"] == 0
+    before = (output / "ppo-index.json").read_bytes()
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    assert (output / "ppo-index.json").read_bytes() == before
+
+
+@pytest.mark.parametrize("minimum", [-1, 1, 48, True])
+def test_convergence_rejects_invalid_minimum(adaptive_inputs, tmp_path, minimum):
+    convergence_config(adaptive_inputs, minimum=minimum)
+    execute_adaptive(adaptive_inputs, tmp_path / "invalid", success=False)
+
+
+def test_convergence_dqn_rejects_minimum_before_learning_warmup(adaptive_inputs, tmp_path):
+    convergence_config(adaptive_inputs, minimum=0, variant="double_dqn")
+    result = execute_adaptive(adaptive_inputs, tmp_path / "untrained", success=False)
+    assert "calentamiento" in result.stderr
+
+
+def replace_confirmed_progress(output, **changes):
+    envelope = read(output / "ppo-index.json")
+    record = envelope["payload"]["recent"][0]
+    source = output / record["bundle"]
+    pending = output / "tampered"
+    shutil.copytree(source, pending)
+    metadata = read(pending / "metadata.json")
+    metadata["progress"].update(changes)
+    (pending / "metadata.json").write_text(json.dumps(metadata))
+    manifest = read(pending / "manifest.json")
+    data = (pending / "metadata.json").read_bytes()
+    manifest["files"]["metadata.json"] = dict(
+        bytes=len(data), sha256=hashlib.sha256(data).hexdigest()
+    )
+    data = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    (pending / "manifest.json").write_bytes(data)
+    digest = hashlib.sha256(data).hexdigest()
+    record.update(bundle=f"ppo-{digest}", sha256=digest)
+    pending.rename(output / record["bundle"])
+    data = json.dumps(envelope["payload"], sort_keys=True, separators=(",", ":")).encode()
+    envelope["sha256"] = hashlib.sha256(data).hexdigest()
+    (output / "ppo-index.json").write_text(json.dumps(envelope))
+
+
+@pytest.mark.parametrize("audit", [False, True])
+def test_convergence_rejects_patience_counted_at_minimum(adaptive_inputs, tmp_path, audit):
+    convergence_config(adaptive_inputs)
+    output = tmp_path / "tampered-state"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "16", paused=True)
+    replace_confirmed_progress(output, status="early_stopped", stale_evaluations=1)
+    if audit:
+        result = execute_audit(adaptive_inputs, output, tmp_path / "audit", success=False)
+    else:
+        result = execute_adaptive(adaptive_inputs, output, "--resume", success=False)
+    assert "paciencia" in result.stderr
+
+
+def test_convergence_audit_accepts_confirmed_plateau(adaptive_inputs, tmp_path):
+    convergence_config(adaptive_inputs, minimum=0)
+    output = tmp_path / "selected-convergence"
+    execute_adaptive(adaptive_inputs, output)
+    execute_audit(adaptive_inputs, output, tmp_path / "audit-convergence")
+
+
+def test_convergence_resume_preserves_consumed_patience(adaptive_inputs, tmp_path):
+    convergence_config(adaptive_inputs, minimum=0, patience=2)
+    output = tmp_path / "consumed-patience"
+    execute_adaptive(adaptive_inputs, output, "--stop-after", "16", paused=True)
+    paused = read(output / "run.json")
+    assert paused["stale_evaluations"] == 1 and paused["transitions"] == 16
+    execute_adaptive(adaptive_inputs, output, "--resume")
+    result = read(output / "run.json")
+    assert result["stale_evaluations"] == 2 and result["transitions"] == 32
+    assert result["stopping_reason"] == "budget_exhausted"
+
+
+def heterogeneous_convergence_inputs(adaptive_inputs, tmp_path, patience):
+    from mars_titan.simulation.adaptation_scenarios import prepare_adaptation_scenarios
+
+    config, paths = adaptive_inputs
+    settings = dict(
+        schema_version=1,
+        families=["known_signal"],
+        generator=dict(assets=2, sessions=12, warmup_sessions=5, regime_sessions=4),
+        worlds=dict(train=1, validation=1, audit=1),
+        seed_base=191,
+        final_test_opened=False,
+    )
+    other = tmp_path / "heterogeneous"
+    catalog = prepare_adaptation_scenarios(settings, other)
+    paths["train"][0] = other / next(
+        row["path"] for row in catalog["records"] if row["split"] == "train"
+    )
+    convergence_config(adaptive_inputs, minimum=16, patience=patience)
+    return config, paths
+
+
+@pytest.mark.parametrize("pending_validation", [False, True])
+def test_convergence_recovers_heterogeneous_warmup_cursor(
+    adaptive_inputs, tmp_path, pending_validation
+):
+    import torch
+
+    inputs = heterogeneous_convergence_inputs(adaptive_inputs, tmp_path, patience=8)
+    output, full = tmp_path / "heterogeneous-resumed", tmp_path / "heterogeneous-full"
+    execute_adaptive(inputs, output, "--stop-after", "16", paused=True)
+    paused = read(output / "run.json")
+    assert paused["transitions"] == 31 and paused["evaluations"] == 2
+    assert paused["stale_evaluations"] == 1
+    if pending_validation:
+        replace_confirmed_progress(
+            output,
+            evaluations=1,
+            stale_evaluations=0,
+            evaluated_transitions=0,
+            evaluated_optimizer_steps=0,
+            evaluation_cursors=[0],
+        )
+    execute_adaptive(inputs, output, "--resume")
+    execute_adaptive(inputs, full)
+    resumed = read(output / "run.json")
+    assert resumed["evaluation_cursors"] == [0, 31, 32]
+    assert resumed["stale_evaluations"] == 2 and resumed["stopping_reason"] == "budget_exhausted"
+    first = torch.jit.load(str(latest(output) / "policy.pt"), map_location="cpu").state_dict()
+    second = torch.jit.load(str(latest(full) / "policy.pt"), map_location="cpu").state_dict()
+    assert all(torch.equal(first[key], second[key]) for key in first)
+    from mars_titan.simulation.adaptive_campaign import Campaign
+
+    campaign = object.__new__(Campaign)
+    campaign.validate_convergence_receipt(
+        output, resumed, read(inputs[0]), resumed["identity_sha256"]
+    )
+
+
+def test_convergence_admits_heterogeneous_plateau_and_audit(adaptive_inputs, tmp_path):
+    from mars_titan.simulation.adaptive_campaign import Campaign
+
+    inputs = heterogeneous_convergence_inputs(adaptive_inputs, tmp_path, patience=1)
+    output = tmp_path / "heterogeneous-plateau"
+    execute_adaptive(inputs, output)
+    report = read(output / "run.json")
+    assert report["transitions"] == 31 and report["stopping_reason"] == "early_stop"
+    campaign = object.__new__(Campaign)
+    campaign.validate_convergence_receipt(
+        output, report, read(inputs[0]), report["identity_sha256"]
+    )
+    execute_adaptive(inputs, output, "--resume")
+    execute_audit(inputs, output, tmp_path / "heterogeneous-audit")
+
+
+def test_convergence_rejects_unbounded_history_before_runtime(adaptive_inputs, tmp_path):
+    config = convergence_config(adaptive_inputs)
+    config["training"]["total_transitions"] = 65536
+    adaptive_inputs[0].write_text(json.dumps(config))
+    result = execute_adaptive(adaptive_inputs, tmp_path / "oversized-selector", success=False)
+    assert "4096" in result.stderr
+    assert not (tmp_path / "oversized-selector").exists()

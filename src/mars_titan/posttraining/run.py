@@ -103,7 +103,7 @@ def validate_case(case):
         or type(case["seed"]) is not int
         or not 0 <= case["seed"] < 2**32
         or type(case["epochs"]) is not int
-        or not 1 <= case["epochs"] <= 30
+        or not 1 <= case["epochs"] <= 50
         or type(case["auxiliary_samples"]) is not int
         or not 1 <= case["auxiliary_samples"] <= 4096
     ):
@@ -119,7 +119,9 @@ def validate_case(case):
             raise ValueError("El caso requiere parámetros finitos y positivos")
     if case["behavior_epsilon"] >= 1:
         raise ValueError("La mezcla exploratoria debe ser inferior a uno")
-    selection_policy(case)
+    policy = selection_policy(case)
+    if case["epochs"] > 30 and policy["version"] != 3:
+        raise ValueError("El presupuesto superior a 30 épocas requiere selección versión 3")
 
 
 def _statistics():
@@ -439,7 +441,7 @@ def run_case(
             torch.cuda.reset_peak_memory_stats(0)
         try:
             save()
-            if policy["version"] == 2 and state["baseline"] is None:
+            if policy["version"] >= 2 and state["baseline"] is None:
                 baseline = evaluate(
                     model,
                     dataset,
@@ -552,6 +554,11 @@ def run_case(
                     validation=dict(path=path.name, sha256=sha256(path), metrics=metrics)
                 ),
             )
+            if policy["version"] == 3:
+                report.update(
+                    stop_reason="validation_plateau" if stopped_early() else "budget_exhausted",
+                    last_epoch_improved=state["selection"]["last_improved"],
+                )
         except InterruptedError:
             # La evaluación seleccionada no debe mezclarse con el optimizador de la última época.
             if not evaluating_selected:

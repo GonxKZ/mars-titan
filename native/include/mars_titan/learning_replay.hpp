@@ -13,6 +13,7 @@ namespace mars_titan::learning {
 inline constexpr std::size_t learning_replay_batch = 64;
 inline constexpr std::size_t auxiliary_replay_capacity = 8192;
 inline constexpr std::size_t dqn_replay_capacity = 4096;
+inline constexpr std::size_t dqn_learning_warmup = 256;
 inline constexpr std::size_t auxiliary_replay_bytes = std::size_t{32} * 1024 * 1024;
 inline constexpr std::size_t dqn_replay_bytes = std::size_t{128} * 1024 * 1024;
 enum class ReplayMode : uint8_t { recent, reservoir };

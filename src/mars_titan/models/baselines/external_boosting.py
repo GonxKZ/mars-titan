@@ -14,6 +14,8 @@ from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import sha256
 
+from .boosting_selection import BoostingSelection, selection_callback, session_validation
+
 MAX_MODEL_BYTES = 128 * 1024**2
 
 
@@ -215,11 +217,15 @@ def fit_external_boosting(
     resume=None,
     checkpoint=None,
     checkpoint_interval=10,
+    selection=None,
+    validation_factory=None,
+    validation_rows=None,
+    stop_requested=None,
 ):
     """Ajustar todas las filas mediante ExtMemQuantileDMatrix, sin concatenación global."""
     for value, low, high in (
         (expected_rows, 1, 2**63 - 1),
-        (rounds, 1, 1000),
+        (rounds, 1, 2000 if selection is not None else 1000),
         (max_depth, 1, 12),
         (max_bin, 2, 512),
         (max_batch_bytes, 1, 512 * 1024**2),
@@ -237,8 +243,27 @@ def fit_external_boosting(
         or not 0 < learning_rate <= 1
         or (resume is not None and not isinstance(resume, ExternalBoostingModel))
         or (checkpoint is not None and not callable(checkpoint))
+        or (stop_requested is not None and not callable(stop_requested))
     ):
         raise ValueError("La factoría o la tasa de aprendizaje no son válidas")
+    selector = None
+    if selection is not None:
+        selector = BoostingSelection(
+            selection, rounds, state=resume.audit.get("selection") if resume else None
+        )
+        if (
+            not callable(validation_factory)
+            or type(validation_rows) is not int
+            or validation_rows < 1
+            or resume is not None
+            and (
+                resume.audit.get("selection") is None
+                or resume.audit.get("selection_policy") != selection
+            )
+        ):
+            raise ValueError("La selección necesita validación completa y un estado recuperable")
+    elif validation_factory is not None or validation_rows is not None:
+        raise ValueError("La validación durante el ajuste necesita una edición de selección")
     cache_directory = Path(cache_directory)
     safe_destination(cache_directory)
     if cache_directory.exists():
@@ -380,17 +405,37 @@ def fit_external_boosting(
                     or resume.audit.get("cupy") != cp.__version__
                     or resume.audit.get("rounds") != completed
                     or not 1 <= completed <= rounds
+                    or selector is not None
+                    and selector.state["completed_rounds"] != completed
                 ):
                     raise ValueError("La continuación cambió de datos, parámetros o presupuesto")
 
             features = iterator.features
+            recovery_callback = None
 
             def wrap(booster):
+                selection_audit = (
+                    dict(selection=dict(selector.state), selection_policy=dict(selector.policy))
+                    if selector
+                    else {}
+                )
+                if selector:
+                    selection_audit["replayed_rounds"] = (
+                        recovery_callback.replayed_rounds if recovery_callback else 0
+                    )
+                    selection_audit["replay_seconds"] = (
+                        recovery_callback.replay_seconds if recovery_callback else 0.0
+                    )
                 return ExternalBoostingModel(
                     booster,
                     expected_rows,
                     features,
-                    dict(audit, device=_device(booster), rounds=booster.num_boosted_rounds()),
+                    dict(
+                        audit,
+                        device=_device(booster),
+                        rounds=booster.num_boosted_rounds(),
+                        **selection_audit,
+                    ),
                     max_batch_bytes,
                 )
 
@@ -403,17 +448,36 @@ def fit_external_boosting(
                         checkpoint(wrap(model))
                     return False
 
+            callbacks = [SaveRound()]
+            if selector:
+                recovery_callback = selection_callback(
+                    xgb,
+                    selector,
+                    lambda booster: session_validation(
+                        wrap(booster), validation_factory, expected_rows=validation_rows
+                    ),
+                    lambda booster, state: checkpoint(wrap(booster)) if checkpoint else None,
+                    replay_model=resume.booster if resume is not None else None,
+                    stop_requested=stop_requested,
+                )
+                callbacks = [recovery_callback]
             booster = (
                 resume.booster
-                if completed == rounds
+                if completed == rounds or selector and selector.state["stop_reason"]
                 else xgb.train(
                     params,
                     data,
-                    num_boost_round=rounds - completed,
-                    xgb_model=resume.booster if resume is not None else None,
-                    callbacks=[SaveRound()],
+                    num_boost_round=rounds if selector else rounds - completed,
+                    xgb_model=resume.booster if resume is not None and not selector else None,
+                    callbacks=callbacks,
                 )
             )
+            if selector:
+                if booster.num_boosted_rounds() < completed:
+                    if not stop_requested or not stop_requested():
+                        raise ValueError("La reconstrucción no alcanza el prefijo confirmado")
+                    booster = resume.booster
+                booster = booster[: selector.state["selected_round"]]
             return wrap(booster)
     finally:
         if (
