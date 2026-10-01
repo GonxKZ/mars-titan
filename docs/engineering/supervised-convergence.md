@@ -27,4 +27,6 @@ El postentrenamiento conserva dos estados recientes y el mejor si es distinto. L
 
 Las pruebas del selector comprueban mejoras antes del mínimo, recuperación tras una caída inicial, reinicio de paciencia y selección de época 0. Las pruebas CPU del postentrenamiento comparan la ejecución continua y la recuperada, incluidos pesos, optimizador y RNG, con las ocho variantes. Las pruebas CUDA de referencias usan un corpus técnico de 18 filas y comprueban los motivos de parada y la igualdad de las predicciones tras recuperar.
 
+La integración CUDA de postentrenamiento comprueba `klpo_mc` y `neural_mae` sobre una vista temporal pequeña, con dos filas de entrenamiento y una de validación. Usa las puntuaciones reales y pausa después de un paso de AdamW. El estado recuperado y las predicciones coinciden con la ejecución continua, y la validación del checkpoint seleccionado coincide con el mejor error observado, incluida la época 0.
+
 Estas comprobaciones validan contratos con cargas pequeñas. No son resultados de la comparación científica ni demuestran una mejora predictiva de los nuevos presupuestos. El test final sigue cerrado.
