@@ -1,0 +1,339 @@
+{
+  "schema_version": 2,
+  "project": "MARS-TITAN",
+  "generated_at": "2026-10-01T14:49:53.012662Z",
+  "source_status": "available",
+  "poll_interval_seconds": 60,
+  "stale_after_seconds": 900,
+  "models": [
+    {
+      "id": "rnn",
+      "name": "RNN",
+      "kind": "baseline"
+    },
+    {
+      "id": "gru",
+      "name": "GRU",
+      "kind": "baseline"
+    },
+    {
+      "id": "lstm",
+      "name": "LSTM",
+      "kind": "baseline"
+    },
+    {
+      "id": "dlinear",
+      "name": "DLinear",
+      "kind": "baseline"
+    },
+    {
+      "id": "ridge",
+      "name": "Ridge",
+      "kind": "baseline"
+    },
+    {
+      "id": "xgboost",
+      "name": "XGBoost",
+      "kind": "baseline"
+    },
+    {
+      "id": "mlp",
+      "name": "MLP",
+      "kind": "baseline"
+    },
+    {
+      "id": "boosting",
+      "name": "Boosting",
+      "kind": "baseline"
+    },
+    {
+      "id": "zero",
+      "name": "Residual cero",
+      "kind": "baseline"
+    },
+    {
+      "id": "adaptation",
+      "name": "Adaptaci\u00f3n predictiva",
+      "kind": "baseline"
+    },
+    {
+      "id": "factor_world",
+      "name": "Generador de mundos sint\u00e9ticos",
+      "kind": "generator"
+    },
+    {
+      "id": "ppo",
+      "name": "PPO",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "double_dqn",
+      "name": "Double DQN",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_window",
+      "name": "PPO con ventana temporal",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_gru",
+      "name": "PPO con GRU",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_episodic",
+      "name": "PPO con memoria epis\u00f3dica",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_hmm",
+      "name": "PPO con HMM",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_episodic_hmm",
+      "name": "PPO con memoria epis\u00f3dica y HMM",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_recent_aux",
+      "name": "PPO con consolidaci\u00f3n reciente",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "ppo_replay_aux",
+      "name": "PPO con consolidaci\u00f3n hist\u00f3rica",
+      "kind": "reinforcement"
+    },
+    {
+      "id": "simulator",
+      "name": "Simulador financiero",
+      "kind": "simulation"
+    },
+    {
+      "id": "cash",
+      "name": "Mantener efectivo",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "hold_initial",
+      "name": "Conservar posiciones iniciales",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "rebalance_50",
+      "name": "Reequilibrar al 50 %",
+      "kind": "financial_baseline"
+    },
+    {
+      "id": "financial_comparison",
+      "name": "Resumen de comparaci\u00f3n financiera",
+      "kind": "summary"
+    },
+    {
+      "id": "adaptive_comparison",
+      "name": "Campa\u00f1a de adaptaci\u00f3n RL",
+      "kind": "summary"
+    },
+    {
+      "id": "unknown",
+      "name": "Modelo no identificado",
+      "kind": "baseline"
+    }
+  ],
+  "notes": [
+    "El test final permanece sellado. MARS-TITAN no est\u00e1 implementado.",
+    "Las curvas sin fechas originales utilizan \u00e9pocas. La observaci\u00f3n del proceso no acredita nuevo progreso.",
+    "El historial conserva comprobaciones t\u00e9cnicas y campa\u00f1as con poblaciones distintas. Los grupos de comparaci\u00f3n dependen de sus fuentes.",
+    "Los entornos de adaptaci\u00f3n RL son escenarios t\u00e9cnicos con 3 conceptos macro simulados. No equivalen al corpus real con 140 indicadores."
+  ],
+  "runs": [
+    {
+      "run_id": "tabular-strict140-us-fold-000-c9b63209e9a198aea1d8",
+      "attempt_id": "attempt-0001",
+      "model_id": "ridge",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": "2026-10-01T14:16:24.344144Z",
+      "updated_at": "2026-10-01T14:17:16.026519Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "f2e72253db47186b7f71bb23e86074bd27fd99ae2cdb49fc8397b7eef44a9bd9",
+      "metrics": {
+        "mae": 0.05045119329684957,
+        "mse": 0.0034956804244778527,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": 102.62158203125,
+        "ram_peak_mib": 1946.859375,
+        "elapsed_seconds": 60.843304180016275,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-strict140-us-fold-000",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "4cc490ab3374c83047a3b84eafa639ea6712afdd262df640d9ca78f258da561e",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_timestamp",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 1946.859375
+      }
+    },
+    {
+      "run_id": "tabular-strict140-us-fold-000-f00e3382c47c585a4fbf",
+      "attempt_id": "attempt-0001",
+      "model_id": "xgboost",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T14:45:50.212802Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "f2e72253db47186b7f71bb23e86074bd27fd99ae2cdb49fc8397b7eef44a9bd9",
+      "metrics": {
+        "mae": 0.01612656717989984,
+        "mse": 0.0006041592943591462,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 3248.2421875,
+        "elapsed_seconds": 210.6624477590085,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-strict140-us-fold-000",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "963af9476a1bae8ebc17901f1ba1b429987b0148616985d6f191db708271bb5c",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 3248.2421875
+      }
+    },
+    {
+      "run_id": "tabular-strict140-us-fold-000-fed8ea5795f0e334778c",
+      "attempt_id": "attempt-0001",
+      "model_id": "xgboost",
+      "activity": "initial_training",
+      "variant_id": null,
+      "status": "completed",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-01T14:49:53.012662Z",
+      "heartbeat_at": null,
+      "completed_steps": null,
+      "total_steps": null,
+      "epoch": null,
+      "max_epochs": null,
+      "seed": null,
+      "fold": "unidentified",
+      "comparison_group": "f2e72253db47186b7f71bb23e86074bd27fd99ae2cdb49fc8397b7eef44a9bd9",
+      "metrics": {
+        "mae": 0.01612728261720148,
+        "mse": 0.0006370843118861842,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": 3248.2421875,
+        "elapsed_seconds": 233.23338757903548,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": null,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "tabular-strict140-us-fold-000",
+        "domain": "real",
+        "method": "initial_training",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": null,
+        "parent_model": null,
+        "configuration_sha256": null,
+        "source_sha256": "a679a17d510dfe1666c71da59bf0569168fcf2bca5591f2e60981d9924ca30dd",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": null,
+        "error_type": null,
+        "ram_peak_scope": "process_lifetime",
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": 3248.2421875
+      }
+    }
+  ]
+}
