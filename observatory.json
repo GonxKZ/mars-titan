@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-01T21:32:01.139335Z",
+  "generated_at": "2026-10-01T21:34:01.137056Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -411,11 +411,11 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 25,
+        "completed": 26,
         "running": 1,
-        "not_started": 14
+        "not_started": 13
       },
-      "registered_runs": 26
+      "registered_runs": 27
     },
     {
       "id": "tabular-convergence-20261001-fold-000",
@@ -711,23 +711,23 @@
   ],
   "runs": [
     {
-      "run_id": "neural-convergence-20261001-fold-000-14002d36c5ab62b2345e",
+      "run_id": "neural-convergence-20261001-fold-000-e98f834d4b42bf4cae59",
       "attempt_id": "legacy",
       "model_id": "gru",
-      "activity": "supervised_continuation",
-      "variant_id": "36566fb259b0795c",
+      "activity": "initial_training",
+      "variant_id": "2c99772e99a85028",
       "status": "running",
       "phase": "validation",
-      "started_at": "2026-10-01T21:31:58.280493Z",
-      "updated_at": "2026-10-01T21:31:58.280561Z",
-      "heartbeat_at": "2026-10-01T21:32:00.819815Z",
-      "completed_steps": 0,
+      "started_at": null,
+      "updated_at": null,
+      "heartbeat_at": "2026-10-01T21:34:00.818781Z",
+      "completed_steps": null,
       "total_steps": null,
       "epoch": null,
-      "max_epochs": 5,
-      "seed": 42,
+      "max_epochs": 100,
+      "seed": 43,
       "fold": "US",
-      "comparison_group": "ad83d383e4a12fb56d48067bd60dd45c495a91ee218c93bc165f27f3093407b8",
+      "comparison_group": null,
       "metrics": {
         "mae": null,
         "mse": null,
@@ -745,7 +745,7 @@
       },
       "history": [],
       "checkpoint": {
-        "step": 0,
+        "step": null,
         "saved_at": null,
         "resumable": null
       },
@@ -754,18 +754,18 @@
       "metadata": {
         "campaign": "neural-convergence-20261001-fold-000",
         "domain": "real",
-        "method": "supervised_continuation",
+        "method": "initial_training",
         "parent_frozen": null,
         "currency": null,
         "condition": null,
-        "parent_model": "gru",
-        "configuration_sha256": "36566fb259b0795c119beb9c95fa130f250d5667794ee67bc2e0f3dcdea0a9d2",
-        "source_sha256": "c435ba1fd79218a77a891037d0d8d4f6abad9e65ca643bcba82b4899a53125b3",
+        "parent_model": null,
+        "configuration_sha256": "2c99772e99a8502802050d0c5195ecdd8c2e832d7ecc16816475a2e4d51ad264",
+        "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
-        "train_rows": 121190,
-        "validation_rows": 39462,
-        "parent": "19047b004870c74818edb19ef5487a3510186cd7b6e5dcf126f976e3003ada20",
+        "train_rows": null,
+        "validation_rows": null,
+        "parent": null,
         "error_type": null,
         "ram_peak_scope": null,
         "executable_peak_rss_mib": null,
@@ -5145,7 +5145,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 1296,
+    "total_runs": 1297,
     "page_size": 64,
     "pages": [
       "pages/8e91f90c160594b959665069d89c92c3246b7b0689c74f9c16d4876e1ad7db2f.json",
@@ -5156,18 +5156,18 @@
       "pages/5b16cae6bd490e92ad1f08e91c803bc9f5fce7db74d54b39effed6d494852c33.json",
       "pages/29598926eb070f3b50ed0ba1d56bd9f1f738ccfebdcc151be84fe87f22a599f3.json",
       "pages/f9030348a47a7b821bf313c443820df3dd62407a7ea5cc1f22228ac41a3bba51.json",
-      "pages/6a661fc532ebed47baf23923eb404e09b91916aab2318c3fecfe33d289008782.json",
-      "pages/7162e58d1cad5cc682f48365a8c2ab92e2a5b6bcccec75ac15b633fdd1a2f28a.json",
-      "pages/65d34e0409f047dcd7ddcb2ac372e1bce0ad0807e15d7a36360a5b49d3a823d9.json",
-      "pages/aa2e515ef598d0e6d4a6a6988be35b8b5d5fc4112a9184977c35a1aab9386512.json",
-      "pages/18a6af72d97f1ae19bb97cb73c3a20149b05b708751d6f84f9ed650936042ed0.json",
-      "pages/bc5fabb79f68ed3a83369fb073e8819051c99617e7d69caacfc132b4adc89083.json",
-      "pages/8862b20f667c63cc4d0305a91c687d1f6319e71826f641352cb3bbebd4f3c37a.json",
-      "pages/6a47db3394c727e33ced7cbf7f224e5b13259673d0bfe970824bb3ba10147322.json",
-      "pages/f42a85deda5704d7d344075f80895d96a18a0de5ea6ea4e6101faee7c7e3188e.json",
-      "pages/4705ecf4066f23fd4c98589328177b25608d78f4fbd8f92e0f12947a0f15f843.json",
-      "pages/63bb06f34f469d09148233b7fe9adcc36a42daa2c8292f932ae671ab2290fdf8.json",
-      "pages/730fb44ea11bc0d10bff6376e2121979c9e379f23df9725ef18c028509d583b4.json"
+      "pages/04d3f6f0300f7e8a4fcb7bf55819dff36a989cf9572a22abec6fb59089bf5c78.json",
+      "pages/88d3c87c64ce02f9a0d9a4e42c70144dcfe63c5aeda15dd601056c9a21b15ab7.json",
+      "pages/44d56645c228a94b5d144e02c2c5b8d929319381f84b6dcf51140a20643cc888.json",
+      "pages/e2e9ea4770051318ab127e2c61f732b6c72b294e08a6878de75dd00287fe5521.json",
+      "pages/5c1e034a2ec949370d9f898070464c2af42b5bd56e36cd84f3251018612c0dcc.json",
+      "pages/10a14d6bce2f05eb0caae413cb2f8145bf3a7af962d0e0ac15aff9975e2509f7.json",
+      "pages/80f4dd5bcdd06a0c51b31328c50145bde2d3372d85ec91b0bd1dab67229f51d9.json",
+      "pages/5d985690dcfcc7f72873a471b7ff5cfa16565c841a1b98220ad789bcd5564e43.json",
+      "pages/629c26899fb83daab55c24db485b6ebab0d8a551c3e8cc0425dc7992972568f0.json",
+      "pages/d7be9531e6d511a2ce9ed0381616f0fbdeea17a94b03b055c43193c9af37bb63.json",
+      "pages/6adf3dbbf802179f55b7e2f66cb36f6aadedb8f14f98cb82eb3e434f6ea28752.json",
+      "pages/7e657bfd2ed2a35acf67f0ff767f70997a1ddb03e51c340d7acc430b0b891a22.json"
     ]
   }
 }
