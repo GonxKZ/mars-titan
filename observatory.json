@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-01T14:45:56.847268Z",
+  "generated_at": "2026-10-01T14:49:56.821083Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -298,11 +298,11 @@
         "adaptation-original-us"
       ],
       "counts": {
-        "completed": 13,
+        "completed": 14,
         "running": 1,
-        "not_started": 3
+        "not_started": 2
       },
-      "registered_runs": 14
+      "registered_runs": 15
     },
     {
       "id": "posttraining-strict140-us-fold-000",
@@ -548,7 +548,7 @@
   ],
   "runs": [
     {
-      "run_id": "tabular-strict140-us-fold-000-fed8ea5795f0e334778c",
+      "run_id": "tabular-strict140-us-fold-000-1bc3b4eaa9aaf38226d3",
       "attempt_id": "attempt-0001",
       "model_id": "xgboost",
       "activity": "initial_training",
@@ -557,7 +557,7 @@
       "phase": "validation",
       "started_at": null,
       "updated_at": null,
-      "heartbeat_at": "2026-10-01T14:45:56.536026Z",
+      "heartbeat_at": "2026-10-01T14:49:56.444005Z",
       "completed_steps": null,
       "total_steps": null,
       "epoch": null,
@@ -6470,7 +6470,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 1166,
+    "total_runs": 1167,
     "page_size": 64,
     "pages": [
       "pages/a507298686904e67dbaaac774bde1c439149434c6f5175c9fa1101854f6039d1.json",
@@ -6490,7 +6490,7 @@
       "pages/f4a5e9d4627cc54ebbdc803a4cd44526c043d295bf5c159d1923c53bb86b8f58.json",
       "pages/223ca62a617e2f2c16ecb4b10243cb12bd735dbfe054ab3bd9d83628f90c6f63.json",
       "pages/f3084093b31a993d13cee3d1e1d7802088add04a3d2527c9bdd65668d85e2cbe.json",
-      "pages/d9f1a3ab92b93805f1fe8110b68d692fbf4d6c608d2f8219e621cddb87bc2000.json"
+      "pages/92eb6fcddd49dbd9bdfe2a1a4aa6a06037f8df2d9ef462bcfd351e4e646cd627.json"
     ]
   }
 }
