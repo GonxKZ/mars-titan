@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "market": "US",
+  "train_start": "2009-01-01",
+  "first_validation_start": "2013-01-01",
+  "validation_months": 6,
+  "calibration_months": 3,
+  "evaluation_months": 3,
+  "step_months": 3,
+  "minimum_train_months": 36,
+  "gap_sessions": 1,
+  "final_test_start": "2024-01-01",
+  "final_test_end": "2025-01-01",
+  "primary_metric": "session_mae",
+  "seeds": [
+    42,
+    43,
+    44
+  ]
+}

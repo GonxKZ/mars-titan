@@ -1,0 +1,11 @@
+[Unit]
+Description=Comprobar la campaña MARS-TITAN cada cinco minutos
+
+[Timer]
+OnStartupSec=1min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=mars-titan-campaign-health@%i.service
+
+[Install]
+WantedBy=timers.target

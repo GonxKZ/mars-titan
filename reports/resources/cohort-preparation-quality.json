@@ -1,0 +1,373 @@
+{
+  "full_suite": {
+    "passed": 1086,
+    "skipped": 0,
+    "seconds": 117.16,
+    "instrumentation": "coverage.py branch"
+  },
+  "targeted_tests": 26,
+  "modules": [
+    {
+      "path": "src/mars_titan/data/cohort_news.py",
+      "sha256": "7a690c2b5ea4f49575bc6972044445c95c25b31bd80dcd6e19a0324679734bdc",
+      "coverage": {
+        "covered_lines": 150,
+        "num_statements": 161,
+        "percent_covered": 89.7872340425532,
+        "percent_covered_display": "90",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.16770186335404,
+        "percent_statements_covered_display": "93",
+        "num_branches": 74,
+        "num_partial_branches": 13,
+        "covered_branches": 61,
+        "missing_branches": 13,
+        "percent_branches_covered": 82.43243243243244,
+        "percent_branches_covered_display": "82"
+      },
+      "functions": [
+        {
+          "name": "_normalise",
+          "complexity": 22,
+          "statement_coverage_fraction": 0.8717948717948718,
+          "crap": 23.019909303932973
+        },
+        {
+          "name": "_tables",
+          "complexity": 9,
+          "statement_coverage_fraction": 1.0,
+          "crap": 9.0
+        },
+        {
+          "name": "write_cohort_news",
+          "complexity": 58,
+          "statement_coverage_fraction": 0.926829268292683,
+          "crap": 59.317856676484666
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/cohort_preparation.py",
+      "sha256": "8aa4d9f667d9934e6e8731247edea94b4839754b1c58ca9f6e01d98866327e3a",
+      "coverage": {
+        "covered_lines": 76,
+        "num_statements": 82,
+        "percent_covered": 88.98305084745763,
+        "percent_covered_display": "89",
+        "missing_lines": 6,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.6829268292683,
+        "percent_statements_covered_display": "93",
+        "num_branches": 36,
+        "num_partial_branches": 7,
+        "covered_branches": 29,
+        "missing_branches": 7,
+        "percent_branches_covered": 80.55555555555556,
+        "percent_branches_covered_display": "81"
+      },
+      "functions": [
+        {
+          "name": "prepare_cohort_asset",
+          "complexity": 54,
+          "statement_coverage_fraction": 0.90625,
+          "crap": 56.4027099609375
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/corpus_preparation.py",
+      "sha256": "e71c8f2126bd7eddc65bd3042878360bfa4c483dce895974b6754e2f97117f8d",
+      "coverage": {
+        "covered_lines": 95,
+        "num_statements": 120,
+        "percent_covered": 77.38095238095238,
+        "percent_covered_display": "77",
+        "missing_lines": 25,
+        "excluded_lines": 0,
+        "percent_statements_covered": 79.16666666666667,
+        "percent_statements_covered_display": "79",
+        "num_branches": 48,
+        "num_partial_branches": 13,
+        "covered_branches": 35,
+        "missing_branches": 13,
+        "percent_branches_covered": 72.91666666666667,
+        "percent_branches_covered_display": "73"
+      },
+      "functions": [
+        {
+          "name": "_snapshot",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.7931034482758621,
+          "crap": 10.885645167903563
+        },
+        {
+          "name": "prepare_cohort",
+          "complexity": 31,
+          "statement_coverage_fraction": 0.8928571428571429,
+          "crap": 32.18198797376093
+        },
+        {
+          "name": "main",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.0,
+          "crap": 30.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/corpus_catalog.py",
+      "sha256": "0d1aa77f1a85b49ebed95c2e617b10c06d3a6c0ce2cd96764cd91eda6a73352b",
+      "coverage": {
+        "covered_lines": 244,
+        "num_statements": 261,
+        "percent_covered": 91.92200557103064,
+        "percent_covered_display": "92",
+        "missing_lines": 17,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.48659003831418,
+        "percent_statements_covered_display": "93",
+        "num_branches": 98,
+        "num_partial_branches": 12,
+        "covered_branches": 86,
+        "missing_branches": 12,
+        "percent_branches_covered": 87.75510204081633,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "_source_path",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_readonly",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "corpus_candidates",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.8918918918918919,
+          "crap": 21.557202929737628
+        },
+        {
+          "name": "_catalog",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 23.041666666666664
+        },
+        {
+          "name": "_initialize",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 9.318851144481703
+        },
+        {
+          "name": "_unique_object",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_fields",
+          "complexity": 31,
+          "statement_coverage_fraction": 0.9347826086956522,
+          "crap": 31.26657146379551
+        },
+        {
+          "name": "_read_source",
+          "complexity": 10,
+          "statement_coverage_fraction": 1.0,
+          "crap": 10.0
+        },
+        {
+          "name": "index_news",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.9767441860465116,
+          "crap": 9.001018778220786
+        },
+        {
+          "name": "corpus_status",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.95,
+          "crap": 6.0045
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/fundamentals.py",
+      "sha256": "38c54c5fd66b042041b4ba09bbe71fa4abcd26b8425eb6d778f9e94634876906",
+      "coverage": {
+        "covered_lines": 81,
+        "num_statements": 86,
+        "percent_covered": 91.7910447761194,
+        "percent_covered_display": "92",
+        "missing_lines": 5,
+        "excluded_lines": 0,
+        "percent_statements_covered": 94.18604651162791,
+        "percent_statements_covered_display": "94",
+        "num_branches": 48,
+        "num_partial_branches": 6,
+        "covered_branches": 42,
+        "missing_branches": 6,
+        "percent_branches_covered": 87.5,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "_us_facts",
+          "complexity": 12,
+          "statement_coverage_fraction": 1.0,
+          "crap": 12.0
+        },
+        {
+          "name": "read_fundamentals",
+          "complexity": 24,
+          "statement_coverage_fraction": 0.8958333333333334,
+          "crap": 24.651041666666664
+        },
+        {
+          "name": "snapshot",
+          "complexity": 10,
+          "statement_coverage_fraction": 1.0,
+          "crap": 10.0
+        }
+      ]
+    }
+  ],
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "directed_mutations": {
+    "executed": 4,
+    "detected": 4,
+    "complete_mutation_score": false,
+    "cases": [
+      {
+        "mutation": "claim",
+        "detected": true
+      },
+      {
+        "mutation": "rejection",
+        "detected": true
+      },
+      {
+        "mutation": "cutoff",
+        "detected": true
+      },
+      {
+        "mutation": "duplicates",
+        "detected": true
+      }
+    ]
+  },
+  "storage_measurements": [
+    {
+      "kind": "synthetic_editorial_storage_benchmark",
+      "rows": 5000,
+      "input_bytes": 11617780,
+      "seconds": 0.40322690398897976,
+      "process_peak_rss_bytes": 164950016,
+      "output_bytes": 727164,
+      "counts": {
+        "records": 5000,
+        "accepted": 5000,
+        "excluded": 0
+      },
+      "machine": "AMD Ryzen 9 8945HS, 32 GB RAM",
+      "gpu_used": false,
+      "concurrent_work": "Pruebas locales y medici\u00f3n de cobertura"
+    },
+    {
+      "kind": "synthetic_editorial_storage_benchmark",
+      "rows": 50000,
+      "input_bytes": 116277780,
+      "seconds": 4.518148874005419,
+      "process_peak_rss_bytes": 170840064,
+      "output_bytes": 7251181,
+      "counts": {
+        "records": 50000,
+        "accepted": 50000,
+        "excluded": 0
+      },
+      "machine": "AMD Ryzen 9 8945HS, 32 GB RAM",
+      "gpu_used": false,
+      "concurrent_work": "Pruebas locales y medici\u00f3n de cobertura"
+    }
+  ],
+  "real_probe": {
+    "status": "paused",
+    "candidates": 4784,
+    "assets": [
+      {
+        "market": "US",
+        "symbol": "A",
+        "state": "missing_modalities",
+        "missing": [
+          "fundamentals"
+        ]
+      },
+      {
+        "market": "US",
+        "symbol": "AA",
+        "state": "prepared",
+        "counts": {
+          "prices": 6031,
+          "news": 1603,
+          "fundamentals": 989
+        },
+        "reused": false,
+        "manifest_sha256": "6af5fdaedc024fd0b458035867a06bf3fd4ba4c80b122135a963a5bdbe795b85"
+      },
+      {
+        "market": "US",
+        "symbol": "AAAU",
+        "state": "prepared",
+        "counts": {
+          "prices": 1353,
+          "news": 7,
+          "fundamentals": 114
+        },
+        "reused": false,
+        "manifest_sha256": "6ca77322b628797c4f3384559c46ea6e10691f066ab7ed6852ce9c6750dbe903"
+      },
+      {
+        "market": "US",
+        "symbol": "AACG",
+        "state": "prepared",
+        "counts": {
+          "prices": 3984,
+          "news": 49,
+          "fundamentals": 0
+        },
+        "reused": false,
+        "manifest_sha256": "9c9d4ae82cb7ee1f7b25ccebeb5d1ad036cb975a7e7dbc64d60dde5283cccae6"
+      },
+      {
+        "market": "US",
+        "symbol": "AADR",
+        "state": "missing_modalities",
+        "missing": [
+          "fundamentals"
+        ]
+      }
+    ],
+    "measured_code_sha256": "1e12bc376e08d02afd62eabdfe58127c9bce4d7ee2aee3e778917ec3101c59c5",
+    "training_ready": false
+  },
+  "review_findings_fixed": [
+    "second_read_integrity",
+    "receipt_cohort_integrity",
+    "missing_source_isolation",
+    "invalid_fact_shape"
+  ],
+  "limits": [
+    "Las entradas de la medici\u00f3n de memoria son sint\u00e9ticas y repetitivas.",
+    "La medici\u00f3n excluye CUDA, codificaci\u00f3n multimodal y entrenamiento.",
+    "El ensayo real de cinco candidatos precede a las correcciones finales y se conserva separado.",
+    "No acredita admisi\u00f3n cient\u00edfica del universo completo ni recuperaci\u00f3n de publicaciones chinas."
+  ]
+}

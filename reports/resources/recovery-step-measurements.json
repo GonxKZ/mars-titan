@@ -1,0 +1,629 @@
+{
+  "hardware": "AMD Ryzen 9 8945HS",
+  "kind": "Sobrecoste de atomicidad, no optimización de rendimiento.",
+  "before": {
+    "label": "before",
+    "python": "3.12.14",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "warmup_episodes": 1,
+    "repetitions": 7,
+    "steps_per_episode": 32,
+    "concurrent_workloads": "Otras comprobaciones del mismo proyecto pueden coincidir.",
+    "energy": null,
+    "monetary_cost": null,
+    "cpu_gpu_transfer_bytes": 0,
+    "sources": {
+      "environment.py": "6cd86d1c0d34c38205ad4cecd5f59426eec748f0aeb9386aebd23301c51faeb6",
+      "portfolio.py": "bc2c45d61f02ae047615eba81ffbaf9d1bbccf1c7aed2e328d32f434ccbba9b1",
+      "market.py": "cc46e1889558eb5439436d5b8c7097263c40400d20a82db1c37f66159217f535",
+      "native_portfolio.py": "e0d1bd9c527e716b4d0bf800cf02a1154761c472b6f2f8a0f0b8e3900a731b2d"
+    },
+    "workloads": [
+      {
+        "assets": 4,
+        "backend": "python",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.003710891,
+          0.004434371,
+          0.003711163,
+          0.003580266,
+          0.003654656,
+          0.003624239,
+          0.003584734
+        ],
+        "median_episode_seconds": 0.003654656,
+        "steps_per_second": 8755.954048753152,
+        "latency_ms_p50_p95_p99": [
+          0.1139395,
+          0.1254347,
+          0.2880881600000017
+        ],
+        "native_library_sha256": null
+      },
+      {
+        "assets": 4,
+        "backend": "native",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.002414266,
+          0.002380302,
+          0.002864642,
+          0.002483115,
+          0.002367318,
+          0.002414957,
+          0.002456986
+        ],
+        "median_episode_seconds": 0.002414957,
+        "steps_per_second": 13250.75353308568,
+        "latency_ms_p50_p95_p99": [
+          0.074285,
+          0.09395785,
+          0.14898141
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      {
+        "assets": 128,
+        "backend": "python",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.070846516,
+          0.070854982,
+          0.070926567,
+          0.070754864,
+          0.070792906,
+          0.071011847,
+          0.070975509
+        ],
+        "median_episode_seconds": 0.070854982,
+        "steps_per_second": 451.6266760183497,
+        "latency_ms_p50_p95_p99": [
+          2.2909895,
+          2.3612055,
+          2.38804671
+        ],
+        "native_library_sha256": null
+      },
+      {
+        "assets": 128,
+        "backend": "native",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.013543003,
+          0.013373604,
+          0.01327002,
+          0.013596854,
+          0.013278175,
+          0.013646457,
+          0.013459245
+        ],
+        "median_episode_seconds": 0.013459245,
+        "steps_per_second": 2377.54792337906,
+        "latency_ms_p50_p95_p99": [
+          0.4914385,
+          0.53884,
+          0.54686647
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      {
+        "assets": 512,
+        "backend": "python",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.280860932,
+          0.280944229,
+          0.2802632,
+          0.340269892,
+          0.282033826,
+          0.282941662,
+          0.33949185
+        ],
+        "median_episode_seconds": 0.282033826,
+        "steps_per_second": 113.46156754970237,
+        "latency_ms_p50_p95_p99": [
+          9.0783055,
+          9.37125975,
+          9.54013287
+        ],
+        "native_library_sha256": null
+      },
+      {
+        "assets": 512,
+        "backend": "native",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.047267289,
+          0.047042617,
+          0.047247452,
+          0.047369171,
+          0.047303026,
+          0.047108892,
+          0.04715043
+        ],
+        "median_episode_seconds": 0.047247452,
+        "steps_per_second": 677.285200480229,
+        "latency_ms_p50_p95_p99": [
+          1.747273,
+          1.9220357,
+          1.94727958
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      }
+    ],
+    "measurement_seconds": 3.6919266789991525,
+    "process_lifetime_peak_rss_bytes": 527396864,
+    "cuda_initialized": false
+  },
+  "after": {
+    "label": "after",
+    "python": "3.12.14",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "warmup_episodes": 1,
+    "repetitions": 7,
+    "steps_per_episode": 32,
+    "concurrent_workloads": "Otras comprobaciones del mismo proyecto pueden coincidir.",
+    "energy": null,
+    "monetary_cost": null,
+    "cpu_gpu_transfer_bytes": 0,
+    "sources": {
+      "environment.py": "4340f967698e78f3169ec53e4610b2e1664fec01421a32d14524930c76543f2d",
+      "portfolio.py": "bc2c45d61f02ae047615eba81ffbaf9d1bbccf1c7aed2e328d32f434ccbba9b1",
+      "market.py": "efb4ad2516bc6b7394b373b68b5f49593364d70291a6864ef6d194e1ed6e44f4",
+      "native_portfolio.py": "e0d1bd9c527e716b4d0bf800cf02a1154761c472b6f2f8a0f0b8e3900a731b2d"
+    },
+    "workloads": [
+      {
+        "assets": 4,
+        "backend": "python",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.004025964,
+          0.003889377,
+          0.003772428,
+          0.003753712,
+          0.003949029,
+          0.003793227,
+          0.003954169
+        ],
+        "median_episode_seconds": 0.003889377,
+        "steps_per_second": 8227.538754921417,
+        "latency_ms_p50_p95_p99": [
+          0.118598,
+          0.14957235,
+          0.18277511000000007
+        ],
+        "native_library_sha256": null
+      },
+      {
+        "assets": 4,
+        "backend": "native",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.003169565,
+          0.002608411,
+          0.003088302,
+          0.002572853,
+          0.002569949,
+          0.002492052,
+          0.002485309
+        ],
+        "median_episode_seconds": 0.002572853,
+        "steps_per_second": 12437.554730099233,
+        "latency_ms_p50_p95_p99": [
+          0.07948,
+          0.11870894999999998,
+          0.18618795000000002
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      {
+        "assets": 128,
+        "backend": "python",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.07414959,
+          0.073570502,
+          0.073636966,
+          0.073328827,
+          0.072401706,
+          0.072326594,
+          0.073449684
+        ],
+        "median_episode_seconds": 0.073449684,
+        "steps_per_second": 435.672398536119,
+        "latency_ms_p50_p95_p99": [
+          2.353707,
+          2.4522947000000004,
+          2.48418346
+        ],
+        "native_library_sha256": null
+      },
+      {
+        "assets": 128,
+        "backend": "native",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.013846464,
+          0.013915895,
+          0.014660624,
+          0.013701502,
+          0.014014439,
+          0.013883284,
+          0.013814855
+        ],
+        "median_episode_seconds": 0.013883284,
+        "steps_per_second": 2304.9301591755957,
+        "latency_ms_p50_p95_p99": [
+          0.517858,
+          0.5554182,
+          0.6117825600000004
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      {
+        "assets": 512,
+        "backend": "python",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.284063297,
+          0.284246673,
+          0.341564549,
+          0.283810914,
+          0.285214551,
+          0.288227411,
+          0.344127113
+        ],
+        "median_episode_seconds": 0.285214551,
+        "steps_per_second": 112.1962392444697,
+        "latency_ms_p50_p95_p99": [
+          9.183534,
+          9.5933585,
+          9.792799070000001
+        ],
+        "native_library_sha256": null
+      },
+      {
+        "assets": 512,
+        "backend": "native",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.048383601,
+          0.047975195,
+          0.048494049,
+          0.048087655,
+          0.048233129,
+          0.048230884,
+          0.049506681
+        ],
+        "median_episode_seconds": 0.048233129,
+        "steps_per_second": 663.4444139006615,
+        "latency_ms_p50_p95_p99": [
+          1.7887505,
+          1.99998955,
+          2.0396472
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      }
+    ],
+    "measurement_seconds": 3.745393338998838,
+    "process_lifetime_peak_rss_bytes": 527077376,
+    "cuda_initialized": false
+  },
+  "before_process": [
+    "process_seconds=5.03",
+    "peak_rss_kib=633672"
+  ],
+  "after_process": [
+    "process_seconds=5.12",
+    "peak_rss_kib=632444"
+  ],
+  "comparison": [
+    {
+      "assets": 4,
+      "backend": "python",
+      "before": {
+        "assets": 4,
+        "backend": "python",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.003710891,
+          0.004434371,
+          0.003711163,
+          0.003580266,
+          0.003654656,
+          0.003624239,
+          0.003584734
+        ],
+        "median_episode_seconds": 0.003654656,
+        "steps_per_second": 8755.954048753152,
+        "latency_ms_p50_p95_p99": [
+          0.1139395,
+          0.1254347,
+          0.2880881600000017
+        ],
+        "native_library_sha256": null
+      },
+      "after": {
+        "assets": 4,
+        "backend": "python",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.004025964,
+          0.003889377,
+          0.003772428,
+          0.003753712,
+          0.003949029,
+          0.003793227,
+          0.003954169
+        ],
+        "median_episode_seconds": 0.003889377,
+        "steps_per_second": 8227.538754921417,
+        "latency_ms_p50_p95_p99": [
+          0.118598,
+          0.14957235,
+          0.18277511000000007
+        ],
+        "native_library_sha256": null
+      },
+      "median_episode_change_percent": 6.422519657116843
+    },
+    {
+      "assets": 4,
+      "backend": "native",
+      "before": {
+        "assets": 4,
+        "backend": "native",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.002414266,
+          0.002380302,
+          0.002864642,
+          0.002483115,
+          0.002367318,
+          0.002414957,
+          0.002456986
+        ],
+        "median_episode_seconds": 0.002414957,
+        "steps_per_second": 13250.75353308568,
+        "latency_ms_p50_p95_p99": [
+          0.074285,
+          0.09395785,
+          0.14898141
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      "after": {
+        "assets": 4,
+        "backend": "native",
+        "tape_bytes": 7128,
+        "episode_seconds": [
+          0.003169565,
+          0.002608411,
+          0.003088302,
+          0.002572853,
+          0.002569949,
+          0.002492052,
+          0.002485309
+        ],
+        "median_episode_seconds": 0.002572853,
+        "steps_per_second": 12437.554730099233,
+        "latency_ms_p50_p95_p99": [
+          0.07948,
+          0.11870894999999998,
+          0.18618795000000002
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      "median_episode_change_percent": 6.538253062062793
+    },
+    {
+      "assets": 128,
+      "backend": "python",
+      "before": {
+        "assets": 128,
+        "backend": "python",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.070846516,
+          0.070854982,
+          0.070926567,
+          0.070754864,
+          0.070792906,
+          0.071011847,
+          0.070975509
+        ],
+        "median_episode_seconds": 0.070854982,
+        "steps_per_second": 451.6266760183497,
+        "latency_ms_p50_p95_p99": [
+          2.2909895,
+          2.3612055,
+          2.38804671
+        ],
+        "native_library_sha256": null
+      },
+      "after": {
+        "assets": 128,
+        "backend": "python",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.07414959,
+          0.073570502,
+          0.073636966,
+          0.073328827,
+          0.072401706,
+          0.072326594,
+          0.073449684
+        ],
+        "median_episode_seconds": 0.073449684,
+        "steps_per_second": 435.672398536119,
+        "latency_ms_p50_p95_p99": [
+          2.353707,
+          2.4522947000000004,
+          2.48418346
+        ],
+        "native_library_sha256": null
+      },
+      "median_episode_change_percent": 3.661989498494278
+    },
+    {
+      "assets": 128,
+      "backend": "native",
+      "before": {
+        "assets": 128,
+        "backend": "native",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.013543003,
+          0.013373604,
+          0.01327002,
+          0.013596854,
+          0.013278175,
+          0.013646457,
+          0.013459245
+        ],
+        "median_episode_seconds": 0.013459245,
+        "steps_per_second": 2377.54792337906,
+        "latency_ms_p50_p95_p99": [
+          0.4914385,
+          0.53884,
+          0.54686647
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      "after": {
+        "assets": 128,
+        "backend": "native",
+        "tape_bytes": 203544,
+        "episode_seconds": [
+          0.013846464,
+          0.013915895,
+          0.014660624,
+          0.013701502,
+          0.014014439,
+          0.013883284,
+          0.013814855
+        ],
+        "median_episode_seconds": 0.013883284,
+        "steps_per_second": 2304.9301591755957,
+        "latency_ms_p50_p95_p99": [
+          0.517858,
+          0.5554182,
+          0.6117825600000004
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      "median_episode_change_percent": 3.150540762130416
+    },
+    {
+      "assets": 512,
+      "backend": "python",
+      "before": {
+        "assets": 512,
+        "backend": "python",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.280860932,
+          0.280944229,
+          0.2802632,
+          0.340269892,
+          0.282033826,
+          0.282941662,
+          0.33949185
+        ],
+        "median_episode_seconds": 0.282033826,
+        "steps_per_second": 113.46156754970237,
+        "latency_ms_p50_p95_p99": [
+          9.0783055,
+          9.37125975,
+          9.54013287
+        ],
+        "native_library_sha256": null
+      },
+      "after": {
+        "assets": 512,
+        "backend": "python",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.284063297,
+          0.284246673,
+          0.341564549,
+          0.283810914,
+          0.285214551,
+          0.288227411,
+          0.344127113
+        ],
+        "median_episode_seconds": 0.285214551,
+        "steps_per_second": 112.1962392444697,
+        "latency_ms_p50_p95_p99": [
+          9.183534,
+          9.5933585,
+          9.792799070000001
+        ],
+        "native_library_sha256": null
+      },
+      "median_episode_change_percent": 1.1277813888891375
+    },
+    {
+      "assets": 512,
+      "backend": "native",
+      "before": {
+        "assets": 512,
+        "backend": "native",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.047267289,
+          0.047042617,
+          0.047247452,
+          0.047369171,
+          0.047303026,
+          0.047108892,
+          0.04715043
+        ],
+        "median_episode_seconds": 0.047247452,
+        "steps_per_second": 677.285200480229,
+        "latency_ms_p50_p95_p99": [
+          1.747273,
+          1.9220357,
+          1.94727958
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      "after": {
+        "assets": 512,
+        "backend": "native",
+        "tape_bytes": 811800,
+        "episode_seconds": [
+          0.048383601,
+          0.047975195,
+          0.048494049,
+          0.048087655,
+          0.048233129,
+          0.048230884,
+          0.049506681
+        ],
+        "median_episode_seconds": 0.048233129,
+        "steps_per_second": 663.4444139006615,
+        "latency_ms_p50_p95_p99": [
+          1.7887505,
+          1.99998955,
+          2.0396472
+        ],
+        "native_library_sha256": "794b54dae38f4d348a461f069da5d1c5c74f463cb7e788dde28efbf75a843db5"
+      },
+      "median_episode_change_percent": 2.0862013892304576
+    }
+  ],
+  "limits": [
+    "Siete repeticiones tras un episodio de calentamiento.",
+    "Episodios de 32 pasos sin entrenamiento ni CUDA.",
+    "Pueden coincidir otras comprobaciones del proyecto.",
+    "RSS máximo de proceso, no memoria aislada por variante.",
+    "Energía y coste monetario no medidos."
+  ]
+}

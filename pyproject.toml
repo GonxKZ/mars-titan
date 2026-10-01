@@ -6,13 +6,40 @@ readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"
 authors = [{name = "Gonzalo García Lama"}]
-dependencies = []
+dependencies = [
+    "numpy>=2,<3", "pandas>=2.2,<4", "pyarrow>=18,<30",
+    "exchange-calendars>=4.8,<5", "ijson>=3.3,<4", "pillow>=11,<13",
+]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+mars-data = "mars_titan.data.cli:main"
 
 [project.optional-dependencies]
-data = ["numpy>=2.0,<3", "pandas>=2.2,<4", "polars>=1,<2", "pyarrow>=18,<30", "duckdb>=1.2,<2"]
+data = [
+    "numpy>=2.0,<3",
+    "pandas>=2.2,<4",
+    "polars>=1,<2",
+    "pyarrow>=18,<30",
+    "duckdb>=1.2,<2",
+    "beautifulsoup4>=4.14,<5",
+    "protego>=0.5,<1",
+    "lxml>=6,<7",
+]
 research = ["scikit-learn>=1.6,<2", "matplotlib>=3.9,<4", "scipy>=1.14,<2"]
 cuda = ["torch>=2.8,<3; sys_platform == 'linux' and platform_machine == 'x86_64'"]
+encoders = ["torchvision>=0.23,<1", "transformers>=4.57,<6", "huggingface-hub>=0.34,<2", "safetensors>=0.5,<1"]
 notebooks = ["jupyterlab>=4,<5", "ipykernel>=6,<8"]
+boosting = [
+    "cupy-cuda13x==14.2.0 ; platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "xgboost==3.3.0 ; platform_machine == 'x86_64' and sys_platform == 'linux'",
+]
+reinforcement = [
+    "gymnasium==1.3.0",
+]
 
 [project.urls]
 Repository = "https://github.com/GonxKZ/mars-titan"
@@ -21,7 +48,7 @@ Repository = "https://github.com/GonxKZ/mars-titan"
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "pyyaml>=6,<7", "bibtexparser>=1.4,<2"]
 
 [tool.uv]
-package = false
+package = true
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
@@ -30,10 +57,11 @@ explicit = true
 
 [tool.uv.sources]
 torch = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"}]
+torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"}]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "src"]
 addopts = "-ra"
 
 [tool.ruff]

@@ -10,7 +10,7 @@ La decisión inicial es una comparación principal de hasta **128 activos estado
 
 El inventario cubre toda la copia local y la canalización se diseña para recorrerla por bloques. Ampliar a 256 activos, al universo completo o a China son pruebas de escalabilidad y transferencia condicionadas al presupuesto. Reducir la campaña no permite relajar los controles temporales, perder referencias importantes o sustituir repeticiones por una única ejecución favorable.
 
-Esta decisión integra la preferencia inicial por aprovechar todo el dataset y la autorización posterior de recortarlo para atender al tiempo y las entregas. La [propuesta académica original](../academic/proposal.md) se conserva como antecedente. Los cambios de amplitud y sus implicaciones se revisarán con la dirección cuando se concrete el calendario.
+Estas cifras describen la planificación inicial. La [campaña ampliada](../engineering/comparison-campaign.md) recorre después todo el universo admisible, con exclusiones justificadas y recursos medidos. La [propuesta técnica original](source/README.md) se conserva como antecedente. Cada cambio de amplitud debe registrar sus implicaciones sobre datos, comparaciones y tiempo disponible.
 
 ## Líneas incorporadas
 

@@ -1,0 +1,31 @@
+{
+  "observed_at_utc": "2026-09-19T18:41:07.398049+00:00",
+  "environment": ".venv",
+  "python": "3.12.14",
+  "uv": "uv 0.12.16 (x86_64-unknown-linux-gnu)",
+  "packages": {
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "pyarrow": "25.0.1",
+    "exchange-calendars": "4.13.2",
+    "ijson": "3.5.1",
+    "pytest": "9.1.1",
+    "ruff": "0.16.8"
+  },
+  "cuda_runtime": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "compute_capability": [
+    8,
+    9
+  ],
+  "cuda_available": true,
+  "cuda_scalar_operation": 1.0,
+  "device": "cuda:0",
+  "uv_lock_sha256": "e29428ad4ff1d72472d8ae12d58afbb55ca1e4daafd67ed961809280f1c916c3",
+  "nvidia_smi": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB",
+  "scientific_implementation": "data_preparation_and_supervised_cost_probes",
+  "native_kernels_measured": false
+}

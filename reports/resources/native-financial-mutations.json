@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "method": "mutación dirigida sobre copias externas temporales",
+  "source": "native/src/financial_session.cpp",
+  "source_sha256": "41cc0a893a9334ec10e514c87f2c5eaf3cf14d52efbf0f01d6f6db47f8012a5a",
+  "tests": "native/tests/financial_session_tests.cpp",
+  "compiler": "Clang 21",
+  "standard": "C++20",
+  "compile_flags": [
+    "-O0",
+    "-g",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wconversion",
+    "-Wsign-conversion",
+    "-Wshadow",
+    "-Werror",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-Xclang",
+    "-fexperimental-lifetime-safety",
+    "-Wexperimental-lifetime-safety"
+  ],
+  "mutations": [
+    {
+      "id": "anticipar_cobro_al_cierre",
+      "before": "settle(staged_, tape_->open_times[following]);",
+      "after": "settle(staged_, tape_->close_times[following]);",
+      "compile_exit": 0,
+      "test_exit": 1,
+      "observed_failure": "El cobro al cierre no puede financiar la compra de apertura"
+    },
+    {
+      "id": "eliminar_costes",
+      "before": "parameters_.cost_bps / basis_point_denominator",
+      "after": "parameters_.cost_bps * 0.0 / basis_point_denominator",
+      "compile_exit": 0,
+      "test_exit": 1,
+      "observed_failure": "La compra debe reservar sus costes"
+    },
+    {
+      "id": "omitir_origen_checkpoint",
+      "before": "state.source_sha256 != tape.source_sha256 || ",
+      "after": "",
+      "compile_exit": 0,
+      "test_exit": 1,
+      "observed_failure": "El origen distinto debe rechazarse"
+    }
+  ],
+  "detected": 3,
+  "attempted": 3,
+  "build_failures": 0,
+  "original_source_unchanged": true,
+  "full_logs_retained": false,
+  "temporary_binaries_retained": false,
+  "limits": [
+    "Selección dirigida de tres cambios de comportamiento, no una campaña exhaustiva.",
+    "El registro conserva los códigos y mensajes observados en la ejecución. Las copias temporales se eliminaron al terminar."
+  ]
+}

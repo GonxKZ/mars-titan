@@ -1,0 +1,1292 @@
+{
+  "market": "US",
+  "assets": [
+    {
+      "schema_version": 2,
+      "fundamental_concepts": [
+        "us-gaap:Assets:USD",
+        "us-gaap:AssetsCurrent:USD",
+        "us-gaap:Liabilities:USD",
+        "us-gaap:LiabilitiesCurrent:USD",
+        "us-gaap:StockholdersEquity:USD",
+        "us-gaap:CashAndCashEquivalentsAtCarryingValue:USD",
+        "us-gaap:AccountsPayableCurrent:USD",
+        "us-gaap:AccountsReceivableNetCurrent:USD",
+        "company:current_ratio:ratio",
+        "company:working_capital_to_assets:ratio",
+        "company:liabilities_to_assets:ratio",
+        "company:equity_to_assets:ratio",
+        "company:receivables_to_assets:ratio",
+        "company:payables_to_assets:ratio",
+        "company:liabilities_to_positive_equity:ratio"
+      ],
+      "company_factors_audit": {
+        "missing_component": 974,
+        "accepted": 580
+      },
+      "company_factor_derivation": {
+        "definitions": [
+          [
+            "current_ratio",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ]
+            ],
+            "LiabilitiesCurrent"
+          ],
+          [
+            "working_capital_to_assets",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ],
+              [
+                "LiabilitiesCurrent",
+                -1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_assets",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "equity_to_assets",
+            [
+              [
+                "StockholdersEquity",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "receivables_to_assets",
+            [
+              [
+                "AccountsReceivableNetCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "payables_to_assets",
+            [
+              [
+                "AccountsPayableCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_positive_equity",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "StockholdersEquity"
+          ]
+        ],
+        "code_sha256": "09ccc6f3e9e9e62d002c7470eb5a6af2965f258be029c2b5a3de98fd3ae6f28e",
+        "source_unit": "USD",
+        "positive_denominator_required": true,
+        "transform": "signed_log1p_then_presence_then_log1p_age_days"
+      },
+      "company_factors_sha256": "efff2fc2a443fbe8c7c5a1e23ea8ed71d23e85cf7ddde75349c3410aae936c6d",
+      "symbol": "MNST",
+      "market": "US",
+      "fingerprint": "0d5297bbfd1de5bbd98305f8fa9ec560ac8f3ce4bea96e4373ad1121cab4395f",
+      "samples": 30,
+      "limits": {
+        "sample_batch_rows": 8,
+        "partition_bytes": 67108864,
+        "partition_rows": 100000
+      },
+      "excluded_no_macro": 0,
+      "samples_sha256": "db6e60dd7aa5b1bd259e622b1c034e29dffd430e6843213179126f53bddd264f",
+      "macro_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "macro_indicators": [
+        "brent_spot",
+        "brent_wti_spread",
+        "cn_cpi_yoy_published",
+        "cn_industrial_yoy_published",
+        "cn_m2_stock",
+        "cn_manufacturing_pmi",
+        "cn_private_credit_gdp",
+        "cn_private_credit_gdp_change_4q",
+        "cn_real_effective_fx",
+        "cn_tsf_flow",
+        "cn_tsf_stock",
+        "cny_per_usd",
+        "cny_per_usd_change_21obs",
+        "copper_global",
+        "de_bond_10y",
+        "ea_deposit_rate",
+        "ea_real_effective_fx",
+        "global_supply_pressure",
+        "global_supply_pressure_change_1m",
+        "jpy_per_usd",
+        "us_bank_credit",
+        "us_bank_credit_change_13w",
+        "us_breakeven_10y",
+        "us_breakeven_5y",
+        "us_broad_dollar",
+        "us_broad_dollar_change_21obs",
+        "us_building_permits",
+        "us_building_permits_yoy",
+        "us_business_loans",
+        "us_business_loans_yoy",
+        "us_capacity_utilization",
+        "us_capacity_utilization_change_1m",
+        "us_consumer_loans",
+        "us_consumer_loans_yoy",
+        "us_continued_claims",
+        "us_continued_claims_ma4",
+        "us_core_cpi",
+        "us_core_cpi_3m_annualized",
+        "us_core_cpi_mom",
+        "us_core_cpi_yoy",
+        "us_core_pce_price",
+        "us_core_pce_price_3m_annualized",
+        "us_core_pce_price_mom",
+        "us_core_pce_price_yoy",
+        "us_cpi",
+        "us_cpi_3m_annualized",
+        "us_cpi_mom",
+        "us_cpi_yoy",
+        "us_curve_10y_2y",
+        "us_curve_10y_3m",
+        "us_curve_30y_10y",
+        "us_curve_5y_2y",
+        "us_effective_target_gap",
+        "us_employment_ratio",
+        "us_employment_ratio_change_1m",
+        "us_factory_orders",
+        "us_factory_orders_mom",
+        "us_fed_assets",
+        "us_fed_assets_change_4w",
+        "us_fed_funds",
+        "us_fed_funds_change_21d",
+        "us_financial_conditions",
+        "us_financial_conditions_change_4w",
+        "us_financial_stress",
+        "us_forward_inflation_5y5y_proxy",
+        "us_hourly_wage",
+        "us_hourly_wage_yoy",
+        "us_housing_starts",
+        "us_housing_starts_yoy",
+        "us_industrial_production",
+        "us_industrial_production_mom",
+        "us_industrial_production_yoy",
+        "us_initial_claims",
+        "us_initial_claims_change_4w",
+        "us_initial_claims_ma4",
+        "us_job_openings",
+        "us_job_openings_yoy",
+        "us_m2",
+        "us_m2_yoy",
+        "us_manufacturing_hours",
+        "us_manufacturing_hours_change_1m",
+        "us_nominal_gdp",
+        "us_nominal_gdp_yoy",
+        "us_participation",
+        "us_participation_change_1m",
+        "us_payrolls",
+        "us_payrolls_change_1m",
+        "us_payrolls_yoy",
+        "us_pce_price",
+        "us_pce_price_3m_annualized",
+        "us_pce_price_mom",
+        "us_pce_price_yoy",
+        "us_permits_starts_ratio",
+        "us_ppi_all",
+        "us_ppi_all_mom",
+        "us_ppi_all_yoy",
+        "us_ppi_final",
+        "us_ppi_final_mom",
+        "us_ppi_final_yoy",
+        "us_quits_rate",
+        "us_quits_rate_change_1m",
+        "us_real_consumption",
+        "us_real_consumption_mom",
+        "us_real_curve_10y_5y",
+        "us_real_disposable_income",
+        "us_real_disposable_income_mom",
+        "us_real_gdp",
+        "us_real_gdp_qoq_annualized",
+        "us_real_gdp_yoy",
+        "us_real_government",
+        "us_real_government_qoq",
+        "us_real_investment",
+        "us_real_investment_qoq",
+        "us_real_retail_sales",
+        "us_real_retail_sales_mom",
+        "us_reserve_balances",
+        "us_retail_sales",
+        "us_retail_sales_mom",
+        "us_retail_sales_yoy",
+        "us_reverse_repo",
+        "us_saving_rate",
+        "us_saving_rate_change_1m",
+        "us_sofr",
+        "us_sofr_fedfunds_gap",
+        "us_target_lower",
+        "us_target_upper",
+        "us_tips_10y",
+        "us_tips_5y",
+        "us_treasury_10y",
+        "us_treasury_10y_change_21obs",
+        "us_treasury_2y",
+        "us_treasury_30y",
+        "us_treasury_3m",
+        "us_treasury_5y",
+        "us_treasury_account",
+        "us_unemployment",
+        "us_unemployment_change_1m",
+        "usd_per_eur",
+        "wti_spot",
+        "wti_spot_change_21obs"
+      ],
+      "encoders": {
+        "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+        "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+        "text_artifacts_sha256": {
+          "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+          "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+          "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+          "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+        },
+        "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+        "tokenizers_version": "0.23.2",
+        "tokenizer_class": "TokenizersBackend",
+        "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+        "image_model": "resnet18.IMAGENET1K_V1",
+        "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+        "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+        "image_policy": "224_rgb_imagenet_normalization_no_crop",
+        "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+        "torch": "2.14.0+cu130",
+        "torchvision": "0.29.0+cu130",
+        "transformers": "5.17.0",
+        "device": "cuda:0",
+        "precision": "float32",
+        "historical_simulation": false
+      },
+      "prepared_fingerprint": "87e344002a68e897fb442594745066362081884910b9510cc02053261b0a4f28",
+      "calendar": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687",
+      "context_sessions": 64,
+      "news_lookback_sessions": 5,
+      "elapsed_seconds": 0.7513737270001002,
+      "cost_profile_ready": true,
+      "training_ready": false,
+      "news_content_policy": "verified_full_articles",
+      "pending_for_scientific_training": [
+        "targets",
+        "frozen_scientific_cohort_and_splits"
+      ],
+      "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
+      "peak_rss_mib": 1948.09375,
+      "peak_vram_allocated_mib": 492.11865234375,
+      "peak_vram_reserved_mib": 524.0,
+      "purpose": "engineering_profile_only"
+    },
+    {
+      "schema_version": 2,
+      "fundamental_concepts": [
+        "us-gaap:Assets:USD",
+        "us-gaap:AssetsCurrent:USD",
+        "us-gaap:Liabilities:USD",
+        "us-gaap:LiabilitiesCurrent:USD",
+        "us-gaap:StockholdersEquity:USD",
+        "us-gaap:CashAndCashEquivalentsAtCarryingValue:USD",
+        "us-gaap:AccountsPayableCurrent:USD",
+        "us-gaap:AccountsReceivableNetCurrent:USD",
+        "company:current_ratio:ratio",
+        "company:working_capital_to_assets:ratio",
+        "company:liabilities_to_assets:ratio",
+        "company:equity_to_assets:ratio",
+        "company:receivables_to_assets:ratio",
+        "company:payables_to_assets:ratio",
+        "company:liabilities_to_positive_equity:ratio"
+      ],
+      "company_factors_audit": {
+        "missing_component": 421,
+        "accepted": 776
+      },
+      "company_factor_derivation": {
+        "definitions": [
+          [
+            "current_ratio",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ]
+            ],
+            "LiabilitiesCurrent"
+          ],
+          [
+            "working_capital_to_assets",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ],
+              [
+                "LiabilitiesCurrent",
+                -1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_assets",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "equity_to_assets",
+            [
+              [
+                "StockholdersEquity",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "receivables_to_assets",
+            [
+              [
+                "AccountsReceivableNetCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "payables_to_assets",
+            [
+              [
+                "AccountsPayableCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_positive_equity",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "StockholdersEquity"
+          ]
+        ],
+        "code_sha256": "09ccc6f3e9e9e62d002c7470eb5a6af2965f258be029c2b5a3de98fd3ae6f28e",
+        "source_unit": "USD",
+        "positive_denominator_required": true,
+        "transform": "signed_log1p_then_presence_then_log1p_age_days"
+      },
+      "company_factors_sha256": "3c26e3bd166d8c3da320badd3d731b24b589d9e349f0290acddc134526712d3f",
+      "symbol": "ABM",
+      "market": "US",
+      "fingerprint": "63db02679b1803ea1ecf9a0c840d84fff20ee8e6df6b3a5c9a858bb919e2efb0",
+      "samples": 0,
+      "limits": {
+        "sample_batch_rows": 8,
+        "partition_bytes": 67108864,
+        "partition_rows": 100000
+      },
+      "excluded_no_macro": 0,
+      "samples_sha256": "120c9915dca9d60edcd781f535fac4a84695684bb2a61326518addf0f9fb25af",
+      "macro_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "macro_indicators": [
+        "brent_spot",
+        "brent_wti_spread",
+        "cn_cpi_yoy_published",
+        "cn_industrial_yoy_published",
+        "cn_m2_stock",
+        "cn_manufacturing_pmi",
+        "cn_private_credit_gdp",
+        "cn_private_credit_gdp_change_4q",
+        "cn_real_effective_fx",
+        "cn_tsf_flow",
+        "cn_tsf_stock",
+        "cny_per_usd",
+        "cny_per_usd_change_21obs",
+        "copper_global",
+        "de_bond_10y",
+        "ea_deposit_rate",
+        "ea_real_effective_fx",
+        "global_supply_pressure",
+        "global_supply_pressure_change_1m",
+        "jpy_per_usd",
+        "us_bank_credit",
+        "us_bank_credit_change_13w",
+        "us_breakeven_10y",
+        "us_breakeven_5y",
+        "us_broad_dollar",
+        "us_broad_dollar_change_21obs",
+        "us_building_permits",
+        "us_building_permits_yoy",
+        "us_business_loans",
+        "us_business_loans_yoy",
+        "us_capacity_utilization",
+        "us_capacity_utilization_change_1m",
+        "us_consumer_loans",
+        "us_consumer_loans_yoy",
+        "us_continued_claims",
+        "us_continued_claims_ma4",
+        "us_core_cpi",
+        "us_core_cpi_3m_annualized",
+        "us_core_cpi_mom",
+        "us_core_cpi_yoy",
+        "us_core_pce_price",
+        "us_core_pce_price_3m_annualized",
+        "us_core_pce_price_mom",
+        "us_core_pce_price_yoy",
+        "us_cpi",
+        "us_cpi_3m_annualized",
+        "us_cpi_mom",
+        "us_cpi_yoy",
+        "us_curve_10y_2y",
+        "us_curve_10y_3m",
+        "us_curve_30y_10y",
+        "us_curve_5y_2y",
+        "us_effective_target_gap",
+        "us_employment_ratio",
+        "us_employment_ratio_change_1m",
+        "us_factory_orders",
+        "us_factory_orders_mom",
+        "us_fed_assets",
+        "us_fed_assets_change_4w",
+        "us_fed_funds",
+        "us_fed_funds_change_21d",
+        "us_financial_conditions",
+        "us_financial_conditions_change_4w",
+        "us_financial_stress",
+        "us_forward_inflation_5y5y_proxy",
+        "us_hourly_wage",
+        "us_hourly_wage_yoy",
+        "us_housing_starts",
+        "us_housing_starts_yoy",
+        "us_industrial_production",
+        "us_industrial_production_mom",
+        "us_industrial_production_yoy",
+        "us_initial_claims",
+        "us_initial_claims_change_4w",
+        "us_initial_claims_ma4",
+        "us_job_openings",
+        "us_job_openings_yoy",
+        "us_m2",
+        "us_m2_yoy",
+        "us_manufacturing_hours",
+        "us_manufacturing_hours_change_1m",
+        "us_nominal_gdp",
+        "us_nominal_gdp_yoy",
+        "us_participation",
+        "us_participation_change_1m",
+        "us_payrolls",
+        "us_payrolls_change_1m",
+        "us_payrolls_yoy",
+        "us_pce_price",
+        "us_pce_price_3m_annualized",
+        "us_pce_price_mom",
+        "us_pce_price_yoy",
+        "us_permits_starts_ratio",
+        "us_ppi_all",
+        "us_ppi_all_mom",
+        "us_ppi_all_yoy",
+        "us_ppi_final",
+        "us_ppi_final_mom",
+        "us_ppi_final_yoy",
+        "us_quits_rate",
+        "us_quits_rate_change_1m",
+        "us_real_consumption",
+        "us_real_consumption_mom",
+        "us_real_curve_10y_5y",
+        "us_real_disposable_income",
+        "us_real_disposable_income_mom",
+        "us_real_gdp",
+        "us_real_gdp_qoq_annualized",
+        "us_real_gdp_yoy",
+        "us_real_government",
+        "us_real_government_qoq",
+        "us_real_investment",
+        "us_real_investment_qoq",
+        "us_real_retail_sales",
+        "us_real_retail_sales_mom",
+        "us_reserve_balances",
+        "us_retail_sales",
+        "us_retail_sales_mom",
+        "us_retail_sales_yoy",
+        "us_reverse_repo",
+        "us_saving_rate",
+        "us_saving_rate_change_1m",
+        "us_sofr",
+        "us_sofr_fedfunds_gap",
+        "us_target_lower",
+        "us_target_upper",
+        "us_tips_10y",
+        "us_tips_5y",
+        "us_treasury_10y",
+        "us_treasury_10y_change_21obs",
+        "us_treasury_2y",
+        "us_treasury_30y",
+        "us_treasury_3m",
+        "us_treasury_5y",
+        "us_treasury_account",
+        "us_unemployment",
+        "us_unemployment_change_1m",
+        "usd_per_eur",
+        "wti_spot",
+        "wti_spot_change_21obs"
+      ],
+      "encoders": {
+        "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+        "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+        "text_artifacts_sha256": {
+          "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+          "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+          "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+          "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+        },
+        "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+        "tokenizers_version": "0.23.2",
+        "tokenizer_class": "TokenizersBackend",
+        "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+        "image_model": "resnet18.IMAGENET1K_V1",
+        "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+        "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+        "image_policy": "224_rgb_imagenet_normalization_no_crop",
+        "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+        "torch": "2.14.0+cu130",
+        "torchvision": "0.29.0+cu130",
+        "transformers": "5.17.0",
+        "device": "cuda:0",
+        "precision": "float32",
+        "historical_simulation": false
+      },
+      "prepared_fingerprint": "1258b7f24e99c1b2cdd7f2cfb353217fdd5885fb825feb78e6d59412013c9034",
+      "calendar": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687",
+      "context_sessions": 64,
+      "news_lookback_sessions": 5,
+      "elapsed_seconds": 0.11048688200025936,
+      "cost_profile_ready": false,
+      "training_ready": false,
+      "news_content_policy": "verified_full_articles",
+      "pending_for_scientific_training": [
+        "targets",
+        "frozen_scientific_cohort_and_splits"
+      ],
+      "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
+      "peak_rss_mib": 1948.09375,
+      "peak_vram_allocated_mib": 492.11865234375,
+      "peak_vram_reserved_mib": 524.0,
+      "purpose": "engineering_profile_only"
+    },
+    {
+      "schema_version": 2,
+      "fundamental_concepts": [
+        "us-gaap:Assets:USD",
+        "us-gaap:AssetsCurrent:USD",
+        "us-gaap:Liabilities:USD",
+        "us-gaap:LiabilitiesCurrent:USD",
+        "us-gaap:StockholdersEquity:USD",
+        "us-gaap:CashAndCashEquivalentsAtCarryingValue:USD",
+        "us-gaap:AccountsPayableCurrent:USD",
+        "us-gaap:AccountsReceivableNetCurrent:USD",
+        "company:current_ratio:ratio",
+        "company:working_capital_to_assets:ratio",
+        "company:liabilities_to_assets:ratio",
+        "company:equity_to_assets:ratio",
+        "company:receivables_to_assets:ratio",
+        "company:payables_to_assets:ratio",
+        "company:liabilities_to_positive_equity:ratio"
+      ],
+      "company_factors_audit": {
+        "accepted": 476,
+        "missing_component": 1029
+      },
+      "company_factor_derivation": {
+        "definitions": [
+          [
+            "current_ratio",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ]
+            ],
+            "LiabilitiesCurrent"
+          ],
+          [
+            "working_capital_to_assets",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ],
+              [
+                "LiabilitiesCurrent",
+                -1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_assets",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "equity_to_assets",
+            [
+              [
+                "StockholdersEquity",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "receivables_to_assets",
+            [
+              [
+                "AccountsReceivableNetCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "payables_to_assets",
+            [
+              [
+                "AccountsPayableCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_positive_equity",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "StockholdersEquity"
+          ]
+        ],
+        "code_sha256": "09ccc6f3e9e9e62d002c7470eb5a6af2965f258be029c2b5a3de98fd3ae6f28e",
+        "source_unit": "USD",
+        "positive_denominator_required": true,
+        "transform": "signed_log1p_then_presence_then_log1p_age_days"
+      },
+      "company_factors_sha256": "d252f7b0db4795c218e3c59e217b474240e534dca486556a5f90e7b649102636",
+      "symbol": "DECK",
+      "market": "US",
+      "fingerprint": "0295db374ad448fbf8ef1f9f23827b2e154b943753990e406311192ac95ac1c1",
+      "samples": 35,
+      "limits": {
+        "sample_batch_rows": 8,
+        "partition_bytes": 67108864,
+        "partition_rows": 100000
+      },
+      "excluded_no_macro": 0,
+      "samples_sha256": "29c946442f575450b46915576dedaceb79029402b264b5f417a8cf0e835c3b96",
+      "macro_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "macro_indicators": [
+        "brent_spot",
+        "brent_wti_spread",
+        "cn_cpi_yoy_published",
+        "cn_industrial_yoy_published",
+        "cn_m2_stock",
+        "cn_manufacturing_pmi",
+        "cn_private_credit_gdp",
+        "cn_private_credit_gdp_change_4q",
+        "cn_real_effective_fx",
+        "cn_tsf_flow",
+        "cn_tsf_stock",
+        "cny_per_usd",
+        "cny_per_usd_change_21obs",
+        "copper_global",
+        "de_bond_10y",
+        "ea_deposit_rate",
+        "ea_real_effective_fx",
+        "global_supply_pressure",
+        "global_supply_pressure_change_1m",
+        "jpy_per_usd",
+        "us_bank_credit",
+        "us_bank_credit_change_13w",
+        "us_breakeven_10y",
+        "us_breakeven_5y",
+        "us_broad_dollar",
+        "us_broad_dollar_change_21obs",
+        "us_building_permits",
+        "us_building_permits_yoy",
+        "us_business_loans",
+        "us_business_loans_yoy",
+        "us_capacity_utilization",
+        "us_capacity_utilization_change_1m",
+        "us_consumer_loans",
+        "us_consumer_loans_yoy",
+        "us_continued_claims",
+        "us_continued_claims_ma4",
+        "us_core_cpi",
+        "us_core_cpi_3m_annualized",
+        "us_core_cpi_mom",
+        "us_core_cpi_yoy",
+        "us_core_pce_price",
+        "us_core_pce_price_3m_annualized",
+        "us_core_pce_price_mom",
+        "us_core_pce_price_yoy",
+        "us_cpi",
+        "us_cpi_3m_annualized",
+        "us_cpi_mom",
+        "us_cpi_yoy",
+        "us_curve_10y_2y",
+        "us_curve_10y_3m",
+        "us_curve_30y_10y",
+        "us_curve_5y_2y",
+        "us_effective_target_gap",
+        "us_employment_ratio",
+        "us_employment_ratio_change_1m",
+        "us_factory_orders",
+        "us_factory_orders_mom",
+        "us_fed_assets",
+        "us_fed_assets_change_4w",
+        "us_fed_funds",
+        "us_fed_funds_change_21d",
+        "us_financial_conditions",
+        "us_financial_conditions_change_4w",
+        "us_financial_stress",
+        "us_forward_inflation_5y5y_proxy",
+        "us_hourly_wage",
+        "us_hourly_wage_yoy",
+        "us_housing_starts",
+        "us_housing_starts_yoy",
+        "us_industrial_production",
+        "us_industrial_production_mom",
+        "us_industrial_production_yoy",
+        "us_initial_claims",
+        "us_initial_claims_change_4w",
+        "us_initial_claims_ma4",
+        "us_job_openings",
+        "us_job_openings_yoy",
+        "us_m2",
+        "us_m2_yoy",
+        "us_manufacturing_hours",
+        "us_manufacturing_hours_change_1m",
+        "us_nominal_gdp",
+        "us_nominal_gdp_yoy",
+        "us_participation",
+        "us_participation_change_1m",
+        "us_payrolls",
+        "us_payrolls_change_1m",
+        "us_payrolls_yoy",
+        "us_pce_price",
+        "us_pce_price_3m_annualized",
+        "us_pce_price_mom",
+        "us_pce_price_yoy",
+        "us_permits_starts_ratio",
+        "us_ppi_all",
+        "us_ppi_all_mom",
+        "us_ppi_all_yoy",
+        "us_ppi_final",
+        "us_ppi_final_mom",
+        "us_ppi_final_yoy",
+        "us_quits_rate",
+        "us_quits_rate_change_1m",
+        "us_real_consumption",
+        "us_real_consumption_mom",
+        "us_real_curve_10y_5y",
+        "us_real_disposable_income",
+        "us_real_disposable_income_mom",
+        "us_real_gdp",
+        "us_real_gdp_qoq_annualized",
+        "us_real_gdp_yoy",
+        "us_real_government",
+        "us_real_government_qoq",
+        "us_real_investment",
+        "us_real_investment_qoq",
+        "us_real_retail_sales",
+        "us_real_retail_sales_mom",
+        "us_reserve_balances",
+        "us_retail_sales",
+        "us_retail_sales_mom",
+        "us_retail_sales_yoy",
+        "us_reverse_repo",
+        "us_saving_rate",
+        "us_saving_rate_change_1m",
+        "us_sofr",
+        "us_sofr_fedfunds_gap",
+        "us_target_lower",
+        "us_target_upper",
+        "us_tips_10y",
+        "us_tips_5y",
+        "us_treasury_10y",
+        "us_treasury_10y_change_21obs",
+        "us_treasury_2y",
+        "us_treasury_30y",
+        "us_treasury_3m",
+        "us_treasury_5y",
+        "us_treasury_account",
+        "us_unemployment",
+        "us_unemployment_change_1m",
+        "usd_per_eur",
+        "wti_spot",
+        "wti_spot_change_21obs"
+      ],
+      "encoders": {
+        "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+        "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+        "text_artifacts_sha256": {
+          "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+          "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+          "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+          "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+        },
+        "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+        "tokenizers_version": "0.23.2",
+        "tokenizer_class": "TokenizersBackend",
+        "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+        "image_model": "resnet18.IMAGENET1K_V1",
+        "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+        "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+        "image_policy": "224_rgb_imagenet_normalization_no_crop",
+        "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+        "torch": "2.14.0+cu130",
+        "torchvision": "0.29.0+cu130",
+        "transformers": "5.17.0",
+        "device": "cuda:0",
+        "precision": "float32",
+        "historical_simulation": false
+      },
+      "prepared_fingerprint": "5713c0bdc3dea3847ed9e25bad0bcc5936227aa0c5fae6708c154cdceb40d69f",
+      "calendar": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687",
+      "context_sessions": 64,
+      "news_lookback_sessions": 5,
+      "elapsed_seconds": 0.7925761650003551,
+      "cost_profile_ready": true,
+      "training_ready": false,
+      "news_content_policy": "verified_full_articles",
+      "pending_for_scientific_training": [
+        "targets",
+        "frozen_scientific_cohort_and_splits"
+      ],
+      "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
+      "peak_rss_mib": 1948.09375,
+      "peak_vram_allocated_mib": 492.11865234375,
+      "peak_vram_reserved_mib": 524.0,
+      "purpose": "engineering_profile_only"
+    },
+    {
+      "schema_version": 2,
+      "fundamental_concepts": [
+        "us-gaap:Assets:USD",
+        "us-gaap:AssetsCurrent:USD",
+        "us-gaap:Liabilities:USD",
+        "us-gaap:LiabilitiesCurrent:USD",
+        "us-gaap:StockholdersEquity:USD",
+        "us-gaap:CashAndCashEquivalentsAtCarryingValue:USD",
+        "us-gaap:AccountsPayableCurrent:USD",
+        "us-gaap:AccountsReceivableNetCurrent:USD",
+        "company:current_ratio:ratio",
+        "company:working_capital_to_assets:ratio",
+        "company:liabilities_to_assets:ratio",
+        "company:equity_to_assets:ratio",
+        "company:receivables_to_assets:ratio",
+        "company:payables_to_assets:ratio",
+        "company:liabilities_to_positive_equity:ratio"
+      ],
+      "company_factors_audit": {
+        "missing_component": 368,
+        "accepted": 738
+      },
+      "company_factor_derivation": {
+        "definitions": [
+          [
+            "current_ratio",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ]
+            ],
+            "LiabilitiesCurrent"
+          ],
+          [
+            "working_capital_to_assets",
+            [
+              [
+                "AssetsCurrent",
+                1
+              ],
+              [
+                "LiabilitiesCurrent",
+                -1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_assets",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "equity_to_assets",
+            [
+              [
+                "StockholdersEquity",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "receivables_to_assets",
+            [
+              [
+                "AccountsReceivableNetCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "payables_to_assets",
+            [
+              [
+                "AccountsPayableCurrent",
+                1
+              ]
+            ],
+            "Assets"
+          ],
+          [
+            "liabilities_to_positive_equity",
+            [
+              [
+                "Liabilities",
+                1
+              ]
+            ],
+            "StockholdersEquity"
+          ]
+        ],
+        "code_sha256": "09ccc6f3e9e9e62d002c7470eb5a6af2965f258be029c2b5a3de98fd3ae6f28e",
+        "source_unit": "USD",
+        "positive_denominator_required": true,
+        "transform": "signed_log1p_then_presence_then_log1p_age_days"
+      },
+      "company_factors_sha256": "d641537fbb6ee59226fb9ce55e44803c9acea409d071e31784cbdd50f11cfd33",
+      "symbol": "CSGS",
+      "market": "US",
+      "fingerprint": "c0117e8f5887e0bba46c080a86cecfc99e85d20a639111aa4c59769c36df85ee",
+      "samples": 0,
+      "limits": {
+        "sample_batch_rows": 8,
+        "partition_bytes": 67108864,
+        "partition_rows": 100000
+      },
+      "excluded_no_macro": 0,
+      "samples_sha256": "120c9915dca9d60edcd781f535fac4a84695684bb2a61326518addf0f9fb25af",
+      "macro_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+      "macro_indicators": [
+        "brent_spot",
+        "brent_wti_spread",
+        "cn_cpi_yoy_published",
+        "cn_industrial_yoy_published",
+        "cn_m2_stock",
+        "cn_manufacturing_pmi",
+        "cn_private_credit_gdp",
+        "cn_private_credit_gdp_change_4q",
+        "cn_real_effective_fx",
+        "cn_tsf_flow",
+        "cn_tsf_stock",
+        "cny_per_usd",
+        "cny_per_usd_change_21obs",
+        "copper_global",
+        "de_bond_10y",
+        "ea_deposit_rate",
+        "ea_real_effective_fx",
+        "global_supply_pressure",
+        "global_supply_pressure_change_1m",
+        "jpy_per_usd",
+        "us_bank_credit",
+        "us_bank_credit_change_13w",
+        "us_breakeven_10y",
+        "us_breakeven_5y",
+        "us_broad_dollar",
+        "us_broad_dollar_change_21obs",
+        "us_building_permits",
+        "us_building_permits_yoy",
+        "us_business_loans",
+        "us_business_loans_yoy",
+        "us_capacity_utilization",
+        "us_capacity_utilization_change_1m",
+        "us_consumer_loans",
+        "us_consumer_loans_yoy",
+        "us_continued_claims",
+        "us_continued_claims_ma4",
+        "us_core_cpi",
+        "us_core_cpi_3m_annualized",
+        "us_core_cpi_mom",
+        "us_core_cpi_yoy",
+        "us_core_pce_price",
+        "us_core_pce_price_3m_annualized",
+        "us_core_pce_price_mom",
+        "us_core_pce_price_yoy",
+        "us_cpi",
+        "us_cpi_3m_annualized",
+        "us_cpi_mom",
+        "us_cpi_yoy",
+        "us_curve_10y_2y",
+        "us_curve_10y_3m",
+        "us_curve_30y_10y",
+        "us_curve_5y_2y",
+        "us_effective_target_gap",
+        "us_employment_ratio",
+        "us_employment_ratio_change_1m",
+        "us_factory_orders",
+        "us_factory_orders_mom",
+        "us_fed_assets",
+        "us_fed_assets_change_4w",
+        "us_fed_funds",
+        "us_fed_funds_change_21d",
+        "us_financial_conditions",
+        "us_financial_conditions_change_4w",
+        "us_financial_stress",
+        "us_forward_inflation_5y5y_proxy",
+        "us_hourly_wage",
+        "us_hourly_wage_yoy",
+        "us_housing_starts",
+        "us_housing_starts_yoy",
+        "us_industrial_production",
+        "us_industrial_production_mom",
+        "us_industrial_production_yoy",
+        "us_initial_claims",
+        "us_initial_claims_change_4w",
+        "us_initial_claims_ma4",
+        "us_job_openings",
+        "us_job_openings_yoy",
+        "us_m2",
+        "us_m2_yoy",
+        "us_manufacturing_hours",
+        "us_manufacturing_hours_change_1m",
+        "us_nominal_gdp",
+        "us_nominal_gdp_yoy",
+        "us_participation",
+        "us_participation_change_1m",
+        "us_payrolls",
+        "us_payrolls_change_1m",
+        "us_payrolls_yoy",
+        "us_pce_price",
+        "us_pce_price_3m_annualized",
+        "us_pce_price_mom",
+        "us_pce_price_yoy",
+        "us_permits_starts_ratio",
+        "us_ppi_all",
+        "us_ppi_all_mom",
+        "us_ppi_all_yoy",
+        "us_ppi_final",
+        "us_ppi_final_mom",
+        "us_ppi_final_yoy",
+        "us_quits_rate",
+        "us_quits_rate_change_1m",
+        "us_real_consumption",
+        "us_real_consumption_mom",
+        "us_real_curve_10y_5y",
+        "us_real_disposable_income",
+        "us_real_disposable_income_mom",
+        "us_real_gdp",
+        "us_real_gdp_qoq_annualized",
+        "us_real_gdp_yoy",
+        "us_real_government",
+        "us_real_government_qoq",
+        "us_real_investment",
+        "us_real_investment_qoq",
+        "us_real_retail_sales",
+        "us_real_retail_sales_mom",
+        "us_reserve_balances",
+        "us_retail_sales",
+        "us_retail_sales_mom",
+        "us_retail_sales_yoy",
+        "us_reverse_repo",
+        "us_saving_rate",
+        "us_saving_rate_change_1m",
+        "us_sofr",
+        "us_sofr_fedfunds_gap",
+        "us_target_lower",
+        "us_target_upper",
+        "us_tips_10y",
+        "us_tips_5y",
+        "us_treasury_10y",
+        "us_treasury_10y_change_21obs",
+        "us_treasury_2y",
+        "us_treasury_30y",
+        "us_treasury_3m",
+        "us_treasury_5y",
+        "us_treasury_account",
+        "us_unemployment",
+        "us_unemployment_change_1m",
+        "usd_per_eur",
+        "wti_spot",
+        "wti_spot_change_21obs"
+      ],
+      "encoders": {
+        "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+        "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+        "text_artifacts_sha256": {
+          "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+          "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+          "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+          "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+        },
+        "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+        "tokenizers_version": "0.23.2",
+        "tokenizer_class": "TokenizersBackend",
+        "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+        "image_model": "resnet18.IMAGENET1K_V1",
+        "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+        "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+        "image_policy": "224_rgb_imagenet_normalization_no_crop",
+        "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+        "torch": "2.14.0+cu130",
+        "torchvision": "0.29.0+cu130",
+        "transformers": "5.17.0",
+        "device": "cuda:0",
+        "precision": "float32",
+        "historical_simulation": false
+      },
+      "prepared_fingerprint": "ce288a6ac72cedc303a2af9f174aad37c47a986cc98a63057d4d9c3b1823616e",
+      "calendar": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687",
+      "context_sessions": 64,
+      "news_lookback_sessions": 5,
+      "elapsed_seconds": 0.09842781399947853,
+      "cost_profile_ready": false,
+      "training_ready": false,
+      "news_content_policy": "verified_full_articles",
+      "pending_for_scientific_training": [
+        "targets",
+        "frozen_scientific_cohort_and_splits"
+      ],
+      "macro_unit_policy": "native_historical_levels_and_unit_compatible_derived_values",
+      "peak_rss_mib": 1948.09375,
+      "peak_vram_allocated_mib": 492.11865234375,
+      "peak_vram_reserved_mib": 524.0,
+      "purpose": "engineering_profile_only"
+    }
+  ],
+  "samples": 65,
+  "purpose": "company_factor_integration_not_confirmatory_training",
+  "parity": [
+    {
+      "symbol": "MNST",
+      "samples": 30,
+      "original_modalities_exactly_equal": true,
+      "observed_ratios_by_catalog_order": [
+        30,
+        30,
+        0,
+        30,
+        30,
+        30,
+        0
+      ],
+      "old_sample_bytes": 138367,
+      "new_sample_bytes": 139120
+    },
+    {
+      "symbol": "ABM",
+      "samples": 0,
+      "original_modalities_exactly_equal": true,
+      "observed_ratios_by_catalog_order": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "old_sample_bytes": 176,
+      "new_sample_bytes": 176
+    },
+    {
+      "symbol": "DECK",
+      "samples": 35,
+      "original_modalities_exactly_equal": true,
+      "observed_ratios_by_catalog_order": [
+        35,
+        35,
+        0,
+        35,
+        35,
+        0,
+        0
+      ],
+      "old_sample_bytes": 164000,
+      "new_sample_bytes": 164791
+    },
+    {
+      "symbol": "CSGS",
+      "samples": 0,
+      "original_modalities_exactly_equal": true,
+      "observed_ratios_by_catalog_order": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "old_sample_bytes": 176,
+      "new_sample_bytes": 176
+    }
+  ],
+  "complete_process_seconds": 7.435704276999786,
+  "maximum_rss_mib": 1948.09375,
+  "script_sha256": "f3ced12f68ce34ede74417f7621a714a394ed07ba333fee976a3ab5f90d4e0ab"
+}

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "audited_at_utc": "2026-09-19T22:53:50.486701+00:00",
+  "market": "US",
+  "calendar": {
+    "first_session": "1990-01-02",
+    "last_session": "2025-12-31",
+    "decisions_sha256": "05d2681d955271a3e02d13016e11b1aeaf6dd525f7754231f072801dc2285687"
+  },
+  "grain": "asset_source_record",
+  "admission_scope": "source_binding_and_publication_fields",
+  "semantic_validation_complete": false,
+  "historical_body_version_verified": false,
+  "raw_records": 4367,
+  "accepted": 4357,
+  "excluded": 10,
+  "reasons": {
+    "duplicate": 10
+  },
+  "assets": [
+    {
+      "symbol": "MNST",
+      "raw_records": 1456,
+      "accepted": 1456,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 1456,
+      "language_unknown": 1456,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2012-04-17T20:05:00+00:00",
+      "last_available_at": "2023-12-18T21:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "a76fb0317960bcd954b1f0b97287aa72a4988ea1c9687617a921b0299c3014c0",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "ABM",
+      "raw_records": 907,
+      "accepted": 897,
+      "excluded": 10,
+      "reasons": {
+        "duplicate": 10
+      },
+      "date_only": 897,
+      "language_unknown": 897,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-02-26T21:05:00+00:00",
+      "last_available_at": "2025-04-17T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "786b05f2e8ea5f5390626a5def70cbdde68e1ddca7910d9b77fc21b58a637332",
+        "exclusions.parquet": "545f248f4205e54bbcf489669ec4e1f2330a781eeb876dec19deccf4fedc31bc"
+      }
+    },
+    {
+      "symbol": "DECK",
+      "raw_records": 1725,
+      "accepted": 1725,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 1725,
+      "language_unknown": 1725,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2010-04-22T20:05:00+00:00",
+      "last_available_at": "2025-04-23T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "f43e156c653aac253a591beaa05356aefb58b665f6290092c99a95f23edc1bdb",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    },
+    {
+      "symbol": "CSGS",
+      "raw_records": 279,
+      "accepted": 279,
+      "excluded": 0,
+      "reasons": {},
+      "date_only": 279,
+      "language_unknown": 279,
+      "lag2_outside_calendar": 0,
+      "first_available_at": "2009-12-21T21:05:00+00:00",
+      "last_available_at": "2025-04-04T20:05:00+00:00",
+      "artifacts": {
+        "news.parquet": "cdcf70a60d63ac839271a594156ac623a1ce15132ab06419460b0fa218450804",
+        "exclusions.parquet": "ec2e82dc3c6502d38db692a747912b9afaf99d8400a34bdcfa6aa763ddf4aae8"
+      }
+    }
+  ],
+  "source_hashes": {
+    "text/sp500_news/MNST.jsonl": "9bc020980952b152553b3e1c2937a8e75c6f1cc1748f53517637970bdbe3cbc0",
+    "text/sp500_news/ABM.jsonl": "93c2113b3c05b2262b16794d25d0e876c1b6b2c1b3c9b1b1c3378c5a1fb3fcdf",
+    "text/sp500_news/DECK.jsonl": "50f7fc49b915b11713fdb044c3899141ea041f6d031483508cade315b353ce10",
+    "text/sp500_news/CSGS.jsonl": "c8cf766401bd3bba460d5beb6e6256997911e3a24d809fc32848805a9bf9b95d"
+  },
+  "implementation_sha256": {
+    "news.py": "db88a46a0a9a199f220d86d16c10e4944f01fe1bdc2a4bf593e13ac5f4f560e5",
+    "news_audit.py": "875dfa094b739ad3c0efb4969243bd3c0b730efaa193e842719b9e84ddc88b49"
+  },
+  "lag2_shift_hours": {
+    "min": 21.0,
+    "max": 120.0
+  },
+  "elapsed_seconds": 0.2656057560016052,
+  "peak_rss_mib": 202.734375
+}

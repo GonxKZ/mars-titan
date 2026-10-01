@@ -1,0 +1,81 @@
+{
+  "code_sha256": "09ccc6f3e9e9e62d002c7470eb5a6af2965f258be029c2b5a3de98fd3ae6f28e",
+  "tests_passed": 496,
+  "tests_skipped": 0,
+  "pytest_seconds": 45.01,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "coverage": {
+    "covered_lines": 95,
+    "num_statements": 95,
+    "percent_covered": 98.65771812080537,
+    "percent_covered_display": "99",
+    "missing_lines": 0,
+    "excluded_lines": 0,
+    "percent_statements_covered": 100.0,
+    "percent_statements_covered_display": "100",
+    "num_branches": 54,
+    "num_partial_branches": 2,
+    "covered_branches": 52,
+    "missing_branches": 2,
+    "percent_branches_covered": 96.29629629629629,
+    "percent_branches_covered_display": "96"
+  },
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "functions": [
+    {
+      "name": "_component",
+      "complexity": 8,
+      "statement_coverage_fraction": 1.0,
+      "crap": 8.0
+    },
+    {
+      "name": "_factor",
+      "complexity": 21,
+      "statement_coverage_fraction": 1.0,
+      "crap": 21.0
+    },
+    {
+      "name": "derive_company_factors",
+      "complexity": 18,
+      "statement_coverage_fraction": 1.0,
+      "crap": 18.0
+    },
+    {
+      "name": "write_company_factors",
+      "complexity": 5,
+      "statement_coverage_fraction": 1.0,
+      "crap": 5.0
+    }
+  ],
+  "targeted_mutations_detected": 4,
+  "targeted_mutations_total": 4,
+  "mutation_scope": "four_selected_mutations_not_exhaustive",
+  "mutations": [
+    "allow_zero_denominator",
+    "accept_flows",
+    "ignore_accession",
+    "earliest_publication"
+  ],
+  "review_regression": "later_incomplete_balance_does_not_silently_retain_old_ratios",
+  "whole_process_measurements": {
+    "materialization_v3": {
+      "seconds": 8.89,
+      "maximum_rss_kib": 1994848
+    },
+    "ridge": {
+      "seconds": 3.46,
+      "maximum_rss_kib": 1117232
+    },
+    "boosting": {
+      "seconds": 4.02,
+      "maximum_rss_kib": 855040
+    },
+    "gru": {
+      "seconds": 4.92,
+      "maximum_rss_kib": 1488048
+    }
+  },
+  "process_measurement_tool": "GNU time -v",
+  "concurrency": "single_process_corpus_audit_active_ridge_and_boosting_overlap_gru_afterwards"
+}

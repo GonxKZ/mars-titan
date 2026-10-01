@@ -1,4 +1,4 @@
-"""Descargar instantáneas públicas nuevas, sin modificar el benchmark ni capturas previas."""
+"""Descargar instantáneas públicas nuevas, sin modificar la referencia ni capturas previas."""
 
 from __future__ import annotations
 

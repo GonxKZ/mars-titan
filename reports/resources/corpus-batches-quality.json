@@ -1,0 +1,129 @@
+{
+  "measured_at": "2026-09-24T11:21:22.796476+00:00",
+  "source": "src/mars_titan/training/corpus_inputs.py",
+  "source_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+  "focused_suite": {
+    "tests": 72,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 10.095,
+    "files": [
+      "tests/training/test_corpus_inputs.py",
+      "tests/training/test_corpus_targets.py",
+      "tests/training/test_price_context_blocks.py",
+      "tests/training/test_corpus_batches_benchmark.py"
+    ]
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "coverage": {
+    "covered_lines": 253,
+    "num_statements": 291,
+    "percent_covered": 82.6879271070615,
+    "percent_covered_display": "83",
+    "missing_lines": 38,
+    "excluded_lines": 0,
+    "percent_statements_covered": 86.94158075601375,
+    "percent_statements_covered_display": "87",
+    "num_branches": 148,
+    "num_partial_branches": 36,
+    "covered_branches": 110,
+    "missing_branches": 38,
+    "percent_branches_covered": 74.32432432432432,
+    "percent_branches_covered_display": "74"
+  },
+  "functions": [
+    {
+      "name": "_unique",
+      "complexity": 3,
+      "statement_coverage_fraction": 0.8571428571428571,
+      "crap": 3.0262390670553936
+    },
+    {
+      "name": "_times",
+      "complexity": 4,
+      "statement_coverage_fraction": 0.75,
+      "crap": 4.25
+    },
+    {
+      "name": "_random",
+      "complexity": 1,
+      "statement_coverage_fraction": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "_availability",
+      "complexity": 12,
+      "statement_coverage_fraction": 0.8181818181818182,
+      "crap": 12.865514650638616
+    },
+    {
+      "name": "_price_contexts",
+      "complexity": 14,
+      "statement_coverage_fraction": 1.0,
+      "crap": 14.0
+    },
+    {
+      "name": "_new_batch",
+      "complexity": 2,
+      "statement_coverage_fraction": 1.0,
+      "crap": 2.0
+    },
+    {
+      "name": "_fill_batch",
+      "complexity": 11,
+      "statement_coverage_fraction": 0.95,
+      "crap": 11.015125
+    },
+    {
+      "name": "supervised_batches",
+      "complexity": 1,
+      "statement_coverage_fraction": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "prepare_corpus_targets",
+      "complexity": 1,
+      "statement_coverage_fraction": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "CorpusDataset.__init__",
+      "complexity": 28,
+      "statement_coverage_fraction": 0.88,
+      "crap": 29.354752
+    },
+    {
+      "name": "CorpusDataset._file",
+      "complexity": 10,
+      "statement_coverage_fraction": 0.85,
+      "crap": 10.3375
+    },
+    {
+      "name": "CorpusDataset._labels",
+      "complexity": 21,
+      "statement_coverage_fraction": 0.7857142857142857,
+      "crap": 25.339285714285715
+    },
+    {
+      "name": "CorpusDataset._blocks",
+      "complexity": 41,
+      "statement_coverage_fraction": 0.8441558441558441,
+      "crap": 47.36266819704162
+    },
+    {
+      "name": "CorpusDataset.batches",
+      "complexity": 26,
+      "statement_coverage_fraction": 0.8888888888888888,
+      "crap": 26.92729766803841
+    }
+  ],
+  "limits": [
+    "Cobertura de las pruebas dirigidas, con ramas medidas por coverage.py.",
+    "CRAP usa cobertura de sentencias en el intervalo de cada función y complejidad de Radon.",
+    "La puntuación no sustituye las comprobaciones de comportamiento.",
+    "No se ejecutan modelos ni CUDA en esta verificación."
+  ]
+}

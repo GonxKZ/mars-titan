@@ -1,0 +1,411 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-09-24T10:04:53.619647Z",
+  "base_revision": "0e5d85c66a14300f0f6d8e00c63a50771cc15678",
+  "source_sha256": {
+    "src/mars_titan/observatory/collector.py": "0f2ffaafd94d36da7b6110891f90604bef80f73b85ae29e55613935874e8609c",
+    "src/mars_titan/observatory/activities.py": "65687acfa1b8ae8323dccbf848739acfb90be8e334f1f9aafac42c0c823923ea",
+    "site/state.mjs": "75d54e12f625180945f2cc1bfec8ca3ece5aa8f1b8a9be4f606ebae64faf3cdf",
+    "site/app.js": "b3650324452ac2bda2756fb940174365784249daef9d13a2032f4b53c774d84b",
+    "configs/observatory/campaigns.json": "516f3a04905e2320f8e723763078dc266c3d36bc323d0554a6b8c11add67f715",
+    "tests/tooling/test_observatory_experiments.py": "069f3394338639fdd8d50b12a44de8537ffd5c7e163ae398a6435251e0c8160a",
+    "site/tests/experiments-browser.mjs": "6afeaa7f7a0a50a95c01de8060ff682828dc95afea79599d21651a8c2fe399eb"
+  },
+  "tools": {
+    "coverage.py": "7.16.1",
+    "radon": "6.0.1",
+    "pytest": "9.1.1",
+    "node": "v24.21.0",
+    "python": "3.12.14",
+    "system": "Linux",
+    "release": "7.0.0-31-generic",
+    "machine": "x86_64"
+  },
+  "tests": {
+    "python_passed": 132,
+    "javascript_passed": 27
+  },
+  "coverage": {
+    "scope": "mars_titan.observatory",
+    "totals": {
+      "covered_lines": 507,
+      "num_statements": 554,
+      "percent_covered": 88.65853658536585,
+      "percent_covered_display": "89",
+      "missing_lines": 47,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.51624548736461,
+      "percent_statements_covered_display": "92",
+      "num_branches": 266,
+      "num_partial_branches": 46,
+      "covered_branches": 220,
+      "missing_branches": 46,
+      "percent_branches_covered": 82.70676691729324,
+      "percent_branches_covered_display": "83"
+    },
+    "convention": "Cobertura de sentencias y ramas del proceso principal con coverage.py. Los subprocesos de pruebas no están instrumentados."
+  },
+  "crap": {
+    "convention": "CC² × (1 − cobertura de sentencias de la función)³ + CC. CC de Radon y cobertura por función de coverage.py. No se suman los agregados de clase ni se incluyen cierres locales como funciones separadas. Diagnóstico, no prueba de corrección.",
+    "functions": [
+      {
+        "file": "src/mars_titan/observatory/activities.py",
+        "name": "classify",
+        "complexity": 14,
+        "line_coverage": 0.9090909090909091,
+        "crap": 14.14725770097671
+      },
+      {
+        "file": "src/mars_titan/observatory/activities.py",
+        "name": "financial_validation",
+        "complexity": 22,
+        "line_coverage": 0.8888888888888888,
+        "crap": 22.663923182441703
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "digest",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "identifier",
+        "complexity": 3,
+        "line_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "finite",
+        "complexity": 4,
+        "line_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "utc",
+        "complexity": 3,
+        "line_coverage": 0.8333333333333333,
+        "crap": 3.0416666666666665
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "planned_runs",
+        "complexity": 34,
+        "line_coverage": 0.9090909090909091,
+        "crap": 34.86851990984223
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "_check_sha256",
+        "complexity": 4,
+        "line_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "_report_paths",
+        "complexity": 7,
+        "line_coverage": 0.9166666666666667,
+        "crap": 7.028356481481482
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "safe_path",
+        "complexity": 5,
+        "line_coverage": 0.8888888888888888,
+        "crap": 5.034293552812072
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "lock_held",
+        "complexity": 5,
+        "line_coverage": 0.9285714285714286,
+        "crap": 5.009110787172012
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "_resources",
+        "complexity": 14,
+        "line_coverage": 0.9047619047619048,
+        "crap": 14.16931216931217
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "public_run",
+        "complexity": 54,
+        "line_coverage": 0.95,
+        "crap": 54.3645
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "validation_metrics",
+        "complexity": 16,
+        "line_coverage": 0.9473684210526316,
+        "crap": 16.037323224959906
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "validate_record",
+        "complexity": 34,
+        "line_coverage": 0.7714285714285714,
+        "crap": 47.8045947521866
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "write_pages",
+        "complexity": 10,
+        "line_coverage": 0.9444444444444444,
+        "crap": 10.017146776406035
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "Collector.__init__",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "Collector.__enter__",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "Collector.__exit__",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "Collector.read",
+        "complexity": 14,
+        "line_coverage": 0.9117647058823529,
+        "crap": 14.13464278444942
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "Collector.collect",
+        "complexity": 32,
+        "line_coverage": 0.88,
+        "crap": 33.769472
+      },
+      {
+        "file": "src/mars_titan/observatory/collector.py",
+        "name": "Collector._campaign",
+        "complexity": 26,
+        "line_coverage": 0.9473684210526316,
+        "crap": 26.098556640909752
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "publication_identity",
+        "complexity": 5,
+        "line_coverage": 1.0,
+        "crap": 5.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "PublicationSchedule.due",
+        "complexity": 4,
+        "line_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "PublicationSchedule.succeeded",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "PublicationSchedule.failed",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "GitPublisher.__init__",
+        "complexity": 4,
+        "line_coverage": 0.8571428571428571,
+        "crap": 4.0466472303206995
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "GitPublisher.allowed",
+        "complexity": 2,
+        "line_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "GitPublisher.git",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "GitPublisher.publish",
+        "complexity": 14,
+        "line_coverage": 0.7857142857142857,
+        "crap": 15.928571428571429
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "PublicationWorker.__init__",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "PublicationWorker.tick",
+        "complexity": 7,
+        "line_coverage": 0.8,
+        "crap": 7.3919999999999995
+      },
+      {
+        "file": "src/mars_titan/observatory/publication.py",
+        "name": "PublicationWorker.close",
+        "complexity": 2,
+        "line_coverage": 1.0,
+        "crap": 2.0
+      }
+    ]
+  },
+  "mutations": {
+    "source": "src/mars_titan/observatory/collector.py",
+    "source_sha256": "0f2ffaafd94d36da7b6110891f90604bef80f73b85ae29e55613935874e8609c",
+    "method": "Mutaciones dirigidas en memoria en procesos separados de pytest",
+    "detected": 3,
+    "attempted": 3,
+    "results": [
+      {
+        "mutation": "configuration_hash",
+        "before": "or hashlib.sha256(body).hexdigest() != expected",
+        "after": "or False",
+        "pytest_exit": 1,
+        "failures": [
+          {
+            "test": "tests/tooling/test_observatory_experiments.py::test_configuration_pin_is_checked_even_when_the_file_is_cached",
+            "phase": "call"
+          }
+        ]
+      },
+      {
+        "mutation": "neural_controls",
+        "before": "family == \"neural\" for family in parents.values()",
+        "after": "family in {\"neural\", \"tabular\"} for family in parents.values()",
+        "pytest_exit": 1,
+        "failures": [
+          {
+            "test": "tests/tooling/test_observatory_experiments.py::test_paired_plan_counts_modes_seeds_conditions_and_declared_families",
+            "phase": "call"
+          }
+        ]
+      },
+      {
+        "mutation": "memory_scope",
+        "before": "ram_peak_mib=executable if executable is not None else lifetime",
+        "after": "ram_peak_mib=lifetime if lifetime is not None else executable",
+        "pytest_exit": 1,
+        "failures": [
+          {
+            "test": "tests/tooling/test_observatory_experiments.py::test_native_receipt_exports_memory_scopes_and_ignores_private_files",
+            "phase": "call"
+          }
+        ]
+      }
+    ]
+  },
+  "collection": {
+    "generated_at": "2026-09-24T10:04:52.947901Z",
+    "registered_runs": 669,
+    "pages": 11,
+    "native_technical_runs": 18,
+    "planned_runs": {
+      "native-financial-check-20260924": 18,
+      "paired-posttraining-20260924": 396,
+      "financial-training-20260924": 6,
+      "financial-check-20260924": 88,
+      "synthetic-worlds-20260924-v2": 12,
+      "neural-original-us": 80,
+      "tabular-original-us": 17,
+      "adaptation-original-us": 216,
+      "reference-edition-20260922": 96,
+      "reference-post-scan-20260923": 96,
+      "streaming-20260923": 96,
+      "tabular-edition-20260922": 4,
+      "tabular-edition-20260923": 4,
+      "tabular-post-scan-20260923": 4,
+      "expanded-check-20260922": 96,
+      "recurrent-check-20260922": 48,
+      "adaptation-check-20260923": 9,
+      "klpo-check-20260924": 36
+    },
+    "private_reads": 0,
+    "parquet_reads": 0,
+    "measurement_scope": "Recolección y escritura de páginas en local. La primera pasada usa una base SQLite nueva. VmHWM del proceso, incluye herramientas de comprobación. Había otras validaciones activas.",
+    "measurements": [
+      {
+        "cache": "cold",
+        "seconds": 0.9706789389892947,
+        "records_per_second": 689.2083191756344,
+        "bytes_read": 23224280,
+        "json_accesses_checked": 1345,
+        "executable_peak_rss_bytes": 46460928
+      },
+      {
+        "cache": "warm",
+        "seconds": 0.6670911269902717,
+        "records_per_second": 1002.8614876326426,
+        "bytes_read": 0,
+        "json_accesses_checked": 1345,
+        "executable_peak_rss_bytes": 54059008
+      },
+      {
+        "cache": "warm",
+        "seconds": 0.6530375620059203,
+        "records_per_second": 1024.4433688393792,
+        "bytes_read": 0,
+        "json_accesses_checked": 1345,
+        "executable_peak_rss_bytes": 54407168
+      }
+    ]
+  },
+  "browser": {
+    "pages": 2,
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 1050
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "native_source_sha256": "84a01c28c9b34033f8a7103476a7524256d009dab03b9ecfbf0bd63899eb8a65",
+    "observed_executable_rss_text": "35",
+    "observed_lifetime_rss_text": "653",
+    "condition": "real_synthetic",
+    "parent_model": "gru",
+    "page_errors": 0,
+    "fixture_scope": "Un recibo nativo real saneado y una fixture técnica de postentrenamiento. Se esperó el texto completo de cada página.",
+    "browser_version": "153.0.8010.47"
+  },
+  "limits": [
+    "Las 396 ejecuciones emparejadas y los seis entrenamientos financieros son planes.",
+    "Los recibos nativos son comprobaciones técnicas y se conserva su historia.",
+    "No se modificó el servicio ni se publicó el resultado.",
+    "Tres mutaciones dirigidas no equivalen a una campaña exhaustiva."
+  ]
+}

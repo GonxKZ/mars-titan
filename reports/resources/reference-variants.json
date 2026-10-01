@@ -1,0 +1,1787 @@
+{
+  "purpose": "exploratory_strict_sample_configurations_not_final_comparison",
+  "config_sha256": "3e469b7a9d46cd8a6cfea303ca55d798ed3b5b7e3ca8ebcee6a1c5e893c64a4e",
+  "script_sha256": "78065b941374b139a3425e0c776ef4a69ec72890708ec9fa954942160643015e",
+  "planned_runs": 42,
+  "runs": [
+    {
+      "id": "gru-mse-0.0001-s42",
+      "kind": "gru",
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mse-0.0001-s42.json",
+      "report_sha256": "f52c08f9de8b63649866c5577e95b1341fafb0f29c4b525090369b43655bece0",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.017022752764286234,
+          "mse": 0.0004550943877207505
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "efc9628c4532dc994c4b1e1c23cd9169b723faa03677b59b900771ac932204d8",
+      "checkpoint_sha256": "5cebbc7b66d9292e58678ae7c1bd853182a218fd8cb9a735fc5f520125cac4a9",
+      "initialization": null,
+      "training_seconds": 0.7492175419993146,
+      "validation_seconds": 0.28753008900093846,
+      "runner_seconds": 6.843484732999059,
+      "peak_rss_mib": 1375.94140625,
+      "peak_vram_allocated_mib": 76.3935546875,
+      "exact_recovery": true,
+      "outer_seconds": 6.866774337999232
+    },
+    {
+      "id": "gru-mse-0.0001-s43",
+      "kind": "gru",
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mse-0.0001-s43.json",
+      "report_sha256": "e1aa86e88dbf7b42356490a1dd3aef9c88e97c40d5a90624fef9fd209e0cf9b2",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.03657331230375584,
+          "mse": 0.0017500415159683715
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "37ce9550d8c4037634fd66f34e5e7e6886b26ddc4e4edd7b56adf8d02e656c8e",
+      "checkpoint_sha256": "4cb3a39ebdefbf5e8bcda30010255cbe8d42b90203eeaf309398475f5bafd824",
+      "initialization": null,
+      "training_seconds": 0.5368330300007074,
+      "validation_seconds": 0.30527842899209645,
+      "runner_seconds": 5.548534814999584,
+      "peak_rss_mib": 1394.05078125,
+      "peak_vram_allocated_mib": 76.3935546875,
+      "exact_recovery": true,
+      "outer_seconds": 5.5722677650010155
+    },
+    {
+      "id": "gru-mse-0.0001-s44",
+      "kind": "gru",
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mse-0.0001-s44.json",
+      "report_sha256": "641de78469e9a93d6ee5eff5e3d751adfa70968d13b629ba3d493dd29c691156",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.019426807787987208,
+          "mse": 0.0006191138180585128
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "a81eb9e9518079d9b63aae4b3dbce2f7de9b5f9798ab6d88ebdadee798e48cca",
+      "checkpoint_sha256": "66ccf3b3969fa3ef5d0f5d8484c3edfdc3c7902cc0d3989fbf9296323386a5ed",
+      "initialization": null,
+      "training_seconds": 0.5424097160030215,
+      "validation_seconds": 0.31337927400272747,
+      "runner_seconds": 5.70275405600114,
+      "peak_rss_mib": 1404.33203125,
+      "peak_vram_allocated_mib": 76.3935546875,
+      "exact_recovery": true,
+      "outer_seconds": 5.726822167000137
+    },
+    {
+      "id": "gru-mse-0.001-s42",
+      "kind": "gru",
+      "loss": "mse",
+      "learning_rate": 0.001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mse-0.001-s42.json",
+      "report_sha256": "f5133a23c36d23749a0005af2ee5662d4939961f0d1f8edb4b3c6240588b1b6a",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.010416286903644111,
+          "mse": 0.00016787240936054083
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "57c677fb2ef1dc815961b46eaa08ae2f59d69fa3114b368b5aeaeeb223737e86",
+      "checkpoint_sha256": "4d640e18b0f4b721b60bbe72fba42b5b7782d9dd6fb5760ea79d4f45a65a8f88",
+      "initialization": null,
+      "training_seconds": 0.547154417999991,
+      "validation_seconds": 0.31484943800387555,
+      "runner_seconds": 5.59825382300005,
+      "peak_rss_mib": 1405.18359375,
+      "peak_vram_allocated_mib": 76.3935546875,
+      "exact_recovery": true,
+      "outer_seconds": 5.622397695000473
+    },
+    {
+      "id": "gru-mse-0.001-s43",
+      "kind": "gru",
+      "loss": "mse",
+      "learning_rate": 0.001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mse-0.001-s43.json",
+      "report_sha256": "b54465669e90b1831c1e131f02e69ce3480aeb6ea98b7c5b137aa0a0a9dfaaac",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.013569933485414576,
+          "mse": 0.0002893248354478443
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "ff239924c7a9d3f87f04e04a655b59c84d731556cce73b48f83e0ce33f3364b7",
+      "checkpoint_sha256": "c54fa5460a378510a4d05120e4e855beabcfef7e6faebdfc20098d3671824275",
+      "initialization": null,
+      "training_seconds": 0.5527006549982616,
+      "validation_seconds": 0.3146633770029439,
+      "runner_seconds": 5.590413906000322,
+      "peak_rss_mib": 1406.00390625,
+      "peak_vram_allocated_mib": 76.3935546875,
+      "exact_recovery": true,
+      "outer_seconds": 5.61470993599869
+    },
+    {
+      "id": "gru-mse-0.001-s44",
+      "kind": "gru",
+      "loss": "mse",
+      "learning_rate": 0.001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mse-0.001-s44.json",
+      "report_sha256": "0b3cbc01a89c0a20a8e45f46171294d56f1b6c2125ad133d2b3a243298769fae",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.0121595587032806,
+          "mse": 0.00027936696939250845
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "3caf942c27340ff07cc7505c3fe1159ec57363f568af033341025c928b8b7b1f",
+      "checkpoint_sha256": "f787f7bdceaca83e5dae84347aa53fddf8c4fbd78b9994cfb2241b0d88ca4d68",
+      "initialization": null,
+      "training_seconds": 0.5566641829936998,
+      "validation_seconds": 0.3151118739951926,
+      "runner_seconds": 5.705008472999907,
+      "peak_rss_mib": 1406.5859375,
+      "peak_vram_allocated_mib": 76.3935546875,
+      "exact_recovery": true,
+      "outer_seconds": 5.72914400099944
+    },
+    {
+      "id": "gru-mae-0.0001-s42",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mae-0.0001-s42.json",
+      "report_sha256": "ca89bc432b4ec1358d0d3421d3f533ba83cf18fcb322f3cf96fe6dbfd72d1bee",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.013710587764522934,
+          "mse": 0.0003319102378497033
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "9cf5de538a3052e5a343e1f7fbe26422b2cbe98b6cd2bece4b2ec330b7fe803a",
+      "checkpoint_sha256": "72a406a60e31b0adf8de797efb76a7b0d3b10a72b7407bccc267525c24a10fd4",
+      "initialization": null,
+      "training_seconds": 0.5778131080005551,
+      "validation_seconds": 0.31604613599847653,
+      "runner_seconds": 5.651710720998381,
+      "peak_rss_mib": 1433.4453125,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 5.676471165001203
+    },
+    {
+      "id": "gru-mae-0.0001-s43",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mae-0.0001-s43.json",
+      "report_sha256": "972d3652bdf006b2852f2d9cb93a7705bfd6d5155fbeb881c948883f39e2951b",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.034730531644159714,
+          "mse": 0.0015739379032122217
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "7a017971b471cef58e874998e8a914b414582d7a9a91c84228394c48b3a8a300",
+      "checkpoint_sha256": "9ba6959c6d64559a7dcb5ce023f412beb163e9852274d1b05a6bc299f85d0dce",
+      "initialization": null,
+      "training_seconds": 0.5537293390025297,
+      "validation_seconds": 0.3161112489960942,
+      "runner_seconds": 5.660261330000139,
+      "peak_rss_mib": 1435.234375,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 5.684889455000302
+    },
+    {
+      "id": "gru-mae-0.0001-s44",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mae-0.0001-s44.json",
+      "report_sha256": "16c64ff2db6b5ccb54cc9261bf394175ca295024444c411142050ecae75d2308",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.019763470095368836,
+          "mse": 0.0006302575165045675
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "d8535ec39f80b4a59425a50f4c2df0b661b849f677b3506161d106bd29d6e974",
+      "checkpoint_sha256": "b5396b4b3eeac2848145f44776bddd3bce46e687b34098bec75af50045fc8ecf",
+      "initialization": null,
+      "training_seconds": 0.5569600239996362,
+      "validation_seconds": 0.31629853100093897,
+      "runner_seconds": 5.750544110000192,
+      "peak_rss_mib": 1436.0703125,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 5.77536185200006
+    },
+    {
+      "id": "gru-mae-0.001-s42",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mae-0.001-s42.json",
+      "report_sha256": "37e24d24fed0b1150725a7b3f469d4aa2914ad159f5ae5efba06d3ab73e57859",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.015056370011395207,
+          "mse": 0.0003777654831989753
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "f7f52bdea14fde6c832ff5747d3cd0ef5f38aa8d1f54677305118444936da07d",
+      "checkpoint_sha256": "73e7da968333bf18c6eca1a4b782a1f51d3f02149949edaeed04da352b2b3a22",
+      "initialization": null,
+      "training_seconds": 0.5461942089987133,
+      "validation_seconds": 0.31846460200540605,
+      "runner_seconds": 5.614774322000812,
+      "peak_rss_mib": 1440.234375,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 5.639439968999795
+    },
+    {
+      "id": "gru-mae-0.001-s43",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mae-0.001-s43.json",
+      "report_sha256": "a72095f60d3b915e3e357e0fc3afb583f5587197967f1726a70e82fe0a1b16ea",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.009622471452427643,
+          "mse": 0.00014932163142908193
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "636b12aecb91b3393c67722c9e352bebd7c3455978cef89420507b6ec8700b52",
+      "checkpoint_sha256": "5909d7a78d6583aaa303310dafb1b300a7658c4174be18f26bf4dabf55752d1b",
+      "initialization": null,
+      "training_seconds": 0.5478012699968531,
+      "validation_seconds": 0.31444784199629794,
+      "runner_seconds": 5.76690379700085,
+      "peak_rss_mib": 1440.234375,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 5.7914832000005845
+    },
+    {
+      "id": "gru-mae-0.001-s44",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-mae-0.001-s44.json",
+      "report_sha256": "8f8ade4216f7d8cca4914ac67dc8920c6649a261aa8776aec4a981a77293346f",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.015077611873452286,
+          "mse": 0.0003464374119691035
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "4ce2b0c056a33126372f7b01c6551490e427edeb25134af8299efbb08bb7b76f",
+      "checkpoint_sha256": "9b37324b8174bfaa006f1dfd4afa8f4708fb27936c0d9fc0cc131a99491c839b",
+      "initialization": null,
+      "training_seconds": 0.5572984749978787,
+      "validation_seconds": 0.3150194370045938,
+      "runner_seconds": 5.640175503000137,
+      "peak_rss_mib": 1440.234375,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 5.6645515549989796
+    },
+    {
+      "id": "gru-huber-0.0001-s42",
+      "kind": "gru",
+      "loss": "huber",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-huber-0.0001-s42.json",
+      "report_sha256": "2dae4fa8fbdf7b3c6f5a3e049e2e1b85eab52d45ed741ce1849c7d9d03039d3e",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.013069685925992221,
+          "mse": 0.00033035196121097046
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "9c2a9c5e10328e447a600b1cc8d92f60bcdc0d9e606d6b8fa849f932dcb91659",
+      "checkpoint_sha256": "4fb388e9f1e0b2719254137053f390615af07634d81d3c66d87a18a9c40b6ea7",
+      "initialization": null,
+      "training_seconds": 0.5527027670050302,
+      "validation_seconds": 0.32009839399688644,
+      "runner_seconds": 5.653760376000719,
+      "peak_rss_mib": 1440.51171875,
+      "peak_vram_allocated_mib": 76.39404296875,
+      "exact_recovery": true,
+      "outer_seconds": 5.6783655979998
+    },
+    {
+      "id": "gru-huber-0.0001-s43",
+      "kind": "gru",
+      "loss": "huber",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-huber-0.0001-s43.json",
+      "report_sha256": "5d1c8f7fceaf5a94e3129fa54117f23941cd609c232cb7a1718bc3a9fd2b5fa2",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.031535606330965124,
+          "mse": 0.0013789069065345523
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "ffcd6bcfb596e6ae7a4c60f23ba97f6adeea0d0bd40262ff53ccd0d82f640c14",
+      "checkpoint_sha256": "864c153c5004ba8c049c4b1cbe2151b28ec1f37c4c7135f2bbf3fd0f4a16ea16",
+      "initialization": null,
+      "training_seconds": 0.5517832750047091,
+      "validation_seconds": 0.3165117689932231,
+      "runner_seconds": 5.749486345999685,
+      "peak_rss_mib": 1440.51171875,
+      "peak_vram_allocated_mib": 76.39404296875,
+      "exact_recovery": true,
+      "outer_seconds": 5.773855145000198
+    },
+    {
+      "id": "gru-huber-0.0001-s44",
+      "kind": "gru",
+      "loss": "huber",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-huber-0.0001-s44.json",
+      "report_sha256": "ece8a67363471e51108c9cd3eafe7afc004bd560a2fcf5346cee8cfae04818dd",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.020893201254961562,
+          "mse": 0.0006948780873371221
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "ecb1ae5a4667a60c6b65e74c994f65ed64a43704db93afa0dee58d49b9d643c8",
+      "checkpoint_sha256": "3d6c61807302aafac178ed902df6951392cbd0694c0604caf06daff5a4b1b37d",
+      "initialization": null,
+      "training_seconds": 0.5444099320011446,
+      "validation_seconds": 0.315992854997603,
+      "runner_seconds": 5.635567417999482,
+      "peak_rss_mib": 1440.51171875,
+      "peak_vram_allocated_mib": 76.39404296875,
+      "exact_recovery": true,
+      "outer_seconds": 5.661021087000336
+    },
+    {
+      "id": "gru-huber-0.001-s42",
+      "kind": "gru",
+      "loss": "huber",
+      "learning_rate": 0.001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-huber-0.001-s42.json",
+      "report_sha256": "539c854b9a92a0aeff8022246b6efcc9ae120a3e00343837117620a63b2763ec",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.010796506825684475,
+          "mse": 0.00018789496013346007
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "4e67b64b145334240ee55ac20ca3c3d65b1613d1104c1af8d0162c195b24b94e",
+      "checkpoint_sha256": "185f0d13c02806a1ea8e771cdac2a5fba2d478bbbcff6628f5f962e249215124",
+      "initialization": null,
+      "training_seconds": 0.552920822003216,
+      "validation_seconds": 0.3168589409960987,
+      "runner_seconds": 5.76289029399959,
+      "peak_rss_mib": 1440.51171875,
+      "peak_vram_allocated_mib": 76.39404296875,
+      "exact_recovery": true,
+      "outer_seconds": 5.787615884000843
+    },
+    {
+      "id": "gru-huber-0.001-s43",
+      "kind": "gru",
+      "loss": "huber",
+      "learning_rate": 0.001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-huber-0.001-s43.json",
+      "report_sha256": "e6c5658d619cdeda61df28bec8170030fb06719939940c249907d318ac73d298",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.02633004916264754,
+          "mse": 0.0009726785125415996
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "62e4e493153f194bff1aabe7bfc49634398c714209b0d8fa57f6d4da1f397e1b",
+      "checkpoint_sha256": "5781cff63028f9a24ba0c024e830000aa087be7c8f9663f67c6f101c25e8703e",
+      "initialization": null,
+      "training_seconds": 0.5579810829949565,
+      "validation_seconds": 0.3200228230034554,
+      "runner_seconds": 5.665510744998755,
+      "peak_rss_mib": 1440.51171875,
+      "peak_vram_allocated_mib": 76.39404296875,
+      "exact_recovery": true,
+      "outer_seconds": 5.690160884001671
+    },
+    {
+      "id": "gru-huber-0.001-s44",
+      "kind": "gru",
+      "loss": "huber",
+      "learning_rate": 0.001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-huber-0.001-s44.json",
+      "report_sha256": "8c778855bb1b49a00bddbcfb5692a0873988c0bc53d13f50126381669bef7723",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.011542571902180136,
+          "mse": 0.00022708636847142095
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "747ae256c5f27cc6e7c153278c14bc3b73604fde89172b73731a818fdba55305",
+      "checkpoint_sha256": "d182311fe5322528d1f97e9e3a5b65d524d6c00ee5dfa2e9fee92f9dd0861074",
+      "initialization": null,
+      "training_seconds": 0.5592220110029302,
+      "validation_seconds": 0.32123130800209765,
+      "runner_seconds": 5.671716750999622,
+      "peak_rss_mib": 1440.51171875,
+      "peak_vram_allocated_mib": 76.39404296875,
+      "exact_recovery": true,
+      "outer_seconds": 5.696463870999651
+    },
+    {
+      "id": "dlinear-mse-0.0001-s42",
+      "kind": "dlinear",
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mse-0.0001-s42.json",
+      "report_sha256": "6732755d21bd8b81e41324d66291aff73d42559575a7a9ac0dc10b8218f051ad",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.020087263757269873,
+          "mse": 0.0006419605959164851
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "098110beefc26d53792504880617b18bff66468bfb5915d2903783ccfdfe0d8c",
+      "checkpoint_sha256": "56526ad17c4a9f0f977fbfa86476e60fe31217c815eae3b3445e09cfa5f2d27e",
+      "initialization": null,
+      "training_seconds": 0.5241716380078287,
+      "validation_seconds": 0.31667197000024316,
+      "runner_seconds": 5.710889242000121,
+      "peak_rss_mib": 1447.76953125,
+      "peak_vram_allocated_mib": 65.0703125,
+      "exact_recovery": true,
+      "outer_seconds": 5.735782907999237
+    },
+    {
+      "id": "dlinear-mse-0.0001-s43",
+      "kind": "dlinear",
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mse-0.0001-s43.json",
+      "report_sha256": "ad374a21a2bc5ceaff9367e6b0dedea99d7e82f4ec0abee9006edc1670955a1d",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.011731236723158671,
+          "mse": 0.00026129995482650534
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "b0b0a2ea4c86c0d9a83177f702347725da1dfccf7f5c7bdf192d9ac79afa266d",
+      "checkpoint_sha256": "b8df7abdbf50eb4fb0bf765521fda55863acec182252d700469ee533abc73e81",
+      "initialization": null,
+      "training_seconds": 0.5266739650014642,
+      "validation_seconds": 0.3205987659985112,
+      "runner_seconds": 5.653400121998857,
+      "peak_rss_mib": 1448.328125,
+      "peak_vram_allocated_mib": 65.0703125,
+      "exact_recovery": true,
+      "outer_seconds": 5.67839566099974
+    },
+    {
+      "id": "dlinear-mse-0.0001-s44",
+      "kind": "dlinear",
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mse-0.0001-s44.json",
+      "report_sha256": "6123a41e97bdc8af799ce293a2287106731ff991efbd91d110383076610c095f",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.014039281778280174,
+          "mse": 0.0003782133646625622
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "e8fbce212d5b467beacbbd747fbd5193dd487c79570ee5730c038d20741de921",
+      "checkpoint_sha256": "c5b8461e752662c5f6b1ae3ca4e84a7ff108d0a8f97aa8645a27171b382b9f2f",
+      "initialization": null,
+      "training_seconds": 0.527376763004213,
+      "validation_seconds": 0.3194156949975877,
+      "runner_seconds": 5.626430315998732,
+      "peak_rss_mib": 1448.8828125,
+      "peak_vram_allocated_mib": 65.0703125,
+      "exact_recovery": true,
+      "outer_seconds": 5.651255545000822
+    },
+    {
+      "id": "dlinear-mse-0.001-s42",
+      "kind": "dlinear",
+      "loss": "mse",
+      "learning_rate": 0.001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mse-0.001-s42.json",
+      "report_sha256": "d1cda863d6f90e3e158e705978f29184919a0efe4b6b5c7dd6f831adace765b3",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.012361205393355383,
+          "mse": 0.0002451929923036829
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "f30d2cd780a42086747aab1b07ea2e18e7a8527bbc3d6f2e6d2140bbc6ec1430",
+      "checkpoint_sha256": "9abf41bf9e2d3bb90274de0a983bb1e0cc43b646ef368c23e9d71ba18e71aa1a",
+      "initialization": null,
+      "training_seconds": 0.5226050239998585,
+      "validation_seconds": 0.3153560249993461,
+      "runner_seconds": 5.73484133599959,
+      "peak_rss_mib": 1448.8828125,
+      "peak_vram_allocated_mib": 65.0703125,
+      "exact_recovery": true,
+      "outer_seconds": 5.760035559000244
+    },
+    {
+      "id": "dlinear-mse-0.001-s43",
+      "kind": "dlinear",
+      "loss": "mse",
+      "learning_rate": 0.001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mse-0.001-s43.json",
+      "report_sha256": "1a28cccdd7b3c9994f29eecaf3ce28db0eb3aa410bae0dfc4823cfb09ee23d21",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.011495998324686925,
+          "mse": 0.00024001901222023555
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "f13ef873c9ed7c88fecd5544b8ca5ff772970cd4c5a927bb2f97e62ddef88307",
+      "checkpoint_sha256": "68f2ac997f7ee3bc7c91712c1bffdc7e2a8bcb54309021b526193daee4cf44b2",
+      "initialization": null,
+      "training_seconds": 0.5273967289958819,
+      "validation_seconds": 0.32012695700177574,
+      "runner_seconds": 5.642607922000025,
+      "peak_rss_mib": 1448.9453125,
+      "peak_vram_allocated_mib": 65.0703125,
+      "exact_recovery": true,
+      "outer_seconds": 5.6673304779997125
+    },
+    {
+      "id": "dlinear-mse-0.001-s44",
+      "kind": "dlinear",
+      "loss": "mse",
+      "learning_rate": 0.001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mse-0.001-s44.json",
+      "report_sha256": "0a9222f98959d476e4205b079bca8edaa7c86f1758430259d466abe278148c7d",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.013668869561867617,
+          "mse": 0.00029589028338487464
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "eca97666e9b90fec3bdd306056a77c213b0c7a1e9f75d16b29ce31ad936e38e1",
+      "checkpoint_sha256": "baf6663a8890f277cefbb412430146a4d3c3a7f3a34e0b61f67ab42d28f73782",
+      "initialization": null,
+      "training_seconds": 0.5336474379982974,
+      "validation_seconds": 0.31978461899780086,
+      "runner_seconds": 5.7463250380005775,
+      "peak_rss_mib": 1448.9453125,
+      "peak_vram_allocated_mib": 65.0703125,
+      "exact_recovery": true,
+      "outer_seconds": 5.771005173999583
+    },
+    {
+      "id": "dlinear-mae-0.0001-s42",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mae-0.0001-s42.json",
+      "report_sha256": "add54253d4a075322d0d498addaf1e83c629759488a028173f5c940d1a34438d",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.015805080185968056,
+          "mse": 0.00038923378974576076
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "5f94b5c85d8f18697ec50c5de04671e9a01cc49431a3a53df9713f31d5badcbb",
+      "checkpoint_sha256": "c81569e143c03540cd0ff60bfff95d7f2230010a61a9562494d29cb7f1a2eb29",
+      "initialization": null,
+      "training_seconds": 0.5291193560005922,
+      "validation_seconds": 0.31692990800183907,
+      "runner_seconds": 5.6143321010004,
+      "peak_rss_mib": 1448.9921875,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 5.63899649799896
+    },
+    {
+      "id": "dlinear-mae-0.0001-s43",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mae-0.0001-s43.json",
+      "report_sha256": "d6da677681c78ae7e3ccb5f5c6b717bca7f243b9f19f60be96c7701a3ab91d42",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.010500536775191829,
+          "mse": 0.00022415293712639933
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "c6ef1f5e8f5ced89ef6c6199c9a013568d8b03ad47f35fc8d9d6cd282f27681d",
+      "checkpoint_sha256": "cad7deb3c7976b66acfe50c2eb712a710f5f784f9030af3c60816b3bb629b40c",
+      "initialization": null,
+      "training_seconds": 0.5277932900025917,
+      "validation_seconds": 0.3218569309992745,
+      "runner_seconds": 5.626386347999869,
+      "peak_rss_mib": 1448.9921875,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 5.65118639100001
+    },
+    {
+      "id": "dlinear-mae-0.0001-s44",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mae-0.0001-s44.json",
+      "report_sha256": "34961866588a813f691e4982c635c28c2e5d2909df81ee63982de2a96c6e6c88",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.012409509416950555,
+          "mse": 0.00025194116337342237
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "328ebc7686bd214cab3b2b53eb64ec5a81669bcc5a732dda2cbf7f152eca6869",
+      "checkpoint_sha256": "b31eeb12661781a1b063a0707a58208ff9007e211fa3919146e206840ec7734a",
+      "initialization": null,
+      "training_seconds": 0.5280947709998145,
+      "validation_seconds": 0.3166120960013359,
+      "runner_seconds": 5.723976441999184,
+      "peak_rss_mib": 1449.09375,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 5.748687367000457
+    },
+    {
+      "id": "dlinear-mae-0.001-s42",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mae-0.001-s42.json",
+      "report_sha256": "7895e1ffba879609282146276d2d9dea72c9fc751cfd418ba53bc1239a66c207",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.01194975026925517,
+          "mse": 0.00021782444811453764
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "2e77dfaf670ad0946e17ec79752f829d9132424ca5a167590bce70e48d803b98",
+      "checkpoint_sha256": "b50d63c5047990c45fc57915e9f58beae121f250cac16e9fd6a8d6441569830e",
+      "initialization": null,
+      "training_seconds": 0.5376620869974431,
+      "validation_seconds": 0.31654281299415743,
+      "runner_seconds": 5.639999958999397,
+      "peak_rss_mib": 1449.09375,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 5.665122698999767
+    },
+    {
+      "id": "dlinear-mae-0.001-s43",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mae-0.001-s43.json",
+      "report_sha256": "828e9d8e459a6d87b8de1f3edb86c3a1c3ea76ef5d845404a73a1792c382f9c0",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.019430351518632386,
+          "mse": 0.0005477441552601946
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "9e310a9086402469a2c3d6f286ae196893b3fc6f9b8b2fd423635db32a8f773e",
+      "checkpoint_sha256": "53c7f617820f0238efb1b67ae9f7ab8a001839da001516e98901f90cf25d0748",
+      "initialization": null,
+      "training_seconds": 0.528632840996579,
+      "validation_seconds": 0.31616649801071617,
+      "runner_seconds": 5.637624191000214,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 5.662807153999893
+    },
+    {
+      "id": "dlinear-mae-0.001-s44",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-mae-0.001-s44.json",
+      "report_sha256": "29ad301172e1c6ad66b698c9e3f9ca7d79383ba3b3e593a6fb1063ac8174664d",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.015658982208384055,
+          "mse": 0.0003400343249426949
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "825676fca111a0cb03b6495384bdeca833f9df4ef27e20116f712674d088951b",
+      "checkpoint_sha256": "54f62194d4b6536df75273cd3f38348bcb4c3ee04d9a0247fc8ea03b5a283679",
+      "initialization": null,
+      "training_seconds": 0.5281697169994004,
+      "validation_seconds": 0.3152285880078125,
+      "runner_seconds": 5.735701493000306,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 5.760589079998681
+    },
+    {
+      "id": "dlinear-huber-0.0001-s42",
+      "kind": "dlinear",
+      "loss": "huber",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-huber-0.0001-s42.json",
+      "report_sha256": "3dd6ce9c6327227414363aec55ef9622f2ac64806befc98b7fe0976bc8987376",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.01610140306182831,
+          "mse": 0.0004005990179854804
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "23fcb078c558cc8413c7628adf00951730e8486f96ff25a20d79c325420d1551",
+      "checkpoint_sha256": "633cc80695abc59bc520167208a27e98d2a7fd7ce3d592706054fddbcc87ef53",
+      "initialization": null,
+      "training_seconds": 0.5326505859993631,
+      "validation_seconds": 0.31613221200314,
+      "runner_seconds": 5.6304030809988035,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.07080078125,
+      "exact_recovery": true,
+      "outer_seconds": 5.655194628001482
+    },
+    {
+      "id": "dlinear-huber-0.0001-s43",
+      "kind": "dlinear",
+      "loss": "huber",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-huber-0.0001-s43.json",
+      "report_sha256": "ca8a735cb718e847e543ac00d14c8bddcd8f7ea2bc87b7e8c590437e736bb7c1",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.010217940777591032,
+          "mse": 0.00021103520618601763
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "2b64e78f5da13ccb1c245ee5ddd441f17cb05022618c20894f5c3763ddbe25ec",
+      "checkpoint_sha256": "38edac9df5b1fc5542774da94eadc9552e1d0c2866f3cc1a26e15e79d46871ae",
+      "initialization": null,
+      "training_seconds": 0.5353217659994698,
+      "validation_seconds": 0.4237650719987869,
+      "runner_seconds": 5.7409875729990745,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.07080078125,
+      "exact_recovery": true,
+      "outer_seconds": 5.766064677000031
+    },
+    {
+      "id": "dlinear-huber-0.0001-s44",
+      "kind": "dlinear",
+      "loss": "huber",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-huber-0.0001-s44.json",
+      "report_sha256": "fceeede5cda9a82b749a413e580591adf1ce11e61b9c000efef513a1d7b1479d",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.012306075045318877,
+          "mse": 0.00029068219751728845
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "558a4160bdfea24c813648d2b1e7e18843d1ba1fad47c0b9ca152e98a345eff0",
+      "checkpoint_sha256": "ee72074b547c03fdbbebc3c0473201a3c8ec1b62f867ec6e63981588a8605d37",
+      "initialization": null,
+      "training_seconds": 0.531364868995297,
+      "validation_seconds": 0.31820904700362007,
+      "runner_seconds": 5.63963435399819,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.07080078125,
+      "exact_recovery": true,
+      "outer_seconds": 5.664464616000259
+    },
+    {
+      "id": "dlinear-huber-0.001-s42",
+      "kind": "dlinear",
+      "loss": "huber",
+      "learning_rate": 0.001,
+      "seed": 42,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-huber-0.001-s42.json",
+      "report_sha256": "4d66a223035c4cafd4d0523fbc0745fbf21900f7c94ac477c408c429f41f6f3f",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.010551974232846572,
+          "mse": 0.00018482604546302294
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "9947de7b8e4bb4cc1007a984de3ac16f942517a7f2bd89672133730ad3c2618a",
+      "checkpoint_sha256": "f27a55ec4ec765cfeee6e479ee19d6bad34801eeb0c1d235604c85ca7d49bf6b",
+      "initialization": null,
+      "training_seconds": 0.5408141999978398,
+      "validation_seconds": 0.32253064799442654,
+      "runner_seconds": 5.640071395000632,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.07080078125,
+      "exact_recovery": true,
+      "outer_seconds": 5.665131539000868
+    },
+    {
+      "id": "dlinear-huber-0.001-s43",
+      "kind": "dlinear",
+      "loss": "huber",
+      "learning_rate": 0.001,
+      "seed": 43,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-huber-0.001-s43.json",
+      "report_sha256": "47e878faf5787310ddad7c6bf7cf206d1e5dd2a770476f645ee262a8b20ac555",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.011863920194888751,
+          "mse": 0.00024301463260483706
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "fb1605766a6732d96d1eece42f83999fdd29d652b66997fe9b04fa85e04e1ecf",
+      "checkpoint_sha256": "123bd15d0afaefe1d80e16d710051b38fd41d22ff632ca216f8db2e7c93870eb",
+      "initialization": null,
+      "training_seconds": 0.52527030699639,
+      "validation_seconds": 0.32084350899458514,
+      "runner_seconds": 5.806832272000975,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.07080078125,
+      "exact_recovery": true,
+      "outer_seconds": 5.831903365999096
+    },
+    {
+      "id": "dlinear-huber-0.001-s44",
+      "kind": "dlinear",
+      "loss": "huber",
+      "learning_rate": 0.001,
+      "seed": 44,
+      "epochs": 30,
+      "stage": "base",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-huber-0.001-s44.json",
+      "report_sha256": "257e8b5081fa284a56f27a4ba1725bff235d56435db4ebcea5b16118152f3e63",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.010445825679504141,
+          "mse": 0.00017314249374703178
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "792053af99aa867590fc5f807132c4a50447f004fd434d54dfd6576cf339c76b",
+      "checkpoint_sha256": "3d511e45b259bd57616abd6bca94fb92b47cd1d728f0d684602638a437f2bf70",
+      "initialization": null,
+      "training_seconds": 0.5309887250023166,
+      "validation_seconds": 0.3181697109976085,
+      "runner_seconds": 5.6515022439998575,
+      "peak_rss_mib": 1449.2890625,
+      "peak_vram_allocated_mib": 65.07080078125,
+      "exact_recovery": true,
+      "outer_seconds": 5.676557369000875
+    },
+    {
+      "id": "gru-post-mae-s42",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 5,
+      "stage": "posttraining",
+      "parent": "gru-mse-0.001-s42",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-post-mae-s42.json",
+      "report_sha256": "68d82a18bfd028edd8f97c0d65235f033490cb33bba83494bb6debe8b1b3447e",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.010471812826944855,
+          "mse": 0.00017073534177890735
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "5335f27dca398fdbb8d57df59eb911a9f1f1b743ba242dbc557b67596abaec0b",
+      "checkpoint_sha256": "e5681435e07355d4af7f2f8f5a79f80db3ea3db33fcf18e7dfc2e5504f69d7bb",
+      "initialization": {
+        "sha256": "4d640e18b0f4b721b60bbe72fba42b5b7782d9dd6fb5760ea79d4f45a65a8f88",
+        "source_completed_epochs": 30,
+        "source_config": {
+          "kind": "gru",
+          "dimensions": {
+            "news": 384,
+            "charts": 512,
+            "fundamentals": 45,
+            "macro": 420,
+            "prices": 5
+          },
+          "context": 64,
+          "hidden_size": 32,
+          "batch_size": 16,
+          "workers": 0,
+          "seed": 42,
+          "epochs": 30,
+          "precision": "float32",
+          "lr": 0.001,
+          "loss": "mse",
+          "huber_delta": null,
+          "optimizer": "AdamW",
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "weight_decay": 0.01,
+          "state_policy": "reset_each_window",
+          "moving_average_kernel": null,
+          "price_output_horizon": null,
+          "cublas_workspace_config": ":4096:8",
+          "initialization": null
+        },
+        "policy": "weights_only_new_optimizer_and_rng"
+      },
+      "training_seconds": 0.09351434699965466,
+      "validation_seconds": 0.053350389998740866,
+      "runner_seconds": 2.0537041569987196,
+      "peak_rss_mib": 1450.25390625,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 2.077469605999795
+    },
+    {
+      "id": "gru-post-mae-s43",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 5,
+      "stage": "posttraining",
+      "parent": "gru-mse-0.001-s43",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-post-mae-s43.json",
+      "report_sha256": "cd8a46d386557e6c9a3ce6d3ff77a82d69fa70b342234b1ef82d9e47064c4c8c",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.01144317755762047,
+          "mse": 0.00022466637140629176
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "8441239bcf4318097531a381d74acc590393a21a83ee1301c1a172949d536174",
+      "checkpoint_sha256": "763f1cf9f9076c7222405bda4ca41b2021681e8532621e22d32f9831fcd3c5e6",
+      "initialization": {
+        "sha256": "c54fa5460a378510a4d05120e4e855beabcfef7e6faebdfc20098d3671824275",
+        "source_completed_epochs": 30,
+        "source_config": {
+          "kind": "gru",
+          "dimensions": {
+            "news": 384,
+            "charts": 512,
+            "fundamentals": 45,
+            "macro": 420,
+            "prices": 5
+          },
+          "context": 64,
+          "hidden_size": 32,
+          "batch_size": 16,
+          "workers": 0,
+          "seed": 43,
+          "epochs": 30,
+          "precision": "float32",
+          "lr": 0.001,
+          "loss": "mse",
+          "huber_delta": null,
+          "optimizer": "AdamW",
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "weight_decay": 0.01,
+          "state_policy": "reset_each_window",
+          "moving_average_kernel": null,
+          "price_output_horizon": null,
+          "cublas_workspace_config": ":4096:8",
+          "initialization": null
+        },
+        "policy": "weights_only_new_optimizer_and_rng"
+      },
+      "training_seconds": 0.09150529900034599,
+      "validation_seconds": 0.05341737799972179,
+      "runner_seconds": 1.9436580790006701,
+      "peak_rss_mib": 1450.25390625,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 1.9673716309989686
+    },
+    {
+      "id": "gru-post-mae-s44",
+      "kind": "gru",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 5,
+      "stage": "posttraining",
+      "parent": "gru-mse-0.001-s44",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-post-mae-s44.json",
+      "report_sha256": "5a36ddc6622cea106fa8c651c51c2944d7b88e13f1854cdddee065ba7810a0d0",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 52609,
+      "metrics": {
+        "gru": {
+          "mae": 0.013271034888828219,
+          "mse": 0.0002873107466856577
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "cce35ca90cd940b6af5326993bd36ec5f37bf76605f8c1b3f5729618c2f05213",
+      "checkpoint_sha256": "e6f7fc1b7c02a8908aad1ff353c71bc58061981c272be1d9eeb181bf5cbd1409",
+      "initialization": {
+        "sha256": "f787f7bdceaca83e5dae84347aa53fddf8c4fbd78b9994cfb2241b0d88ca4d68",
+        "source_completed_epochs": 30,
+        "source_config": {
+          "kind": "gru",
+          "dimensions": {
+            "news": 384,
+            "charts": 512,
+            "fundamentals": 45,
+            "macro": 420,
+            "prices": 5
+          },
+          "context": 64,
+          "hidden_size": 32,
+          "batch_size": 16,
+          "workers": 0,
+          "seed": 44,
+          "epochs": 30,
+          "precision": "float32",
+          "lr": 0.001,
+          "loss": "mse",
+          "huber_delta": null,
+          "optimizer": "AdamW",
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "weight_decay": 0.01,
+          "state_policy": "reset_each_window",
+          "moving_average_kernel": null,
+          "price_output_horizon": null,
+          "cublas_workspace_config": ":4096:8",
+          "initialization": null
+        },
+        "policy": "weights_only_new_optimizer_and_rng"
+      },
+      "training_seconds": 0.09090400799868803,
+      "validation_seconds": 0.05334443300125713,
+      "runner_seconds": 1.9285489930007316,
+      "peak_rss_mib": 1450.25390625,
+      "peak_vram_allocated_mib": 76.39306640625,
+      "exact_recovery": true,
+      "outer_seconds": 1.9523538270004792
+    },
+    {
+      "id": "dlinear-post-mae-s42",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 42,
+      "epochs": 5,
+      "stage": "posttraining",
+      "parent": "dlinear-mse-0.001-s42",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-post-mae-s42.json",
+      "report_sha256": "b36b1b17aba6c7cabc0d6cf00ffbc2513a56468a1c5ac84c34923401926d3edb",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.011127943352713261,
+          "mse": 0.0002038172265666287
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "94d0cf5cf295befd8f11fc0bd5997eaefb059ccaa02db2396db3326f1d79914b",
+      "checkpoint_sha256": "756646a88c5c74b7b46a0cf81d2d53aac4802552d5a45a6dc64d0c7e1836eb62",
+      "initialization": {
+        "sha256": "9abf41bf9e2d3bb90274de0a983bb1e0cc43b646ef368c23e9d71ba18e71aa1a",
+        "source_completed_epochs": 30,
+        "source_config": {
+          "kind": "dlinear",
+          "dimensions": {
+            "news": 384,
+            "charts": 512,
+            "fundamentals": 45,
+            "macro": 420,
+            "prices": 5
+          },
+          "context": 64,
+          "hidden_size": 32,
+          "batch_size": 16,
+          "workers": 0,
+          "seed": 42,
+          "epochs": 30,
+          "precision": "float32",
+          "lr": 0.001,
+          "loss": "mse",
+          "huber_delta": null,
+          "optimizer": "AdamW",
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "weight_decay": 0.01,
+          "state_policy": "reset_each_window",
+          "moving_average_kernel": 25,
+          "price_output_horizon": 1,
+          "cublas_workspace_config": ":4096:8",
+          "initialization": null
+        },
+        "policy": "weights_only_new_optimizer_and_rng"
+      },
+      "training_seconds": 0.08858588199836959,
+      "validation_seconds": 0.05366197700095654,
+      "runner_seconds": 2.0345264820007287,
+      "peak_rss_mib": 1450.30078125,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 2.0585049919991434
+    },
+    {
+      "id": "dlinear-post-mae-s43",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 43,
+      "epochs": 5,
+      "stage": "posttraining",
+      "parent": "dlinear-mse-0.001-s43",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-post-mae-s43.json",
+      "report_sha256": "0b2c99ad970d3b6f429f6700c56c71ba8a82bdf9e7355f6f9fa44c0599f683f5",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.011673282158010268,
+          "mse": 0.00024694095694714134
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "c678126f826fb60acd8c6a0d2b97c4ea039f25822008a8b25677f162a20ab686",
+      "checkpoint_sha256": "7b83b21c07ea6848152034fcb516967ad2a3efbad80ff132b97955b5cdcef70a",
+      "initialization": {
+        "sha256": "68f2ac997f7ee3bc7c91712c1bffdc7e2a8bcb54309021b526193daee4cf44b2",
+        "source_completed_epochs": 30,
+        "source_config": {
+          "kind": "dlinear",
+          "dimensions": {
+            "news": 384,
+            "charts": 512,
+            "fundamentals": 45,
+            "macro": 420,
+            "prices": 5
+          },
+          "context": 64,
+          "hidden_size": 32,
+          "batch_size": 16,
+          "workers": 0,
+          "seed": 43,
+          "epochs": 30,
+          "precision": "float32",
+          "lr": 0.001,
+          "loss": "mse",
+          "huber_delta": null,
+          "optimizer": "AdamW",
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "weight_decay": 0.01,
+          "state_policy": "reset_each_window",
+          "moving_average_kernel": 25,
+          "price_output_horizon": 1,
+          "cublas_workspace_config": ":4096:8",
+          "initialization": null
+        },
+        "policy": "weights_only_new_optimizer_and_rng"
+      },
+      "training_seconds": 0.08847484099896974,
+      "validation_seconds": 0.054072020002422505,
+      "runner_seconds": 1.9288871100015967,
+      "peak_rss_mib": 1450.33203125,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 1.9529970980001963
+    },
+    {
+      "id": "dlinear-post-mae-s44",
+      "kind": "dlinear",
+      "loss": "mae",
+      "learning_rate": 0.0001,
+      "seed": 44,
+      "epochs": 5,
+      "stage": "posttraining",
+      "parent": "dlinear-mse-0.001-s44",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-post-mae-s44.json",
+      "report_sha256": "aaf734e5cf4d50ef3749e12531521cbbc18ce3f090a67a161c33255e683aa398",
+      "samples": {
+        "train": 50,
+        "validation": 15
+      },
+      "parameters": 49187,
+      "metrics": {
+        "dlinear": {
+          "mae": 0.018394405589801224,
+          "mse": 0.00047174498064383216
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "0126d114d732a93b1ab7ef1e356741b916191b19edc4fe1ca210288d0a7e45d0",
+      "checkpoint_sha256": "07ebeac035db47fd4d8f7af1c6e9f6cee2bf69231da358db3b937754248b7357",
+      "initialization": {
+        "sha256": "baf6663a8890f277cefbb412430146a4d3c3a7f3a34e0b61f67ab42d28f73782",
+        "source_completed_epochs": 30,
+        "source_config": {
+          "kind": "dlinear",
+          "dimensions": {
+            "news": 384,
+            "charts": 512,
+            "fundamentals": 45,
+            "macro": 420,
+            "prices": 5
+          },
+          "context": 64,
+          "hidden_size": 32,
+          "batch_size": 16,
+          "workers": 0,
+          "seed": 44,
+          "epochs": 30,
+          "precision": "float32",
+          "lr": 0.001,
+          "loss": "mse",
+          "huber_delta": null,
+          "optimizer": "AdamW",
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "weight_decay": 0.01,
+          "state_policy": "reset_each_window",
+          "moving_average_kernel": 25,
+          "price_output_horizon": 1,
+          "cublas_workspace_config": ":4096:8",
+          "initialization": null
+        },
+        "policy": "weights_only_new_optimizer_and_rng"
+      },
+      "training_seconds": 0.08548260599854984,
+      "validation_seconds": 0.05195711299893446,
+      "runner_seconds": 1.931814049001332,
+      "peak_rss_mib": 1450.33203125,
+      "peak_vram_allocated_mib": 65.06982421875,
+      "exact_recovery": true,
+      "outer_seconds": 1.9552811479989032
+    }
+  ],
+  "final_test_opened": false,
+  "completed_runs": 42,
+  "failed_runs": 0
+}

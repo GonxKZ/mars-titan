@@ -6,7 +6,7 @@ Esta revisión recoge el estado de preparación de esta entrega. Distingue docum
 
 La [guía de implementación](implementation-guide.md) y el [tablero](../research/task-board.md) recogen 64 guías y 183 dependencias. La biblioteca incorpora TRA como antecedente adicional y reúne 112 referencias y 81 PDF locales. Estos recuentos describen preparación, no ejecución científica.
 
-El [observatorio](https://gonxkz.github.io/mars-titan/) también está publicado y verificado. Su [informe](observatory.md) distingue 112 pruebas Python, 21 JavaScript y comprobaciones de navegador de cualquier resultado científico. La conexión del futuro entrenador, el historial completo y las ejecuciones reales siguen en sus tareas, no se dan por realizados por publicar una interfaz.
+El [observatorio](https://gonxkz.github.io/mars-titan/) también está publicado y verificado. Su [informe](observatory.md) separa las 112 pruebas de Python, las 21 de JavaScript y las comprobaciones de navegador de cualquier resultado científico. La conexión del futuro entrenador, el historial completo y las ejecuciones reales siguen en sus tareas, no se dan por realizados por publicar una interfaz.
 
 ## Investigación y alcance
 
@@ -69,7 +69,7 @@ La [revisión del catálogo](../research/backlog-review.md) explica las consolid
 
 No se ha entrenado ni comparado ningún modelo. No hay cifras propias de precisión, latencia, rentabilidad o eficiencia energética. Los objetivos de latencia y memoria son presupuestos de diseño que deberán medirse en el equipo real.
 
-La memoria LaTeX no se ha compilado y no sustituye la plantilla oficial del aula. Falta concretar esa plantilla y el calendario con la dirección. La cobertura máxima de la rúbrica dependerá de las evidencias científicas y de la defensa, no del volumen de documentación.
+La memoria LaTeX no se ha compilado. Falta concretar su formato final y el calendario de trabajo. La solidez de las conclusiones dependerá de las evidencias científicas, no del volumen de documentación.
 
 El repositorio se hizo público posteriormente por autorización expresa, tras revisar archivos versionados e historial. El tablero conserva su acceso privado. El rechazo anterior de protección de `main` correspondía al repositorio privado y al plan disponible entonces. No se ha contratado ningún servicio. Los datos, pesos y PDF de terceros siguen fuera de Git.
 

@@ -1,0 +1,4848 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-29",
+  "purpose": "Medir el coste del recorrido RL nativo y comprobar la equivalencia de los cambios evaluados.",
+  "domain": "synthetic",
+  "analysis_domain": "technical",
+  "final_test_opened": false,
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "logical_cpus": 16,
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "gpu_total_mib": 8188,
+    "driver": "595.91.07",
+    "python": "3.12.14",
+    "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "device": "cuda:0",
+    "power_profile": {
+      "observed_at": "2026-09-29T09:49:21.690624+00:00",
+      "profile": "power-saver",
+      "scope": "Observación después de los benchmarks, sin seguimiento continuo."
+    },
+    "compiler": {
+      "name": "Clang",
+      "version": "21.1.8",
+      "standard": "C++20",
+      "build_type": "Release",
+      "flags": [
+        "-O3",
+        "-DNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off"
+      ],
+      "cxx11_abi": 1,
+      "torch": "2.14.0+cu130",
+      "cuda": "13.0",
+      "scope": "Identidad conservada del binario cpu_gae_trace",
+      "artifact": "pipeline-optimized-bin__native-build-identity-Release"
+    },
+    "thread_limits": {
+      "OMP_NUM_THREADS": 1,
+      "MKL_NUM_THREADS": 1,
+      "OPENBLAS_NUM_THREADS": 1
+    },
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+  },
+  "dataset": {
+    "index_sha256": "81048649d2660b64f90f06b025ec20d6b6a5e0791ba6844b3db34811ba6f0b65",
+    "source_records_sha256": "885b3a8d74d0a1df026a238e603ea22520c300ad80769358f1906b40648f24f3",
+    "hmm_sha256": "8c5cad40ac4f6b69479c0a36219988a48c95b5134992d72b1d138b36b73aaf95",
+    "parquet_bytes": 75873867,
+    "train_catalog_worlds": 256,
+    "validation_worlds": 128,
+    "audit_used": false,
+    "generator_configuration": {
+      "schema_version": 1,
+      "families": [
+        "no_signal",
+        "known_signal",
+        "delayed_cue",
+        "signal_reversal",
+        "regime_recurrence",
+        "source_conflict",
+        "volatility_shift",
+        "execution_friction"
+      ],
+      "generator": {
+        "assets": 16,
+        "sessions": 256,
+        "warmup_sessions": 64,
+        "regime_sessions": 64
+      },
+      "worlds": {
+        "train": 32,
+        "validation": 16,
+        "audit": 64
+      },
+      "seed_base": 20260929,
+      "final_test_opened": false
+    },
+    "shape": {
+      "assets": 16,
+      "sessions": 256,
+      "context_fields": 11,
+      "warmup_sessions": 64,
+      "policy_input_width": 207
+    },
+    "source_order_rules": {
+      "lexicographic": {
+        "families": [
+          "delayed_cue",
+          "execution_friction",
+          "known_signal",
+          "no_signal",
+          "regime_recurrence",
+          "signal_reversal",
+          "source_conflict",
+          "volatility_shift"
+        ],
+        "rule": "Intercalar familias por ordinal de semilla dentro de cada partición"
+      },
+      "catalog": {
+        "families": [
+          "no_signal",
+          "known_signal",
+          "delayed_cue",
+          "signal_reversal",
+          "regime_recurrence",
+          "source_conflict",
+          "volatility_shift",
+          "execution_friction"
+        ],
+        "rule": "Intercalar familias por ordinal de semilla dentro de cada partición"
+      }
+    }
+  },
+  "common_protocol": {
+    "seed": 42,
+    "environments": 16,
+    "rollout_transitions": 1024,
+    "rollout_shape": [
+      64,
+      16,
+      207
+    ],
+    "minibatch_size": 64,
+    "gru_sequence_length": 16,
+    "epochs": 4,
+    "early_stopping": false,
+    "precision": "Pesos FP32 y ventajas, retornos y cocientes PPO FP64",
+    "evaluation_transitions": 16384,
+    "rollout_bytes": 134217728,
+    "process_start": "new_process",
+    "cache_reset": false
+  },
+  "measurement_definitions": {
+    "process_seconds": "Tiempo de pared del lanzamiento y espera del proceso, incluida la supervisión del lanzador.",
+    "timings": "Tiempos de pared internos del recibo nativo. Sus medianas no se suman para reconstruir la mediana de proceso.",
+    "rss": "VmHWM del proceso nativo, en bytes.",
+    "disk": "Tamaños de archivos al finalizar y payload de checkpoints retenidos verificado por sus índices. No son bytes físicos de E/S ni bytes acumulados escritos.",
+    "delta_percent": "100 × (mediana candidata / mediana de referencia − 1). Un valor positivo indica más tiempo.",
+    "speedup": "Mediana de referencia dividida por mediana candidata.",
+    "dispersion": "Desviación típica muestral, mínimo y máximo. No se estiman percentiles de cola con dos o tres repeticiones.",
+    "parquet_integrity_scope": {
+      "measured_harness_sha256": "aafaf70f1554adf1f6fb38a97669251f95fbca1a1abf76022eba71fdae4e5fda",
+      "parquet_verified_at_preparation": true,
+      "parquet_rechecked_after_each_process": false,
+      "later_guard": "La revisión posterior añade los Parquet al conjunto comprobado antes y después de cada proceso, fuera del intervalo medido.",
+      "later_harness_sha256": "1619da9ff080424ed12fd6184f87bcb07b7fd2fcb16edb11cbfa6ca0fe1ee4c8",
+      "experiments": [
+        "pipeline_8192",
+        "pipeline_large",
+        "pipeline_workers"
+      ]
+    }
+  },
+  "binaries": {
+    "initial": {
+      "binary_sha256": "1e62c180e42086c2ffb0fa029e8558bcd2bbb2c43f0803eac389ea22e88e63aa",
+      "binary_bytes": 1671544,
+      "native_build_sha256": "6277d518936a646e3f223e13c8f12993084cf7392be23b9f703d89e0f3293dc2",
+      "native_source_sha256": "e66728c1d11f00154322911b2f5f1883d956504ff0d53474a3a9411cd105d9ea",
+      "torch_version": "2.14.0"
+    },
+    "finite_checks": {
+      "binary_sha256": "56ac3cec2274731c146f9064a7d6a94d61a402a6314b4703aa2bc172cc6ddd1f",
+      "binary_bytes": 1676080,
+      "native_build_sha256": "ef444e50631e0ab4d71812ab92b88ca878fe4c07179b2d877e785dd39460b498",
+      "native_source_sha256": "6b34f3497d10d719954c59a718c59480fa5fc6f6919fa9f51b2c75629229fe7f",
+      "torch_version": "2.14.0"
+    },
+    "cpu_gae_trace": {
+      "binary_sha256": "4cde4019baec572bb5ee2c9a71783f983fa9f0f9431f7a7bf369a729052ee24c",
+      "binary_bytes": 1685520,
+      "native_build_sha256": "0e7a07f15bb08f091fdfbfc2a2cc55cba1bf87ccaca3e3640ff1e593d9ea6838",
+      "native_source_sha256": "8259048c1d29afb82596fd941d34e487d5daacf7e1e776a0eac7857c5dd6b487",
+      "torch_version": "2.14.0"
+    }
+  },
+  "experiments": [
+    {
+      "id": "finite_checks",
+      "change": "Reducir trabajo redundante de comprobación de finitud, manteniendo el rechazo de valores no finitos.",
+      "reference": "initial",
+      "candidate": "finite_checks",
+      "transitions": 8192,
+      "source_order": "lexicographic",
+      "checkpoint_transitions": 1024,
+      "order": "AB/BA alterno",
+      "artifacts": [
+        "performance-paired__results",
+        "performance-parity"
+      ],
+      "parity": [
+        {
+          "variant": "ppo",
+          "exact_weights": true,
+          "exact_trace": true,
+          "observed_decisions": 11264
+        },
+        {
+          "variant": "double_dqn",
+          "exact_weights": true,
+          "exact_trace": true,
+          "observed_decisions": 11264
+        },
+        {
+          "variant": "ppo_gru",
+          "exact_weights": true,
+          "exact_trace": true,
+          "observed_decisions": 11264
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "exact_weights": true,
+          "exact_trace": true,
+          "observed_decisions": 11264
+        }
+      ],
+      "warmup": {
+        "scope": "Barridos previos separados. La serie intercalada no tiene calentamiento propio.",
+        "per_variant_and_method": 1,
+        "artifacts": [
+          "performance-baseline__benchmark",
+          "performance-candidate__benchmark"
+        ]
+      },
+      "cases": [
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "methods": {
+            "reference": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 6.092606222984614,
+                  "timings": {
+                    "checkpoint_seconds": 0.16253171599999996,
+                    "evaluation_seconds": 1.30384824,
+                    "setup_seconds": 1.380084364,
+                    "training_seconds": 2.530551149
+                  },
+                  "ram_peak_bytes": 1369509888
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 5.9970409399829805,
+                  "timings": {
+                    "checkpoint_seconds": 0.16537777699999998,
+                    "evaluation_seconds": 1.290598224,
+                    "setup_seconds": 1.322760165,
+                    "training_seconds": 2.491656651999999
+                  },
+                  "ram_peak_bytes": 1369186304
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 6.004150413995376,
+                  "timings": {
+                    "checkpoint_seconds": 0.160680702,
+                    "evaluation_seconds": 1.299218006,
+                    "setup_seconds": 1.321317545,
+                    "training_seconds": 2.4576877310000023
+                  },
+                  "ram_peak_bytes": 1369296896
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 6.004150413995376,
+                "minimum": 5.9970409399829805,
+                "maximum": 6.092606222984614,
+                "mean": 6.031265858987656,
+                "stdev_sample": 0.05324111518969739
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.16253171599999996,
+                "evaluation_seconds": 1.299218006,
+                "setup_seconds": 1.322760165,
+                "training_seconds": 2.491656651999999
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1369296896,
+                "minimum": 1369186304,
+                "maximum": 1369509888,
+                "mean": 1369331029.3333333,
+                "stdev_sample": 164470.2544453961
+              },
+              "preceding_warmup_process_seconds": 8.140862692001974,
+              "disk_recorded": false
+            },
+            "candidate": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 5.850425319018541,
+                  "timings": {
+                    "checkpoint_seconds": 0.16276017699999998,
+                    "evaluation_seconds": 1.215317426,
+                    "setup_seconds": 1.346101008,
+                    "training_seconds": 2.405219836000001
+                  },
+                  "ram_peak_bytes": 1368477696
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 5.913461724005174,
+                  "timings": {
+                    "checkpoint_seconds": 0.16614629199999997,
+                    "evaluation_seconds": 1.242595302,
+                    "setup_seconds": 1.305848178,
+                    "training_seconds": 2.4569198109999997
+                  },
+                  "ram_peak_bytes": 1369616384
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 5.852420928014908,
+                  "timings": {
+                    "checkpoint_seconds": 0.16852688999999998,
+                    "evaluation_seconds": 1.229369901,
+                    "setup_seconds": 1.310685464,
+                    "training_seconds": 2.411832771999996
+                  },
+                  "ram_peak_bytes": 1369198592
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 5.852420928014908,
+                "minimum": 5.850425319018541,
+                "maximum": 5.913461724005174,
+                "mean": 5.872102657012874,
+                "stdev_sample": 0.035831898228697596
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.16614629199999997,
+                "evaluation_seconds": 1.229369901,
+                "setup_seconds": 1.310685464,
+                "training_seconds": 2.411832771999996
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1369198592,
+                "minimum": 1368477696,
+                "maximum": 1369616384,
+                "mean": 1369097557.3333333,
+                "stdev_sample": 576028.2920459145
+              },
+              "preceding_warmup_process_seconds": 6.29835096700117,
+              "disk_recorded": false
+            }
+          },
+          "parameters_count": 17927,
+          "optimizer_steps": 520,
+          "observed_transitions": 11264,
+          "configuration_sha256": "a3baa5289c3e7f05f4354b25861f5fd68008b593d58bef5b1af53862b990a1e5",
+          "delta_percent": -2.5270766972591785,
+          "speedup": 1.0259259352406036
+        },
+        {
+          "variant": "double_dqn",
+          "workers": 1,
+          "methods": {
+            "reference": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 22.453528513986384,
+                  "timings": {
+                    "checkpoint_seconds": 0.595926754,
+                    "evaluation_seconds": 1.3441923359999999,
+                    "setup_seconds": 1.411840174,
+                    "training_seconds": 18.139108872000012
+                  },
+                  "ram_peak_bytes": 1322303488
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 19.539086574979592,
+                  "timings": {
+                    "checkpoint_seconds": 0.480394596,
+                    "evaluation_seconds": 1.437310241,
+                    "setup_seconds": 1.317589974,
+                    "training_seconds": 15.561110469000015
+                  },
+                  "ram_peak_bytes": 1323438080
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 31.585618760000216,
+                  "timings": {
+                    "checkpoint_seconds": 0.6918942829999999,
+                    "evaluation_seconds": 1.570637607,
+                    "setup_seconds": 1.379424585,
+                    "training_seconds": 27.01015667000002
+                  },
+                  "ram_peak_bytes": 1324130304
+                },
+                {
+                  "repetition": 4,
+                  "process_seconds": 21.495433432981372,
+                  "timings": {
+                    "checkpoint_seconds": 0.5512381430000001,
+                    "evaluation_seconds": 1.3519258289999998,
+                    "setup_seconds": 1.326894133,
+                    "training_seconds": 17.487691307000016
+                  },
+                  "ram_peak_bytes": 1322840064
+                },
+                {
+                  "repetition": 5,
+                  "process_seconds": 18.20455088300514,
+                  "timings": {
+                    "checkpoint_seconds": 0.483178722,
+                    "evaluation_seconds": 1.360609833,
+                    "setup_seconds": 1.28990698,
+                    "training_seconds": 14.328388007000003
+                  },
+                  "ram_peak_bytes": 1323425792
+                }
+              ],
+              "process_summary": {
+                "count": 5,
+                "median": 21.495433432981372,
+                "minimum": 18.20455088300514,
+                "maximum": 31.585618760000216,
+                "mean": 22.65564363299054,
+                "stdev_sample": 5.259670820577969
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.5512381430000001,
+                "evaluation_seconds": 1.360609833,
+                "setup_seconds": 1.326894133,
+                "training_seconds": 17.487691307000016
+              },
+              "rss_summary_bytes": {
+                "count": 5,
+                "median": 1323425792,
+                "minimum": 1322303488,
+                "maximum": 1324130304,
+                "mean": 1323227545.6,
+                "stdev_sample": 689678.1017118058
+              },
+              "preceding_warmup_process_seconds": 24.543575741990935,
+              "disk_recorded": false
+            },
+            "candidate": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 26.275095025019255,
+                  "timings": {
+                    "checkpoint_seconds": 0.602431538,
+                    "evaluation_seconds": 1.356571904,
+                    "setup_seconds": 1.317722697,
+                    "training_seconds": 22.048860294000015
+                  },
+                  "ram_peak_bytes": 1323212800
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 17.359616424975684,
+                  "timings": {
+                    "checkpoint_seconds": 0.468955704,
+                    "evaluation_seconds": 1.292993187,
+                    "setup_seconds": 1.336052909,
+                    "training_seconds": 13.486683521999984
+                  },
+                  "ram_peak_bytes": 1323032576
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 27.655190202000085,
+                  "timings": {
+                    "checkpoint_seconds": 0.703782704,
+                    "evaluation_seconds": 1.285559325,
+                    "setup_seconds": 1.403834833,
+                    "training_seconds": 23.294023217999996
+                  },
+                  "ram_peak_bytes": 1323331584
+                },
+                {
+                  "repetition": 4,
+                  "process_seconds": 18.36752604600042,
+                  "timings": {
+                    "checkpoint_seconds": 0.514464354,
+                    "evaluation_seconds": 1.272338995,
+                    "setup_seconds": 1.382764698,
+                    "training_seconds": 14.232914547000004
+                  },
+                  "ram_peak_bytes": 1323249664
+                },
+                {
+                  "repetition": 5,
+                  "process_seconds": 17.441986014018767,
+                  "timings": {
+                    "checkpoint_seconds": 0.47598857999999994,
+                    "evaluation_seconds": 1.288690368,
+                    "setup_seconds": 1.26505416,
+                    "training_seconds": 13.66783263500002
+                  },
+                  "ram_peak_bytes": 1323556864
+                }
+              ],
+              "process_summary": {
+                "count": 5,
+                "median": 18.36752604600042,
+                "minimum": 17.359616424975684,
+                "maximum": 27.655190202000085,
+                "mean": 21.41988274240284,
+                "stdev_sample": 5.100942358456259
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.514464354,
+                "evaluation_seconds": 1.288690368,
+                "setup_seconds": 1.336052909,
+                "training_seconds": 14.232914547000004
+              },
+              "rss_summary_bytes": {
+                "count": 5,
+                "median": 1323249664,
+                "minimum": 1323032576,
+                "maximum": 1323556864,
+                "mean": 1323276697.6,
+                "stdev_sample": 190993.98092295998
+              },
+              "preceding_warmup_process_seconds": 24.36220845999196,
+              "disk_recorded": false
+            }
+          },
+          "parameters_count": 17862,
+          "optimizer_steps": 7937,
+          "observed_transitions": 11264,
+          "configuration_sha256": "1fcd9596f439afa11ca3dfdfb6f08542f3dfe771faf62cf9638b0f4bd1c3b094",
+          "delta_percent": -14.55149716675016,
+          "speedup": 1.170295519339256
+        },
+        {
+          "variant": "ppo_gru",
+          "workers": 1,
+          "methods": {
+            "reference": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 8.431131573015591,
+                  "timings": {
+                    "checkpoint_seconds": 0.43135589299999993,
+                    "evaluation_seconds": 2.127490131,
+                    "setup_seconds": 1.324249428,
+                    "training_seconds": 3.8256920999999995
+                  },
+                  "ram_peak_bytes": 1488773120
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 8.203952820011182,
+                  "timings": {
+                    "checkpoint_seconds": 0.431555171,
+                    "evaluation_seconds": 2.130338859,
+                    "setup_seconds": 1.275414029,
+                    "training_seconds": 3.6189997509999983
+                  },
+                  "ram_peak_bytes": 1486069760
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 8.528733844024828,
+                  "timings": {
+                    "checkpoint_seconds": 0.439222875,
+                    "evaluation_seconds": 2.141759509,
+                    "setup_seconds": 1.263496714,
+                    "training_seconds": 3.9174884239999974
+                  },
+                  "ram_peak_bytes": 1482526720
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 8.431131573015591,
+                "minimum": 8.203952820011182,
+                "maximum": 8.528733844024828,
+                "mean": 8.387939412350534,
+                "stdev_sample": 0.1666428829774174
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.431555171,
+                "evaluation_seconds": 2.130338859,
+                "setup_seconds": 1.275414029,
+                "training_seconds": 3.8256920999999995
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1486069760,
+                "minimum": 1482526720,
+                "maximum": 1488773120,
+                "mean": 1485789866.6666667,
+                "stdev_sample": 3132592.1292969715
+              },
+              "preceding_warmup_process_seconds": 11.74767566297669,
+              "disk_recorded": false
+            },
+            "candidate": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 8.122115812991979,
+                  "timings": {
+                    "checkpoint_seconds": 0.43799703800000006,
+                    "evaluation_seconds": 2.140759105,
+                    "setup_seconds": 1.320845677,
+                    "training_seconds": 3.496413573000007
+                  },
+                  "ram_peak_bytes": 1485955072
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 8.110105722997105,
+                  "timings": {
+                    "checkpoint_seconds": 0.440320169,
+                    "evaluation_seconds": 2.157539057,
+                    "setup_seconds": 1.275297195,
+                    "training_seconds": 3.5017136709999974
+                  },
+                  "ram_peak_bytes": 1482764288
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 8.452866125997389,
+                  "timings": {
+                    "checkpoint_seconds": 0.435161748,
+                    "evaluation_seconds": 2.1269076279999997,
+                    "setup_seconds": 1.344717505,
+                    "training_seconds": 3.8056322989999964
+                  },
+                  "ram_peak_bytes": 1488699392
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 8.122115812991979,
+                "minimum": 8.110105722997105,
+                "maximum": 8.452866125997389,
+                "mean": 8.22836255399549,
+                "stdev_sample": 0.19451851055010114
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.43799703800000006,
+                "evaluation_seconds": 2.140759105,
+                "setup_seconds": 1.320845677,
+                "training_seconds": 3.5017136709999974
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1485955072,
+                "minimum": 1482764288,
+                "maximum": 1488699392,
+                "mean": 1485806250.6666667,
+                "stdev_sample": 2970349.426354639
+              },
+              "preceding_warmup_process_seconds": 10.715038099006051,
+              "disk_recorded": false
+            }
+          },
+          "parameters_count": 52871,
+          "optimizer_steps": 544,
+          "observed_transitions": 11264,
+          "configuration_sha256": "fbf71f4d6d4aac4aa6ee589d0f28fce5a25973fc94d8b309e388e843f7b22708",
+          "delta_percent": -3.665175396059983,
+          "speedup": 1.03804621445182
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 1,
+          "methods": {
+            "reference": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 7.395372526982101,
+                  "timings": {
+                    "checkpoint_seconds": 0.262057988,
+                    "evaluation_seconds": 2.471701372,
+                    "setup_seconds": 1.24850708,
+                    "training_seconds": 2.6828459709999954
+                  },
+                  "ram_peak_bytes": 1422278656
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 7.539434713020455,
+                  "timings": {
+                    "checkpoint_seconds": 0.26515602,
+                    "evaluation_seconds": 2.476758119,
+                    "setup_seconds": 1.309315979,
+                    "training_seconds": 2.779532619999998
+                  },
+                  "ram_peak_bytes": 1422376960
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 7.489579635992413,
+                  "timings": {
+                    "checkpoint_seconds": 0.26471512999999997,
+                    "evaluation_seconds": 2.496640191,
+                    "setup_seconds": 1.262069298,
+                    "training_seconds": 2.7043030070000023
+                  },
+                  "ram_peak_bytes": 1422221312
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.489579635992413,
+                "minimum": 7.395372526982101,
+                "maximum": 7.539434713020455,
+                "mean": 7.474795625331656,
+                "stdev_sample": 0.07316012294925693
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.26471512999999997,
+                "evaluation_seconds": 2.476758119,
+                "setup_seconds": 1.262069298,
+                "training_seconds": 2.7043030070000023
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1422278656,
+                "minimum": 1422221312,
+                "maximum": 1422376960,
+                "mean": 1422292309.3333333,
+                "stdev_sample": 78717.12081455554
+              },
+              "preceding_warmup_process_seconds": 9.33831918600481,
+              "disk_recorded": false
+            },
+            "candidate": {
+              "measured": [
+                {
+                  "repetition": 1,
+                  "process_seconds": 7.6086376100138295,
+                  "timings": {
+                    "checkpoint_seconds": 0.25974075399999996,
+                    "evaluation_seconds": 2.497835467,
+                    "setup_seconds": 1.317801834,
+                    "training_seconds": 2.8181478699999976
+                  },
+                  "ram_peak_bytes": 1424875520
+                },
+                {
+                  "repetition": 2,
+                  "process_seconds": 7.261839045007946,
+                  "timings": {
+                    "checkpoint_seconds": 0.258213819,
+                    "evaluation_seconds": 2.397165186,
+                    "setup_seconds": 1.287538635,
+                    "training_seconds": 2.5969483929999964
+                  },
+                  "ram_peak_bytes": 1425014784
+                },
+                {
+                  "repetition": 3,
+                  "process_seconds": 7.501041648996761,
+                  "timings": {
+                    "checkpoint_seconds": 0.270639249,
+                    "evaluation_seconds": 2.427648118,
+                    "setup_seconds": 1.353173808,
+                    "training_seconds": 2.6909849060000015
+                  },
+                  "ram_peak_bytes": 1423663104
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.501041648996761,
+                "minimum": 7.261839045007946,
+                "maximum": 7.6086376100138295,
+                "mean": 7.457172768006179,
+                "stdev_sample": 0.17751245086488837
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.25974075399999996,
+                "evaluation_seconds": 2.427648118,
+                "setup_seconds": 1.317801834,
+                "training_seconds": 2.6909849060000015
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1424875520,
+                "minimum": 1423663104,
+                "maximum": 1425014784,
+                "mean": 1424517802.6666667,
+                "stdev_sample": 743458.7907378144
+              },
+              "preceding_warmup_process_seconds": 10.389847670012387,
+              "disk_recorded": false
+            }
+          },
+          "parameters_count": 17927,
+          "optimizer_steps": 520,
+          "observed_transitions": 11264,
+          "configuration_sha256": "e47388aaca02d0428afff622a475a409e4ff4ad320a30f5d66fda28d38526643",
+          "delta_percent": 0.15303947032307974,
+          "speedup": 0.9984719438258444
+        }
+      ]
+    },
+    {
+      "id": "pipeline_8192",
+      "transitions": 8192,
+      "source_order": "catalog",
+      "checkpoint_transitions": 2048,
+      "warmup_runs_per_case_and_method": 1,
+      "repetitions": 3,
+      "order": "AB/BA alterno",
+      "artifacts": [
+        "pipeline-8192__benchmark",
+        "pipeline-8192__parity"
+      ],
+      "parity": [
+        {
+          "variant": "double_dqn",
+          "workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo_gru",
+          "workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        }
+      ],
+      "created_at": "2026-09-29T08:56:24.261494+00:00",
+      "harness_sha256": "aafaf70f1554adf1f6fb38a97669251f95fbca1a1abf76022eba71fdae4e5fda",
+      "base_configuration_sha256": "f8cecc72a32f858628cbdcefcb682cc7d068c25d6fc1b9c19e64657ff76b78d7",
+      "methods": {
+        "candidate": "cpu_gae_trace",
+        "reference": "finite_checks"
+      },
+      "cases": [
+        {
+          "variant": "double_dqn",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "5d6a6044c68a90c7a0cb139854eb9d80797a6f7a2cb7fc025def35bc2728f054",
+          "observed_transitions": 11264,
+          "optimizer_steps": 7937,
+          "parameters_count": 17862,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 26.428750621009385,
+                  "invocation_seconds": 25.426767307,
+                  "timings": {
+                    "checkpoint_seconds": 0.3852897089999999,
+                    "evaluation_seconds": 1.289684434,
+                    "setup_seconds": 1.399935117,
+                    "training_seconds": 22.329952605
+                  },
+                  "ram_peak_bytes": 1323913216,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621274,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438770,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.35498046875,
+                    1.12158203125,
+                    1.1103515625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 24.12686724201194,
+                  "invocation_seconds": 23.058505848,
+                  "timings": {
+                    "checkpoint_seconds": 0.30835100299999996,
+                    "evaluation_seconds": 1.2844543819999998,
+                    "setup_seconds": 1.389557888,
+                    "training_seconds": 20.054126555000035
+                  },
+                  "ram_peak_bytes": 1324584960,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621146,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438656,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.623046875,
+                    1.21435546875,
+                    1.140625
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 26.03064807402552,
+                  "invocation_seconds": 25.098901655,
+                  "timings": {
+                    "checkpoint_seconds": 0.367338175,
+                    "evaluation_seconds": 1.413769924,
+                    "setup_seconds": 1.415229565,
+                    "training_seconds": 21.880064336
+                  },
+                  "ram_peak_bytes": 1324224512,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621146,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438635,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.677734375,
+                    1.2607421875,
+                    1.15869140625
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 27.587282879976556,
+                  "invocation_seconds": 26.599084287,
+                  "timings": {
+                    "checkpoint_seconds": 0.36430277,
+                    "evaluation_seconds": 1.26137121,
+                    "setup_seconds": 1.381069391,
+                    "training_seconds": 23.570598989999983
+                  },
+                  "ram_peak_bytes": 1324032000,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621274,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438767,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.43701171875,
+                    1.251953125,
+                    1.16162109375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 26.03064807402552,
+                "minimum": 24.12686724201194,
+                "maximum": 27.587282879976556,
+                "mean": 25.914932732004672,
+                "stdev_sample": 1.7331075059417884
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.36430277,
+                "evaluation_seconds": 1.2844543819999998,
+                "setup_seconds": 1.389557888,
+                "training_seconds": 21.880064336
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1324224512,
+                "minimum": 1324032000,
+                "maximum": 1324584960,
+                "mean": 1324280490.6666667,
+                "stdev_sample": 280698.05617662077
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 16438656,
+                  "minimum": 16438635,
+                  "maximum": 16438767,
+                  "mean": 16438686,
+                  "stdev_sample": 70.92954250522133
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 16637952,
+                  "minimum": 16637952,
+                  "maximum": 16637952,
+                  "mean": 16637952,
+                  "stdev_sample": 0.0
+                }
+              }
+            },
+            "reference": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 23.87290613001096,
+                  "invocation_seconds": 22.813424611,
+                  "timings": {
+                    "checkpoint_seconds": 0.353162642,
+                    "evaluation_seconds": 1.4195982429999998,
+                    "setup_seconds": 1.394602418,
+                    "training_seconds": 19.623872209
+                  },
+                  "ram_peak_bytes": 1324638208,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621146,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438642,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.3046875,
+                    1.09716796875,
+                    1.103515625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 20.86858338699676,
+                  "invocation_seconds": 19.911859122,
+                  "timings": {
+                    "checkpoint_seconds": 0.311597911,
+                    "evaluation_seconds": 1.261101237,
+                    "setup_seconds": 1.347286042,
+                    "training_seconds": 16.969964466
+                  },
+                  "ram_peak_bytes": 1323970560,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621146,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438635,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.3759765625,
+                    1.1435546875,
+                    1.1171875
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 21.866355798003497,
+                  "invocation_seconds": 20.836334567,
+                  "timings": {
+                    "checkpoint_seconds": 0.29697724999999997,
+                    "evaluation_seconds": 1.270494583,
+                    "setup_seconds": 1.414219291,
+                    "training_seconds": 17.83249384800001
+                  },
+                  "ram_peak_bytes": 1324261376,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621146,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438648,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.3876953125,
+                    1.22314453125,
+                    1.1484375
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 28.587613123003393,
+                  "invocation_seconds": 27.525314719,
+                  "timings": {
+                    "checkpoint_seconds": 0.36164762500000003,
+                    "evaluation_seconds": 1.517924779,
+                    "setup_seconds": 1.391498544,
+                    "training_seconds": 24.231386126999993
+                  },
+                  "ram_peak_bytes": 1324244992,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 117296,
+                      "policy": 621146,
+                      "rollout": 13806430
+                    },
+                    "output_file_bytes": 16438649,
+                    "output_allocated_bytes": 16637952,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.34521484375,
+                    1.224609375,
+                    1.150390625
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 21.866355798003497,
+                "minimum": 20.86858338699676,
+                "maximum": 28.587613123003393,
+                "mean": 23.774184102667885,
+                "stdev_sample": 4.198298660933688
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.311597911,
+                "evaluation_seconds": 1.270494583,
+                "setup_seconds": 1.391498544,
+                "training_seconds": 17.83249384800001
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1324244992,
+                "minimum": 1323970560,
+                "maximum": 1324261376,
+                "mean": 1324158976,
+                "stdev_sample": 163378.55017106744
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 16438648,
+                  "minimum": 16438635,
+                  "maximum": 16438649,
+                  "mean": 16438644,
+                  "stdev_sample": 7.810249675906654
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 16637952,
+                  "minimum": 16637952,
+                  "maximum": 16637952,
+                  "mean": 16637952,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          },
+          "delta_percent": 19.044290299173873,
+          "speedup": 0.8400234883057971
+        },
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "09ae6841d3cd8e06c25a4dff101500fd09e02c94c05afc2ec411432399f39899",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 7.233964729995932,
+                  "invocation_seconds": 6.367441607,
+                  "timings": {
+                    "checkpoint_seconds": 0.129060752,
+                    "evaluation_seconds": 1.48463562,
+                    "setup_seconds": 1.335058802,
+                    "training_seconds": 3.3937682870000048
+                  },
+                  "ram_peak_bytes": 1366560768,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007005,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    0.8525390625,
+                    0.98828125,
+                    1.0712890625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 7.835024233994773,
+                  "invocation_seconds": 6.980937567,
+                  "timings": {
+                    "checkpoint_seconds": 0.13181226299999999,
+                    "evaluation_seconds": 1.475395581,
+                    "setup_seconds": 1.340909276,
+                    "training_seconds": 4.008749877000001
+                  },
+                  "ram_peak_bytes": 1367068672,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007013,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.0400390625,
+                    1.0224609375,
+                    1.08154296875
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 7.534564604022307,
+                  "invocation_seconds": 6.481866376,
+                  "timings": {
+                    "checkpoint_seconds": 0.140495691,
+                    "evaluation_seconds": 1.366417693,
+                    "setup_seconds": 1.442140047,
+                    "training_seconds": 3.5110662189999973
+                  },
+                  "ram_peak_bytes": 1366286336,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006878,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.26806640625,
+                    1.07177734375,
+                    1.09765625
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 7.383370393014047,
+                  "invocation_seconds": 6.518252554,
+                  "timings": {
+                    "checkpoint_seconds": 0.13692728699999998,
+                    "evaluation_seconds": 1.353798428,
+                    "setup_seconds": 1.290548502,
+                    "training_seconds": 3.712931776999996
+                  },
+                  "ram_peak_bytes": 1367064576,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562361,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007141,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.24365234375,
+                    1.08154296875,
+                    1.0986328125
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.534564604022307,
+                "minimum": 7.383370393014047,
+                "maximum": 7.835024233994773,
+                "mean": 7.584319743677042,
+                "stdev_sample": 0.2299010188313815
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.13692728699999998,
+                "evaluation_seconds": 1.366417693,
+                "setup_seconds": 1.340909276,
+                "training_seconds": 3.712931776999996
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1367064576,
+                "minimum": 1366286336,
+                "maximum": 1367068672,
+                "mean": 1366806528,
+                "stdev_sample": 450504.1419920576
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 3007013,
+                  "minimum": 3006878,
+                  "maximum": 3007141,
+                  "mean": 3007010.6666666665,
+                  "stdev_sample": 131.515525065801
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 3182592,
+                  "minimum": 3182592,
+                  "maximum": 3182592,
+                  "mean": 3182592,
+                  "stdev_sample": 0.0
+                }
+              }
+            },
+            "reference": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 7.833213681995403,
+                  "invocation_seconds": 6.962956762,
+                  "timings": {
+                    "checkpoint_seconds": 0.13091288,
+                    "evaluation_seconds": 1.3675792649999998,
+                    "setup_seconds": 1.355074693,
+                    "training_seconds": 4.0872384179999965
+                  },
+                  "ram_peak_bytes": 1370193920,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562361,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007140,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    0.91259765625,
+                    1.0048828125,
+                    1.07763671875
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 8.989704434992746,
+                  "invocation_seconds": 8.009057142,
+                  "timings": {
+                    "checkpoint_seconds": 0.49057537999999995,
+                    "evaluation_seconds": 1.4689036899999999,
+                    "setup_seconds": 1.419535058,
+                    "training_seconds": 4.598693905000002
+                  },
+                  "ram_peak_bytes": 1370988544,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006892,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    0.9560546875,
+                    1.005859375,
+                    1.076171875
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 7.533516445982968,
+                  "invocation_seconds": 6.619931115,
+                  "timings": {
+                    "checkpoint_seconds": 0.131581032,
+                    "evaluation_seconds": 1.346299849,
+                    "setup_seconds": 1.326913206,
+                    "training_seconds": 3.7907988430000032
+                  },
+                  "ram_peak_bytes": 1370521600,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006878,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.2265625,
+                    1.06884765625,
+                    1.095703125
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 8.434644980996381,
+                  "invocation_seconds": 7.492011711,
+                  "timings": {
+                    "checkpoint_seconds": 0.129298582,
+                    "evaluation_seconds": 1.494091764,
+                    "setup_seconds": 1.370152295,
+                    "training_seconds": 4.472024066999999
+                  },
+                  "ram_peak_bytes": 1370931200,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007005,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.28857421875,
+                    1.08447265625,
+                    1.1005859375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 8.434644980996381,
+                "minimum": 7.533516445982968,
+                "maximum": 8.989704434992746,
+                "mean": 8.319288620657366,
+                "stdev_sample": 0.7349157654024598
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.131581032,
+                "evaluation_seconds": 1.4689036899999999,
+                "setup_seconds": 1.370152295,
+                "training_seconds": 4.472024066999999
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1370931200,
+                "minimum": 1370521600,
+                "maximum": 1370988544,
+                "mean": 1370813781.3333333,
+                "stdev_sample": 254655.71316059912
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 3006892,
+                  "minimum": 3006878,
+                  "maximum": 3007005,
+                  "mean": 3006925,
+                  "stdev_sample": 69.63476143421474
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 3182592,
+                  "minimum": 3182592,
+                  "maximum": 3182592,
+                  "mean": 3182592,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          },
+          "delta_percent": -10.671230134783317,
+          "speedup": 1.1194601711283447
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "4a692976d50f28493d819c531ab19555bef8842a10122d9625d3fb97a43ed918",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 9.23752706401865,
+                  "invocation_seconds": 8.281492565,
+                  "timings": {
+                    "checkpoint_seconds": 0.22694122900000002,
+                    "evaluation_seconds": 2.4807930789999997,
+                    "setup_seconds": 1.432925736,
+                    "training_seconds": 4.117144486000005
+                  },
+                  "ram_peak_bytes": 1417764864,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312058,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.98828125,
+                    1.46728515625,
+                    1.248046875
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 7.431897434988059,
+                  "invocation_seconds": 6.424875308,
+                  "timings": {
+                    "checkpoint_seconds": 0.180878236,
+                    "evaluation_seconds": 2.434482568,
+                    "setup_seconds": 1.395642041,
+                    "training_seconds": 2.391791876000001
+                  },
+                  "ram_peak_bytes": 1419137024,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312050,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.9296875,
+                    1.486328125,
+                    1.25927734375
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 8.487204759003362,
+                  "invocation_seconds": 7.664883507,
+                  "timings": {
+                    "checkpoint_seconds": 0.22142795999999998,
+                    "evaluation_seconds": 2.451916591,
+                    "setup_seconds": 1.370678432,
+                    "training_seconds": 3.5978058100000037
+                  },
+                  "ram_peak_bytes": 1421733888,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312052,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    2.015625,
+                    1.51171875,
+                    1.26904296875
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 9.64012629800709,
+                  "invocation_seconds": 8.683350554,
+                  "timings": {
+                    "checkpoint_seconds": 0.213335075,
+                    "evaluation_seconds": 2.67726927,
+                    "setup_seconds": 1.376907675,
+                    "training_seconds": 4.392353865000003
+                  },
+                  "ram_peak_bytes": 1423458304,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312042,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.66748046875,
+                    1.47705078125,
+                    1.265625
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 8.487204759003362,
+                "minimum": 7.431897434988059,
+                "maximum": 9.64012629800709,
+                "mean": 8.51974283066617,
+                "stdev_sample": 1.1044739573426938
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.213335075,
+                "evaluation_seconds": 2.451916591,
+                "setup_seconds": 1.376907675,
+                "training_seconds": 3.5978058100000037
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1421733888,
+                "minimum": 1419137024,
+                "maximum": 1423458304,
+                "mean": 1421443072,
+                "stdev_sample": 2175269.1026610937
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 7312050,
+                  "minimum": 7312042,
+                  "maximum": 7312052,
+                  "mean": 7312048,
+                  "stdev_sample": 5.291502622129181
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 7532544,
+                  "minimum": 7532544,
+                  "maximum": 7532544,
+                  "mean": 7532544,
+                  "stdev_sample": 0.0
+                }
+              }
+            },
+            "reference": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 10.091248918994097,
+                  "invocation_seconds": 9.060566221,
+                  "timings": {
+                    "checkpoint_seconds": 0.210211277,
+                    "evaluation_seconds": 2.6985767860000003,
+                    "setup_seconds": 1.404328416,
+                    "training_seconds": 4.723203246999998
+                  },
+                  "ram_peak_bytes": 1423564800,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311922,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.7021484375,
+                    1.39697265625,
+                    1.22314453125
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 9.233992819994455,
+                  "invocation_seconds": 8.367665524,
+                  "timings": {
+                    "checkpoint_seconds": 0.19788815999999998,
+                    "evaluation_seconds": 2.666581802,
+                    "setup_seconds": 1.355020574,
+                    "training_seconds": 4.123088808
+                  },
+                  "ram_peak_bytes": 1423024128,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312045,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.90966796875,
+                    1.46826171875,
+                    1.2509765625
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 9.08831279000151,
+                  "invocation_seconds": 8.184242032,
+                  "timings": {
+                    "checkpoint_seconds": 0.209498603,
+                    "evaluation_seconds": 2.649266081,
+                    "setup_seconds": 1.331667032,
+                    "training_seconds": 3.9696041550000043
+                  },
+                  "ram_peak_bytes": 1423437824,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312044,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.9326171875,
+                    1.51123046875,
+                    1.271484375
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 9.590203076979378,
+                  "invocation_seconds": 8.508583085,
+                  "timings": {
+                    "checkpoint_seconds": 0.22548799300000003,
+                    "evaluation_seconds": 2.563838696,
+                    "setup_seconds": 1.435731447,
+                    "training_seconds": 4.258044110000002
+                  },
+                  "ram_peak_bytes": 1424359424,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311923,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.7890625,
+                    1.49365234375,
+                    1.2685546875
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 9.233992819994455,
+                "minimum": 9.08831279000151,
+                "maximum": 9.590203076979378,
+                "mean": 9.304169562325114,
+                "stdev_sample": 0.2581996251232554
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.209498603,
+                "evaluation_seconds": 2.649266081,
+                "setup_seconds": 1.355020574,
+                "training_seconds": 4.123088808
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1423437824,
+                "minimum": 1423024128,
+                "maximum": 1424359424,
+                "mean": 1423607125.3333333,
+                "stdev_sample": 683557.6479020137
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 7312044,
+                  "minimum": 7311923,
+                  "maximum": 7312045,
+                  "mean": 7312004,
+                  "stdev_sample": 70.14983962918234
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 7532544,
+                  "minimum": 7532544,
+                  "maximum": 7532544,
+                  "mean": 7532544,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          },
+          "delta_percent": -8.087379701812914,
+          "speedup": 1.0879898720717076
+        },
+        {
+          "variant": "ppo_gru",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "e78d54d3cde5fa953540824efbb7be12038d35222be5d78123c0d3541194ba4d",
+          "observed_transitions": 11264,
+          "optimizer_steps": 544,
+          "parameters_count": 52871,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 8.587382911995519,
+                  "invocation_seconds": 7.56349863,
+                  "timings": {
+                    "checkpoint_seconds": 0.291254628,
+                    "evaluation_seconds": 2.164423952,
+                    "setup_seconds": 1.402487892,
+                    "training_seconds": 3.684504547000001
+                  },
+                  "ram_peak_bytes": 1488343040,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540537,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343469,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.60205078125,
+                    1.3154296875,
+                    1.1875
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 9.991161156009184,
+                  "invocation_seconds": 9.194784828,
+                  "timings": {
+                    "checkpoint_seconds": 0.354893717,
+                    "evaluation_seconds": 2.194374583,
+                    "setup_seconds": 1.293230364,
+                    "training_seconds": 5.329906168999992
+                  },
+                  "ram_peak_bytes": 1492307968,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540537,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343470,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.57373046875,
+                    1.32763671875,
+                    1.193359375
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 10.744189695018576,
+                  "invocation_seconds": 9.700190863,
+                  "timings": {
+                    "checkpoint_seconds": 0.34832527599999996,
+                    "evaluation_seconds": 2.434368598,
+                    "setup_seconds": 1.429274384,
+                    "training_seconds": 5.465484737999999
+                  },
+                  "ram_peak_bytes": 1485545472,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540537,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343478,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.55908203125,
+                    1.3330078125,
+                    1.1962890625
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 10.842404477996752,
+                  "invocation_seconds": 9.836737107,
+                  "timings": {
+                    "checkpoint_seconds": 0.356249785,
+                    "evaluation_seconds": 2.3375762900000003,
+                    "setup_seconds": 1.408977455,
+                    "training_seconds": 5.7113673700000005
+                  },
+                  "ram_peak_bytes": 1491980288,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540537,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343478,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.64013671875,
+                    1.3759765625,
+                    1.21484375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 10.744189695018576,
+                "minimum": 9.991161156009184,
+                "maximum": 10.842404477996752,
+                "mean": 10.525918443008171,
+                "stdev_sample": 0.4657097303017727
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.354893717,
+                "evaluation_seconds": 2.3375762900000003,
+                "setup_seconds": 1.408977455,
+                "training_seconds": 5.465484737999999
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1491980288,
+                "minimum": 1485545472,
+                "maximum": 1492307968,
+                "mean": 1489944576,
+                "stdev_sample": 3813257.2097502155
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 24343478,
+                  "minimum": 24343470,
+                  "maximum": 24343478,
+                  "mean": 24343475.333333332,
+                  "stdev_sample": 4.618802153517006
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 24518656,
+                  "minimum": 24518656,
+                  "maximum": 24518656,
+                  "mean": 24518656,
+                  "stdev_sample": 0.0
+                }
+              }
+            },
+            "reference": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 10.240852456016,
+                  "invocation_seconds": 9.458757701,
+                  "timings": {
+                    "checkpoint_seconds": 0.338635401,
+                    "evaluation_seconds": 2.389728002,
+                    "setup_seconds": 1.341018217,
+                    "training_seconds": 5.367281500999997
+                  },
+                  "ram_peak_bytes": 1485639680,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540665,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343598,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.53759765625,
+                    1.2919921875,
+                    1.1787109375
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 11.795029455999611,
+                  "invocation_seconds": 10.868900133,
+                  "timings": {
+                    "checkpoint_seconds": 0.379754436,
+                    "evaluation_seconds": 2.400017537,
+                    "setup_seconds": 1.381051074,
+                    "training_seconds": 6.684393720999997
+                  },
+                  "ram_peak_bytes": 1485856768,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540537,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343471,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.63427734375,
+                    1.3271484375,
+                    1.19189453125
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 11.043664208991686,
+                  "invocation_seconds": 9.931568039,
+                  "timings": {
+                    "checkpoint_seconds": 0.32282733,
+                    "evaluation_seconds": 2.279932175,
+                    "setup_seconds": 1.462854198,
+                    "training_seconds": 5.842579295000002
+                  },
+                  "ram_peak_bytes": 1485369344,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540793,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343725,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.546875,
+                    1.33837890625,
+                    1.19921875
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 11.092440284992335,
+                  "invocation_seconds": 10.095939565,
+                  "timings": {
+                    "checkpoint_seconds": 0.334514997,
+                    "evaluation_seconds": 2.216213272,
+                    "setup_seconds": 1.418061288,
+                    "training_seconds": 6.104043619999999
+                  },
+                  "ram_peak_bytes": 1485340672,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 178469,
+                      "policy": 1540537,
+                      "rollout": 20524749
+                    },
+                    "output_file_bytes": 24343471,
+                    "output_allocated_bytes": 24518656,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.6171875,
+                    1.36083984375,
+                    1.2080078125
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 11.092440284992335,
+                "minimum": 11.043664208991686,
+                "maximum": 11.795029455999611,
+                "mean": 11.310377983327877,
+                "stdev_sample": 0.420428428950357
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.334514997,
+                "evaluation_seconds": 2.279932175,
+                "setup_seconds": 1.418061288,
+                "training_seconds": 6.104043619999999
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1485369344,
+                "minimum": 1485340672,
+                "maximum": 1485856768,
+                "mean": 1485522261.3333333,
+                "stdev_sample": 290045.7781615401
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 24343471,
+                  "minimum": 24343471,
+                  "maximum": 24343725,
+                  "mean": 24343555.666666668,
+                  "stdev_sample": 146.64696837416494
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 24518656,
+                  "minimum": 24518656,
+                  "maximum": 24518656,
+                  "mean": 24518656,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          },
+          "delta_percent": -3.1395308969562774,
+          "speedup": 1.0324129226920873
+        }
+      ]
+    },
+    {
+      "id": "pipeline_large",
+      "transitions": 65536,
+      "source_order": "catalog",
+      "checkpoint_transitions": 2048,
+      "warmup_runs_per_case_and_method": 1,
+      "repetitions": 2,
+      "order": "AB/BA alterno",
+      "artifacts": [
+        "pipeline-large__benchmark",
+        "pipeline-large__parity"
+      ],
+      "parity": [
+        {
+          "variant": "double_dqn",
+          "workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 88064
+        },
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 88064
+        }
+      ],
+      "created_at": "2026-09-29T09:13:18.758714+00:00",
+      "harness_sha256": "aafaf70f1554adf1f6fb38a97669251f95fbca1a1abf76022eba71fdae4e5fda",
+      "base_configuration_sha256": "f8cecc72a32f858628cbdcefcb682cc7d068c25d6fc1b9c19e64657ff76b78d7",
+      "methods": {
+        "candidate": "cpu_gae_trace",
+        "reference": "finite_checks"
+      },
+      "cases": [
+        {
+          "variant": "double_dqn",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "436c4916ba0472dde5e163b647f4dd1b926cb787cbd593314a0e8eda3837c5e7",
+          "observed_transitions": 88064,
+          "optimizer_steps": 65281,
+          "parameters_count": 17862,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 164.83093943499262,
+                  "invocation_seconds": 163.91258411,
+                  "timings": {
+                    "checkpoint_seconds": 2.481050319,
+                    "evaluation_seconds": 3.538117865,
+                    "setup_seconds": 1.346824711,
+                    "training_seconds": 156.41543416099987
+                  },
+                  "ram_peak_bytes": 1325445120,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180997,
+                      "policy": 931719,
+                      "rollout": 20709645
+                    },
+                    "output_file_bytes": 35673195,
+                    "output_allocated_bytes": 36782080,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.99072265625,
+                    1.6796875,
+                    1.36865234375
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 152.70702124701347,
+                  "invocation_seconds": 151.843336515,
+                  "timings": {
+                    "checkpoint_seconds": 2.4932227900000004,
+                    "evaluation_seconds": 3.031561767,
+                    "setup_seconds": 1.387201505,
+                    "training_seconds": 144.7984652459995
+                  },
+                  "ram_peak_bytes": 1324916736,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180997,
+                      "policy": 931719,
+                      "rollout": 20709645
+                    },
+                    "output_file_bytes": 35673202,
+                    "output_allocated_bytes": 36782080,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.56787109375,
+                    1.4111328125,
+                    1.328125
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 158.16728400200373,
+                  "invocation_seconds": 157.063798409,
+                  "timings": {
+                    "checkpoint_seconds": 2.34984555,
+                    "evaluation_seconds": 3.181348574,
+                    "setup_seconds": 1.386945897,
+                    "training_seconds": 150.01259575200027
+                  },
+                  "ram_peak_bytes": 1324806144,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180997,
+                      "policy": 931719,
+                      "rollout": 20709645
+                    },
+                    "output_file_bytes": 35673195,
+                    "output_allocated_bytes": 36782080,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.8046875,
+                    1.689453125,
+                    1.455078125
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 2,
+                "median": 155.4371526245086,
+                "minimum": 152.70702124701347,
+                "maximum": 158.16728400200373,
+                "mean": 155.4371526245086,
+                "stdev_sample": 3.8609888211139483
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 2.42153417,
+                "evaluation_seconds": 3.1064551705,
+                "setup_seconds": 1.3870737009999998,
+                "training_seconds": 147.4055304989999
+              },
+              "rss_summary_bytes": {
+                "count": 2,
+                "median": 1324861440.0,
+                "minimum": 1324806144,
+                "maximum": 1324916736,
+                "mean": 1324861440,
+                "stdev_sample": 78200.35314498267
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 2,
+                  "median": 35673198.5,
+                  "minimum": 35673195,
+                  "maximum": 35673202,
+                  "mean": 35673198.5,
+                  "stdev_sample": 4.949747468305833
+                },
+                "output_allocated_bytes": {
+                  "count": 2,
+                  "median": 36782080.0,
+                  "minimum": 36782080,
+                  "maximum": 36782080,
+                  "mean": 36782080,
+                  "stdev_sample": 0.0
+                }
+              }
+            },
+            "reference": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 191.64987617600127,
+                  "invocation_seconds": 190.686833683,
+                  "timings": {
+                    "checkpoint_seconds": 2.593813956,
+                    "evaluation_seconds": 3.298507293,
+                    "setup_seconds": 1.39748456,
+                    "training_seconds": 183.2519769979999
+                  },
+                  "ram_peak_bytes": 1325883392,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180997,
+                      "policy": 931719,
+                      "rollout": 20709645
+                    },
+                    "output_file_bytes": 35673194,
+                    "output_allocated_bytes": 36782080,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.6513671875,
+                    1.38671875,
+                    1.22216796875
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 174.16137636397616,
+                  "invocation_seconds": 173.426555539,
+                  "timings": {
+                    "checkpoint_seconds": 2.846467261,
+                    "evaluation_seconds": 3.5404980360000002,
+                    "setup_seconds": 1.375788557,
+                    "training_seconds": 165.47559631700008
+                  },
+                  "ram_peak_bytes": 1325088768,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180997,
+                      "policy": 931719,
+                      "rollout": 20709645
+                    },
+                    "output_file_bytes": 35673203,
+                    "output_allocated_bytes": 36782080,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.2080078125,
+                    1.4541015625,
+                    1.3330078125
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 166.05150912699173,
+                  "invocation_seconds": 165.001993843,
+                  "timings": {
+                    "checkpoint_seconds": 2.545509144,
+                    "evaluation_seconds": 3.1288137739999997,
+                    "setup_seconds": 1.404111527,
+                    "training_seconds": 157.78345441900052
+                  },
+                  "ram_peak_bytes": 1326043136,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180997,
+                      "policy": 931719,
+                      "rollout": 20709645
+                    },
+                    "output_file_bytes": 35673203,
+                    "output_allocated_bytes": 36782080,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.6572265625,
+                    1.66650390625,
+                    1.47802734375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 2,
+                "median": 170.10644274548395,
+                "minimum": 166.05150912699173,
+                "maximum": 174.16137636397616,
+                "mean": 170.10644274548395,
+                "stdev_sample": 5.734542117794299
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 2.6959882024999997,
+                "evaluation_seconds": 3.334655905,
+                "setup_seconds": 1.389950042,
+                "training_seconds": 161.62952536800032
+              },
+              "rss_summary_bytes": {
+                "count": 2,
+                "median": 1325565952.0,
+                "minimum": 1325088768,
+                "maximum": 1326043136,
+                "mean": 1325565952,
+                "stdev_sample": 674840.084547443
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 2,
+                  "median": 35673203.0,
+                  "minimum": 35673203,
+                  "maximum": 35673203,
+                  "mean": 35673203,
+                  "stdev_sample": 0.0
+                },
+                "output_allocated_bytes": {
+                  "count": 2,
+                  "median": 36782080.0,
+                  "minimum": 36782080,
+                  "maximum": 36782080,
+                  "mean": 36782080,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          },
+          "delta_percent": -8.62359466473811,
+          "speedup": 1.0943744135381335
+        },
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "c5bdfddbab545b087928895791194ee9a837ea43a06800680ad69d51f9d8e04c",
+          "observed_transitions": 88064,
+          "optimizer_steps": 4160,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 35.4083210619865,
+                  "invocation_seconds": 34.508873262,
+                  "timings": {
+                    "checkpoint_seconds": 0.8079894479999998,
+                    "evaluation_seconds": 3.860401971,
+                    "setup_seconds": 1.392405074,
+                    "training_seconds": 28.31104773200001
+                  },
+                  "ram_peak_bytes": 1367482368,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180572,
+                      "policy": 713091,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 16634283,
+                    "output_allocated_bytes": 17620992,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.052734375,
+                    0.9775390625,
+                    1.072265625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 32.45075042001554,
+                  "invocation_seconds": 31.403246735,
+                  "timings": {
+                    "checkpoint_seconds": 0.7995199139999999,
+                    "evaluation_seconds": 3.6345461329999997,
+                    "setup_seconds": 1.385686364,
+                    "training_seconds": 25.448303095999986
+                  },
+                  "ram_peak_bytes": 1368281088,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180572,
+                      "policy": 712707,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 16633907,
+                    "output_allocated_bytes": 17620992,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    2.00439453125,
+                    1.294921875,
+                    1.177734375
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 29.084955797996372,
+                  "invocation_seconds": 28.104500317,
+                  "timings": {
+                    "checkpoint_seconds": 0.731868815,
+                    "evaluation_seconds": 3.599622921,
+                    "setup_seconds": 1.369550642,
+                    "training_seconds": 22.26691662799999
+                  },
+                  "ram_peak_bytes": 1368178688,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180572,
+                      "policy": 712707,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 16633892,
+                    "output_allocated_bytes": 17620992,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.91064453125,
+                    1.3564453125,
+                    1.2021484375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 2,
+                "median": 30.767853109005955,
+                "minimum": 29.084955797996372,
+                "maximum": 32.45075042001554,
+                "mean": 30.767853109005955,
+                "stdev_sample": 2.379976201310965
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.7656943645,
+                "evaluation_seconds": 3.617084527,
+                "setup_seconds": 1.3776185029999999,
+                "training_seconds": 23.85760986199999
+              },
+              "rss_summary_bytes": {
+                "count": 2,
+                "median": 1368229888.0,
+                "minimum": 1368178688,
+                "maximum": 1368281088,
+                "mean": 1368229888,
+                "stdev_sample": 72407.73439350247
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 2,
+                  "median": 16633899.5,
+                  "minimum": 16633892,
+                  "maximum": 16633907,
+                  "mean": 16633899.5,
+                  "stdev_sample": 10.606601717798213
+                },
+                "output_allocated_bytes": {
+                  "count": 2,
+                  "median": 17620992.0,
+                  "minimum": 17620992,
+                  "maximum": 17620992,
+                  "mean": 17620992,
+                  "stdev_sample": 0.0
+                }
+              }
+            },
+            "reference": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 40.267760299000656,
+                  "invocation_seconds": 39.549800268,
+                  "timings": {
+                    "checkpoint_seconds": 0.7473847610000001,
+                    "evaluation_seconds": 3.7442184320000003,
+                    "setup_seconds": 1.364741516,
+                    "training_seconds": 33.54148497400002
+                  },
+                  "ram_peak_bytes": 1372483584,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180572,
+                      "policy": 712899,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 16634098,
+                    "output_allocated_bytes": 17620992,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    0.63525390625,
+                    0.90087890625,
+                    1.052734375
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 39.57043937800336,
+                  "invocation_seconds": 38.725097586,
+                  "timings": {
+                    "checkpoint_seconds": 0.7125183900000003,
+                    "evaluation_seconds": 3.7609690739999997,
+                    "setup_seconds": 1.341834032,
+                    "training_seconds": 32.76407773300008
+                  },
+                  "ram_peak_bytes": 1372897280,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180572,
+                      "policy": 713091,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 16634290,
+                    "output_allocated_bytes": 17620992,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.60546875,
+                    1.12353515625,
+                    1.1181640625
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 39.46190444697277,
+                  "invocation_seconds": 38.404359567,
+                  "timings": {
+                    "checkpoint_seconds": 0.7338894169999998,
+                    "evaluation_seconds": 3.776718166,
+                    "setup_seconds": 1.409336338,
+                    "training_seconds": 32.333297586
+                  },
+                  "ram_peak_bytes": 1372360704,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 180572,
+                      "policy": 713091,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 16634278,
+                    "output_allocated_bytes": 17620992,
+                    "output_file_count": 707
+                  },
+                  "load_average_1_5_15": [
+                    1.75146484375,
+                    1.3701171875,
+                    1.2109375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 2,
+                "median": 39.51617191248806,
+                "minimum": 39.46190444697277,
+                "maximum": 39.57043937800336,
+                "mean": 39.51617191248806,
+                "stdev_sample": 0.07674578572734449
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.7232039035,
+                "evaluation_seconds": 3.76884362,
+                "setup_seconds": 1.3755851849999998,
+                "training_seconds": 32.54868765950004
+              },
+              "rss_summary_bytes": {
+                "count": 2,
+                "median": 1372628992.0,
+                "minimum": 1372360704,
+                "maximum": 1372897280,
+                "mean": 1372628992,
+                "stdev_sample": 379416.5282219529
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 2,
+                  "median": 16634284.0,
+                  "minimum": 16634278,
+                  "maximum": 16634290,
+                  "mean": 16634284,
+                  "stdev_sample": 8.48528137423857
+                },
+                "output_allocated_bytes": {
+                  "count": 2,
+                  "median": 17620992.0,
+                  "minimum": 17620992,
+                  "maximum": 17620992,
+                  "mean": 17620992,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          },
+          "delta_percent": -22.13857866307497,
+          "speedup": 1.2843330918308828
+        }
+      ]
+    },
+    {
+      "id": "pipeline_workers",
+      "transitions": 8192,
+      "source_order": "catalog",
+      "checkpoint_transitions": 2048,
+      "warmup_runs_per_case_and_method": 1,
+      "repetitions": 3,
+      "order": "Workers 1, 2, 4 y 8, en ese orden",
+      "artifacts": [
+        "pipeline-workers__benchmark",
+        "pipeline-workers__parity"
+      ],
+      "parity": [
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo",
+          "workers": 2,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo",
+          "workers": 4,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo",
+          "workers": 8,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 1,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 2,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 4,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 8,
+          "reference_workers": 1,
+          "parameters_equal": true,
+          "traces_equal": true,
+          "rows": 11264
+        }
+      ],
+      "created_at": "2026-09-29T09:37:34.893829+00:00",
+      "harness_sha256": "aafaf70f1554adf1f6fb38a97669251f95fbca1a1abf76022eba71fdae4e5fda",
+      "base_configuration_sha256": "f8cecc72a32f858628cbdcefcb682cc7d068c25d6fc1b9c19e64657ff76b78d7",
+      "methods": {
+        "candidate": "cpu_gae_trace"
+      },
+      "cases": [
+        {
+          "variant": "ppo",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "09ae6841d3cd8e06c25a4dff101500fd09e02c94c05afc2ec411432399f39899",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 6.227159886999289,
+                  "invocation_seconds": 5.461365021,
+                  "timings": {
+                    "checkpoint_seconds": 0.122452756,
+                    "evaluation_seconds": 1.37689541,
+                    "setup_seconds": 1.346523064,
+                    "training_seconds": 2.593652779999999
+                  },
+                  "ram_peak_bytes": 1366552576,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007004,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    0.86572265625,
+                    1.32763671875,
+                    1.42138671875
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 6.480807730986271,
+                  "invocation_seconds": 5.397972804,
+                  "timings": {
+                    "checkpoint_seconds": 0.11779555700000001,
+                    "evaluation_seconds": 1.314855292,
+                    "setup_seconds": 1.371349344,
+                    "training_seconds": 2.5719770400000015
+                  },
+                  "ram_peak_bytes": 1367056384,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007014,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    0.96728515625,
+                    1.33349609375,
+                    1.42236328125
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 7.1821492860035505,
+                  "invocation_seconds": 6.164275845,
+                  "timings": {
+                    "checkpoint_seconds": 0.12403196500000001,
+                    "evaluation_seconds": 1.473662296,
+                    "setup_seconds": 1.381179433,
+                    "training_seconds": 3.163805436000004
+                  },
+                  "ram_peak_bytes": 1366016000,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562361,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007141,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    0.97021484375,
+                    1.32763671875,
+                    1.419921875
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 8.087133330991492,
+                  "invocation_seconds": 7.012098237,
+                  "timings": {
+                    "checkpoint_seconds": 0.12309875199999999,
+                    "evaluation_seconds": 1.461965357,
+                    "setup_seconds": 1.426267045,
+                    "training_seconds": 3.9782353049999934
+                  },
+                  "ram_peak_bytes": 1366130688,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006886,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.12890625,
+                    1.35009765625,
+                    1.4267578125
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.1821492860035505,
+                "minimum": 6.480807730986271,
+                "maximum": 8.087133330991492,
+                "mean": 7.250030115993771,
+                "stdev_sample": 0.8053113302432506
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.12309875199999999,
+                "evaluation_seconds": 1.461965357,
+                "setup_seconds": 1.381179433,
+                "training_seconds": 3.163805436000004
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1366130688,
+                "minimum": 1366016000,
+                "maximum": 1367056384,
+                "mean": 1366401024,
+                "stdev_sample": 570447.9656690871
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 3007014,
+                  "minimum": 3006886,
+                  "maximum": 3007141,
+                  "mean": 3007013.6666666665,
+                  "stdev_sample": 127.50032679696682
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 3182592,
+                  "minimum": 3182592,
+                  "maximum": 3182592,
+                  "mean": 3182592,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo",
+          "workers": 2,
+          "seed": 42,
+          "configuration_sha256": "b097f0aab0d5fa56bca342c3dd1d480ad435eae24de92088e93be03adf3febe2",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 8.233096682990436,
+                  "invocation_seconds": 7.161442887,
+                  "timings": {
+                    "checkpoint_seconds": 0.14412656499999998,
+                    "evaluation_seconds": 1.832242793,
+                    "setup_seconds": 1.380904376,
+                    "training_seconds": 3.7807484009999963
+                  },
+                  "ram_peak_bytes": 1367310336,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007014,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.1181640625,
+                    1.34423828125,
+                    1.42431640625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 8.23306391001097,
+                  "invocation_seconds": 7.150220711,
+                  "timings": {
+                    "checkpoint_seconds": 0.133031423,
+                    "evaluation_seconds": 1.615340785,
+                    "setup_seconds": 1.454443284,
+                    "training_seconds": 3.923795796
+                  },
+                  "ram_peak_bytes": 1367711744,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006871,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.26025390625,
+                    1.3662109375,
+                    1.4306640625
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 7.933777069003554,
+                  "invocation_seconds": 6.91589574,
+                  "timings": {
+                    "checkpoint_seconds": 0.13277488999999998,
+                    "evaluation_seconds": 1.6851846849999998,
+                    "setup_seconds": 1.312814989,
+                    "training_seconds": 3.760538718
+                  },
+                  "ram_peak_bytes": 1368186880,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006885,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.2197265625,
+                    1.353515625,
+                    1.42578125
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 6.528127388010034,
+                  "invocation_seconds": 5.496188227,
+                  "timings": {
+                    "checkpoint_seconds": 0.12288418200000001,
+                    "evaluation_seconds": 1.41253027,
+                    "setup_seconds": 1.383625231,
+                    "training_seconds": 2.5552504699999985
+                  },
+                  "ram_peak_bytes": 1367166976,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006885,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.20166015625,
+                    1.34716796875,
+                    1.42333984375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.933777069003554,
+                "minimum": 6.528127388010034,
+                "maximum": 8.23306391001097,
+                "mean": 7.564989455674852,
+                "stdev_sample": 0.9103325567185164
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.13277488999999998,
+                "evaluation_seconds": 1.615340785,
+                "setup_seconds": 1.383625231,
+                "training_seconds": 3.760538718
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1367711744,
+                "minimum": 1367166976,
+                "maximum": 1368186880,
+                "mean": 1367688533.3333333,
+                "stdev_sample": 510348.0122321761
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 3006885,
+                  "minimum": 3006871,
+                  "maximum": 3006885,
+                  "mean": 3006880.3333333335,
+                  "stdev_sample": 8.082903768654761
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 3182592,
+                  "minimum": 3182592,
+                  "maximum": 3182592,
+                  "mean": 3182592,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo",
+          "workers": 4,
+          "seed": 42,
+          "configuration_sha256": "1de89086b21910406a103cb7c569d534f29ef88cc47f947446b259ebe65c3fed",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 8.33598169698962,
+                  "invocation_seconds": 7.193477113,
+                  "timings": {
+                    "checkpoint_seconds": 0.137707348,
+                    "evaluation_seconds": 1.7057077280000001,
+                    "setup_seconds": 1.418550212,
+                    "training_seconds": 3.907210458000001
+                  },
+                  "ram_peak_bytes": 1368748032,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006884,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.169921875,
+                    1.33544921875,
+                    1.41845703125
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 8.08238958401489,
+                  "invocation_seconds": 6.925411187,
+                  "timings": {
+                    "checkpoint_seconds": 0.13566998,
+                    "evaluation_seconds": 1.6701732,
+                    "setup_seconds": 1.389281394,
+                    "training_seconds": 3.7072811989999974
+                  },
+                  "ram_peak_bytes": 1368629248,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006875,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.15625,
+                    1.32958984375,
+                    1.416015625
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 7.833835072000511,
+                  "invocation_seconds": 6.787371024,
+                  "timings": {
+                    "checkpoint_seconds": 0.132614911,
+                    "evaluation_seconds": 1.61614973,
+                    "setup_seconds": 1.405448178,
+                    "training_seconds": 3.6071070420000027
+                  },
+                  "ram_peak_bytes": 1369341952,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006877,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.2060546875,
+                    1.3349609375,
+                    1.4169921875
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 7.381758231000276,
+                  "invocation_seconds": 6.329672702,
+                  "timings": {
+                    "checkpoint_seconds": 0.128183807,
+                    "evaluation_seconds": 1.6454215429999999,
+                    "setup_seconds": 1.381602597,
+                    "training_seconds": 3.1472042749999973
+                  },
+                  "ram_peak_bytes": 1369010176,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006885,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.173828125,
+                    1.3232421875,
+                    1.412109375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.833835072000511,
+                "minimum": 7.381758231000276,
+                "maximum": 8.08238958401489,
+                "mean": 7.765994295671892,
+                "stdev_sample": 0.3552081803765568
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.132614911,
+                "evaluation_seconds": 1.6454215429999999,
+                "setup_seconds": 1.389281394,
+                "training_seconds": 3.6071070420000027
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1369010176,
+                "minimum": 1368629248,
+                "maximum": 1369341952,
+                "mean": 1368993792,
+                "stdev_sample": 356634.3708842433
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 3006877,
+                  "minimum": 3006875,
+                  "maximum": 3006885,
+                  "mean": 3006879,
+                  "stdev_sample": 5.291502622129181
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 3182592,
+                  "minimum": 3182592,
+                  "maximum": 3182592,
+                  "mean": 3182592,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo",
+          "workers": 8,
+          "seed": 42,
+          "configuration_sha256": "e564df8937abe1516c4417d2df55c8c61edb2996c81fcaef7e961c76b6af134a",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 7.832295572996372,
+                  "invocation_seconds": 6.775474305,
+                  "timings": {
+                    "checkpoint_seconds": 0.127327869,
+                    "evaluation_seconds": 1.621528193,
+                    "setup_seconds": 1.442017302,
+                    "training_seconds": 3.5621677579999953
+                  },
+                  "ram_peak_bytes": 1370898432,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006878,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.240234375,
+                    1.3349609375,
+                    1.41552734375
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 7.733455179986777,
+                  "invocation_seconds": 6.640176792,
+                  "timings": {
+                    "checkpoint_seconds": 0.136915643,
+                    "evaluation_seconds": 1.699503698,
+                    "setup_seconds": 1.426391253,
+                    "training_seconds": 3.3527804219999986
+                  },
+                  "ram_peak_bytes": 1370763264,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007006,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.20263671875,
+                    1.3232421875,
+                    1.41064453125
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 7.832602453971049,
+                  "invocation_seconds": 6.753124578,
+                  "timings": {
+                    "checkpoint_seconds": 0.134734165,
+                    "evaluation_seconds": 1.691271897,
+                    "setup_seconds": 1.383525822,
+                    "training_seconds": 3.516901632000006
+                  },
+                  "ram_peak_bytes": 1371250688,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562233,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3007005,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.10595703125,
+                    1.30126953125,
+                    1.40283203125
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 7.3317108459887095,
+                  "invocation_seconds": 6.233003674,
+                  "timings": {
+                    "checkpoint_seconds": 0.12261981599999998,
+                    "evaluation_seconds": 1.661158664,
+                    "setup_seconds": 1.435023396,
+                    "training_seconds": 2.9890617739999965
+                  },
+                  "ram_peak_bytes": 1371275264,
+                  "disk": {
+                    "retained_bundles": 3,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 179048,
+                      "policy": 562105,
+                      "rollout": 160269
+                    },
+                    "output_file_bytes": 3006886,
+                    "output_allocated_bytes": 3182592,
+                    "output_file_count": 107
+                  },
+                  "load_average_1_5_15": [
+                    1.25,
+                    1.32421875,
+                    1.4091796875
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 7.733455179986777,
+                "minimum": 7.3317108459887095,
+                "maximum": 7.832602453971049,
+                "mean": 7.632589493315511,
+                "stdev_sample": 0.2652423717989506
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.134734165,
+                "evaluation_seconds": 1.691271897,
+                "setup_seconds": 1.426391253,
+                "training_seconds": 3.3527804219999986
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1371250688,
+                "minimum": 1370763264,
+                "maximum": 1371275264,
+                "mean": 1371096405.3333333,
+                "stdev_sample": 288770.42079363554
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 3007005,
+                  "minimum": 3006886,
+                  "maximum": 3007006,
+                  "mean": 3006965.6666666665,
+                  "stdev_sample": 68.9951689129995
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 3182592,
+                  "minimum": 3182592,
+                  "maximum": 3182592,
+                  "mean": 3182592,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 1,
+          "seed": 42,
+          "configuration_sha256": "4a692976d50f28493d819c531ab19555bef8842a10122d9625d3fb97a43ed918",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 9.940807504986878,
+                  "invocation_seconds": 8.905877809,
+                  "timings": {
+                    "checkpoint_seconds": 0.24611977799999998,
+                    "evaluation_seconds": 2.611590572,
+                    "setup_seconds": 1.42819353,
+                    "training_seconds": 4.596057949999999
+                  },
+                  "ram_peak_bytes": 1418993664,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311922,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.2919921875,
+                    1.330078125,
+                    1.41015625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 9.237745296995854,
+                  "invocation_seconds": 8.502275989,
+                  "timings": {
+                    "checkpoint_seconds": 0.22413687499999999,
+                    "evaluation_seconds": 2.6812436359999996,
+                    "setup_seconds": 1.330295027,
+                    "training_seconds": 4.242742765
+                  },
+                  "ram_peak_bytes": 1422704640,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311924,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.3271484375,
+                    1.33544921875,
+                    1.4111328125
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 8.236082885996439,
+                  "invocation_seconds": 7.315851691,
+                  "timings": {
+                    "checkpoint_seconds": 0.177892142,
+                    "evaluation_seconds": 2.6286853509999997,
+                    "setup_seconds": 1.40373371,
+                    "training_seconds": 3.0837317900000016
+                  },
+                  "ram_peak_bytes": 1418354688,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311922,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.30078125,
+                    1.32958984375,
+                    1.40869140625
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 10.040454847010551,
+                  "invocation_seconds": 9.162184867,
+                  "timings": {
+                    "checkpoint_seconds": 0.235709274,
+                    "evaluation_seconds": 2.6904090910000003,
+                    "setup_seconds": 1.373845007,
+                    "training_seconds": 4.838222535999999
+                  },
+                  "ram_peak_bytes": 1421123584,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311922,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.328125,
+                    1.3349609375,
+                    1.40966796875
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 9.237745296995854,
+                "minimum": 8.236082885996439,
+                "maximum": 10.040454847010551,
+                "mean": 9.171427676667614,
+                "stdev_sample": 0.9040122031797905
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.22413687499999999,
+                "evaluation_seconds": 2.6812436359999996,
+                "setup_seconds": 1.373845007,
+                "training_seconds": 4.242742765
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1421123584,
+                "minimum": 1418354688,
+                "maximum": 1422704640,
+                "mean": 1420727637.3333333,
+                "stdev_sample": 2201840.349051069
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 7311922,
+                  "minimum": 7311922,
+                  "maximum": 7311924,
+                  "mean": 7311922.666666667,
+                  "stdev_sample": 1.1547005383792515
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 7532544,
+                  "minimum": 7532544,
+                  "maximum": 7532544,
+                  "mean": 7532544,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 2,
+          "seed": 42,
+          "configuration_sha256": "91e79a73c11962c3bf3d9f3c4130ef37c118eb713b3524a26f760e0405342926",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 9.137040097004501,
+                  "invocation_seconds": 8.365916215,
+                  "timings": {
+                    "checkpoint_seconds": 0.22982568199999998,
+                    "evaluation_seconds": 2.9589054949999998,
+                    "setup_seconds": 1.347853584,
+                    "training_seconds": 3.806376142
+                  },
+                  "ram_peak_bytes": 1421819904,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311924,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.65283203125,
+                    1.40625,
+                    1.4326171875
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 10.239513843000168,
+                  "invocation_seconds": 9.225882121,
+                  "timings": {
+                    "checkpoint_seconds": 0.212761957,
+                    "evaluation_seconds": 3.185324427,
+                    "setup_seconds": 1.385592542,
+                    "training_seconds": 4.418387393000003
+                  },
+                  "ram_peak_bytes": 1421389824,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475266,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7312043,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.63232421875,
+                    1.40966796875,
+                    1.43359375
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 10.290455271984683,
+                  "invocation_seconds": 9.212890544,
+                  "timings": {
+                    "checkpoint_seconds": 0.24623070900000002,
+                    "evaluation_seconds": 3.072634481,
+                    "setup_seconds": 1.391019722,
+                    "training_seconds": 4.479702456999998
+                  },
+                  "ram_peak_bytes": 1422872576,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311923,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.53466796875,
+                    1.39599609375,
+                    1.4287109375
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 10.33878111699596,
+                  "invocation_seconds": 9.370001427,
+                  "timings": {
+                    "checkpoint_seconds": 0.234168493,
+                    "evaluation_seconds": 3.253050976,
+                    "setup_seconds": 1.360295329,
+                    "training_seconds": 4.497078344000005
+                  },
+                  "ram_peak_bytes": 1419157504,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311915,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.60693359375,
+                    1.41650390625,
+                    1.435546875
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 10.290455271984683,
+                "minimum": 10.239513843000168,
+                "maximum": 10.33878111699596,
+                "mean": 10.28958341066027,
+                "stdev_sample": 0.049639379813467555
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.234168493,
+                "evaluation_seconds": 3.185324427,
+                "setup_seconds": 1.385592542,
+                "training_seconds": 4.479702456999998
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1421389824,
+                "minimum": 1419157504,
+                "maximum": 1422872576,
+                "mean": 1421139968,
+                "stdev_sample": 1870096.5234040727
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 7311923,
+                  "minimum": 7311915,
+                  "maximum": 7312043,
+                  "mean": 7311960.333333333,
+                  "stdev_sample": 71.70309151866002
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 7532544,
+                  "minimum": 7532544,
+                  "maximum": 7532544,
+                  "mean": 7532544,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 4,
+          "seed": 42,
+          "configuration_sha256": "31f2c33a325df9b7c9634a1dadcec6332686bbeb811469a825a16f5903da07a3",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 8.784917390003102,
+                  "invocation_seconds": 7.76096449,
+                  "timings": {
+                    "checkpoint_seconds": 0.19673350799999997,
+                    "evaluation_seconds": 2.727796606,
+                    "setup_seconds": 1.409300883,
+                    "training_seconds": 3.4043006539999974
+                  },
+                  "ram_peak_bytes": 1421410304,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311923,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.51318359375,
+                    1.40234375,
+                    1.4306640625
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 8.785928620985942,
+                  "invocation_seconds": 7.913961095,
+                  "timings": {
+                    "checkpoint_seconds": 0.193469567,
+                    "evaluation_seconds": 2.835202292,
+                    "setup_seconds": 1.347730964,
+                    "training_seconds": 3.5145898159999973
+                  },
+                  "ram_peak_bytes": 1421549568,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311916,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.51416015625,
+                    1.40576171875,
+                    1.431640625
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 9.638968184997793,
+                  "invocation_seconds": 8.720800526,
+                  "timings": {
+                    "checkpoint_seconds": 0.226416524,
+                    "evaluation_seconds": 2.926964153,
+                    "setup_seconds": 1.356416343,
+                    "training_seconds": 4.187290236999995
+                  },
+                  "ram_peak_bytes": 1422188544,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311915,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.6630859375,
+                    1.4423828125,
+                    1.44384765625
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 10.79252861099667,
+                  "invocation_seconds": 9.69798923,
+                  "timings": {
+                    "checkpoint_seconds": 0.33223721500000003,
+                    "evaluation_seconds": 3.42177919,
+                    "setup_seconds": 1.46688472,
+                    "training_seconds": 4.423821196000004
+                  },
+                  "ram_peak_bytes": 1424285696,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311920,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.64111328125,
+                    1.4443359375,
+                    1.44482421875
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 9.638968184997793,
+                "minimum": 8.785928620985942,
+                "maximum": 10.79252861099667,
+                "mean": 9.739141805660134,
+                "stdev_sample": 1.007043666225658
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.226416524,
+                "evaluation_seconds": 2.926964153,
+                "setup_seconds": 1.356416343,
+                "training_seconds": 4.187290236999995
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1422188544,
+                "minimum": 1421549568,
+                "maximum": 1424285696,
+                "mean": 1422674602.6666667,
+                "stdev_sample": 1431359.1019298173
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 7311916,
+                  "minimum": 7311915,
+                  "maximum": 7311920,
+                  "mean": 7311917,
+                  "stdev_sample": 2.6457513110645907
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 7532544,
+                  "minimum": 7532544,
+                  "maximum": 7532544,
+                  "mean": 7532544,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "workers": 8,
+          "seed": 42,
+          "configuration_sha256": "f4e277fc333d8b4b121d08e3ff173e9d159dfe532e2556a5c5ce79cd36084625",
+          "observed_transitions": 11264,
+          "optimizer_steps": 520,
+          "parameters_count": 17927,
+          "methods": {
+            "candidate": {
+              "runs": [
+                {
+                  "repetition": 0,
+                  "warmup": true,
+                  "process_seconds": 8.933107352990191,
+                  "invocation_seconds": 8.085571174,
+                  "timings": {
+                    "checkpoint_seconds": 0.203335243,
+                    "evaluation_seconds": 2.966708671,
+                    "setup_seconds": 1.328020016,
+                    "training_seconds": 3.5619242509999953
+                  },
+                  "ram_peak_bytes": 1423593472,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311916,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.62255859375,
+                    1.4462890625,
+                    1.44580078125
+                  ]
+                },
+                {
+                  "repetition": 1,
+                  "warmup": false,
+                  "process_seconds": 9.73641967799631,
+                  "invocation_seconds": 8.745514648,
+                  "timings": {
+                    "checkpoint_seconds": 0.225320462,
+                    "evaluation_seconds": 2.940595183,
+                    "setup_seconds": 1.443472006,
+                    "training_seconds": 4.111349231
+                  },
+                  "ram_peak_bytes": 1424388096,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311909,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.60009765625,
+                    1.44775390625,
+                    1.44677734375
+                  ]
+                },
+                {
+                  "repetition": 2,
+                  "warmup": false,
+                  "process_seconds": 8.934999028017046,
+                  "invocation_seconds": 8.099536258,
+                  "timings": {
+                    "checkpoint_seconds": 0.20903706399999997,
+                    "evaluation_seconds": 2.853957632,
+                    "setup_seconds": 1.341682509,
+                    "training_seconds": 3.6712880689999987
+                  },
+                  "ram_peak_bytes": 1423798272,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311924,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.50732421875,
+                    1.4326171875,
+                    1.44189453125
+                  ]
+                },
+                {
+                  "repetition": 3,
+                  "warmup": false,
+                  "process_seconds": 9.486073362990282,
+                  "invocation_seconds": 8.70440618,
+                  "timings": {
+                    "checkpoint_seconds": 0.20023635299999998,
+                    "evaluation_seconds": 2.9471287200000003,
+                    "setup_seconds": 1.303335693,
+                    "training_seconds": 4.230415942000001
+                  },
+                  "ram_peak_bytes": 1422794752,
+                  "disk": {
+                    "retained_bundles": 2,
+                    "recent_bundles": 2,
+                    "selected_best_present": true,
+                    "retained_payload_bytes": {
+                      "metadata": 116758,
+                      "policy": 475138,
+                      "rollout": 4022366
+                    },
+                    "output_file_bytes": 7311929,
+                    "output_allocated_bytes": 7532544,
+                    "output_file_count": 103
+                  },
+                  "load_average_1_5_15": [
+                    1.50927734375,
+                    1.43505859375,
+                    1.44287109375
+                  ]
+                }
+              ],
+              "process_summary": {
+                "count": 3,
+                "median": 9.486073362990282,
+                "minimum": 8.934999028017046,
+                "maximum": 9.73641967799631,
+                "mean": 9.385830689667879,
+                "stdev_sample": 0.41000635326713275
+              },
+              "internal_medians": {
+                "checkpoint_seconds": 0.20903706399999997,
+                "evaluation_seconds": 2.940595183,
+                "setup_seconds": 1.341682509,
+                "training_seconds": 4.111349231
+              },
+              "rss_summary_bytes": {
+                "count": 3,
+                "median": 1423798272,
+                "minimum": 1422794752,
+                "maximum": 1424388096,
+                "mean": 1423660373.3333333,
+                "stdev_sample": 805573.2786564692
+              },
+              "retained_disk_summary_bytes": {
+                "output_file_bytes": {
+                  "count": 3,
+                  "median": 7311924,
+                  "minimum": 7311909,
+                  "maximum": 7311929,
+                  "mean": 7311920.666666667,
+                  "stdev_sample": 10.408329997330664
+                },
+                "output_allocated_bytes": {
+                  "count": 3,
+                  "median": 7532544,
+                  "minimum": 7532544,
+                  "maximum": 7532544,
+                  "mean": 7532544,
+                  "stdev_sample": 0.0
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "profiling": {
+    "scope": {
+      "transitions": 1024,
+      "observed_transitions": 2048,
+      "environments": 16,
+      "rollout_transitions": 256,
+      "validation_worlds": 8,
+      "train_catalog_worlds": 256,
+      "checkpoint_transitions": 256,
+      "evaluation_transitions": 512,
+      "source_order": "lexicographic",
+      "repetitions_per_variant_and_binary": 1
+    },
+    "tool": "Nsight Systems",
+    "tool_version": null,
+    "trace": [
+      "cuda",
+      "nvtx",
+      "osrt"
+    ],
+    "sampling": "none",
+    "cpu_context_switches": "none",
+    "process_speedup_from_profiles": false,
+    "megabytes": "Total (MB) tal como se exporta en CSV, redondeado a tres decimales.",
+    "cases": [
+      {
+        "variant": "ppo",
+        "methods": {
+          "finite_checks": {
+            "artifacts": [
+              "nsys-candidate__ppo_cuda_api_sum",
+              "nsys-candidate__ppo_cuda_gpu_kern_sum",
+              "nsys-candidate__ppo_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 39348,
+            "cuda_stream_synchronizations": 4003,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 38900,
+              "cudaLaunchKernelExC": 448
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 1243,
+                "exported_mb": 10.349
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 2760,
+                "exported_mb": 1.499
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 384,
+                "exported_mb": 0.034
+              }
+            ]
+          },
+          "cpu_gae_trace": {
+            "artifacts": [
+              "nsys-pipeline__ppo_cuda_api_sum",
+              "nsys-pipeline__ppo_cuda_gpu_kern_sum",
+              "nsys-pipeline__ppo_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 35940,
+            "cuda_stream_synchronizations": 3863,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 35492,
+              "cudaLaunchKernelExC": 448
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 1191,
+                "exported_mb": 9.446
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 2672,
+                "exported_mb": 1.499
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 256,
+                "exported_mb": 0.018
+              }
+            ]
+          }
+        }
+      },
+      {
+        "variant": "double_dqn",
+        "methods": {
+          "finite_checks": {
+            "artifacts": [
+              "nsys-candidate__double_dqn_cuda_api_sum",
+              "nsys-candidate__double_dqn_cuda_gpu_kern_sum",
+              "nsys-candidate__double_dqn_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 162092,
+            "cuda_stream_synchronizations": 11165,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 152095,
+              "cudaLaunchKernelExC": 9997
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 4878,
+                "exported_mb": 90.743
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 6287,
+                "exported_mb": 2.051
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 793,
+                "exported_mb": 1.467
+              }
+            ]
+          },
+          "cpu_gae_trace": {
+            "artifacts": [
+              "nsys-pipeline__double_dqn_cuda_api_sum",
+              "nsys-pipeline__double_dqn_cuda_gpu_kern_sum",
+              "nsys-pipeline__double_dqn_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 162092,
+            "cuda_stream_synchronizations": 11165,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 152095,
+              "cudaLaunchKernelExC": 9997
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 4878,
+                "exported_mb": 90.743
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 6287,
+                "exported_mb": 2.051
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 793,
+                "exported_mb": 1.467
+              }
+            ]
+          }
+        }
+      },
+      {
+        "variant": "ppo_gru",
+        "methods": {
+          "finite_checks": {
+            "artifacts": [
+              "nsys-candidate__ppo_gru_cuda_api_sum",
+              "nsys-candidate__ppo_gru_cuda_gpu_kern_sum",
+              "nsys-candidate__ppo_gru_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 56647,
+            "cuda_stream_synchronizations": 5403,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 56199,
+              "cudaLaunchKernelExC": 384,
+              "cuLaunchKernel": 64
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 6980,
+                "exported_mb": 242.293
+              },
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 1515,
+                "exported_mb": 51.166
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 3888,
+                "exported_mb": 3.912
+              },
+              {
+                "operation": "[CUDA memset]",
+                "count": 20,
+                "exported_mb": 0.017
+              }
+            ]
+          },
+          "cpu_gae_trace": {
+            "artifacts": [
+              "nsys-pipeline__ppo_gru_cuda_api_sum",
+              "nsys-pipeline__ppo_gru_cuda_gpu_kern_sum",
+              "nsys-pipeline__ppo_gru_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 56647,
+            "cuda_stream_synchronizations": 5403,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 56199,
+              "cudaLaunchKernelExC": 384,
+              "cuLaunchKernel": 64
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 6980,
+                "exported_mb": 242.293
+              },
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 1515,
+                "exported_mb": 51.166
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 3888,
+                "exported_mb": 3.912
+              },
+              {
+                "operation": "[CUDA memset]",
+                "count": 20,
+                "exported_mb": 0.017
+              }
+            ]
+          }
+        }
+      },
+      {
+        "variant": "ppo_episodic_hmm",
+        "methods": {
+          "finite_checks": {
+            "artifacts": [
+              "nsys-candidate__ppo_episodic_hmm_cuda_api_sum",
+              "nsys-candidate__ppo_episodic_hmm_cuda_gpu_kern_sum",
+              "nsys-candidate__ppo_episodic_hmm_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 39348,
+            "cuda_stream_synchronizations": 4003,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 38900,
+              "cudaLaunchKernelExC": 448
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 1243,
+                "exported_mb": 10.349
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 2760,
+                "exported_mb": 1.499
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 384,
+                "exported_mb": 0.034
+              }
+            ]
+          },
+          "cpu_gae_trace": {
+            "artifacts": [
+              "nsys-pipeline__ppo_episodic_hmm_cuda_api_sum",
+              "nsys-pipeline__ppo_episodic_hmm_cuda_gpu_kern_sum",
+              "nsys-pipeline__ppo_episodic_hmm_cuda_gpu_mem_size_sum"
+            ],
+            "kernel_instances": 35940,
+            "cuda_stream_synchronizations": 3863,
+            "runtime_launch_calls": {
+              "cudaLaunchKernel": 35492,
+              "cudaLaunchKernelExC": 448
+            },
+            "transfers": [
+              {
+                "operation": "[CUDA memcpy Host-to-Device]",
+                "count": 1191,
+                "exported_mb": 9.446
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Host]",
+                "count": 2672,
+                "exported_mb": 1.499
+              },
+              {
+                "operation": "[CUDA memcpy Device-to-Device]",
+                "count": 256,
+                "exported_mb": 0.018
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "source_artifacts": {
+    "pipeline-optimized-bin__native-build-identity-Release": {
+      "sha256": "c8845ecf1b1a427298b2f839e2f7cc53ad63d037793ace8774dae3af460fa58c",
+      "bytes": 36877
+    },
+    "power-profile-observation": {
+      "sha256": "4c63e1eab074294d3afa4fa54a8ad436af2ad5755dee37422f03019096cf28f0",
+      "bytes": 165
+    },
+    "performance-paired__results": {
+      "sha256": "8567d492a77f3117a792b577a28db81570efc7584c20c965b9b65922780d3990",
+      "bytes": 10636
+    },
+    "performance-parity": {
+      "sha256": "a07c768c8670f6693749986eba38dbe34c810621115504a16212a2bde9c7e22e",
+      "bytes": 487
+    },
+    "performance-baseline__benchmark": {
+      "sha256": "3aa527bd71c0991776d3c6bfb29fbda8622f4cb568bc764b4dd4fd66890517d1",
+      "bytes": 13373
+    },
+    "performance-candidate__benchmark": {
+      "sha256": "fc22b1d0e83d1f9c90d595f580356e80fde1ce67998d0c01159718a12c097e4b",
+      "bytes": 13332
+    },
+    "pipeline-8192__benchmark": {
+      "sha256": "3e0475024c417828e19b7abe2f4d06bbc375e836ba83935c9c9f117f208fedc9",
+      "bytes": 348953
+    },
+    "pipeline-8192__parity": {
+      "sha256": "dd3e7d0df05b4303654cae71cf0de46b77f580a3cf000321bfbc5ab0fa1c71dc",
+      "bytes": 519
+    },
+    "pipeline-large__benchmark": {
+      "sha256": "a55c501d58c47a1bab0a69dbbbc9cb2a2e7933988bb61e0307342f9be21e5a4f",
+      "bytes": 287363
+    },
+    "pipeline-large__parity": {
+      "sha256": "14f603207223d3856cdc0eed7910944e2ee4d386490861ac6aab8a24302a7737",
+      "bytes": 256
+    },
+    "pipeline-workers__benchmark": {
+      "sha256": "67ec562ef6cc9cc376808e2a22000b404222bea127a330b2237b30972ef5e1de",
+      "bytes": 348612
+    },
+    "pipeline-workers__parity": {
+      "sha256": "6b492df8f6dfa24e7f6db4ba9f43b5764a87b229d77eb6da8762a08709a9e8ac",
+      "bytes": 1263
+    },
+    "nsys-candidate__ppo_cuda_api_sum": {
+      "sha256": "07b6fdba42ee96f3468c24a0ba7a27336f60fa9e33e41e05102ac2f8ea90839c",
+      "bytes": 1401
+    },
+    "nsys-candidate__ppo_cuda_gpu_kern_sum": {
+      "sha256": "597216138029adaf1327db9d1f7887d1a2e83d32c82caedff725b15aabaca10e",
+      "bytes": 29637
+    },
+    "nsys-candidate__ppo_cuda_gpu_mem_size_sum": {
+      "sha256": "21ede89f0f294a5da6fe8d2b4fc87dbf7a44dadcbdc767c5cd0c23456ca430a3",
+      "bytes": 287
+    },
+    "nsys-pipeline__ppo_cuda_api_sum": {
+      "sha256": "6d1a242437ae7c299d88484f6960873f92e683e1f4eb8274f3f04bf33a758ee6",
+      "bytes": 1398
+    },
+    "nsys-pipeline__ppo_cuda_gpu_kern_sum": {
+      "sha256": "472869276d21039ed5168c350a106c9417de2efaf1ef7c01cc7808c4f8821e40",
+      "bytes": 27499
+    },
+    "nsys-pipeline__ppo_cuda_gpu_mem_size_sum": {
+      "sha256": "c65ace60245f8a2f571ecab4918fdaf7f1574c34e8d70cb41802db7f8ba1c5f8",
+      "bytes": 286
+    },
+    "nsys-candidate__double_dqn_cuda_api_sum": {
+      "sha256": "659cb632f7f56befba62b80a812b48307f4e72c4433ceeaa167be079a2d09f6f",
+      "bytes": 1401
+    },
+    "nsys-candidate__double_dqn_cuda_gpu_kern_sum": {
+      "sha256": "56c37c338eeb7286a13af544d862e7a663d3454fead0a65aa614e72870dda718",
+      "bytes": 20451
+    },
+    "nsys-candidate__double_dqn_cuda_gpu_mem_size_sum": {
+      "sha256": "1f09dad594e4f24140b942636dbb138746990d130240e6460f628983b5c0d512",
+      "bytes": 287
+    },
+    "nsys-pipeline__double_dqn_cuda_api_sum": {
+      "sha256": "cfb9846afffce79da78dd874eb3b9e44d443edad70b4e616c70ed120428e4601",
+      "bytes": 1399
+    },
+    "nsys-pipeline__double_dqn_cuda_gpu_kern_sum": {
+      "sha256": "d858f503acc33781b65a499dde5d1accb2ce73b0c3999b1176351721f03dda0c",
+      "bytes": 20454
+    },
+    "nsys-pipeline__double_dqn_cuda_gpu_mem_size_sum": {
+      "sha256": "1f09dad594e4f24140b942636dbb138746990d130240e6460f628983b5c0d512",
+      "bytes": 287
+    },
+    "nsys-candidate__ppo_gru_cuda_api_sum": {
+      "sha256": "ba121b5d621bb95325323be196ad9cfd602b1a0b0e7c830de42027d93796f3d6",
+      "bytes": 1925
+    },
+    "nsys-candidate__ppo_gru_cuda_gpu_kern_sum": {
+      "sha256": "649e6c138cea60920742525ccc72adfa72b5155344764a41a295b6b93fc2de56",
+      "bytes": 32074
+    },
+    "nsys-candidate__ppo_gru_cuda_gpu_mem_size_sum": {
+      "sha256": "f6bff51813594275517e7e23b69219156e78264f8ede7598d8357e03f08c9c52",
+      "bytes": 343
+    },
+    "nsys-pipeline__ppo_gru_cuda_api_sum": {
+      "sha256": "5b524f583ee02c667a5e6c31d1425519ffdfa38afe47554aebfa264736a5256b",
+      "bytes": 1931
+    },
+    "nsys-pipeline__ppo_gru_cuda_gpu_kern_sum": {
+      "sha256": "cb00ae0444109d065b43646396f8853b0d8e36f74e90dd953ef0a6e72efc079b",
+      "bytes": 32077
+    },
+    "nsys-pipeline__ppo_gru_cuda_gpu_mem_size_sum": {
+      "sha256": "f6bff51813594275517e7e23b69219156e78264f8ede7598d8357e03f08c9c52",
+      "bytes": 343
+    },
+    "nsys-candidate__ppo_episodic_hmm_cuda_api_sum": {
+      "sha256": "09d1542fb8a3b092de60ee020014150eca33d6bcfd5463e4a7301028e7763289",
+      "bytes": 1405
+    },
+    "nsys-candidate__ppo_episodic_hmm_cuda_gpu_kern_sum": {
+      "sha256": "7e9241197ab2260d4d2ffc8ebea3db330be65a8837df6473e654a55e4f5ca92d",
+      "bytes": 29643
+    },
+    "nsys-candidate__ppo_episodic_hmm_cuda_gpu_mem_size_sum": {
+      "sha256": "21ede89f0f294a5da6fe8d2b4fc87dbf7a44dadcbdc767c5cd0c23456ca430a3",
+      "bytes": 287
+    },
+    "nsys-pipeline__ppo_episodic_hmm_cuda_api_sum": {
+      "sha256": "8a0ab45196351c54caf87e4f41ff3ab9f83ba752476aac2ec3c8d1ab1df010fa",
+      "bytes": 1395
+    },
+    "nsys-pipeline__ppo_episodic_hmm_cuda_gpu_kern_sum": {
+      "sha256": "b95fd322385f41f82812a51a9c5511dafe65d5b5b819393035edcb00f9487217",
+      "bytes": 27503
+    },
+    "nsys-pipeline__ppo_episodic_hmm_cuda_gpu_mem_size_sum": {
+      "sha256": "c65ace60245f8a2f571ecab4918fdaf7f1574c34e8d70cb41802db7f8ba1c5f8",
+      "bytes": 286
+    }
+  },
+  "decisions": {
+    "pipeline": "Conservar la variante con GAE CPU para MLP y publicación diferida del índice de trazas para las cargas posteriores, registrando la regresión corta de Double DQN.",
+    "workers": 1
+  },
+  "limits": [
+    "Son medidas de coste de ejecución, no una evaluación de rentabilidad o calidad de aprendizaje.",
+    "Las series de finitud y del recorrido completo tienen distinto orden de fuentes y frecuencia de checkpoint. No se encadenan sus razones de tiempo.",
+    "La CPU compartió el equipo con otras tareas. Hubo pruebas CPU instrumentadas durante parte de la primera comparación. Las capturas de procesos posteriores no son seguimiento continuo.",
+    "El perfil power-saver se registró después de los benchmarks. No prueba que permaneciese constante en cada ejecución.",
+    "No se midieron pico de VRAM, energía, contadores físicos de E/S ni un límite de rendimiento del hardware.",
+    "El catálogo de entrenamiento contiene 256 mundos, pero una carga corta no garantiza haberlos recorrido todos.",
+    "La comprobación de paridad acredita los pares registrados, no todas las configuraciones o trayectorias posibles."
+  ]
+}

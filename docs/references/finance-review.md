@@ -1,8 +1,8 @@
-# Revisión financiera para MARS–TITAN
+# Revisión financiera para MARS-TITAN
 
 Autor: Gonzalo. Fecha de verificación: 18 de septiembre de 2026.
 
-Esta selección reúne 18 fuentes para justificar el diseño financiero y la evaluación del proyecto. Es una revisión dirigida a las decisiones del proyecto, no una revisión sistemática exhaustiva. Distingo los resultados publicados de las propuestas para MARS–TITAN. Ninguna de las fuentes demuestra por adelantado que su arquitectura vaya a generar rentabilidad.
+Esta selección reúne 18 fuentes para justificar el diseño financiero y la evaluación del proyecto. Es una revisión dirigida a las decisiones del proyecto, no una revisión sistemática exhaustiva. Distingo los resultados publicados de las propuestas para MARS-TITAN. Ninguna de las fuentes demuestra por adelantado que su arquitectura vaya a generar rentabilidad.
 
 El catálogo [finance-sources.json](finance-sources.json) conserva enlaces, versiones, estado de acceso y derechos conocidos. [finance.bib](finance.bib) contiene las referencias bibliográficas. Un PDF disponible para lectura no implica permiso para subirlo al repositorio. `unknown` significa que no se ha verificado una licencia de redistribución. Las fuentes vivas sin año único tienen `year: null`. Su fecha de consulta se registra por separado.
 
@@ -32,7 +32,7 @@ Proporciona la base para separar exposición al mercado, tamaño y valor en acci
 
 Eugene F. Fama y Kenneth R. French (2015). [A five-factor asset pricing model](https://doi.org/10.1016/j.jfineco.2014.10.010). Fases 2, 4, 5 y 6.
 
-Añade rentabilidad operativa e inversión al modelo de acciones. Sirve para comprobar si una señal atribuida a MARS–TITAN depende del modelo de riesgo usado para definir el target. El propio trabajo identifica patrones que el modelo no explica bien. No constituye una definición universal del riesgo. Acceso: ficha editorial y [manuscrito de 2014](https://ssrn.com/abstract=2287202), cuya descarga no se pudo verificar. SSRN indica derechos reservados y permiso necesario para reutilizar.
+Añade rentabilidad operativa e inversión al modelo de acciones. Sirve para comprobar si una señal atribuida a MARS-TITAN depende del modelo de riesgo usado para definir la variable objetivo. El propio trabajo identifica patrones que el modelo no explica bien. No constituye una definición universal del riesgo. Acceso: ficha editorial y [manuscrito de 2014](https://ssrn.com/abstract=2287202), cuya descarga no se pudo verificar. SSRN indica derechos reservados y permiso necesario para reutilizar.
 
 ### 5. Datos y versiones de los factores
 
@@ -40,7 +40,7 @@ Kenneth R. French, sin fecha única. [Data Library](https://mba.tuck.dartmouth.e
 
 Es el origen primario para las series y sus convenciones. La página documenta el paso de CRSP FIZ a CIZ en enero de 2025 y ofrece algunos archivos históricos. Propongo registrar fecha de descarga, definición, unidades y hash. Una versión actual puede incorporar revisiones. La existencia de factores diarios no demuestra su disponibilidad operativa diaria inmediata. Acceso: datos y documentación públicos. Redistribución: licencia específica no verificada.
 
-### 6. Baselines financieros con aprendizaje automático
+### 6. Referencias financieras con aprendizaje automático
 
 Shihao Gu, Bryan Kelly y Dacheng Xiu (2020). [Empirical Asset Pricing via Machine Learning](https://doi.org/10.1093/rfs/hhaa009). [Manuscrito del autor, 2019](https://dachxiu.chicagobooth.edu/download/ML_BKP.pdf). Fases 2, 4, 5 y 6.
 
@@ -92,7 +92,7 @@ El trabajo analiza variantes ponderadas y cuantifica pérdidas de cobertura cuan
 
 Chen Xu y Yao Xie (2021). [Conformal prediction interval for dynamic time-series](https://proceedings.mlr.press/v139/xu21h.html). [PDF](https://proceedings.mlr.press/v139/xu21h/xu21h.pdf). Fases 3, 4, 5 y 6.
 
-EnbPI es un baseline útil para separar la calidad del predictor de la calibración del intervalo. Su cobertura marginal aproximada depende de supuestos sobre los errores y la calidad del estimador, incluyendo condiciones de mezcla. Los resultados no autorizan afirmar cobertura exacta para cualquier cambio estructural ni para todas las acciones simultáneamente. Acceso: artículo completo de ICML en PMLR. Redistribución: licencia específica no verificada.
+EnbPI es una referencia útil para separar la calidad del predictor de la calibración del intervalo. Su cobertura marginal aproximada depende de supuestos sobre los errores y la calidad del estimador, incluyendo condiciones de mezcla. Los resultados no autorizan afirmar cobertura exacta para cualquier cambio estructural ni para todas las acciones simultáneamente. Acceso: artículo completo de ICML en PMLR. Redistribución: licencia específica no verificada.
 
 ### 15. Manual abierto de predicción
 
@@ -122,11 +122,11 @@ Ofrece contexto econométrico para contrastar la adaptación de memoria con una 
 
 Las siguientes decisiones son una propuesta metodológica derivada de las fuentes, no resultados experimentales ni recetas atribuidas literalmente a sus autores.
 
-### Definición del target y de la información disponible
+### Definición de la variable objetivo y de la información disponible
 
 Para un horizonte diario, fijaría primero el modelo `rᵉ(i,t) = α(i) + β(i)' f(t) + ε(i,t)`. En la fecha de decisión `t`, estimaría los parámetros con una ventana pasada y datos cuya disponibilidad esté acreditada. La etiqueta futura sería `y_res(i,t+1) = rᵉ(i,t+1) − α̂(i,t) − β̂(i,t)' f(t+1)`. El retorno en exceso es `rᵉ = r − r_f`. Si se decide conservar el intercepto, el objetivo pasa a ser `rᵉ − β̂'f`, una magnitud distinta que debe nombrarse expresamente. El contraste FF3/FF5 examinaría la sensibilidad a esta elección. [Fama y French, 1993](https://doi.org/10.1016/0304-405X(93)90023-5), [Fama y French, 2015](https://doi.org/10.1016/j.jfineco.2014.10.010).
 
-El factor realizado en `t+1` puede formar parte de la etiqueta evaluada después. No puede entrar como entrada conocida en `t`. Las estimaciones tampoco deben usar una regresión sobre toda la muestra. Las versiones revisadas de factores merecen un registro específico. Predecir este target no garantiza por sí solo neutralidad factorial de los pesos negociados: las exposiciones de cartera se comprueban por separado. [Biblioteca de French](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html).
+El factor realizado en `t+1` puede formar parte de la etiqueta evaluada después. No puede entrar como entrada conocida en `t`. Las estimaciones tampoco deben usar una regresión sobre toda la muestra. Las versiones revisadas de factores merecen un registro específico. Predecir esta variable objetivo no garantiza por sí solo neutralidad factorial de los pesos negociados: las exposiciones de cartera se comprueban por separado. [Biblioteca de French](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html).
 
 Para cada noticia, tabla o informe conservaría `event_time`, `published_at`, `available_at` y `ingested_at` cuando existan. Si solo se conoce la fecha, declararía una regla conservadora y estudiaría su sensibilidad. Imágenes y gráficos deberían construirse con datos truncados al corte. Cambios de ticker, componentes históricos, exclusiones y revisiones contables requieren auditoría. No deben inferirse del estado actual. [SEC](https://www.sec.gov/about/webmaster-frequently-asked-questions), [Shumway, 1997](https://doi.org/10.1111/j.1540-6261.1997.tb03818.x).
 
@@ -140,13 +140,13 @@ Para cada noticia, tabla o informe conservaría `event_time`, `published_at`, `a
 | Incertidumbre | Predictor puntual con calibración común. ACI. EnbPI si es viable | Si mejora el predictor, el calibrador o ambos |
 | Robustez financiera | Retorno bruto y neto. FF3 y FF5. Subperiodos definidos previamente | Dependencia de costes, modelo de riesgo y entorno |
 
-La tabla es una propuesta de ablaciones. Los baselines financieros se apoyan en [Gu, Kelly y Xiu](https://doi.org/10.1093/rfs/hhaa009). Los contrastes de incertidumbre, en [ACI](https://proceedings.neurips.cc/paper/2021/hash/0d441de75945e5acbc865406fc9a2559-Abstract.html) y [EnbPI](https://proceedings.mlr.press/v139/xu21h.html).
+La tabla es una propuesta de ablaciones. Las referencias financieras se apoyan en [Gu, Kelly y Xiu](https://doi.org/10.1093/rfs/hhaa009). Los contrastes de incertidumbre, en [ACI](https://proceedings.neurips.cc/paper/2021/hash/0d441de75945e5acbc865406fc9a2559-Abstract.html) y [EnbPI](https://proceedings.mlr.press/v139/xu21h.html).
 
-El test principal seguiría cortes cronológicos comunes a todo el panel, con selección dentro del pasado de cada ventana. Imputación, escalado, selección de variables, estimación factorial y calibración formarían parte de ese corte. Se eliminarían del entrenamiento las etiquetas que todavía no hayan terminado o no estén disponibles al predecir. La separación adicional se justificaría por el solapamiento real. Un embargo arbitrario no garantiza causalidad. Se registrarían reinicios de memoria y actualizaciones online para que cada predicción pueda reconstruirse. [Hyndman y Athanasopoulos, sección 5.10](https://otexts.com/fpp3/tscv.html), [López de Prado, índice editorial](https://www.wiley-vch.de/en?isbn=9781119482086&option=com_eshop&view=product).
+La prueba principal seguiría cortes cronológicos comunes a todo el panel, con selección dentro del pasado de cada ventana. Imputación, escalado, selección de variables, estimación factorial y calibración formarían parte de ese corte. Se eliminarían del entrenamiento las etiquetas que todavía no hayan terminado o no estén disponibles al predecir. La separación adicional se justificaría por el solapamiento real. Un embargo arbitrario no garantiza causalidad. Se registrarían reinicios de memoria y actualizaciones en línea para que cada predicción pueda reconstruirse. [Hyndman y Athanasopoulos, sección 5.10](https://otexts.com/fpp3/tscv.html), [López de Prado, índice editorial](https://www.wiley-vch.de/en?isbn=9781119482086&option=com_eshop&view=product).
 
 ### Evaluación financiera e incertidumbre
 
-Además de error predictivo y correlación de ranking por fecha, reportaría rentabilidad neta, Sharpe con incertidumbre, caída máxima, rotación, exposición bruta y neta, y costes de ejecución. La simulación declararía el instante negociable, el precio utilizado, préstamo de títulos si hay cortos y límites de liquidez. Para evitar ambigüedad, distinguiría volumen negociado `Σ|w − w_previo_ajustado|` de rotación de un solo sentido `½Σ|w − w_previo_ajustado|`. El coste por unidad se aplicaría a la magnitud correspondiente. [Frazzini, Israel y Moskowitz](https://www.aqr.com/insights/research/working-paper/trading-costs), [Lo](https://rpc.cfainstitute.org/research/financial-analysts-journal/2002/the-statistics-of-sharpe-ratios).
+Además de error predictivo y correlación de ordenación por fecha, reportaría rentabilidad neta, Sharpe con incertidumbre, caída máxima, rotación, exposición bruta y neta, y costes de ejecución. La simulación declararía el instante negociable, el precio utilizado, préstamo de títulos si hay cortos y límites de liquidez. Para evitar ambigüedad, distinguiría volumen negociado `Σ|w − w_previo_ajustado|` de rotación de un solo sentido `½Σ|w − w_previo_ajustado|`. El coste por unidad se aplicaría a la magnitud correspondiente. [Frazzini, Israel y Moskowitz](https://www.aqr.com/insights/research/working-paper/trading-costs), [Lo](https://rpc.cfainstitute.org/research/financial-analysts-journal/2002/the-statistics-of-sharpe-ratios).
 
 Registraría todas las configuraciones evaluadas y reservaría un bloque final sin selección reiterada. PBO y DSR se usarían como diagnósticos con sus supuestos declarados. No reemplazan ese historial ni convierten el backtest en una prueba de rentabilidad futura. [PBO](https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf), [DSR](https://www.davidhbailey.com/dhbpapers/deflated-sharpe.pdf), [Harvey, Liu y Zhu](https://doi.org/10.1093/rfs/hhv059).
 
@@ -156,4 +156,4 @@ En incertidumbre separaría cobertura, amplitud e infracobertura por tiempo, act
 
 Se han verificado procedencia y metadatos mediante páginas de autores, organismos, universidades, congresos y editoriales. Ocho enlaces de PDF completo se han comprobado. Las descargas locales, hashes y conservación de versiones deben registrarse aparte. No se ha eludido ningún acceso restringido. Las fichas de libros comerciales y los resúmenes no equivalen a una lectura completa. Hamilton queda pendiente de lectura detallada. Los resultados de un modelo de regímenes no deben atribuirse a este capítulo sin consultar su desarrollo.
 
-Estas fuentes no verifican la calidad del dataset local, la composición histórica de sus universos ni las licencias de cada noticia o imagen. Tampoco comparan MARS–TITAN con sistemas propietarios de inversión. El contraste con prácticas cuantitativas profesionales procede de métodos públicos de investigación y ejecución. Cualquier afirmación de superioridad necesitará resultados propios reproducibles y netos de costes.
+Estas fuentes no verifican la calidad del conjunto de datos local, la composición histórica de sus universos ni las licencias de cada noticia o imagen. Tampoco comparan MARS-TITAN con sistemas propietarios de inversión. El contraste con prácticas cuantitativas profesionales procede de métodos públicos de investigación y ejecución. Cualquier afirmación de superioridad necesitará resultados propios reproducibles y netos de costes.

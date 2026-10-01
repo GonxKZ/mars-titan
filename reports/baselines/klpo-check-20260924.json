@@ -1,0 +1,2152 @@
+{
+  "date": "2026-09-24",
+  "purpose": "comprobacion_de_integracion_no_comparacion_confirmatoria",
+  "summary_path": "data/interim/klpo-verified-check-20260924/summary.json",
+  "summary_sha256": "bb6c29fc8a3b0c4db4f2f3d6eb0d460969c016526cab7956d859807a35aa4501",
+  "config_path": "configs/baselines/klpo-adaptation.json",
+  "config_sha256": "5b1980aec7a2c70ecceda4807e9bf60aacc7002b5b93014d7fb27517d31345ce",
+  "source_sha256": "4b59dc103bbcc07e7b269835e86a4fe1167e676e11a3c9cf2ca407e600197391",
+  "ordered_sha256": "cbb673da18472ae2b2c4798168865f728f8fb96f92515c480f995c9f4a6e34ed",
+  "parent_report_sha256": "5fcd5f17069eef561013bac87dcef4710fb2cd1c25d074dd4d30836cd98a4c1d",
+  "parent": "ridge_alpha_1_frozen",
+  "counts": {
+    "train": 245,
+    "validation": 225
+  },
+  "completed_runs": 36,
+  "complete_training_passes": 180,
+  "training_row_visits": 44100,
+  "final_test_opened": false,
+  "synthetic_rows_in_financial_corpus": 0,
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "device": "cuda:0"
+  },
+  "versions": {
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "numpy": "2.5.3",
+    "python": "3.12.14"
+  },
+  "numerics": {
+    "float32_matmul_precision": "highest",
+    "cuda_matmul_allow_tf32": false,
+    "deterministic_algorithms": true,
+    "cublas_workspace": ":16:8"
+  },
+  "features": 1682,
+  "whole_process": {
+    "wall_seconds": 36.8,
+    "max_rss_bytes": 1844928512,
+    "swaps": 0,
+    "source": "GNU time -v, proceso uv y sus descendientes"
+  },
+  "resource_limits": [
+    "Carga concurrente del entrenamiento principal y de otra aplicación CUDA.",
+    "La memoria CUDA indicada por ejecución es la gestionada por PyTorch, no toda la VRAM del proceso.",
+    "470 filas no permiten extrapolar tiempo ni precisión del corpus completo.",
+    "Cada época tiene un único lote de 245 filas. Cinco épocas equivalen a cinco actualizaciones.",
+    "La validación selecciona el checkpoint y no es un test final independiente.",
+    "Los registros originales conservan sus fuentes y huellas. No se añade información sintética."
+  ],
+  "code": {
+    "training/predictive_run.py": "882b804a3cfe1d9b070808f4be8d09718661694465aef3ee56a3d6a932b41347",
+    "training/predictive_evaluation.py": "55f233afa950259dbcdd495d0d2c2a2f47a4fbbf37c970b8d128de404faaa8df",
+    "training/predictive_inputs.py": "32bd0d0dec45ab3753311041dd3383006b78b9739e206cdecca6805f483f8a21",
+    "training/predictive_parents.py": "490697c33a67fee3124df72e1be55d2af558cfc83cce55fe4af9dd41cd2a0773",
+    "training/checkpoints.py": "f303e432c164d16b84cd379e89dc42196bbd0d00a91aa385e7766c628c2bb941",
+    "models/predictive_adaptation.py": "128b5ab4dc9153016d3922e5d2565673485b316e017fd27299ec49baa92fe9ff",
+    "models/klpo.py": "1b47ac15935f9a6a8446b9aa08ee90bfe17af4d94af3b70287663b7f106c7d59",
+    "training/corpus_inputs.py": "fa231072bbcc3a6b1043581e57140bfc3a60f2891700be0fc355b4da74b3ace8",
+    "environments/corpus_source.py": "9a04d1a64438689eb749a840241a67d1d09fbd3b19b5941013ec5f1dceece4f3",
+    "environments/cohorts.py": "45095f4cca23cc5ea6ab4c25190ae413d62fbfd37d9026981892bae8c0d0fda7",
+    "environments/actions.py": "78d01ec28ce7378ff5b066aabf324984686014209a1dac7e5d12efcbff844f6a",
+    "data/cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "data/storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+    "evaluation/session_metrics.py": "146e064587921c6f278376eb123ce3288c8fbf593c5c9c26ae244b148ee6e22d",
+    "budget_training.py": "83258c5c18b57fc22a02abd1a5d546122194590a013ad888895a3477af1ca1e7",
+    "data/embeddings.py": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+    "predictive_study.py": "9c71dd89714b015ba21b0427bda71fb6f4fb6493e4700b40bd4228274a22713e"
+  },
+  "runs": [
+    {
+      "id": "reinforce-s42",
+      "case": {
+        "mode": "reinforce",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/reinforce-s42/run.json",
+      "report_sha256": "cfdbae7d5c1c59e09913f77e44aaf79c3702b9c5b83b4ed155a5a6c6f66d29ed",
+      "checkpoint_sha256": "46542f714dff9725173e1ad9dce111ed9da432f708b5153e5d53cf533c32ff8e",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03215075058087243,
+          "session_mse": 0.001714656895345671,
+          "mae": 0.03324435481434532,
+          "mse": 0.0017744204780735585
+        },
+        "nearest": {
+          "session_mae": 0.03166718072962065,
+          "session_mse": 0.001639233921151773,
+          "mae": 0.03280030267305899,
+          "mse": 0.0016947739361564376
+        },
+        "median": {
+          "session_mae": 0.0313341204600993,
+          "session_mse": 0.0015885334433558796,
+          "mae": 0.03229890305249808,
+          "mse": 0.0016201640981344872
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0974052873369127
+        }
+      },
+      "attempt_seconds": 1.263556823018007,
+      "peak_vram_allocated_bytes": 10226688,
+      "peak_vram_reserved_bytes": 23068672
+    },
+    {
+      "id": "expected-s42",
+      "case": {
+        "mode": "expected",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/expected-s42/run.json",
+      "report_sha256": "cb430573866cda55c1d5ea1fdc08f16665a93aaa46ba39083e3e065694dd4956",
+      "checkpoint_sha256": "387be3b7164892bd659ab00e8f00cd066178bef825d5bf5aa079dcde1b0a6aac",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218483641459467,
+          "session_mse": 0.0017132446833753238,
+          "mae": 0.03330209646989429,
+          "mse": 0.0017796905503882313
+        },
+        "nearest": {
+          "session_mae": 0.03178277037257559,
+          "session_mse": 0.0016592308761895942,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017061983637507933
+        },
+        "median": {
+          "session_mae": 0.03156843992135583,
+          "session_mse": 0.0016250570894647271,
+          "mae": 0.0324866648114012,
+          "mse": 0.0016575773054896454
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0969184863362202
+        }
+      },
+      "attempt_seconds": 0.8203041130036581,
+      "peak_vram_allocated_bytes": 10224640,
+      "peak_vram_reserved_bytes": 23068672
+    },
+    {
+      "id": "mae-s42",
+      "case": {
+        "mode": "mae",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/mae-s42/run.json",
+      "report_sha256": "ae54acddedb196ef79f7466a3e52238d4ec72bd1632996cdd49ec97c88f05146",
+      "checkpoint_sha256": "7267b94b06148850001473706ad312d9e906ee18166c6d02531907cd0b5a7c4d",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03216648417375088,
+          "session_mse": 0.001711432603849858,
+          "mae": 0.0332729118786038,
+          "mse": 0.0017766453418214608
+        },
+        "nearest": {
+          "session_mae": 0.031696421413810794,
+          "session_mse": 0.001650202380224429,
+          "mae": 0.032718080020890855,
+          "mse": 0.0016995402315823699
+        },
+        "median": {
+          "session_mae": 0.03140653562367184,
+          "session_mse": 0.0016034598333432477,
+          "mae": 0.03229381880349316,
+          "mse": 0.0016320018967947054
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097205896061964
+        }
+      },
+      "attempt_seconds": 0.8298563279968221,
+      "peak_vram_allocated_bytes": 10224640,
+      "peak_vram_reserved_bytes": 23068672
+    },
+    {
+      "id": "klpo_full-b0-s42",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b0-s42/run.json",
+      "report_sha256": "0f75c4d59874c73d3af2819eda784b79d79c62dedaf02dc6538f85c7b1958809",
+      "checkpoint_sha256": "def31cae84b406a2240d92fdbe804dad3da7e2c0df67ad00e441c82b906a59c0",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03213524330956699,
+          "session_mse": 0.0017134354071989865,
+          "mae": 0.03323601855659229,
+          "mse": 0.0017740280885983745
+        },
+        "nearest": {
+          "session_mae": 0.03164559348992945,
+          "session_mse": 0.001642886915694115,
+          "mae": 0.03276173347147738,
+          "mse": 0.0016957159216792444
+        },
+        "median": {
+          "session_mae": 0.0313341204600993,
+          "session_mse": 0.0015935964727917115,
+          "mae": 0.03229890305249808,
+          "mse": 0.0016236253460003294
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.09745624881217,
+          "mean_behavior_kl_nats": 0.0010153807733258619,
+          "mean_klpo_variance": 11.736810608886666
+        }
+      },
+      "attempt_seconds": 0.8495003590069246,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 23068672
+    },
+    {
+      "id": "klpo_full-b1-s42",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b1-s42/run.json",
+      "report_sha256": "9b58d9de78b74663bcbac818781c170b62d818ca4bfad4aef07683e5d5fad372",
+      "checkpoint_sha256": "df2066d034a088196a78fa0bf55262afec13d609a2cd801552b861a3740f49b7",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.032135580130137,
+          "session_mse": 0.0017134652273971512,
+          "mae": 0.033236351256379595,
+          "mse": 0.0017740735884819508
+        },
+        "nearest": {
+          "session_mae": 0.03164559348992945,
+          "session_mse": 0.001642886915694115,
+          "mae": 0.03276173347147738,
+          "mse": 0.0016957159216792444
+        },
+        "median": {
+          "session_mae": 0.0313341204600993,
+          "session_mse": 0.0015935964727917115,
+          "mae": 0.03229890305249808,
+          "mse": 0.0016236253460003294
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0974519036981403,
+          "mean_behavior_kl_nats": 0.0010087706291205321,
+          "mean_klpo_variance": 3.5195175601465647
+        }
+      },
+      "attempt_seconds": 0.9239121610007714,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 23068672
+    },
+    {
+      "id": "klpo_full-b2-s42",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b2-s42/run.json",
+      "report_sha256": "ae3be313112ad08ce8aac0abcfaf8a40cba60beb6e8b3c1538b70fe2068c838f",
+      "checkpoint_sha256": "2d4bcaf6f649a16ef6d5e5bcfdde4c9b732f0cf08e22dc88ec5a59d06fa69fcf",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03213651767013724,
+          "session_mse": 0.0017135464801050634,
+          "mae": 0.03323727895203995,
+          "mse": 0.0017741990396518243
+        },
+        "nearest": {
+          "session_mae": 0.03164559348992945,
+          "session_mse": 0.001642886915694115,
+          "mae": 0.03276173347147738,
+          "mse": 0.0016957159216792444
+        },
+        "median": {
+          "session_mae": 0.0313341204600993,
+          "session_mse": 0.0015935964727917115,
+          "mae": 0.03229890305249808,
+          "mse": 0.0016236253460003294
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097439900322474,
+          "mean_behavior_kl_nats": 0.0009901753500274211,
+          "mean_klpo_variance": 1.1719384464282188
+        }
+      },
+      "attempt_seconds": 0.9336375900020357,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 23068672
+    },
+    {
+      "id": "klpo_mc-b0-s42",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b0-s42/run.json",
+      "report_sha256": "617f56a7cf84787976e5d479fc243cc772be4c6e86161aef370b2c495c1a7f6f",
+      "checkpoint_sha256": "cf386b5424643360f88ed245b48c06f2dba3ee87c3a7c8eed300c0abcb7d8dfd",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03213238760260586,
+          "session_mse": 0.0017133864219248181,
+          "mae": 0.03323593242599564,
+          "mse": 0.0017742998729865784
+        },
+        "nearest": {
+          "session_mae": 0.03165436394182207,
+          "session_mse": 0.001642963026292692,
+          "mae": 0.03276695676282677,
+          "mse": 0.0016957612497690636
+        },
+        "median": {
+          "session_mae": 0.03131051005245512,
+          "session_mse": 0.0015887999260311974,
+          "mae": 0.03226555714226586,
+          "mse": 0.0016178667977690977
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0974598534801463,
+          "mean_behavior_kl_nats": 0.0009831735990390555,
+          "mean_klpo_variance": 11.736927622478753
+        }
+      },
+      "attempt_seconds": 0.8642134850088041,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b1-s42",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b1-s42/run.json",
+      "report_sha256": "9f9644abce0d38b9adbb3133fd1668743bd69ccbb0923131a6038ff2ff47b62d",
+      "checkpoint_sha256": "2a7dc1dcbe60df754c62249c5dab6b82966a1700e2017ae0ed32ab35e6d1d7dd",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03213271442722364,
+          "session_mse": 0.0017134143818509917,
+          "mae": 0.033236220743520554,
+          "mse": 0.0017743392353593884
+        },
+        "nearest": {
+          "session_mae": 0.03165436394182207,
+          "session_mse": 0.001642963026292692,
+          "mae": 0.03276695676282677,
+          "mse": 0.0016957612497690636
+        },
+        "median": {
+          "session_mae": 0.03131051005245512,
+          "session_mse": 0.0015887999260311974,
+          "mae": 0.03226555714226586,
+          "mse": 0.0016178667977690977
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0974556558675994,
+          "mean_behavior_kl_nats": 0.0009771869281907002,
+          "mean_klpo_variance": 3.519629113914712
+        }
+      },
+      "attempt_seconds": 0.8492994839907624,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b2-s42",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b2-s42/run.json",
+      "report_sha256": "d2d060e5e897069d287bed8abe02d8767f4edda7486a54ced55a1a384f799cea",
+      "checkpoint_sha256": "573a71b086a426d4508a21f4806fb6a2d5e19f21dcf45f1555d7bd9d52e8e90b",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.032133613166927866,
+          "session_mse": 0.0017134890052390697,
+          "mae": 0.03323701212926865,
+          "mse": 0.0017744455439806877
+        },
+        "nearest": {
+          "session_mae": 0.031621983082285275,
+          "session_mse": 0.001638090368933601,
+          "mae": 0.03272838756124516,
+          "mse": 0.001689957373448013
+        },
+        "median": {
+          "session_mae": 0.03131051005245512,
+          "session_mse": 0.0015887999260311974,
+          "mae": 0.03226555714226586,
+          "mse": 0.0016178667977690977
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097444225991854,
+          "mean_behavior_kl_nats": 0.0009604643515509823,
+          "mean_klpo_variance": 1.1720344760480157
+        }
+      },
+      "attempt_seconds": 0.8618903599854093,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b0-s42",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b0-s42/run.json",
+      "report_sha256": "7017327da1dcf3f6e9a2ebb94ebc1d9287ee0b20368f49d89ecd62eb01c716a9",
+      "checkpoint_sha256": "d1e3d18dd3a6182e170975a31262322ba81b869e9648f551eb2fc262e46d7822",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218784493174729,
+          "session_mse": 0.0017142686561846968,
+          "mae": 0.03331944739245766,
+          "mse": 0.0017816765572380873
+        },
+        "nearest": {
+          "session_mae": 0.031817071230199334,
+          "session_mse": 0.0016567547259098432,
+          "mae": 0.03280207921721811,
+          "mse": 0.001703675615092995
+        },
+        "median": {
+          "session_mae": 0.03150559820036919,
+          "session_mse": 0.0016135504082807296,
+          "mae": 0.03241638720140203,
+          "mse": 0.0016478126658073984
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096762634746393,
+          "mean_behavior_kl_nats": 0.0002893111028262172,
+          "mean_klpo_variance": 11.740937068803836
+        }
+      },
+      "attempt_seconds": 0.8409374579787254,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b1-s42",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b1-s42/run.json",
+      "report_sha256": "d1495e0b1b2f3b17fedd7f49b876207218aaabf97654f3c85fedcb0cf0c57b91",
+      "checkpoint_sha256": "a0da01c04d68a49888307d05b93ca73e9c0bcf2b72f553c2c4cacb23f9c69eb4",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218405356853933,
+          "session_mse": 0.0017138116533493904,
+          "mae": 0.03331641743203571,
+          "mse": 0.0017812950139203072
+        },
+        "nearest": {
+          "session_mae": 0.03178469037066254,
+          "session_mse": 0.0016536253651685598,
+          "mae": 0.03276351001563651,
+          "mse": 0.0016999481987433774
+        },
+        "median": {
+          "session_mae": 0.03148401096067799,
+          "session_mse": 0.0016102322122366185,
+          "mae": 0.032377817999820424,
+          "mse": 0.0016418841555419198
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096793874053453,
+          "mean_behavior_kl_nats": 0.00028756806539930656,
+          "mean_klpo_variance": 3.523459526215551
+        }
+      },
+      "attempt_seconds": 0.9894396459858399,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b2-s42",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 42,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b2-s42/run.json",
+      "report_sha256": "77c002458b9c3e77d24c1f5fda7a91a74516c0d41e3217cfb77f6ba1e759ffe2",
+      "checkpoint_sha256": "9d3252322e119c23cf77e2ec27133dc4b08a604e63cbbebf41845512d6f8e8d2",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.0321777429211536,
+          "session_mse": 0.0017130792947814195,
+          "mae": 0.033310364037254125,
+          "mse": 0.0017805372185975162
+        },
+        "nearest": {
+          "session_mae": 0.031817071230199334,
+          "session_mse": 0.0016584980225276508,
+          "mae": 0.03280207921721811,
+          "mse": 0.0017057520750644282
+        },
+        "median": {
+          "session_mae": 0.03148401096067799,
+          "session_mse": 0.0016123505871012873,
+          "mae": 0.032377817999820424,
+          "mse": 0.0016444073753807253
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096864504672665,
+          "mean_behavior_kl_nats": 0.000262085190290752,
+          "mean_klpo_variance": 1.1754666642300728
+        }
+      },
+      "attempt_seconds": 0.8329895210044924,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "reinforce-s43",
+      "case": {
+        "mode": "reinforce",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/reinforce-s43/run.json",
+      "report_sha256": "81d1000bc1dc34753d9968a8f300291f99d0f1ecde160654648154e76daa8c46",
+      "checkpoint_sha256": "6b7e9b1f49a1b8ddd97b78e7eb04436b88d9c694dacb288d84ce698436cd369b",
+      "best_epoch": 5,
+      "validation": {
+        "center": {
+          "session_mae": 0.032257412233463324,
+          "session_mse": 0.0017150967703098892,
+          "mae": 0.03338373603152297,
+          "mse": 0.0017864335526303274
+        },
+        "nearest": {
+          "session_mae": 0.03188991215887141,
+          "session_mse": 0.0016695493104423604,
+          "mae": 0.03294665653092815,
+          "mse": 0.0017184910746530055
+        },
+        "median": {
+          "session_mae": 0.03158383593896406,
+          "session_mse": 0.0016220971101039731,
+          "mae": 0.03252239531353046,
+          "mse": 0.0016565118214722778
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0964735947692206
+        }
+      },
+      "attempt_seconds": 0.9603764819912612,
+      "peak_vram_allocated_bytes": 10226688,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "expected-s43",
+      "case": {
+        "mode": "expected",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/expected-s43/run.json",
+      "report_sha256": "a1b924cca39b94f2a3c4703af5a04942f2f4333f9f5ffb1634bb038ee1444ae2",
+      "checkpoint_sha256": "ddbce26e0fec60a2d5d67b2ccd7b1a3bb9a3db121ad0b28ede1d52cca995bc83",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218483641278819,
+          "session_mse": 0.0017132446832151063,
+          "mae": 0.03330209646875022,
+          "mse": 0.0017796905502451832
+        },
+        "nearest": {
+          "session_mae": 0.03178277037257559,
+          "session_mse": 0.0016592308761895942,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017061983637507933
+        },
+        "median": {
+          "session_mae": 0.03156843992135583,
+          "session_mse": 0.0016250570894647271,
+          "mae": 0.0324866648114012,
+          "mse": 0.0016575773054896454
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096918486349261
+        }
+      },
+      "attempt_seconds": 0.8245592979947105,
+      "peak_vram_allocated_bytes": 10224640,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "mae-s43",
+      "case": {
+        "mode": "mae",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/mae-s43/run.json",
+      "report_sha256": "572815b8b8cfffcf578719f3fb86832833337963cebbbefcb9d2726fed17cd9a",
+      "checkpoint_sha256": "649f451849f75898af8ce12b7f43b951fb85da7c692f8c9952626c1d0778a2c5",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.03216648417622577,
+          "session_mse": 0.0017114326043673508,
+          "mae": 0.03327291188518452,
+          "mse": 0.0017766453426021863
+        },
+        "nearest": {
+          "session_mae": 0.031696421413810794,
+          "session_mse": 0.001650202380224429,
+          "mae": 0.032718080020890855,
+          "mse": 0.0016995402315823699
+        },
+        "median": {
+          "session_mae": 0.03140653562367184,
+          "session_mse": 0.0016034598333432477,
+          "mae": 0.03229381880349316,
+          "mse": 0.0016320018967947054
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0972058960144815
+        }
+      },
+      "attempt_seconds": 0.8297903700149618,
+      "peak_vram_allocated_bytes": 10224640,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_full-b0-s43",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b0-s43/run.json",
+      "report_sha256": "d9b78e0a6144ddf5952fb8b42246bed33678eedf067d389a923891f5cfc4a2d7",
+      "checkpoint_sha256": "16c83b0a62fc263e5c22afdbf03df74c46cb709a1ff51617ade03027b518758d",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.032202734136139645,
+          "session_mse": 0.0017138244516681418,
+          "mae": 0.03329535608399955,
+          "mse": 0.001779025901167654
+        },
+        "nearest": {
+          "session_mae": 0.031804357612266784,
+          "session_mse": 0.0016564669294987088,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017017239671206358
+        },
+        "median": {
+          "session_mae": 0.03155764630151023,
+          "session_mse": 0.001621584737456451,
+          "mae": 0.03248666481140121,
+          "mse": 0.001655040126964241
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096830286690163,
+          "mean_behavior_kl_nats": 0.0003368448601387087,
+          "mean_klpo_variance": 11.739195436111364
+        }
+      },
+      "attempt_seconds": 0.8369218239968177,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_full-b1-s43",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b1-s43/run.json",
+      "report_sha256": "fcc8f037b4a22c023fd948e85a61ddf266534abd639fd7be1debb5d90bedd3db",
+      "checkpoint_sha256": "504e11209e691a893646c44635ef66b8fec46253ec572a2ab48c2ff75d710fb9",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.032202734140076864,
+          "session_mse": 0.001713824451879105,
+          "mae": 0.033295356086417906,
+          "mse": 0.0017790259012225587
+        },
+        "nearest": {
+          "session_mae": 0.031804357612266784,
+          "session_mse": 0.0016564669294987088,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017017239671206358
+        },
+        "median": {
+          "session_mae": 0.03155764630151023,
+          "session_mse": 0.001621584737456451,
+          "mae": 0.03248666481140121,
+          "mse": 0.001655040126964241
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096830286696082,
+          "mean_behavior_kl_nats": 0.0003368448604596082,
+          "mean_klpo_variance": 3.521838864983586
+        }
+      },
+      "attempt_seconds": 0.8457706970220897,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_full-b2-s43",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b2-s43/run.json",
+      "report_sha256": "dcf3673548540c5e2c012fb0a3b8d14214b718cb61d2b5a8bb5b7262037d3f8f",
+      "checkpoint_sha256": "2f9fc51d6ed038341b9f87c649237207e94ff43469eb898a152962ac921170f0",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03220273413520122,
+          "session_mse": 0.001713824451563451,
+          "mae": 0.03329535608309034,
+          "mse": 0.0017790259010213492
+        },
+        "nearest": {
+          "session_mae": 0.031804357612266784,
+          "session_mse": 0.0016564669294987088,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017017239671206358
+        },
+        "median": {
+          "session_mae": 0.03155764630151023,
+          "session_mse": 0.001621584737456451,
+          "mae": 0.03248666481140121,
+          "mse": 0.001655040126964241
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096830286700816,
+          "mean_behavior_kl_nats": 0.00033684484957987215,
+          "mean_klpo_variance": 1.1740845002274205
+        }
+      },
+      "attempt_seconds": 0.8401370990031864,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b0-s43",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b0-s43/run.json",
+      "report_sha256": "546bf8daec6e94859e08b8c1bb94867b0fb2b0fecf82421d9e93a64b46e21a46",
+      "checkpoint_sha256": "38cede895db1f182eeb33fa858be42047960b5e5efaabef34764917d8a9e0041",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03219975830421065,
+          "session_mse": 0.0017135472082759407,
+          "mae": 0.03329305789338052,
+          "mse": 0.0017788100627135226
+        },
+        "nearest": {
+          "session_mae": 0.031804357612266784,
+          "session_mse": 0.0016564669294987088,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017017239671206358
+        },
+        "median": {
+          "session_mae": 0.03155764630151023,
+          "session_mse": 0.001621584737456451,
+          "mae": 0.03248666481140121,
+          "mse": 0.001655040126964241
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096845021814916,
+          "mean_behavior_kl_nats": 0.0003249393563309484,
+          "mean_klpo_variance": 11.739106923541112
+        }
+      },
+      "attempt_seconds": 0.8393238610005938,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b1-s43",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b1-s43/run.json",
+      "report_sha256": "abe9bfb05630bc8eb06254210e52336447bed566a91351c168deafdc4185891e",
+      "checkpoint_sha256": "2ba1a9d5effb9814799995fd36344518ff157c7d8d8a5ed82b2ec92262cf0986",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.032199758308118866,
+          "session_mse": 0.0017135472085654197,
+          "mae": 0.03329305789563145,
+          "mse": 0.001778810062915164
+        },
+        "nearest": {
+          "session_mae": 0.031804357612266784,
+          "session_mse": 0.0016564669294987088,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017017239671206358
+        },
+        "median": {
+          "session_mae": 0.03155764630151023,
+          "session_mse": 0.001621584737456451,
+          "mae": 0.03248666481140121,
+          "mse": 0.001655040126964241
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0968450218131323,
+          "mean_behavior_kl_nats": 0.0003249393503400215,
+          "mean_klpo_variance": 3.521749518730669
+        }
+      },
+      "attempt_seconds": 0.8931887130020186,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b2-s43",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b2-s43/run.json",
+      "report_sha256": "8316df593b6cf82b8d7913bfaf4c1c8ae8d2e8f44e5dfbfea5693bf80ea817d5",
+      "checkpoint_sha256": "b299764916ef2e3a5aaa089ed412a646e2708d80170c4c355047bf8525105bdc",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03219975830921138,
+          "session_mse": 0.0017135472086982984,
+          "mae": 0.033293057896096524,
+          "mse": 0.0017788100629883969
+        },
+        "nearest": {
+          "session_mae": 0.031804357612266784,
+          "session_mse": 0.0016564669294987088,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017017239671206358
+        },
+        "median": {
+          "session_mae": 0.03155764630151023,
+          "session_mse": 0.001621584737456451,
+          "mae": 0.03248666481140121,
+          "mse": 0.001655040126964241
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0968450218071686,
+          "mean_behavior_kl_nats": 0.00032493934661513877,
+          "mean_klpo_variance": 1.1739927719669343
+        }
+      },
+      "attempt_seconds": 0.8937563599902205,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b0-s43",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b0-s43/run.json",
+      "report_sha256": "9b6d38337211670ad6e9af7161dda880202e6c1c6593d8d7e4ca1015dc1a0ae0",
+      "checkpoint_sha256": "31d8eb8ea34d0f776c5735e7e668cf64f3f13bd4af3353a9ce4008ce5504c480",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218784493359611,
+          "session_mse": 0.0017142686555738345,
+          "mae": 0.03331944739503414,
+          "mse": 0.001781676556996716
+        },
+        "nearest": {
+          "session_mae": 0.031817071230199334,
+          "session_mse": 0.0016567547259098432,
+          "mae": 0.03280207921721811,
+          "mse": 0.001703675615092995
+        },
+        "median": {
+          "session_mae": 0.03150559820036919,
+          "session_mse": 0.0016135504082807296,
+          "mae": 0.03241638720140203,
+          "mse": 0.0016478126658073984
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096762634774793,
+          "mean_behavior_kl_nats": 0.00028931110590877686,
+          "mean_klpo_variance": 11.740937068866735
+        }
+      },
+      "attempt_seconds": 0.8336882299918216,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b1-s43",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b1-s43/run.json",
+      "report_sha256": "a45c48c3bed5db20225acb80139e8ec854015ab206eb016157d6fcb2a0521217",
+      "checkpoint_sha256": "df87e181a3b5ef431150544330aa369602cbd129036a6b899eb76bc04d115de9",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218405357372301,
+          "session_mse": 0.0017138116533626663,
+          "mae": 0.033316417435551623,
+          "mse": 0.0017812950140263463
+        },
+        "nearest": {
+          "session_mae": 0.03178469037066254,
+          "session_mse": 0.0016536253651685598,
+          "mae": 0.03276351001563651,
+          "mse": 0.0016999481987433774
+        },
+        "median": {
+          "session_mae": 0.03148401096067799,
+          "session_mse": 0.0016102322122366185,
+          "mae": 0.032377817999820424,
+          "mse": 0.0016418841555419198
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.09679387406393,
+          "mean_behavior_kl_nats": 0.0002875680614104947,
+          "mean_klpo_variance": 3.5234595264217274
+        }
+      },
+      "attempt_seconds": 0.8460301180020906,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b2-s43",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 43,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b2-s43/run.json",
+      "report_sha256": "068894302953c563b418e12e39aa00b78df08827d87db2f76d30f51b33fe9f4b",
+      "checkpoint_sha256": "d3e2ccc51e9bd0f16b20328aafc136768a8baf787e4436b2f93324f63fc8b6ce",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.032177742914336914,
+          "session_mse": 0.0017130792941490076,
+          "mae": 0.03331036403608448,
+          "mse": 0.0017805372184331726
+        },
+        "nearest": {
+          "session_mae": 0.031817071230199334,
+          "session_mse": 0.0016584980225276508,
+          "mae": 0.03280207921721811,
+          "mse": 0.0017057520750644282
+        },
+        "median": {
+          "session_mae": 0.03148401096067799,
+          "session_mse": 0.0016123505871012873,
+          "mae": 0.032377817999820424,
+          "mse": 0.0016444073753807253
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096864504681758,
+          "mean_behavior_kl_nats": 0.00026208520981510096,
+          "mean_klpo_variance": 1.175466664214035
+        }
+      },
+      "attempt_seconds": 0.8232895859982818,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "reinforce-s44",
+      "case": {
+        "mode": "reinforce",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/reinforce-s44/run.json",
+      "report_sha256": "90a0d09138703f78acd729ab058f9b0c7fba48691a8ab17d6b6391f2a405bb51",
+      "checkpoint_sha256": "9767f14d4f1125d0db401b5b049aa34306050930c9476fb0265cdf0ad58f716f",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218120971177112,
+          "session_mse": 0.0017130144007618437,
+          "mae": 0.03327965331746239,
+          "mse": 0.0017778951582105701
+        },
+        "nearest": {
+          "session_mae": 0.03172880227334759,
+          "session_mse": 0.0016510093936566849,
+          "mae": 0.03275664922247246,
+          "mse": 0.0016995636880241915
+        },
+        "median": {
+          "session_mae": 0.031611614400738224,
+          "session_mse": 0.0016270629239321752,
+          "mae": 0.03252523401298281,
+          "mse": 0.0016593926780481443
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0969579210429594
+        }
+      },
+      "attempt_seconds": 0.8156514109869022,
+      "peak_vram_allocated_bytes": 10226688,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "expected-s44",
+      "case": {
+        "mode": "expected",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/expected-s44/run.json",
+      "report_sha256": "c248e4b0ede7915fbc2d055d79a6d4ee798a97021c86b35d2367c6e7a50634bf",
+      "checkpoint_sha256": "18613598fa399b3fc4e8339632ed0a838fd73a951824956f5b7c8e28ff36fc27",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.032184836417902894,
+          "session_mse": 0.0017132446836846374,
+          "mae": 0.03330209647273586,
+          "mse": 0.0017796905506403664
+        },
+        "nearest": {
+          "session_mae": 0.03178277037257559,
+          "session_mse": 0.0016592308761895942,
+          "mae": 0.03279521842405407,
+          "mse": 0.0017061983637507933
+        },
+        "median": {
+          "session_mae": 0.03156843992135583,
+          "session_mse": 0.0016250570894647271,
+          "mae": 0.0324866648114012,
+          "mse": 0.0016575773054896454
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0969184863309556
+        }
+      },
+      "attempt_seconds": 0.801254151010653,
+      "peak_vram_allocated_bytes": 10224640,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "mae-s44",
+      "case": {
+        "mode": "mae",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/mae-s44/run.json",
+      "report_sha256": "d1144c6c7173a70331f51a62febe136c457377b886434a2233b70bc8dfef2219",
+      "checkpoint_sha256": "f7159cbce22c8d1ac7420a1d101bd009035462ceb24ca371df1f8aad9c273ad4",
+      "best_epoch": 4,
+      "validation": {
+        "center": {
+          "session_mae": 0.032166484175897236,
+          "session_mse": 0.0017114326039928314,
+          "mae": 0.03327291188309171,
+          "mse": 0.0017766453421961066
+        },
+        "nearest": {
+          "session_mae": 0.031696421413810794,
+          "session_mse": 0.001650202380224429,
+          "mae": 0.032718080020890855,
+          "mse": 0.0016995402315823699
+        },
+        "median": {
+          "session_mae": 0.03140653562367184,
+          "session_mse": 0.0016034598333432477,
+          "mae": 0.03229381880349316,
+          "mse": 0.0016320018967947054
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097205896056607
+        }
+      },
+      "attempt_seconds": 0.9057183359982446,
+      "peak_vram_allocated_bytes": 10224640,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_full-b0-s44",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b0-s44/run.json",
+      "report_sha256": "4fa9ecfc9a14ec25585f7420366f4fcb42ecd0e6d86623219b3320d22826cff3",
+      "checkpoint_sha256": "aaf2f67918fdb551ff3ad3b5fdfa2d08d945a92b4719d01b8ea899eafb057c9e",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03217329218734041,
+          "session_mse": 0.0017120416922821319,
+          "mae": 0.033270231054460156,
+          "mse": 0.001776852450443823
+        },
+        "nearest": {
+          "session_mae": 0.031707215033656394,
+          "session_mse": 0.0016500466479356856,
+          "mae": 0.032718080020890855,
+          "mse": 0.001697843582336006
+        },
+        "median": {
+          "session_mae": 0.03149288458243663,
+          "session_mse": 0.0016162378111370208,
+          "mae": 0.032409526408237986,
+          "mse": 0.0016494398720309077
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0970228404908995,
+          "mean_behavior_kl_nats": 0.0001464151189918498,
+          "mean_klpo_variance": 11.738403944878199
+        }
+      },
+      "attempt_seconds": 0.9135867469885852,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_full-b1-s44",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b1-s44/run.json",
+      "report_sha256": "91871673be893b0b05ee60394e1355742cf7bb45c471c97b384c836ce58b0a04",
+      "checkpoint_sha256": "57a0c77908d390cc531ef7969f5559337005e29d0680f2b328b94a53751ad4e3",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03217329218364923,
+          "session_mse": 0.001712041692029908,
+          "mae": 0.033270231050861104,
+          "mse": 0.0017768524501900944
+        },
+        "nearest": {
+          "session_mae": 0.031707215033656394,
+          "session_mse": 0.0016500466479356856,
+          "mae": 0.032718080020890855,
+          "mse": 0.001697843582336006
+        },
+        "median": {
+          "session_mae": 0.03149288458243663,
+          "session_mse": 0.0016162378111370208,
+          "mae": 0.032409526408237986,
+          "mse": 0.0016494398720309077
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0970228404965803,
+          "mean_behavior_kl_nats": 0.00014641511501726348,
+          "mean_klpo_variance": 3.521034038893367
+        }
+      },
+      "attempt_seconds": 0.8542339499981608,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_full-b2-s44",
+      "case": {
+        "mode": "klpo_full",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_full-b2-s44/run.json",
+      "report_sha256": "c089743a65d152fa23e11028de4b60d28840f101661bb09ce140299cabbd16ad",
+      "checkpoint_sha256": "3a3195f2278584bf80c2d433964bddc34792502cc5d67e075ae1af1732d814e5",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03217329218522311,
+          "session_mse": 0.0017120416921530975,
+          "mae": 0.03327023105166567,
+          "mse": 0.0017768524502509836
+        },
+        "nearest": {
+          "session_mae": 0.031707215033656394,
+          "session_mse": 0.0016500466479356856,
+          "mae": 0.032718080020890855,
+          "mse": 0.001697843582336006
+        },
+        "median": {
+          "session_mae": 0.03149288458243663,
+          "session_mse": 0.0016162378111370208,
+          "mae": 0.032409526408237986,
+          "mse": 0.0016494398720309077
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097022840492802,
+          "mean_behavior_kl_nats": 0.00014641511548927846,
+          "mean_klpo_variance": 1.1732415752937213
+        }
+      },
+      "attempt_seconds": 0.838603862997843,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b0-s44",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b0-s44/run.json",
+      "report_sha256": "eaad8aa9e7f2dd3492d2579f51ed4a6d2ac921b0c87a80fab7a386e05a9407da",
+      "checkpoint_sha256": "9d58bebc64cc8b21240e192c84433c401eb4b3775c00666818974036e5aca419",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03217171759261086,
+          "session_mse": 0.001712006458403294,
+          "mae": 0.033268640006274414,
+          "mse": 0.0017767131592764838
+        },
+        "nearest": {
+          "session_mae": 0.03172880227334759,
+          "session_mse": 0.0016510093936566849,
+          "mae": 0.03275664922247246,
+          "mse": 0.0016995636880241915
+        },
+        "median": {
+          "session_mae": 0.03142812286336304,
+          "session_mse": 0.0016076162407247434,
+          "mae": 0.03237095720665638,
+          "mse": 0.0016414996448227337
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097040831652126,
+          "mean_behavior_kl_nats": 0.00015229510789821574,
+          "mean_klpo_variance": 11.73834263876627
+        }
+      },
+      "attempt_seconds": 0.9345842849870678,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b1-s44",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b1-s44/run.json",
+      "report_sha256": "8db4a569ad52a4fd426baef8a2e4d3ebca5dee5f3e56bff7937a5682a5335a51",
+      "checkpoint_sha256": "ccdd2e4a3bb348cdd07a7b76b30ab57740cceb32dd0283d1fd31a5a3d47599fd",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.03217171757273585,
+          "session_mse": 0.0017120064570295003,
+          "mae": 0.0332686399857457,
+          "mse": 0.0017767131575488926
+        },
+        "nearest": {
+          "session_mae": 0.03172880227334759,
+          "session_mse": 0.0016510093936566849,
+          "mae": 0.03275664922247246,
+          "mse": 0.0016995636880241915
+        },
+        "median": {
+          "session_mae": 0.03142812286336304,
+          "session_mse": 0.0016076162407247434,
+          "mae": 0.03237095720665638,
+          "mse": 0.0016414996448227337
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0970408317560336,
+          "mean_behavior_kl_nats": 0.00015229512060783198,
+          "mean_klpo_variance": 3.5209731437361964
+        }
+      },
+      "attempt_seconds": 0.8420297630073037,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_mc-b2-s44",
+      "case": {
+        "mode": "klpo_mc",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_mc-b2-s44/run.json",
+      "report_sha256": "f1d759aabab57ca96778f5c81b70b69910324c94787edc5b6c3d3776b9b5b156",
+      "checkpoint_sha256": "ae6d8776f0e8e1926240ba11078c15812b421a99b41bc2956419bd62089677ea",
+      "best_epoch": 1,
+      "validation": {
+        "center": {
+          "session_mae": 0.032171717533818096,
+          "session_mse": 0.0017120064543530347,
+          "mae": 0.033268639941127595,
+          "mse": 0.0017767131537695328
+        },
+        "nearest": {
+          "session_mae": 0.03172880227334759,
+          "session_mse": 0.0016510093936566849,
+          "mae": 0.03275664922247246,
+          "mse": 0.0016995636880241915
+        },
+        "median": {
+          "session_mae": 0.03142812286336304,
+          "session_mse": 0.0016076162407247434,
+          "mae": 0.03237095720665638,
+          "mse": 0.0016414996448227337
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.097040831999684,
+          "mean_behavior_kl_nats": 0.00015229516153209176,
+          "mean_klpo_variance": 1.1731818544202466
+        }
+      },
+      "attempt_seconds": 0.8440557319845539,
+      "peak_vram_allocated_bytes": 10351104,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b0-s44",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.03,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b0-s44/run.json",
+      "report_sha256": "759b7e7014fa573d50e33204c7d77775593055db80f7f7cb530a1fb6966fcd69",
+      "checkpoint_sha256": "eaef5182fec3d136bdf136aa377497bea5c0833ca24b43051b247209da282cfa",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.032187844924666115,
+          "session_mse": 0.0017142686551156242,
+          "mae": 0.033319447389734684,
+          "mse": 0.0017816765568722573
+        },
+        "nearest": {
+          "session_mae": 0.031817071230199334,
+          "session_mse": 0.0016567547259098432,
+          "mae": 0.03280207921721811,
+          "mse": 0.001703675615092995
+        },
+        "median": {
+          "session_mae": 0.03150559820036919,
+          "session_mse": 0.0016135504082807296,
+          "mae": 0.03241638720140203,
+          "mse": 0.0016478126658073984
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0967626347688864,
+          "mean_behavior_kl_nats": 0.0002893111034237582,
+          "mean_klpo_variance": 11.740937068702692
+        }
+      },
+      "attempt_seconds": 0.8291153110039886,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b1-s44",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.1,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b1-s44/run.json",
+      "report_sha256": "e826f2518dd13e3e1bc367450abe04fc6f53588b7a1b3b989173d94f3715eed3",
+      "checkpoint_sha256": "05f1371739ebba0a240c6d664cb59ff99275ca39de5601f3ce55520d2063c913",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.03218405357182213,
+          "session_mse": 0.001713811654352189,
+          "mae": 0.03331641743238916,
+          "mse": 0.0017812950145605951
+        },
+        "nearest": {
+          "session_mae": 0.03178469037066254,
+          "session_mse": 0.0016536253651685598,
+          "mae": 0.03276351001563651,
+          "mse": 0.0016999481987433774
+        },
+        "median": {
+          "session_mae": 0.03148401096067799,
+          "session_mse": 0.0016102322122366185,
+          "mae": 0.032377817999820424,
+          "mse": 0.0016418841555419198
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.0967938739587453,
+          "mean_behavior_kl_nats": 0.00028756800319127367,
+          "mean_klpo_variance": 3.523459526243189
+        }
+      },
+      "attempt_seconds": 0.9036896179895848,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    },
+    {
+      "id": "klpo_exact-b2-s44",
+      "case": {
+        "mode": "klpo_exact",
+        "seed": 44,
+        "epochs": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.01,
+        "clip_norm": 1.0,
+        "beta": 0.3,
+        "behavior_epsilon": 1e-06,
+        "auxiliary_samples": 128
+      },
+      "global_step": 5,
+      "report_path": "data/interim/klpo-verified-check-20260924/runs/klpo_exact-b2-s44/run.json",
+      "report_sha256": "a3054c25c8c88da6af0e409e8c0f1538266b3eb6db744b84eeb4b5cb80e25f23",
+      "checkpoint_sha256": "5a50cfe680f20383a65b8e6a81a34d8992d71a24e47cd4c233e4fbd4c5617e3d",
+      "best_epoch": 2,
+      "validation": {
+        "center": {
+          "session_mae": 0.03217774292659015,
+          "session_mse": 0.0017130792952803299,
+          "mae": 0.033310364040509605,
+          "mse": 0.0017805372187646071
+        },
+        "nearest": {
+          "session_mae": 0.031817071230199334,
+          "session_mse": 0.0016584980225276508,
+          "mae": 0.03280207921721811,
+          "mse": 0.0017057520750644282
+        },
+        "median": {
+          "session_mae": 0.03148401096067799,
+          "session_mse": 0.0016123505871012873,
+          "mae": 0.032377817999820424,
+          "mse": 0.0016444073753807253
+        },
+        "parent": {
+          "session_mae": 0.03218032274117526,
+          "session_mse": 0.0017121731780114823,
+          "mae": 0.03328338388529616,
+          "mse": 0.0017776300786904065
+        },
+        "zero": {
+          "session_mae": 0.014740397268312158,
+          "session_mse": 0.0004751431450528187,
+          "mae": 0.01411632643747965,
+          "mse": 0.00042238554319670073
+        },
+        "policy": {
+          "mean_entropy_nats": 2.096864504683636,
+          "mean_behavior_kl_nats": 0.0002620851944951561,
+          "mean_klpo_variance": 1.1754666643625602
+        }
+      },
+      "attempt_seconds": 0.8400204879872035,
+      "peak_vram_allocated_bytes": 10349056,
+      "peak_vram_reserved_bytes": 25165824
+    }
+  ]
+}

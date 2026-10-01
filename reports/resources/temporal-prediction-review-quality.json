@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-28T09:40:25.304414+00:00",
+  "source": "src/mars_titan/evaluation/prediction_review.py",
+  "source_sha256": "f328c14a36aa5dbb9d085891171fc7eebb1486b5c1deef0f15edf132e1510f35",
+  "tests": {
+    "passed": 116,
+    "failed": 0,
+    "command": "CUDA_VISIBLE_DEVICES=-1 uv run pytest tests/evaluation/test_prediction_review.py tests/evaluation/test_splits.py tests/training/test_campaign_health.py -q"
+  },
+  "tools": {
+    "coverage": "coverage.py 7.16.2",
+    "complexity": "Radon 6.0.1"
+  },
+  "coverage": {
+    "covered_lines": 246,
+    "num_statements": 267,
+    "percent_covered": 89.72431077694236,
+    "percent_covered_display": "90",
+    "missing_lines": 21,
+    "excluded_lines": 0,
+    "percent_statements_covered": 92.13483146067416,
+    "percent_statements_covered_display": "92",
+    "num_branches": 132,
+    "num_partial_branches": 20,
+    "covered_branches": 112,
+    "missing_branches": 20,
+    "percent_branches_covered": 84.84848484848484,
+    "percent_branches_covered_display": "85"
+  },
+  "functions": [
+    {
+      "name": "_json",
+      "complexity": 3,
+      "statements": 9,
+      "covered": 7,
+      "crap": 3.0987654320987654
+    },
+    {
+      "name": "_inside",
+      "complexity": 3,
+      "statements": 6,
+      "covered": 6,
+      "crap": 3.0
+    },
+    {
+      "name": "_signature",
+      "complexity": 1,
+      "statements": 3,
+      "covered": 3,
+      "crap": 1.0
+    },
+    {
+      "name": "_sources",
+      "complexity": 10,
+      "statements": 13,
+      "covered": 10,
+      "crap": 11.228948566226672
+    },
+    {
+      "name": "_temporal_contract",
+      "complexity": 12,
+      "statements": 16,
+      "covered": 15,
+      "crap": 12.03515625
+    },
+    {
+      "name": "_run_manifest",
+      "complexity": 13,
+      "statements": 20,
+      "covered": 18,
+      "crap": 13.169
+    },
+    {
+      "name": "_confirmed",
+      "complexity": 22,
+      "statements": 40,
+      "covered": 36,
+      "crap": 22.483999999999998
+    },
+    {
+      "name": "_metrics",
+      "complexity": 40,
+      "statements": 57,
+      "covered": 55,
+      "crap": 40.06911708325909
+    },
+    {
+      "name": "_evaluate",
+      "complexity": 4,
+      "statements": 11,
+      "covered": 11,
+      "crap": 4.0
+    },
+    {
+      "name": "review_campaigns",
+      "complexity": 27,
+      "statements": 62,
+      "covered": 56,
+      "crap": 27.660702896848044
+    },
+    {
+      "name": "main",
+      "complexity": 6,
+      "statements": 11,
+      "covered": 11,
+      "crap": 6.0
+    }
+  ],
+  "coverage_convention": "Sentencias y ramas del proceso principal. Los procesos CLI no se incluyen en la instrumentación.",
+  "crap_convention": "CCN² × (1 − cobertura de sentencias de la función)³ + CCN.",
+  "mutations": [
+    {
+      "mutation": "upper_bound",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "lower_bound",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "derived_parent",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "cache_contract",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "reserved_test",
+      "detected": true,
+      "returncode": 1
+    }
+  ],
+  "real_review": {
+    "checked_at_utc": "2026-09-28T09:39:37.739505+00:00",
+    "reviewer_sha256": [
+      "f328c14a36aa5dbb9d085891171fc7eebb1486b5c1deef0f15edf132e1510f35",
+      "6fab04d73ff8d43a2d7029f95e667faa4a0f4d3fc541ce8c48d32b8f3d435115",
+      "baf98c407fa0cee75077f8873f602f663e124ddd87816081c8d8e68cbaf92669"
+    ],
+    "counts": {
+      "confirmed": 202,
+      "verified": 202,
+      "failed": 0,
+      "pending": 0
+    },
+    "source_errors": {},
+    "unavailable_sources": [
+      "strict140-fold-003"
+    ],
+    "final_test_opened": false
+  },
+  "monitoring": {
+    "health_every_seconds": 300,
+    "prediction_every_seconds": 900,
+    "prediction_jobs_per_cycle": 8,
+    "health_service": "mars-titan-strict-temporal-search.service",
+    "health": "ok",
+    "phase": "training",
+    "cpu_progress_ticks": 30042,
+    "semantic_progress": true,
+    "review_last_cycle_memory_peak_bytes": 73961472
+  },
+  "checkpoint_audit": {
+    "stats": {
+      "completed": 101,
+      "stopped_early": 37,
+      "selected_hashes_verified": 101
+    },
+    "selected": {
+      "trained_epoch": 86,
+      "initial_parent": 15
+    },
+    "retention": {
+      "3": 70,
+      "2": 31
+    },
+    "retained_bytes": 304455975,
+    "errors": []
+  },
+  "limits": [
+    "Las particiones de distintas ventanas pueden solaparse. Sus recuentos no representan muestras únicas.",
+    "El revisor contrasta errores y límites de fechas sobre predicciones confirmadas. La disponibilidad de modalidades y purga de etiquetas pertenecen a la auditoría de corpus.",
+    "No se modificaron la selección, los datos ni el runtime de la campaña activa.",
+    "No se midieron energía, rendimiento de entrenamiento ni bytes físicos de E/S. Los contadores I/O del proceso no están accesibles al monitor, que usa CPU y progreso confirmado.",
+    "El pico del revisor corresponde al último ciclo de systemd. No es el pico de todos los ciclos de revisión.",
+    "La ventana fold-003 todavía no tenía resumen al tomar la instantánea.",
+    "Cobertura, CRAP y cinco mutaciones dirigidas son diagnósticos, no garantías de ausencia de errores."
+  ]
+}

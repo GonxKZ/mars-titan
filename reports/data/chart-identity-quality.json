@@ -1,0 +1,72 @@
+{
+  "checked_at": "2026-09-22",
+  "suite": {
+    "passed": 466,
+    "skipped": 0,
+    "seconds": 43.3,
+    "cuda_enabled": true
+  },
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1"
+  },
+  "coverage": {
+    "covered_lines": 125,
+    "num_statements": 138,
+    "percent_covered": 89.01098901098901,
+    "percent_covered_display": "89",
+    "missing_lines": 13,
+    "excluded_lines": 0,
+    "percent_statements_covered": 90.57971014492753,
+    "percent_statements_covered_display": "91",
+    "num_branches": 44,
+    "num_partial_branches": 7,
+    "covered_branches": 37,
+    "missing_branches": 7,
+    "percent_branches_covered": 84.0909090909091,
+    "percent_branches_covered_display": "84"
+  },
+  "functions": [
+    {
+      "name": "inventory",
+      "complexity": 32,
+      "statement_coverage": 0.8846153846153846,
+      "crap": 33.57305416477014
+    },
+    {
+      "name": "_chart_identity",
+      "complexity": 11,
+      "statement_coverage": 1,
+      "crap": 11
+    },
+    {
+      "name": "classify",
+      "complexity": 8,
+      "statement_coverage": 0.9230769230769231,
+      "crap": 8.029130632680928
+    },
+    {
+      "name": "inspect_header",
+      "complexity": 5,
+      "statement_coverage": 0.7692307692307693,
+      "crap": 5.307237141556668
+    },
+    {
+      "name": "entries",
+      "complexity": 2,
+      "statement_coverage": 1,
+      "crap": 2
+    }
+  ],
+  "crap_convention": "Radon por función y cobertura de sentencias de su rango, sin contar la declaración. CRAP=C²(1-c)³+C.",
+  "mutation": {
+    "name": "parent_filename_equality_removed",
+    "detected": true,
+    "failed_tests": 2
+  },
+  "limits": [
+    "La clasificación no valida disponibilidad temporal ni contenido financiero.",
+    "La corrección reutiliza huellas y cabeceras cuando coinciden tamaño, mtime y ctime. No relee los 116 GB.",
+    "No se presenta la puntuación de cobertura o CRAP como garantía de ausencia de errores."
+  ]
+}

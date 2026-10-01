@@ -11,7 +11,7 @@ MARS-TITAN busca reducir el error bajo límites de tiempo y memoria en un equipo
 | Latencia completa | Recepción del evento hasta predicción validada. | Lectura, tokenización, extracción de embeddings, colas y serialización. |
 | Antigüedad del estado | Diferencia entre corte de la instantánea y decisión atendida. | Una salida rápida calculada con un estado demasiado antiguo. |
 | Tiempo de actualización | Etiqueta madura hasta estado nuevo publicable. | Consolidación aplazada que nunca alcanza al flujo. |
-| Coste total del estudio | Preparación, búsqueda, entrenamiento, calibración y evaluación. | Desplazar todo el gasto al profesor o a una caché que luego se omite. |
+| Coste total del estudio | Preparación, búsqueda, entrenamiento, calibración y evaluación. | Desplazar todo el gasto al modelo maestro de destilación o a una caché que luego se omite. |
 
 Se informarán p50, p95, p99, máximo, tamaño de muestra, caudal y proporción de incumplimientos. Un promedio pequeño no describe las colas de latencia. Los tiempos en frío, calentamiento, compilación y ejecución estable se publicarán por separado. Las [herramientas de medida de PyTorch](https://docs.pytorch.org/tutorials/recipes/recipes/benchmark.html) son la referencia para temporización, junto con una medida de reloj de pared del recorrido completo.
 

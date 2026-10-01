@@ -1,0 +1,194 @@
+{
+  "targeted_suite": {
+    "passed": 49,
+    "skipped": 0,
+    "scope": [
+      "tabular_search",
+      "baseline_queue",
+      "external_corpus",
+      "corpus_tabular"
+    ]
+  },
+  "earlier_full_suite": {
+    "passed": 1321,
+    "scope": "Antes de a\u00f1adir esta orquestaci\u00f3n"
+  },
+  "full_suite_repeated": false,
+  "reason": "La campa\u00f1a neuronal amplia ocupa CUDA. Se verifican los m\u00f3dulos nuevos y sus integraciones sin repetir cargas ajenas al cambio.",
+  "new_tests": 39,
+  "real_cuda_integration": {
+    "ridge_fits": 1,
+    "xgboost_fits": 2,
+    "train_rows": 12,
+    "validation_rows": 6,
+    "scientific_campaign": false
+  },
+  "directed_mutations": {
+    "executed": 4,
+    "detected": 4,
+    "complete_mutation_score": false,
+    "names": [
+      "seed_limit",
+      "case_identity",
+      "initial_summary",
+      "queue_gate"
+    ]
+  },
+  "independent_review": {
+    "important_findings_fixed": 3,
+    "critical_findings": 0
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/training/baseline_queue.py",
+      "sha256": "6be6165717375d642fe9d1531c5a0c2971fe23c14306edb0846eb30f1c70a7b2",
+      "coverage": {
+        "covered_lines": 40,
+        "num_statements": 61,
+        "percent_covered": 68.23529411764706,
+        "percent_covered_display": "68",
+        "missing_lines": 21,
+        "excluded_lines": 0,
+        "percent_statements_covered": 65.57377049180327,
+        "percent_statements_covered_display": "66",
+        "num_branches": 24,
+        "num_partial_branches": 2,
+        "covered_branches": 18,
+        "missing_branches": 6,
+        "percent_branches_covered": 75.0,
+        "percent_branches_covered_display": "75"
+      },
+      "functions": [
+        {
+          "name": "reference_view",
+          "complexity": 36,
+          "statement_coverage_fraction": 0.967741935483871,
+          "crap": 36.0435030713974
+        },
+        {
+          "name": "run_queue",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.0,
+          "crap": 12.0
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.0,
+          "crap": 6.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/tabular_search.py",
+      "sha256": "e2a0860e26aa157c3e324b53e03da00926986e525dcf8018e4a81d4fb9d926fe",
+      "coverage": {
+        "covered_lines": 198,
+        "num_statements": 226,
+        "percent_covered": 84.17721518987342,
+        "percent_covered_display": "84",
+        "missing_lines": 28,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.61061946902655,
+        "percent_statements_covered_display": "88",
+        "num_branches": 90,
+        "num_partial_branches": 20,
+        "covered_branches": 68,
+        "missing_branches": 22,
+        "percent_branches_covered": 75.55555555555556,
+        "percent_branches_covered_display": "76"
+      },
+      "functions": [
+        {
+          "name": "_code",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_environment",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8,
+          "crap": 3.072
+        },
+        {
+          "name": "_numbers",
+          "complexity": 8,
+          "statement_coverage_fraction": 1.0,
+          "crap": 8.0
+        },
+        {
+          "name": "_xgb_case",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_configuration",
+          "complexity": 29,
+          "statement_coverage_fraction": 0.8461538461538461,
+          "crap": 32.062357760582614
+        },
+        {
+          "name": "_artifact",
+          "complexity": 8,
+          "statement_coverage_fraction": 0.7777777777777778,
+          "crap": 8.70233196159122
+        },
+        {
+          "name": "_completed",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.75,
+          "crap": 27.890625
+        },
+        {
+          "name": "run_tabular_search",
+          "complexity": 52,
+          "statement_coverage_fraction": 0.9322033898305084,
+          "crap": 52.8426177944191
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_Study.__init__",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 3.0416666666666665
+        },
+        {
+          "name": "_Study.save",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_Study.check_sources",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "_Study.execute",
+          "complexity": 25,
+          "statement_coverage_fraction": 0.9310344827586207,
+          "crap": 25.205010455533234
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "La prueba CUDA verifica ejecuci\u00f3n y recuperaci\u00f3n sobre una poblaci\u00f3n peque\u00f1a. No es el ajuste tabular del corpus amplio.",
+    "La primera escritura del resumen se interrumpe con una excepci\u00f3n de espacio, no con un corte el\u00e9ctrico real.",
+    "Una inicializaci\u00f3n sin identidad que conserve archivos ajenos o temporales desconocidos requiere revisi\u00f3n, no se adopta en silencio.",
+    "Un Ridge incompleto se ajusta de nuevo. No hay recuperaci\u00f3n de sus estad\u00edsticas parciales.",
+    "XGBoost observa la parada durante la preparaci\u00f3n y al confirmar checkpoints, no necesariamente despu\u00e9s de cada ronda.",
+    "Una terminaci\u00f3n forzada puede dejar cach\u00e9s externas. No se borran datos autom\u00e1ticamente ni se encadenan reintentos ciegos."
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "external_runs": 3,
+  "paused_and_resumed": true,
+  "samples": [
+    {
+      "stage": "baseline",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 0,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 0,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7466975232
+    },
+    {
+      "stage": "0:after_return",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "0:after_gc",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "1:after_return",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "1:after_gc",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "2:after_return",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "2:after_gc",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "paused:after_return",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 7168,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "resumed:after_return",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 23040,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    },
+    {
+      "stage": "resumed:after_gc",
+      "live_models": 0,
+      "async_used_bytes": 0,
+      "async_reserved_bytes": 100663296,
+      "cupy_used_bytes": 0,
+      "cupy_reserved_bytes": 23040,
+      "torch_allocated_bytes": 0,
+      "torch_reserved_bytes": 0,
+      "cuda_free_bytes": 7343243264
+    }
+  ],
+  "parent_cache_copies_survive_closed_map": [
+    "train",
+    "validation"
+  ],
+  "seconds": 1.5636623409991444
+}

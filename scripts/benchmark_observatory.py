@@ -1,4 +1,4 @@
-"""Reproduce en Linux una exportación sintética en CPU, sin entrenamientos ni red."""
+"""Reproduce en Linux una medición sintética de exportación en CPU, sin entrenamientos ni red."""
 
 import hashlib
 import json
@@ -61,7 +61,7 @@ def build_fixture(directory):
 
 
 def measure_exports(source, output):
-    """Mide cinco CLI reales y captura RSS antes de consultar metadatos con subprocess."""
+    """Mide cinco ejecuciones reales de la CLI y captura RSS antes de consultar metadatos."""
     command = [sys.executable, str(EXPORTER), "--input-dir", str(source), "--output", str(output)]
     for name, value in LIMITS.items():
         command.extend(("--" + name.replace("_", "-"), str(value)))
@@ -86,7 +86,7 @@ def measure_exports(source, output):
                 document = json.loads(output.read_bytes())
                 runs = document["runs"]
                 if len(runs) != 32 or any(len(run["history"]) != 500 for run in runs):
-                    raise ValueError("Unexpected fixture output")
+                    raise ValueError("La salida del caso de prueba no es la esperada")
                 output_bytes = output.stat().st_size
                 elapsed.append(duration)
         except subprocess.TimeoutExpired:
@@ -147,7 +147,7 @@ def provenance():
 
 def main():
     if sys.platform != "linux":
-        raise SystemExit("Este benchmark requiere Linux y /proc.")
+        raise SystemExit("Esta medición requiere Linux y /proc.")
     with tempfile.TemporaryDirectory(prefix="mars-observatory-benchmark-") as temporary:
         root = Path(temporary)
         fixture = build_fixture(root / "runs")

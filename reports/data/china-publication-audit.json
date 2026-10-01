@@ -1,0 +1,12 @@
+{
+  "rows": 202767,
+  "missing_publication": 202767,
+  "duplicates": 0,
+  "invalid": 0,
+  "ambiguous_facts": 0,
+  "accepted": 0,
+  "files": 2430,
+  "elapsed_seconds": 5.57550203899882,
+  "training_admissible": false,
+  "rule": "period_end_does_not_establish_publication"
+}

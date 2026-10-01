@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-24T12:26:09.556487+00:00",
+  "torch": "2.14.0+cu130",
+  "cuda_build": "13.0",
+  "cuda_available": true,
+  "scientific_cuda_workload_started": false,
+  "cpu_fallback": false,
+  "admitted": false,
+  "error_type": "RuntimeError",
+  "reason": "Hay otra carga de cómputo activa en CUDA"
+}

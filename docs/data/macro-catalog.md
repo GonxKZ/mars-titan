@@ -2,11 +2,45 @@
 
 Autor: Gonzalo García Lama. Verificación documental: 18 de septiembre de 2026.
 
-El [catálogo CSV](../../data/catalogs/macro-indicators.csv) contiene 140 indicadores candidatos. Son 64 series de proveedores oficiales con identificador, nombre, frecuencia y unidad contrastados, 70 transformaciones especificadas y seis candidatos del NBS/PBOC con proveedor confirmado pero identificador estable pendiente. Las 64 series incluyen 63 fichas FRED y el GSCPI del New York Fed. No se ha incorporado un panel de observaciones, reconstruido sus vintages ni ejecutado una comparación predictiva.
+El [catálogo CSV](../../data/catalogs/macro-indicators.csv) contiene 140 indicadores candidatos. Sus estados documentan la revisión inicial, no el estado de cada ejecución. Son 64 series de proveedores oficiales con metadatos contrastados, 70 transformaciones y seis candidatos del NBS/PBOC sin identificador estable verificado. Las 64 series incluyen 63 fichas FRED y el GSCPI del New York Fed.
+
+La preparación posterior adquirió 59 series completas y calculó valores para 125 indicadores en al menos una fecha. Los paneles conservan también las ausencias y sus causas. La unidad del catálogo es una referencia de diseño, no sustituye las unidades históricas de cada versión. No se ha ejecutado una comparación confirmatoria predictiva. Véanse [preparación](preparation.md) y los informes de cálculo [US](../../reports/data/macro-US-calculation.json) y [CN](../../reports/data/macro-CN-calculation.json).
 
 El catálogo sirve para seleccionar familias macro con un contrato temporal común. No propone introducir 140 columnas de forma automática ni afirma que una mayor cantidad de indicadores mejore la predicción. La selección pertenece al periodo de desarrollo. La cobertura estadounidense es más amplia que la china y no debe presentarse como simétrica.
 
 ## Contenido y estado
+
+La descarga histórica no requiere una clave en la vía pública de ALFRED utilizada
+en esta preparación. Se seleccionan todas las fechas de vintage del intervalo y
+se valida el archivo devuelto. El formulario web puede cambiar. Un cambio de
+estructura produce un error, no una descarga aparentemente correcta.
+
+```bash
+uv run python - <<'PY'
+import csv
+from pathlib import Path
+from mars_titan.data.macro_acquisition import acquire_catalog
+from mars_titan.data.storage import atomic_json
+
+with Path("data/catalogs/macro-indicators.csv").open() as stream:
+    catalog = list(csv.DictReader(stream))
+report = acquire_catalog(
+    catalog, Path("data/external/phase1-macro"),
+    observation_start="1988-01-01", observation_end="2025-03-31",
+    realtime_start="1990-01-01", realtime_end="2025-03-31", workers=2,
+)
+report["destination"] = "data/external/phase1-macro"
+atomic_json(Path("reports/data/macro-acquisition.json"), report)
+print(report["completed_series"], report["failed_series"])
+PY
+uv run mars-data macro --market US
+uv run mars-data macro --market CN
+```
+
+La captura ejecutada conserva 59 series completas y dos errores pendientes, WTI
+y Brent. No se presentan las 61 adquisiciones como correctas. Los errores y las
+exclusiones se trasladan al cálculo mediante `execution_catalog`. Las series que
+fallan después de algún lote no exponen sus filas parciales al motor.
 
 | Familia | Series del proveedor y candidatos | Transformaciones |
 | --- | ---: | ---: |
@@ -30,9 +64,10 @@ Los estados tienen un significado limitado:
 
 - `verified_metadata_not_ingested`: ficha oficial comprobada, observaciones y disponibilidad histórica todavía sin auditar.
 - `provider_verified_identifier_pending`: existe el proveedor y la familia de información, pero no se ha validado un código estable. `series_id` contiene literalmente `no identifier verified` y la serie queda excluida de cualquier ejecución.
+- `verified_official_release_archive`: concepto, unidad y documentos fechados verificados mediante el [lector de comunicados](china-release-archive.md). No se inventa un identificador de API. La admisión depende de ese contrato documental, de sus huellas y de la cobertura del periodo solicitado.
 - `formula_defined_not_computed`: fórmula y dependencias definidas, sin valores calculados ni validación numérica con un panel real.
 
-`core`, `secondary` y `optional` ordenan la auditoría propuesta. No son resultados de selección de variables. Una serie `core` que no supere la auditoría temporal se excluye igualmente. Los índices con estimación retrospectiva y los candidatos chinos sin identificador son optativos.
+`core`, `secondary` y `optional` ordenan la auditoría propuesta. No son resultados de selección de variables. Una serie `core` que no supere la auditoría temporal se excluye igualmente. La puerta de cobertura completa exige los 140 indicadores con independencia de esas prioridades de auditoría.
 
 ## Contrato de cada campo
 
@@ -40,7 +75,7 @@ Los estados tienen un significado limitado:
 
 `frequency` describe el periodo observado, no la frecuencia de publicación. `M` y `Q` son mes y trimestre. `Q_END` es un saldo de fin de trimestre. `D` representa los días con observación del proveedor y `D7` una serie diaria que también puede incluir fines de semana. `W_SAT`, `W_FRI` y `W_WED` indican la referencia semanal. `W_WED_LEVEL` es un saldo del miércoles y `W_WED_AVG` una media semanal terminada en miércoles. Estos últimos no son intercambiables.
 
-`unit` utiliza `million = 10^6` y `billion = 10^9`, evitando la ambigüedad del billón español. `SA` significa ajuste estacional, `NSA` ausencia de ajuste y `SAAR` nivel desestacionalizado expresado a tasa anual. `percent_pa` es un tipo anual cotizado en porcentaje. Las diferencias entre dos porcentajes están en puntos porcentuales, no en porcentaje de variación. Los importes PBOC pendientes se normalizarían a miles de millones de CNY solo después de verificar la unidad del comunicado.
+`unit` utiliza `million = 10^6` y `billion = 10^9`, evitando la ambigüedad del billón español. `SA` significa ajuste estacional, `NSA` ausencia de ajuste y `SAAR` nivel desestacionalizado expresado a tasa anual. `percent_pa` es un tipo anual cotizado en porcentaje. Las diferencias entre dos porcentajes están en puntos porcentuales, no en porcentaje de variación. Los importes PBoC se normalizan a miles de millones de CNY después de verificar la unidad del comunicado. La cifra y unidad originales quedan registradas.
 
 `formula` define exclusivamente derivados. `availability_rule` remite a las reglas siguientes. `vintage_policy` establece el tratamiento obligatorio de las revisiones. `verification_status` y `verified_on` documentan la comprobación realizada, no la actualidad de cada observación.
 
@@ -83,7 +118,8 @@ Las horas habituales de la tabla orientan la búsqueda del comunicado. Siempre p
 | `OECD_RELEASE`, `IMF_COMMODITY` | Edición de OECD o IMF y fecha comprobada de incorporación. Una media mensual alemana o de cobre no es un precio diario ejecutable. Sin archivo histórico de ediciones se excluye del PIT estricto. |
 | `NYFED_GSCPI` | La [página oficial](https://www.newyorkfed.org/research/policy/gscpi) anuncia actualización a las 10:00 del cuarto día hábil del mes. Exigir la versión del indicador y su método que existían en la fecha evaluada. |
 | `NBS_RELEASE`, `NBS_PMI` | Comunicado chino original, calendario y unidad exacta. La traducción inglesa puede publicarse después. Enero y febrero pueden difundirse conjuntamente para algunas magnitudes. No crear un enero mensual inexistente. |
-| `PBOC_RELEASE` | Tabla o comunicado original de M2 o financiación agregada, con fecha y perímetro. Distinguir flujo del mes, acumulado y saldo. Las seis filas chinas pendientes no pasan a admisibles solo por aplicar un desfase. |
+| `PBOC_RELEASE` | Tabla o comunicado original de M2 o financiación agregada, con fecha y perímetro. Distinguir flujo del mes, acumulado y saldo. Un desfase fijo no acredita por sí solo su disponibilidad. |
+| `OFFICIAL_RELEASE_BOUND_THEN_NEXT_SESSION` | Archivo fechado de NBS o PBoC, con cada documento identificado por URL y SHA-256. Se aplica el límite documental contrastado y después la siguiente sesión. El [contrato del archivo](china-release-archive.md) detalla la regla conservadora y las exclusiones. |
 | `MAX_INPUT_AVAILABLE_AT` | El derivado aparece cuando estén disponibles todas las observaciones y versiones de su fórmula, incluidas las de los retardos. Recalcular solo para decisiones posteriores al evento. |
 | `COMMON_PERIOD_MAX_INPUT_AVAILABLE_AT` | Lo anterior, usando además el último periodo común a las dependencias. No restar un TIPS de ayer a un Treasury de hoy y llamarlo diferencial de hoy. |
 
@@ -92,6 +128,15 @@ La tabla no fija retardos constantes de publicación que aparenten reconstruir u
 ## Vintages y fórmulas
 
 `ALFRED_OR_RELEASE_ARCHIVE` exige seleccionar para cada decisión la versión con evidencia de publicación no posterior al corte. [ALFRED](https://alfred.stlouisfed.org/help) conserva versiones, pero puede añadirlas después de la publicación y no ofrece por sí solo una hora intradiaria universal. Hay que comprobar su cobertura por serie. `MODEL_VINTAGES_ONLY` añade que el cálculo y la versión del modelo también deben existir en esa fecha. `NO_VINTAGES_EXCLUDE` mantiene fuera del conjunto estricto a los candidatos pendientes. `DERIVE_FROM_ASOF_VINTAGES` hereda todas las restricciones de las dependencias.
+
+`ALFRED_MODEL_VINTAGES` admite únicamente las versiones oficiales verificadas de NFCI y STLFSI4. La identidad del indicador, serie, proveedor, URL, frecuencia y unidad se comprueba antes de adquirir o calcular. El recibo registra esta política y la primera fecha del archivo admitido. Las observaciones cuyo periodo sea antiguo solo entran desde su versión publicada, con la misma regla conservadora de disponibilidad que las demás entradas de ALFRED.
+
+| Serie | Primera versión ALFRED admitida | Evidencia y límite |
+| --- | --- | --- |
+| `NFCI` | 25 de mayo de 2011 | [Archivo de versiones](https://alfred.stlouisfed.org/series/downloaddata?seid=NFCI). Chicago anunció la publicación semanal desde el [13 de abril de 2011](https://www.chicagofed.org/utilities/newsroom/news-releases/2011/04-05-nfci-release), pero las primeras semanas no están acreditadas por este archivo. |
+| `STLFSI4` | 10 de noviembre de 2022 | [Archivo de versiones](https://alfred.stlouisfed.org/series/downloaddata?seid=STLFSI4) y [presentación de la versión 4](https://fredblog.stlouisfed.org/2022/11/the-st-louis-feds-financial-stress-index-version-4/). Las versiones anteriores no sustituyen a STLFSI4. |
+
+La adquisición conserva en cuarentena una fila que atribuya a estos modelos una versión anterior al límite verificado. El cálculo rechaza esa incoherencia incluso si una actualización de metadatos desplazó el comienzo de la fila. Una lista de versiones que empiece antes del contrato exige revisar su evidencia. Cambiar el nombre de la política no elimina estos límites. `MODEL_VINTAGES_ONLY` continúa excluida, incluido GSCPI, hasta acreditar por separado las fechas y versiones de cada modelo.
 
 En las fórmulas, `p` es el último periodo de referencia admisible a la hora de decisión. `x[p-k]` es el periodo anterior correspondiente, consultado en la misma instantánea permitida. Para datos mensuales y trimestrales se exige el periodo de calendario exacto. Para las series semanales se exige la semana indicada. En `D`, veintiuna observaciones son veintiún registros diarios válidos del proveedor, no necesariamente veintiuna sesiones del mercado de la acción. En `D7`, el retardo de veintiún días es natural. Un hueco no se convierte en cero ni se elimina para fabricar una ventana de calendario completa.
 
@@ -111,7 +156,7 @@ La comprobación empleó páginas oficiales y descargas públicas, sin claves ap
 | BIS | [Descargas completas](https://data.bis.org/bulkdownload), [metodología de crédito](https://data.bis.org/topics/TOTAL_CREDIT) y fichas de tipos efectivos. | Cumplir [condiciones de uso](https://data.bis.org/help/legal). Las revisiones de rupturas, ponderaciones y PIB requieren ediciones históricas. |
 | ECB, OECD e IMF | Fichas FRED contrastadas para `ECBDFR`, `IRLTLT01DEM156N` y `PCOPPUSDM`, con productor identificado. | No se ha validado una API directa ni una historia completa de ediciones. Comprobar términos y cobertura en el productor antes de una ingesta. |
 | NBS | [Calendario 2026](https://www.stats.gov.cn/english/PressRelease/ReleaseCalendar/202512/t20251226_1962154.html), comunicados originales y traducciones. | Reconstruir archivo por fecha, identificador y unidad. No atribuir un dato a una fecha anterior por usar su traducción posterior. |
-| PBOC | [Portal estadístico](https://www.pbc.gov.cn/en/3688247/3688975/index.html), con tablas de dinero y financiación agregada. | Identificadores estables, condiciones de reutilización y cambios de perímetro pendientes. No hay un panel PIT chino preparado. |
+| PBOC | [Portal estadístico](https://www.pbc.gov.cn/en/3688247/3688975/index.html), con tablas de dinero y financiación agregada. | El [panel de comunicados](china-release-archive.md) cubre el periodo declarado en su manifiesto. No acredita una API estable ni una historia anterior completa. |
 | New York Fed y Chicago Fed | Páginas de índices y tipos de referencia. | Acreditar vintages, versiones del método y derechos de insumos de terceros. Un backcast no fue necesariamente un dato público contemporáneo. |
 
 La comprobación actual no acredita máximos y mínimos históricos, porcentaje de ausencias ni cobertura coincidente con cada activo de FinMultiTime. Esas cifras se medirán tras una ingesta autorizada. La existencia de una serie desde 1959 o de un backcast desde 1997 no prueba que la versión actual estuviera disponible entonces. Por ejemplo, el New York Fed presentó públicamente el GSCPI el [4 de enero de 2022](https://libertystreeteconomics.newyorkfed.org/2022/01/a-new-barometer-of-global-supply-chain-pressures/). Su historia retrospectiva anterior no se admite como indicador público contemporáneo. Desde su presentación siguen siendo necesarias las ediciones que se publicaron en cada fecha.

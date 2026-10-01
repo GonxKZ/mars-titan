@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "purpose": "exploratory_strict_sample_configurations_not_final_comparison",
+  "models": ["gru", "dlinear"],
+  "seeds": [42, 43, 44],
+  "losses": ["mse", "mae", "huber"],
+  "learning_rates": [0.0001, 0.001],
+  "huber_delta": 0.01,
+  "epochs": 30,
+  "batch_size": 16,
+  "workers": 0,
+  "device": "cuda:0",
+  "training_through": "2022-12-31",
+  "validation_year": 2023,
+  "final_test_opened": false,
+  "posttraining": {
+    "base_loss": "mse",
+    "base_learning_rate": 0.001,
+    "selection": "fixed_control_not_validation_winner",
+    "loss": "mae",
+    "learning_rate": 0.0001,
+    "epochs": 5,
+    "optimizer_policy": "new_adamw"
+  }
+}

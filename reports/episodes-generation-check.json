@@ -1,0 +1,12 @@
+{
+  "status": "completed",
+  "config_sha256": "4d0d45644dc8f7bd39251e158d3cf36444b9d303b2bfe289620b76b7a36a5135",
+  "elapsed_seconds": 1.546909031982068,
+  "peak_rss_mib": 589.04296875,
+  "final_test_opened": false,
+  "worlds": 12,
+  "rows": 12288,
+  "encoding": "synthetic-analytic-v1",
+  "gpu_used": false,
+  "scope": "Comprobación técnica del generador y la escritura Parquet. No mide utilidad predictiva sobre datos reales."
+}

@@ -1,0 +1,17 @@
+{
+  "method": "Mutaciones dirigidas de causalidad, identidad de entradas y presupuesto CUDA.",
+  "results": [
+    {
+      "name": "future_labels",
+      "detected": true
+    },
+    {
+      "name": "parent_inputs",
+      "detected": true
+    },
+    {
+      "name": "gpu_budget",
+      "detected": true
+    }
+  ]
+}

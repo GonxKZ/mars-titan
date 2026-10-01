@@ -1,6 +1,6 @@
 # Matriz de experimentos y reglas de comparación
 
-Estado: diseño previo a la implementación. Ninguna celda representa un resultado ejecutado.
+Estado: diseño de la comparación confirmatoria. Ninguna celda representa un resultado de eficacia observado. Las sondas MLP y GRU del [presupuesto experimental](../../reports/resources/campaign-budget.md) miden coste, no completan esta comparación.
 
 ## Familias y prioridad
 
@@ -10,7 +10,7 @@ Estado: diseño previo a la implementación. Ninguna celda representa un resulta
 | B1 | Ridge con variables históricas | Referencia lineal regularizada, fácil de interpretar. | Obligatoria |
 | B2 | Boosting tabular compacto | Contraste no lineal. Comenzar con HistGradientBoosting de scikit-learn. | Obligatoria |
 | B3 | GRU compacta | Referencia neural secuencial con presupuesto comparable. | Obligatoria |
-| B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada al target. | Deseable tras el piloto |
+| B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada a la variable objetivo. | Deseable tras el piloto |
 | B5 | TCN o PatchTST reducido | Contraste adicional si aporta una pregunta distinta. | Extensión |
 | B6 | Memoria asociativa compacta con regla delta | Referencia neural adaptativa identificable, separada del banco episódico. | Obligatoria |
 | M0 | Codificador y cabeza de MARS-TITAN sin memoria | Aísla el efecto de introducir memoria. | Obligatoria |
@@ -22,7 +22,7 @@ La elección de boosting aprovecha una dependencia ya prevista y evita incorpora
 
 HistGradientBoosting no debe reservar aleatoriamente una parte del panel para parada temprana. Se utilizará `early_stopping=False` con selección externa cronológica, o un conjunto de validación explícito cuando la versión fijada lo admita. La [documentación de scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html) describe la activación automática de parada y la reserva interna. Leer el dataset por bloques no convierte ese estimador en un algoritmo incremental.
 
-El núcleo usa una sola lectura, K = 1. La comparación K = 2 o 4 y una eventual puerta adaptativa pertenecen a MT-054. No bloquearán la comparación principal si no aportan una pregunta viable bajo el presupuesto. El estudio con macro, replay paramétrico, destilación, universo completo y otro mercado se declara por separado.
+El núcleo usa una sola lectura, K = 1. La comparación K = 2 o 4 y una eventual puerta adaptativa pertenecen a MT-054. No bloquearán la comparación principal si no aportan una pregunta viable bajo el presupuesto. Las cuatro modalidades y el contexto macro son obligatorios. El replay paramétrico, la destilación, el universo completo y otro mercado se estudian por separado.
 
 ## Ablaciones emparejadas
 
@@ -32,8 +32,8 @@ El núcleo usa una sola lectura, K = 1. La comparación K = 2 o 4 y una eventual
 | Escritura selectiva frente a uniforme | Capacidad de memoria y presupuesto de actualización. | Número de escrituras. Comparar también escritura aleatoria con presupuesto igual cuando sea viable. |
 | Sorpresa completa frente a error | Escalas y calibración obtenidas del pasado. | Disponibilidad de indicadores económicos y cantidad de etiquetas maduras. |
 | Régimen frente a memoria global | Señales y capacidad total. | Número de bancos y parámetros extra. Regímenes filtrados, sin suavizado futuro. |
-| Precios frente a precios+texto | Muestras comunes y misma disponibilidad temporal. | Selección por cobertura de noticias y versión del codificador. |
-| Con/sin fundamentales o gráficos válidos | Universo y reloj de decisión. | Información redundante del gráfico respecto a precios. Revisiones contables. |
+| Alternativas de codificación y agregación textual | Las cuatro modalidades, muestras comunes y disponibilidad temporal. | Cobertura de noticias, versión y coste del codificador. |
+| Alternativas de representación contable y visual | Las cuatro modalidades, universo y reloj de decisión. | Redundancia del gráfico respecto a precios, revisiones contables y dimensión de las entradas. |
 | Con/sin abstención | Predicciones y periodo. | Capital expuesto, cobertura, costes y número de operaciones. |
 | Memoria congelada frente a adaptativa | Estado inicial y regla predefinida. | Uso de etiquetas durante evaluación. No confundir política online con reajuste retrospectivo. |
 
@@ -41,7 +41,7 @@ La memoria por mercado, sector y activo se añade solo después de validar el ca
 
 ## Presupuesto inicial propuesto
 
-Hasta 64 activos, ventanas de 64 sesiones, dimensión latente 64, minibatch inicial 16 y máximo 30 épocas con parada temprana. Estas cifras son **puntos de partida por medir**. El estado de memoria debe preservarse en orden temporal aunque se agrupen activos. No se puede mezclar aleatoriamente el eje temporal de una secuencia adaptativa.
+Hasta 64 activos, ventanas de 64 sesiones, dimensión latente 64, lote inicial de 16 muestras y máximo 30 épocas con parada temprana. Estas cifras son **puntos de partida por medir**. El estado de memoria debe preservarse en orden temporal aunque se agrupen activos. No se puede mezclar aleatoriamente el eje temporal de una secuencia adaptativa.
 
 Como límite de planificación, hasta diez configuraciones por familia y tres semillas en la comparación confirmatoria. Se registrará el tiempo total de búsqueda, no solo el entrenamiento del mejor modelo. Los codificadores de texto se precalcularán con pesos congelados cuando sea apropiado. La primera medición de memoria fijará el margen operativo por debajo de los 8 GB físicos, incluyendo activaciones, optimizadores y actualización interna.
 

@@ -1,0 +1,32 @@
+{
+  "parity_samples": 25856,
+  "exact_float32_parity": true,
+  "measurements": [
+    {
+      "reader": "reference",
+      "samples": 25856,
+      "seconds": 2.5881283910000548,
+      "samples_per_second": 9990.230813089309
+    },
+    {
+      "reader": "projected_arrow",
+      "samples": 25856,
+      "seconds": 0.7088230019999173,
+      "samples_per_second": 36477.37153993066
+    },
+    {
+      "reader": "projected_arrow",
+      "samples": 25856,
+      "seconds": 0.7186655759999212,
+      "samples_per_second": 35977.791149972705
+    },
+    {
+      "reader": "reference",
+      "samples": 25856,
+      "seconds": 2.641383571999995,
+      "samples_per_second": 9788.809271809936
+    }
+  ],
+  "cache_state": "warm_OS_cache_not_flushed",
+  "worker_count": 0
+}

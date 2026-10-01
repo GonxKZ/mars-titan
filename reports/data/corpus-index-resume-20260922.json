@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "scope": "source_index_not_training_admission",
+  "index_complete": true,
+  "training_ready": false,
+  "source_files": 5586,
+  "completed_files": 5586,
+  "records": 4469917,
+  "confirmed_source_bytes": 14382105211,
+  "records_by_state": {
+    "needs_provenance": 1061815,
+    "reserved": 980008,
+    "pending_verification": 2428080,
+    "missing_content": 14
+  },
+  "errors": 0,
+  "source_errors_by_modality": {},
+  "markets": {
+    "CN": {
+      "assets": 892,
+      "with_four_sources": 810,
+      "records": 1420362,
+      "candidate_records": 1377245
+    },
+    "US": {
+      "assets": 4784,
+      "with_four_sources": 2639,
+      "records": 3049555,
+      "candidate_records": 2021684
+    }
+  },
+  "catalog_sha256": "bfb1285992a3604940bf29570953d869684a33af0612d0fd831ffd95448eea8b",
+  "indexer_sha256": "842d181a2c9f45b74ce373ad2e1f088abcbba547dbce630d3455b5e5bca6bc68",
+  "cutoff": "2023-12-31",
+  "database_bytes": 2201612288,
+  "reused_files": 5586,
+  "elapsed_seconds": 7.792444560000149,
+  "peak_rss_mib": 182.80859375
+}

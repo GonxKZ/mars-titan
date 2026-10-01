@@ -1,0 +1,209 @@
+{
+  "full_suite": {
+    "passed": 1214,
+    "skipped": 0,
+    "seconds": 172.12
+  },
+  "focused_suite": {
+    "passed": 22,
+    "seconds": 6.85
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/models/baselines/external_boosting.py",
+      "sha256": "072a4529bc85fa8347a8be6f1b5ab8c83aa3a1b88f2f976c59da8602fd92d97e",
+      "coverage": {
+        "covered_lines": 200,
+        "num_statements": 226,
+        "percent_covered": 84.0909090909091,
+        "percent_covered_display": "84",
+        "missing_lines": 26,
+        "excluded_lines": 0,
+        "percent_statements_covered": 88.49557522123894,
+        "percent_statements_covered_display": "88",
+        "num_branches": 82,
+        "num_partial_branches": 23,
+        "covered_branches": 59,
+        "missing_branches": 23,
+        "percent_branches_covered": 71.95121951219512,
+        "percent_branches_covered_display": "72"
+      },
+      "functions": [
+        {
+          "name": "_libraries",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.7,
+          "crap": 5.675000000000001
+        },
+        {
+          "name": "_device",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.75,
+          "crap": 2.0625
+        },
+        {
+          "name": "_blocks",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.8484848484848485,
+          "crap": 20.255669644099395
+        },
+        {
+          "name": "fit_external_boosting",
+          "complexity": 33,
+          "statement_coverage_fraction": 0.8974358974358975,
+          "crap": 34.17493551813078
+        },
+        {
+          "name": "ExternalBoostingModel.predict",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 12.197530864197532
+        },
+        {
+          "name": "ExternalBoostingModel.save",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "ExternalBoostingModel.load",
+          "complexity": 16,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 17.007727073917483
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/external_corpus.py",
+      "sha256": "7c5d3b43ced9cfe75bda2cf81b7bd9a7f4d18cdc6a784493ba7b462505d43efa",
+      "coverage": {
+        "covered_lines": 110,
+        "num_statements": 146,
+        "percent_covered": 73.6842105263158,
+        "percent_covered_display": "74",
+        "missing_lines": 36,
+        "excluded_lines": 0,
+        "percent_statements_covered": 75.34246575342466,
+        "percent_statements_covered_display": "75",
+        "num_branches": 44,
+        "num_partial_branches": 14,
+        "covered_branches": 30,
+        "missing_branches": 14,
+        "percent_branches_covered": 68.18181818181819,
+        "percent_branches_covered_display": "68"
+      },
+      "functions": [
+        {
+          "name": "_identity",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_load",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8,
+          "crap": 3.072
+        },
+        {
+          "name": "run_external_reference",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 22.73596734217816
+        },
+        {
+          "name": "_execute",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.825,
+          "crap": 10.535937500000001
+        },
+        {
+          "name": "main",
+          "complexity": 1,
+          "statement_coverage_fraction": 0.0,
+          "crap": 2.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/tabular_corpus.py",
+      "sha256": "bae0d1e72a19ce201d9e1e502f4474c68b2bd5d5b34be5555746398c4a503d91",
+      "coverage": {
+        "covered_lines": 99,
+        "num_statements": 120,
+        "percent_covered": 79.87012987012987,
+        "percent_covered_display": "80",
+        "missing_lines": 21,
+        "excluded_lines": 0,
+        "percent_statements_covered": 82.5,
+        "percent_statements_covered_display": "82",
+        "num_branches": 34,
+        "num_partial_branches": 8,
+        "covered_branches": 24,
+        "missing_branches": 10,
+        "percent_branches_covered": 70.58823529411765,
+        "percent_branches_covered_display": "71"
+      },
+      "functions": [
+        {
+          "name": "_matrix",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_predict",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 5.072886297376093
+        },
+        {
+          "name": "run_tabular_reference",
+          "complexity": 30,
+          "statement_coverage_fraction": 0.8727272727272727,
+          "crap": 31.85544703230654
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.0,
+          "crap": 6.0
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 4,
+    "detected": 4,
+    "complete_mutation_score": false,
+    "cases": [
+      "converted_budget",
+      "changed_data_on_resume",
+      "exclusive_output",
+      "model_size_budget"
+    ]
+  },
+  "runtime": {
+    "xgboost": "3.3.0",
+    "cupy": "14.2.0",
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU"
+  },
+  "recovery": {
+    "continuous_and_resumed_predictions_equal": true,
+    "model_format": "UBJ",
+    "model_limit_bytes": 134217728,
+    "original_issue": 25
+  },
+  "limits": [
+    "Las pruebas de entrenamiento usan poblaciones sint\u00e9ticas peque\u00f1as.",
+    "No se ha ejecutado todav\u00eda la campa\u00f1a completa de boosting ni una b\u00fasqueda de hiperpar\u00e1metros.",
+    "La GPU comparte memoria con otras aplicaciones y la codificaci\u00f3n del corpus sigue activa.",
+    "La comprobaci\u00f3n de memoria de entrada no acota todas las asignaciones internas de XGBoost.",
+    "La publicaci\u00f3n duradera se comprueba mediante llamadas fsync. No se simula una p\u00e9rdida f\u00edsica de alimentaci\u00f3n.",
+    "Una primera bater\u00eda fall\u00f3 por la selecci\u00f3n de bibliotecas CUDA al importar CuPy antes de PyTorch. La regresi\u00f3n usa un proceso nuevo."
+  ]
+}

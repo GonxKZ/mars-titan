@@ -1,0 +1,120 @@
+{
+  "tests": {
+    "passed": 89,
+    "seconds": 2.439,
+    "skipped": 0
+  },
+  "test_command": "CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 uv run --no-sync --with coverage==7.16.1 --with radon==6.0.1 coverage run --branch -m pytest tests/evaluation/test_session_metrics.py tests/training/test_evaluation_io.py",
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C² × (1 − fracción de líneas ejecutables cubiertas)³ + C",
+  "coverage": {
+    "covered_lines": 70,
+    "num_statements": 73,
+    "percent_covered": 95.95959595959596,
+    "percent_covered_display": "96",
+    "missing_lines": 3,
+    "excluded_lines": 0,
+    "percent_statements_covered": 95.89041095890411,
+    "percent_statements_covered_display": "96",
+    "num_branches": 26,
+    "num_partial_branches": 1,
+    "covered_branches": 25,
+    "missing_branches": 1,
+    "percent_branches_covered": 96.15384615384616,
+    "percent_branches_covered_display": "96"
+  },
+  "functions": [
+    {
+      "name": "_group_errors",
+      "complexity": 5,
+      "statement_coverage_fraction": 1.0,
+      "crap": 5.0
+    },
+    {
+      "name": "SessionErrors.__init__",
+      "complexity": 3,
+      "statement_coverage_fraction": 0.75,
+      "crap": 3.140625
+    },
+    {
+      "name": "SessionErrors.update",
+      "complexity": 20,
+      "statement_coverage_fraction": 1.0,
+      "crap": 20.0
+    },
+    {
+      "name": "SessionErrors._means",
+      "complexity": 4,
+      "statement_coverage_fraction": 1.0,
+      "crap": 4.0
+    },
+    {
+      "name": "SessionErrors.summary",
+      "complexity": 10,
+      "statement_coverage_fraction": 0.8,
+      "crap": 10.799999999999999
+    }
+  ],
+  "mutations": [
+    {
+      "name": "market_collision",
+      "old": "(markets == \"CN\")",
+      "new": "0",
+      "selection": "grouping and cohorts and 512",
+      "detected": true,
+      "result": "3 failed, 77 deselected in 0.08s"
+    },
+    {
+      "name": "timestamp_narrowing",
+      "old": "np.unique(times, return_inverse=True)",
+      "new": "np.unique(times.astype(np.int64), return_inverse=True)",
+      "selection": "grouping and uint64 and 512",
+      "detected": true,
+      "result": "2 failed, 78 deselected in 0.08s"
+    },
+    {
+      "name": "reversed_reduction",
+      "old": "np.bincount(groups, weights=absolute)",
+      "new": "np.bincount(groups[::-1], weights=absolute[::-1])",
+      "selection": "rounding_is_observable",
+      "detected": true,
+      "result": "1 failed, 79 deselected in 0.06s"
+    },
+    {
+      "name": "ignore_previous_error",
+      "old": "ae += previous[1]",
+      "new": "ae = previous[1]",
+      "selection": "previous_large_state",
+      "detected": true,
+      "result": "9 failed, 71 deselected in 0.08s"
+    },
+    {
+      "name": "partial_commit",
+      "old": "            merged[key] = [count, ae, se]",
+      "new": "            merged[key] = [count, ae, se]\n            self.sessions[key] = merged[key]",
+      "selection": "overflow_in_a_group",
+      "detected": true,
+      "result": "2 failed, 78 deselected in 0.06s"
+    },
+    {
+      "name": "session_budget",
+      "old": "len(self.sessions) + added > self.max_sessions",
+      "new": "len(self.sessions) + added > self.max_sessions + 1",
+      "selection": "session_budget_fails",
+      "detected": true,
+      "result": "1 failed, 79 deselected in 0.06s"
+    }
+  ],
+  "source_sha256": "6fab04d73ff8d43a2d7029f95e667faa4a0f4d3fc541ce8c48d32b8f3d435115",
+  "limits": [
+    "Pruebas sintéticas en CPU. La suite completa CUDA no se ejecutó durante la campaña activa.",
+    "Seis mutaciones dirigidas, sin puntuación exhaustiva ni garantía de ausencia de defectos."
+  ],
+  "repository_checks": {
+    "uv run --no-sync ruff check .": "passed",
+    "uv run --no-sync ruff format --check .": "412 files already formatted",
+    "uv run --no-sync python scripts/check_repository.py": "671 archivos, 123 referencias, 64 tareas y 140 indicadores",
+    "git diff --check": "passed"
+  }
+}

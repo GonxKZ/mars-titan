@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "modes": ["reinforce", "expected", "mae"],
+  "seeds": [42, 43, 44],
+  "epochs": 5,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.01,
+  "clip_norm": 1.0,
+  "batch_size": 256,
+  "checkpoint_seconds": 60,
+  "final_test_opened": false
+}

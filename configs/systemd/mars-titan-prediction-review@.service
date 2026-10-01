@@ -1,0 +1,24 @@
+[Unit]
+Description=Revisar predicciones confirmadas de MARS-TITAN
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/mars-titan/prediction-review.env
+Environment=UV_NO_CACHE=1
+Environment=OMP_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=ARROW_NUM_THREADS=1
+Environment=PYTHONPATH=%h/.local/lib/mars-titan/prediction-review/%i
+ExecStart=%h/.local/bin/uv run --no-project --no-config --offline --python ${MARS_TITAN_REVIEW_PYTHON} python -m mars_titan.evaluation.prediction_review --config %h/.config/mars-titan/prediction-review.json --state %h/.local/state/mars-titan/prediction-review/state.json --max-jobs 8
+StateDirectory=mars-titan/prediction-review
+TimeoutStartSec=10min
+MemoryMax=512M
+TasksMax=16
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+StandardOutput=journal
+StandardError=journal

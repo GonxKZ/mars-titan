@@ -1,0 +1,187 @@
+{
+  "full_suite": {
+    "passed": 1159,
+    "skipped": 0,
+    "seconds": 101.88
+  },
+  "focused_suite": {
+    "passed": 42
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/models/baselines/multimodal.py",
+      "sha256": "1584a79abe760e9b62cfc9cd4add34e3c07a5e0a854e661c11cd061157add766",
+      "coverage": {
+        "covered_lines": 43,
+        "num_statements": 44,
+        "percent_covered": 96.66666666666667,
+        "percent_covered_display": "97",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 97.72727272727273,
+        "percent_statements_covered_display": "98",
+        "num_branches": 16,
+        "num_partial_branches": 1,
+        "covered_branches": 15,
+        "missing_branches": 1,
+        "percent_branches_covered": 93.75,
+        "percent_branches_covered_display": "94"
+      },
+      "functions": [
+        {
+          "name": "validate_architecture",
+          "complexity": 8,
+          "statement_coverage_fraction": 1.0,
+          "crap": 8.0
+        },
+        {
+          "name": "MultimodalReference.__init__",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.9333333333333333,
+          "crap": 14.058074074074074
+        },
+        {
+          "name": "MultimodalReference.encode",
+          "complexity": 10,
+          "statement_coverage_fraction": 1.0,
+          "crap": 10.0
+        },
+        {
+          "name": "MultimodalReference.forward",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/reference_run.py",
+      "sha256": "03614c4c5ba8e11bd2b355e09aeb903e62b9646ff31b951994ffd62c284540d5",
+      "coverage": {
+        "covered_lines": 203,
+        "num_statements": 227,
+        "percent_covered": 84.76190476190476,
+        "percent_covered_display": "85",
+        "missing_lines": 24,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.42731277533039,
+        "percent_statements_covered_display": "89",
+        "num_branches": 88,
+        "num_partial_branches": 20,
+        "covered_branches": 64,
+        "missing_branches": 24,
+        "percent_branches_covered": 72.72727272727273,
+        "percent_branches_covered_display": "73"
+      },
+      "functions": [
+        {
+          "name": "read_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "scientific_identity",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_options",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.7272727272727273,
+          "crap": 26.323065364387677
+        },
+        {
+          "name": "_inputs",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_statistics",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_metrics",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.75,
+          "crap": 2.0625
+        },
+        {
+          "name": "_update",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 3.0262390670553936
+        },
+        {
+          "name": "_evaluate",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.9230769230769231,
+          "crap": 4.007282658170232
+        },
+        {
+          "name": "training_weights",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.8,
+          "crap": 7.3919999999999995
+        },
+        {
+          "name": "_parent",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.8823529411764706,
+          "crap": 13.275188276002442
+        },
+        {
+          "name": "run_reference_case",
+          "complexity": 39,
+          "statement_coverage_fraction": 0.9009009009009009,
+          "crap": 40.48026112306609
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 2,
+    "detected": 2,
+    "complete_mutation_score": false,
+    "cases": [
+      "hidden_dropout_state",
+      "discard_text_gradient"
+    ]
+  },
+  "device": "cuda:0",
+  "checkpoint_recovery": {
+    "models": [
+      "rnn",
+      "lstm",
+      "gru",
+      "dlinear"
+    ],
+    "variants": [
+      "legacy_cost_probe",
+      "scientific_multimodal_reference"
+    ],
+    "exact_weights": true,
+    "exact_prediction_tables": true,
+    "scientific_architecture": {
+      "hidden_size": 64,
+      "layers": 2,
+      "dropout": 0.1
+    },
+    "dropout_location": "fusion_only",
+    "cublas_workspace": ":4096:8"
+  },
+  "limits": [
+    "Las pruebas usan entradas sint\u00e9ticas y no miden precisi\u00f3n burs\u00e1til.",
+    "La codificaci\u00f3n del corpus estaba activa en otra carga CUDA. No es una medici\u00f3n de rendimiento.",
+    "La rejilla cient\u00edfica, la selecci\u00f3n por sesi\u00f3n y la parada temprana siguen pendientes.",
+    "La cobertura corresponde a 42 pruebas espec\u00edficas, no a toda la bater\u00eda.",
+    "El contrato y los cambios se revisaron localmente, sin una revisi\u00f3n independiente de esta rama."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "seeds": [42, 43, 44],
+  "algorithms": ["ppo", "double_dqn"],
+  "references": ["cash", "hold_initial", "rebalance_50"],
+  "cost_bps": [0, 10, 25],
+  "environment": {"capital": 10000, "cost_bps": 10, "participation": 0.01, "score_scale": 0.01, "ruin_penalty": -20},
+  "training": {"total_steps": 8192, "learning_rate": 0.0003, "gamma": 0.99, "batch_size": 64, "rollout_steps": 128, "ppo_epochs": 4, "gae_lambda": 0.95, "clip": 0.2, "entropy": 0.01, "value_weight": 0.5, "replay_capacity": 4096, "warmup_steps": 256, "target_interval": 256, "epsilon_start": 1, "epsilon_end": 0.05, "checkpoint_steps": 128, "gradient_norm": 1},
+  "final_test_opened": false
+}

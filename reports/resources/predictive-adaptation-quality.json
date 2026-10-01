@@ -1,0 +1,399 @@
+{
+  "full_suite": {
+    "passed": 1299,
+    "skipped": 0,
+    "warnings": 2,
+    "invocation_groups": [
+      {
+        "passed": 1284,
+        "seconds": 250.91,
+        "coverage": true
+      },
+      {
+        "passed": 15,
+        "seconds": 8.37,
+        "scope": "external_boosting_and_external_corpus"
+      }
+    ],
+    "reason": "Dos procesos evitan retener memoria CUDA de pruebas previas mientras la GPU est\u00e1 compartida."
+  },
+  "earlier_attempt": {
+    "passed": 1289,
+    "failed": 8,
+    "seconds": 244.06,
+    "reason": "Ocho fallos de asignaci\u00f3n CUDA por falta de memoria en las pruebas de boosting."
+  },
+  "new_test_cases": 44,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "aggregate_coverage": {
+    "covered_lines": 617,
+    "num_statements": 693,
+    "percent_covered": 85.09052183173588,
+    "percent_covered_display": "85",
+    "missing_lines": 76,
+    "excluded_lines": 0,
+    "percent_statements_covered": 89.03318903318903,
+    "percent_statements_covered_display": "89",
+    "num_branches": 246,
+    "num_partial_branches": 62,
+    "covered_branches": 182,
+    "missing_branches": 64,
+    "percent_branches_covered": 73.98373983739837,
+    "percent_branches_covered_display": "74"
+  },
+  "modules": [
+    {
+      "path": "src/mars_titan/models/predictive_adaptation.py",
+      "sha256": "128b5ab4dc9153016d3922e5d2565673485b316e017fd27299ec49baa92fe9ff",
+      "coverage": {
+        "covered_lines": 55,
+        "num_statements": 61,
+        "percent_covered": 85.88235294117646,
+        "percent_covered_display": "86",
+        "missing_lines": 6,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.1639344262295,
+        "percent_statements_covered_display": "90",
+        "num_branches": 24,
+        "num_partial_branches": 6,
+        "covered_branches": 18,
+        "missing_branches": 6,
+        "percent_branches_covered": 75.0,
+        "percent_branches_covered_display": "75"
+      },
+      "functions": [
+        {
+          "name": "_policy_inputs",
+          "complexity": 15,
+          "statement_coverage_fraction": 1.0,
+          "crap": 15.0
+        },
+        {
+          "name": "gaussian_log_probabilities",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 2.011661807580175
+        },
+        {
+          "name": "objective",
+          "complexity": 20,
+          "statement_coverage_fraction": 0.9545454545454546,
+          "crap": 20.03756574004508
+        },
+        {
+          "name": "LinearResidualPolicy.__init__",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.9,
+          "crap": 12.144
+        },
+        {
+          "name": "LinearResidualPolicy.forward",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 19.25925925925926
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/predictive_evaluation.py",
+      "sha256": "67529dc6742a5b469ec2202ed0eb1137f41fe4a63f2bb6bd822dc9fa778e1e1d",
+      "coverage": {
+        "covered_lines": 58,
+        "num_statements": 59,
+        "percent_covered": 97.26027397260275,
+        "percent_covered_display": "97",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 98.30508474576271,
+        "percent_statements_covered_display": "98",
+        "num_branches": 14,
+        "num_partial_branches": 1,
+        "covered_branches": 13,
+        "missing_branches": 1,
+        "percent_branches_covered": 92.85714285714286,
+        "percent_branches_covered_display": "93"
+      },
+      "functions": [
+        {
+          "name": "evaluate_predictive",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.9473684210526315,
+          "crap": 7.007143898527482
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/predictive_inputs.py",
+      "sha256": "32bd0d0dec45ab3753311041dd3383006b78b9739e206cdecca6805f483f8a21",
+      "coverage": {
+        "covered_lines": 107,
+        "num_statements": 120,
+        "percent_covered": 86.144578313253,
+        "percent_covered_display": "86",
+        "missing_lines": 13,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.16666666666667,
+        "percent_statements_covered_display": "89",
+        "num_branches": 46,
+        "num_partial_branches": 10,
+        "covered_branches": 36,
+        "missing_branches": 10,
+        "percent_branches_covered": 78.26086956521739,
+        "percent_branches_covered_display": "78"
+      },
+      "functions": [
+        {
+          "name": "fit_standardizer",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.7857142857142857,
+          "crap": 12.190597667638484
+        },
+        {
+          "name": "PredictiveDataset.__init__",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.7777777777777778,
+          "crap": 5.274348422496571
+        },
+        {
+          "name": "PredictiveDataset._buffer",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "PredictiveDataset.batches",
+          "complexity": 41,
+          "statement_coverage_fraction": 0.9,
+          "crap": 42.681
+        },
+        {
+          "name": "PredictiveDataset.close",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "PredictiveDataset.__enter__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "PredictiveDataset.__exit__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/predictive_parents.py",
+      "sha256": "490697c33a67fee3124df72e1be55d2af558cfc83cce55fe4af9dd41cd2a0773",
+      "coverage": {
+        "covered_lines": 154,
+        "num_statements": 175,
+        "percent_covered": 82.71604938271605,
+        "percent_covered_display": "83",
+        "missing_lines": 21,
+        "excluded_lines": 0,
+        "percent_statements_covered": 88.0,
+        "percent_statements_covered_display": "88",
+        "num_branches": 68,
+        "num_partial_branches": 21,
+        "covered_branches": 47,
+        "missing_branches": 21,
+        "percent_branches_covered": 69.11764705882354,
+        "percent_branches_covered_display": "69"
+      },
+      "functions": [
+        {
+          "name": "_signature",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_verified_file",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.7692307692307693,
+          "crap": 12.487027765134274
+        },
+        {
+          "name": "_parent",
+          "complexity": 16,
+          "statement_coverage_fraction": 0.8823529411764706,
+          "crap": 16.41685324648891
+        },
+        {
+          "name": "_prediction_schema",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.75,
+          "crap": 14.25
+        },
+        {
+          "name": "_align",
+          "complexity": 16,
+          "statement_coverage_fraction": 0.9487179487179487,
+          "crap": 16.03452519428851
+        },
+        {
+          "name": "prepare_parent_cache",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.8837209302325582,
+          "crap": 19.56756008904876
+        },
+        {
+          "name": "ParentPredictions.__init__",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.7272727272727273,
+          "crap": 12.028549962434258
+        },
+        {
+          "name": "ParentPredictions.values",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.7777777777777778,
+          "crap": 9.88888888888889
+        },
+        {
+          "name": "ParentPredictions.close",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/predictive_run.py",
+      "sha256": "de52c8390850d573fddcc27e985f3adf66a043b2bd17114ed9533b54c7900782",
+      "coverage": {
+        "covered_lines": 157,
+        "num_statements": 168,
+        "percent_covered": 89.63963963963964,
+        "percent_covered_display": "90",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.45238095238095,
+        "percent_statements_covered_display": "93",
+        "num_branches": 54,
+        "num_partial_branches": 12,
+        "covered_branches": 42,
+        "missing_branches": 12,
+        "percent_branches_covered": 77.77777777777777,
+        "percent_branches_covered_display": "78"
+      },
+      "functions": [
+        {
+          "name": "_code",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_options",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.625,
+          "crap": 44.255859375
+        },
+        {
+          "name": "_statistics",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "run_predictive_case",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 11.352769679300291
+        },
+        {
+          "name": "_setup_run",
+          "complexity": 22,
+          "statement_coverage_fraction": 0.9459459459459459,
+          "crap": 22.076441671766727
+        },
+        {
+          "name": "_train",
+          "complexity": 15,
+          "statement_coverage_fraction": 0.9705882352941176,
+          "crap": 15.005724608182373
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/predictive_study.py",
+      "sha256": "ae09ccd29c82dab975d509b581d0f7cc453f5254e26ff9dec188c44f30273386",
+      "coverage": {
+        "covered_lines": 86,
+        "num_statements": 110,
+        "percent_covered": 74.66666666666667,
+        "percent_covered_display": "75",
+        "missing_lines": 24,
+        "excluded_lines": 0,
+        "percent_statements_covered": 78.18181818181819,
+        "percent_statements_covered_display": "78",
+        "num_branches": 40,
+        "num_partial_branches": 12,
+        "covered_branches": 26,
+        "missing_branches": 14,
+        "percent_branches_covered": 65.0,
+        "percent_branches_covered_display": "65"
+      },
+      "functions": [
+        {
+          "name": "_configuration",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.9,
+          "crap": 14.196
+        },
+        {
+          "name": "run_predictive_study",
+          "complexity": 33,
+          "statement_coverage_fraction": 0.8266666666666667,
+          "crap": 38.67118933333333
+        },
+        {
+          "name": "main",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.0,
+          "crap": 6.0
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 5,
+    "detected": 5,
+    "complete_mutation_score": false,
+    "cases": [
+      "cost_sign",
+      "baseline_gradient",
+      "frozen_parent",
+      "target_alignment",
+      "initial_checkpoint"
+    ]
+  },
+  "review": {
+    "important_findings_fixed": 1,
+    "regression_cases_added": 2
+  },
+  "numerical_checks": {
+    "expected_gradient_tolerance": 1e-11,
+    "enumerated_actions": 21,
+    "devices": [
+      "cpu_reference",
+      "cuda:0"
+    ],
+    "resumed_predictions_exact": true
+  },
+  "limits": [
+    "Las pruebas integradas usan poblaciones peque\u00f1as y no prueban el coste del corpus completo.",
+    "La igualdad del gradiente esperado precede a AdamW y al recorte de norma.",
+    "La mutaci\u00f3n dirigida comprueba cinco defectos concretos, no un porcentaje global de ausencia de errores.",
+    "La cobertura combina sentencias y ramas. CRAP utiliza solo cobertura de sentencias por funci\u00f3n.",
+    "No se han provocado cortes el\u00e9ctricos ni agotamiento f\u00edsico del disco.",
+    "No hay resultados financieros ni entrenamiento de MARS-TITAN en esta comprobaci\u00f3n."
+  ]
+}

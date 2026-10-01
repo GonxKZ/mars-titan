@@ -1,0 +1,627 @@
+{
+  "schema_version": 1,
+  "full_suite": {
+    "passed": 1120,
+    "skipped": 0,
+    "seconds": 122.07,
+    "cuda_enabled": true,
+    "clang_tidy": "21.1.8"
+  },
+  "focused_suite": {
+    "passed": 60
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/data/cohort_contexts.py",
+      "sha256": "843544ec003243c779ee7947e4a1f670b5806589456391b4e0be4756c3f11831",
+      "coverage": {
+        "covered_lines": 149,
+        "num_statements": 170,
+        "percent_covered": 83.203125,
+        "percent_covered_display": "83",
+        "missing_lines": 21,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.6470588235294,
+        "percent_statements_covered_display": "88",
+        "num_branches": 86,
+        "num_partial_branches": 22,
+        "covered_branches": 64,
+        "missing_branches": 22,
+        "percent_branches_covered": 74.4186046511628,
+        "percent_branches_covered_display": "74"
+      },
+      "functions": [
+        {
+          "name": "NewsWindows.__init__",
+          "complexity": 15,
+          "statement_coverage_fraction": 0.8275862068965517,
+          "crap": 16.153183812374433
+        },
+        {
+          "name": "NewsWindows.cached_row_groups",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "NewsWindows.between",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.8695652173913043,
+          "crap": 11.268513191419414
+        },
+        {
+          "name": "NewsWindows.__enter__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "NewsWindows.__exit__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "FactCursor.__init__",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "FactCursor.at",
+          "complexity": 12,
+          "statement_coverage_fraction": 1.0,
+          "crap": 12.0
+        },
+        {
+          "name": "MacroVectors.__init__",
+          "complexity": 26,
+          "statement_coverage_fraction": 0.7966101694915254,
+          "crap": 31.687670112328917
+        },
+        {
+          "name": "MacroVectors.verify",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 4.074074074074074
+        },
+        {
+          "name": "MacroVectors.at",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/cohort_files.py",
+      "sha256": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+      "coverage": {
+        "covered_lines": 17,
+        "num_statements": 20,
+        "percent_covered": 80.0,
+        "percent_covered_display": "80",
+        "missing_lines": 3,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.0,
+        "percent_statements_covered_display": "85",
+        "num_branches": 10,
+        "num_partial_branches": 3,
+        "covered_branches": 7,
+        "missing_branches": 3,
+        "percent_branches_covered": 70.0,
+        "percent_branches_covered_display": "70"
+      },
+      "functions": [
+        {
+          "name": "_unique",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 3.0416666666666665
+        },
+        {
+          "name": "read_manifest",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.7142857142857143,
+          "crap": 4.373177842565598
+        },
+        {
+          "name": "safe_destination",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/cohort_samples.py",
+      "sha256": "1e8fc33c92787b8f6fbb9d82daca87d89fe7c1df00d2b73c80731ee5ab1ca631",
+      "coverage": {
+        "covered_lines": 168,
+        "num_statements": 193,
+        "percent_covered": 82.78388278388279,
+        "percent_covered_display": "83",
+        "missing_lines": 25,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.04663212435233,
+        "percent_statements_covered_display": "87",
+        "num_branches": 80,
+        "num_partial_branches": 22,
+        "covered_branches": 58,
+        "missing_branches": 22,
+        "percent_branches_covered": 72.5,
+        "percent_branches_covered_display": "72"
+      },
+      "functions": [
+        {
+          "name": "_digest",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_schema",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_artifact",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_prepared",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 14.907407407407407
+        },
+        {
+          "name": "_vector",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 6.166666666666667
+        },
+        {
+          "name": "_text_window",
+          "complexity": 8,
+          "statement_coverage_fraction": 0.8125,
+          "crap": 8.421875
+        },
+        {
+          "name": "_rows",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.8409090909090909,
+          "crap": 31.156836964688203
+        },
+        {
+          "name": "materialize_cohort_asset",
+          "complexity": 30,
+          "statement_coverage_fraction": 0.8507462686567164,
+          "crap": 32.99238935640355
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/data/corpus_encoding.py",
+      "sha256": "9882ddcd8b1b80b947c0ddf5cb072856ba025e21a9c5844de8d194b9fbaf8688",
+      "coverage": {
+        "covered_lines": 93,
+        "num_statements": 126,
+        "percent_covered": 71.19565217391305,
+        "percent_covered_display": "71",
+        "missing_lines": 33,
+        "excluded_lines": 0,
+        "percent_statements_covered": 73.80952380952381,
+        "percent_statements_covered_display": "74",
+        "num_branches": 58,
+        "num_partial_branches": 16,
+        "covered_branches": 38,
+        "missing_branches": 20,
+        "percent_branches_covered": 65.51724137931035,
+        "percent_branches_covered_display": "66"
+      },
+      "functions": [
+        {
+          "name": "encode_corpus",
+          "complexity": 61,
+          "statement_coverage_fraction": 0.8085106382978723,
+          "crap": 87.12724540805027
+        },
+        {
+          "name": "main",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.0,
+          "crap": 30.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/cohort_contract.py",
+      "sha256": "c06c336abaa33fe1ae5fcc1d8b5ac5841931c67a47101ca4a781e888f0833ff4",
+      "coverage": {
+        "covered_lines": 45,
+        "num_statements": 56,
+        "percent_covered": 73.91304347826087,
+        "percent_covered_display": "74",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 80.35714285714286,
+        "percent_statements_covered_display": "80",
+        "num_branches": 36,
+        "num_partial_branches": 9,
+        "covered_branches": 23,
+        "missing_branches": 13,
+        "percent_branches_covered": 63.888888888888886,
+        "percent_branches_covered_display": "64"
+      },
+      "functions": [
+        {
+          "name": "cohort_identity",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.8461538461538461,
+          "crap": 12.524351388256713
+        },
+        {
+          "name": "validate_cohort_rows",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "validate_population",
+          "complexity": 22,
+          "statement_coverage_fraction": 0.7083333333333334,
+          "crap": 34.008969907407405
+        },
+        {
+          "name": "representation_identity",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.75,
+          "crap": 11.5625
+        },
+        {
+          "name": "representation_hash",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/corpus_inputs.py",
+      "sha256": "d9190d228f1e18b7a5d8d720b5cad74d1fa53e5ac12bc77e0d78f2630f8f77e3",
+      "coverage": {
+        "covered_lines": 187,
+        "num_statements": 218,
+        "percent_covered": 80.98159509202453,
+        "percent_covered_display": "81",
+        "missing_lines": 31,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.77981651376147,
+        "percent_statements_covered_display": "86",
+        "num_branches": 108,
+        "num_partial_branches": 29,
+        "covered_branches": 77,
+        "missing_branches": 31,
+        "percent_branches_covered": 71.29629629629629,
+        "percent_branches_covered_display": "71"
+      },
+      "functions": [
+        {
+          "name": "_unique",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 3.0416666666666665
+        },
+        {
+          "name": "_times",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_random",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_batch",
+          "complexity": 7,
+          "statement_coverage_fraction": 1.0,
+          "crap": 7.0
+        },
+        {
+          "name": "supervised_batches",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "CorpusDataset.__init__",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.88,
+          "crap": 29.354752
+        },
+        {
+          "name": "CorpusDataset._file",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 10.393643388249016
+        },
+        {
+          "name": "CorpusDataset._labels",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.7804878048780488,
+          "crap": 25.66460150026842
+        },
+        {
+          "name": "CorpusDataset._rows",
+          "complexity": 42,
+          "statement_coverage_fraction": 0.84,
+          "crap": 49.22534400000001
+        },
+        {
+          "name": "CorpusDataset.batches",
+          "complexity": 23,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 23.72565157750343
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/corpus_targets.py",
+      "sha256": "88a325b79ad3d3b04f544a566d64b1348c69663840fd4426a45f55017d71e4a0",
+      "coverage": {
+        "covered_lines": 146,
+        "num_statements": 161,
+        "percent_covered": 87.23404255319149,
+        "percent_covered_display": "87",
+        "missing_lines": 15,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.6832298136646,
+        "percent_statements_covered_display": "91",
+        "num_branches": 74,
+        "num_partial_branches": 15,
+        "covered_branches": 59,
+        "missing_branches": 15,
+        "percent_branches_covered": 79.72972972972973,
+        "percent_branches_covered_display": "80"
+      },
+      "functions": [
+        {
+          "name": "_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_path",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.75,
+          "crap": 4.25
+        },
+        {
+          "name": "_asset_sources",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 20.42105263157895
+        },
+        {
+          "name": "_label_batches",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.8928571428571429,
+          "crap": 19.444014212827987
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 57,
+          "statement_coverage_fraction": 0.9146341463414634,
+          "crap": 59.021167351025085
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 4,
+    "detected": 4,
+    "complete_mutation_score": false,
+    "cases": [
+      "future_news",
+      "stale_facts",
+      "row_cohort",
+      "population"
+    ]
+  },
+  "measurement": {
+    "scope": "all_eligible_AA_windows_before_2024",
+    "training_executed": false,
+    "companies": 1,
+    "samples": 832,
+    "context_sessions": 64,
+    "news_lookback_sessions": 5,
+    "representation_dimensions": {
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 45,
+      "macro": 420
+    },
+    "source_manifest_sha256": "8ded1c99a88f268a243e9f348580dbd022c686a3f4f7d907e3868992423802a4",
+    "macro_sha256": "73952d78a67a2976ce188e84f68fa13786c6b79479b8752e8837acff01da50a0",
+    "measurement_code_sha256": "e610fc5eed2ace1b9659c97078e83382ac0ac65607b4a38cec92e28b96fc7d22",
+    "encoders": {
+      "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+      "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+      "text_artifacts_sha256": {
+        "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+        "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+        "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+        "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+      },
+      "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+      "tokenizers_version": "0.23.2",
+      "tokenizer_class": "TokenizersBackend",
+      "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+      "image_model": "resnet18.IMAGENET1K_V1",
+      "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+      "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+      "image_policy": "224_rgb_imagenet_normalization_no_crop",
+      "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+      "torch": "2.14.0+cu130",
+      "torchvision": "0.29.0+cu130",
+      "transformers": "5.17.0",
+      "device": "cuda:0",
+      "precision": "float32",
+      "historical_simulation": false
+    },
+    "hardware": {
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "gpu_memory_mib": 8188,
+      "host_memory_mib": 30816
+    },
+    "precision": "float32_encoders_float64_text_accumulation",
+    "schedule": "three_alternating_pairs_separate_processes_cold_embedding_caches_after_warmup",
+    "concurrent_workloads": "Escritorio activo. Sin normalizaci\u00f3n ni pruebas locales simult\u00e1neas.",
+    "variants": [
+      {
+        "variant": "reference",
+        "trials": [
+          {
+            "repetition": 1,
+            "measurement_sha256": "b5c01a6308b9c4096d133e0d169b51956701e13b1f2e62b66f8cd2eea72d3412",
+            "elapsed_seconds": 16.777845315999002,
+            "process_seconds": 23.51,
+            "setup_and_warmup_seconds": 4.58925616099441,
+            "peak_rss_bytes": 2044026880,
+            "peak_cuda_allocated_bytes": 594470400,
+            "peak_cuda_reserved_bytes": 717225984,
+            "maximum_absolute_difference": {
+              "news": 0.0,
+              "charts": 0.0,
+              "fundamentals": 0.0,
+              "macro": 0.0
+            },
+            "samples_sha256": "f4de9a08f2a6135a0fb156845bd126a0664b911d4d7a36a82da3d2bde05b60b2"
+          },
+          {
+            "repetition": 2,
+            "measurement_sha256": "5748705b02cd826965af91e2200e7c7f717c579384216c520184e454fd556e7a",
+            "elapsed_seconds": 17.103381513996283,
+            "process_seconds": 23.76,
+            "setup_and_warmup_seconds": 4.567025209005806,
+            "peak_rss_bytes": 2043469824,
+            "peak_cuda_allocated_bytes": 594470400,
+            "peak_cuda_reserved_bytes": 717225984,
+            "maximum_absolute_difference": {
+              "news": 0.0,
+              "charts": 0.0,
+              "fundamentals": 0.0,
+              "macro": 0.0
+            },
+            "samples_sha256": "f4de9a08f2a6135a0fb156845bd126a0664b911d4d7a36a82da3d2bde05b60b2"
+          },
+          {
+            "repetition": 3,
+            "measurement_sha256": "ea789d77d395d6d19a2dab833766fd29128f6e371e2bafdb5f9f43dae1bada4e",
+            "elapsed_seconds": 17.08116189201246,
+            "process_seconds": 23.83,
+            "setup_and_warmup_seconds": 4.58903916599229,
+            "peak_rss_bytes": 2044252160,
+            "peak_cuda_allocated_bytes": 594470400,
+            "peak_cuda_reserved_bytes": 717225984,
+            "maximum_absolute_difference": {
+              "news": 0.0,
+              "charts": 0.0,
+              "fundamentals": 0.0,
+              "macro": 0.0
+            },
+            "samples_sha256": "f4de9a08f2a6135a0fb156845bd126a0664b911d4d7a36a82da3d2bde05b60b2"
+          }
+        ],
+        "median_seconds": 17.08116189201246,
+        "sample_std_seconds": 0.18187379923642857,
+        "samples_per_second": 48.70863031800326
+      },
+      {
+        "variant": "streamed",
+        "trials": [
+          {
+            "repetition": 1,
+            "measurement_sha256": "1843e122addbedbe3e93c31493291381028fabb317e5adba1ece508b565ff7a0",
+            "elapsed_seconds": 16.26287301199045,
+            "process_seconds": 22.88,
+            "setup_and_warmup_seconds": 4.54198492699652,
+            "peak_rss_bytes": 2044420096,
+            "peak_cuda_allocated_bytes": 594470400,
+            "peak_cuda_reserved_bytes": 717225984,
+            "maximum_absolute_difference": {
+              "news": 5.960464477539063e-08,
+              "charts": 0.0,
+              "fundamentals": 0.0,
+              "macro": 0.0
+            },
+            "samples_sha256": "63a9ca06e71447843a88e354a871baa2c2ce0487c13d077e0d0cdc19888f6fc3"
+          },
+          {
+            "repetition": 2,
+            "measurement_sha256": "03b02208e81d8fbb69343f1735d7a6052f8c6d5e227bd9c929953d7294e67c40",
+            "elapsed_seconds": 16.6528097900009,
+            "process_seconds": 23.35,
+            "setup_and_warmup_seconds": 4.622882891999325,
+            "peak_rss_bytes": 2043990016,
+            "peak_cuda_allocated_bytes": 594470400,
+            "peak_cuda_reserved_bytes": 717225984,
+            "maximum_absolute_difference": {
+              "news": 5.960464477539063e-08,
+              "charts": 0.0,
+              "fundamentals": 0.0,
+              "macro": 0.0
+            },
+            "samples_sha256": "63a9ca06e71447843a88e354a871baa2c2ce0487c13d077e0d0cdc19888f6fc3"
+          },
+          {
+            "repetition": 3,
+            "measurement_sha256": "a860855e95f3685293047cf86ab1e12d936cc92c056cb6557bb0ca93f67969b9",
+            "elapsed_seconds": 16.96604802198999,
+            "process_seconds": 23.66,
+            "setup_and_warmup_seconds": 4.596404369993252,
+            "peak_rss_bytes": 2043879424,
+            "peak_cuda_allocated_bytes": 594470400,
+            "peak_cuda_reserved_bytes": 717225984,
+            "maximum_absolute_difference": {
+              "news": 5.960464477539063e-08,
+              "charts": 0.0,
+              "fundamentals": 0.0,
+              "macro": 0.0
+            },
+            "samples_sha256": "63a9ca06e71447843a88e354a871baa2c2ce0487c13d077e0d0cdc19888f6fc3"
+          }
+        ],
+        "median_seconds": 16.6528097900009,
+        "sample_std_seconds": 0.35228397056746624,
+        "samples_per_second": 49.96153865274858
+      }
+    ],
+    "speedup": 1.0257225121413902
+  },
+  "limits": [
+    "La medici\u00f3n cubre un activo, no acredita el coste del corpus completo.",
+    "Cada proceso incluye modelos congelados y cach\u00e9 fr\u00eda. No se vac\u00eda la cach\u00e9 del sistema operativo.",
+    "El contexto macro se construye una vez, incluido en el tiempo de la nueva ruta.",
+    "No se han medido energ\u00eda, todos los contadores de hardware ni latencias de cola.",
+    "El pico RSS incluye la carga y el calentamiento, no solo los vectores materializados.",
+    "No se abre la reserva desde 2024 ni se entrenan modelos predictivos."
+  ]
+}

@@ -2,6 +2,9 @@
 
 Fecha: 18 de septiembre de 2026. Autor: Gonzalo García Lama.
 
+Este documento conserva el diseño de la preparación inicial. El estado posterior
+se recoge en el [protocolo](../research/protocol.md) y los [informes](../../reports/README.md).
+
 ## Alcance de esta entrega
 
 Preparar un repositorio privado de investigación, documentación verificable, biblioteca local de consulta y herramientas de mantenimiento. La implementación y evaluación de MARS-TITAN corresponden al trabajo posterior. No hay todavía resultados experimentales que permitan afirmar mejoras.
@@ -12,13 +15,13 @@ Se adopta un monorrepositorio con distribución Python `src`, configuración dec
 
 Los datos originales permanecen en `dataset/`, que ya existía y ocupa aproximadamente 109 GiB según `du -sh`. Las tablas derivadas irán en `data/`. Los datos y artefactos grandes no se versionan con Git. Los PDF académicos y las descargas de terceros tienen copias locales, catálogo, URL y SHA-256. La propuesta propia se conserva como antecedente.
 
-Se elige licencia MIT para el trabajo original del repositorio, sin relicenciar datos ni publicaciones ajenas. GitHub almacena código, documentos de diseño, referencias y manifiestos. El repositorio se inicia privado. Cualquier difusión de la memoria deberá considerar las condiciones de originalidad y publicación de UNIR.
+Se elige licencia MIT para el trabajo original del repositorio, sin relicenciar datos ni publicaciones ajenas. GitHub almacena código, documentos de diseño, referencias y manifiestos. En esta fase, el repositorio se inició como privado. Cualquier difusión del documento de investigación deberá revisar los derechos de las fuentes y los datos utilizados.
 
 Python cubre el desarrollo científico. CMake prepara C/C++ y CUDA optativa. No se crea una implementación nativa antes de detectar un cuello de botella. El entorno de calidad debe funcionar sin GPU. Entrenamientos y pruebas de aceleración requieren CUDA explícita.
 
 ## Entregables comprobables
 
-1. Los ocho indicadores de la rúbrica tienen peso, evidencia esperada y estado.
+1. Los objetivos de investigación tienen evidencia esperada y estado.
 2. Cada objetivo tiene criterios de aceptación, riesgos y artefactos de salida.
 3. El protocolo distingue predicción, adaptación de memoria, selección y evaluación final.
 4. Cada publicación descargada conserva origen, hash y estado de acceso. No se afirman derechos no verificados.

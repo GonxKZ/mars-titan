@@ -1,0 +1,31 @@
+{
+  "source_sha256": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+  "method": "Mutaciones individuales en memoria, sin modificar el checkout",
+  "cases": [
+    {
+      "mutation": "wrong_selected_row",
+      "test": "test_all_assets_and_last_partial_batch_are_visited_once",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "future_modality",
+      "test": "test_modality_availability_is_checked_and_retained_in_batches",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "wrong_confirmed_cursor",
+      "test": "test_confirmed_cursor_resumes_exact_remaining_order_despite_prefetch",
+      "detected": true,
+      "returncode": 1
+    },
+    {
+      "mutation": "reused_batch_buffer",
+      "test": "test_batches_own_contiguous_buffers_after_advancing_and_mutating_other_batches[7]",
+      "detected": true,
+      "returncode": 1
+    }
+  ],
+  "complete_mutation_score": false
+}

@@ -1,0 +1,288 @@
+{
+  "purpose": "strict_supervised_execution_probe_not_confirmatory_comparison",
+  "started_at_utc": "2026-09-21T03:26:23.823399+00:00",
+  "model": "gru",
+  "config": {
+    "kind": "gru",
+    "dimensions": {
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 24,
+      "macro": 420,
+      "prices": 5
+    },
+    "context": 64,
+    "hidden_size": 32,
+    "batch_size": 16,
+    "workers": 0,
+    "seed": 42,
+    "epochs": 3,
+    "precision": "float32",
+    "lr": 0.0001,
+    "optimizer": "AdamW",
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-08,
+    "weight_decay": 0.01,
+    "state_policy": "reset_each_window",
+    "cublas_workspace_config": ":4096:8"
+  },
+  "samples": {
+    "train": 50,
+    "validation": 15
+  },
+  "modalities": [
+    "prices",
+    "news",
+    "charts",
+    "fundamentals",
+    "macro"
+  ],
+  "input_hashes": {
+    "dataset/time_series/S&P500_time_series/spy.csv": "9c8046fbdff4f92091e5ac6a34f38cfe4690af545a7033901440a0dfbce835fc",
+    "data/processed/bounded-samples-20260921-v2/US/DECK/samples.parquet": "32471048a793e32e7cc029b963df0f5476ddc094c05c2c1716c06b4a52790ff8",
+    "data/processed/news-expansion-20260921/US/DECK/prices.parquet": "3f260319bc62a38bec50077d9922b79a735ce6a9faf468db4432080247eb5e8d",
+    "data/processed/bounded-samples-20260921-v2/US/DECK/manifest.json": "e31616a25f22d0b0a1bbefe4e1e09f7eb830c8d67db8de1abd35368e1cdfb997",
+    "data/processed/news-expansion-20260921/US/DECK/manifest.json": "6f3c3eeecdd150fb302316bc068d7a750eb735d6dd87ad99afba57d4cc567240",
+    "data/interim/strict-gru-20260921/targets/DECK-targets.parquet": "193aba7e2eba502b14656b379ff7cce767821017a49b463857a76aef1ef348c4",
+    "data/processed/bounded-samples-20260921-v2/US/MNST/samples.parquet": "f4b6f0791402a2861dbd085bbaecc258a19ea6752de7d84ba4d079dad4e478cc",
+    "data/processed/news-expansion-20260921/US/MNST/prices.parquet": "92fd950f453d4cfccf02197d1ccf5ac1bcbd5c89796637c9c556d412837484de",
+    "data/processed/bounded-samples-20260921-v2/US/MNST/manifest.json": "670b0b2e03626beb7adbe7d7721b4d93a8531ee54976834fa278de38fb944d50",
+    "data/processed/news-expansion-20260921/US/MNST/manifest.json": "1e0d5fc2bdc1d09c2af4a42fb3d3b2896b9eb246531582cc0cf7a6084805251d",
+    "data/interim/strict-gru-20260921/targets/MNST-targets.parquet": "5f68763afc91aa915584c29331af50d42d51f0e5597bb740684ef3437e420ad9",
+    "src/mars_titan/budget_training.py": "3611b7f66d34875ae9ead79d27eab559c8a6ab4517011d787c32a72b7de64051",
+    "src/mars_titan/data/budget_targets.py": "32cce1fcc3fd44a19b183381b0e0d8d945254d13a03e3b3515b7c6ebf49293f3",
+    "src/mars_titan/data/streaming.py": "c763ec4c422bc298b816412343f576fa71e93e6a215f104aa405fe1232b89357",
+    "src/mars_titan/profiling.py": "848773ad1956175fffaf70e788969ed58f8e33ebdea560c5337e0efd787df700",
+    "src/mars_titan/gru_probe.py": "82860516b620085c366963212e397145c84afb0e85aad837262506b79515b9de",
+    "src/mars_titan/reference_probe.py": "c8b4afc182aab0de44b6f9a1cae3e0d7801396d5ae9fb872beec3f2a12b134a7"
+  },
+  "target_audit": {
+    "market_price_audit": {
+      "rows": 6348,
+      "accepted": 4031,
+      "excluded": 2317,
+      "invalid_ohlc": 2,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 2317,
+      "invalid_date_rows": 0,
+      "first_session": "2000-01-03",
+      "last_session": "2025-03-28",
+      "corporate_action_columns": [
+        "Dividends",
+        "Stock Splits"
+      ],
+      "adjustments": "as_distributed_retrospective_adjustments_not_reconstructed",
+      "reason_counts_overlap": true
+    },
+    "assets": {
+      "DECK": {
+        "train": 25,
+        "validation": 10,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "MNST": {
+        "train": 25,
+        "validation": 5,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      }
+    }
+  },
+  "training_cutoff": "2022-12-31",
+  "validation_year": 2023,
+  "final_test_opened": false,
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "parameters": 51937,
+  "sensors_before": {
+    "available": true,
+    "reading": "NVIDIA GeForce RTX 4070 Laptop GPU, 69, 61.78 W, 6851 MiB, 100 %",
+    "error": null
+  },
+  "preparation_seconds": 2.4710135929999524,
+  "epochs": [
+    {
+      "epoch": 1,
+      "train": {
+        "samples": 50,
+        "steps": 4,
+        "elapsed_seconds": 0.3815826130003188,
+        "samples_per_second": 131.03322399010415,
+        "diagnostic_mse": 0.01742236960679293,
+        "step_p50_ms": 20.862440499968216,
+        "step_p95_ms": 276.3814673003252,
+        "step_p99_ms": 312.1694462603954,
+        "peak_vram_allocated_mib": 76.37890625,
+        "peak_vram_reserved_mib": 80.0,
+        "sampled_tree_peak": {
+          "rss_mib": 1226.2734375,
+          "pss_mib": 1143.3759765625,
+          "processes": 1
+        },
+        "ram_poll_seconds": 0.25,
+        "latency_scope": "loader_plus_transfer_plus_synchronized_gpu_step"
+      },
+      "validation": {
+        "samples": 15,
+        "steps": 1,
+        "elapsed_seconds": 0.024467483000080392,
+        "samples_per_second": 613.0585642973866,
+        "diagnostic_mse": 0.007572650443762541,
+        "step_p50_ms": 24.40172899969184,
+        "step_p95_ms": 24.40172899969184,
+        "step_p99_ms": 24.40172899969184,
+        "peak_vram_allocated_mib": 74.95458984375,
+        "peak_vram_reserved_mib": 80.0,
+        "sampled_tree_peak": {
+          "rss_mib": 1318.32421875,
+          "pss_mib": 1235.4267578125,
+          "processes": 1
+        },
+        "ram_poll_seconds": 0.25,
+        "latency_scope": "loader_plus_transfer_plus_synchronized_gpu_step"
+      },
+      "checkpoint_seconds": 0.006695637000120769,
+      "checkpoint_sha256": "3f3c8c7e8cb273c760301b135c77130aaab6419359b83eed6b9d46441a2d399d"
+    },
+    {
+      "epoch": 2,
+      "train": {
+        "samples": 50,
+        "steps": 4,
+        "elapsed_seconds": 0.08230723399992712,
+        "samples_per_second": 607.4800180995545,
+        "diagnostic_mse": 0.005958200870081782,
+        "step_p50_ms": 20.493637000527087,
+        "step_p95_ms": 22.632730900159004,
+        "step_p99_ms": 22.7516189801554,
+        "peak_vram_allocated_mib": 76.37890625,
+        "peak_vram_reserved_mib": 80.0,
+        "sampled_tree_peak": {
+          "rss_mib": 1320.75,
+          "pss_mib": 1237.8525390625,
+          "processes": 1
+        },
+        "ram_poll_seconds": 0.25,
+        "latency_scope": "loader_plus_transfer_plus_synchronized_gpu_step"
+      },
+      "validation": {
+        "samples": 15,
+        "steps": 1,
+        "elapsed_seconds": 0.024509523000233457,
+        "samples_per_second": 612.0070145737689,
+        "diagnostic_mse": 0.01778254471719265,
+        "step_p50_ms": 24.450281000099494,
+        "step_p95_ms": 24.450281000099494,
+        "step_p99_ms": 24.450281000099494,
+        "peak_vram_allocated_mib": 74.95458984375,
+        "peak_vram_reserved_mib": 80.0,
+        "sampled_tree_peak": {
+          "rss_mib": 1322.8984375,
+          "pss_mib": 1240.0009765625,
+          "processes": 1
+        },
+        "ram_poll_seconds": 0.25,
+        "latency_scope": "loader_plus_transfer_plus_synchronized_gpu_step"
+      },
+      "checkpoint_seconds": 0.009387001000504824,
+      "checkpoint_sha256": "b0c42199540e04456a5d73f4fa53893cfb353aee716f5065dc0030894198249f"
+    },
+    {
+      "epoch": 3,
+      "train": {
+        "samples": 50,
+        "steps": 4,
+        "elapsed_seconds": 0.0822307689995796,
+        "samples_per_second": 608.0449034868642,
+        "diagnostic_mse": 0.012261654930189252,
+        "step_p50_ms": 20.289962999868294,
+        "step_p95_ms": 22.857682100084276,
+        "step_p99_ms": 23.017496420116004,
+        "peak_vram_allocated_mib": 76.37890625,
+        "peak_vram_reserved_mib": 80.0,
+        "sampled_tree_peak": {
+          "rss_mib": 1324.921875,
+          "pss_mib": 1242.0244140625,
+          "processes": 1
+        },
+        "ram_poll_seconds": 0.25,
+        "latency_scope": "loader_plus_transfer_plus_synchronized_gpu_step"
+      },
+      "validation": {
+        "samples": 15,
+        "steps": 1,
+        "elapsed_seconds": 0.024656839000272157,
+        "samples_per_second": 608.350486444529,
+        "diagnostic_mse": 0.011040082201361656,
+        "step_p50_ms": 24.594921999778308,
+        "step_p95_ms": 24.594921999778308,
+        "step_p99_ms": 24.594921999778308,
+        "peak_vram_allocated_mib": 74.95458984375,
+        "peak_vram_reserved_mib": 80.0,
+        "sampled_tree_peak": {
+          "rss_mib": 1326.984375,
+          "pss_mib": 1244.0869140625,
+          "processes": 1
+        },
+        "ram_poll_seconds": 0.25,
+        "latency_scope": "loader_plus_transfer_plus_synchronized_gpu_step"
+      },
+      "checkpoint_seconds": 0.008539686999938567,
+      "checkpoint_sha256": "9d07733232069feee2c429ebf84cd7c23d0a4eef75227653283055d9fd5f88c5"
+    }
+  ],
+  "status": "completed",
+  "timing_scope": "runner_with_preparation_and_replay_without_imports_or_process_start",
+  "limitations": [
+    "small_directed_editorial_sample",
+    "fixed_epochs_no_model_selection",
+    "synchronized_step_timing",
+    "operating_system_cache_uncontrolled"
+  ],
+  "resume_check": {
+    "from_epoch": 1,
+    "exact_weights": true,
+    "elapsed_seconds": 0.4600294829997438
+  },
+  "diagnostic_row_metrics": {
+    "gru": {
+      "mae": 0.08843434392310447,
+      "mse": 0.011040245588618372
+    },
+    "zero": {
+      "mae": 0.00961996824361159,
+      "mse": 0.00015974379549416325
+    }
+  },
+  "restored_predictions_equal": true,
+  "predictions_sha256": "43e6e6c7a1c0de0e800c5f2468c7b2a4d001b1fcf1ecc1fe75b2fff3daf93cbd",
+  "sensors_after": {
+    "available": true,
+    "reading": "NVIDIA GeForce RTX 4070 Laptop GPU, 69, 65.18 W, 6995 MiB, 100 %",
+    "error": null
+  },
+  "total_seconds": 4.145293949000006,
+  "peak_rss_mib": 1338.3359375,
+  "process_memory_at_end": {
+    "rss_mib": 1339.66015625,
+    "pss_mib": 1256.7626953125,
+    "processes": 1
+  },
+  "finished_at_utc": "2026-09-21T03:26:27.989109+00:00"
+}

@@ -36,10 +36,6 @@ def main() -> int:
         elif path.suffix == ".toml" or path.name == "uv.lock":
             tomllib.loads(path.read_text(encoding="utf-8"))
 
-    source_manifest = json.loads(
-        (ROOT / "docs/academic/source-manifest.json").read_text(encoding="utf-8")
-    )
-    local_sources = {ROOT / entry["path"] for entry in source_manifest["files"]}
     for name in paths:
         if not name.endswith(".md"):
             continue
@@ -51,7 +47,7 @@ def main() -> int:
             if target.scheme or target.netloc or not target.path:
                 continue
             resolved = (path.parent / unquote(target.path)).resolve()
-            if resolved not in local_sources and not resolved.exists():
+            if not resolved.exists():
                 errors.append(f"Enlace local inexistente en {name}: {link}")
 
     reference_dir = ROOT / "docs/references"

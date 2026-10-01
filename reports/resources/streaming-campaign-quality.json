@@ -1,0 +1,503 @@
+{
+  "full_suite": {
+    "passed": 1025,
+    "skipped": 0,
+    "seconds": 65.62
+  },
+  "focused_suite": {
+    "passed": 21
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "files": {
+    "src/mars_titan/training/reference_campaign.py": {
+      "sha256": "ec59be316a6c51b8858b46222393db9567c4478b8cc02aa88a3c3f0925e4b9ae",
+      "coverage": {
+        "covered_lines": 105,
+        "num_statements": 131,
+        "percent_covered": 78.37837837837837,
+        "percent_covered_display": "78",
+        "missing_lines": 26,
+        "excluded_lines": 0,
+        "percent_statements_covered": 80.1526717557252,
+        "percent_statements_covered_display": "80",
+        "num_branches": 54,
+        "num_partial_branches": 10,
+        "covered_branches": 40,
+        "missing_branches": 14,
+        "percent_branches_covered": 74.07407407407408,
+        "percent_branches_covered_display": "74"
+      },
+      "functions": [
+        {
+          "name": "campaign_views",
+          "complexity": 12,
+          "statement_coverage_fraction": 1.0,
+          "crap": 12.0
+        },
+        {
+          "name": "_configuration",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.8,
+          "crap": 15.568
+        },
+        {
+          "name": "_check_finished",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 8.814814814814815
+        },
+        {
+          "name": "run_reference_campaign",
+          "complexity": 33,
+          "statement_coverage_fraction": 0.8271604938271605,
+          "crap": 38.622855594506255
+        },
+        {
+          "name": "main",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.0,
+          "crap": 20.0
+        }
+      ]
+    },
+    "src/mars_titan/training/reference_run.py": {
+      "sha256": "cee312cb66284c70714a7b41410795d7ddb88dc8d2a0dda95d038e53a76167f0",
+      "coverage": {
+        "covered_lines": 197,
+        "num_statements": 220,
+        "percent_covered": 84.86842105263158,
+        "percent_covered_display": "85",
+        "missing_lines": 23,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.54545454545455,
+        "percent_statements_covered_display": "90",
+        "num_branches": 84,
+        "num_partial_branches": 19,
+        "covered_branches": 61,
+        "missing_branches": 23,
+        "percent_branches_covered": 72.61904761904762,
+        "percent_branches_covered_display": "73"
+      },
+      "functions": [
+        {
+          "name": "read_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "scientific_identity",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_options",
+          "complexity": 16,
+          "statement_coverage_fraction": 0.6,
+          "crap": 32.384
+        },
+        {
+          "name": "_inputs",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_statistics",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_metrics",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.75,
+          "crap": 2.0625
+        },
+        {
+          "name": "_update",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 3.0262390670553936
+        },
+        {
+          "name": "_evaluate",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.9230769230769231,
+          "crap": 4.007282658170232
+        },
+        {
+          "name": "training_weights",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.8,
+          "crap": 7.3919999999999995
+        },
+        {
+          "name": "_parent",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.8823529411764706,
+          "crap": 12.23447995115001
+        },
+        {
+          "name": "run_reference_case",
+          "complexity": 37,
+          "statement_coverage_fraction": 0.9009009009009009,
+          "crap": 38.332332332332335
+        }
+      ]
+    }
+  },
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "campaign_identity",
+      "price_transform",
+      "exact_parent"
+    ]
+  },
+  "profile": {
+    "source_sha256": "6f1f3982ea07f5c5ba4688f2b4ae37eeb37b109c484825956b1ee4303aebff85",
+    "hardware": "name, memory.total [MiB], driver_version\nNVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 595.91.07",
+    "scope": "engineering_batch_cost_not_model_selection",
+    "training_rows": 160,
+    "validation_rows": 135,
+    "epochs": 2,
+    "groups": [
+      {
+        "model": "rnn",
+        "requested_batch_size": 16,
+        "largest_actual_batch": 16,
+        "steps_per_epoch": 10,
+        "repetitions": 3,
+        "call_seconds": [
+          1.3835887809982523,
+          1.6561660320003284,
+          1.348337891002302
+        ],
+        "mean_seconds": 1.4626975680002943,
+        "sample_std_seconds": 0.16847311724211678,
+        "peak_vram_allocated_bytes": 78666240
+      },
+      {
+        "model": "rnn",
+        "requested_batch_size": 64,
+        "largest_actual_batch": 64,
+        "steps_per_epoch": 3,
+        "repetitions": 3,
+        "call_seconds": [
+          1.366803360011545,
+          1.4269963959959568,
+          1.3166997840016847
+        ],
+        "mean_seconds": 1.3701665133363956,
+        "sample_std_seconds": 0.055225164142522855,
+        "peak_vram_allocated_bytes": 85713920
+      },
+      {
+        "model": "rnn",
+        "requested_batch_size": 128,
+        "largest_actual_batch": 128,
+        "steps_per_epoch": 2,
+        "repetitions": 3,
+        "call_seconds": [
+          1.5200808859954122,
+          1.5240065489924746,
+          1.5804852790024597
+        ],
+        "mean_seconds": 1.5415242379967822,
+        "sample_std_seconds": 0.033798294996585126,
+        "peak_vram_allocated_bytes": 95727104
+      },
+      {
+        "model": "rnn",
+        "requested_batch_size": 256,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.5036207830125932,
+          1.5754205849952996,
+          1.4753359899914358
+        ],
+        "mean_seconds": 1.518125785999776,
+        "sample_std_seconds": 0.051594843473117546,
+        "peak_vram_allocated_bytes": 99810304
+      },
+      {
+        "model": "rnn",
+        "requested_batch_size": 512,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.512312179998844,
+          1.429360349997296,
+          1.6214020739862463
+        ],
+        "mean_seconds": 1.5210248679941287,
+        "sample_std_seconds": 0.09631686839406388,
+        "peak_vram_allocated_bytes": 99810304
+      },
+      {
+        "model": "lstm",
+        "requested_batch_size": 16,
+        "largest_actual_batch": 16,
+        "steps_per_epoch": 10,
+        "repetitions": 3,
+        "call_seconds": [
+          1.555595286001335,
+          1.4612646979949204,
+          1.4748096339899348
+        ],
+        "mean_seconds": 1.4972232059953967,
+        "sample_std_seconds": 0.051003344164299615,
+        "peak_vram_allocated_bytes": 80285696
+      },
+      {
+        "model": "lstm",
+        "requested_batch_size": 64,
+        "largest_actual_batch": 64,
+        "steps_per_epoch": 3,
+        "repetitions": 3,
+        "call_seconds": [
+          1.3669561360002263,
+          1.7794768370076781,
+          1.2923634759936249
+        ],
+        "mean_seconds": 1.4795988163338432,
+        "sample_std_seconds": 0.26236641685657464,
+        "peak_vram_allocated_bytes": 92021248
+      },
+      {
+        "model": "lstm",
+        "requested_batch_size": 128,
+        "largest_actual_batch": 128,
+        "steps_per_epoch": 2,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4829987449920736,
+          1.5282738159876317,
+          1.4477095009933691
+        ],
+        "mean_seconds": 1.486327353991025,
+        "sample_std_seconds": 0.040385169815473264,
+        "peak_vram_allocated_bytes": 108401664
+      },
+      {
+        "model": "lstm",
+        "requested_batch_size": 256,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.442726428998867,
+          1.536534226994263,
+          1.4687924870086135
+        ],
+        "mean_seconds": 1.4826843810005812,
+        "sample_std_seconds": 0.04842224984652514,
+        "peak_vram_allocated_bytes": 115492864
+      },
+      {
+        "model": "lstm",
+        "requested_batch_size": 512,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4243247929989593,
+          1.5393806669890182,
+          1.397399701003451
+        ],
+        "mean_seconds": 1.453701720330476,
+        "sample_std_seconds": 0.07541154798921462,
+        "peak_vram_allocated_bytes": 115492864
+      },
+      {
+        "model": "gru",
+        "requested_batch_size": 16,
+        "largest_actual_batch": 16,
+        "steps_per_epoch": 10,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4131637279933784,
+          1.5298108759889146,
+          1.449060074010049
+        ],
+        "mean_seconds": 1.4640115593307808,
+        "sample_std_seconds": 0.05974361446083735,
+        "peak_vram_allocated_bytes": 80015360
+      },
+      {
+        "model": "gru",
+        "requested_batch_size": 64,
+        "largest_actual_batch": 64,
+        "steps_per_epoch": 3,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4897862689977046,
+          1.4977352369896835,
+          1.4073617050016765
+        ],
+        "mean_seconds": 1.4649610703296883,
+        "sample_std_seconds": 0.05004060039284796,
+        "peak_vram_allocated_bytes": 91815424
+      },
+      {
+        "model": "gru",
+        "requested_batch_size": 128,
+        "largest_actual_batch": 128,
+        "steps_per_epoch": 2,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4456794559955597,
+          1.404392883006949,
+          1.3716253569873516
+        ],
+        "mean_seconds": 1.4072325653299533,
+        "sample_std_seconds": 0.03710862759185607,
+        "peak_vram_allocated_bytes": 105634816
+      },
+      {
+        "model": "gru",
+        "requested_batch_size": 256,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4880461300053867,
+          1.9047109930106672,
+          1.559135192001122
+        ],
+        "mean_seconds": 1.650630771672392,
+        "sample_std_seconds": 0.22289231220555492,
+        "peak_vram_allocated_bytes": 112955392
+      },
+      {
+        "model": "gru",
+        "requested_batch_size": 512,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.5158932019985514,
+          1.66125849900709,
+          1.7926142429932952
+        ],
+        "mean_seconds": 1.6565886479996454,
+        "sample_std_seconds": 0.13841961300201452,
+        "peak_vram_allocated_bytes": 112955392
+      },
+      {
+        "model": "dlinear",
+        "requested_batch_size": 16,
+        "largest_actual_batch": 16,
+        "steps_per_epoch": 10,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4369838439888554,
+          1.381835113003035,
+          1.3620361590001266
+        ],
+        "mean_seconds": 1.393618371997339,
+        "sample_std_seconds": 0.03883841868160394,
+        "peak_vram_allocated_bytes": 68121600
+      },
+      {
+        "model": "dlinear",
+        "requested_batch_size": 64,
+        "largest_actual_batch": 64,
+        "steps_per_epoch": 3,
+        "repetitions": 3,
+        "call_seconds": [
+          1.8193705730082002,
+          1.4659838920051698,
+          1.4849703410000075
+        ],
+        "mean_seconds": 1.5901082686711259,
+        "sample_std_seconds": 0.1987738022321286,
+        "peak_vram_allocated_bytes": 68627456
+      },
+      {
+        "model": "dlinear",
+        "requested_batch_size": 128,
+        "largest_actual_batch": 128,
+        "steps_per_epoch": 2,
+        "repetitions": 3,
+        "call_seconds": [
+          2.7147798369987868,
+          1.5600751189922448,
+          1.521328356990125
+        ],
+        "mean_seconds": 1.9320611043270521,
+        "sample_std_seconds": 0.6781310999709768,
+        "peak_vram_allocated_bytes": 69334016
+      },
+      {
+        "model": "dlinear",
+        "requested_batch_size": 256,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.445268430004944,
+          1.5247436909994576,
+          1.4325699619948864
+        ],
+        "mean_seconds": 1.4675273609997628,
+        "sample_std_seconds": 0.04995592143506219,
+        "peak_vram_allocated_bytes": 69689344
+      },
+      {
+        "model": "dlinear",
+        "requested_batch_size": 512,
+        "largest_actual_batch": 160,
+        "steps_per_epoch": 1,
+        "repetitions": 3,
+        "call_seconds": [
+          1.4749281880067429,
+          1.421243395001511,
+          1.4217611660133116
+        ],
+        "mean_seconds": 1.4393109163405218,
+        "sample_std_seconds": 0.030846548468413896,
+        "peak_vram_allocated_bytes": 69689344
+      }
+    ],
+    "source_code": {
+      "training/reference_run.py": "cee312cb66284c70714a7b41410795d7ddb88dc8d2a0dda95d038e53a76167f0",
+      "training/reference_campaign.py": "ec59be316a6c51b8858b46222393db9567c4478b8cc02aa88a3c3f0925e4b9ae",
+      "training/checkpoints.py": "31e83647d5c5abd05f340228fe3b94f4180b7aa9d5242c225bac419f13d22501",
+      "training/corpus_inputs.py": "b5ad9f264a366150cd3af7a61a9439af306580eef96b43deab4aa77135dad16c",
+      "profiling.py": "6984b9f70c006d0cdef576d53f0b28a2e5daa736ea31e30cfa286d7f86151f75",
+      "models/baselines/dlinear.py": "3b13629594b4691a5806b1e1f7a9fa525793d0d84de4f701a1933b34741d6f32",
+      "models/baselines/campaign.py": "3aa9a95939fa59c8d11a43fe692365485f6bdfca51715e4da23c9bc702e28ba8",
+      "budget_training.py": "83258c5c18b57fc22a02abd1a5d546122194590a013ad888895a3477af1ca1e7",
+      "data/streaming.py": "c763ec4c422bc298b816412343f576fa71e93e6a215f104aa405fe1232b89357",
+      "data/batches.py": "2fabe5c9212b99d434c137c0f7099e7a41100b1d0f8e9ea154737dbe815de99f",
+      "data/storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+      "data/embeddings.py": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e"
+    },
+    "concurrent_workloads": [
+      "Campa\u00f1a de referencias anterior",
+      "Verificaci\u00f3n editorial",
+      "Pruebas locales y cobertura"
+    ],
+    "caveats": [
+      "Los lotes cambian el n\u00famero de actualizaciones y la trayectoria de ajuste.",
+      "Las solicitudes de 256 y 512 solo contienen 160 filas en esta edici\u00f3n.",
+      "No se controla la cach\u00e9 del sistema ni se mide una GPU aislada."
+    ]
+  },
+  "limits": [
+    "Cobertura de pruebas espec\u00edficas, no de todos los m\u00f3dulos del repositorio.",
+    "No es un an\u00e1lisis de mutaci\u00f3n completo ni una prueba de ausencia de errores.",
+    "El perfilado no selecciona configuraciones seg\u00fan su error predictivo.",
+    "La poblaci\u00f3n actual es una edici\u00f3n de desarrollo, no todo el corpus."
+  ]
+}

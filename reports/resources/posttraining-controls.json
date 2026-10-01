@@ -1,0 +1,161 @@
+{
+  "purpose": "matched_additional_steps_control_for_mae_posttraining",
+  "config_sha256": "1a660c030dab711bc81f2055aa4a9667dace3075ec2783adf2ef6316cdf54650",
+  "script_sha256": "0f729608d28cb90f3c68035420f1acd3c0732ae873f469fac7e49fd90e3cdb64",
+  "runs": [
+    {
+      "id": "gru-post-mse-s42",
+      "kind": "gru",
+      "seed": 42,
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "epochs": 5,
+      "stage": "post_control",
+      "parent": "gru-mse-0.001-s42",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-post-mse-s42.json",
+      "report_sha256": "cdf526c0c61e2e262bc2a6c88b76dbe0cf677a95272d2dae1359c58f63994171",
+      "metrics": {
+        "gru": {
+          "mae": 0.010543095102534776,
+          "mse": 0.0001693697591564289
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "0f82cf3e6b20e69dc2b6f567a48bb6e56b8afa1dae0591825a1a1a3011d1e4f7",
+      "runner_seconds": 3.290685650999876
+    },
+    {
+      "id": "gru-post-mse-s43",
+      "kind": "gru",
+      "seed": 43,
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "epochs": 5,
+      "stage": "post_control",
+      "parent": "gru-mse-0.001-s43",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-post-mse-s43.json",
+      "report_sha256": "0707f5b342a731fdfb66e6a819fdf0fc12eb55919d956f402f46c7f5eac4dcb9",
+      "metrics": {
+        "gru": {
+          "mae": 0.012227570574905467,
+          "mse": 0.00024298670334856208
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "6f81bb6102b2f19a58c87a2ee715f46fca556c9c7625f8df176d9c7128197505",
+      "runner_seconds": 1.9400706279993756
+    },
+    {
+      "id": "gru-post-mse-s44",
+      "kind": "gru",
+      "seed": 44,
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "epochs": 5,
+      "stage": "post_control",
+      "parent": "gru-mse-0.001-s44",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/gru-post-mse-s44.json",
+      "report_sha256": "7e73311c0accca7cdeccb43301cb4223f09a1c443ceb6bc606b18a1e1dcf30f6",
+      "metrics": {
+        "gru": {
+          "mae": 0.012207826420643867,
+          "mse": 0.00027778298594621027
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "4383b70f23d0efda4ba7ca4055708dd1382fa2a33ea273caff33c1e521da187f",
+      "runner_seconds": 1.9231841640012135
+    },
+    {
+      "id": "dlinear-post-mse-s42",
+      "kind": "dlinear",
+      "seed": 42,
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "epochs": 5,
+      "stage": "post_control",
+      "parent": "dlinear-mse-0.001-s42",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-post-mse-s42.json",
+      "report_sha256": "57613603a9123019d76ec3bfe578cd0c4fab3fb3386f727587db3be8d5d0e130",
+      "metrics": {
+        "dlinear": {
+          "mae": 0.013340049929156543,
+          "mse": 0.0002767344709213652
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "f6200eb7ebe0861c8f2dfb1024fc0d98b77720455322bb07a667858ebfaba116",
+      "runner_seconds": 2.039792606001356
+    },
+    {
+      "id": "dlinear-post-mse-s43",
+      "kind": "dlinear",
+      "seed": 43,
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "epochs": 5,
+      "stage": "post_control",
+      "parent": "dlinear-mse-0.001-s43",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-post-mse-s43.json",
+      "report_sha256": "538ed5f8c48717aa1ba5daaaef3f139f244b0f2c0a08f76ac127cadf0c21704e",
+      "metrics": {
+        "dlinear": {
+          "mae": 0.012824667130046152,
+          "mse": 0.00028462790639864757
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "e8ef39d043a25554de6163a57253b487162c2554fe24153c61620985edbe1bc0",
+      "runner_seconds": 1.9451946159988438
+    },
+    {
+      "id": "dlinear-post-mse-s44",
+      "kind": "dlinear",
+      "seed": 44,
+      "loss": "mse",
+      "learning_rate": 0.0001,
+      "epochs": 5,
+      "stage": "post_control",
+      "parent": "dlinear-mse-0.001-s44",
+      "status": "completed",
+      "report_path": "data/interim/reference-variant-reports-20260922/dlinear-post-mse-s44.json",
+      "report_sha256": "7fd478c6016c3a9268e272099c92123f65b611ec0d54892778e0bd9bb3e77c81",
+      "metrics": {
+        "dlinear": {
+          "mae": 0.012037726312780798,
+          "mse": 0.00022901938501320855
+        },
+        "zero": {
+          "mae": 0.00961996824361159,
+          "mse": 0.00015974379549416325
+        }
+      },
+      "predictions_sha256": "2dfe8b114baaff42bacf521ed2ea132c3cb74ed54913308b10e50a49b827ca1e",
+      "runner_seconds": 1.928690111000833
+    }
+  ],
+  "planned_runs": 6,
+  "final_test_opened": false,
+  "completed_runs": 6,
+  "failed_runs": 0
+}

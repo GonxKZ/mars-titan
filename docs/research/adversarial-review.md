@@ -165,7 +165,7 @@ La prueba debe separar ambos componentes. Un contraste factorial pequeño con re
 | Latencia medida con GPU libre y una única copia. | Presupuesto del doble buffer, actualizaciones y contención. Registro de antigüedad del estado, colas y degradación a K = 1 o abstención. | p50/p95/p99, memoria pico y evaluación bajo carga concurrente. |
 | Interpretar todo el dataset como entrenamiento indiscriminado. | Inventario completo y uso de todo el entrenamiento elegible de cada fold. Exclusiones justificadas y test protegido. | Auditoría de cobertura y ejecución del recorrido completo. |
 
-Estos ajustes resuelven objeciones en la especificación. No certifican una implementación ni cierran los objetivos empíricos de la [matriz de rúbrica](../academic/rubric-matrix.md).
+Estos ajustes resuelven objeciones en la especificación. No certifican una implementación ni completan los objetivos experimentales de la [hoja de ruta](roadmap.md).
 
 ## Fuentes primarias consultadas
 

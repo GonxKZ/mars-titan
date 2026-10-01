@@ -1,0 +1,4623 @@
+{
+  "schema_version": 1,
+  "baseline_revision": "4a5bc69",
+  "domain": "technical",
+  "final_test_opened": false,
+  "comparisons": [
+    {
+      "case": "episodes-representative",
+      "relative_time_change": -0.07480006044136622,
+      "exact_parity": true,
+      "baseline": {
+        "measured_at": "2026-09-24T11:27:08.150690+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "episodes",
+        "size": "representative",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+          "src/mars_titan/training/reference_run.py": "0b0120f869de608d19193f28b438277ae0c998c6bf19afcb87a02a0e256fbb87",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.7788698520162143,
+            "min": 0.7579345199919771,
+            "max": 0.7933666059980169,
+            "std": 0.01290621713440871
+          },
+          "total_process_seconds": {
+            "median": 1.9361456500191707,
+            "min": 1.8892386329825968,
+            "max": 1.9696131920209154,
+            "std": 0.030382208306101416
+          },
+          "worker_peak_rss_bytes": {
+            "median": 161206272.0,
+            "min": 161099776,
+            "max": 161415168,
+            "std": 125025.3260231702
+          }
+        },
+        "runs": [
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7579345199919771,
+            "samples_per_second": 32424.964626575053,
+            "parquet_and_input_seconds": 0.39108719999785535,
+            "simulation_seconds": 0.3563023000024259,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.00173103048291523,
+              "p95": 0.005905964542762376,
+              "p99": 0.006198768328758888
+            },
+            "io_delta": {
+              "rchar": 110053979,
+              "wchar": 0,
+              "syscr": 434,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161415168,
+            "total_process_seconds": 1.8892386329825968
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7740423739887774,
+            "samples_per_second": 31750.199764071727,
+            "parquet_and_input_seconds": 0.4051806019851938,
+            "simulation_seconds": 0.3584804710117169,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.0017972800123970956,
+              "p95": 0.005380889857769933,
+              "p99": 0.006153620842378587
+            },
+            "io_delta": {
+              "rchar": 110053979,
+              "wchar": 0,
+              "syscr": 434,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161206272,
+            "total_process_seconds": 1.9274640390067361
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7933666059980169,
+            "samples_per_second": 30976.852080992972,
+            "parquet_and_input_seconds": 0.40107717298087664,
+            "simulation_seconds": 0.38087827200070024,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.0017771970015019178,
+              "p95": 0.005302931046753649,
+              "p99": 0.006196878817281687
+            },
+            "io_delta": {
+              "rchar": 110053979,
+              "wchar": 0,
+              "syscr": 434,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161337344,
+            "total_process_seconds": 1.9534991870168597
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7817831090069376,
+            "samples_per_second": 31435.828833930347,
+            "parquet_and_input_seconds": 0.4091516679909546,
+            "simulation_seconds": 0.36126672697719187,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.001816832009353675,
+              "p95": 0.005538123543374233,
+              "p99": 0.006263881512568332
+            },
+            "io_delta": {
+              "rchar": 110053979,
+              "wchar": 0,
+              "syscr": 434,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161193984,
+            "total_process_seconds": 1.9696131920209154
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7788698520162143,
+            "samples_per_second": 31553.4102859182,
+            "parquet_and_input_seconds": 0.4036903230007738,
+            "simulation_seconds": 0.3646767289901618,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.0018133999983547255,
+              "p95": 0.005487400997662907,
+              "p99": 0.006396488684404178
+            },
+            "io_delta": {
+              "rchar": 110053979,
+              "wchar": 0,
+              "syscr": 434,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161099776,
+            "total_process_seconds": 1.9361456500191707
+          }
+        ],
+        "profile": [
+          {
+            "file": "storage.py",
+            "line": 328,
+            "function": "__call__",
+            "calls": 192,
+            "self_seconds": 0.00090373,
+            "cumulative_seconds": 0.408511618
+          },
+          {
+            "file": "storage.py",
+            "line": 271,
+            "function": "read",
+            "calls": 192,
+            "self_seconds": 0.032634925,
+            "cumulative_seconds": 0.40739600600000003
+          },
+          {
+            "file": "storage.py",
+            "line": 238,
+            "function": "_group",
+            "calls": 192,
+            "self_seconds": 0.017976046000000002,
+            "cumulative_seconds": 0.272337767
+          },
+          {
+            "file": "core.py",
+            "line": 439,
+            "function": "read_row_group",
+            "calls": 192,
+            "self_seconds": 0.130402492,
+            "cumulative_seconds": 0.131020264
+          },
+          {
+            "file": "core.py",
+            "line": 314,
+            "function": "__init__",
+            "calls": 193,
+            "self_seconds": 0.048268739000000005,
+            "cumulative_seconds": 0.057982713000000005
+          },
+          {
+            "file": "storage.py",
+            "line": 59,
+            "function": "_verified",
+            "calls": 12,
+            "self_seconds": 8.2786e-05,
+            "cumulative_seconds": 0.045258582000000006
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 15,
+            "self_seconds": 0.0009446290000000001,
+            "cumulative_seconds": 0.045048547
+          },
+          {
+            "file": "storage.py",
+            "line": 55,
+            "function": "read_tape",
+            "calls": 1,
+            "self_seconds": 0.001672089,
+            "cumulative_seconds": 0.008434594
+          },
+          {
+            "file": "core.py",
+            "line": 352,
+            "function": "_build_nested_paths",
+            "calls": 193,
+            "self_seconds": 0.004056570000000001,
+            "cumulative_seconds": 0.004955391
+          },
+          {
+            "file": "core.py",
+            "line": 599,
+            "function": "read",
+            "calls": 1,
+            "self_seconds": 0.002752755,
+            "cumulative_seconds": 0.0027563210000000004
+          },
+          {
+            "file": "core.py",
+            "line": 349,
+            "function": "__exit__",
+            "calls": 192,
+            "self_seconds": 0.000107261,
+            "cumulative_seconds": 0.000735128
+          },
+          {
+            "file": "core.py",
+            "line": 431,
+            "function": "close",
+            "calls": 192,
+            "self_seconds": 0.000627867,
+            "cumulative_seconds": 0.000627867
+          },
+          {
+            "file": "core.py",
+            "line": 683,
+            "function": "_get_column_indices",
+            "calls": 193,
+            "self_seconds": 0.000434208,
+            "cumulative_seconds": 0.000621338
+          },
+          {
+            "file": "storage.py",
+            "line": 194,
+            "function": "__init__",
+            "calls": 2,
+            "self_seconds": 3.1501e-05,
+            "cumulative_seconds": 0.000528947
+          },
+          {
+            "file": "storage.py",
+            "line": 235,
+            "function": "__len__",
+            "calls": 385,
+            "self_seconds": 8.387600000000001e-05,
+            "cumulative_seconds": 0.00011809300000000001
+          },
+          {
+            "file": "core.py",
+            "line": 371,
+            "function": "metadata",
+            "calls": 207,
+            "self_seconds": 4.1569e-05,
+            "cumulative_seconds": 4.1569e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 343,
+            "function": "__exit__",
+            "calls": 2,
+            "self_seconds": 1.412e-06,
+            "cumulative_seconds": 2.3684000000000002e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 335,
+            "function": "close",
+            "calls": 2,
+            "self_seconds": 2.5350000000000003e-06,
+            "cumulative_seconds": 2.2272000000000003e-05
+          },
+          {
+            "file": "core.py",
+            "line": 346,
+            "function": "__enter__",
+            "calls": 192,
+            "self_seconds": 1.8977e-05,
+            "cumulative_seconds": 1.8977e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 81,
+            "function": "<genexpr>",
+            "calls": 14,
+            "self_seconds": 5.05e-06,
+            "cumulative_seconds": 6.041e-06
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      },
+      "optimized": {
+        "measured_at": "2026-09-24T11:28:02.957196+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "episodes",
+        "size": "representative",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+          "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.7206103400094435,
+            "min": 0.7070671880210284,
+            "max": 0.7418918500188738,
+            "std": 0.015209878822984765
+          },
+          "total_process_seconds": {
+            "median": 1.8203839059860911,
+            "min": 1.7884218789986335,
+            "max": 1.8558269919885788,
+            "std": 0.030783030185717045
+          },
+          "worker_peak_rss_bytes": {
+            "median": 161464320.0,
+            "min": 160923648,
+            "max": 161865728,
+            "std": 347412.27943755814
+          }
+        },
+        "runs": [
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7380779800005257,
+            "samples_per_second": 33297.29468420464,
+            "parquet_and_input_seconds": 0.3438906100054737,
+            "simulation_seconds": 0.38225951700587757,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.001429501993698068,
+              "p95": 0.0054120017535751585,
+              "p99": 0.006491218849841972
+            },
+            "io_delta": {
+              "rchar": 98257499,
+              "wchar": 0,
+              "syscr": 254,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161533952,
+            "total_process_seconds": 1.8558269919885788
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7070671880210284,
+            "samples_per_second": 34757.6587011263,
+            "parquet_and_input_seconds": 0.33926534801139496,
+            "simulation_seconds": 0.3576878320018295,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.0014203699975041673,
+              "p95": 0.005633355118334285,
+              "p99": 0.0062601423356682066
+            },
+            "io_delta": {
+              "rchar": 98257499,
+              "wchar": 0,
+              "syscr": 254,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161267712,
+            "total_process_seconds": 1.7884218789986335
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7418918500188738,
+            "samples_per_second": 33126.12208824613,
+            "parquet_and_input_seconds": 0.3693489220167976,
+            "simulation_seconds": 0.3637848639918957,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.0014405924885068089,
+              "p95": 0.005963767103094129,
+              "p99": 0.006831838081707247
+            },
+            "io_delta": {
+              "rchar": 98257499,
+              "wchar": 0,
+              "syscr": 254,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 160923648,
+            "total_process_seconds": 1.8499603089876473
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7135533610126004,
+            "samples_per_second": 34441.71290164524,
+            "parquet_and_input_seconds": 0.33736791502451524,
+            "simulation_seconds": 0.36635965199093334,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.001416668004821986,
+              "p95": 0.00597258256166242,
+              "p99": 0.006456671347259544
+            },
+            "io_delta": {
+              "rchar": 98257499,
+              "wchar": 0,
+              "syscr": 254,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161464320,
+            "total_process_seconds": 1.8203839059860911
+          },
+          {
+            "workers": 1,
+            "samples": 24576,
+            "cohort_count": 192,
+            "pipeline_seconds": 0.7206103400094435,
+            "samples_per_second": 34104.42320280602,
+            "parquet_and_input_seconds": 0.3427625030162744,
+            "simulation_seconds": 0.3679048119811341,
+            "decoded_input_bytes": 58392576,
+            "cohort_latency_seconds": {
+              "p50": 0.001437587503460236,
+              "p95": 0.005909144598990678,
+              "p99": 0.006368192770169117
+            },
+            "io_delta": {
+              "rchar": 98257499,
+              "wchar": 0,
+              "syscr": 254,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "dc7bf48390705402c3c79f7f2e7bc568b3a21dd83febde60cf7a6473c381246b",
+            "financial_validation": {
+              "net_return": -0.04377205092400205,
+              "max_drawdown": 0.07542503296029202,
+              "costs": 1214.2602019292108,
+              "turnover": 121.42602019292141,
+              "steps": 192,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 161865728,
+            "total_process_seconds": 1.7949023160035722
+          }
+        ],
+        "profile": [
+          {
+            "file": "storage.py",
+            "line": 334,
+            "function": "__call__",
+            "calls": 192,
+            "self_seconds": 0.0009278110000000001,
+            "cumulative_seconds": 0.351283479
+          },
+          {
+            "file": "storage.py",
+            "line": 277,
+            "function": "read",
+            "calls": 192,
+            "self_seconds": 0.019417306000000002,
+            "cumulative_seconds": 0.350165968
+          },
+          {
+            "file": "storage.py",
+            "line": 239,
+            "function": "_group",
+            "calls": 192,
+            "self_seconds": 0.01963094,
+            "cumulative_seconds": 0.227061283
+          },
+          {
+            "file": "core.py",
+            "line": 439,
+            "function": "read_row_group",
+            "calls": 192,
+            "self_seconds": 0.138946603,
+            "cumulative_seconds": 0.13959406800000002
+          },
+          {
+            "file": "storage.py",
+            "line": 59,
+            "function": "_verified",
+            "calls": 12,
+            "self_seconds": 8.9509e-05,
+            "cumulative_seconds": 0.043794449000000006
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 15,
+            "self_seconds": 0.0011950490000000001,
+            "cumulative_seconds": 0.043552522
+          },
+          {
+            "file": "storage.py",
+            "line": 55,
+            "function": "read_tape",
+            "calls": 1,
+            "self_seconds": 0.0018082940000000002,
+            "cumulative_seconds": 0.008483667
+          },
+          {
+            "file": "core.py",
+            "line": 314,
+            "function": "__init__",
+            "calls": 13,
+            "self_seconds": 0.00364357,
+            "cumulative_seconds": 0.0047259780000000005
+          },
+          {
+            "file": "core.py",
+            "line": 599,
+            "function": "read",
+            "calls": 1,
+            "self_seconds": 0.0025748200000000002,
+            "cumulative_seconds": 0.0025782160000000004
+          },
+          {
+            "file": "core.py",
+            "line": 683,
+            "function": "_get_column_indices",
+            "calls": 193,
+            "self_seconds": 0.00042955300000000005,
+            "cumulative_seconds": 0.0006508610000000001
+          },
+          {
+            "file": "storage.py",
+            "line": 194,
+            "function": "__init__",
+            "calls": 2,
+            "self_seconds": 3.1215000000000005e-05,
+            "cumulative_seconds": 0.000545708
+          },
+          {
+            "file": "core.py",
+            "line": 352,
+            "function": "_build_nested_paths",
+            "calls": 13,
+            "self_seconds": 0.00031579400000000005,
+            "cumulative_seconds": 0.000379193
+          },
+          {
+            "file": "storage.py",
+            "line": 352,
+            "function": "__exit__",
+            "calls": 2,
+            "self_seconds": 1.7440000000000002e-06,
+            "cumulative_seconds": 0.000210757
+          },
+          {
+            "file": "storage.py",
+            "line": 341,
+            "function": "close",
+            "calls": 2,
+            "self_seconds": 0.00018312500000000002,
+            "cumulative_seconds": 0.00020901300000000003
+          },
+          {
+            "file": "storage.py",
+            "line": 236,
+            "function": "__len__",
+            "calls": 385,
+            "self_seconds": 8.4527e-05,
+            "cumulative_seconds": 0.000119072
+          },
+          {
+            "file": "core.py",
+            "line": 371,
+            "function": "metadata",
+            "calls": 207,
+            "self_seconds": 7.979200000000001e-05,
+            "cumulative_seconds": 7.979200000000001e-05
+          },
+          {
+            "file": "core.py",
+            "line": 431,
+            "function": "close",
+            "calls": 12,
+            "self_seconds": 6.913000000000001e-05,
+            "cumulative_seconds": 6.913000000000001e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 81,
+            "function": "<genexpr>",
+            "calls": 14,
+            "self_seconds": 5.772e-06,
+            "cumulative_seconds": 6.793e-06
+          },
+          {
+            "file": "core.py",
+            "line": 378,
+            "function": "schema",
+            "calls": 1,
+            "self_seconds": 1.393e-06,
+            "cumulative_seconds": 1.503e-06
+          },
+          {
+            "file": "core.py",
+            "line": 411,
+            "function": "num_row_groups",
+            "calls": 1,
+            "self_seconds": 1.232e-06,
+            "cumulative_seconds": 1.232e-06
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      }
+    },
+    {
+      "case": "episodes-small",
+      "relative_time_change": -0.32726099055125735,
+      "exact_parity": true,
+      "baseline": {
+        "measured_at": "2026-09-24T11:26:36.731316+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "episodes",
+        "size": "small",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+          "src/mars_titan/training/reference_run.py": "0b0120f869de608d19193f28b438277ae0c998c6bf19afcb87a02a0e256fbb87",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.03055899200262502,
+            "min": 0.029811294021783397,
+            "max": 0.034771655016811565,
+            "std": 0.002042190329091947
+          },
+          "total_process_seconds": {
+            "median": 0.4635383660206571,
+            "min": 0.44165065500419587,
+            "max": 0.48913937000907026,
+            "std": 0.017923858845161476
+          },
+          "worker_peak_rss_bytes": {
+            "median": 136175616.0,
+            "min": 136003584,
+            "max": 136224768,
+            "std": 87581.63708906109
+          }
+        },
+        "runs": [
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.03055899200262502,
+            "samples_per_second": 4188.619833697551,
+            "parquet_and_input_seconds": 0.0258251870109234,
+            "simulation_seconds": 0.0037703309790231287,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0007800890016369522,
+              "p95": 0.0008932707569329068,
+              "p99": 0.0011275852442486215
+            },
+            "io_delta": {
+              "rchar": 2438778,
+              "wchar": 0,
+              "syscr": 84,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136003584,
+            "total_process_seconds": 0.45910731199546717
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.030089136998867616,
+            "samples_per_second": 4254.026960122425,
+            "parquet_and_input_seconds": 0.025291811994975433,
+            "simulation_seconds": 0.0038605410081800073,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0007805299974279478,
+              "p95": 0.0008762682075030171,
+              "p99": 0.0009740249678725379
+            },
+            "io_delta": {
+              "rchar": 2438770,
+              "wchar": 0,
+              "syscr": 84,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136224768,
+            "total_process_seconds": 0.44165065500419587
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.03201354100019671,
+            "samples_per_second": 3998.3080909173245,
+            "parquet_and_input_seconds": 0.027384373010136187,
+            "simulation_seconds": 0.003752877004444599,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0007727204938419163,
+              "p95": 0.001297755546693224,
+              "p99": 0.0017225692520150917
+            },
+            "io_delta": {
+              "rchar": 2438770,
+              "wchar": 0,
+              "syscr": 84,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136200192,
+            "total_process_seconds": 0.4635383660206571
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.034771655016811565,
+            "samples_per_second": 3681.159264294839,
+            "parquet_and_input_seconds": 0.029501609998987988,
+            "simulation_seconds": 0.0043592689908109605,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0008405980042880401,
+              "p95": 0.001224198292766232,
+              "p99": 0.0013913083219085822
+            },
+            "io_delta": {
+              "rchar": 2438770,
+              "wchar": 0,
+              "syscr": 84,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136175616,
+            "total_process_seconds": 0.48913937000907026
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.029811294021783397,
+            "samples_per_second": 4293.674736375723,
+            "parquet_and_input_seconds": 0.0251244270184543,
+            "simulation_seconds": 0.003792882984271273,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0007505285029765218,
+              "p95": 0.0008757097093621269,
+              "p99": 0.0010580529269645924
+            },
+            "io_delta": {
+              "rchar": 2438770,
+              "wchar": 0,
+              "syscr": 84,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136126464,
+            "total_process_seconds": 0.4761588339752052
+          }
+        ],
+        "profile": [
+          {
+            "file": "storage.py",
+            "line": 328,
+            "function": "__call__",
+            "calls": 32,
+            "self_seconds": 0.000135899,
+            "cumulative_seconds": 0.033894884
+          },
+          {
+            "file": "storage.py",
+            "line": 271,
+            "function": "read",
+            "calls": 32,
+            "self_seconds": 0.004941224,
+            "cumulative_seconds": 0.033727828
+          },
+          {
+            "file": "storage.py",
+            "line": 238,
+            "function": "_group",
+            "calls": 32,
+            "self_seconds": 0.0029206780000000003,
+            "cumulative_seconds": 0.021947743000000002
+          },
+          {
+            "file": "core.py",
+            "line": 314,
+            "function": "__init__",
+            "calls": 33,
+            "self_seconds": 0.008217594,
+            "cumulative_seconds": 0.009758198000000001
+          },
+          {
+            "file": "core.py",
+            "line": 439,
+            "function": "read_row_group",
+            "calls": 32,
+            "self_seconds": 0.005440199000000001,
+            "cumulative_seconds": 0.005531035
+          },
+          {
+            "file": "storage.py",
+            "line": 55,
+            "function": "read_tape",
+            "calls": 1,
+            "self_seconds": 0.000121169,
+            "cumulative_seconds": 0.000892511
+          },
+          {
+            "file": "core.py",
+            "line": 352,
+            "function": "_build_nested_paths",
+            "calls": 33,
+            "self_seconds": 0.0006288040000000001,
+            "cumulative_seconds": 0.000745016
+          },
+          {
+            "file": "storage.py",
+            "line": 194,
+            "function": "__init__",
+            "calls": 2,
+            "self_seconds": 2.6361e-05,
+            "cumulative_seconds": 0.000458723
+          },
+          {
+            "file": "storage.py",
+            "line": 59,
+            "function": "_verified",
+            "calls": 2,
+            "self_seconds": 8.699000000000001e-06,
+            "cumulative_seconds": 0.00038747
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 5,
+            "self_seconds": 1.8454e-05,
+            "cumulative_seconds": 0.000294704
+          },
+          {
+            "file": "core.py",
+            "line": 599,
+            "function": "read",
+            "calls": 1,
+            "self_seconds": 0.000201329,
+            "cumulative_seconds": 0.000204615
+          },
+          {
+            "file": "core.py",
+            "line": 349,
+            "function": "__exit__",
+            "calls": 32,
+            "self_seconds": 1.8493e-05,
+            "cumulative_seconds": 0.00011401
+          },
+          {
+            "file": "core.py",
+            "line": 431,
+            "function": "close",
+            "calls": 32,
+            "self_seconds": 9.5517e-05,
+            "cumulative_seconds": 9.5517e-05
+          },
+          {
+            "file": "core.py",
+            "line": 683,
+            "function": "_get_column_indices",
+            "calls": 33,
+            "self_seconds": 6.2895e-05,
+            "cumulative_seconds": 9.4122e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 343,
+            "function": "__exit__",
+            "calls": 2,
+            "self_seconds": 1.7330000000000002e-06,
+            "cumulative_seconds": 2.3243e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 335,
+            "function": "close",
+            "calls": 2,
+            "self_seconds": 2.404e-06,
+            "cumulative_seconds": 2.1510000000000002e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 235,
+            "function": "__len__",
+            "calls": 65,
+            "self_seconds": 1.5043000000000001e-05,
+            "cumulative_seconds": 2.0700000000000002e-05
+          },
+          {
+            "file": "core.py",
+            "line": 371,
+            "function": "metadata",
+            "calls": 37,
+            "self_seconds": 6.479e-06,
+            "cumulative_seconds": 6.479e-06
+          },
+          {
+            "file": "core.py",
+            "line": 346,
+            "function": "__enter__",
+            "calls": 32,
+            "self_seconds": 3.2170000000000003e-06,
+            "cumulative_seconds": 3.2170000000000003e-06
+          },
+          {
+            "file": "storage.py",
+            "line": 81,
+            "function": "<genexpr>",
+            "calls": 4,
+            "self_seconds": 2.064e-06,
+            "cumulative_seconds": 2.346e-06
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      },
+      "optimized": {
+        "measured_at": "2026-09-24T11:27:32.188396+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "episodes",
+        "size": "small",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+          "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.020558226009598002,
+            "min": 0.019988282991107553,
+            "max": 0.021386867010733113,
+            "std": 0.0005326905841345301
+          },
+          "total_process_seconds": {
+            "median": 0.4350781850225758,
+            "min": 0.4312228549970314,
+            "max": 0.4379046580288559,
+            "std": 0.00270263113034315
+          },
+          "worker_peak_rss_bytes": {
+            "median": 136355840.0,
+            "min": 136249344,
+            "max": 136396800,
+            "std": 59821.23513268512
+          }
+        },
+        "runs": [
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.021386867010733113,
+            "samples_per_second": 5984.981340921161,
+            "parquet_and_input_seconds": 0.016464115993585438,
+            "simulation_seconds": 0.003999372012913227,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.00043108200770802796,
+              "p95": 0.0009152510974672622,
+              "p99": 0.001526458188891412
+            },
+            "io_delta": {
+              "rchar": 472698,
+              "wchar": 0,
+              "syscr": 54,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136396800,
+            "total_process_seconds": 0.43315510399406776
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.020244165003532544,
+            "samples_per_second": 6322.809559083538,
+            "parquet_and_input_seconds": 0.015501133020734414,
+            "simulation_seconds": 0.0038425060047302395,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0004352294927230105,
+              "p95": 0.0007281018566573035,
+              "p99": 0.0010750512531376444
+            },
+            "io_delta": {
+              "rchar": 472690,
+              "wchar": 0,
+              "syscr": 54,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136392704,
+            "total_process_seconds": 0.4312228549970314
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.019988282991107553,
+            "samples_per_second": 6403.7516407459825,
+            "parquet_and_input_seconds": 0.015334739000536501,
+            "simulation_seconds": 0.0037564040103461593,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.00042472948553040624,
+              "p95": 0.0007504150024033147,
+              "p99": 0.0010662913697888144
+            },
+            "io_delta": {
+              "rchar": 472690,
+              "wchar": 0,
+              "syscr": 54,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136355840,
+            "total_process_seconds": 0.4379046580288559
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.020558226009598002,
+            "samples_per_second": 6226.218154243501,
+            "parquet_and_input_seconds": 0.015888051013462245,
+            "simulation_seconds": 0.0037270090251695365,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.0004308064962970093,
+              "p95": 0.0009806155823753214,
+              "p99": 0.0010877251625061035
+            },
+            "io_delta": {
+              "rchar": 472690,
+              "wchar": 0,
+              "syscr": 54,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136335360,
+            "total_process_seconds": 0.43680103999213316
+          },
+          {
+            "workers": 1,
+            "samples": 128,
+            "cohort_count": 32,
+            "pipeline_seconds": 0.020723577996250242,
+            "samples_per_second": 6176.539592881139,
+            "parquet_and_input_seconds": 0.016005141980713233,
+            "simulation_seconds": 0.0038148339954204857,
+            "decoded_input_bytes": 160768,
+            "cohort_latency_seconds": {
+              "p50": 0.00045700099144596606,
+              "p95": 0.0007508485607104372,
+              "p99": 0.001086507820582483
+            },
+            "io_delta": {
+              "rchar": 472690,
+              "wchar": 0,
+              "syscr": 54,
+              "syscw": 0,
+              "read_bytes": 0,
+              "write_bytes": 0,
+              "cancelled_write_bytes": 0
+            },
+            "input_sha256": "8ee3eacac31b02d7cd93ce89a6e4604bcb8a45fd157023afe8586ebcf83b51ad",
+            "financial_validation": {
+              "net_return": 0.021681380353811175,
+              "max_drawdown": 0.008672500407545192,
+              "costs": 221.38152709946309,
+              "turnover": 22.13815270994631,
+              "steps": 32,
+              "completed": true,
+              "invalid_reason": null
+            },
+            "peak_vram_bytes": null,
+            "cpu_gpu_transfer_bytes": null,
+            "energy_joules": null,
+            "cost_currency": null,
+            "worker_peak_rss_bytes": 136249344,
+            "total_process_seconds": 0.4350781850225758
+          }
+        ],
+        "profile": [
+          {
+            "file": "storage.py",
+            "line": 334,
+            "function": "__call__",
+            "calls": 32,
+            "self_seconds": 0.000104228,
+            "cumulative_seconds": 0.019183778000000002
+          },
+          {
+            "file": "storage.py",
+            "line": 277,
+            "function": "read",
+            "calls": 32,
+            "self_seconds": 0.002149516,
+            "cumulative_seconds": 0.019057973000000002
+          },
+          {
+            "file": "storage.py",
+            "line": 239,
+            "function": "_group",
+            "calls": 32,
+            "self_seconds": 0.002725246,
+            "cumulative_seconds": 0.011436694
+          },
+          {
+            "file": "core.py",
+            "line": 439,
+            "function": "read_row_group",
+            "calls": 32,
+            "self_seconds": 0.004646051,
+            "cumulative_seconds": 0.004743935
+          },
+          {
+            "file": "storage.py",
+            "line": 55,
+            "function": "read_tape",
+            "calls": 1,
+            "self_seconds": 0.00011270400000000001,
+            "cumulative_seconds": 0.0009031610000000001
+          },
+          {
+            "file": "core.py",
+            "line": 314,
+            "function": "__init__",
+            "calls": 3,
+            "self_seconds": 0.0006988760000000001,
+            "cumulative_seconds": 0.000883724
+          },
+          {
+            "file": "storage.py",
+            "line": 194,
+            "function": "__init__",
+            "calls": 2,
+            "self_seconds": 2.6578000000000002e-05,
+            "cumulative_seconds": 0.00048084600000000005
+          },
+          {
+            "file": "storage.py",
+            "line": 59,
+            "function": "_verified",
+            "calls": 2,
+            "self_seconds": 8.461e-06,
+            "cumulative_seconds": 0.000388031
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 5,
+            "self_seconds": 2.2003000000000003e-05,
+            "cumulative_seconds": 0.00030748900000000004
+          },
+          {
+            "file": "core.py",
+            "line": 599,
+            "function": "read",
+            "calls": 1,
+            "self_seconds": 0.000197752,
+            "cumulative_seconds": 0.00020090800000000002
+          },
+          {
+            "file": "storage.py",
+            "line": 352,
+            "function": "__exit__",
+            "calls": 2,
+            "self_seconds": 1.813e-06,
+            "cumulative_seconds": 0.000146155
+          },
+          {
+            "file": "storage.py",
+            "line": 341,
+            "function": "close",
+            "calls": 2,
+            "self_seconds": 0.00012785000000000002,
+            "cumulative_seconds": 0.00014434200000000002
+          },
+          {
+            "file": "core.py",
+            "line": 683,
+            "function": "_get_column_indices",
+            "calls": 33,
+            "self_seconds": 6.710800000000001e-05,
+            "cumulative_seconds": 0.00010104000000000001
+          },
+          {
+            "file": "core.py",
+            "line": 352,
+            "function": "_build_nested_paths",
+            "calls": 3,
+            "self_seconds": 6.275000000000001e-05,
+            "cumulative_seconds": 7.0733e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 236,
+            "function": "__len__",
+            "calls": 65,
+            "self_seconds": 1.3557e-05,
+            "cumulative_seconds": 1.8785e-05
+          },
+          {
+            "file": "core.py",
+            "line": 371,
+            "function": "metadata",
+            "calls": 37,
+            "self_seconds": 8.346000000000001e-06,
+            "cumulative_seconds": 8.346000000000001e-06
+          },
+          {
+            "file": "core.py",
+            "line": 431,
+            "function": "close",
+            "calls": 2,
+            "self_seconds": 7.223e-06,
+            "cumulative_seconds": 7.223e-06
+          },
+          {
+            "file": "storage.py",
+            "line": 81,
+            "function": "<genexpr>",
+            "calls": 4,
+            "self_seconds": 2.5340000000000002e-06,
+            "cumulative_seconds": 2.886e-06
+          },
+          {
+            "file": "core.py",
+            "line": 378,
+            "function": "schema",
+            "calls": 1,
+            "self_seconds": 1.223e-06,
+            "cumulative_seconds": 1.4030000000000002e-06
+          },
+          {
+            "file": "core.py",
+            "line": 411,
+            "function": "num_row_groups",
+            "calls": 1,
+            "self_seconds": 9.02e-07,
+            "cumulative_seconds": 9.02e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      }
+    },
+    {
+      "case": "evaluation-representative-persisted",
+      "relative_time_change": 0.004838202108829792,
+      "exact_parity": true,
+      "baseline": {
+        "measured_at": "2026-09-24T11:27:29.286187+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "representative",
+        "persist": true,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+          "src/mars_titan/training/reference_run.py": "0b0120f869de608d19193f28b438277ae0c998c6bf19afcb87a02a0e256fbb87",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.0953835730033461,
+            "min": 0.0939697099965997,
+            "max": 0.09974076799699105,
+            "std": 0.0025803640265906437
+          },
+          "total_process_seconds": {
+            "median": 1.7580190839944407,
+            "min": 1.7178192459978163,
+            "max": 1.764701152977068,
+            "std": 0.020655072813630597
+          },
+          "worker_peak_rss_bytes": {
+            "median": 627208192.0,
+            "min": 627122176,
+            "max": 627269632,
+            "std": 56977.112036325605
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.0945458649948705,
+            "samples": 65536,
+            "samples_per_second": 693166.2215323282,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627179520,
+            "total_process_seconds": 1.7178192459978163
+          },
+          {
+            "pipeline_seconds": 0.0953835730033461,
+            "samples": 65536,
+            "samples_per_second": 687078.4762665681,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627240960,
+            "total_process_seconds": 1.7312649759987835
+          },
+          {
+            "pipeline_seconds": 0.09866125497501343,
+            "samples": 65536,
+            "samples_per_second": 664252.6492957888,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627269632,
+            "total_process_seconds": 1.764701152977068
+          },
+          {
+            "pipeline_seconds": 0.09974076799699105,
+            "samples": 65536,
+            "samples_per_second": 657063.3184013289,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627122176,
+            "total_process_seconds": 1.7602081280201674
+          },
+          {
+            "pipeline_seconds": 0.0939697099965997,
+            "samples": 65536,
+            "samples_per_second": 697416.2206350474,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627208192,
+            "total_process_seconds": 1.7580190839944407
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 129,
+            "self_seconds": 0.033288990000000004,
+            "cumulative_seconds": 0.261166821
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 128,
+            "self_seconds": 0.045424595000000005,
+            "cumulative_seconds": 0.059981458
+          },
+          {
+            "file": "core.py",
+            "line": 1191,
+            "function": "write_table",
+            "calls": 128,
+            "self_seconds": 0.030919528,
+            "cumulative_seconds": 0.030919528
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 0.00017952000000000002,
+            "cumulative_seconds": 0.002271277
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 9.249e-06,
+            "cumulative_seconds": 0.001780192
+          },
+          {
+            "file": "core.py",
+            "line": 1218,
+            "function": "close",
+            "calls": 1,
+            "self_seconds": 0.0007657520000000001,
+            "cumulative_seconds": 0.0007657520000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 4096,
+            "self_seconds": 0.00051564,
+            "cumulative_seconds": 0.0007432820000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.00043750900000000004,
+            "cumulative_seconds": 0.000597734
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.00040474,
+            "cumulative_seconds": 0.000561043
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 1,
+            "self_seconds": 1.0838e-05,
+            "cumulative_seconds": 0.000422686
+          },
+          {
+            "file": "core.py",
+            "line": 1063,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 0.000138891,
+            "cumulative_seconds": 0.000189587
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 1152,
+            "self_seconds": 0.000160163,
+            "cumulative_seconds": 0.000160163
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.00012857300000000002,
+            "cumulative_seconds": 0.00012857300000000002
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 9.5648e-05,
+            "cumulative_seconds": 9.5648e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 4.4795e-05,
+            "cumulative_seconds": 4.4795e-05
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 3.6560000000000002e-06,
+            "cumulative_seconds": 4.388e-06
+          },
+          {
+            "file": "core.py",
+            "line": 1144,
+            "function": "__del__",
+            "calls": 1,
+            "self_seconds": 1.804e-06,
+            "cumulative_seconds": 2.144e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 8.720000000000001e-07,
+            "cumulative_seconds": 8.720000000000001e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      },
+      "optimized": {
+        "measured_at": "2026-09-24T11:28:23.772254+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "representative",
+        "persist": true,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+          "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.09584505800739862,
+            "min": 0.09533142999862321,
+            "max": 0.09936133900191635,
+            "std": 0.001692507190210726
+          },
+          "total_process_seconds": {
+            "median": 1.7457162769860588,
+            "min": 1.7300379140069708,
+            "max": 1.7511408040008973,
+            "std": 0.008319031413629972
+          },
+          "worker_peak_rss_bytes": {
+            "median": 627240960.0,
+            "min": 627150848,
+            "max": 627331072,
+            "std": 64373.69301197501
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.09533142999862321,
+            "samples": 65536,
+            "samples_per_second": 687454.2844993145,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627150848,
+            "total_process_seconds": 1.7457162769860588
+          },
+          {
+            "pipeline_seconds": 0.09702739398926497,
+            "samples": 65536,
+            "samples_per_second": 675438.1139748106,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627240960,
+            "total_process_seconds": 1.749156905018026
+          },
+          {
+            "pipeline_seconds": 0.09936133900191635,
+            "samples": 65536,
+            "samples_per_second": 659572.4318765071,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627331072,
+            "total_process_seconds": 1.7427112430159468
+          },
+          {
+            "pipeline_seconds": 0.09538677401724271,
+            "samples": 65536,
+            "samples_per_second": 687055.4191103402,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627240960,
+            "total_process_seconds": 1.7300379140069708
+          },
+          {
+            "pipeline_seconds": 0.09584505800739862,
+            "samples": 65536,
+            "samples_per_second": 683770.2575644646,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": "1babfeaf7a7c3df63cb170ecd6a6395c980a06c4485aa2cb2268abc4b9c21d61",
+            "prediction_bytes": 627023,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 627261440,
+            "total_process_seconds": 1.7511408040008973
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 129,
+            "self_seconds": 0.031628617000000005,
+            "cumulative_seconds": 0.253297147
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 128,
+            "self_seconds": 0.044567468000000006,
+            "cumulative_seconds": 0.058856629
+          },
+          {
+            "file": "core.py",
+            "line": 1191,
+            "function": "write_table",
+            "calls": 128,
+            "self_seconds": 0.029870479000000002,
+            "cumulative_seconds": 0.029870479000000002
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 0.000152118,
+            "cumulative_seconds": 0.001766657
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 1.0268e-05,
+            "cumulative_seconds": 0.001416747
+          },
+          {
+            "file": "core.py",
+            "line": 1218,
+            "function": "close",
+            "calls": 1,
+            "self_seconds": 0.00080701,
+            "cumulative_seconds": 0.00080701
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 4096,
+            "self_seconds": 0.000510827,
+            "cumulative_seconds": 0.0007370730000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000332787,
+            "cumulative_seconds": 0.000452129
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 1,
+            "self_seconds": 1.3143000000000001e-05,
+            "cumulative_seconds": 0.000433726
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.00025337600000000004,
+            "cumulative_seconds": 0.00034539300000000005
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000185426,
+            "cumulative_seconds": 0.000185426
+          },
+          {
+            "file": "core.py",
+            "line": 1063,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 0.00011417600000000001,
+            "cumulative_seconds": 0.00016686400000000002
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 1152,
+            "self_seconds": 0.00016130000000000002,
+            "cumulative_seconds": 0.00016130000000000002
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 4.3665e-05,
+            "cumulative_seconds": 4.3665e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 4.3497e-05,
+            "cumulative_seconds": 4.3497e-05
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 3.1560000000000004e-06,
+            "cumulative_seconds": 4.188e-06
+          },
+          {
+            "file": "core.py",
+            "line": 1144,
+            "function": "__del__",
+            "calls": 1,
+            "self_seconds": 1.512e-06,
+            "cumulative_seconds": 1.8630000000000002e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 1.373e-06,
+            "cumulative_seconds": 1.373e-06
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      }
+    },
+    {
+      "case": "evaluation-representative-transient",
+      "relative_time_change": -0.46326073091482667,
+      "exact_parity": true,
+      "baseline": {
+        "measured_at": "2026-09-24T11:27:18.496152+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "representative",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+          "src/mars_titan/training/reference_run.py": "0b0120f869de608d19193f28b438277ae0c998c6bf19afcb87a02a0e256fbb87",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.06051675899652764,
+            "min": 0.05929793501854874,
+            "max": 0.06409122198238038,
+            "std": 0.0020282063832930096
+          },
+          "total_process_seconds": {
+            "median": 1.6778141809918452,
+            "min": 1.665364882996073,
+            "max": 1.6887947210052516,
+            "std": 0.008511198837579309
+          },
+          "worker_peak_rss_bytes": {
+            "median": 619855872.0,
+            "min": 619765760,
+            "max": 619937792,
+            "std": 70136.1513857155
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.06232565699610859,
+            "samples": 65536,
+            "samples_per_second": 1051509.1722834443,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 619855872,
+            "total_process_seconds": 1.6778141809918452
+          },
+          {
+            "pipeline_seconds": 0.05954050100990571,
+            "samples": 65536,
+            "samples_per_second": 1100696.1461257576,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 619765760,
+            "total_process_seconds": 1.665364882996073
+          },
+          {
+            "pipeline_seconds": 0.05929793501854874,
+            "samples": 65536,
+            "samples_per_second": 1105198.6882764122,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 619937792,
+            "total_process_seconds": 1.6736254779971205
+          },
+          {
+            "pipeline_seconds": 0.06409122198238038,
+            "samples": 65536,
+            "samples_per_second": 1022542.5256834207,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 619782144,
+            "total_process_seconds": 1.67881363700144
+          },
+          {
+            "pipeline_seconds": 0.06051675899652764,
+            "samples": 65536,
+            "samples_per_second": 1082939.6862406388,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 619872256,
+            "total_process_seconds": 1.6887947210052516
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 129,
+            "self_seconds": 0.029609702,
+            "cumulative_seconds": 0.212879331
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 128,
+            "self_seconds": 0.044484452,
+            "cumulative_seconds": 0.057825353
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 0.00013656600000000002,
+            "cumulative_seconds": 0.0015358120000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 7.131000000000001e-06,
+            "cumulative_seconds": 0.001193478
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 4096,
+            "self_seconds": 0.0004972360000000001,
+            "cumulative_seconds": 0.0007051980000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.00027338700000000004,
+            "cumulative_seconds": 0.000367133
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000259097,
+            "cumulative_seconds": 0.00035134200000000004
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 1152,
+            "self_seconds": 0.000143422,
+            "cumulative_seconds": 0.000143422
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000130562,
+            "cumulative_seconds": 0.000130562
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 5.1091e-05,
+            "cumulative_seconds": 5.1091e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 4.4194000000000004e-05,
+            "cumulative_seconds": 4.4194000000000004e-05
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 2.785e-06,
+            "cumulative_seconds": 3.2460000000000003e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 9.12e-07,
+            "cumulative_seconds": 9.12e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      },
+      "optimized": {
+        "measured_at": "2026-09-24T11:28:12.998156+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "representative",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+          "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.032481720991199836,
+            "min": 0.031676915008574724,
+            "max": 0.033132615993963555,
+            "std": 0.0006559043064145938
+          },
+          "total_process_seconds": {
+            "median": 1.6139285159879364,
+            "min": 1.6000128710002173,
+            "max": 1.668059263000032,
+            "std": 0.030410069121251864
+          },
+          "worker_peak_rss_bytes": {
+            "median": 612827136.0,
+            "min": 612741120,
+            "max": 612888576,
+            "std": 55756.77649218972
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.032481720991199836,
+            "samples": 65536,
+            "samples_per_second": 2017627.0837913868,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 612888576,
+            "total_process_seconds": 1.6014218410127796
+          },
+          {
+            "pipeline_seconds": 0.033132615993963555,
+            "samples": 65536,
+            "samples_per_second": 1977990.509772607,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 612851712,
+            "total_process_seconds": 1.668059263000032
+          },
+          {
+            "pipeline_seconds": 0.03287030299543403,
+            "samples": 65536,
+            "samples_per_second": 1993775.3542796217,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 612827136,
+            "total_process_seconds": 1.6484877729963046
+          },
+          {
+            "pipeline_seconds": 0.031676915008574724,
+            "samples": 65536,
+            "samples_per_second": 2068888.3365775945,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 612741120,
+            "total_process_seconds": 1.6000128710002173
+          },
+          {
+            "pipeline_seconds": 0.031740203994559124,
+            "samples": 65536,
+            "samples_per_second": 2064763.037163659,
+            "input_bytes": 4980736,
+            "metrics": {
+              "samples": 65536,
+              "absolute_error": 42965.77585848421,
+              "squared_error": 41743.648729133885,
+              "session_count": 1024,
+              "session_mae": 0.6556057107312654,
+              "session_mse": 0.6369575306569502,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6556147970376287,
+                  "mse": 0.6369819133141755
+                },
+                "US": {
+                  "sessions": 512,
+                  "samples": 32768,
+                  "mae": 0.6555966244249021,
+                  "mse": 0.6369331479997247
+                }
+              },
+              "mse": 0.6369575306569502,
+              "mae": 0.6556057107312654
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 612798464,
+            "total_process_seconds": 1.6139285159879364
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 1,
+            "self_seconds": 1.5949000000000003e-05,
+            "cumulative_seconds": 0.060540181000000005
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 128,
+            "self_seconds": 0.044286735,
+            "cumulative_seconds": 0.056597066
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 0.00010636100000000001,
+            "cumulative_seconds": 0.0014935030000000002
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 7.654e-06,
+            "cumulative_seconds": 0.001188648
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 4096,
+            "self_seconds": 0.00046940100000000004,
+            "cumulative_seconds": 0.000659189
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000264351,
+            "cumulative_seconds": 0.000356526
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000253777,
+            "cumulative_seconds": 0.00034539200000000003
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 1152,
+            "self_seconds": 0.00013487900000000002,
+            "cumulative_seconds": 0.00013487900000000002
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 2051,
+            "self_seconds": 0.000127334,
+            "cumulative_seconds": 0.000127334
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 4.4316e-05,
+            "cumulative_seconds": 4.4316e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 1025,
+            "self_seconds": 4.3868e-05,
+            "cumulative_seconds": 4.3868e-05
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 3.637e-06,
+            "cumulative_seconds": 4.138e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 7.720000000000001e-07,
+            "cumulative_seconds": 7.720000000000001e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      }
+    },
+    {
+      "case": "evaluation-small-persisted",
+      "relative_time_change": -0.004394444305371281,
+      "exact_parity": true,
+      "baseline": {
+        "measured_at": "2026-09-24T11:26:55.541537+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "small",
+        "persist": true,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+          "src/mars_titan/training/reference_run.py": "0b0120f869de608d19193f28b438277ae0c998c6bf19afcb87a02a0e256fbb87",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.004030771000543609,
+            "min": 0.003571745997760445,
+            "max": 0.00445872699492611,
+            "std": 0.0003569318325437139
+          },
+          "total_process_seconds": {
+            "median": 1.5238481659907848,
+            "min": 1.5059157159994356,
+            "max": 1.553717726987088,
+            "std": 0.017545589546347072
+          },
+          "worker_peak_rss_bytes": {
+            "median": 614264832.0,
+            "min": 614211584,
+            "max": 614449152,
+            "std": 107163.44690238366
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.00445872699492611,
+            "samples": 1024,
+            "samples_per_second": 229661.96431521364,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614264832,
+            "total_process_seconds": 1.525884416012559
+          },
+          {
+            "pipeline_seconds": 0.003571745997760445,
+            "samples": 1024,
+            "samples_per_second": 286694.51877095073,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614387712,
+            "total_process_seconds": 1.5059157159994356
+          },
+          {
+            "pipeline_seconds": 0.004030771000543609,
+            "samples": 1024,
+            "samples_per_second": 254045.68998385133,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614215680,
+            "total_process_seconds": 1.5238481659907848
+          },
+          {
+            "pipeline_seconds": 0.004378526005893946,
+            "samples": 1024,
+            "samples_per_second": 233868.6577678403,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614211584,
+            "total_process_seconds": 1.553717726987088
+          },
+          {
+            "pipeline_seconds": 0.003952263999963179,
+            "samples": 1024,
+            "samples_per_second": 259092.00397785674,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614449152,
+            "total_process_seconds": 1.518517192977015
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 3,
+            "self_seconds": 0.000537983,
+            "cumulative_seconds": 0.005458732
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 2,
+            "self_seconds": 0.0009253870000000001,
+            "cumulative_seconds": 0.001259692
+          },
+          {
+            "file": "core.py",
+            "line": 1191,
+            "function": "write_table",
+            "calls": 2,
+            "self_seconds": 0.000473772,
+            "cumulative_seconds": 0.000473772
+          },
+          {
+            "file": "core.py",
+            "line": 1063,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 7.3779e-05,
+            "cumulative_seconds": 0.00010651100000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 2.0767000000000003e-05,
+            "cumulative_seconds": 0.00010260300000000001
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 1,
+            "self_seconds": 1.3624e-05,
+            "cumulative_seconds": 8.3367e-05
+          },
+          {
+            "file": "core.py",
+            "line": 1218,
+            "function": "close",
+            "calls": 1,
+            "self_seconds": 8.2997e-05,
+            "cumulative_seconds": 8.2997e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 9.609e-06,
+            "cumulative_seconds": 6.862e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 1.2708000000000001e-05,
+            "cumulative_seconds": 1.7027e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 1.0888000000000001e-05,
+            "cumulative_seconds": 1.5166e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 64,
+            "self_seconds": 9.146e-06,
+            "cumulative_seconds": 1.2551e-05
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 4.479000000000001e-06,
+            "cumulative_seconds": 5.4910000000000005e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 4.498e-06,
+            "cumulative_seconds": 4.498e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 18,
+            "self_seconds": 2.345e-06,
+            "cumulative_seconds": 2.345e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 2.164e-06,
+            "cumulative_seconds": 2.164e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 1.973e-06,
+            "cumulative_seconds": 1.973e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 1.9710000000000003e-06,
+            "cumulative_seconds": 1.9710000000000003e-06
+          },
+          {
+            "file": "core.py",
+            "line": 1144,
+            "function": "__del__",
+            "calls": 1,
+            "self_seconds": 5.71e-07,
+            "cumulative_seconds": 7.71e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      },
+      "optimized": {
+        "measured_at": "2026-09-24T11:27:51.075716+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "small",
+        "persist": true,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+          "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.004013058001874015,
+            "min": 0.003604618977988139,
+            "max": 0.004674924013670534,
+            "std": 0.00038695115304781483
+          },
+          "total_process_seconds": {
+            "median": 1.539043083001161,
+            "min": 1.5311409740243107,
+            "max": 1.552509667002596,
+            "std": 0.007767487556923754
+          },
+          "worker_peak_rss_bytes": {
+            "median": 614297600.0,
+            "min": 614187008,
+            "max": 614453248,
+            "std": 99937.36380753697
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.004013058001874015,
+            "samples": 1024,
+            "samples_per_second": 255167.00718549627,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614187008,
+            "total_process_seconds": 1.539043083001161
+          },
+          {
+            "pipeline_seconds": 0.003604618977988139,
+            "samples": 1024,
+            "samples_per_second": 284079.955815893,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614367232,
+            "total_process_seconds": 1.5391788470151369
+          },
+          {
+            "pipeline_seconds": 0.0039693950093351305,
+            "samples": 1024,
+            "samples_per_second": 257973.82160046574,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614277120,
+            "total_process_seconds": 1.5378110790043138
+          },
+          {
+            "pipeline_seconds": 0.004674924013670534,
+            "samples": 1024,
+            "samples_per_second": 219040.9933948857,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614453248,
+            "total_process_seconds": 1.552509667002596
+          },
+          {
+            "pipeline_seconds": 0.004128044005483389,
+            "samples": 1024,
+            "samples_per_second": 248059.37113068416,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": "6df7a24c7a31c36fec5b32d02509014e531b4cef73f62500a78edb5b0738dfb6",
+            "prediction_bytes": 10216,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 614297600,
+            "total_process_seconds": 1.5311409740243107
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 3,
+            "self_seconds": 0.000581487,
+            "cumulative_seconds": 0.005075238
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 2,
+            "self_seconds": 0.0007496930000000001,
+            "cumulative_seconds": 0.001011615
+          },
+          {
+            "file": "core.py",
+            "line": 1191,
+            "function": "write_table",
+            "calls": 2,
+            "self_seconds": 0.00049374,
+            "cumulative_seconds": 0.00049374
+          },
+          {
+            "file": "core.py",
+            "line": 1063,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 0.000105468,
+            "cumulative_seconds": 0.00014995200000000002
+          },
+          {
+            "file": "core.py",
+            "line": 1218,
+            "function": "close",
+            "calls": 1,
+            "self_seconds": 9.096100000000001e-05,
+            "cumulative_seconds": 9.096100000000001e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 1.3767e-05,
+            "cumulative_seconds": 5.7418000000000005e-05
+          },
+          {
+            "file": "storage.py",
+            "line": 15,
+            "function": "sha256",
+            "calls": 1,
+            "self_seconds": 8.625000000000001e-06,
+            "cumulative_seconds": 5.3741000000000006e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 6.515e-06,
+            "cumulative_seconds": 3.6409e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 64,
+            "self_seconds": 9.517e-06,
+            "cumulative_seconds": 1.3014000000000001e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 6.323e-06,
+            "cumulative_seconds": 8.176000000000001e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 5.567e-06,
+            "cumulative_seconds": 7.2000000000000005e-06
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 2.725e-06,
+            "cumulative_seconds": 3.2460000000000003e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 2.4450000000000003e-06,
+            "cumulative_seconds": 2.4450000000000003e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 18,
+            "self_seconds": 2.4270000000000002e-06,
+            "cumulative_seconds": 2.4270000000000002e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 1.543e-06,
+            "cumulative_seconds": 1.543e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 9.940000000000001e-07,
+            "cumulative_seconds": 9.940000000000001e-07
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 9.510000000000001e-07,
+            "cumulative_seconds": 9.510000000000001e-07
+          },
+          {
+            "file": "core.py",
+            "line": 1144,
+            "function": "__del__",
+            "calls": 1,
+            "self_seconds": 6.210000000000001e-07,
+            "cumulative_seconds": 8.510000000000001e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      }
+    },
+    {
+      "case": "evaluation-small-transient",
+      "relative_time_change": -0.42934442193793276,
+      "exact_parity": true,
+      "baseline": {
+        "measured_at": "2026-09-24T11:26:46.118045+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "small",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "a9651e7a433aa2443c6b7190ae2ed32237eeb440cfd8c6cd32e33eede5b162ed",
+          "src/mars_titan/training/reference_run.py": "0b0120f869de608d19193f28b438277ae0c998c6bf19afcb87a02a0e256fbb87",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.0010227359889540821,
+            "min": 0.000987078994512558,
+            "max": 0.0010607570002321154,
+            "std": 2.6337278209827655e-05
+          },
+          "total_process_seconds": {
+            "median": 1.5132855649862904,
+            "min": 1.4867489299795125,
+            "max": 1.5429776910168584,
+            "std": 0.02250390775012869
+          },
+          "worker_peak_rss_bytes": {
+            "median": 608849920.0,
+            "min": 608792576,
+            "max": 608980992,
+            "std": 76978.65087931848
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.000987078994512558,
+            "samples": 1024,
+            "samples_per_second": 1037404.3067400847,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 608980992,
+            "total_process_seconds": 1.5365299370023422
+          },
+          {
+            "pipeline_seconds": 0.0010312719969078898,
+            "samples": 1024,
+            "samples_per_second": 992948.5170452666,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 608849920,
+            "total_process_seconds": 1.510279187001288
+          },
+          {
+            "pipeline_seconds": 0.0010227359889540821,
+            "samples": 1024,
+            "samples_per_second": 1001235.9113784687,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 608858112,
+            "total_process_seconds": 1.4867489299795125
+          },
+          {
+            "pipeline_seconds": 0.0010607570002321154,
+            "samples": 1024,
+            "samples_per_second": 965348.3312162237,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 608792576,
+            "total_process_seconds": 1.5132855649862904
+          },
+          {
+            "pipeline_seconds": 0.0010212140041403472,
+            "samples": 1024,
+            "samples_per_second": 1002728.1214792957,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 608792576,
+            "total_process_seconds": 1.5429776910168584
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 3,
+            "self_seconds": 0.000540984,
+            "cumulative_seconds": 0.003762988
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 2,
+            "self_seconds": 0.000704373,
+            "cumulative_seconds": 0.000941663
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 1.0871000000000001e-05,
+            "cumulative_seconds": 5.5755000000000004e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 6.172e-06,
+            "cumulative_seconds": 3.8042e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 64,
+            "self_seconds": 8.688e-06,
+            "cumulative_seconds": 1.2209000000000001e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 8.537e-06,
+            "cumulative_seconds": 1.0520000000000001e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 5.642e-06,
+            "cumulative_seconds": 7.084e-06
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 4.969e-06,
+            "cumulative_seconds": 5.4300000000000005e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 2.4220000000000003e-06,
+            "cumulative_seconds": 2.4220000000000003e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 18,
+            "self_seconds": 2.2140000000000003e-06,
+            "cumulative_seconds": 2.2140000000000003e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 1.063e-06,
+            "cumulative_seconds": 1.063e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 9.310000000000001e-07,
+            "cumulative_seconds": 9.310000000000001e-07
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 8.32e-07,
+            "cumulative_seconds": 8.32e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      },
+      "optimized": {
+        "measured_at": "2026-09-24T11:27:41.514768+00:00",
+        "domain": "technical",
+        "device": "cpu",
+        "kind": "evaluation",
+        "size": "small",
+        "persist": false,
+        "final_test_opened": false,
+        "hardware": {
+          "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+          "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+        },
+        "software": {
+          "python": "3.12.14",
+          "numpy": "2.5.3",
+          "pyarrow": "25.0.1"
+        },
+        "repetitions": 5,
+        "warmup_runs_per_process": 1,
+        "numerical_threads": 1,
+        "code_sha256": {
+          "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+          "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52",
+          "benchmarks/episode_pipeline.py": "69000d5afafc07dd35dd18f62648f5da245f020bde34a4e305a6206d368dcdd0",
+          "benchmarks/evaluation_io.py": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31"
+        },
+        "summary": {
+          "pipeline_seconds": {
+            "median": 0.0005836299969814718,
+            "min": 0.000570013013202697,
+            "max": 0.0006458360003307462,
+            "std": 3.136505006152278e-05
+          },
+          "total_process_seconds": {
+            "median": 1.5102424419892486,
+            "min": 1.5042652229894884,
+            "max": 1.5228611679922324,
+            "std": 0.007336154395986571
+          },
+          "worker_peak_rss_bytes": {
+            "median": 601690112.0,
+            "min": 601636864,
+            "max": 601911296,
+            "std": 113659.3872937911
+          }
+        },
+        "runs": [
+          {
+            "pipeline_seconds": 0.0005714159924536943,
+            "samples": 1024,
+            "samples_per_second": 1792039.4485336032,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 601911296,
+            "total_process_seconds": 1.5080207730061375
+          },
+          {
+            "pipeline_seconds": 0.0006458360003307462,
+            "samples": 1024,
+            "samples_per_second": 1585541.8395313798,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 601755648,
+            "total_process_seconds": 1.5228611679922324
+          },
+          {
+            "pipeline_seconds": 0.000601502979407087,
+            "samples": 1024,
+            "samples_per_second": 1702402.2075657488,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 601640960,
+            "total_process_seconds": 1.5102424419892486
+          },
+          {
+            "pipeline_seconds": 0.0005836299969814718,
+            "samples": 1024,
+            "samples_per_second": 1754536.2734885411,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 601636864,
+            "total_process_seconds": 1.5163804400071967
+          },
+          {
+            "pipeline_seconds": 0.000570013013202697,
+            "samples": 1024,
+            "samples_per_second": 1796450.2147881049,
+            "input_bytes": 77824,
+            "metrics": {
+              "samples": 1024,
+              "absolute_error": 673.0086808614433,
+              "squared_error": 654.4266191324506,
+              "session_count": 16,
+              "session_mae": 0.6572350399037532,
+              "session_mse": 0.6390884952465338,
+              "session_metrics_reason": null,
+              "by_market_session": {
+                "CN": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6624376234467491,
+                  "mse": 0.648494919343937
+                },
+                "US": {
+                  "sessions": 8,
+                  "samples": 512,
+                  "mae": 0.6520324563607574,
+                  "mse": 0.6296820711491306
+                }
+              },
+              "mse": 0.6390884952465338,
+              "mae": 0.6572350399037532
+            },
+            "prediction_sha256": null,
+            "prediction_bytes": 0,
+            "torch_version": "2.14.0+cu130",
+            "worker_peak_rss_bytes": 601690112,
+            "total_process_seconds": 1.5042652229894884
+          }
+        ],
+        "profile": [
+          {
+            "file": "reference_run.py",
+            "line": 155,
+            "function": "tables",
+            "calls": 1,
+            "self_seconds": 1.2042000000000001e-05,
+            "cumulative_seconds": 0.001080334
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 16,
+            "function": "update",
+            "calls": 2,
+            "self_seconds": 0.0006888420000000001,
+            "cumulative_seconds": 0.0009143920000000001
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 72,
+            "function": "summary",
+            "calls": 1,
+            "self_seconds": 9.619e-06,
+            "cumulative_seconds": 4.6127e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 63,
+            "function": "_means",
+            "calls": 3,
+            "self_seconds": 3.999e-06,
+            "cumulative_seconds": 3.0086000000000003e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 59,
+            "function": "<genexpr>",
+            "calls": 64,
+            "self_seconds": 9.099e-06,
+            "cumulative_seconds": 1.2805e-05
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 68,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 5.5080000000000005e-06,
+            "cumulative_seconds": 7.1320000000000005e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 69,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 4.762e-06,
+            "cumulative_seconds": 6.305000000000001e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 51,
+            "function": "<genexpr>",
+            "calls": 18,
+            "self_seconds": 2.3940000000000003e-06,
+            "cumulative_seconds": 2.3940000000000003e-06
+          },
+          {
+            "file": "reference_run.py",
+            "line": 128,
+            "function": "_metrics",
+            "calls": 1,
+            "self_seconds": 1.973e-06,
+            "cumulative_seconds": 2.324e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 67,
+            "function": "<genexpr>",
+            "calls": 35,
+            "self_seconds": 2.184e-06,
+            "cumulative_seconds": 2.184e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 77,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 1.041e-06,
+            "cumulative_seconds": 1.041e-06
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 78,
+            "function": "<genexpr>",
+            "calls": 17,
+            "self_seconds": 8.920000000000001e-07,
+            "cumulative_seconds": 8.920000000000001e-07
+          },
+          {
+            "file": "session_metrics.py",
+            "line": 11,
+            "function": "__init__",
+            "calls": 1,
+            "self_seconds": 7.22e-07,
+            "cumulative_seconds": 7.22e-07
+          }
+        ],
+        "limits": [
+          "Datos sintéticos, caché del sistema caliente y otras cargas activas.",
+          "Evaluación con modelo lineal mínimo en CPU. No mide entrenamiento ni aceleración GPU.",
+          "El tiempo de proceso incluye importaciones y calentamiento, el recorrido los excluye.",
+          "El perfil usa otro proceso. RSS usa VmHWM tras exec, una aproximación asíncrona de Linux.",
+          "No se miden energía, coste monetario, VRAM ni transferencias CPU/GPU."
+        ]
+      }
+    }
+  ],
+  "acceptance": {
+    "exact_input_and_result_parity": true,
+    "exact_saved_prediction_sha256": true,
+    "saved_and_transient_metrics_equal": true
+  },
+  "concurrent_work": {
+    "other_cuda_processes_before_measurement": 3,
+    "gpu_used": false,
+    "other_applications_stopped": false
+  },
+  "discarded_measurements": "Las tandas iniciales con getrusage no se usan para comparar RSS. Se repitió con preparación aislada y VmHWM.",
+  "benchmark_format_verification": {
+    "measured_sha256": "dd7f1fc7c2e706333300295578d03d1df22e0ce8bd5c55bcb86551d1cc4ebc31",
+    "current_sha256": "0e618ba49c11afe2acbdc04877f8197220676fcb144d3afbf5af1f8fc61c9fb7",
+    "ast_equal": true,
+    "change": "Se dividió un literal de límites para cumplir la longitud de línea. El AST y el valor del literal son iguales."
+  }
+}

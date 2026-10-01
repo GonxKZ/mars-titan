@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "modes": ["reinforce", "expected", "mae", "klpo_full", "klpo_mc", "klpo_exact"],
+  "seeds": [42, 43, 44],
+  "betas": [0.03, 0.1, 0.3],
+  "behavior_epsilon": 0.000001,
+  "auxiliary_samples": 128,
+  "epochs": 5,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.01,
+  "clip_norm": 1.0,
+  "batch_size": 256,
+  "checkpoint_seconds": 60,
+  "final_test_opened": false
+}

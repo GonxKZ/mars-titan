@@ -1,0 +1,136 @@
+{
+  "purpose": "strict_supervised_execution_probe_not_confirmatory_comparison",
+  "measured_at_utc": "2026-09-22T02:00:16.315148+00:00",
+  "model": "ridge",
+  "alpha": 1.0,
+  "parameters": {
+    "alpha": 1.0
+  },
+  "samples": {
+    "train": 50,
+    "validation": 15
+  },
+  "features": 1681,
+  "feature_order": [
+    "prices",
+    "news",
+    "charts",
+    "fundamentals",
+    "macro"
+  ],
+  "scaling": "train_only_population_variance",
+  "intercept": "unpenalized_with_residual_centering_correction",
+  "loss": "sum_squared_error_plus_alpha_l2",
+  "training_cutoff": "2022-12-31",
+  "validation_year": 2023,
+  "final_test_opened": false,
+  "fit_seconds": 0.18666014300015377,
+  "validation_and_restore_check_seconds": 0.012127802999202686,
+  "total_seconds": 1.8358328940003048,
+  "timing_scope": "runner_including_input_validation_excluding_imports_and_process_start",
+  "device": "cuda:0",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "sensors_before": {
+    "available": true,
+    "reading": "NVIDIA GeForce RTX 4070 Laptop GPU, 40, 5.81 W, 311 MiB, 9 %",
+    "error": null
+  },
+  "sensors_after": {
+    "available": true,
+    "reading": "NVIDIA GeForce RTX 4070 Laptop GPU, 40, 5.81 W, 499 MiB, 9 %",
+    "error": null
+  },
+  "peak_vram_allocated_bytes": 103461888,
+  "peak_vram_reserved_bytes": 104857600,
+  "peak_rss_mib": 973.42578125,
+  "process_memory_at_end": {
+    "rss_mib": 974.390625,
+    "pss_mib": 830.49609375,
+    "processes": 1
+  },
+  "diagnostic_row_metrics": {
+    "ridge": {
+      "mae": 0.01787781089809816,
+      "mse": 0.0004905791740003659
+    },
+    "zero": {
+      "mae": 0.00961996824361159,
+      "mse": 0.00015974379549416325
+    }
+  },
+  "restored_predictions_equal": true,
+  "target_audit": {
+    "market_price_audit": {
+      "rows": 6348,
+      "accepted": 4031,
+      "excluded": 2317,
+      "invalid_ohlc": 2,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 2317,
+      "invalid_date_rows": 0,
+      "first_session": "2000-01-03",
+      "last_session": "2025-03-28",
+      "corporate_action_columns": [
+        "Dividends",
+        "Stock Splits"
+      ],
+      "adjustments": "as_distributed_retrospective_adjustments_not_reconstructed",
+      "reason_counts_overlap": true
+    },
+    "assets": {
+      "DECK": {
+        "train": 25,
+        "validation": 10,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "MNST": {
+        "train": 25,
+        "validation": 5,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      }
+    }
+  },
+  "input_hashes": {
+    "dataset/time_series/S&P500_time_series/spy.csv": "9c8046fbdff4f92091e5ac6a34f38cfe4690af545a7033901440a0dfbce835fc",
+    "data/processed/company-samples-20260922-v2/US/DECK/samples.parquet": "29c946442f575450b46915576dedaceb79029402b264b5f417a8cf0e835c3b96",
+    "data/processed/news-expansion-20260921/US/DECK/prices.parquet": "3f260319bc62a38bec50077d9922b79a735ce6a9faf468db4432080247eb5e8d",
+    "data/processed/company-samples-20260922-v2/US/DECK/manifest.json": "48da5521b065c6452014f7f074bcaf06cb58af60c4de78e94a234bc8cdc94a7b",
+    "data/processed/news-expansion-20260921/US/DECK/manifest.json": "6f3c3eeecdd150fb302316bc068d7a750eb735d6dd87ad99afba57d4cc567240",
+    "data/interim/company-ridge-20260922/targets/DECK-targets.parquet": "193aba7e2eba502b14656b379ff7cce767821017a49b463857a76aef1ef348c4",
+    "data/processed/company-samples-20260922-v2/US/MNST/samples.parquet": "db6e60dd7aa5b1bd259e622b1c034e29dffd430e6843213179126f53bddd264f",
+    "data/processed/news-expansion-20260921/US/MNST/prices.parquet": "92fd950f453d4cfccf02197d1ccf5ac1bcbd5c89796637c9c556d412837484de",
+    "data/processed/company-samples-20260922-v2/US/MNST/manifest.json": "2d0a86ada909104b6c3dfda09fe75131552727ce2843e768bec4968f07c6bc2d",
+    "data/processed/news-expansion-20260921/US/MNST/manifest.json": "1e0d5fc2bdc1d09c2af4a42fb3d3b2896b9eb246531582cc0cf7a6084805251d",
+    "data/interim/company-ridge-20260922/targets/MNST-targets.parquet": "5f68763afc91aa915584c29331af50d42d51f0e5597bb740684ef3437e420ad9",
+    "src/mars_titan/budget_training.py": "3611b7f66d34875ae9ead79d27eab559c8a6ab4517011d787c32a72b7de64051",
+    "src/mars_titan/data/budget_targets.py": "32cce1fcc3fd44a19b183381b0e0d8d945254d13a03e3b3515b7c6ebf49293f3",
+    "src/mars_titan/data/streaming.py": "c763ec4c422bc298b816412343f576fa71e93e6a215f104aa405fe1232b89357",
+    "src/mars_titan/profiling.py": "848773ad1956175fffaf70e788969ed58f8e33ebdea560c5337e0efd787df700",
+    "src/mars_titan/reference_probe.py": "c8b4afc182aab0de44b6f9a1cae3e0d7801396d5ae9fb872beec3f2a12b134a7",
+    "src/mars_titan/models/baselines/ridge.py": "ba71c068442de918f1ee87ea86f84e86a4ae34b07221fa7817a3cb3d78a225dd",
+    "src/mars_titan/models/baselines/inputs.py": "4cb31e2bf934b0a20945137b62d9bf4105a0c44fd87c061adfe0f73b03e823f3",
+    "src/mars_titan/models/baselines/boosting.py": "d77daa63b8c64950f5cd712c2489215bce9a12aeb315c26e5e7551fe6f811011"
+  },
+  "checkpoint_sha256": "d3254d3acb62f994c4ffb26f47b99b4000dffc27347bc01d699a4294b7ac410a",
+  "predictions_sha256": "4287d7a52b797fe605cb3bf405e29a59c1807b40a44351b0feb60f4e7cace2ba",
+  "limitations": [
+    "small_directed_editorial_sample",
+    "one_fixed_configuration",
+    "no_search_or_predictive_superiority_claim",
+    "operating_system_cache_uncontrolled"
+  ]
+}

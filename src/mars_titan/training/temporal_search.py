@@ -1,0 +1,209 @@
+"""Ejecutar la búsqueda predefinida en todas las ventanas con una única carga CUDA."""
+
+import argparse
+import fcntl
+import json
+import os
+import re
+from datetime import UTC, datetime
+from pathlib import Path
+
+from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation.splits import PARTITIONS, build_folds
+
+from .checkpoints import StopRequest
+from .experiment_resources import GpuLease
+from .reference_search import _configuration, run_search
+
+
+def _inputs(config, views):
+    plan, cases, config_hash = _configuration(config)
+    if plan["schema_version"] != 2 or plan["arms"] != ["US"]:
+        raise ValueError("La campaña temporal requiere el diseño estricto estadounidense")
+    report, report_hash = read_manifest(views / "report.json", 1024**2)
+    if (
+        not isinstance(report, dict)
+        or type(report.get("schema_version")) is not int
+        or report.get("schema_version") != 1
+        or report.get("status") != "temporal_views_prepared"
+        or report.get("final_test_opened") is not False
+        or not isinstance(report.get("folds"), list)
+        or not 1 <= len(report["folds"]) <= 128
+    ):
+        raise ValueError("Las vistas no tienen un informe de preparación admisible")
+    if any(
+        not re.fullmatch(r"[0-9a-f]{64}", str(report.get(key)))
+        for key in ("parent_sha256", "macro_sha256", "admission_sha256", "protocol_sha256")
+    ):
+        raise ValueError("Faltan huellas de procedencia de la preparación")
+    records, protocol = [], None
+    for index, row in enumerate(report["folds"]):
+        name = f"fold-{index:03}"
+        if row.get("id") != name or row.get("has_all_partitions") is not True:
+            raise ValueError("Las ventanas deben ser consecutivas y tener todas sus particiones")
+        path = views / name / "manifest.json"
+        meta, digest = read_manifest(path, 8 * 1024**2)
+        contract = meta.get("temporal_view", {})
+        if not isinstance(contract, dict):
+            raise ValueError("La ventana no declara un contrato temporal")
+        if protocol is None:
+            protocol = contract.get("protocol")
+        if (
+            digest != row.get("manifest_sha256")
+            or set(meta.get("counts", {})) != set(PARTITIONS)
+            or any(type(v) is not int or v <= 0 for v in meta["counts"].values())
+            or meta["counts"] != row.get("counts")
+            or meta.get("final_test_opened") is not False
+            or contract.get("protocol") != protocol
+            or contract.get("macro_sha256") != report.get("macro_sha256")
+            or contract.get("parent_sha256") != report.get("parent_sha256")
+            or contract.get("admission_sha256") != report.get("admission_sha256")
+        ):
+            raise ValueError("Una ventana no conserva su identidad y población declaradas")
+        records.append(dict(id=name, manifest=path, manifest_sha256=digest, fold=contract["fold"]))
+    if [r["fold"] for r in records] != build_folds(protocol):
+        raise ValueError("La campaña no contiene todas las ventanas del protocolo")
+    per_fold = len(cases) + len(plan["models"]) * (
+        len(plan["finalist_seeds"]) - 1 + 2 * len(plan["finalist_seeds"])
+    )
+    if per_fold * len(records) > 512:
+        raise ValueError("La campaña temporal supera el presupuesto de 512 ejecuciones")
+    identity = dict(
+        config_sha256=config_hash,
+        views_report_sha256=report_hash,
+        protocol_sha256=report["protocol_sha256"],
+        manifests={r["id"]: r["manifest_sha256"] for r in records},
+        code_sha256=sha256(Path(__file__)),
+    )
+    return records, identity, per_fold
+
+
+def run_temporal_search(config, views, output, *, resume=False):
+    config, views, output = map(Path, (config, views, output))
+    records, identity, per_fold = _inputs(config, views)
+    safe_destination(output)
+    outside_source(views, output)
+    outside_source(Path("dataset"), output)
+    if (output.exists() and not resume) or (resume and not output.is_dir()):
+        raise ValueError("Usa un destino nuevo o reanuda una campaña existente")
+    output.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    accepted_summary = False
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        path = output / "summary.json"
+        if resume and path.exists():
+            summary, _ = read_manifest(path, 1024**2)
+            if summary.get("identity") != identity or summary.get("planned_runs") != per_fold * len(
+                records
+            ):
+                raise ValueError("La identidad de la campaña temporal ha cambiado")
+        else:
+            if any(
+                p.name != ".lock"
+                and not (p.name.startswith(".summary.json.") and p.is_file() and not p.is_symlink())
+                for p in output.iterdir()
+            ):
+                raise ValueError("No se puede recuperar un inicio con artefactos desconocidos")
+            summary = dict(
+                schema_version=1,
+                kind="temporal_reference_search",
+                identity=identity,
+                status="running",
+                started_at_utc=datetime.now(UTC).isoformat(),
+                final_test_opened=False,
+                planned_runs=per_fold * len(records),
+                completed_runs=0,
+                folds=[
+                    dict(id=r["id"], status="pending", completed_runs=0, planned_runs=per_fold)
+                    for r in records
+                ],
+            )
+        expected_ids = [r["id"] for r in records]
+        if (
+            [f.get("id") for f in summary.get("folds", [])] != expected_ids
+            or summary.get("final_test_opened") is not False
+            or summary.get("schema_version") != 1
+            or summary.get("kind") != "temporal_reference_search"
+            or summary.get("status") not in {"running", "paused", "failed", "completed"}
+            or any(
+                row.get("planned_runs") != per_fold
+                or type(row.get("completed_runs")) is not int
+                or not 0 <= row["completed_runs"] <= per_fold
+                or row.get("status") not in {"pending", "running", "paused", "failed", "completed"}
+                or row["status"] == "completed"
+                and row["completed_runs"] != per_fold
+                for row in summary["folds"]
+            )
+            or summary.get("completed_runs") != sum(r["completed_runs"] for r in summary["folds"])
+        ):
+            raise ValueError("El resumen no conserva las ventanas y la reserva final")
+        accepted_summary = True
+
+        def save():
+            summary["completed_runs"] = sum(f["completed_runs"] for f in summary["folds"])
+            summary["updated_at_utc"] = datetime.now(UTC).isoformat()
+            atomic_json(path, summary)
+
+        summary["status"] = "running"
+        save()
+        with GpuLease() as resources, StopRequest() as stop:
+            summary["resources"] = resources.record
+            for record, progress in zip(records, summary["folds"], strict=True):
+                if stop.requested:
+                    summary["status"] = "paused"
+                    save()
+                    return summary
+                if (
+                    sha256(config) != identity["config_sha256"]
+                    or sha256(views / "report.json") != identity["views_report_sha256"]
+                ):
+                    raise ValueError("La configuración o la preparación han cambiado")
+
+                def observe(child, entry=progress):
+                    if (
+                        child["planned_runs"] != per_fold
+                        or not 0 <= child["completed_runs"] <= per_fold
+                    ):
+                        raise ValueError("El progreso de la ventana no concilia con su presupuesto")
+                    entry.update(status=child["status"], completed_runs=child["completed_runs"])
+                    save()
+
+                folder = output / record["id"]
+                result = run_search(
+                    config, record["manifest"], folder, resume=folder.exists(), progress=observe
+                )
+                resources.check()
+                observe(result)
+                if result["status"] != "completed":
+                    summary["status"] = result["status"]
+                    save()
+                    return summary
+            if summary["completed_runs"] != summary["planned_runs"]:
+                raise ValueError("La campaña no completó todas las ejecuciones declaradas")
+            summary["status"] = "completed"
+            save()
+        return summary
+    except BaseException as error:
+        if accepted_summary:
+            summary.update(status="failed", error_type=type(error).__name__, error=str(error))
+            atomic_json(output / "summary.json", summary)
+        raise
+    finally:
+        os.close(descriptor)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ("config", "views", "output"):
+        parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--resume", action="store_true")
+    args = parser.parse_args(argv)
+    report = run_temporal_search(args.config, args.views, args.output, resume=args.resume)
+    print(json.dumps(report, ensure_ascii=False))
+    return 0 if report["status"] == "completed" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
