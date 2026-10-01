@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-01T13:20:41.621049Z",
+  "generated_at": "2026-10-01T13:22:56.721046Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -103,11 +103,11 @@
         "tabular-original-us"
       ],
       "counts": {
-        "completed": 211,
+        "completed": 212,
         "running": 1,
-        "not_started": 4
+        "not_started": 3
       },
-      "registered_runs": 212
+      "registered_runs": 213
     },
     {
       "id": "reference-edition-20260922",
@@ -547,26 +547,26 @@
   ],
   "runs": [
     {
-      "run_id": "adaptation-original-us-eda57879c05e11ded965",
+      "run_id": "adaptation-original-us-32c9c75df7bc77111171",
       "attempt_id": "legacy",
       "model_id": "adaptation",
       "activity": "predictive_adaptation",
-      "variant_id": "3b07a686df8933d0",
+      "variant_id": "28941810ed5b1b28",
       "status": "running",
       "phase": "validation",
       "started_at": null,
-      "updated_at": "2026-10-01T13:20:31.717327Z",
-      "heartbeat_at": "2026-10-01T13:20:38.039889Z",
-      "completed_steps": 30245,
+      "updated_at": "2026-10-01T13:22:47.020056Z",
+      "heartbeat_at": "2026-10-01T13:22:53.131569Z",
+      "completed_steps": 0,
       "total_steps": null,
-      "epoch": 4,
+      "epoch": null,
       "max_epochs": 5,
       "seed": 44,
       "fold": "unidentified",
       "comparison_group": "9f9adad86fd124ffa9638ce3bd8f30cc6067c61edaf4ca050821603d3865741b",
       "metrics": {
-        "mae": 0.016076457419302085,
-        "mse": 0.0006568675821961044,
+        "mae": null,
+        "mse": null,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -579,34 +579,9 @@
         "elapsed_seconds": null,
         "samples_per_second": null
       },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016319133039952704
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015895825048028393
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01607320443627038
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016076457419302085
-        }
-      ],
+      "history": [],
       "checkpoint": {
-        "step": 30245,
+        "step": 0,
         "saved_at": null,
         "resumable": null
       },
@@ -620,8 +595,8 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "3b07a686df8933d08ffe25c3fe153162c0bff480d8a1cf6b1ad78b896706c966",
-        "source_sha256": "27d5232122e4d15c1df2b4a89b5a9a3003f91b8158057abd07d5e2040bba862b",
+        "configuration_sha256": "28941810ed5b1b28c4cb26b0bed29153b22ae6dc4cdd0c6b279adc43d63410eb",
+        "source_sha256": "ca4f5d382a63171268bdb72efea87cfc51d6426fc8a03c698c00602a310eef4f",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 1548307,
@@ -6494,26 +6469,26 @@
     }
   ],
   "pagination": {
-    "total_runs": 1148,
+    "total_runs": 1149,
     "page_size": 64,
     "pages": [
       "pages/05c8e85993eb1e4f533af180166a148cfd7bb5298af7373cc479c3e03e61342c.json",
       "pages/8236ae0be56040fc96fbf5b0a00a2998fb9468f1b91fc0e251f832daaaf538b5.json",
-      "pages/9020a7ee03f75f34f2cd20e2dae78f89f481730bf10846670eb726232c63c7ed.json",
-      "pages/5367d26e1b5a57248b1b58fb35285fb814aa2cf964d9dd66cfee7bbc0ac364d7.json",
-      "pages/42e9d6ebfa7b5d91f22a5f6a47bbf216c8006be05f0d006470bceb40ffcb42b8.json",
-      "pages/8e339bb4f215f12cf0461c7c7786adc3903d7e4659bead7f271869d6d72dbf2a.json",
-      "pages/550ede1d50d993735adbda52e0801bd94e5b94d9356f617b9a586bef557d81ec.json",
-      "pages/77ec3b1292d00657d6842a8f8f310f25ec998a1834f5589d539f0d41ef69c957.json",
-      "pages/eae4089893e1d975b622d8f428933f789afcb789d8b98ce81217e307cc25f55f.json",
-      "pages/71cfbba9aba8de984742d8fd560de4d2e9f9cdceadc25b1e8669dfa388cccd7e.json",
-      "pages/4a5ba8da10e3e3d7ede16bacade6b0d5d8f9473910ff3f1fda02842f47a3d51c.json",
-      "pages/4e875b5354f53e0a62ce781198c8d6330a387f9e014c619ee6e7261d5b04dc05.json",
-      "pages/53053a0fa52cd7f475245e76578d044cc1183ac809b8b2a61b3fb3077ddae5d3.json",
-      "pages/7c24f6c6af92264430e229eaebc97c5dd30625578f3cbfa4027b3b20d665965b.json",
-      "pages/38df78d50bfa57d553c0eee1989cdcf49a3c623604d8fec74cc4105a4d0c357e.json",
-      "pages/4502299d9a44a7fe9d56a6708eecf306c413227089e9dafe7d6e28c44e165838.json",
-      "pages/0f93db2aede9e1f41446b4ec988e7810928d52ddcb140a3dafed3c433ea98639.json"
+      "pages/bea6406196f2ab45e45b8f3c8020a3a8fe73987c30172b7f0fa43829613296e9.json",
+      "pages/07c47538c73dcb22e1ef1212dd3a808bec73016a43b1d1a5f383ccba40accaa0.json",
+      "pages/8deca30ba408ffa7b3e9b81eb864fe230c63782d91a6cc9f168db0bd9e7a99e8.json",
+      "pages/114e0cacfb52efad7c157cf675044e789c004344a1e13932a9502c9bbaf801a8.json",
+      "pages/7e59b1b5b333ef705f79cbd8a493a51d72f4e453dc9c9b6b03a10a745d42cb5b.json",
+      "pages/45159d6997a32b3e431f3bdca9b5065a365b037bb088f1dc48b1e9e6a1df61d3.json",
+      "pages/d8232d14a1ce3e60ea28f09c7ed44ff51ad8108c5103854c962794f6a113ced5.json",
+      "pages/788d5f4275d1a6b8a2c650e7e4b542fe7854af6c373d3afb821bf4b8a154903e.json",
+      "pages/9a06035cb3a71954c808a4745c73127c58a8540dd80c1213a119ea49dd1d9a71.json",
+      "pages/c7575d10121c0c265c1fce8fe06fb714c1a7c30a60a6eebd8140376636b31270.json",
+      "pages/eaeee19565492f5cce946690dafeb1d8c88fb727cb7941920cd4de75fc3d06e2.json",
+      "pages/8673872e6e3b754d1efe7a9ef9a0d3bca51aca2126c43ed485402f358cf62ed3.json",
+      "pages/77d04d49504ccbb4bbfe357ce6baa53695aad79dc82fc8234d1494d9940a3903.json",
+      "pages/a20d78839b03732f7831a0bc962602734e99e8af820578068a2051b260c38c0c.json",
+      "pages/2fe8376bc7e0170f848f0730b36d0ee50a06044f5d1701007a030025c50c6315.json"
     ]
   }
 }
