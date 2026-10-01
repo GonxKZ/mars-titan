@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "families": ["no_signal", "known_signal", "delayed_cue", "signal_reversal", "regime_recurrence", "source_conflict", "volatility_shift", "execution_friction"],
+  "generator": {"assets": 16, "sessions": 256, "warmup_sessions": 64, "regime_sessions": 64},
+  "worlds": {"train": 32, "validation": 16, "audit": 64},
+  "seed_base": 20260929,
+  "final_test_opened": false
+}

@@ -172,10 +172,12 @@ def public_checkpoint(raw, run, now):
     }
     saved_step = result["step"]
     if resumable and (saved_step is None or result["saved_at"] is None):
-        raise ValueError("La recuperación necesita un paso y una fecha de checkpoint observados.")
+        raise ValueError(
+            "La recuperación necesita un paso y una fecha de punto de control observados."
+        )
     if saved_step is not None and run["completed_steps"] is not None:
         if saved_step > run["completed_steps"]:
-            raise ValueError("Checkpoint posterior al progreso confirmado.")
+            raise ValueError("Punto de control posterior al progreso confirmado.")
     check_order(result["saved_at"], run["updated_at"])
     return result
 
@@ -367,7 +369,9 @@ def export_snapshot(
     if type(max_output_bytes) is not int or not 1 <= max_output_bytes <= 8388608:
         raise ValueError("El límite de salida debe estar entre 1 y 8388608 bytes.")
     if type(release_test) is not bool:
-        raise ValueError("La liberación del test debe ser una decisión booleana explícita.")
+        raise ValueError(
+            "La publicación de la prueba final debe ser una decisión booleana explícita."
+        )
     if type(timeout_seconds) not in (int, float) or not 0 < timeout_seconds <= 30:
         raise ValueError("El presupuesto de tiempo debe ser positivo y no superar 30 segundos.")
     deadline = time.monotonic() + timeout_seconds
@@ -392,7 +396,9 @@ def export_snapshot(
         )
         for run in runs
     ):
-        notes.append("Hay ejecuciones sin latido reciente. Su actividad no está confirmada.")
+        notes.append(
+            "Hay ejecuciones sin una señal de actividad reciente. Su actividad no está confirmada."
+        )
     if any(run["phase"] is None for run in runs):
         notes.append("Hay ejecuciones sin fase identificada. Sus métricas permanecen ocultas.")
     document = {
@@ -415,7 +421,9 @@ def main(argv=None):
     parser.add_argument("--input-dir", type=Path, default=Path("artifacts/runs"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
-        "--release-test", action="store_true", help="Liberar test de runs terminados."
+        "--release-test",
+        action="store_true",
+        help="Publicar las métricas de la prueba final de ejecuciones terminadas.",
     )
     parser.add_argument("--max-runs", type=int, default=128)
     parser.add_argument("--max-file-bytes", type=int, default=262144)

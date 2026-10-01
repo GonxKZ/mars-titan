@@ -1,5 +1,5 @@
 project = "MARS-TITAN"
-status = "design_only"
+status = "data_preparation_and_cost_probes"
 seed_selection = 42
 evaluation_seeds = [17, 42, 123]
 
@@ -16,6 +16,9 @@ timezone = "America/New_York"
 news_date_only_lag_sessions = 1
 charts = "regenerate_from_past_only"
 fundamentals = "require_publication_evidence"
+modalities = ["prices", "news", "fundamentals", "charts"]
+require_all_modalities = true
+require_macro_context = true
 
 [target]
 type = "market_residual"
@@ -41,6 +44,8 @@ max_configs_per_family = 10
 device = "cuda:0"
 allow_cpu_fallback = false
 planning_vram_gib = 8
+working_vram_gib = 6
+working_ram_gib = 20
 initial_context_sessions = 64
 initial_latent_dimension = 64
 initial_batch_size = 16

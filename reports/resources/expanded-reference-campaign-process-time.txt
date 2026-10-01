@@ -1,0 +1,23 @@
+	Command being timed: "uv run --no-sync python -m mars_titan.models.baselines.campaign --config configs/baselines/expanded-reference-variants.json --prepared data/processed/news-cohort-20260922 --samples data/processed/news-cohort-samples-20260922/US --output data/interim/expanded-reference-campaign-20260922"
+	User time (seconds): 693.77
+	System time (seconds): 209.36
+	Percent of CPU this job got: 98%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 15:19.76
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1635236
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 1862081
+	Voluntary context switches: 448272
+	Involuntary context switches: 17482
+	Swaps: 0
+	File system inputs: 688
+	File system outputs: 3349344
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

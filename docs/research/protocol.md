@@ -4,11 +4,11 @@ Autor: Gonzalo García Lama. Versión de trabajo ampliada: 18 de septiembre de 2
 
 ## Pregunta y alcance
 
-El estudio compara soluciones para predecir retornos residuales de un subconjunto del mercado estadounidense disponible en FinMultiTime. Se quiere determinar si una memoria adaptativa de eventos aporta información útil frente a modelos sin esa memoria, bajo las mismas condiciones de datos y evaluación. El trabajo no depende de demostrar superioridad: una comparación que identifique un efecto nulo o un coste desproporcionado también responde a la pregunta.
+El estudio compara soluciones para predecir retornos residuales de los mercados estadounidense y chino disponibles en FinMultiTime. La campaña de referencias amplía el recorrido a todo el universo admisible, con comparaciones por mercado y conjunta. Se quiere determinar si una memoria adaptativa de eventos aporta información útil frente a modelos sin esa memoria, bajo las mismas condiciones de datos y evaluación. El trabajo no depende de demostrar superioridad: una comparación que identifique un efecto nulo o un coste desproporcionado también responde a la pregunta.
 
 La contribución prevista tiene tres partes: un protocolo temporal verificable, una adaptación compacta de memoria neural y una comparación con ablaciones. La novedad de esa combinación debe justificarse frente al [estado del arte](../references/neural-review.md). El nombre MARS-TITAN no acredita por sí mismo una arquitectura novedosa. La propuesta toma ideas de Titans, pero no se presentará como una reproducción completa de sus resultados.
 
-Quedan fuera del núcleo: operaciones reales, conexión a un bróker, recomendaciones de inversión, generación de estrategias por refuerzo, autoedición de modelos al estilo SEAL y entrenamiento de grandes codificadores multimodales. China/HS300, varias escalas de memoria y kernels propios son extensiones condicionadas a tiempo y evidencia.
+Quedan fuera del núcleo las operaciones reales, la conexión a un bróker, las recomendaciones de inversión, la autoedición de modelos al estilo SEAL y el entrenamiento de grandes codificadores multimodales. La ampliación incorpora experimentos separados de refuerzo predictivo, decisiones financieras simuladas y ajuste conjunto. Su criterio principal sigue siendo el error predictivo, no el beneficio simulado. Varias escalas de memoria y kernels propios siguen condicionados a evidencia. La campaña china y la conjunta requieren resolver sus publicaciones, identidad y factor de mercado, sin dar por utilizables las cuatro modalidades solo porque existan sus archivos.
 
 ## Hipótesis registrables
 
@@ -16,14 +16,23 @@ Quedan fuera del núcleo: operaciones reales, conexión a un bróker, recomendac
 | --- | --- | --- |
 | H1. La memoria aporta señal adicional | Modelo completo frente al mismo codificador sin memoria. | Diferencia de MAE fuera de muestra favorable, intervalo por bloques temporales y consistencia entre ventanas. Informar también tamaño y coste del efecto. |
 | H2. La escritura selectiva importa | Sorpresa propuesta frente a escritura uniforme y sorpresa puramente predictiva. | Mejora que no se explique solo por más parámetros, más actualizaciones o más cómputo. |
-| H3. Hay complementariedad entre modalidades | Precios frente a precios+texto y modalidades adicionales auditadas. | Contribución sobre el mismo conjunto evaluable y análisis separado del efecto de disponibilidad de datos. |
+| H3. La representación multimodal afecta al resultado | Comparar codificadores y formas de fusión conservando las cuatro modalidades y las mismas muestras. | Diferencias que no se expliquen por cambios de cobertura. Una ablación que retire una modalidad requiere revisar explícitamente el alcance. |
 | H4. La incertidumbre ayuda a abstenerse | Riesgo-cobertura, calibración y simulación con/sin abstención. | Menor error o pérdida a coberturas comparables. Informar operaciones descartadas, costes y periodos sin señal. |
 
 Métrica primaria propuesta: **MAE del retorno residual**. Rank IC medio por sesión será una métrica secundaria prioritaria. Los resultados económicos son secundarios y no sustituyen la pregunta predictiva. La hipótesis principal, la métrica y la familia de comparaciones se congelarán antes de ejecutar el test final. No se fija una mejora porcentual esperada sin piloto que justifique su relevancia práctica.
 
 ## Universo y selección del subconjunto
 
-El piloto propone hasta 64 activos estadounidenses y la comparación principal hasta 128, con frecuencia diaria y un único horizonte principal de una sesión. El número final y las fechas se fijarán con la auditoría de cobertura y el tiempo medido, sin seleccionar por rentabilidad futura ni por disponibilidad durante todo el test. La selección se basará en información del periodo inicial y una regla determinista registrada. Conservará altas, bajas, cambios de símbolo y fechas de exclusión cuando existan. Se inventaría toda la copia y se prepara el recorrido por bloques. Ampliar a 256 activos, al universo completo o a China requiere una decisión de presupuesto registrada.
+La ampliación del 23 de septiembre de 2026 introduce [dos cohortes diferenciadas](../data/cohort-policies.md), original auditada y verificación externa estricta. La política acompaña cada edición y sus resultados. Esta ampliación no cambia retrospectivamente la admisión ni las conclusiones de las campañas anteriores.
+
+Actualización de la campaña de referencias: el [contrato del corpus completo](../engineering/comparison-campaign.md)
+amplía el recorrido a todos los instrumentos y muestras admisibles, sin el límite
+de 128 activos. Las cifras de piloto del párrafo siguiente describen la
+planificación inicial. La ampliación conserva las reglas temporales, las cuatro
+modalidades y el test cerrado. El candidato posterior deberá compararse con
+referencias ajustadas sobre los mismos datos de entrenamiento.
+
+El piloto propone hasta 64 activos estadounidenses y la comparación principal hasta 128, con frecuencia diaria y un único horizonte principal de una sesión. El número final y las fechas se fijarán con la auditoría de cobertura y el tiempo medido, sin seleccionar por rentabilidad futura ni por disponibilidad durante todo el test. La selección se basará en información del periodo inicial y una regla determinista registrada. Conservará altas, bajas, cambios de símbolo y fechas de exclusión cuando existan. Se inventariará toda la copia y se prepara el recorrido por bloques. Ampliar a 256 activos, al universo completo o a China requiere una decisión de presupuesto registrada.
 
 El universo de FinMultiTime no equivale a una lista de constituyentes históricos del S&P 500. Si no se reconstruye la pertenencia temporal, las conclusiones se limitarán explícitamente al universo retrospectivo disponible. No se impondrá como requisito que un activo sobreviva hasta el último día. Un manifiesto recogerá la versión, los archivos utilizados, los hashes, la regla de selección y cada motivo de exclusión. Véase la [ficha inicial](../data/finmultitime-card.md).
 
@@ -45,11 +54,11 @@ La extensión sectorial añadiría un factor y su coeficiente con la misma regla
 
 Todas las entradas deben cumplir `available_at <= prediction_at`. El calendario contable, la fecha del texto y el nombre de un archivo son indicios, no pruebas suficientes de disponibilidad. Las reglas completas se especifican en el [contrato de datos](../data/data-contract.md).
 
-Se propone comenzar con precios y texto de disponibilidad defendible. Cuando una noticia solo tiene fecha, se aplica un desplazamiento conservador hasta el cierre de la siguiente sesión posterior a esa fecha. Se estudiará sensibilidad a dos sesiones. Si no se puede verificar su fecha o relevancia para el activo, se excluye o se identifica como una aproximación en un análisis separado.
+Cada entrenamiento requiere precios, texto, fundamentales y gráficos, además de contexto macro verificado. No se admite una variante de dos modalidades como sustitución silenciosa. Cuando una noticia solo tiene fecha, se aplica un desplazamiento conservador hasta el cierre de la siguiente sesión posterior a esa fecha. Se estudiará sensibilidad a dos sesiones. Si no se puede verificar su fecha o relevancia para el activo, se excluye o se identifica como una aproximación en un análisis separado.
 
 Las tablas usarán cada hecho y su versión de publicación. Ni el fin del trimestre ni un filing exterior justifican retrospectivamente todas sus cifras. Los gráficos se regenerarán con una ventana que termine en t, evitando usar imágenes semestrales para predecir días interiores. Embeddings, normalizadores, selección de variables y diccionarios se registrarán por versión y corte de entrenamiento. Un codificador preentrenado publicado después del periodo evaluado puede introducir conocimiento retrospectivo: debe declararse y no presentarse como una simulación histórica estricta de disponibilidad del modelo.
 
-El [catálogo macroeconómico](../data/macro-catalog.md) amplía los candidatos por familias. Ninguna fila se admite por aparecer en el catálogo. Se requieren observaciones, versiones y disponibilidad histórica verificables. Una revisión conocida hoy es un evento nuevo y no reemplaza retroactivamente las entradas pasadas. El modelo con macro se compara con la misma arquitectura sin macro sobre muestras comunes.
+El [catálogo macroeconómico](../data/macro-catalog.md) amplía los candidatos por familias. Ninguna fila se admite por aparecer en el catálogo. Se requieren observaciones, versiones y disponibilidad histórica verificables. Una revisión conocida hoy es un evento nuevo y no reemplaza retroactivamente las entradas pasadas. La comparación actual mantiene el contexto macro en todos los modelos. Una variante que lo retire queda fuera del alcance vigente.
 
 ## Memoria y orden de actualización
 
@@ -65,7 +74,7 @@ En cada instante de decisión se procesarán los eventos en este orden:
 
 Esta convención es conservadora: una etiqueta conocida en t puede influir a partir de la siguiente decisión. Para las escrituras simultáneas se fija un orden canónico por `(label_available_at, event_id, asset_id)`, independiente del orden de carga. La permutación de activos debe conservar tanto las predicciones actuales como el estado final y las predicciones posteriores. Una agregación conjunta sería una variante distinta que exigiría especificar su reducción. Las actualizaciones autosupervisadas de entradas observadas, si se incluyen, tendrán una variante y un registro separados de la adaptación supervisada por etiquetas maduras.
 
-Cada fold reinicia memoria y optimizador interno. El calentamiento solo puede usar historia previa al comienzo de evaluación y etiquetas maduras. No se hereda el estado del final de otro fold. Se comparará memoria congelada con adaptación online predeterminada. Los hiperparámetros y reglas de actualización permanecerán fijados durante la evaluación.
+Cada ventana de evaluación reinicia la memoria y optimizador interno. El calentamiento solo puede usar historia previa al comienzo de evaluación y etiquetas maduras. No se hereda el estado del final de otra ventana. Se comparará memoria congelada con adaptación online predeterminada. Los hiperparámetros y reglas de actualización permanecerán fijados durante la evaluación.
 
 La [arquitectura candidata](candidate-architecture.md) distingue ese estado persistente de hasta cuatro pasos internos de lectura sobre una instantánea fija. Los pasos internos no escriben nuevos recuerdos ni consultan etiquetas futuras. La política de K se calibra como parte del predictor. Los errores de escritura proceden de predicciones conservadas, no recalculadas posteriormente. La consolidación de parámetros se limita inicialmente al entrenamiento y a reajustes programados anteriores al corte. Cambiar el codificador requiere reconstruir o migrar de forma comprobada los episodios.
 
@@ -85,9 +94,9 @@ flowchart LR
     E --> N[Siguiente corte<br/>nuevo ajuste con pasado]
 ```
 
-La búsqueda se limita inicialmente a diez configuraciones por familia principal y tres semillas de evaluación (`17`, `42`, `123`). Se registrarán todos los intentos, incluidos errores, descartes y cambios manuales. El límite se revisará con el piloto antes del test final. Cualquier reducción se aplicará de forma explicable a todas las familias.
+La [búsqueda implementada para la ampliación](../engineering/reference-search.md) fija doce configuraciones por familia principal, semilla `42` para seleccionar y semillas `42`, `43` y `44` para los finalistas. Se registra cada intento, incluidos errores y descartes. Este diseño sustituye el presupuesto inicial de diez configuraciones para las nuevas campañas, sin reinterpretar los experimentos anteriores. La reserva final permanece cerrada durante esa selección.
 
-Diez configuraciones es un techo y no una obligación. El [plan de cómputo](../engineering/compute-plan.md) comienza con un cribado menor y reserva recursos para confirmación y análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
+El [plan de cómputo](../engineering/compute-plan.md) distingue el cribado, la confirmación y el análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
 
 ## Métricas e interpretación
 
@@ -100,6 +109,10 @@ La simulación económica ordenará activos por señal al cierre de t y abrirá 
 Los retornos netos se calculan con retornos reales de activos, no sumando residuos como si fueran beneficios. Se estudiarán costes ilustrativos de 0, 5, 10 y 20 puntos básicos **por lado**, separados de préstamo de valores, impacto y deslizamiento. Los valores son escenarios de sensibilidad, no estimaciones observadas de ejecución. Si faltan disponibilidad de préstamo o precios ejecutables, se declara la limitación de la posición corta. La abstención deja capital en efectivo. Se informa su porcentaje y la exposición real, sin renormalizar silenciosamente el riesgo.
 
 Se publicarán retorno acumulado neto, drawdown máximo, rotación, exposición, número de operaciones y Sharpe diario con convención de anualización y análisis de dependencia. La incertidumbre se estimará remuestreando bloques de sesiones que conserven juntos los activos, sobre diferencias pareadas entre modelos. Longitud de bloque y sensibilidad se predefinen con el periodo de desarrollo. Las semillas no se tratarán como nuevos mercados independientes. La búsqueda múltiple se reflejará en los contrastes y en el registro de ensayos. PBO y DSR serán análisis complementarios cuando sus supuestos y datos de entrada estén justificados.
+
+La política financiera por refuerzo es otro experimento, distinto de la ordenación larga y corta descrita anteriormente. Su alcance previsto es efectivo o posiciones largas, sin apalancamiento, con ejecución en aperturas posteriores y cuentas separadas por moneda. No reutiliza retornos residuales como beneficios. Las restricciones de cada instrumento y fecha, incluidas las de China, deben estar acreditadas antes de simular sus operaciones.
+
+El [entorno predictivo causal](../engineering/causal-prediction-environment.md) separa observaciones, acciones y etiquetas maduras. Su implementación no acredita que estén terminados la política financiera, el ajuste conjunto o sus campañas. Los tres experimentos deben conservar padres, población y presupuestos comparables, y mantener el error predictivo como criterio principal.
 
 ## Reglas para cerrar el estudio
 

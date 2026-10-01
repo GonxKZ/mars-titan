@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "source": "native/src/simulation_files.cpp",
+  "source_sha256": "7b051a40ba214c23d32c16a626a6bf3752bc918f477a4d7b6097728fef609a96",
+  "mutation": {
+    "before": "if (pending_event) {",
+    "after": "if (pending_event && session.cursor() % options.checkpoint_steps == 0) {"
+  },
+  "compiler": "Clang 21.1.8",
+  "compile_exit": 0,
+  "link_exit": 0,
+  "test_exit": 1,
+  "test": "test_native_resume_preserves_exact_state_and_does_not_restart_initial_policy",
+  "detected": true,
+  "original_unchanged": true,
+  "scope": "Una mutación dirigida en copia externa. Se omite el evento al pausar entre checkpoints."
+}

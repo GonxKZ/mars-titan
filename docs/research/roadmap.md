@@ -1,15 +1,15 @@
 # Objetivos, hitos y criterios de cierre
 
-El trabajo se organiza en seis hitos alineados con la propuesta presentada. No son seis carpetas ni una secuencia rígida de implementación. El contrato de datos y el protocolo permiten iniciar referencias simples mientras se estudia la memoria. La comparación se cierra antes de redactar conclusiones.
+El trabajo se organiza en seis objetivos relacionados entre sí. El contrato de datos y el protocolo permiten empezar por referencias sencillas mientras se estudia la memoria. La comparación se cierra antes de redactar conclusiones.
 
 | Hito | Entregable | Criterios de aceptación | Dependencia principal |
 | --- | --- | --- | --- |
 | O1. Datos multimodales | Manifiesto, ficha de datos, tabla experimental y auditoría temporal. | Procedencia y disponibilidad por modalidad. Exclusiones justificadas. Cobertura real. Prueba contra contaminación futura y revisión de licencias. | Requisitos, acceso y protocolo. |
 | O2. Retornos residuales | Definición de etiqueta y residualizador reproducible. | Fechas de entrada/salida precisas. Coeficientes con historia permitida. Comparación bruto/residual. Sensibilidad al mercado y sector si verificable. | O1 y calendario de decisión. |
 | O3. Memoria adaptativa | Diseño e implementación compacta con incertidumbre. | Lectura y escritura ordenadas. Etiquetas maduras. Estado reiniciable. Prueba numérica y presupuesto medido en CUDA. | O1/O2 y referencia neural simple. |
-| O4. Referencias y ablaciones | Modelos comparables y matriz de componentes. | Mismo universo, targets, cortes y búsqueda registrada. Referencias cero/Ridge/boosting/GRU y variantes de memoria. | O1/O2. O3 para las ablaciones finales. |
+| O4. Referencias y ablaciones | Modelos comparables y matriz de componentes. | Mismo universo, variables objetivo, cortes y búsqueda registrada. Referencias cero/Ridge/boosting/GRU y variantes de memoria. | O1/O2. O3 para las ablaciones finales. |
 | O5. Evaluación | Predicciones fuera de muestra e informe verificable. | Walk-forward purgado, calibración separada, costes completos, intervalos por bloques, test final protegido y todas las ejecuciones registradas. | Protocolo fijado y O4. |
-| O6. Interpretación y memoria | Discusión, limitaciones, conclusiones y defensa. | Responder O1–O6 con evidencia, resultados negativos incluidos, referencias correctas, requisitos académicos revisados y ensayo de defensa. | Evidencias de O1–O5. Redacción paralela. |
+| O6. Interpretación e informe | Discusión, limitaciones, conclusiones y presentación de resultados. | Responder O1–O6 con evidencias, incluidos resultados negativos. Revisar referencias y explicar métodos, figuras y limitaciones. | Evidencias de O1–O5. Redacción paralela. |
 
 ## Orden práctico
 
@@ -21,15 +21,21 @@ flowchart LR
     B --> M[O3 · Memoria]
     M --> A[O4 · Ablaciones]
     A --> E[O5 · Evaluación cerrada]
-    E --> C[O6 · Conclusiones y defensa]
+    E --> C[O6 · Conclusiones y documentación]
     R -. escritura continua .-> C
 ```
 
-Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) desarrolla las tareas, dependencias y prioridades. Sus fechas se asignarán cuando se conozca el calendario del aula. Las duraciones estimadas son de planificación, no compromisos institucionales.
+Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) desarrolla las tareas, dependencias y prioridades. Las fechas se fijarán cuando se concrete el calendario del proyecto. Las duraciones estimadas no son fechas de entrega confirmadas.
 
 ## Alcance mínimo y extensiones
 
-El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, precios y texto de disponibilidad justificable, referencias de varias familias y una memoria compacta con ablaciones. Los fundamentales y gráficos deben auditarse y evaluarse cuando sean válidos. Excluirlos requiere evidencia y discusión, no omisión silenciosa del primer objetivo.
+La [campaña previa de referencias](../engineering/comparison-campaign.md) pasa a
+recorrer el universo completo admisible. No se limita a las cifras iniciales de
+64 o 128 activos descritas debajo. O1, O2 y las referencias de O4 pueden avanzar
+en paralelo con O5, siempre que cada entrenamiento use una instantánea de datos
+fijada y validada. El desarrollo del candidato no forma parte de esa campaña.
+
+El mínimo científico es una comparación estadounidense reproducible, con piloto de hasta 64 activos y selección principal propuesta de hasta 128. Incluye un horizonte diario, las cuatro modalidades de disponibilidad justificable, contexto macro, referencias de varias familias y una memoria compacta con ablaciones de componentes. Una muestra sin alguna modalidad se excluye. No se sustituye por entrenamiento de dos modalidades.
 
 La residualización sectorial, un Transformer adicional, HS300, memorias jerárquicas completas y kernels C++/CUDA son extensiones. Su activación exige que los controles temporales y las referencias funcionen, que exista presupuesto medido y que la comparación principal no quede comprometida.
 
@@ -37,4 +43,4 @@ La [ampliación](research-expansion.md) añade estudio cerebral, macroeconomía,
 
 ## Cierre de una tarea
 
-Una tarea se cierra con el artefacto enlazado, su comprobación y las limitaciones que permanecen. Un documento de diseño puede cerrar la tarea de diseño. No cierra implementación, experimento ni validación del objetivo. La matriz de rúbrica mantendrá esa diferencia durante todo el proyecto.
+Una tarea se cierra con el artefacto enlazado, su comprobación y las limitaciones que permanecen. Un documento de diseño puede cerrar la tarea de diseño. No cierra implementación, experimento ni validación del objetivo. El tablero y los informes deben mantener esa diferencia.

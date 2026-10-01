@@ -1,0 +1,890 @@
+{
+  "schema_version": 1,
+  "domain": "technical",
+  "python": "3.12.14",
+  "duckdb": "1.5.5",
+  "numpy": "2.5.3",
+  "pyarrow": "25.0.1",
+  "source_sha256": "075ee37832f09f0fe3c4df44e2748e3eceaa988fd6d3bb2a42e2f1ca87029cd2",
+  "candidate_commit": "1de05b2ff8a1c08d8865233ad30fa0bf8e0c34b0",
+  "code_sha256": {
+    "environments/corpus_source.py": "5e8dc507ec244b5f05a2fcfb0cb2d48c5a2060ce730d5a860cce2fd155e2a902",
+    "environments/cohorts.py": "45095f4cca23cc5ea6ab4c25190ae413d62fbfd37d9026981892bae8c0d0fda7",
+    "environments/actions.py": "78d01ec28ce7378ff5b066aabf324984686014209a1dac7e5d12efcbff844f6a",
+    "training/corpus_inputs.py": "77dacde1de45d4ea393e1ce2a94aa3af6d7acd36d286b1af7b6fd85d977068ef",
+    "training/cohort_contract.py": "2bda4ddd8936d80aac5d7ea444dda8cd647b3c9ee4cc9352c05ed9ec787485a9",
+    "training/run_receipts.py": "fb527a0c578f624220a732890c452d05537ed44546ca36d3d322becc088d5fab",
+    "data/streaming.py": "c763ec4c422bc298b816412343f576fa71e93e6a215f104aa405fe1232b89357",
+    "data/batches.py": "2fabe5c9212b99d434c137c0f7099e7a41100b1d0f8e9ea154737dbe815de99f",
+    "data/cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "data/cohort_news.py": "335302918bf8380915d559396c8de5aa3f35746e3982ce6b89ca9e3e84b0f70b",
+    "data/storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd"
+  },
+  "settings": {
+    "threads": 4,
+    "memory_limit": "8GiB",
+    "max_temp_directory_size": "32GiB",
+    "preserve_insertion_order": true,
+    "service_memory_max_bytes": 12884901888
+  },
+  "baseline_512_mib": {
+    "status": "failed",
+    "attempt_seconds": 203.05685194000034,
+    "process_lifetime_peak_rss_bytes": 1740345344,
+    "error_type": "OutOfMemoryException",
+    "error": "Out of Memory Error: failed to pin block of size 256.0 KiB (512.3 MiB/512.0 MiB used)\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+  },
+  "trial_4_gib": {
+    "status": "failed",
+    "attempt_seconds": 222.86993260000236,
+    "process_lifetime_peak_rss_bytes": 6050693120,
+    "error_type": "OutOfMemoryException",
+    "error": "Out of Memory Error: failed to allocate data of size 3.2 MiB (3.9 GiB/4.0 GiB used)\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+  },
+  "verified_8_gib": {
+    "schema_version": 1,
+    "memory_limit": "8GiB",
+    "samples": [
+      {
+        "observed_at": "2026-09-26T06:57:14.683811+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 876367872,
+        "peak_rss": 881029120,
+        "read_bytes": 7530778624,
+        "write_bytes": 1668370432,
+        "cgroup_memory_bytes": 8833073152
+      },
+      {
+        "observed_at": "2026-09-26T06:57:19.684696+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 872267776,
+        "peak_rss": 881029120,
+        "read_bytes": 7587667968,
+        "write_bytes": 1975508992,
+        "cgroup_memory_bytes": 9202200576
+      },
+      {
+        "observed_at": "2026-09-26T06:57:24.686041+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 876371968,
+        "peak_rss": 881029120,
+        "read_bytes": 7676428288,
+        "write_bytes": 2298884096,
+        "cgroup_memory_bytes": 9486229504
+      },
+      {
+        "observed_at": "2026-09-26T06:57:29.687231+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 877076480,
+        "peak_rss": 881029120,
+        "read_bytes": 7731982336,
+        "write_bytes": 2632929280,
+        "cgroup_memory_bytes": 9593401344
+      },
+      {
+        "observed_at": "2026-09-26T06:57:34.688425+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 885088256,
+        "peak_rss": 885088256,
+        "read_bytes": 7824916480,
+        "write_bytes": 2953682944,
+        "cgroup_memory_bytes": 9570017280
+      },
+      {
+        "observed_at": "2026-09-26T06:57:39.689774+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 888135680,
+        "peak_rss": 889507840,
+        "read_bytes": 7894609920,
+        "write_bytes": 3184381952,
+        "cgroup_memory_bytes": 9596100608
+      },
+      {
+        "observed_at": "2026-09-26T06:57:44.690896+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 884625408,
+        "peak_rss": 892424192,
+        "read_bytes": 7964164096,
+        "write_bytes": 3512991744,
+        "cgroup_memory_bytes": 9588682752
+      },
+      {
+        "observed_at": "2026-09-26T06:57:49.692133+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 891084800,
+        "peak_rss": 896024576,
+        "read_bytes": 8080740352,
+        "write_bytes": 3826032640,
+        "cgroup_memory_bytes": 9621401600
+      },
+      {
+        "observed_at": "2026-09-26T06:57:54.693425+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 894025728,
+        "peak_rss": 896024576,
+        "read_bytes": 8173719552,
+        "write_bytes": 4146225152,
+        "cgroup_memory_bytes": 9629298688
+      },
+      {
+        "observed_at": "2026-09-26T06:57:59.694640+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 892846080,
+        "peak_rss": 902828032,
+        "read_bytes": 8256573440,
+        "write_bytes": 4466810880,
+        "cgroup_memory_bytes": 9764818944
+      },
+      {
+        "observed_at": "2026-09-26T06:58:04.695574+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 898478080,
+        "peak_rss": 902828032,
+        "read_bytes": 8342036480,
+        "write_bytes": 4715819008,
+        "cgroup_memory_bytes": 9710292992
+      },
+      {
+        "observed_at": "2026-09-26T06:58:09.696780+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 900104192,
+        "peak_rss": 902828032,
+        "read_bytes": 8447741952,
+        "write_bytes": 5024137216,
+        "cgroup_memory_bytes": 9738563584
+      },
+      {
+        "observed_at": "2026-09-26T06:58:14.698128+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 905601024,
+        "peak_rss": 905601024,
+        "read_bytes": 8563032064,
+        "write_bytes": 5307641856,
+        "cgroup_memory_bytes": 10011222016
+      },
+      {
+        "observed_at": "2026-09-26T06:58:19.699004+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 905031680,
+        "peak_rss": 905637888,
+        "read_bytes": 8628060160,
+        "write_bytes": 5605826560,
+        "cgroup_memory_bytes": 10328416256
+      },
+      {
+        "observed_at": "2026-09-26T06:58:24.700143+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 906498048,
+        "peak_rss": 915263488,
+        "read_bytes": 8650600448,
+        "write_bytes": 5923065856,
+        "cgroup_memory_bytes": 9922355200
+      },
+      {
+        "observed_at": "2026-09-26T06:58:29.700736+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 910323712,
+        "peak_rss": 915812352,
+        "read_bytes": 8690614272,
+        "write_bytes": 6244184064,
+        "cgroup_memory_bytes": 9787715584
+      },
+      {
+        "observed_at": "2026-09-26T06:58:34.701979+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 916729856,
+        "peak_rss": 916729856,
+        "read_bytes": 8750145536,
+        "write_bytes": 6472798208,
+        "cgroup_memory_bytes": 9674727424
+      },
+      {
+        "observed_at": "2026-09-26T06:58:39.703222+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 917200896,
+        "peak_rss": 922189824,
+        "read_bytes": 8838889472,
+        "write_bytes": 6788173824,
+        "cgroup_memory_bytes": 9782542336
+      },
+      {
+        "observed_at": "2026-09-26T06:58:44.703815+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 917671936,
+        "peak_rss": 927674368,
+        "read_bytes": 8945053696,
+        "write_bytes": 7110545408,
+        "cgroup_memory_bytes": 9829343232
+      },
+      {
+        "observed_at": "2026-09-26T06:58:49.704545+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 922648576,
+        "peak_rss": 927674368,
+        "read_bytes": 9067012096,
+        "write_bytes": 7429062656,
+        "cgroup_memory_bytes": 9978408960
+      },
+      {
+        "observed_at": "2026-09-26T06:58:54.705737+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 921546752,
+        "peak_rss": 928542720,
+        "read_bytes": 9187803136,
+        "write_bytes": 7730233344,
+        "cgroup_memory_bytes": 10044899328
+      },
+      {
+        "observed_at": "2026-09-26T06:58:59.706888+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 930410496,
+        "peak_rss": 931221504,
+        "read_bytes": 9274929152,
+        "write_bytes": 8043466752,
+        "cgroup_memory_bytes": 10154831872
+      },
+      {
+        "observed_at": "2026-09-26T06:59:04.708126+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 932622336,
+        "peak_rss": 933437440,
+        "read_bytes": 9357426688,
+        "write_bytes": 8274591744,
+        "cgroup_memory_bytes": 10137755648
+      },
+      {
+        "observed_at": "2026-09-26T06:59:09.709165+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 935276544,
+        "peak_rss": 937857024,
+        "read_bytes": 9428467712,
+        "write_bytes": 8518410240,
+        "cgroup_memory_bytes": 10195111936
+      },
+      {
+        "observed_at": "2026-09-26T06:59:14.710496+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 928137216,
+        "peak_rss": 937857024,
+        "read_bytes": 9554743296,
+        "write_bytes": 8772550656,
+        "cgroup_memory_bytes": 10268905472
+      },
+      {
+        "observed_at": "2026-09-26T06:59:19.711516+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 931864576,
+        "peak_rss": 937857024,
+        "read_bytes": 9665630208,
+        "write_bytes": 9017946112,
+        "cgroup_memory_bytes": 10290946048
+      },
+      {
+        "observed_at": "2026-09-26T06:59:24.712598+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 934621184,
+        "peak_rss": 937857024,
+        "read_bytes": 9813245952,
+        "write_bytes": 9317658624,
+        "cgroup_memory_bytes": 10444251136
+      },
+      {
+        "observed_at": "2026-09-26T06:59:29.713974+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 933543936,
+        "peak_rss": 937857024,
+        "read_bytes": 9920229376,
+        "write_bytes": 9537896448,
+        "cgroup_memory_bytes": 10406744064
+      },
+      {
+        "observed_at": "2026-09-26T06:59:34.714975+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 4424146944,
+        "peak_rss": 4424146944,
+        "read_bytes": 12190310400,
+        "write_bytes": 9623269376,
+        "cgroup_memory_bytes": 10481156096
+      },
+      {
+        "observed_at": "2026-09-26T06:59:39.739005+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 10072162304,
+        "peak_rss": 10087424000,
+        "read_bytes": 15568412672,
+        "write_bytes": 10309169152,
+        "cgroup_memory_bytes": 10560667648
+      },
+      {
+        "observed_at": "2026-09-26T06:59:44.739778+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 8126746624,
+        "peak_rss": 10087424000,
+        "read_bytes": 17349779456,
+        "write_bytes": 12138573824,
+        "cgroup_memory_bytes": 12254633984
+      },
+      {
+        "observed_at": "2026-09-26T06:59:49.740672+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 7404380160,
+        "peak_rss": 10087424000,
+        "read_bytes": 18497142784,
+        "write_bytes": 12334985216,
+        "cgroup_memory_bytes": 12880142336
+      },
+      {
+        "observed_at": "2026-09-26T06:59:54.742285+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 6431662080,
+        "peak_rss": 10087424000,
+        "read_bytes": 18678390784,
+        "write_bytes": 13752823808,
+        "cgroup_memory_bytes": 12865114112
+      },
+      {
+        "observed_at": "2026-09-26T06:59:59.743177+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 7328989184,
+        "peak_rss": 10087424000,
+        "read_bytes": 19599745024,
+        "write_bytes": 14427516928,
+        "cgroup_memory_bytes": 12884885504
+      },
+      {
+        "observed_at": "2026-09-26T07:00:04.744773+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 7831470080,
+        "peak_rss": 10087424000,
+        "read_bytes": 20312281088,
+        "write_bytes": 15155818496,
+        "cgroup_memory_bytes": 12685725696
+      },
+      {
+        "observed_at": "2026-09-26T07:00:09.746126+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 8116703232,
+        "peak_rss": 10087424000,
+        "read_bytes": 20746383360,
+        "write_bytes": 15676108800,
+        "cgroup_memory_bytes": 12882841600
+      },
+      {
+        "observed_at": "2026-09-26T07:00:14.747032+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 8574590976,
+        "peak_rss": 10087424000,
+        "read_bytes": 21130391552,
+        "write_bytes": 16009359360,
+        "cgroup_memory_bytes": 12881637376
+      },
+      {
+        "observed_at": "2026-09-26T07:00:19.748402+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 8663138304,
+        "peak_rss": 10087424000,
+        "read_bytes": 21523701760,
+        "write_bytes": 16720064512,
+        "cgroup_memory_bytes": 12884733952
+      },
+      {
+        "observed_at": "2026-09-26T07:00:24.749766+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9038880768,
+        "peak_rss": 10087424000,
+        "read_bytes": 21896364032,
+        "write_bytes": 17098305536,
+        "cgroup_memory_bytes": 12884819968
+      },
+      {
+        "observed_at": "2026-09-26T07:00:29.751343+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9205559296,
+        "peak_rss": 10087424000,
+        "read_bytes": 22447304704,
+        "write_bytes": 17741213696,
+        "cgroup_memory_bytes": 12884443136
+      },
+      {
+        "observed_at": "2026-09-26T07:00:34.752235+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9424429056,
+        "peak_rss": 10087424000,
+        "read_bytes": 23161085952,
+        "write_bytes": 19162263552,
+        "cgroup_memory_bytes": 12881559552
+      },
+      {
+        "observed_at": "2026-09-26T07:00:39.753638+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9467351040,
+        "peak_rss": 10087424000,
+        "read_bytes": 23668043776,
+        "write_bytes": 20008267776,
+        "cgroup_memory_bytes": 12882468864
+      },
+      {
+        "observed_at": "2026-09-26T07:00:44.754554+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 11102789632,
+        "peak_rss": 11527593984,
+        "read_bytes": 23917928448,
+        "write_bytes": 21320921088,
+        "cgroup_memory_bytes": 12446654464
+      },
+      {
+        "observed_at": "2026-09-26T07:00:49.756253+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 11486507008,
+        "peak_rss": 11527593984,
+        "read_bytes": 24778014720,
+        "write_bytes": 21782495232,
+        "cgroup_memory_bytes": 12882284544
+      },
+      {
+        "observed_at": "2026-09-26T07:00:54.757258+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9161318400,
+        "peak_rss": 11587465216,
+        "read_bytes": 25208328192,
+        "write_bytes": 22793764864,
+        "cgroup_memory_bytes": 11339337728
+      },
+      {
+        "observed_at": "2026-09-26T07:00:59.758139+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9114324992,
+        "peak_rss": 11587465216,
+        "read_bytes": 25867194368,
+        "write_bytes": 24060063744,
+        "cgroup_memory_bytes": 10950578176
+      },
+      {
+        "observed_at": "2026-09-26T07:01:04.759493+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 10701631488,
+        "peak_rss": 11587465216,
+        "read_bytes": 26740322304,
+        "write_bytes": 25219723264,
+        "cgroup_memory_bytes": 12643880960
+      },
+      {
+        "observed_at": "2026-09-26T07:01:09.760101+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 10363314176,
+        "peak_rss": 11587465216,
+        "read_bytes": 27300499456,
+        "write_bytes": 26599866368,
+        "cgroup_memory_bytes": 12882804736
+      },
+      {
+        "observed_at": "2026-09-26T07:01:14.761385+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 10336555008,
+        "peak_rss": 11587465216,
+        "read_bytes": 27308855296,
+        "write_bytes": 27621359616,
+        "cgroup_memory_bytes": 11951427584
+      },
+      {
+        "observed_at": "2026-09-26T07:01:19.762993+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9734795264,
+        "peak_rss": 11587465216,
+        "read_bytes": 27412713472,
+        "write_bytes": 30860640256,
+        "cgroup_memory_bytes": 12791963648
+      },
+      {
+        "observed_at": "2026-09-26T07:01:24.764459+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 9889148928,
+        "peak_rss": 11587465216,
+        "read_bytes": 27425656832,
+        "write_bytes": 32894222336,
+        "cgroup_memory_bytes": 12432977920
+      },
+      {
+        "observed_at": "2026-09-26T07:01:29.766274+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 4533100544,
+        "peak_rss": 11587465216,
+        "read_bytes": 27895123968,
+        "write_bytes": 34309292032,
+        "cgroup_memory_bytes": 7100051456
+      },
+      {
+        "observed_at": "2026-09-26T07:01:34.767146+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 4110086144,
+        "peak_rss": 11587465216,
+        "read_bytes": 28301213696,
+        "write_bytes": 35241771008,
+        "cgroup_memory_bytes": 6898085888
+      },
+      {
+        "observed_at": "2026-09-26T07:01:39.768514+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 1700712448,
+        "peak_rss": 11587465216,
+        "read_bytes": 28380602368,
+        "write_bytes": 36700921856,
+        "cgroup_memory_bytes": 3402788864
+      },
+      {
+        "observed_at": "2026-09-26T07:01:44.769898+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 469770240,
+        "peak_rss": 11587465216,
+        "read_bytes": 28847681536,
+        "write_bytes": 36700921856,
+        "cgroup_memory_bytes": 2623328256
+      },
+      {
+        "observed_at": "2026-09-26T07:01:49.771373+00:00",
+        "status": "running",
+        "confirmed_partitions": [],
+        "rss": 469770240,
+        "peak_rss": 11587465216,
+        "read_bytes": 31901224960,
+        "write_bytes": 36700921856,
+        "cgroup_memory_bytes": 5683134464
+      },
+      {
+        "observed_at": "2026-09-26T07:01:54.775739+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 545492992,
+        "peak_rss": 11587465216,
+        "read_bytes": 32857432064,
+        "write_bytes": 36722135040,
+        "cgroup_memory_bytes": 6697463808
+      },
+      {
+        "observed_at": "2026-09-26T07:01:59.780225+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 565555200,
+        "peak_rss": 11587465216,
+        "read_bytes": 32996691968,
+        "write_bytes": 36815630336,
+        "cgroup_memory_bytes": 6946598912
+      },
+      {
+        "observed_at": "2026-09-26T07:02:04.784053+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 576004096,
+        "peak_rss": 11587465216,
+        "read_bytes": 33135132672,
+        "write_bytes": 36913442816,
+        "cgroup_memory_bytes": 7193456640
+      },
+      {
+        "observed_at": "2026-09-26T07:02:09.787428+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 582348800,
+        "peak_rss": 11587465216,
+        "read_bytes": 33281675264,
+        "write_bytes": 37023764480,
+        "cgroup_memory_bytes": 7457988608
+      },
+      {
+        "observed_at": "2026-09-26T07:02:14.791003+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 581435392,
+        "peak_rss": 11587465216,
+        "read_bytes": 33439920128,
+        "write_bytes": 37131689984,
+        "cgroup_memory_bytes": 7715606528
+      },
+      {
+        "observed_at": "2026-09-26T07:02:19.794377+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 635752448,
+        "peak_rss": 11587465216,
+        "read_bytes": 33594417152,
+        "write_bytes": 37233651712,
+        "cgroup_memory_bytes": 8024150016
+      },
+      {
+        "observed_at": "2026-09-26T07:02:24.797442+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 638840832,
+        "peak_rss": 11587465216,
+        "read_bytes": 33742925824,
+        "write_bytes": 37338214400,
+        "cgroup_memory_bytes": 8287420416
+      },
+      {
+        "observed_at": "2026-09-26T07:02:29.801558+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 620875776,
+        "peak_rss": 11587465216,
+        "read_bytes": 33890086912,
+        "write_bytes": 37444653056,
+        "cgroup_memory_bytes": 8518447104
+      },
+      {
+        "observed_at": "2026-09-26T07:02:34.804691+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 633892864,
+        "peak_rss": 11587465216,
+        "read_bytes": 34027548672,
+        "write_bytes": 37543763968,
+        "cgroup_memory_bytes": 8773136384
+      },
+      {
+        "observed_at": "2026-09-26T07:02:39.807562+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 636133376,
+        "peak_rss": 11587465216,
+        "read_bytes": 34181423104,
+        "write_bytes": 37656051712,
+        "cgroup_memory_bytes": 9062240256
+      },
+      {
+        "observed_at": "2026-09-26T07:02:44.811724+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 623267840,
+        "peak_rss": 11587465216,
+        "read_bytes": 34313510912,
+        "write_bytes": 37747761152,
+        "cgroup_memory_bytes": 9253224448
+      },
+      {
+        "observed_at": "2026-09-26T07:02:49.815086+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 647524352,
+        "peak_rss": 11587465216,
+        "read_bytes": 34447785984,
+        "write_bytes": 37844488192,
+        "cgroup_memory_bytes": 9513787392
+      },
+      {
+        "observed_at": "2026-09-26T07:02:54.818750+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 649555968,
+        "peak_rss": 11587465216,
+        "read_bytes": 34604109824,
+        "write_bytes": 37959491584,
+        "cgroup_memory_bytes": 9790394368
+      },
+      {
+        "observed_at": "2026-09-26T07:02:59.822477+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 649887744,
+        "peak_rss": 11587465216,
+        "read_bytes": 34740813824,
+        "write_bytes": 38055428096,
+        "cgroup_memory_bytes": 10029686784
+      },
+      {
+        "observed_at": "2026-09-26T07:03:04.826314+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 651423744,
+        "peak_rss": 11587465216,
+        "read_bytes": 34878013440,
+        "write_bytes": 38160211968,
+        "cgroup_memory_bytes": 10276708352
+      },
+      {
+        "observed_at": "2026-09-26T07:03:09.829978+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 651972608,
+        "peak_rss": 11587465216,
+        "read_bytes": 35026481152,
+        "write_bytes": 38267211776,
+        "cgroup_memory_bytes": 10535260160
+      },
+      {
+        "observed_at": "2026-09-26T07:03:14.832129+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 5411573760,
+        "peak_rss": 11587465216,
+        "read_bytes": 35089973248,
+        "write_bytes": 38316101632,
+        "cgroup_memory_bytes": 12842897408
+      },
+      {
+        "observed_at": "2026-09-26T07:03:19.835847+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train"
+        ],
+        "rss": 600072192,
+        "peak_rss": 11587465216,
+        "read_bytes": 35089993728,
+        "write_bytes": 39450664960,
+        "cgroup_memory_bytes": 7776563200
+      },
+      {
+        "observed_at": "2026-09-26T07:03:24.839970+00:00",
+        "status": "running",
+        "confirmed_partitions": [
+          "train",
+          "validation"
+        ],
+        "rss": 600428544,
+        "peak_rss": 11587465216,
+        "read_bytes": 37526528000,
+        "write_bytes": 39450894336,
+        "cgroup_memory_bytes": 8551944192
+      },
+      {
+        "observed_at": "2026-09-26T07:03:29.842648+00:00",
+        "status": "completed",
+        "confirmed_partitions": [
+          "train",
+          "validation"
+        ],
+        "rss": 615682048,
+        "peak_rss": 11587465216,
+        "read_bytes": 39043379200,
+        "write_bytes": 39451369472,
+        "cgroup_memory_bytes": 9944641536
+      }
+    ],
+    "observation_seconds": 375.1594669110018,
+    "preparation_seconds": 415.48050616800174,
+    "process_peak_rss_bytes": 11587465216,
+    "status": "completed",
+    "counts": {
+      "train": 1548307,
+      "validation": 261069
+    },
+    "source_sha256": "075ee37832f09f0fe3c4df44e2748e3eceaa988fd6d3bb2a42e2f1ca87029cd2",
+    "error": null,
+    "final_test_opened": false
+  },
+  "partitions": {
+    "train": {
+      "rows": 1548307,
+      "size_bytes": 6307465656,
+      "max_assets": 1276,
+      "market_rows": {
+        "US": 1548307
+      },
+      "sha256": "9c4583ab54febb901487950630d1b15a99e8772f0e5746a7414319291f3e5b90"
+    },
+    "validation": {
+      "rows": 261069,
+      "size_bytes": 1134561416,
+      "max_assets": 1394,
+      "market_rows": {
+        "US": 261069
+      },
+      "sha256": "1165d59ab73a7095f5d7f1321251629b183f6dcb7d8472eafc7e8fccad43d201"
+    }
+  },
+  "final_test_opened": false,
+  "limits": [
+    "memory_limit solo cubre la memoria gestionada por DuckDB. VmHWM recoge el máximo residente del proceso.",
+    "La memoria del cgroup incluye caché de archivos. Se mantuvo el límite de 12 GiB y no hubo OOM del sistema en esta ejecución.",
+    "No se compara tiempo de una ejecución completada con tiempos hasta el fallo como una aceleración.",
+    "La observación de I/O comienza después de arrancar la cola y sus contadores incluyen la admisión de padres."
+  ]
+}

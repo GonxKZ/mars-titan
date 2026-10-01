@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "conditions": ["real", "real_resampled", "real_synthetic"],
+  "modes": ["reinforce", "expected", "mae", "klpo_full", "klpo_mc", "klpo_exact"],
+  "neural_controls": ["neural_mae", "neural_mse"],
+  "seeds": [42, 43, 44],
+  "fraction": 0.25,
+  "decisions": 16,
+  "warmup": 16,
+  "epochs": 5,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.01,
+  "clip_norm": 1.0,
+  "beta": 0.1,
+  "behavior_epsilon": 0.000001,
+  "auxiliary_samples": 128,
+  "batch_size": 256,
+  "checkpoint_seconds": 60,
+  "selection": {
+    "version": 2,
+    "metric": "session_mae",
+    "patience": null,
+    "min_delta": 0.0
+  },
+  "final_test_opened": false
+}

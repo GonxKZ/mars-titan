@@ -1,0 +1,281 @@
+{
+  "full_suite": {
+    "passed": 1182,
+    "skipped": 0,
+    "seconds": 103.37
+  },
+  "focused_suite": {
+    "passed": 49
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/training/checkpoints.py",
+      "sha256": "f303e432c164d16b84cd379e89dc42196bbd0d00a91aa385e7766c628c2bb941",
+      "coverage": {
+        "covered_lines": 171,
+        "num_statements": 190,
+        "percent_covered": 87.05035971223022,
+        "percent_covered_display": "87",
+        "missing_lines": 19,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.0,
+        "percent_statements_covered_display": "90",
+        "num_branches": 88,
+        "num_partial_branches": 17,
+        "covered_branches": 71,
+        "missing_branches": 17,
+        "percent_branches_covered": 80.68181818181819,
+        "percent_branches_covered_display": "81"
+      },
+      "functions": [
+        {
+          "name": "_json",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.5,
+          "crap": 8.125
+        },
+        {
+          "name": "_locked",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.92,
+          "crap": 13.086528
+        },
+        {
+          "name": "_record_valid",
+          "complexity": 9,
+          "statement_coverage_fraction": 1.0,
+          "crap": 9.0
+        },
+        {
+          "name": "_index",
+          "complexity": 13,
+          "statement_coverage_fraction": 1.0,
+          "crap": 13.0
+        },
+        {
+          "name": "_intact",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "_tensor_bytes",
+          "complexity": 10,
+          "statement_coverage_fraction": 1.0,
+          "crap": 10.0
+        },
+        {
+          "name": "_read_payload",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.8181818181818182,
+          "crap": 10.601051840721261
+        },
+        {
+          "name": "save_training_state",
+          "complexity": 26,
+          "statement_coverage_fraction": 0.8666666666666667,
+          "crap": 27.60237037037037
+        },
+        {
+          "name": "load_training_state",
+          "complexity": 17,
+          "statement_coverage_fraction": 0.9166666666666666,
+          "crap": 17.16724537037037
+        },
+        {
+          "name": "capture_rng",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 5.9259259259259265
+        },
+        {
+          "name": "restore_rng",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.8,
+          "crap": 5.2
+        },
+        {
+          "name": "StopRequest.__init__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "StopRequest.request_stop",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "StopRequest.__enter__",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "StopRequest.__exit__",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/reference_run.py",
+      "sha256": "d054172a8860e14619f457aca1e639b3f1f009510c11439eb22a82ed4f1d4921",
+      "coverage": {
+        "covered_lines": 231,
+        "num_statements": 254,
+        "percent_covered": 86.85714285714286,
+        "percent_covered_display": "87",
+        "missing_lines": 23,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.94488188976378,
+        "percent_statements_covered_display": "91",
+        "num_branches": 96,
+        "num_partial_branches": 19,
+        "covered_branches": 73,
+        "missing_branches": 23,
+        "percent_branches_covered": 76.04166666666667,
+        "percent_branches_covered_display": "76"
+      },
+      "functions": [
+        {
+          "name": "read_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "scientific_identity",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_options",
+          "complexity": 20,
+          "statement_coverage_fraction": 0.7692307692307693,
+          "crap": 24.915794264906687
+        },
+        {
+          "name": "_inputs",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_statistics",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_metrics",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.75,
+          "crap": 2.0625
+        },
+        {
+          "name": "_update",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 3.0262390670553936
+        },
+        {
+          "name": "_evaluate",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.9285714285714286,
+          "crap": 4.005830903790088
+        },
+        {
+          "name": "training_weights",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.8,
+          "crap": 7.3919999999999995
+        },
+        {
+          "name": "_confirmed_state",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 11.165980795610425
+        },
+        {
+          "name": "_parent",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.9166666666666666,
+          "crap": 11.070023148148149
+        },
+        {
+          "name": "run_reference_case",
+          "complexity": 45,
+          "statement_coverage_fraction": 0.9126984126984127,
+          "crap": 46.34738419177195
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/selection.py",
+      "sha256": "fe282996eeacf5535f1f793fcd4885ad267cf3ef7a0f63f748d4a2f1f2e55743",
+      "coverage": {
+        "covered_lines": 14,
+        "num_statements": 15,
+        "percent_covered": 91.30434782608695,
+        "percent_covered_display": "91",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.33333333333333,
+        "percent_statements_covered_display": "93",
+        "num_branches": 8,
+        "num_partial_branches": 1,
+        "covered_branches": 7,
+        "missing_branches": 1,
+        "percent_branches_covered": 87.5,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "validate_selection",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.5,
+          "crap": 19.125
+        },
+        {
+          "name": "advance_selection",
+          "complexity": 13,
+          "statement_coverage_fraction": 1.0,
+          "crap": 13.0
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 3,
+    "detected": 3,
+    "complete_mutation_score": false,
+    "cases": [
+      "patience_boundary",
+      "wrong_prediction_epoch",
+      "mixed_recovery_state"
+    ]
+  },
+  "verified_behaviors": [
+    "complete_epoch_selection",
+    "first_tie_retention",
+    "minimum_delta",
+    "best_and_latest_are_distinct",
+    "coherent_pause_during_selected_evaluation",
+    "selected_epoch_identity",
+    "initial_write_failure",
+    "strict_hash_without_fallback"
+  ],
+  "limits": [
+    "Las pruebas de entrenamiento usan datos sint\u00e9ticos, no una campa\u00f1a financiera.",
+    "No se ha demostrado recuperaci\u00f3n ante un corte el\u00e9ctrico.",
+    "La cobertura corresponde a las pruebas espec\u00edficas.",
+    "La revisi\u00f3n de barreras y referencias fue local."
+  ]
+}

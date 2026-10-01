@@ -1,0 +1,144 @@
+{
+  "tests_passed": 832,
+  "tests_skipped": 0,
+  "pytest_seconds_with_coverage": 81.12,
+  "specific_catalog_tests": 34,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "files": {
+    "src/mars_titan/data/corpus_catalog.py": {
+      "sha256": "842d181a2c9f45b74ce373ad2e1f088abcbba547dbce630d3455b5e5bca6bc68",
+      "coverage": {
+        "covered_lines": 239,
+        "num_statements": 256,
+        "percent_covered": 91.76136363636364,
+        "percent_covered_display": "92",
+        "missing_lines": 17,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.359375,
+        "percent_statements_covered_display": "93",
+        "num_branches": 96,
+        "num_partial_branches": 12,
+        "covered_branches": 84,
+        "missing_branches": 12,
+        "percent_branches_covered": 87.5,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "_source_path",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.75,
+          "crap": 6.5625
+        },
+        {
+          "name": "_readonly",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "corpus_candidates",
+          "complexity": 18,
+          "statement_coverage_fraction": 0.90625,
+          "crap": 18.2669677734375
+        },
+        {
+          "name": "_catalog",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 23.041666666666664
+        },
+        {
+          "name": "_initialize",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 9.318851144481703
+        },
+        {
+          "name": "_unique_object",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_fields",
+          "complexity": 31,
+          "statement_coverage_fraction": 0.9347826086956522,
+          "crap": 31.26657146379551
+        },
+        {
+          "name": "_read_source",
+          "complexity": 10,
+          "statement_coverage_fraction": 1.0,
+          "crap": 10.0
+        },
+        {
+          "name": "index_news",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.9767441860465116,
+          "crap": 9.001018778220786
+        },
+        {
+          "name": "corpus_status",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.95,
+          "crap": 6.0045
+        }
+      ]
+    },
+    "src/mars_titan/data/cli.py": {
+      "sha256": "1d8b2f0ccbbabbaae056412ad407ca7e542847bd60118f648e4ea38c9af07808",
+      "coverage": {
+        "covered_lines": 113,
+        "num_statements": 152,
+        "percent_covered": 68.42105263157895,
+        "percent_covered_display": "68",
+        "missing_lines": 39,
+        "excluded_lines": 0,
+        "percent_statements_covered": 74.34210526315789,
+        "percent_statements_covered_display": "74",
+        "num_branches": 38,
+        "num_partial_branches": 9,
+        "covered_branches": 17,
+        "missing_branches": 21,
+        "percent_branches_covered": 44.73684210526316,
+        "percent_branches_covered_display": "45"
+      },
+      "functions": [
+        {
+          "name": "main",
+          "complexity": 34,
+          "statement_coverage_fraction": 0.7342657342657343,
+          "crap": 55.69204574094789
+        }
+      ]
+    }
+  },
+  "directed_mutations": {
+    "method": "Mutaciones puntuales en memoria con pytest, sin alterar los archivos de producci\u00f3n",
+    "detected": [
+      "duplicate_keys",
+      "unsafe_identity",
+      "source_digest",
+      "reserved_dates",
+      "source_output",
+      "transaction",
+      "parser_identity",
+      "failed_source_receipt"
+    ],
+    "executed": 8,
+    "not_a_complete_mutation_score": true
+  },
+  "review": {
+    "finding": "Se perd\u00edan los recibos de fuentes con error al normalizar el cat\u00e1logo",
+    "regression_observed": true,
+    "fix_verified": true
+  },
+  "limits": [
+    "La cobertura mide el proceso principal. Los CLI comprobados en subprocesos no est\u00e1n instrumentados.",
+    "Las m\u00e9tricas de cobertura y CRAP no acreditan ausencia de errores ni admisi\u00f3n editorial.",
+    "La comprobaci\u00f3n final coincidi\u00f3 con la indexaci\u00f3n. Su duraci\u00f3n no es un benchmark aislado."
+  ]
+}

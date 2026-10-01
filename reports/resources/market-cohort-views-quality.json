@@ -1,0 +1,124 @@
+{
+  "full_suite": {
+    "passed": 1132,
+    "skipped": 0,
+    "seconds": 84.42
+  },
+  "coverage_scope": "45_tests_covering_market_views_encoding_and_targets",
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/data/cohort_views.py",
+      "sha256": "318b96b67a403469fd0592fa5a9259c1caf949d9de5a6c80409bd9a3f6652738",
+      "coverage": {
+        "covered_lines": 54,
+        "num_statements": 67,
+        "percent_covered": 80.8080808080808,
+        "percent_covered_display": "81",
+        "missing_lines": 13,
+        "excluded_lines": 0,
+        "percent_statements_covered": 80.59701492537313,
+        "percent_statements_covered_display": "81",
+        "num_branches": 32,
+        "num_partial_branches": 6,
+        "covered_branches": 26,
+        "missing_branches": 6,
+        "percent_branches_covered": 81.25,
+        "percent_branches_covered_display": "81"
+      },
+      "functions": [
+        {
+          "name": "project_prepared_cohort",
+          "complexity": 41,
+          "statement_coverage_fraction": 0.8958333333333334,
+          "crap": 42.90000180844907
+        },
+        {
+          "name": "main",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.0,
+          "crap": 12.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/cohort_contract.py",
+      "sha256": "2bda4ddd8936d80aac5d7ea444dda8cd647b3c9ee4cc9352c05ed9ec787485a9",
+      "coverage": {
+        "covered_lines": 47,
+        "num_statements": 58,
+        "percent_covered": 75.0,
+        "percent_covered_display": "75",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 81.03448275862068,
+        "percent_statements_covered_display": "81",
+        "num_branches": 38,
+        "num_partial_branches": 9,
+        "covered_branches": 25,
+        "missing_branches": 13,
+        "percent_branches_covered": 65.78947368421052,
+        "percent_branches_covered_display": "66"
+      },
+      "functions": [
+        {
+          "name": "cohort_identity",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.8461538461538461,
+          "crap": 12.524351388256713
+        },
+        {
+          "name": "validate_cohort_rows",
+          "complexity": 5,
+          "statement_coverage_fraction": 1.0,
+          "crap": 5.0
+        },
+        {
+          "name": "validate_population",
+          "complexity": 27,
+          "statement_coverage_fraction": 0.7307692307692307,
+          "crap": 41.22661583978153
+        },
+        {
+          "name": "representation_identity",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.75,
+          "crap": 11.5625
+        },
+        {
+          "name": "representation_hash",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 2,
+    "detected": 2,
+    "complete_mutation_score": false,
+    "cases": [
+      "missing_candidates",
+      "selected_failures"
+    ]
+  },
+  "source_preparation_sha256": "888d92c7c6303276a07cbd80ecb637f3f14110346e8f1e8d5cf548264142230d",
+  "us_view_sha256": "ad7cc353e6cd0bc621a7dd3814f7c54a5ac51c59d77c18a4208e0c90cc5a78d0",
+  "us_candidates": 4784,
+  "us_prepared": 2639,
+  "us_with_nonempty_source_modalities": 2234,
+  "cn_recovered_preparation_sha256": "ca5562933fd5172bf44ce1f43c7a7d9dd24ab7e3dd351bb4dd019aebaa30ad0e",
+  "cn_candidates": 892,
+  "cn_prepared": 810,
+  "cn_failed": 0,
+  "cn_with_admitted_fundamentals": 0,
+  "limits": [
+    "Los recuentos preceden a la intersecci\u00f3n temporal y las etiquetas.",
+    "Esta comprobaci\u00f3n no ejecuta entrenamiento ni recupera la publicaci\u00f3n contable.",
+    "La cobertura es de las pruebas espec\u00edficas, no de la bater\u00eda completa.",
+    "Se revisaron localmente rutas, poblaci\u00f3n, identidad y propagaci\u00f3n del alcance."
+  ]
+}

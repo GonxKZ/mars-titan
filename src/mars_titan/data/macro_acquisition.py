@@ -1,0 +1,969 @@
+"""Adquisición acotada y reanudable de versiones históricas macro desde ALFRED."""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import io
+import json
+import math
+import os
+import re
+import sqlite3
+import subprocess
+import tempfile
+import time
+import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import UTC, date, datetime
+from html.parser import HTMLParser
+from pathlib import Path, PurePosixPath
+from urllib.parse import quote, urlsplit
+
+from .macro_model_vintages import model_vintage_contract
+from .storage import outside_source
+
+_ALFRED_HOST = "alfred.stlouisfed.org"
+_FORM_URL = f"https://{_ALFRED_HOST}/series/downloaddata?seid={{series_id}}"
+_QUERY_VERSION = "alfred-real-time-period-v1"
+_DATABASE = "macro.sqlite3"
+_BATCH_SIZE = 350
+_MAX_COMPRESSED_BYTES = 32 * 1024 * 1024
+_MAX_UNCOMPRESSED_BYTES = 128 * 1024 * 1024
+_MAX_MEMBERS = 4
+_HTTP_TIMEOUT_SECONDS = 90
+_HTTP_RETRIES = 2
+
+
+class _VintagePageParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self._inside = False
+        self.dates: list[str] = []
+        self.observation_start: str | None = None
+        self.observation_end: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        if tag == "select" and attributes.get("id") == "form_selected_vintage_dates":
+            self._inside = True
+        elif self._inside and tag == "option" and attributes.get("value"):
+            self.dates.append(attributes["value"])
+        elif tag == "input" and attributes.get("value"):
+            if attributes.get("id") == "form_obs_start_date":
+                self.observation_start = attributes["value"]
+            elif attributes.get("id") == "form_obs_end_date":
+                self.observation_end = attributes["value"]
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "select" and self._inside:
+            self._inside = False
+
+
+def _iso_day(value: date | str, name: str) -> str:
+    if isinstance(value, datetime):
+        raise TypeError(f"{name} debe ser una fecha, no un objeto datetime")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, str):
+        return date.fromisoformat(value).isoformat()
+    raise TypeError(f"{name} debe ser una fecha o una cadena de fecha ISO")
+
+
+def _official_url(url: str) -> None:
+    parsed = urlsplit(url)
+    if parsed.scheme != "https" or parsed.hostname != _ALFRED_HOST:
+        raise ValueError("Las peticiones a ALFRED deben usar su servidor HTTPS oficial")
+
+
+def _request(url: str, *, fields: dict[str, str | list[str]] | None = None):
+    """Devuelve cuerpo, tipo, URL efectiva y estado HTTP con una petición curl acotada."""
+    _official_url(url)
+    with tempfile.TemporaryDirectory(prefix="mars-titan-alfred-") as temporary:
+        output = Path(temporary) / "response"
+        command = [
+            "curl",
+            "--silent",
+            "--show-error",
+            "--proto",
+            "=https",
+            "--connect-timeout",
+            "15",
+            "--max-time",
+            str(_HTTP_TIMEOUT_SECONDS),
+            "--max-filesize",
+            str(_MAX_COMPRESSED_BYTES),
+            "--output",
+            str(output),
+            "--write-out",
+            "%{http_code}\n%{content_type}\n%{url_effective}",
+            url,
+        ]
+        if fields:
+            for key, value in fields.items():
+                values = value if isinstance(value, list) else [value]
+                for item in values:
+                    command.extend(["--data-urlencode", f"{key}={item}"])
+        for attempt in range(_HTTP_RETRIES + 1):
+            result = subprocess.run(command, capture_output=True, check=False)
+            if result.returncode:
+                raise OSError(result.stderr.decode("utf-8", errors="replace").strip())
+            metadata = result.stdout.decode("utf-8", errors="strict").splitlines()
+            if len(metadata) != 3:
+                raise ValueError("Los metadatos de curl no tienen el formato esperado")
+            status = int(metadata[0])
+            content_type, effective_url = metadata[1], metadata[2]
+            _official_url(effective_url)
+            body = output.read_bytes()
+            if len(body) > _MAX_COMPRESSED_BYTES:
+                raise ValueError("La respuesta de ALFRED supera el límite de tamaño comprimido")
+            if status != 429 and not 500 <= status <= 599:
+                return body, content_type, effective_url, status
+            if attempt < _HTTP_RETRIES:
+                time.sleep(0.5 * 2**attempt)
+        return body, content_type, effective_url, status
+
+
+def _vintage_metadata(page: bytes) -> tuple[list[str], str | None, str | None]:
+    try:
+        text = page.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("La página de versiones de ALFRED no está codificada en UTF-8") from error
+    parser = _VintagePageParser()
+    parser.feed(text)
+    if not parser.dates:
+        raise ValueError("La página de ALFRED no contiene fechas de versión seleccionables")
+    dates = []
+    for value in parser.dates:
+        dates.append(date.fromisoformat(value).isoformat())
+    if dates != sorted(set(dates)):
+        raise ValueError("Las fechas de versión de ALFRED están duplicadas o desordenadas")
+    observation_start = (
+        date.fromisoformat(parser.observation_start).isoformat()
+        if parser.observation_start
+        else None
+    )
+    observation_end = (
+        date.fromisoformat(parser.observation_end).isoformat() if parser.observation_end else None
+    )
+    return dates, observation_start, observation_end
+
+
+def _vintage_dates(page: bytes) -> list[str]:
+    return _vintage_metadata(page)[0]
+
+
+def _sha256(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
+
+
+def _atomic_bytes(path: Path, content: bytes) -> None:
+    outside_source(Path("dataset"), path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def _readme_dates(readme: str) -> set[str]:
+    marker = "Vintage Dates Specified:"
+    if marker not in readme:
+        raise ValueError("El README de ALFRED no recoge las fechas de versión solicitadas")
+    values = set()
+    for line in readme.split(marker, 1)[1].splitlines():
+        candidate = line.strip()
+        try:
+            values.add(date.fromisoformat(candidate).isoformat())
+        except ValueError:
+            continue
+    return values
+
+
+def _archive_text(content: bytes) -> tuple[str, str]:
+    if len(content) > _MAX_COMPRESSED_BYTES:
+        raise ValueError("El ZIP de ALFRED supera el límite de tamaño comprimido")
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(content))
+    except zipfile.BadZipFile as error:
+        raise ValueError("La respuesta de ALFRED no es un archivo ZIP válido") from error
+    with archive:
+        members = archive.infolist()
+        if not 1 < len(members) <= _MAX_MEMBERS:
+            raise ValueError("El ZIP de ALFRED contiene un número de entradas inesperado")
+        if sum(member.file_size for member in members) > _MAX_UNCOMPRESSED_BYTES:
+            raise ValueError("El ZIP de ALFRED supera el límite de tamaño descomprimido")
+        for member in members:
+            path = PurePosixPath(member.filename)
+            if path.is_absolute() or ".." in path.parts or len(path.parts) != 1:
+                raise ValueError("El ZIP de ALFRED contiene una ruta no segura")
+        names = {member.filename for member in members}
+        csv_names = sorted(name for name in names if name.lower().endswith(".csv"))
+        if "README.txt" not in names or len(csv_names) != 1:
+            raise ValueError("El ZIP de ALFRED debe contener un CSV y README.txt")
+        try:
+            readme = archive.read("README.txt").decode("utf-8")
+            csv_text = archive.read(csv_names[0]).decode("utf-8-sig")
+        except UnicodeDecodeError as error:
+            raise ValueError("El texto del ZIP de ALFRED no está codificado en UTF-8") from error
+    return readme, csv_text
+
+
+def _readme_metadata(readme: str) -> list[dict]:
+    """Conserva las descripciones literales y los intervalos inclusivos de vigencia de ALFRED."""
+    headings = {"Title", "Source", "Release", "Units", "Frequency", "Seasonal Adjustment", "Notes"}
+    fields = {"Units": "native_unit", "Seasonal Adjustment": "seasonal_adjustment"}
+    section, current = None, None
+    records = []
+    for line in readme.splitlines():
+        text = line.strip()
+        if text == "Vintage Dates Specified:":
+            break
+        if text in headings:
+            section, current = fields.get(text), None
+            continue
+        if not section or not text or set(text) <= {"-", " "}:
+            continue
+        match = re.fullmatch(r"(.+?)\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2}|Current)", text)
+        if match:
+            description, start, end = match.groups()
+            start = date.fromisoformat(start).isoformat()
+            end = "9999-12-31" if end == "Current" else date.fromisoformat(end).isoformat()
+            if start > end:
+                raise ValueError("El intervalo de metadatos de ALFRED no es válido")
+            current = {"field": section, "start": start, "end": end, "description": description}
+            records.append(current)
+        elif current is not None:
+            current["description"] += " " + text
+        else:
+            raise ValueError(f"La sección {section} de ALFRED continúa sin indicar un intervalo")
+    return records
+
+
+def _parse_zip(
+    content: bytes,
+    series_id: str,
+    requested_dates: set[str],
+    *,
+    model_vintage_first: str | None = None,
+) -> list[dict]:
+    readme, csv_text = _archive_text(content)
+    recorded_dates = _readme_dates(readme)
+    if recorded_dates != requested_dates:
+        raise ValueError("Las fechas de versión del README de ALFRED no coinciden con la petición")
+    reader = csv.DictReader(io.StringIO(csv_text, newline=""))
+    expected = [
+        "period_start_date",
+        series_id,
+        "realtime_start_date",
+        "realtime_end_date",
+    ]
+    if reader.fieldnames != expected:
+        raise ValueError("El CSV de ALFRED tiene una cabecera inesperada")
+    result: list[dict] = []
+    seen: dict[tuple[str, str], dict] = {}
+    for row in reader:
+        period = date.fromisoformat(row["period_start_date"]).isoformat()
+        realtime_start = date.fromisoformat(row["realtime_start_date"]).isoformat()
+        raw_end = row["realtime_end_date"].strip()
+        realtime_end = (
+            "9999-12-31" if raw_end in {"", "."} else date.fromisoformat(raw_end).isoformat()
+        )
+        if realtime_end < realtime_start:
+            raise ValueError("El CSV de ALFRED contiene un intervalo temporal no válido")
+        raw_value = row[series_id].strip()
+        if raw_value in {"", "."}:
+            value = None
+        else:
+            value = float(raw_value)
+            if not math.isfinite(value):
+                raise ValueError("El CSV de ALFRED contiene un valor no finito")
+        key = period, realtime_start
+        if key in seen:
+            previous = seen[key]
+            if (previous["realtime_end"], previous["value"]) != (realtime_end, value):
+                raise ValueError("El CSV de ALFRED contiene versiones en conflicto")
+            previous["source_rows"] += 1
+            continue
+        parsed = {
+            "period_start": period,
+            "realtime_start": realtime_start,
+            "realtime_end": realtime_end,
+            "value": value,
+            "source_rows": 1,
+        }
+        exclusion = None
+        if period > realtime_start:
+            exclusion = "observation_after_realtime_start"
+        elif model_vintage_first is not None and realtime_start < model_vintage_first:
+            exclusion = "model_vintage_before_publication"
+        if exclusion:
+            parsed.update(
+                exclusion_reason=exclusion,
+                row_number=reader.line_num,
+                source_row=row,
+            )
+        seen[key] = parsed
+        result.append(parsed)
+    return result
+
+
+def _connect(destination: Path) -> sqlite3.Connection:
+    database = destination / _DATABASE
+    outside_source(Path("dataset"), database)
+    connection = sqlite3.connect(database, timeout=30)
+    connection.execute("PRAGMA journal_mode=WAL")
+    connection.execute("PRAGMA busy_timeout=30000")
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS configuration (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS series (
+            indicator_id TEXT PRIMARY KEY,
+            series_id TEXT,
+            status TEXT NOT NULL,
+            reason TEXT,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS batches (
+            indicator_id TEXT NOT NULL,
+            batch_key TEXT NOT NULL,
+            status TEXT NOT NULL,
+            raw_path TEXT,
+            source_hash TEXT,
+            requested_dates TEXT NOT NULL,
+            query TEXT NOT NULL,
+            retrieved_at TEXT,
+            row_count INTEGER,
+            PRIMARY KEY (indicator_id, batch_key)
+        );
+        CREATE TABLE IF NOT EXISTS vintages (
+            indicator_id TEXT NOT NULL,
+            period_start TEXT NOT NULL,
+            realtime_start TEXT NOT NULL,
+            realtime_end TEXT NOT NULL,
+            value REAL,
+            source_hash TEXT NOT NULL,
+            source_timezone TEXT NOT NULL,
+            PRIMARY KEY (indicator_id, period_start, realtime_start)
+        );
+        CREATE TABLE IF NOT EXISTS archive_metadata (
+            source_hash TEXT PRIMARY KEY,
+            intervals_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS batch_admission (
+            indicator_id TEXT NOT NULL,
+            batch_key TEXT NOT NULL,
+            report_json TEXT NOT NULL,
+            PRIMARY KEY (indicator_id, batch_key)
+        );
+        """
+    )
+    return connection
+
+
+def _configuration(
+    observation_start: str, observation_end: str, realtime_start: str, realtime_end: str
+) -> str:
+    return json.dumps(
+        {
+            "query_version": _QUERY_VERSION,
+            "observation_start": observation_start,
+            "observation_end": observation_end,
+            "realtime_start": realtime_start,
+            "realtime_end": realtime_end,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _initialize(destination: Path, configuration: str) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    with _connect(destination) as connection:
+        previous = connection.execute(
+            "SELECT value FROM configuration WHERE key='acquisition'"
+        ).fetchone()
+        if previous and previous[0] != configuration:
+            raise ValueError("El destino contiene una adquisición macro distinta")
+        connection.execute(
+            "INSERT OR IGNORE INTO configuration VALUES ('acquisition', ?)", (configuration,)
+        )
+
+
+def _exclusion(entry: dict) -> str | None:
+    if entry.get("kind") != "raw":
+        return "derived_not_downloaded"
+    if entry.get("id") == "global_supply_pressure" or entry.get("series_id") == "GSCPI":
+        return "gscpi_release_timestamp_unverified"
+    if entry.get("vintage_policy") == "MODEL_VINTAGES_ONLY":
+        return "model_vintages_only"
+    _, model_exclusion = model_vintage_contract(entry)
+    if model_exclusion:
+        return model_exclusion
+    if entry.get("vintage_policy") == "NO_VINTAGES_EXCLUDE":
+        return "no_vintages_exclude"
+    if entry.get("verification_status") != "verified_metadata_not_ingested":
+        return "metadata_not_verified"
+    series_id = entry.get("series_id")
+    if not series_id or series_id == "no identifier verified":
+        return "unverified_identifier"
+    source = urlsplit(entry.get("source_url", ""))
+    if "FRED" not in entry.get("provider", "") or source.hostname != "fred.stlouisfed.org":
+        return "unsupported_provider"
+    if entry.get("vintage_policy") not in {"ALFRED_OR_RELEASE_ARCHIVE", "ALFRED_MODEL_VINTAGES"}:
+        return "vintages_not_admissible"
+    return None
+
+
+def _batches(values: list[str]) -> list[list[str]]:
+    return [
+        values[index : index + _BATCH_SIZE] for index in range(0, len(values), _BATCH_SIZE)
+    ] or [[]]
+
+
+def _batch_key(entry: dict, selected: list[str], entered: list[str], configuration: str) -> str:
+    model_first, _ = model_vintage_contract(entry)
+    if model_first is not None:
+        configuration += f":ALFRED_MODEL_VINTAGES:{model_first}"
+    payload = json.dumps(
+        {
+            "configuration": configuration,
+            "indicator_id": entry["id"],
+            "series_id": entry["series_id"],
+            "selected": selected,
+            "entered": entered,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()[:20]
+
+
+def _completed_batch(
+    destination: Path, indicator_id: str, key: str
+) -> tuple[str, int, dict] | None:
+    with _connect(destination) as connection:
+        row = connection.execute(
+            "SELECT b.raw_path,b.source_hash,b.row_count,a.report_json FROM batches b "
+            "JOIN batch_admission a ON a.indicator_id=b.indicator_id AND a.batch_key=b.batch_key "
+            "WHERE b.indicator_id=? AND b.batch_key=? AND b.status='complete'",
+            (indicator_id, key),
+        ).fetchone()
+    if not row:
+        return None
+    raw_path, digest, count, report_json = row
+    path = destination / raw_path
+    if not path.is_file() or _sha256(path.read_bytes()) != digest:
+        return None
+    return digest, count, json.loads(report_json)
+
+
+def _store_batch(
+    destination: Path,
+    entry: dict,
+    key: str,
+    content: bytes,
+    requested_dates: set[str],
+    query: dict,
+    rows: list[dict],
+    realtime_start: str,
+    realtime_end: str,
+) -> tuple[str, int, dict]:
+    digest = _sha256(content)
+    metadata = _readme_metadata(_archive_text(content)[0])
+    relative = Path("raw") / entry["id"] / f"{key}.zip"
+    _atomic_bytes(destination / relative, content)
+    admitted = [
+        row
+        for row in rows
+        if not row.get("exclusion_reason")
+        and row["realtime_start"] <= realtime_end
+        and row["realtime_end"] >= realtime_start
+    ]
+    quarantined = [
+        {
+            "row_number": row["row_number"],
+            "reason": row["exclusion_reason"],
+            "source_row": row["source_row"],
+            "source_hash": digest,
+            "raw_path": relative.as_posix(),
+        }
+        for row in rows
+        if row.get("exclusion_reason")
+    ]
+    audit = {
+        "counts": {
+            "source_rows": sum(row["source_rows"] for row in rows),
+            "duplicate_rows": sum(row["source_rows"] - 1 for row in rows),
+            "admitted_rows": len(admitted),
+            "quarantined_rows": len(quarantined),
+            "outside_realtime_rows": len(rows) - len(admitted) - len(quarantined),
+        },
+        "quarantined_observations": quarantined,
+    }
+    retrieved_at = datetime.now(UTC).isoformat()
+    with _connect(destination) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "INSERT OR REPLACE INTO archive_metadata VALUES (?,?)",
+            (digest, json.dumps(metadata, sort_keys=True)),
+        )
+        for row in admitted:
+            previous = connection.execute(
+                "SELECT realtime_end,value FROM vintages "
+                "WHERE indicator_id=? AND period_start=? AND realtime_start=?",
+                (entry["id"], row["period_start"], row["realtime_start"]),
+            ).fetchone()
+            payload = row["realtime_end"], row["value"]
+            if previous is not None and previous != payload:
+                raise ValueError(
+                    "Versión macro en conflicto: "
+                    f"{entry['id']}/{row['period_start']}/{row['realtime_start']}"
+                )
+            connection.execute(
+                "INSERT INTO vintages VALUES (?,?,?,?,?,?,?) "
+                "ON CONFLICT(indicator_id,period_start,realtime_start) DO UPDATE SET "
+                "source_hash=excluded.source_hash,source_timezone=excluded.source_timezone",
+                (
+                    entry["id"],
+                    row["period_start"],
+                    row["realtime_start"],
+                    row["realtime_end"],
+                    row["value"],
+                    digest,
+                    "America/New_York",
+                ),
+            )
+        connection.execute(
+            "INSERT OR REPLACE INTO batches VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                entry["id"],
+                key,
+                "complete",
+                relative.as_posix(),
+                digest,
+                json.dumps(sorted(requested_dates)),
+                json.dumps(query, sort_keys=True),
+                retrieved_at,
+                len(admitted),
+            ),
+        )
+        connection.execute(
+            "INSERT OR REPLACE INTO batch_admission VALUES (?,?,?)",
+            (entry["id"], key, json.dumps(audit, sort_keys=True)),
+        )
+    return digest, len(admitted), audit
+
+
+def _acquire_series(
+    entry: dict,
+    destination: Path,
+    observation_start: str,
+    observation_end: str,
+    realtime_start: str,
+    realtime_end: str,
+    configuration: str,
+) -> dict:
+    with _connect(destination) as connection:
+        connection.execute(
+            "INSERT OR REPLACE INTO series VALUES (?,?,?,?,?)",
+            (entry["id"], entry["series_id"], "in_progress", None, datetime.now(UTC).isoformat()),
+        )
+    url = _FORM_URL.format(series_id=quote(entry["series_id"], safe=""))
+    page, content_type, effective_url, status = _request(url)
+    _official_url(effective_url)
+    if status != 200 or "html" not in content_type.lower():
+        raise ValueError(
+            f"La página de versiones de ALFRED devolvió HTTP {status} con tipo {content_type}"
+        )
+    dates, source_observation_start, source_observation_end = _vintage_metadata(page)
+    page_digest = _sha256(page)
+    _atomic_bytes(destination / "raw" / entry["id"] / f"vintage-list-{page_digest}.html", page)
+    model_first, _ = model_vintage_contract(entry)
+    if model_first is not None and dates[0] < model_first:
+        raise ValueError("La lista de versiones del modelo precede al archivo verificado")
+    if realtime_end < dates[0]:
+        raise ValueError("La serie de ALFRED empieza después del intervalo de vigencia solicitado")
+    effective_realtime_start = max(realtime_start, dates[0])
+    effective_observation_start = max(
+        observation_start, source_observation_start or observation_start
+    )
+    effective_observation_end = min(observation_end, source_observation_end or observation_end)
+    if effective_observation_start > effective_observation_end:
+        raise ValueError("La serie de ALFRED no tiene observaciones en el intervalo solicitado")
+    selected = [value for value in dates if realtime_start <= value <= realtime_end]
+    batches = _batches(selected)
+    source_hashes: list[str] = []
+    audits = []
+    rows = 0
+    resumed = 0
+    for index, batch in enumerate(batches):
+        entered = (
+            list(dict.fromkeys([effective_realtime_start, realtime_end])) if index == 0 else []
+        )
+        requested_dates = set(batch) | set(entered)
+        batch_configuration = configuration
+        if (
+            effective_observation_start != observation_start
+            or effective_observation_end != observation_end
+        ):
+            batch_configuration += effective_observation_start + effective_observation_end
+        key = _batch_key(entry, batch, entered, batch_configuration)
+        completed = _completed_batch(destination, entry["id"], key)
+        if completed:
+            digest, count, audit = completed
+            source_hashes.append(digest)
+            audits.append(audit)
+            rows += count
+            resumed += 1
+            continue
+        fields: dict[str, str | list[str]] = {
+            "form[units]": "lin",
+            "form[obs_start_date]": effective_observation_start,
+            "form[obs_end_date]": effective_observation_end,
+            "form[entered_vintage_dates]": " ".join(entered),
+            "form[selected_vintage_dates][]": batch,
+            "form[file_type]": "1",
+            "form[file_format]": "csv",
+            "form[download_data]": "",
+        }
+        content, response_type, response_url, response_status = _request(url, fields=fields)
+        _official_url(response_url)
+        if response_status != 200 or "zip" not in response_type.lower():
+            detail = "html_error" if b"<html" in content[:4096].lower() else response_type
+            raise ValueError(f"La descarga de ALFRED devolvió HTTP {response_status}: {detail}")
+        parsed = _parse_zip(
+            content, entry["series_id"], requested_dates, model_vintage_first=model_first
+        )
+        query = {
+            "query_version": _QUERY_VERSION,
+            "vintage_policy": entry["vintage_policy"],
+            "model_vintage_first": model_first,
+            "url": url,
+            "observation_start": effective_observation_start,
+            "observation_end": effective_observation_end,
+            "realtime_start": realtime_start,
+            "realtime_end": realtime_end,
+            "selected_vintage_dates": batch,
+            "entered_vintage_dates": entered,
+            "output_type": 1,
+        }
+        digest, count, audit = _store_batch(
+            destination,
+            entry,
+            key,
+            content,
+            requested_dates,
+            query,
+            parsed,
+            realtime_start,
+            realtime_end,
+        )
+        source_hashes.append(digest)
+        audits.append(audit)
+        rows += count
+    admission = {
+        field: sum(audit["counts"][field] for audit in audits) for field in audits[0]["counts"]
+    }
+    quarantined = [row for audit in audits for row in audit["quarantined_observations"]]
+    if rows == 0 and not quarantined:
+        raise ValueError("La serie de ALFRED no devolvió filas en los intervalos solicitados")
+    updated_at = datetime.now(UTC).isoformat()
+    with _connect(destination) as connection:
+        connection.execute(
+            "INSERT OR REPLACE INTO series VALUES (?,?,?,?,?)",
+            (entry["id"], entry["series_id"], "complete", None, updated_at),
+        )
+    return {
+        "indicator_id": entry["id"],
+        "series_id": entry["series_id"],
+        "vintage_policy": entry["vintage_policy"],
+        "model_vintage_first": model_first,
+        "status": "complete",
+        "download_complete": True,
+        "all_rows_temporally_admissible": not quarantined,
+        "admission": admission,
+        "quarantined_observations": quarantined,
+        "vintage_dates_available": len(dates),
+        "vintage_dates_selected": len(selected),
+        "vintage_date_first": selected[0] if selected else None,
+        "vintage_date_last": selected[-1] if selected else None,
+        "effective_realtime_start": effective_realtime_start,
+        "coverage_limited_at_start": effective_realtime_start != realtime_start,
+        "effective_observation_start": effective_observation_start,
+        "effective_observation_end": effective_observation_end,
+        "observation_coverage_limited": (
+            effective_observation_start != observation_start
+            or effective_observation_end != observation_end
+        ),
+        "batches": len(batches),
+        "resumed_batches": resumed,
+        "rows": rows,
+        "source_hashes": sorted(set(source_hashes)),
+        "vintage_page_hash": page_digest,
+    }
+
+
+def acquire_catalog(
+    catalog,
+    destination: Path,
+    *,
+    observation_start,
+    observation_end,
+    realtime_start,
+    realtime_end,
+    workers=2,
+) -> dict:
+    """Descarga series y audita por separado sus observaciones temporalmente admisibles.
+
+    ``complete`` y ``download_complete`` describen la descarga. Las filas con un
+    periodo posterior a su supuesta publicación quedan en cuarentena sin corregir
+    sus datos. Los recuentos incluyen repeticiones entre lotes, identificados por
+    su ZIP y huella. La disponibilidad de unidades y valores se comprueba después.
+    """
+    if type(workers) is not int or not 1 <= workers <= 2:
+        raise ValueError("El número de trabajadores debe ser uno o dos")
+    destination = Path(destination)
+    outside_source(Path("dataset"), destination)
+    outside_source(Path("dataset"), destination / _DATABASE)
+    outside_source(Path("dataset"), destination / "raw")
+    entries = list(catalog)
+    for entry in entries:
+        if _exclusion(entry) is None:
+            outside_source(Path("dataset"), destination / "raw" / entry["id"])
+    observation_start = _iso_day(observation_start, "observation_start")
+    observation_end = _iso_day(observation_end, "observation_end")
+    realtime_start = _iso_day(realtime_start, "realtime_start")
+    realtime_end = _iso_day(realtime_end, "realtime_end")
+    if observation_start > observation_end or realtime_start > realtime_end:
+        raise ValueError("Los intervalos de fechas de adquisición deben estar ordenados")
+    configuration = _configuration(observation_start, observation_end, realtime_start, realtime_end)
+    _initialize(destination, configuration)
+    excluded = []
+    eligible = []
+    for entry in entries:
+        reason = _exclusion(entry)
+        if reason:
+            excluded.append({"indicator_id": entry.get("id"), "reason": reason})
+            with _connect(destination) as connection:
+                connection.execute(
+                    "INSERT OR REPLACE INTO series VALUES (?,?,?,?,?)",
+                    (
+                        entry.get("id"),
+                        entry.get("series_id"),
+                        "excluded",
+                        reason,
+                        datetime.now(UTC).isoformat(),
+                    ),
+                )
+        else:
+            eligible.append(entry)
+    results = []
+    failures = []
+    started = time.perf_counter()
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _acquire_series,
+                entry,
+                destination,
+                observation_start,
+                observation_end,
+                realtime_start,
+                realtime_end,
+                configuration,
+            ): entry
+            for entry in eligible
+        }
+        for future in as_completed(futures):
+            entry = futures[future]
+            try:
+                results.append(future.result())
+            except Exception as error:  # Cada fuente queda auditada sin ocultar fallos parciales.
+                failure = {
+                    "indicator_id": entry["id"],
+                    "series_id": entry["series_id"],
+                    "status": "error",
+                    "error": f"{type(error).__name__}: {error}",
+                }
+                failures.append(failure)
+                with _connect(destination) as connection:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO series VALUES (?,?,?,?,?)",
+                        (
+                            entry["id"],
+                            entry["series_id"],
+                            "error",
+                            failure["error"],
+                            datetime.now(UTC).isoformat(),
+                        ),
+                    )
+    series = sorted(results + failures, key=lambda item: item["indicator_id"])
+    return {
+        "schema_version": 1,
+        "query_version": _QUERY_VERSION,
+        "destination": str(destination.resolve()),
+        "catalog_entries": len(entries),
+        "eligible_series": len(eligible),
+        "completed_series": len(results),
+        "failed_series": len(failures),
+        "excluded_entries": len(excluded),
+        "complete": not failures and len(results) == len(eligible),
+        "download_complete": not failures and len(results) == len(eligible),
+        "all_rows_temporally_admissible": not failures
+        and all(result["all_rows_temporally_admissible"] for result in results),
+        "observation_start": observation_start,
+        "observation_end": observation_end,
+        "realtime_start": realtime_start,
+        "realtime_end": realtime_end,
+        "workers": workers,
+        "elapsed_seconds": time.perf_counter() - started,
+        "series": series,
+        "exclusions": excluded,
+    }
+
+
+def execution_catalog(catalog, destination: Path) -> list[dict]:
+    """Copia el catálogo y añade el estado real de adquisición de cada fuente original."""
+    database = Path(destination) / _DATABASE
+    if not database.is_file():
+        raise FileNotFoundError(database)
+    with sqlite3.connect(database) as connection:
+        status = {
+            identifier: (state, reason)
+            for identifier, state, reason in connection.execute(
+                "SELECT indicator_id,status,reason FROM series"
+            )
+        }
+    result = []
+    for entry in catalog:
+        item = dict(entry)
+        if item["kind"] == "raw":
+            state, reason = status.get(item["id"], ("not_acquired", "no_acquisition_record"))
+            item.update(acquisition_status=state, acquisition_reason=reason)
+        result.append(item)
+    return result
+
+
+def rebuild_metadata(destination: Path, *, backup_path: Path) -> dict:
+    """Reconstruye metadatos desde ZIP locales verificados y conserva una copia binaria SQLite."""
+    destination, backup_path = Path(destination), Path(backup_path)
+    database = destination / _DATABASE
+    if not database.is_file():
+        raise FileNotFoundError(database)
+    with backup_path.open("xb"):
+        pass
+    with sqlite3.connect(database) as source, sqlite3.connect(backup_path) as backup:
+        source.backup(backup)
+    count = 0
+    with _connect(destination) as connection:
+        batches = connection.execute(
+            "SELECT raw_path,source_hash FROM batches WHERE status='complete'"
+        ).fetchall()
+        for relative, digest in batches:
+            path = destination / relative
+            if not path.resolve().is_relative_to(destination.resolve()):
+                raise ValueError("La ruta del archivo macro no es segura")
+            if path.stat().st_size > _MAX_COMPRESSED_BYTES:
+                raise ValueError("El ZIP de ALFRED supera el límite de tamaño comprimido")
+            content = path.read_bytes()
+            if _sha256(content) != digest:
+                raise ValueError(f"La huella del archivo macro no coincide: {relative}")
+            metadata = _readme_metadata(_archive_text(content)[0])
+            connection.execute(
+                "INSERT OR REPLACE INTO archive_metadata VALUES (?,?)",
+                (digest, json.dumps(metadata, sort_keys=True)),
+            )
+            count += 1
+    return {"archives": count, "backup_path": str(backup_path)}
+
+
+def _metadata_segments(row: dict, metadata: list[dict]):
+    start = date.fromisoformat(row["realtime_start"]).toordinal()
+    stop = date.fromisoformat(row["realtime_end"]).toordinal() + 1
+    boundaries = {start, stop}
+    intervals = []
+    for record in metadata:
+        first = date.fromisoformat(record["start"]).toordinal()
+        last = date.fromisoformat(record["end"]).toordinal() + 1
+        if first < stop and last > start:
+            boundaries.update((max(start, first), min(stop, last)))
+            intervals.append((first, last, record))
+    ordered = sorted(boundaries)
+    for first, last in zip(ordered[:-1], ordered[1:], strict=True):
+        active = [record for begin, end, record in intervals if begin <= first < end]
+        selected = {
+            field: {record["description"] for record in active if record["field"] == field}
+            for field in ("native_unit", "seasonal_adjustment")
+        }
+        reason = None
+        if any(len(values) > 1 for values in selected.values()):
+            reason = "ambiguous_historical_metadata"
+        elif any(not values for values in selected.values()):
+            reason = "missing_historical_metadata"
+        yield {
+            **row,
+            "original_realtime_start": row["realtime_start"],
+            "original_realtime_end": row["realtime_end"],
+            "original_value": row["value"],
+            "realtime_start": date.fromordinal(first).isoformat(),
+            "realtime_end": date.fromordinal(last - 1).isoformat(),
+            "value": None if reason else row["value"],
+            "missing_reason": reason,
+            "metadata_intervals": active,
+            **{
+                field: next(iter(values)) if len(values) == 1 else None
+                for field, values in selected.items()
+            },
+        }
+
+
+def iter_vintages(destination: Path):
+    """Emite series completas en sus unidades históricas e identifica los metadatos ausentes."""
+    database = Path(destination) / _DATABASE
+    if not database.is_file():
+        raise FileNotFoundError(f"No se encuentra la base de adquisición macro: {database}")
+    with sqlite3.connect(database) as connection:
+        if not connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='archive_metadata'"
+        ).fetchone():
+            raise ValueError(
+                "Faltan metadatos históricos. Ejecuta rebuild_metadata antes de iter_vintages"
+            )
+        metadata = {
+            digest: json.loads(intervals)
+            for digest, intervals in connection.execute(
+                "SELECT source_hash,intervals_json FROM archive_metadata"
+            )
+        }
+        cursor = connection.execute(
+            "SELECT v.indicator_id,v.period_start,v.realtime_start,v.realtime_end,v.value,"
+            "v.source_hash,v.source_timezone FROM vintages v "
+            "JOIN series s ON s.indicator_id=v.indicator_id WHERE s.status='complete' "
+            "ORDER BY v.indicator_id,v.period_start,v.realtime_start"
+        )
+        while rows := cursor.fetchmany(1000):
+            for row in rows:
+                if row[5] not in metadata:
+                    raise ValueError(
+                        f"Faltan metadatos históricos de {row[0]}. Ejecuta rebuild_metadata"
+                    )
+                vintage = {
+                    "indicator_id": row[0],
+                    "period_start": row[1],
+                    "realtime_start": row[2],
+                    "realtime_end": row[3],
+                    "value": row[4],
+                    "source_hash": row[5],
+                    "source_timezone": row[6],
+                }
+                yield from _metadata_segments(vintage, metadata[row[5]])

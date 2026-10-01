@@ -1,10 +1,12 @@
 # Entrenamiento sobre el conjunto completo con memoria acotada
 
-MARS-TITAN se prepara para recorrer toda la copia de FinMultiTime por bloques. La comparación principal se plantea inicialmente con hasta 128 activos estadounidenses, precedida por un piloto de hasta 64, para equilibrar repetición experimental y tiempo de entrega. El recorrido completo de entrenamiento queda como extensión de escalabilidad cuando el coste medido lo permita. No es una condición para ejecutar cada ablación.
+La [campaña comparativa del corpus completo](comparison-campaign.md) concreta el nuevo alcance: recorrer toda la copia de FinMultiTime y entrenar las referencias sobre todas las muestras admisibles, antes de evaluar MARS-TITAN. El piloto de 64 activos y la selección inicial de 128 se conservan como etapas históricas de preparación, no como límites de esa campaña. El documento de campaña distingue la especificación de las implementaciones y entrenamientos todavía pendientes.
 
 «Todo el dataset» no significa entrenar con el test, aceptar información futura ni cargar todos los archivos en RAM. La cobertura debe informarse mediante un inventario de admisiones y exclusiones. Los datos sin disponibilidad defendible se conservan en el inventario y se excluyen del contraste estricto o se estudian en una variante identificada.
 
 ## Lo que se ha comprobado en el equipo
+
+La [preparación ejecutada](../data/preparation.md) y el [presupuesto de almacenamiento](../../reports/resources/storage-budget.md) actualizan esta planificación. Se han generado Parquet de los paneles técnicos y del piloto de verificación, no de todo el corpus. El lector usa lotes de 256 filas y construye las ventanas al consumirlas. Las cifras ilustrativas siguientes no deben sustituir las mediciones de esos informes.
 
 El [registro de recursos](../../reports/resource-inventory.json) contiene las observaciones y las órdenes de comprobación. El equipo tiene 32 GB de RAM según su configuración declarada, de los que el sistema informa 30,09 GiB utilizables. Dispone de ocho núcleos físicos, 16 hilos lógicos y una RTX 4070 Max-Q de 8 GB, identificada por NVIDIA como Laptop GPU con 8.188 MiB. El volumen dispone de unos 396 GiB libres en el momento de la inspección.
 
@@ -77,4 +79,4 @@ La etiqueta y la simulación deben atender al instrumento y a las reglas que est
 
 Se deberá registrar, por mercado y fold, número de archivos inventariados, registros leídos, aceptados, excluidos y finalmente usados, con motivos de exclusión. Una pasada deberá alcanzar el 100 % de los registros elegibles asignados a ese tramo, sin recurrir al test para completar entrenamiento.
 
-El piloto valida que el recorrido cabe en recursos y conserva el tiempo. Una ejecución que se presente como completa deberá repetirlo sobre toda la cobertura elegible del universo declarado. La campaña principal puede cerrarse sobre la selección de 128 activos, con sus límites explícitos. Si una familia no cabe o no termina dentro del presupuesto fijado, se informa como límite de esa solución. No se oculta mediante una muestra distinta ni se atribuye el fallo a todo el proyecto.
+El piloto valida que el recorrido cabe en recursos y conserva el tiempo. Una ejecución que se presente como completa deberá repetirlo sobre toda la cobertura elegible del universo declarado. La campaña ampliada no se cierra usando solo la selección de 128 activos. Si una familia no cabe o no termina dentro del presupuesto fijado, se informa como límite de esa solución. No se oculta mediante una muestra distinta ni se atribuye el fallo a todo el proyecto.

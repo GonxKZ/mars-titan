@@ -1,0 +1,187 @@
+{
+  "tests": {
+    "passed": 34,
+    "skipped": 0,
+    "seconds": 3.933
+  },
+  "test_command": "CUDA_VISIBLE_DEVICES='' uv run --no-sync --with coverage==7.16.1 --with radon==6.0.1 coverage run --branch -m pytest tests/episodes/test_storage.py tests/evaluation/test_session_metrics.py tests/training/test_evaluation_io.py tests/posttraining/test_queue.py::test_materialized_augmentation_resumes_and_rejects_a_different_encoder",
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C² × (1 − cobertura de líneas ejecutables)³ + C. _evaluate incluye el cierre tables, que también se informa por separado.",
+  "modules": {
+    "src/mars_titan/episodes/storage.py": {
+      "covered_lines": 191,
+      "num_statements": 210,
+      "percent_covered": 87.33333333333333,
+      "percent_covered_display": "87",
+      "missing_lines": 19,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.95238095238095,
+      "percent_statements_covered_display": "91",
+      "num_branches": 90,
+      "num_partial_branches": 19,
+      "covered_branches": 71,
+      "missing_branches": 19,
+      "percent_branches_covered": 78.88888888888889,
+      "percent_branches_covered_display": "79"
+    },
+    "src/mars_titan/evaluation/session_metrics.py": {
+      "covered_lines": 50,
+      "num_statements": 55,
+      "percent_covered": 89.33333333333333,
+      "percent_covered_display": "89",
+      "missing_lines": 5,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.9090909090909,
+      "percent_statements_covered_display": "91",
+      "num_branches": 20,
+      "num_partial_branches": 3,
+      "covered_branches": 17,
+      "missing_branches": 3,
+      "percent_branches_covered": 85.0,
+      "percent_branches_covered_display": "85"
+    },
+    "src/mars_titan/training/reference_run.py": {
+      "covered_lines": 61,
+      "num_statements": 256,
+      "percent_covered": 21.1864406779661,
+      "percent_covered_display": "21",
+      "missing_lines": 195,
+      "excluded_lines": 0,
+      "percent_statements_covered": 23.828125,
+      "percent_statements_covered_display": "24",
+      "num_branches": 98,
+      "num_partial_branches": 2,
+      "covered_branches": 14,
+      "missing_branches": 84,
+      "percent_branches_covered": 14.285714285714286,
+      "percent_branches_covered_display": "14"
+    }
+  },
+  "changed_functions": [
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.__init__",
+      "complexity": 18,
+      "covered_statements": 24,
+      "statements": 29,
+      "line_coverage_fraction": 0.8275862068965517,
+      "crap": 19.66058468981918
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource._group",
+      "complexity": 11,
+      "covered_statements": 33,
+      "statements": 34,
+      "line_coverage_fraction": 0.9705882352941176,
+      "crap": 11.003078567066964
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.read",
+      "complexity": 17,
+      "covered_statements": 19,
+      "statements": 22,
+      "line_coverage_fraction": 0.8636363636363636,
+      "crap": 17.732813673929375
+    },
+    {
+      "file": "src/mars_titan/episodes/storage.py",
+      "name": "EpisodeSource.close",
+      "complexity": 2,
+      "covered_statements": 7,
+      "statements": 7,
+      "line_coverage_fraction": 1.0,
+      "crap": 2.0
+    },
+    {
+      "file": "src/mars_titan/training/reference_run.py",
+      "name": "_evaluate",
+      "complexity": 4,
+      "covered_statements": 26,
+      "statements": 27,
+      "line_coverage_fraction": 0.9629629629629629,
+      "crap": 4.000812884214804
+    },
+    {
+      "file": "src/mars_titan/training/reference_run.py",
+      "name": "_evaluate.tables",
+      "complexity": 7,
+      "covered_statements": 13,
+      "statements": 13,
+      "line_coverage_fraction": 1.0,
+      "crap": 7.0
+    }
+  ],
+  "directed_mutations": [
+    {
+      "name": "omit_prediction_errors",
+      "path": "src/mars_titan/training/reference_run.py",
+      "old": "predictions.astype(np.float64) - batch[\"target\"],",
+      "new": "np.zeros(len(predictions), dtype=np.float64),",
+      "test": "tests/training/test_evaluation_io.py::test_metrics_only_avoid_arrow_and_match_saved_predictions",
+      "detected": true
+    },
+    {
+      "name": "invert_prediction_destination",
+      "path": "src/mars_titan/training/reference_run.py",
+      "old": "if destination is None:\n                    continue",
+      "new": "if destination is not None:\n                    continue",
+      "test": "tests/training/test_evaluation_io.py::test_metrics_only_avoid_arrow_and_match_saved_predictions",
+      "detected": true
+    },
+    {
+      "name": "ignore_block_signature",
+      "path": "src/mars_titan/episodes/storage.py",
+      "old": "if signature != self.signatures[block_index]:",
+      "new": "if False:",
+      "test": "tests/episodes/test_storage.py::test_open_reader_checks_integrity_before_returning_cached_cohort[overwrite]",
+      "detected": true
+    },
+    {
+      "name": "omit_reader_close",
+      "path": "src/mars_titan/episodes/storage.py",
+      "old": "    def close(self):\n        if self._file is not None:\n            self._file.close()",
+      "new": "    def close(self):\n        if self._file is not None:\n            pass",
+      "test": "tests/episodes/test_storage.py::test_reader_reuses_one_open_block_and_closes_on_switch_and_exit",
+      "detected": true
+    },
+    {
+      "name": "wrong_row_group",
+      "path": "src/mars_titan/episodes/storage.py",
+      "old": "group = position - block[\"start\"]",
+      "new": "group = 0",
+      "test": "tests/episodes/test_storage.py::test_reader_reuses_one_open_block_and_closes_on_switch_and_exit",
+      "detected": true
+    }
+  ],
+  "source_sha256": {
+    "src/mars_titan/episodes/storage.py": "3e01f81ee333f72dbc6efd296448f8f0010d9ff62da31cf298d93d17485f9df7",
+    "src/mars_titan/training/reference_run.py": "bad15dd3c1cf2c1dab806fada300d00c28d04f8b5dc85c0082698aa4aa63df52"
+  },
+  "limits": [
+    "Pruebas sintéticas de lógica y E/S en CPU. No se ejecutó la suite completa de entrenamiento CUDA por una campaña activa.",
+    "La cobertura de reference_run.py incluye solamente el recorrido de evaluación. Las otras funciones no se ejercitan en esta tanda.",
+    "Cinco mutaciones dirigidas, sin puntuación exhaustiva de mutación ni garantía de ausencia de defectos."
+  ],
+  "environment": {
+    "manager": "uv 0.12.16",
+    "extras": [
+      "cuda",
+      "reinforcement",
+      "research",
+      "data"
+    ],
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "repository_checks": {
+    "uv run --no-sync ruff check .": "passed",
+    "uv run --no-sync ruff format --check .": "405 files already formatted",
+    "uv run --no-sync python scripts/check_repository.py": "653 archivos, 123 referencias, 64 tareas y 140 indicadores",
+    "git diff --check": "passed"
+  }
+}

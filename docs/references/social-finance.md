@@ -43,7 +43,7 @@ Es una verificación de existencia, finalidad declarada y licencia publicada, no
 
 El README de [market-trackers-data](https://github.com/LuxAlgo/market-trackers-data) explica que sus archivos diarios agrupan por fecha de ingesta, no por fecha del evento, y que los más recientes pueden reescribirse. Para un backtest sería necesario preservar versiones y comprobar la disponibilidad histórica de cada registro. El nombre de un archivo no basta como marca temporal del acontecimiento.
 
-Para MARS–TITAN, Vela y el diario pueden orientar una futura presentación de resultados. Market-trackers permite explorar fuentes complementarias para la fase 1. PineTS solo aportaría un contraste práctico si se decidiese comparar reglas técnicas. La utilidad es secundaria frente a asegurar datos temporales y evaluación reproducible. Estos proyectos no justifican una mejora de predicción ni de rentabilidad. No se han instalado ni incorporado dependencias.
+Para MARS-TITAN, Vela y el diario pueden orientar una futura presentación de resultados. Market-trackers permite explorar fuentes complementarias para la fase 1. PineTS solo aportaría un contraste práctico si se decidiese comparar reglas técnicas. La utilidad es secundaria frente a asegurar datos temporales y evaluación reproducible. Estos proyectos no justifican una mejora de predicción ni de rentabilidad. No se han instalado ni incorporado dependencias.
 
 ## Abomination81: bot de Polymarket
 
@@ -55,8 +55,8 @@ El recurso original localizado es [Abomination81/copybot](https://github.com/Abo
 
 El propio README indica que no se ha elegido una licencia de código abierto para el proyecto y que no es una distribución MIT. También señala que no incluye identidades de wallets financiadas, lista de líderes ni historiales de operaciones. Por ello no se acredita permiso general para reutilizar su código ni un historial auditable de resultados. No se ha ejecutado, conectado una wallet o operado con el bot. [Fuente original y condiciones publicadas](https://github.com/Abomination81/copybot).
 
-Su relación con el proyecto es limitada: trata ejecución y copia de operaciones en mercados de predicción, mientras que el objetivo de MARS–TITAN es estudiar predicción multimodal y retornos residuales de acciones. Puede servir como lectura de contexto sobre separación entre señal, ejecución y supervisión, sin incorporarlo como baseline de rentabilidad ni como evidencia de eficacia de aprendizaje automático.
+Su relación con el proyecto es limitada: trata ejecución y copia de operaciones en mercados de predicción, mientras que el objetivo de MARS-TITAN es estudiar predicción multimodal y retornos residuales de acciones. Puede servir como lectura de contexto sobre separación entre señal, ejecución y supervisión, sin incorporarlo como baseline de rentabilidad ni como evidencia de eficacia de aprendizaje automático.
 
 ## Estado para el repositorio
 
-Esta revisión añade documentación y enlaces de procedencia. No supone adoptar herramientas, instalar paquetes ni iniciar código científico. Las redes sirven para descubrir material. La incorporación posterior de una fuente exigirá comprobar que resuelve una necesidad concreta y registrar versión, disponibilidad y derechos de uso. Las referencias académicas y las condiciones de evaluación se recogen por separado en [finance-review.md](finance-review.md).
+Esta revisión añade documentación y enlaces de procedencia. No supone adoptar herramientas, instalar paquetes ni iniciar código científico. Las redes sirven para descubrir material. La incorporación posterior de una fuente exigirá comprobar que resuelve una necesidad concreta y registrar versión, disponibilidad y derechos de uso. Las fuentes científicas y las condiciones de evaluación se recogen por separado en [finance-review.md](finance-review.md).

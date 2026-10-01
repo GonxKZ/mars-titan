@@ -1,0 +1,267 @@
+{
+  "full_suite": {
+    "passed": 1255,
+    "skipped": 0,
+    "warnings": 2,
+    "seconds": 183.12
+  },
+  "focused_suite": {
+    "passed": 29,
+    "seconds": 6.57
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/environments/corpus_source.py",
+      "sha256": "9a04d1a64438689eb749a840241a67d1d09fbd3b19b5941013ec5f1dceece4f3",
+      "coverage": {
+        "covered_lines": 253,
+        "num_statements": 296,
+        "percent_covered": 81.57894736842105,
+        "percent_covered_display": "82",
+        "missing_lines": 43,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.47297297297297,
+        "percent_statements_covered_display": "85",
+        "num_branches": 122,
+        "num_partial_branches": 32,
+        "covered_branches": 88,
+        "missing_branches": 34,
+        "percent_branches_covered": 72.1311475409836,
+        "percent_branches_covered_display": "72"
+      },
+      "functions": [
+        {
+          "name": "_code",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_tables",
+          "complexity": 8,
+          "statement_coverage_fraction": 0.8,
+          "crap": 8.512
+        },
+        {
+          "name": "_bounded_groups",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.9166666666666666,
+          "crap": 7.028356481481482
+        },
+        {
+          "name": "_partition",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.8181818181818182,
+          "crap": 15.178061607813673
+        },
+        {
+          "name": "_signature",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_file",
+          "complexity": 11,
+          "statement_coverage_fraction": 0.8181818181818182,
+          "crap": 11.727272727272727
+        },
+        {
+          "name": "_fit_grid",
+          "complexity": 6,
+          "statement_coverage_fraction": 0.7777777777777778,
+          "crap": 6.395061728395062
+        },
+        {
+          "name": "prepare_causal_corpus",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.9,
+          "crap": 28.784
+        },
+        {
+          "name": "main",
+          "complexity": 1,
+          "statement_coverage_fraction": 0.0,
+          "crap": 2.0
+        },
+        {
+          "name": "ParquetCohortSource.__init__",
+          "complexity": 35,
+          "statement_coverage_fraction": 0.7878787878787878,
+          "crap": 46.691988758104465
+        },
+        {
+          "name": "ParquetCohortSource._signature",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ParquetCohortSource.__len__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ParquetCohortSource._group",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.9285714285714286,
+          "crap": 7.017857142857143
+        },
+        {
+          "name": "ParquetCohortSource.__call__",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 21.60493827160494
+        },
+        {
+          "name": "ParquetCohortSource.close",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "ParquetCohortSource.__enter__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ParquetCohortSource.__exit__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/corpus_inputs.py",
+      "sha256": "a74053e473b03d6ad959226ec7f0ed3924876589049d0ef80675d3cf0efb4923",
+      "coverage": {
+        "covered_lines": 211,
+        "num_statements": 246,
+        "percent_covered": 81.18279569892474,
+        "percent_covered_display": "81",
+        "missing_lines": 35,
+        "excluded_lines": 0,
+        "percent_statements_covered": 85.77235772357723,
+        "percent_statements_covered_display": "86",
+        "num_branches": 126,
+        "num_partial_branches": 33,
+        "covered_branches": 91,
+        "missing_branches": 35,
+        "percent_branches_covered": 72.22222222222223,
+        "percent_branches_covered_display": "72"
+      },
+      "functions": [
+        {
+          "name": "_unique",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 3.0416666666666665
+        },
+        {
+          "name": "_times",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_random",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_availability",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.8095238095238095,
+          "crap": 12.99514091350826
+        },
+        {
+          "name": "_batch",
+          "complexity": 9,
+          "statement_coverage_fraction": 1.0,
+          "crap": 9.0
+        },
+        {
+          "name": "supervised_batches",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "CorpusDataset.__init__",
+          "complexity": 28,
+          "statement_coverage_fraction": 0.875,
+          "crap": 29.53125
+        },
+        {
+          "name": "CorpusDataset._file",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.8421052631578947,
+          "crap": 10.393643388249016
+        },
+        {
+          "name": "CorpusDataset._labels",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.7804878048780488,
+          "crap": 25.66460150026842
+        },
+        {
+          "name": "CorpusDataset._rows",
+          "complexity": 48,
+          "statement_coverage_fraction": 0.8536585365853658,
+          "crap": 55.220789019311965
+        },
+        {
+          "name": "CorpusDataset.batches",
+          "complexity": 23,
+          "statement_coverage_fraction": 0.8888888888888888,
+          "crap": 23.72565157750343
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 4,
+    "detected": 4,
+    "complete_mutation_score": false,
+    "cases": [
+      "missing_macro_date",
+      "oversized_row_groups",
+      "final_publication",
+      "file_generation"
+    ]
+  },
+  "review": {
+    "important_findings_fixed": 3,
+    "version_two_provenance_test_added": true
+  },
+  "real_edition": {
+    "assets": 66,
+    "train_rows": 245,
+    "validation_rows": 225,
+    "maximum_feature_difference": 0.0,
+    "targets_equal": true,
+    "maturities_equal": true,
+    "scope": "development_snapshot",
+    "full_corpus": false
+  },
+  "limits": [
+    "La prueba real verifica una edici\u00f3n hist\u00f3rica completa de 470 filas, no la campa\u00f1a amplia.",
+    "La versi\u00f3n 2 y la conservaci\u00f3n de su pol\u00edtica editorial se comprueban con fixtures.",
+    "El gestor de memoria DuckDB y la cach\u00e9 no limitan todas las asignaciones del proceso.",
+    "La prueba de grupos grandes usa un presupuesto reducido y no un agotamiento real de RAM.",
+    "Siguen pendientes los entrenadores de refuerzo y sus campa\u00f1as, sin implementar MARS-TITAN."
+  ]
+}

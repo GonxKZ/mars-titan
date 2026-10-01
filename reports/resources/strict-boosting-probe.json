@@ -1,0 +1,150 @@
+{
+  "purpose": "strict_supervised_execution_probe_not_confirmatory_comparison",
+  "measured_at_utc": "2026-09-21T02:32:25.818541+00:00",
+  "model": "boosting",
+  "alpha": null,
+  "parameters": {
+    "categorical_features": "from_dtype",
+    "early_stopping": false,
+    "interaction_cst": null,
+    "l2_regularization": 0.0,
+    "learning_rate": 0.05,
+    "loss": "squared_error",
+    "max_bins": 255,
+    "max_depth": null,
+    "max_features": 1.0,
+    "max_iter": 30,
+    "max_leaf_nodes": 7,
+    "min_samples_leaf": 5,
+    "monotonic_cst": null,
+    "n_iter_no_change": 10,
+    "quantile": null,
+    "random_state": 42,
+    "scoring": "loss",
+    "tol": 1e-07,
+    "validation_fraction": 0.1,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "samples": {
+    "train": 50,
+    "validation": 15
+  },
+  "features": 1660,
+  "feature_order": [
+    "prices",
+    "news",
+    "charts",
+    "fundamentals",
+    "macro"
+  ],
+  "scaling": "none",
+  "intercept": null,
+  "loss": "squared_error",
+  "training_cutoff": "2022-12-31",
+  "validation_year": 2023,
+  "final_test_opened": false,
+  "fit_seconds": 0.7894876279997334,
+  "validation_and_restore_check_seconds": 0.18710665400021753,
+  "total_seconds": 2.2542944689998876,
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "sensors_before": {
+    "available": false,
+    "reason": "explicit_cpu_estimator"
+  },
+  "sensors_after": null,
+  "peak_vram_allocated_bytes": null,
+  "peak_vram_reserved_bytes": null,
+  "peak_rss_mib": 734.3125,
+  "process_memory_at_end": {
+    "rss_mib": 713.3515625,
+    "pss_mib": 655.0830078125,
+    "processes": 1
+  },
+  "diagnostic_row_metrics": {
+    "boosting": {
+      "mae": 0.011770837174480055,
+      "mse": 0.00019682173223191962
+    },
+    "zero": {
+      "mae": 0.00961996824361159,
+      "mse": 0.00015974379549416325
+    }
+  },
+  "restored_predictions_equal": true,
+  "target_audit": {
+    "market_price_audit": {
+      "rows": 6348,
+      "accepted": 4031,
+      "excluded": 2317,
+      "invalid_ohlc": 2,
+      "duplicate_session_rows": 0,
+      "non_session_rows": 2317,
+      "invalid_date_rows": 0,
+      "first_session": "2000-01-03",
+      "last_session": "2025-03-28",
+      "corporate_action_columns": [
+        "Dividends",
+        "Stock Splits"
+      ],
+      "adjustments": "as_distributed_retrospective_adjustments_not_reconstructed",
+      "reason_counts_overlap": true
+    },
+    "assets": {
+      "DECK": {
+        "train": 25,
+        "validation": 10,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "MNST": {
+        "train": 25,
+        "validation": 5,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      }
+    }
+  },
+  "input_hashes": {
+    "dataset/time_series/S&P500_time_series/spy.csv": "9c8046fbdff4f92091e5ac6a34f38cfe4690af545a7033901440a0dfbce835fc",
+    "data/processed/bounded-samples-20260921-v2/US/DECK/samples.parquet": "32471048a793e32e7cc029b963df0f5476ddc094c05c2c1716c06b4a52790ff8",
+    "data/processed/news-expansion-20260921/US/DECK/prices.parquet": "3f260319bc62a38bec50077d9922b79a735ce6a9faf468db4432080247eb5e8d",
+    "data/processed/bounded-samples-20260921-v2/US/DECK/manifest.json": "e31616a25f22d0b0a1bbefe4e1e09f7eb830c8d67db8de1abd35368e1cdfb997",
+    "data/processed/news-expansion-20260921/US/DECK/manifest.json": "6f3c3eeecdd150fb302316bc068d7a750eb735d6dd87ad99afba57d4cc567240",
+    "data/interim/strict-boosting-20260921/targets/DECK-targets.parquet": "193aba7e2eba502b14656b379ff7cce767821017a49b463857a76aef1ef348c4",
+    "data/processed/bounded-samples-20260921-v2/US/MNST/samples.parquet": "f4b6f0791402a2861dbd085bbaecc258a19ea6752de7d84ba4d079dad4e478cc",
+    "data/processed/news-expansion-20260921/US/MNST/prices.parquet": "92fd950f453d4cfccf02197d1ccf5ac1bcbd5c89796637c9c556d412837484de",
+    "data/processed/bounded-samples-20260921-v2/US/MNST/manifest.json": "670b0b2e03626beb7adbe7d7721b4d93a8531ee54976834fa278de38fb944d50",
+    "data/processed/news-expansion-20260921/US/MNST/manifest.json": "1e0d5fc2bdc1d09c2af4a42fb3d3b2896b9eb246531582cc0cf7a6084805251d",
+    "data/interim/strict-boosting-20260921/targets/MNST-targets.parquet": "5f68763afc91aa915584c29331af50d42d51f0e5597bb740684ef3437e420ad9",
+    "src/mars_titan/budget_training.py": "3611b7f66d34875ae9ead79d27eab559c8a6ab4517011d787c32a72b7de64051",
+    "src/mars_titan/data/budget_targets.py": "32cce1fcc3fd44a19b183381b0e0d8d945254d13a03e3b3515b7c6ebf49293f3",
+    "src/mars_titan/data/streaming.py": "c763ec4c422bc298b816412343f576fa71e93e6a215f104aa405fe1232b89357",
+    "src/mars_titan/profiling.py": "848773ad1956175fffaf70e788969ed58f8e33ebdea560c5337e0efd787df700",
+    "src/mars_titan/reference_probe.py": "9146c563bdf04cd6a5e38d91802f9852e281ee13e5a021508d1ffa41ab49049a",
+    "src/mars_titan/models/baselines/ridge.py": "ba71c068442de918f1ee87ea86f84e86a4ae34b07221fa7817a3cb3d78a225dd",
+    "src/mars_titan/models/baselines/inputs.py": "4cb31e2bf934b0a20945137b62d9bf4105a0c44fd87c061adfe0f73b03e823f3",
+    "src/mars_titan/models/baselines/boosting.py": "d77daa63b8c64950f5cd712c2489215bce9a12aeb315c26e5e7551fe6f811011"
+  },
+  "checkpoint_sha256": "4798d5a42daf417b4c024d961c2443a6d19a1c8f6e0f4bfb164b0289c2372b68",
+  "predictions_sha256": "60befd5b283f8eb22f539092deae81b11e0a80426ae90d9bd9062695bc038005",
+  "limitations": [
+    "small_directed_editorial_sample",
+    "one_fixed_configuration",
+    "no_search_or_predictive_superiority_claim",
+    "operating_system_cache_uncontrolled"
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "domain": "technical",
+  "observed_at": "2026-09-26T06:29:51.153871+00:00",
+  "source_sha256": "672223c491d8d1488ca95b41134f45904e63eb99ceadbf5aa8236ca8d64ff514",
+  "tests": {
+    "supervisor_and_queue": 67,
+    "supervisor_only": 18,
+    "cuda_model_and_recovery": 30,
+    "guarded_cuda_model_and_recovery": 30,
+    "systemd_graceful_stop_checkpoint_confirmed": true
+  },
+  "exclusive_cuda": {
+    "waiting": {
+      "schema_version": 1,
+      "observed_at": "2026-09-26T06:25:23.634846+00:00",
+      "status": "waiting",
+      "starts": 0,
+      "pauses": 0,
+      "reason": "otro_proceso_cuda",
+      "returncode": null,
+      "free_mib": 7101
+    },
+    "result": {
+      "cuda_available": true,
+      "device": "cuda:0",
+      "sum": 496
+    },
+    "final": {
+      "schema_version": 1,
+      "observed_at": "2026-09-26T06:25:25.587362+00:00",
+      "status": "completed",
+      "starts": 1,
+      "pauses": 0,
+      "reason": null,
+      "returncode": 0,
+      "free_mib": null
+    },
+    "other_applications_stopped": false,
+    "concurrent_scientific_jobs": false
+  },
+  "coverage": {
+    "tool": "7.16.1",
+    "command": "coverage run --branch --source mars_titan.training.gpu_supervisor -m pytest",
+    "totals": {
+      "covered_lines": 160,
+      "num_statements": 197,
+      "percent_covered": 81.56862745098039,
+      "percent_covered_display": "82",
+      "missing_lines": 37,
+      "excluded_lines": 0,
+      "percent_statements_covered": 81.21827411167513,
+      "percent_statements_covered_display": "81",
+      "num_branches": 58,
+      "num_partial_branches": 8,
+      "covered_branches": 48,
+      "missing_branches": 10,
+      "percent_branches_covered": 82.75862068965517,
+      "percent_branches_covered_display": "83"
+    },
+    "scope": "El proceso Python instrumentado. La CLI también se prueba como subproceso sin fusionar su cobertura."
+  },
+  "complexity": {
+    "tool": "lizard 1.17.31",
+    "crap_convention": "CC² × (1 − cobertura de sentencias)³ + CC. Diagnóstico por función, sin atribuir cobertura de los subprocesos.",
+    "functions": [
+      {
+        "name": "request",
+        "complexity": 1,
+        "covered_statements": 1,
+        "missing_statements": 1,
+        "crap": 1.125
+      },
+      {
+        "name": "parse_gpu",
+        "complexity": 16,
+        "covered_statements": 28,
+        "missing_statements": 3,
+        "crap": 16.232
+      },
+      {
+        "name": "read_gpu",
+        "complexity": 1,
+        "covered_statements": 1,
+        "missing_statements": 2,
+        "crap": 1.296
+      },
+      {
+        "name": "memory_reason",
+        "complexity": 7,
+        "covered_statements": 9,
+        "missing_statements": 4,
+        "crap": 8.427
+      },
+      {
+        "name": "__init__",
+        "complexity": 1,
+        "covered_statements": 4,
+        "missing_statements": 0,
+        "crap": 1.0
+      },
+      {
+        "name": "save",
+        "complexity": 7,
+        "covered_statements": 16,
+        "missing_statements": 1,
+        "crap": 7.01
+      },
+      {
+        "name": "_stop_child",
+        "complexity": 6,
+        "covered_statements": 19,
+        "missing_statements": 2,
+        "crap": 6.031
+      },
+      {
+        "name": "supervise",
+        "complexity": 44,
+        "covered_statements": 57,
+        "missing_statements": 6,
+        "crap": 45.672
+      },
+      {
+        "name": "main",
+        "complexity": 5,
+        "covered_statements": 1,
+        "missing_statements": 17,
+        "crap": 26.061
+      }
+    ]
+  },
+  "mutations": {
+    "source_sha256": "672223c491d8d1488ca95b41134f45904e63eb99ceadbf5aa8236ca8d64ff514",
+    "mutations": [
+      {
+        "mutation": "ignore-free-memory",
+        "detected": true,
+        "returncode": 1
+      },
+      {
+        "mutation": "ignore-pause-count",
+        "detected": true,
+        "returncode": 1
+      },
+      {
+        "mutation": "ignore-descendant-cleanup",
+        "detected": true,
+        "returncode": 1
+      },
+      {
+        "mutation": "admit-missing-processes",
+        "detected": true,
+        "returncode": 1
+      }
+    ],
+    "scope": "Mutaciones aisladas fuera del checkout, sin reservar GPU."
+  },
+  "lifetime_reports": [
+    "gpu-object-lifetime.json",
+    "gpu-corpus-lifetime.json"
+  ],
+  "initial_verification_failure": "La primera batería de integración no declaró CUBLAS_WORKSPACE_CONFIG. 66 casos pasaron y el caso CUDA rechazó la configuración. La ejecución posterior declaró :4096:8 y pasaron los 67 casos.",
+  "limits": [
+    "Los casos de vida útil utilizan datos pequeños. No son una cota del consumo de todo el corpus.",
+    "El supervisor consulta el controlador, no reserva físicamente el margen. Una asignación concurrente entre consultas todavía puede agotar la memoria.",
+    "El perfil de energía y la cuota de CPU no se modifican. Los resultados científicos previos mantienen su edición y sus fallos registrados."
+  ]
+}

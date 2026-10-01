@@ -8,9 +8,9 @@ Registro histórico de la preparación inicial. Las cifras de referencias, prueb
 
 El [repositorio privado](https://github.com/GonxKZ/mars-titan) tiene `main` como rama principal, licencia MIT, autoría y cita de Gonzalo García Lama y plantillas de revisión. Los commits se redactan en inglés conforme a Conventional Commits.
 
-El [Project MARS-TITAN](https://github.com/users/GonxKZ/projects/4) está vinculado al repositorio. Incluye una vista Kanban agrupada por estado y una vista tabular del plan completo. Las 46 issues están asignadas a Gonzalo, distribuidas en seis hitos y tres tareas transversales sin hito. Tienen prioridad, tamaño, criterios de aceptación, referencias a la rúbrica y 124 relaciones nativas de dependencia.
+El [Project MARS-TITAN](https://github.com/users/GonxKZ/projects/4) está vinculado al repositorio. Incluye una vista Kanban agrupada por estado y una vista tabular del plan completo. Las 46 issues están asignadas a Gonzalo, distribuidas en seis hitos y tres tareas transversales sin hito. Tienen prioridad, tamaño, criterios de aceptación y 124 relaciones nativas de dependencia.
 
-Los estados del tablero son Pendiente, En curso, En revisión, Bloqueado y Hecho. Solo se cierra la preparación documental MT-001. Las 45 tareas restantes siguen pendientes de trabajo científico o académico. El [mapa remoto](../../.github/planning/remote-map.json) conserva identificadores, enlaces y fecha de comprobación. Las listas y casillas de las issues se comprobaron mediante el renderizado Markdown de GitHub.
+Los estados del tablero son Pendiente, En curso, En revisión, Bloqueado y Hecho. Solo se cierra la preparación documental MT-001. Las 45 tareas restantes siguen pendientes de trabajo científico o técnico. El [mapa remoto](../../.github/planning/remote-map.json) conserva identificadores, enlaces y fecha de comprobación. Las listas y casillas de las issues se comprobaron mediante el renderizado Markdown de GitHub.
 
 ## Comprobaciones realizadas
 
@@ -22,7 +22,7 @@ Los estados del tablero son Pendiente, En curso, En revisión, Bloqueado y Hecho
 | Ruff | Revisión de código y formato correctas. |
 | Documentación | Enlaces locales, JSON, YAML, TOML, BibTeX, secciones de issues y dependencias del catálogo válidos. |
 | Bibliografía | 38 identificadores únicos y coincidentes entre catálogos y BibTeX. |
-| Biblioteca | 28 PDF interpretables por `pdfinfo`, con hashes registrados. Se inspeccionaron visualmente la rúbrica y portadas de referencias principales. |
+| Biblioteca | 28 PDF interpretables por `pdfinfo`, con hashes registrados. Se inspeccionaron visualmente las portadas de las referencias principales. |
 | Fuentes recibidas | Siete hashes de documentos y catálogos pequeños coinciden con los originales. No es una auditoría de todos los archivos de FinMultiTime. |
 | CMake | Configuración completada con C/C++ y con CUDA activada en el equipo local. No existen kernels ni algoritmos científicos que evaluar todavía. |
 | GPU | RTX 4070 Laptop, 8.188 MiB, PyTorch compartido `2.14.0+cu130` y operación mínima en `cuda:0` comprobados. No se entrenó ningún modelo. |
@@ -36,6 +36,6 @@ Se habilitaron las alertas de dependencias. La configuración inicial fijaba las
 
 GitHub rechazó la activación de protección de `main` con HTTP 403 porque el plan actual no la permite en repositorios privados. La respuesta exige GitHub Pro o visibilidad pública. El repositorio conserva su visibilidad privada y no se afirma que la protección esté activa. Los controles locales y las reglas documentadas sí están disponibles.
 
-La plantilla del aula, las instrucciones específicas de formato y el calendario académico siguen pendientes de aportación y revisión con la dirección. La fuente LaTeX es una base de trabajo y no una plantilla oficial. No se ha comprobado su compilación porque no hay una distribución LaTeX instalada. Sus cinco claves de cita se han contrastado con la bibliografía.
+El formato final del documento y el calendario de redacción siguen pendientes de concretar. La fuente LaTeX es una base de trabajo. No se ha comprobado su compilación porque no hay una distribución LaTeX instalada. Sus cinco claves de cita se han contrastado con la bibliografía.
 
-La preparación no garantiza una calificación ni que la arquitectura supere a las referencias. La matriz de rúbrica recoge qué evidencia deberá producir el trabajo posterior y las condiciones que deben revisarse antes de cualquier entrega.
+La preparación no garantiza que la arquitectura supere a las referencias. El trabajo posterior deberá aportar evidencia experimental y revisar sus condiciones antes de publicar conclusiones.

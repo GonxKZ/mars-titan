@@ -1,6 +1,6 @@
 # Revisión de memoria adaptativa, multimodalidad e incertidumbre
 
-MARS-TITAN. Autor: Gonzalo García Lama. Revisión comprobada el 18 de septiembre de 2026. Este documento sirve de apoyo a una comparativa de tipo 3: las propuestas de arquitectura son hipótesis que se deben contrastar, no resultados del proyecto.
+MARS-TITAN. Autor: Gonzalo García Lama. Revisión comprobada el 18 de septiembre de 2026. Este documento sirve de apoyo a la comparación experimental. Las propuestas de arquitectura son hipótesis que se deben contrastar, no resultados del proyecto.
 
 Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `neural-sources.json` y `neural.bib`. EnbPI (`xu2021enbpi`) y ACI (`gibbs2021aci`) usan las entradas canónicas de `finance-sources.json` y `finance.bib` para evitar duplicados. Se ha comprobado un PDF abierto de cada trabajo. En TTT y MIRAS se distingue la publicación de la copia arXiv accesible. Acceso abierto y permiso de redistribución son cuestiones diferentes. El campo `redistribution` permanece en `unknown` cuando no se ha verificado expresamente ese permiso.
 
@@ -9,9 +9,9 @@ Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `ne
 | Objetivo | Uso de esta revisión |
 |---|---|
 | 1. Datos multimodales y disponibilidad temporal | FinMultiTime, FinBERT y antecedentes de fusión financiera. Revisión de qué información estaba disponible en cada instante. |
-| 2. Target residual | Distinguir el objetivo del proyecto de las tareas de sentimiento, dirección y sorpresa de beneficios usadas por otros autores. La justificación financiera del residual corresponde a su revisión específica. |
+| 2. Retorno residual | Distinguir el objetivo del proyecto de las tareas de sentimiento, dirección y sorpresa de beneficios usadas por otros autores. La justificación financiera del residual corresponde a su revisión específica. |
 | 3. Arquitectura e incertidumbre | Titans, TTT y MIRAS como base. ATLAS, SEAL y Nested Learning para delimitar avances y alcance. |
-| 4. Baselines y ablaciones | DLinear, TCN, PatchTST y comparaciones con la misma entrada y presupuesto. |
+| 4. Referencias y ablaciones | DLinear, TCN, PatchTST y comparaciones con la misma entrada y presupuesto. |
 | 5. Evaluación walk-forward | Comparación temporal y evaluación de intervalos con EnbPI y ACI, sin utilizar etiquetas antes de que estén disponibles. |
 | 6. Análisis crítico | Separar evidencia publicada, extrapolaciones al problema financiero y límites de recursos y datos. |
 
@@ -47,7 +47,7 @@ Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `ne
 
 ### 8. DLinear: `zeng2023dlinear`
 
-**Estado:** AAAI 2023, revisado por pares. Este trabajo muestra el valor de modelos lineales sencillos frente a arquitecturas de series temporales más complejas en sus benchmarks. DLinear es una referencia útil por su bajo coste y facilidad de interpretación experimental. No implica que los Transformers sean siempre inadecuados. Hay que ajustarlo al mismo objetivo residual, entradas y horizonte, y evitar comparar predicción de precios con predicción de retornos. [Artículo](https://ojs.aaai.org/index.php/AAAI/article/view/26317).
+**Estado:** AAAI 2023, revisado por pares. Este trabajo muestra el valor de modelos lineales sencillos frente a arquitecturas de series temporales más complejas en sus pruebas de rendimiento. DLinear es una referencia útil por su bajo coste y facilidad de interpretación experimental. No implica que los Transformers sean siempre inadecuados. Hay que ajustarlo al mismo objetivo residual, entradas y horizonte, y evitar comparar predicción de precios con predicción de retornos. [Artículo](https://ojs.aaai.org/index.php/AAAI/article/view/26317).
 
 ### 9. PatchTST: `nie2023patchtst`
 
@@ -55,7 +55,7 @@ Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `ne
 
 ### 10. TCN: `bai2018tcn`
 
-**Estado:** preprint técnico de 2018. Publicación revisada por pares no confirmada. Estudia convoluciones temporales dilatadas y conexiones residuales frente a redes recurrentes. Es un baseline compacto útil para comprobar si una memoria adaptativa mejora sobre un campo receptivo fijo. Aquí «causal» significa que la convolución no utiliza observaciones futuras. No significa que el modelo identifique efectos económicos causales. El campo receptivo debe cubrir un historial comparable al de los demás modelos. [Artículo](https://arxiv.org/abs/1803.01271).
+**Estado:** preprint técnico de 2018. Publicación revisada por pares no confirmada. Estudia convoluciones temporales dilatadas y conexiones residuales frente a redes recurrentes. Es una referencia compacta útil para comprobar si una memoria adaptativa mejora sobre un campo receptivo fijo. Aquí «causal» significa que la convolución no utiliza observaciones futuras. No significa que el modelo identifique efectos económicos causales. El campo receptivo debe cubrir un historial comparable al de los demás modelos. [Artículo](https://arxiv.org/abs/1803.01271).
 
 ### 11. FinBERT: `araci2019finbert`
 
@@ -67,7 +67,7 @@ Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `ne
 
 ### 13. Texto y tablas financieras: `koval2024financial`
 
-**Estado:** Findings of EMNLP 2024, revisado por pares. Predice beneficios trimestrales frente a expectativas de analistas mediante documentos, variables financieras y contexto macroeconómico. Aporta un diseño con baselines unimodales y análisis de la fusión. Resulta relevante para organizar las comparaciones, aunque la sorpresa de beneficios no equivale a una rentabilidad residual diaria. Sus resultados deben describirse dentro de esa tarea, sin trasladar directamente magnitudes al proyecto. [Actas](https://aclanthology.org/2024.findings-emnlp.486/).
+**Estado:** Findings of EMNLP 2024, revisado por pares. Predice beneficios trimestrales frente a expectativas de analistas mediante documentos, variables financieras y contexto macroeconómico. Aporta un diseño con referencias unimodales y análisis de la fusión. Resulta relevante para organizar las comparaciones, aunque la sorpresa de beneficios no equivale a una rentabilidad residual diaria. Sus resultados deben describirse dentro de esa tarea, sin trasladar directamente magnitudes al proyecto. [Actas](https://aclanthology.org/2024.findings-emnlp.486/).
 
 ### 14. Deep Ensembles: `lakshminarayanan2017ensembles`
 
@@ -120,7 +120,7 @@ Una implementación mínima puede extraer el texto una sola vez con pesos congel
 
 Cada fila necesita el mismo objetivo, universo, fechas y entradas disponibles. Igualar aproximadamente parámetros ayuda, pero no sustituye registrar tiempo de entrenamiento, latencia y memoria máxima. Los hiperparámetros se eligen en validación temporal. El conjunto final de prueba no decide qué arquitectura, semillas o periodos se publican.
 
-La memoria debe seguir una secuencia operativa inequívoca: incorpora observaciones disponibles, produce una predicción y solo más adelante puede incorporar el objetivo cuando se haya realizado. Una actualización autosupervisada sobre entradas disponibles y un ajuste supervisado tras recibir el retorno son mecanismos diferentes y se documentarán por separado. Los folds deben reconstruir su estado inicial sin arrastrar información de otra evaluación. También hay que decidir si cada activo tiene estado propio o si existe una memoria compartida. Mezclar activos mediante el orden arbitrario de los lotes no es una justificación económica.
+La memoria debe seguir una secuencia operativa inequívoca: incorpora observaciones disponibles, produce una predicción y solo más adelante puede incorporar el objetivo cuando se haya realizado. Una actualización autosupervisada sobre entradas disponibles y un ajuste supervisado tras recibir el retorno son mecanismos diferentes y se documentarán por separado. Las particiones temporales deben reconstruir su estado inicial sin arrastrar información de otra evaluación. También hay que decidir si cada activo tiene estado propio o si existe una memoria compartida. Mezclar activos mediante el orden arbitrario de los lotes no es una justificación económica.
 
 ATLAS, SEAL y HOPE ayudan a situar el proyecto, pero implementar los tres además de Titans no es necesario para resolver esta pregunta. No se incluye generación autónoma de nuevas reglas, modificación del código, aprendizaje por refuerzo de una política de ajuste ni un agente de negociación. Esa delimitación mantiene el esfuerzo en una comparación reproducible y permite explicar una ausencia de mejora como resultado válido.
 

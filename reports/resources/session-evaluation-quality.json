@@ -1,0 +1,206 @@
+{
+  "full_suite": {
+    "passed": 1172,
+    "skipped": 0,
+    "seconds": 101.86
+  },
+  "focused_suite": {
+    "passed": 36
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/evaluation/session_metrics.py",
+      "sha256": "146e064587921c6f278376eb123ce3288c8fbf593c5c9c26ae244b148ee6e22d",
+      "coverage": {
+        "covered_lines": 50,
+        "num_statements": 55,
+        "percent_covered": 89.33333333333333,
+        "percent_covered_display": "89",
+        "missing_lines": 5,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.9090909090909,
+        "percent_statements_covered_display": "91",
+        "num_branches": 20,
+        "num_partial_branches": 3,
+        "covered_branches": 17,
+        "missing_branches": 3,
+        "percent_branches_covered": 85.0,
+        "percent_branches_covered_display": "85"
+      },
+      "functions": [
+        {
+          "name": "SessionErrors.__init__",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 3.3333333333333335
+        },
+        {
+          "name": "SessionErrors.update",
+          "complexity": 21,
+          "statement_coverage_fraction": 0.9411764705882353,
+          "crap": 21.089761856299614
+        },
+        {
+          "name": "SessionErrors._means",
+          "complexity": 4,
+          "statement_coverage_fraction": 1.0,
+          "crap": 4.0
+        },
+        {
+          "name": "SessionErrors.summary",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.7777777777777778,
+          "crap": 11.097393689986282
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/reference_run.py",
+      "sha256": "1c8575b2eb8bc7e53d910f073d42c6aefa5eae4c0bd9e62c5ee369dba41a05b2",
+      "coverage": {
+        "covered_lines": 205,
+        "num_statements": 229,
+        "percent_covered": 84.85804416403785,
+        "percent_covered_display": "85",
+        "missing_lines": 24,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.51965065502183,
+        "percent_statements_covered_display": "90",
+        "num_branches": 88,
+        "num_partial_branches": 20,
+        "covered_branches": 64,
+        "missing_branches": 24,
+        "percent_branches_covered": 72.72727272727273,
+        "percent_branches_covered_display": "73"
+      },
+      "functions": [
+        {
+          "name": "read_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "scientific_identity",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_options",
+          "complexity": 19,
+          "statement_coverage_fraction": 0.7272727272727273,
+          "crap": 26.323065364387677
+        },
+        {
+          "name": "_inputs",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_statistics",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_metrics",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.75,
+          "crap": 2.0625
+        },
+        {
+          "name": "_update",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 3.0262390670553936
+        },
+        {
+          "name": "_evaluate",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.9285714285714286,
+          "crap": 4.005830903790088
+        },
+        {
+          "name": "training_weights",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.8,
+          "crap": 7.3919999999999995
+        },
+        {
+          "name": "_parent",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.8823529411764706,
+          "crap": 13.275188276002442
+        },
+        {
+          "name": "run_reference_case",
+          "complexity": 39,
+          "statement_coverage_fraction": 0.9009009009009009,
+          "crap": 40.48026112306609
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 2,
+    "detected": 2,
+    "complete_mutation_score": false,
+    "cases": [
+      "row_weighting",
+      "market_collision"
+    ]
+  },
+  "aggregation": {
+    "key": [
+      "market",
+      "prediction_at"
+    ],
+    "within_session": "mean_over_admissible_rows",
+    "between_sessions": "equal_weight",
+    "max_batch_rows": 4096,
+    "default_max_sessions": 50000
+  },
+  "known_examples": [
+    {
+      "absolute_errors": [
+        1,
+        3,
+        6
+      ],
+      "rows_per_session": [
+        2,
+        1
+      ],
+      "session_mae": 4.0,
+      "row_mae": 3.3333333333333335,
+      "session_mse": 20.5
+    },
+    {
+      "absolute_errors": [
+        0.06,
+        0.07,
+        0.07,
+        0.08,
+        0.08
+      ],
+      "rows_per_session": [
+        1,
+        2,
+        2
+      ],
+      "session_mae": 0.07,
+      "row_mae": 0.072
+    }
+  ],
+  "limits": [
+    "Los ejemplos num\u00e9ricos son sint\u00e9ticos y no miden precisi\u00f3n del corpus.",
+    "No se han calculado aqu\u00ed intervalos temporales ni m\u00e9tricas de densidades predictivas.",
+    "La cobertura corresponde a las pruebas espec\u00edficas.",
+    "Se revisaron localmente contratos, acumulaci\u00f3n y propagaci\u00f3n de denominadores."
+  ]
+}

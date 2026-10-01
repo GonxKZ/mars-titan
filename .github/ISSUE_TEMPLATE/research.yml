@@ -20,4 +20,4 @@ body:
     id: constraints
     attributes:
       label: Recursos, riesgos y fuentes
-      description: Presupuesto, dependencias, bibliografía y requisitos de la rúbrica.
+      description: Presupuesto, dependencias, fuentes y restricciones del experimento.

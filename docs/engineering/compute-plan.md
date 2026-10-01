@@ -1,6 +1,6 @@
-# Plan de cómputo y entregas
+# Plan de cómputo y campaña
 
-Todavía no hay fechas académicas confirmadas. El equipo estará disponible para sesiones largas y recuperación mediante checkpoints. Esta disponibilidad no se convierte en una estimación de días de entrenamiento sin medir el flujo real.
+Todavía no hay un calendario definitivo para la campaña. El equipo estará disponible para sesiones largas y recuperación mediante checkpoints. Esta disponibilidad no se convierte en una estimación de días de entrenamiento sin medir el flujo real.
 
 ## Decisión inicial de campaña
 
@@ -16,7 +16,7 @@ Para cada ejecución se estimará:
 
 $$T_{run}=T_{inicio}+N_{pasos}\,t_{paso}+T_{validacion}+T_{calibracion}+T_{guardados}.$$
 
-El coste de campaña suma configuraciones, folds y semillas, más preparación, profesores, consolidación y repeticiones justificadas. Se utilizarán al menos una estimación central y otra conservadora obtenida de ejecuciones sostenidas. El coste se revisa si el tamaño cambia la saturación de GPU o convierte la lectura en cuello de botella.
+El coste de campaña suma configuraciones, ventanas de evaluación y semillas, más preparación, cómputo de los modelos maestros de destilación, consolidación y repeticiones justificadas. Se utilizarán al menos una estimación central y otra conservadora obtenida de ejecuciones sostenidas. El coste se revisa si el tamaño cambia la saturación de GPU o convierte la lectura en cuello de botella.
 
 Como ejemplo de cálculo, no como pronóstico del proyecto, 12 configuraciones con tres folds, tres semillas y 20 minutos por ejecución requieren 36 horas, antes de los costes auxiliares. Si cada ejecución tarda dos horas, la misma campaña exige 216 horas, equivalentes a nueve días ideales continuos. La disponibilidad 24/7 no evita esa multiplicación.
 
@@ -36,9 +36,9 @@ El test final permanece cerrado. Si falta tiempo, se eliminan extensiones y ampl
 | Desarrollo principal | Codificador común y memoria mínima. | Entrenamiento verificable, estados correctos y comparación inicial completa. |
 | Decisión de alcance | Revisar recurrencia, replay, familia moderna y extensión de cobertura. | Beneficio de desarrollo o pregunta útil que quepa en el presupuesto restante. |
 | Campaña confirmatoria | Folds, semillas, calibración y evaluación financiera. | Protocolo cerrado, recursos reservados y test protegido. |
-| Cierre | Reproducción de cifras, análisis crítico, redacción y defensa. | Evidencias completas y cumplimiento de las entregas reales del aula. |
+| Cierre | Reproducción de cifras, análisis crítico y redacción técnica. | Evidencias completas y comprobación de la reproducibilidad. |
 
-La redacción acompaña todas las etapas. El calendario del campus sustituirá esta secuencia relativa en cuanto esté disponible. No se asignan ahora fechas de depósito ni un número ficticio de horas semanales del estudiante.
+La redacción acompaña todas las etapas. El calendario operativo sustituirá esta secuencia relativa cuando se conozcan la cobertura admisible y el coste medido de las ejecuciones.
 
 ## Sesiones largas en el portátil
 

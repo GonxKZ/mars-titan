@@ -1,0 +1,79 @@
+{
+  "domain": "technical",
+  "command": "scripts/run_financial_comparators.py --diagnostic",
+  "configuration": {
+    "schema_version": 1,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "algorithms": [
+      "ppo",
+      "double_dqn"
+    ],
+    "references": [
+      "cash",
+      "hold_initial",
+      "rebalance_50"
+    ],
+    "cost_bps": [
+      0,
+      10,
+      25
+    ],
+    "environment": {
+      "capital": 10000,
+      "cost_bps": 10,
+      "participation": 0.01,
+      "score_scale": 0.01,
+      "ruin_penalty": -20
+    },
+    "training": {
+      "total_steps": 16,
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "batch_size": 4,
+      "rollout_steps": 8,
+      "ppo_epochs": 2,
+      "gae_lambda": 0.95,
+      "clip": 0.2,
+      "entropy": 0.01,
+      "value_weight": 0.5,
+      "replay_capacity": 32,
+      "warmup_steps": 4,
+      "target_interval": 4,
+      "epsilon_start": 1,
+      "epsilon_end": 0.05,
+      "checkpoint_steps": 4,
+      "gradient_norm": 1
+    },
+    "final_test_opened": false
+  },
+  "training_runs": 6,
+  "evaluations": 81,
+  "training_decisions": 96,
+  "evaluation_periods": 3,
+  "total_process_seconds": 5.35,
+  "process_lifetime_peak_rss_bytes": 895246336,
+  "artifact_bytes": 2476331,
+  "operating_system_read_blocks_512": 54400,
+  "operating_system_write_blocks_512": 13400,
+  "cuda_workload": false,
+  "peak_vram_bytes": null,
+  "cpu_gpu_transfer_bytes": null,
+  "energy_joules": null,
+  "cost_currency": null,
+  "final_test_opened": false,
+  "code_identity": {
+    "campaign.py": "da9e656d909b891e5880582d5025e9245604b23100491cec358889c47770774a",
+    "evaluation.py": "b835920344a5c3c3ba707acf6765254104ad830cc36c9fdd6b98450a3574056a",
+    "training.py": "64b8872f879b2c7bc332942ac54c71c5459302910550cc9b9e98e428643c35d2"
+  },
+  "limits": [
+    "Comprobación CPU de 16 decisiones por ajuste, sin comparación científica.",
+    "Medida de una ejecución antes de las correcciones posteriores de restauración y liquidez. No es un benchmark de aceleración.",
+    "Otras cargas de entrenamiento y servicios seguían activas.",
+    "La GPU, transferencias y energía no se midieron en esta ejecución."
+  ]
+}

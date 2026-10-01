@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-09-24T10:44:25Z",
+  "diagnostic_only": true,
+  "device": "cpu",
+  "scientific_training_executed": false,
+  "final_test_opened": false,
+  "tests": {
+    "command": "CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=2 uv run --no-sync --with coverage==7.16.1 --with radon==6.0.1 coverage run --branch --source=mars_titan.posttraining -m pytest tests/posttraining -q",
+    "passed": 65,
+    "failed": 0,
+    "skipped": 0
+  },
+  "coverage": {
+    "tool": "Coverage.py 7.16.1",
+    "branch_measurement": true,
+    "scope": [
+      "src/mars_titan/posttraining/run.py",
+      "src/mars_titan/posttraining/queue.py",
+      "src/mars_titan/posttraining/selection.py"
+    ],
+    "covered_lines": 379,
+    "executable_lines": 431,
+    "covered_branches": 111,
+    "branches": 150,
+    "selection_module": {
+      "covered_lines": 21,
+      "executable_lines": 21,
+      "covered_branches": 10,
+      "branches": 10
+    }
+  },
+  "complexity": {
+    "tool": "Radon 6.0.1",
+    "crap_formula": "C**2 * (1 - line_coverage)**3 + C",
+    "line_coverage_convention": "Fracción de líneas ejecutables cubiertas dentro del intervalo inclusivo de cada función",
+    "maximum_crap": {
+      "function": "run._validate_run",
+      "cyclomatic_complexity": 27,
+      "line_coverage": 0.6956521739130435,
+      "crap": 47.55124517136517
+    },
+    "run_case": {
+      "cyclomatic_complexity": 42,
+      "line_coverage": 0.8571428571428571,
+      "crap": 47.142857142857146
+    }
+  },
+  "targeted_mutations": {
+    "method": "Sustituciones en memoria mediante un plugin temporal de pytest, sin editar fuentes",
+    "detected": 5,
+    "survived": 0,
+    "cases": [
+      "Omitir la evaluación inicial",
+      "Aceptar empates como mejoras",
+      "Ignorar la mejora mínima configurada",
+      "Guardar pesos seleccionados con el optimizador de la última época al interrumpir",
+      "Fijar todos los estados e impedir su rotación"
+    ]
+  },
+  "checkpoint_retention": {
+    "maximum_confirmed_states": 3,
+    "recent_states": 2,
+    "best_states": 1,
+    "pinned_states": 0,
+    "verified_checkpoint_saves_greater_than": 20,
+    "includes_repeated_resumes": true
+  },
+  "source_sha256": {
+    "src/mars_titan/posttraining/run.py": "fec059cbaca3fbcd79c48881c29a1dd17e76d7915b664ea52dc3546909a9aa1e",
+    "src/mars_titan/posttraining/queue.py": "a8039f4732d39181cc38cec90c7e3ae4b55418b040a32f4bb5fa91cdc238bb38",
+    "src/mars_titan/posttraining/selection.py": "cfd5fc05d38b49e8c5174d362e7261459e7c5b072a46c5832037b823549fc6b3"
+  },
+  "limits": [
+    "Las pruebas no ejecutan CUDA ni cargan padres científicos reales",
+    "Los recorridos CUDA de admisión y ejecución no quedan cubiertos",
+    "Las curvas controladas comprueban selección y recuperación, no calidad predictiva",
+    "Un mejor checkpoint corrupto se rechaza y no se sustituye por otro reciente"
+  ]
+}

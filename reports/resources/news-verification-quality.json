@@ -1,0 +1,377 @@
+{
+  "tests_passed": 922,
+  "tests_skipped": 0,
+  "pytest_seconds_with_coverage": 87.18,
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "packages": {
+    "beautifulsoup4": "4.15.0",
+    "protego": "0.7.0"
+  },
+  "files": {
+    "src/mars_titan/data/news_sources.py": {
+      "sha256": "5325ca3b7d816fdda96bcf5aef686fb91c99b178a4235cca580b232d1d037268",
+      "coverage": {
+        "covered_lines": 125,
+        "num_statements": 137,
+        "percent_covered": 86.72985781990522,
+        "percent_covered_display": "87",
+        "missing_lines": 12,
+        "excluded_lines": 0,
+        "percent_statements_covered": 91.24087591240875,
+        "percent_statements_covered_display": "91",
+        "num_branches": 74,
+        "num_partial_branches": 16,
+        "covered_branches": 58,
+        "missing_branches": 16,
+        "percent_branches_covered": 78.37837837837837,
+        "percent_branches_covered_display": "78"
+      },
+      "functions": [
+        {
+          "name": "_article_metadata",
+          "complexity": 10,
+          "statement_coverage_fraction": 0.7222222222222222,
+          "crap": 12.143347050754459
+        },
+        {
+          "name": "_quote_identity",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_publisher_zone",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.8695652173913043,
+          "crap": 13.375030821073395
+        },
+        {
+          "name": "parse_fool",
+          "complexity": 26,
+          "statement_coverage_fraction": 1.0,
+          "crap": 26.0
+        },
+        {
+          "name": "ArticleEvidence.__post_init__",
+          "complexity": 22,
+          "statement_coverage_fraction": 0.7894736842105263,
+          "crap": 26.516110220148708
+        },
+        {
+          "name": "__post_init__",
+          "complexity": 22,
+          "statement_coverage_fraction": null,
+          "crap": null
+        }
+      ]
+    },
+    "src/mars_titan/data/news_verification.py": {
+      "sha256": "7bd7fed3694bf4c8a0f22498a52f45c178f264b92673b9b8516e46ead3b6be80",
+      "coverage": {
+        "covered_lines": 68,
+        "num_statements": 73,
+        "percent_covered": 91.2621359223301,
+        "percent_covered_display": "91",
+        "missing_lines": 5,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.15068493150685,
+        "percent_statements_covered_display": "93",
+        "num_branches": 30,
+        "num_partial_branches": 4,
+        "covered_branches": 26,
+        "missing_branches": 4,
+        "percent_branches_covered": 86.66666666666667,
+        "percent_branches_covered_display": "87"
+      },
+      "functions": [
+        {
+          "name": "_tokens",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_known_promotion",
+          "complexity": 2,
+          "statement_coverage_fraction": 0.8333333333333334,
+          "crap": 2.0185185185185186
+        },
+        {
+          "name": "_editorial_spans",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_unverified",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "compare_article",
+          "complexity": 18,
+          "statement_coverage_fraction": 0.8787878787878788,
+          "crap": 18.577009767092413
+        }
+      ]
+    },
+    "src/mars_titan/data/news_fetch.py": {
+      "sha256": "89f57e7ed506fa664bb06d8fcb5e2eafe359a6e09f344437a4f49928549967b9",
+      "coverage": {
+        "covered_lines": 186,
+        "num_statements": 196,
+        "percent_covered": 93.54838709677419,
+        "percent_covered_display": "94",
+        "missing_lines": 10,
+        "excluded_lines": 0,
+        "percent_statements_covered": 94.89795918367346,
+        "percent_statements_covered_display": "95",
+        "num_branches": 52,
+        "num_partial_branches": 6,
+        "covered_branches": 46,
+        "missing_branches": 6,
+        "percent_branches_covered": 88.46153846153847,
+        "percent_branches_covered_display": "88"
+      },
+      "functions": [
+        {
+          "name": "_address",
+          "complexity": 6,
+          "statement_coverage_fraction": 1.0,
+          "crap": 6.0
+        },
+        {
+          "name": "_request",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.9473684210526315,
+          "crap": 14.02857559410993
+        },
+        {
+          "name": "_retry_time",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.7142857142857143,
+          "crap": 3.2099125364431487
+        },
+        {
+          "name": "SourceUnavailable.__init__",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "__init__",
+          "complexity": 1,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "ArticleFetcher.__init__",
+          "complexity": 7,
+          "statement_coverage_fraction": 0.7857142857142857,
+          "crap": 7.482142857142858
+        },
+        {
+          "name": "ArticleFetcher._connect",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ArticleFetcher.cached",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 5.072886297376093
+        },
+        {
+          "name": "ArticleFetcher._state",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ArticleFetcher._get",
+          "complexity": 12,
+          "statement_coverage_fraction": 1.0,
+          "crap": 12.0
+        },
+        {
+          "name": "ArticleFetcher._remember_failure",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "ArticleFetcher._robots",
+          "complexity": 7,
+          "statement_coverage_fraction": 1.0,
+          "crap": 7.0
+        },
+        {
+          "name": "ArticleFetcher.fetch",
+          "complexity": 5,
+          "statement_coverage_fraction": 0.9523809523809523,
+          "crap": 5.0026994924954105
+        },
+        {
+          "name": "__init__",
+          "complexity": 7,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "_connect",
+          "complexity": 1,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "cached",
+          "complexity": 5,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "_state",
+          "complexity": 1,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "_get",
+          "complexity": 12,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "_remember_failure",
+          "complexity": 1,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "_robots",
+          "complexity": 7,
+          "statement_coverage_fraction": null,
+          "crap": null
+        },
+        {
+          "name": "fetch",
+          "complexity": 5,
+          "statement_coverage_fraction": null,
+          "crap": null
+        }
+      ]
+    },
+    "src/mars_titan/data/news_registry.py": {
+      "sha256": "523127c01bf83d30b93b2915003d292f126ffcc215de4b09bbeffa6fb6ffacd0",
+      "coverage": {
+        "covered_lines": 164,
+        "num_statements": 184,
+        "percent_covered": 85.65573770491804,
+        "percent_covered_display": "86",
+        "missing_lines": 20,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.1304347826087,
+        "percent_statements_covered_display": "89",
+        "num_branches": 60,
+        "num_partial_branches": 13,
+        "covered_branches": 45,
+        "missing_branches": 15,
+        "percent_branches_covered": 75.0,
+        "percent_branches_covered_display": "75"
+      },
+      "functions": [
+        {
+          "name": "_policy_hash",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "_connect",
+          "complexity": 1,
+          "statement_coverage_fraction": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "_bind",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 3.3333333333333335
+        },
+        {
+          "name": "_catalog_digest",
+          "complexity": 3,
+          "statement_coverage_fraction": 1.0,
+          "crap": 3.0
+        },
+        {
+          "name": "_read_record",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.8571428571428571,
+          "crap": 4.0466472303206995
+        },
+        {
+          "name": "initialize_verification",
+          "complexity": 20,
+          "statement_coverage_fraction": 0.8648648648648649,
+          "crap": 20.98710836475628
+        },
+        {
+          "name": "candidate_urls",
+          "complexity": 12,
+          "statement_coverage_fraction": 0.8125,
+          "crap": 12.94921875
+        },
+        {
+          "name": "_verify",
+          "complexity": 9,
+          "statement_coverage_fraction": 0.7692307692307693,
+          "crap": 9.995448338643603
+        },
+        {
+          "name": "verify_pending",
+          "complexity": 13,
+          "statement_coverage_fraction": 0.9642857142857143,
+          "crap": 13.00769861516035
+        },
+        {
+          "name": "reviews_for_asset",
+          "complexity": 3,
+          "statement_coverage_fraction": 0.9090909090909091,
+          "crap": 3.006761833208114
+        },
+        {
+          "name": "verification_status",
+          "complexity": 2,
+          "statement_coverage_fraction": 1.0,
+          "crap": 2.0
+        }
+      ]
+    }
+  },
+  "directed_mutations": {
+    "method": "Mutaciones dirigidas en memoria, sin alterar los archivos de producci\u00f3n",
+    "detected": [
+      "units",
+      "promotion",
+      "original_hash",
+      "capture_hash",
+      "robots",
+      "body_match",
+      "source_destination",
+      "full_queue"
+    ],
+    "executed": 8,
+    "not_a_complete_mutation_score": true
+  },
+  "limits": [
+    "La cobertura no incluye los subprocesos de la CLI ni las consultas reales al editor.",
+    "El transporte se comprueba con un canal controlado. No simula todas las aver\u00edas de red.",
+    "No se ha certificado un plazo total estricto para DNS y cabeceras lentas.",
+    "Cobertura y CRAP no acreditan ausencia de errores ni validez cient\u00edfica del corpus."
+  ]
+}

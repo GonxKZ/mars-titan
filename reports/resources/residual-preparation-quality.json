@@ -1,0 +1,305 @@
+{
+  "full_suite": {
+    "passed": 1052,
+    "skipped": 0,
+    "seconds": 100.56,
+    "instrumentation": "coverage.py branch"
+  },
+  "focused_suite": {
+    "passed": 30
+  },
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "modules": [
+    {
+      "path": "src/mars_titan/data/residual_arrays.py",
+      "sha256": "d590c8074a98aaf5637a239faedbda0f94c46757a844a5bbe01add90db639f15",
+      "coverage": {
+        "covered_lines": 43,
+        "num_statements": 43,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 14,
+        "num_partial_branches": 0,
+        "covered_branches": 14,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      },
+      "functions": [
+        {
+          "name": "residual_targets_array",
+          "complexity": 14,
+          "statement_coverage_fraction": 1.0,
+          "crap": 14.0
+        }
+      ]
+    },
+    {
+      "path": "src/mars_titan/training/corpus_targets.py",
+      "sha256": "4cd607508621bd398eb7fc055c33783270f74ca751bbec96c7bc0af6492b9c3d",
+      "coverage": {
+        "covered_lines": 118,
+        "num_statements": 132,
+        "percent_covered": 85.26315789473684,
+        "percent_covered_display": "85",
+        "missing_lines": 14,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.39393939393939,
+        "percent_statements_covered_display": "89",
+        "num_branches": 58,
+        "num_partial_branches": 14,
+        "covered_branches": 44,
+        "missing_branches": 14,
+        "percent_branches_covered": 75.86206896551724,
+        "percent_branches_covered_display": "76"
+      },
+      "functions": [
+        {
+          "name": "_json",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.6666666666666666,
+          "crap": 4.592592592592593
+        },
+        {
+          "name": "_path",
+          "complexity": 4,
+          "statement_coverage_fraction": 0.75,
+          "crap": 4.25
+        },
+        {
+          "name": "_asset_sources",
+          "complexity": 14,
+          "statement_coverage_fraction": 0.8235294117647058,
+          "crap": 15.07714227559536
+        },
+        {
+          "name": "_label_batches",
+          "complexity": 16,
+          "statement_coverage_fraction": 0.8846153846153846,
+          "crap": 16.393263541192535
+        },
+        {
+          "name": "prepare_corpus_targets",
+          "complexity": 43,
+          "statement_coverage_fraction": 0.9,
+          "crap": 44.849
+        }
+      ]
+    }
+  ],
+  "directed_mutations": {
+    "executed": 4,
+    "detected": 4,
+    "complete_mutation_score": false,
+    "cases": [
+      {
+        "mutation": "availability",
+        "detected": true
+      },
+      {
+        "mutation": "minimum",
+        "detected": true
+      },
+      {
+        "mutation": "window",
+        "detected": true
+      },
+      {
+        "mutation": "next_session",
+        "detected": true
+      }
+    ]
+  },
+  "benchmark": {
+    "source_manifest_sha256": "b0f5982d6d8cfaa02da56ce11af8cb24da0924ae7cd682954458feae39cf3ec9",
+    "benchmark_sha256": "21182ec541b6bd4b0ddf780f5d32e3b3ae417212747679b20fe0f57375f9df69",
+    "code_sha256": {
+      "src/mars_titan/data/budget_targets.py": "32cce1fcc3fd44a19b183381b0e0d8d945254d13a03e3b3515b7c6ebf49293f3",
+      "src/mars_titan/data/residual_arrays.py": "d590c8074a98aaf5637a239faedbda0f94c46757a844a5bbe01add90db639f15",
+      "src/mars_titan/training/corpus_targets.py": "4cd607508621bd398eb7fc055c33783270f74ca751bbec96c7bc0af6492b9c3d"
+    },
+    "python": "3.12.14",
+    "machine": "x86_64",
+    "threads": {
+      "OMP_NUM_THREADS": "4",
+      "OPENBLAS_NUM_THREADS": "4"
+    },
+    "assets": 66,
+    "exact_labels_equal": true,
+    "measurements": [
+      {
+        "backend": "reference",
+        "compute_seconds": 61.802211704009096,
+        "process_peak_rss_bytes": 212410368,
+        "assets": 66,
+        "counts": {
+          "train": 245,
+          "validation": 225
+        },
+        "reused_assets": 0,
+        "repeat": 0,
+        "process_seconds": 62.121062268997775
+      },
+      {
+        "backend": "numpy",
+        "compute_seconds": 11.571742470012396,
+        "process_peak_rss_bytes": 235294720,
+        "assets": 66,
+        "counts": {
+          "train": 245,
+          "validation": 225
+        },
+        "reused_assets": 0,
+        "repeat": 0,
+        "process_seconds": 11.887906279996969
+      },
+      {
+        "backend": "numpy",
+        "compute_seconds": 11.422615096002119,
+        "process_peak_rss_bytes": 221581312,
+        "assets": 66,
+        "counts": {
+          "train": 245,
+          "validation": 225
+        },
+        "reused_assets": 0,
+        "repeat": 1,
+        "process_seconds": 11.723271173003013
+      },
+      {
+        "backend": "reference",
+        "compute_seconds": 62.48141258400574,
+        "process_peak_rss_bytes": 223768576,
+        "assets": 66,
+        "counts": {
+          "train": 245,
+          "validation": 225
+        },
+        "reused_assets": 0,
+        "repeat": 1,
+        "process_seconds": 62.777026248993934
+      },
+      {
+        "backend": "reference",
+        "compute_seconds": 61.20450101800088,
+        "process_peak_rss_bytes": 216494080,
+        "assets": 66,
+        "counts": {
+          "train": 245,
+          "validation": 225
+        },
+        "reused_assets": 0,
+        "repeat": 2,
+        "process_seconds": 61.50660873799643
+      },
+      {
+        "backend": "numpy",
+        "compute_seconds": 11.32939544400142,
+        "process_peak_rss_bytes": 225964032,
+        "assets": 66,
+        "counts": {
+          "train": 245,
+          "validation": 225
+        },
+        "reused_assets": 0,
+        "repeat": 2,
+        "process_seconds": 11.621411212996463
+      }
+    ],
+    "limits": [
+      "Procesos separados. La cach\u00e9 del sistema operativo no se vac\u00eda.",
+      "El tiempo de proceso incluye arranque e importaciones.",
+      "El tiempo interno incluye lectura, c\u00e1lculo, huellas y escritura.",
+      "No se ejecuta trabajo GPU ni se mide energ\u00eda en esta comparaci\u00f3n."
+    ],
+    "exact_prior_campaign_labels_equal": true,
+    "label_hashes": {
+      "US/AKRO": "dab19f79f35261c12768038c82973ac87c8a4bf5e919ae73695cdcf1210ea7b2",
+      "US/AMC": "c0a1aa2a6189b836ebb2af600b8b891007a811df1d98b312c63412937f533989",
+      "US/AMT": "734f08315b08a00da3477130d00f09e4a119b635b63320eb51501d80e968672d",
+      "US/AMZN": "1a0e94399630be8553a5bb5b08b0f07d6062fd1b1561ea70b4352aaaaa176aca",
+      "US/ANET": "197f8caeac252be9f715064ecfb56c95bbb82a1d6b74f8fceaedfabeb84041ec",
+      "US/APO": "31d5d34ad45b1d0b1f8a2c70f432980a7b5c8a598fb27e34613b717cfa2fdbc9",
+      "US/ARES": "14e574d3537e08bbc0dd0c4da9fe5d1d6cb079290d849c2a9e25ca4d4b5f7054",
+      "US/BAM": "d8363e9a690e32c76b6eed5c84e8099055b52717fb3537e74d8585f2fd32e6b8",
+      "US/BK": "78a72e8e037e451fbfd1a57cc9b995e7a2e85ec78259340ded12ef75304fe57f",
+      "US/BLNK": "ebd6c845d9def107a963d8be643c8f591f967563beb9628cb254ba68344f9c49",
+      "US/BMI": "28addac229b0632617853984bd8ddf34a51719a83af9eb5ea34f393f1f69d39e",
+      "US/CCI": "c9f3ee0c7470985c21bf1b20d27b12a65094bedc2026da9b498d574de5e29a4e",
+      "US/CHWY": "89b47fc9efd35cf32a4ff1bbd76cf8b4d586a0804ae4c3aa1fc1c79a56989f78",
+      "US/COP": "94851089ae6d67349a512cf97dc57b989770a7f8a47a0cb08d69439390cbe9c0",
+      "US/COST": "634f36e580502fa65165584112b10e7027ef6d016d89c28b1cba883ede71920e",
+      "US/COTY": "1e88e3cf7912d33f17d1f105b944002c58cada7aa5f40ec2c2ca52bcfaf191e0",
+      "US/CRMT": "1760cdb373aaca5ca59023df93a0b69e804fc9b9c8c914316d3e10c75781ec6a",
+      "US/CVX": "f8aac2eed09beec1dc4792733e7c36f5ca4ddf5623015087d21b74238a1e0e76",
+      "US/CWCO": "6b2daa247ee15ed2f31404e3ea8a5f2fb1ede33d6fe783bf9d8e129d016ce575",
+      "US/DAKT": "54019dba459c3685760ad27a697fc1f0ac7f8cc754ac6215ff125465e3b21208",
+      "US/DECK": "2cc2a3f733fe400c4937df13c79616fdd3672c175d9785539624b86d513af18a",
+      "US/DLTR": "7dafda5e968be44764007d7bebf19bbaa51cc12a91837a3080c793dba0f906ed",
+      "US/EW": "2341b98d3a63e4eb3183a63d8e6bfab7d153bf2e5634358c304434eeadfe9507",
+      "US/FANG": "6aedaddff1d7c9ae13471185b5ba45c68e565e9ba6264f7453e2d9f6af537972",
+      "US/FNKO": "020277f5a944c676529e9684a0085f229b1d20460cf724203c7549b3af5ef13f",
+      "US/FSLY": "64e8a4d509e15467859f93b4595ab256be104fb79e47253ec1a11e77e8b5552d",
+      "US/FTNT": "f1b78c9b5d802eac3aa826454763d810166674cd7a43ad28fe5e281aa328fbe5",
+      "US/GE": "521187ae0afdb04addb0a2cff7419f7c110c9efb78589909f47905dd46e6cb26",
+      "US/GES": "6dcdb40bfc2cdd8ee4377482dbdca220f59c84894920fd251b972ad4d4d30167",
+      "US/GILD": "033b1b2c69891940f145d73a53c937f4dc566f019428e553972842e66d7d7f8e",
+      "US/GIS": "e4efce08a8c506a99a18df5920f75313ec20e09eed85f0e325964c859a3f49f9",
+      "US/GLDD": "29c0bcb5bf40305474ee550b9524f8969a536e8643a16ec7923ebdca7a711cf8",
+      "US/GRPN": "cc163638ef1e6b9b03a587acdba1e716ed87fd77442fdc027a3673d336e247b0",
+      "US/HOG": "cb9149b1e13c362c9070dbeb8823a8d22226579f4ce57cd824f452b89754012f",
+      "US/HPQ": "d7b53cbfea4e83465879fd6284ddd3fd6382b225185f4b414433388fd5f13d2d",
+      "US/KO": "f78e37c19e314dc7477490bcf6ee87c2e42b656d5037f3e680bcc06ac4425294",
+      "US/LNG": "d6b5b325eaf2629c2e19e952f9c7bb7fefd4c96f9b630b0233ae4dfcab7d9fbc",
+      "US/MNST": "253f834c84db99eb75cc1272c3835275a0f58e48f8b79245c0d4b29829aa9409",
+      "US/MSFT": "bb9037c0623fe03314c2a4409eceea1d09be6fa527bdad66473a5edfe79ac4db",
+      "US/MU": "75ffe802d320f795f03f37deeaaad3146fc4c92e2d2ac1b584695b363bca3133",
+      "US/NEE": "90d1d5933c5fd7db26400aa1d099af3cf09395c72cbf01038ae6ce5a3e96848e",
+      "US/NET": "01a6bdc272ae16b9873feab80febf49884ee6399975873b176ce255bbe269259",
+      "US/NFE": "4f3cc38dec9ca9315acb6561475438e9ed6b5d076c25d7f5724fda9764f2e212",
+      "US/NKE": "046611c6339c9811a41fcb363bc708723a5abc919e45eaf59b65bbceb471e414",
+      "US/NVDA": "4d1aacd334615968de3f713810f13fab59c22d933882102e15d6f726f56b8955",
+      "US/ON": "7a650b64ce79e98faef44a63e38bf2271e848ccec1d23cfb7109a9a7bf62dc27",
+      "US/OXY": "bd63f11252770e8bcc3f64974f9a3d2a33a25a3442ae790ff56ec7b74bb1e0c2",
+      "US/PINS": "2fa137b75d0b710e9787add124121d2c015e8ca32134d8b50639542f3b115ebb",
+      "US/PYPL": "42fe3d87d609b5b9b18c458ad4642ca17e772a7963f10b86d8eb61031dcc41bd",
+      "US/TDOC": "97ed5db2ef874d8b2dcbcf85a719295dbfe8c167cd902a3d59a4a63a3383b5fc",
+      "US/TEX": "506a08055c63254ef53b3b32b585fb1c2b5ab4ca7583ee7121491afa3a26bfca",
+      "US/TGLS": "eac41e1baa2ec7f39635e1d39a7e5df77491edc55d2e2bf2ec14f78c042cc478",
+      "US/TOL": "471e228be30b5373863203ba0e906b15c6675157e273051297b35c8c9e09a5fa",
+      "US/TSCO": "0e965c85e635ea04457b9a07150e1af76478ba438bbcffa45151ff3ec544979f",
+      "US/TSLA": "11d5cd3f95c6f3694e9f81d726e5e64ed04fa264c152d82b5249ea985ae98ad7",
+      "US/TSN": "f6b5f93d2b137cbde227d44591bb6a9749b1e1e0cfb5c64495ff99b1cb73d917",
+      "US/TXN": "76eb7f8480313bb6f78db9eb1a8ba803fbea8d8d82a5426e42632266ae46d6c8",
+      "US/UGI": "33cf214a2e0900213c771c17f7f0556606cb3080069581ce3005e66776c27509",
+      "US/UNIT": "04dce795d1c81fbaac7b35fe8c32e85f42cfd9bc1db1768c3de08736bf1bc865",
+      "US/URG": "5115708436af070a5602e04e782a0d51cb00ef0aed3f1f28add08e36bc5aa328",
+      "US/UUUU": "0ad336c6c256cdcd5db3d51658f4b9bc66002b562bdba8476c4ffdc60504a4d9",
+      "US/WHR": "15f40b22c9127fc67e5f89ad67f78d3f7f409495270be1e906b7f56c8a1f3a45",
+      "US/WMT": "b882be86fcf69548f4a41802eae31164710c3389e17f3962850f317374bab24b",
+      "US/XOM": "6043246f9376287b633509ccef7e0a6bc54a1554a7f7badde88c31ce00214198",
+      "US/ZM": "16fd626e8ff87c2161a0eef78ff7958aa9df3d3796f30a88a590e9ebae0ff269",
+      "US/ZS": "ab6511233c384de373e30e168319d642bda44d5d8824d5e9deff493460302118"
+    },
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "memory_nominal_gib": 32,
+    "concurrent_workloads": [
+      "Campa\u00f1a neuronal durante parte del intervalo",
+      "Comprobaciones peque\u00f1as en CPU"
+    ],
+    "warmup": "No hay calentamiento separado. Cada medida arranca un proceso nuevo.",
+    "energy_measured": false,
+    "gpu_workload_in_benchmark": false
+  },
+  "limits": [
+    "No acredita cobertura editorial ni calidad predictiva.",
+    "No se ha implementado un kernel C++ o CUDA propio.",
+    "La bater\u00eda espec\u00edfica no sustituye una demostraci\u00f3n de igualdad en cualquier entorno."
+  ]
+}

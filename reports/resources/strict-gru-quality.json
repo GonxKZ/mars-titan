@@ -1,0 +1,103 @@
+{
+  "checked_at": "2026-09-21",
+  "suite": {
+    "passed": 452,
+    "skipped": 0,
+    "seconds": 47.79,
+    "cuda_enabled": true,
+    "real_encoder_integration": true
+  },
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1"
+  },
+  "coverage": {
+    "scope": [
+      "src/mars_titan/gru_probe.py",
+      "src/mars_titan/reference_probe.py"
+    ],
+    "covered_lines": 169,
+    "num_statements": 196,
+    "percent_covered": 83.84615384615384,
+    "percent_covered_display": "84",
+    "missing_lines": 27,
+    "excluded_lines": 0,
+    "percent_statements_covered": 86.22448979591837,
+    "percent_statements_covered_display": "86",
+    "num_branches": 64,
+    "num_partial_branches": 13,
+    "covered_branches": 49,
+    "missing_branches": 15,
+    "percent_branches_covered": 76.5625,
+    "percent_branches_covered_display": "77"
+  },
+  "crap_convention": "Radon por función y cobertura de sentencias en su rango, excluida la declaración. CRAP=C²(1-c)³+C. No se puntúan los cierres por separado.",
+  "functions": [
+    {
+      "file": "src/mars_titan/gru_probe.py",
+      "name": "run_gru_probe",
+      "complexity": 26,
+      "statement_coverage": 0.9365079365079365,
+      "crap": 26.173023471587342
+    },
+    {
+      "file": "src/mars_titan/gru_probe.py",
+      "name": "main",
+      "complexity": 2,
+      "statement_coverage": 0,
+      "crap": 6
+    },
+    {
+      "file": "src/mars_titan/reference_probe.py",
+      "name": "run_reference_probe",
+      "complexity": 28,
+      "statement_coverage": 0.9565217391304348,
+      "crap": 28.064436590778335
+    },
+    {
+      "file": "src/mars_titan/reference_probe.py",
+      "name": "prepare_probe",
+      "complexity": 17,
+      "statement_coverage": 0.8275862068965517,
+      "crap": 18.481200541227604
+    },
+    {
+      "file": "src/mars_titan/reference_probe.py",
+      "name": "main",
+      "complexity": 1,
+      "statement_coverage": 0,
+      "crap": 2
+    }
+  ],
+  "mutations": [
+    {
+      "name": "optimizer_removed",
+      "detected": true,
+      "evidence": "La aserción comprueba que cambian los pesos entre épocas."
+    },
+    {
+      "name": "future_cutoff_removed",
+      "detected": true,
+      "evidence": "La fila futura deliberadamente inválida activa la guarda temporal."
+    },
+    {
+      "name": "checkpoint_cursor_advanced",
+      "detected": true,
+      "evidence": "La recuperación no reproduce los pesos y se rechaza."
+    }
+  ],
+  "limitations": [
+    "La cobertura no incluye la invocación CLI como prueba automatizada. El ensayo real se ejecutó aparte.",
+    "La mutación es dirigida y no una campaña exhaustiva.",
+    "La GPU siguió compartida con otra carga. No acredita un máximo de rendimiento."
+  ],
+  "rechecks": [
+    {
+      "checked_at_utc": "2026-09-21 22:33:17 UTC",
+      "passed": 452,
+      "skipped": 0,
+      "seconds": 37.46,
+      "scope": "Repetición completa con CUDA y codificadores reales, sin instrumentación de cobertura. Las medidas anteriores permanecen intactas."
+    }
+  ]
+}

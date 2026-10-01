@@ -1,0 +1,73 @@
+{
+  "recorded_at": "2026-09-24T09:52:56.135666+00:00",
+  "profiles": [
+    {
+      "preset": "native-static-analysis",
+      "source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "build_sha256": "60e12dec513b6d9e38a7b10362bec406a1640e1d013aa9cb03491e9c3f8b7c11",
+      "ctest_passed": 4,
+      "cli_passed": null,
+      "incremental_build_seconds": 57.784744691016385
+    },
+    {
+      "preset": "native-fuzz",
+      "source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "build_sha256": "606ebf32c0a033c3f521c0c2edc4e9ea1ed844d1d8d9f6baaccdd0d8a3813d97",
+      "ctest_passed": 7,
+      "cli_passed": null,
+      "incremental_build_seconds": 15.303818621003302
+    },
+    {
+      "preset": "native-asan-ubsan",
+      "source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "build_sha256": "faa262313d6096589324601a4fa412178b9263aeac2a1eecfd8a6b0afa958a1b",
+      "ctest_passed": 4,
+      "cli_passed": 75,
+      "incremental_build_seconds": 9.06353393298923
+    },
+    {
+      "preset": "native-tsan",
+      "source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "build_sha256": "afe51d37e4b5e3c223fe9f7fe24a7580f55ea402a327b3a1b4fee3973e16c70e",
+      "ctest_passed": 4,
+      "cli_passed": 5,
+      "incremental_build_seconds": 7.983425213984447
+    },
+    {
+      "preset": "native-msan",
+      "source_sha256": "e7937562b897b3235413a56a6d96e686b8b9c9d399ada8c25953c3c560b3f333",
+      "build_sha256": "a21e3589925bd4340b964e176c6c36d14cdc80244145578e592bc06e90644eff",
+      "ctest_passed": 4,
+      "cli_passed": null,
+      "incremental_build_seconds": 2.088888105005026
+    },
+    {
+      "preset": "native-gcc-debug",
+      "source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "build_sha256": "a68a5d5d446fe8fc8a56b05f5daaf92542ebe1f261a127ba7801bbb40d0c6cca",
+      "ctest_passed": 4,
+      "cli_passed": 75,
+      "incremental_build_seconds": 9.008772354020039
+    },
+    {
+      "preset": "native-release",
+      "source_sha256": "2100dde5ad52345d8552bd80abced094917f678e354507e60ca115e1e8488e4c",
+      "build_sha256": "c6cd1b22b8b4610f23a74d6b1d36ef85dcd100218ca24ef617e5c270d8ba677e",
+      "ctest_passed": 4,
+      "cli_passed": 75,
+      "incremental_build_seconds": 10.630166205985006
+    }
+  ],
+  "pure_core_source_scope": "MSan excluye fuentes del ejecutable y dependencias Arrow/OpenSSL",
+  "fuzz": {
+    "harnesses": 3,
+    "runs_per_harness": 1000,
+    "seed": 42,
+    "maximum_input_bytes": 4096
+  },
+  "clang_tidy_serialization_returncode": 0,
+  "path_analyzer_production_sources": 5,
+  "instrumented_cli_scope": "ASan/UBSan 75 casos y TSan 5 casos concurrentes",
+  "build_mode": "incremental",
+  "parallel_jobs": 2
+}

@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-27T20:29:49.528033+00:00",
+  "domain": "technical",
+  "tests": {
+    "passed": 147,
+    "command": "uv run --no-sync --with coverage --with lizard coverage run --branch --source=mars_titan.evaluation.splits,mars_titan.evaluation.split_readiness -m pytest tests/evaluation -q"
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "convention": "Sentencias y ramas del proceso principal.",
+    "modules": {
+      "src/mars_titan/evaluation/split_readiness.py": {
+        "sha256": "53decc9e0ecb68669af568eb9faafa543ebd472b821a5a7d00c245439696105d",
+        "summary": {
+          "covered_lines": 96,
+          "num_statements": 105,
+          "percent_covered": 87.75510204081633,
+          "percent_covered_display": "88",
+          "missing_lines": 9,
+          "excluded_lines": 0,
+          "percent_statements_covered": 91.42857142857143,
+          "percent_statements_covered_display": "91",
+          "num_branches": 42,
+          "num_partial_branches": 9,
+          "covered_branches": 33,
+          "missing_branches": 9,
+          "percent_branches_covered": 78.57142857142857,
+          "percent_branches_covered_display": "79"
+        },
+        "functions": [
+          {
+            "name": "_read",
+            "complexity": 4,
+            "covered_statements": 4,
+            "statements": 5,
+            "crap": 4.128
+          },
+          {
+            "name": "_admission",
+            "complexity": 19,
+            "covered_statements": 16,
+            "statements": 17,
+            "crap": 19.073
+          },
+          {
+            "name": "_complete_dates",
+            "complexity": 19,
+            "covered_statements": 18,
+            "statements": 23,
+            "crap": 22.709
+          },
+          {
+            "name": "prepare_readiness",
+            "complexity": 13,
+            "covered_statements": 36,
+            "statements": 37,
+            "crap": 13.003
+          },
+          {
+            "name": "main",
+            "complexity": 2,
+            "covered_statements": 9,
+            "statements": 9,
+            "crap": 2.0
+          }
+        ]
+      },
+      "src/mars_titan/evaluation/splits.py": {
+        "sha256": "baf98c407fa0cee75077f8873f602f663e124ddd87816081c8d8e68cbaf92669",
+        "summary": {
+          "covered_lines": 96,
+          "num_statements": 100,
+          "percent_covered": 93.66197183098592,
+          "percent_covered_display": "94",
+          "missing_lines": 4,
+          "excluded_lines": 0,
+          "percent_statements_covered": 96.0,
+          "percent_statements_covered_display": "96",
+          "num_branches": 42,
+          "num_partial_branches": 5,
+          "covered_branches": 37,
+          "missing_branches": 5,
+          "percent_branches_covered": 88.0952380952381,
+          "percent_branches_covered_display": "88"
+        },
+        "functions": [
+          {
+            "name": "_add_months",
+            "complexity": 1,
+            "covered_statements": 3,
+            "statements": 3,
+            "crap": 1.0
+          },
+          {
+            "name": "_timestamp",
+            "complexity": 1,
+            "covered_statements": 2,
+            "statements": 2,
+            "crap": 1.0
+          },
+          {
+            "name": "_validate",
+            "complexity": 23,
+            "covered_statements": 24,
+            "statements": 24,
+            "crap": 23.0
+          },
+          {
+            "name": "build_folds",
+            "complexity": 5,
+            "covered_statements": 15,
+            "statements": 17,
+            "crap": 5.041
+          },
+          {
+            "name": "__init__",
+            "complexity": 8,
+            "covered_statements": 12,
+            "statements": 13,
+            "crap": 8.029
+          },
+          {
+            "name": "assign",
+            "complexity": 15,
+            "covered_statements": 31,
+            "statements": 32,
+            "crap": 15.007
+          },
+          {
+            "name": "assign_partitions",
+            "complexity": 1,
+            "covered_statements": 2,
+            "statements": 2,
+            "crap": 1.0
+          }
+        ]
+      }
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "formula": "CC² × (1 − cobertura de sentencias)³ + CC"
+  },
+  "mutations": [
+    {
+      "name": "maduracion_frontera",
+      "detected": true,
+      "returncode": 1,
+      "selector": "exact_boundary"
+    },
+    {
+      "name": "ignorar_publicacion",
+      "detected": true,
+      "returncode": 1,
+      "selector": "future_inputs"
+    },
+    {
+      "name": "ignorar_admision",
+      "detected": true,
+      "returncode": 1,
+      "selector": "future_inputs"
+    },
+    {
+      "name": "ignorar_margen",
+      "detected": true,
+      "returncode": 1,
+      "selector": "two_session"
+    },
+    {
+      "name": "invadir_test",
+      "detected": true,
+      "returncode": 1,
+      "selector": "expanding_windows"
+    }
+  ],
+  "benchmark": {
+    "warmup_per_shape": 1,
+    "samples": [
+      {
+        "rows": 10000,
+        "repetitions": 5,
+        "median_seconds": 0.00038484399919980206,
+        "stdev_seconds": 0.0003714776058513086,
+        "rows_per_second": 25984554.834667522
+      },
+      {
+        "rows": 100000,
+        "repetitions": 5,
+        "median_seconds": 0.003662651999547961,
+        "stdev_seconds": 0.0011075208196285906,
+        "rows_per_second": 27302621.16421157
+      },
+      {
+        "rows": 1000000,
+        "repetitions": 5,
+        "median_seconds": 0.03787397400083137,
+        "stdev_seconds": 0.0006022704959425878,
+        "rows_per_second": 26403355.506819777
+      }
+    ],
+    "peak_rss_bytes": 543948800,
+    "scope": "Asignación de metadatos de una ventana. No mide entrenamiento ni I/O del corpus."
+  },
+  "readiness": {
+    "status": "blocked",
+    "reason": "no_complete_macro_decisions",
+    "planned_folds": 41,
+    "runnable_folds": 0,
+    "protocol_sha256": "8b1e4a976529228516d8dbd50439b7fffe751e5ce8497fcd803c80dd1537db25",
+    "admission_sha256": "2c097004aadac81bd590b2277b68f051fb436b35811cb90d4bb8bd5ad016ab87",
+    "final_test": {
+      "start": "2024-01-01",
+      "end": "2025-01-01",
+      "opened": false,
+      "materialized": false
+    }
+  },
+  "software": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "exchange_calendars": "4.13.2"
+  },
+  "limits": [
+    "No se han entrenado modelos mediante estas ventanas. La edición comprobada no cumple cobertura completa de macros.",
+    "La precomprobación macro usa un horizonte de una sesión. El asignador admite fechas de maduración reales, todavía sin materializar las vistas de una campaña nueva.",
+    "La medición sintética corresponde a un único fold y no representa el coste de entrenamiento o lectura del corpus.",
+    "El pico de memoria incluye los buffers de entrada y resultados del proceso de benchmark. No se midieron VRAM, energía ni coste monetario."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "purpose": "matched_additional_steps_control_for_mae_posttraining",
+  "models": ["gru", "dlinear"],
+  "seeds": [42, 43, 44],
+  "base_loss": "mse",
+  "base_learning_rate": 0.001,
+  "base_completed_epochs": 30,
+  "loss": "mse",
+  "learning_rate": 0.0001,
+  "epochs": 5,
+  "optimizer_policy": "new_adamw",
+  "selection": "same_fixed_parents_as_mae_posttraining",
+  "final_test_opened": false
+}

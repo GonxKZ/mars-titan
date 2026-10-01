@@ -1,0 +1,434 @@
+{
+  "purpose": "directed_editorial_expansion_not_full_corpus",
+  "reviews_sha256": "bb2d5564ddda01a24b6bcd1ee305324e386de97ae268232cb168d0896130612e",
+  "panel_sha256": "c57c6431721e13bcfd86212454b96d94a0cfdc1f541dc4bcd4115810cd20cfc0",
+  "execution_receipt_sha256": "6a3ff5420d8e95d655de2572e18bca796d79c21274867add2f420b278aec3398",
+  "source_check": {
+    "reviews": 45,
+    "statuses": {
+      "verified_full_article": 21,
+      "unverifiable": 13,
+      "rejected": 11
+    },
+    "by_asset_year": [
+      {
+        "symbol": "ABM",
+        "year": 2014,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "ABM",
+        "year": 2018,
+        "status": "rejected",
+        "records": 2
+      },
+      {
+        "symbol": "ABM",
+        "year": 2019,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "ABM",
+        "year": 2022,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "ABM",
+        "year": 2023,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "AMZN",
+        "year": 2023,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2014,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2018,
+        "status": "unverifiable",
+        "records": 2
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2019,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2020,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2021,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2022,
+        "status": "unverifiable",
+        "records": 2
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2023,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "CSGS",
+        "year": 2023,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "DECK",
+        "year": 2018,
+        "status": "unverifiable",
+        "records": 2
+      },
+      {
+        "symbol": "DECK",
+        "year": 2018,
+        "status": "verified_full_article",
+        "records": 2
+      },
+      {
+        "symbol": "DECK",
+        "year": 2019,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "DECK",
+        "year": 2020,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "DECK",
+        "year": 2021,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "DECK",
+        "year": 2022,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "DECK",
+        "year": 2023,
+        "status": "verified_full_article",
+        "records": 2
+      },
+      {
+        "symbol": "MNST",
+        "year": 2018,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2018,
+        "status": "verified_full_article",
+        "records": 2
+      },
+      {
+        "symbol": "MNST",
+        "year": 2019,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2020,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2021,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2022,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2022,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2023,
+        "status": "rejected",
+        "records": 1
+      },
+      {
+        "symbol": "MNST",
+        "year": 2023,
+        "status": "verified_full_article",
+        "records": 1
+      },
+      {
+        "symbol": "MSFT",
+        "year": 2022,
+        "status": "unverifiable",
+        "records": 1
+      },
+      {
+        "symbol": "MSFT",
+        "year": 2022,
+        "status": "verified_full_article",
+        "records": 3
+      },
+      {
+        "symbol": "NVDA",
+        "year": 2022,
+        "status": "verified_full_article",
+        "records": 3
+      },
+      {
+        "symbol": "NVDA",
+        "year": 2023,
+        "status": "verified_full_article",
+        "records": 1
+      }
+    ],
+    "source_hashes": {
+      "text/sp500_news/MNST.jsonl": "9bc020980952b152553b3e1c2937a8e75c6f1cc1748f53517637970bdbe3cbc0",
+      "text/sp500_news/CSGS.jsonl": "c8cf766401bd3bba460d5beb6e6256997911e3a24d809fc32848805a9bf9b95d",
+      "text/sp500_news/DECK.jsonl": "50f7fc49b915b11713fdb044c3899141ea041f6d031483508cade315b353ce10",
+      "text/sp500_news/ABM.jsonl": "93c2113b3c05b2262b16794d25d0e876c1b6b2c1b3c9b1b1c3378c5a1fb3fcdf",
+      "text/sp500_news/MSFT.jsonl": "3f3aa4b9e6b55fcc5fa5680cf3f19cd7f902797c37297f2255d071cf0d2f5358",
+      "text/sp500_news/NVDA.jsonl": "da0c8228a7d020e5e4e54d5c217683d22bd4bbdc8b9e7704c18fef0fbbac342e",
+      "text/sp500_news/AMZN.jsonl": "979ef8da28eb4df2de58fb9c6ef8ae1777c064901fd2519cd6d1136c36c81f08"
+    }
+  },
+  "assets": [
+    {
+      "symbol": "ABM",
+      "prepared_counts": {
+        "prices": 6331,
+        "news": 0,
+        "fundamentals": 1921
+      },
+      "samples": 0,
+      "target_counts": {
+        "train": 0,
+        "validation": 0,
+        "excluded": 0
+      },
+      "sample_sha256": "120c9915dca9d60edcd781f535fac4a84695684bb2a61326518addf0f9fb25af",
+      "sample_bytes": 176,
+      "company_factors_sha256": "3c26e3bd166d8c3da320badd3d731b24b589d9e349f0290acddc134526712d3f",
+      "factor_audit": {
+        "missing_component": 421,
+        "accepted": 776
+      }
+    },
+    {
+      "symbol": "CSGS",
+      "prepared_counts": {
+        "prices": 6345,
+        "news": 0,
+        "fundamentals": 2173
+      },
+      "samples": 0,
+      "target_counts": {
+        "train": 0,
+        "validation": 0,
+        "excluded": 0
+      },
+      "sample_sha256": "120c9915dca9d60edcd781f535fac4a84695684bb2a61326518addf0f9fb25af",
+      "sample_bytes": 176,
+      "company_factors_sha256": "d641537fbb6ee59226fb9ce55e44803c9acea409d071e31784cbdd50f11cfd33",
+      "factor_audit": {
+        "missing_component": 368,
+        "accepted": 738
+      }
+    },
+    {
+      "symbol": "DECK",
+      "prepared_counts": {
+        "prices": 6348,
+        "news": 7,
+        "fundamentals": 1941
+      },
+      "samples": 35,
+      "target_counts": {
+        "train": 25,
+        "validation": 10,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "sample_sha256": "29c946442f575450b46915576dedaceb79029402b264b5f417a8cf0e835c3b96",
+      "sample_bytes": 164791,
+      "company_factors_sha256": "d252f7b0db4795c218e3c59e217b474240e534dca486556a5f90e7b649102636",
+      "factor_audit": {
+        "accepted": 476,
+        "missing_component": 1029
+      }
+    },
+    {
+      "symbol": "MNST",
+      "prepared_counts": {
+        "prices": 6348,
+        "news": 6,
+        "fundamentals": 1766
+      },
+      "samples": 30,
+      "target_counts": {
+        "train": 25,
+        "validation": 5,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "sample_sha256": "db6e60dd7aa5b1bd259e622b1c034e29dffd430e6843213179126f53bddd264f",
+      "sample_bytes": 139120,
+      "company_factors_sha256": "efff2fc2a443fbe8c7c5a1e23ea8ed71d23e85cf7ddde75349c3410aae936c6d",
+      "factor_audit": {
+        "missing_component": 974,
+        "accepted": 580
+      }
+    },
+    {
+      "symbol": "MSFT",
+      "prepared_counts": {
+        "prices": 6346,
+        "news": 3,
+        "fundamentals": 2569
+      },
+      "samples": 15,
+      "target_counts": {
+        "train": 15,
+        "validation": 0,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "sample_sha256": "0d481f8350be568df1190877cda6c05432a140a361cb6b0f9dbbff94c133ae0a",
+      "sample_bytes": 69307,
+      "company_factors_sha256": "f1c78fcf49a308ed84665d0f0c8ba93b158417b21d5c1734ae3ac25d6a5d1f56",
+      "factor_audit": {
+        "missing_component": 562,
+        "accepted": 894
+      }
+    },
+    {
+      "symbol": "NVDA",
+      "prepared_counts": {
+        "prices": 6347,
+        "news": 4,
+        "fundamentals": 2359
+      },
+      "samples": 20,
+      "target_counts": {
+        "train": 15,
+        "validation": 5,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3900,
+          "insufficient_history": 125,
+          "missing_next_session": 1,
+          "target_after_cutoff": 1
+        }
+      },
+      "sample_sha256": "004af53d6448f6d013a86d92530f4db1265ac565d4f8befb4d5862c027101053",
+      "sample_bytes": 95027,
+      "company_factors_sha256": "f0acf46452fc018671a1ad2f25c11b70c4be9918a057dd893112b644bdfd5668",
+      "factor_audit": {
+        "missing_component": 755,
+        "accepted": 778
+      }
+    },
+    {
+      "symbol": "AMZN",
+      "prepared_counts": {
+        "prices": 6348,
+        "news": 1,
+        "fundamentals": 2604
+      },
+      "samples": 5,
+      "target_counts": {
+        "train": 0,
+        "validation": 5,
+        "excluded": 0,
+        "excluded_reasons": {},
+        "calendar_label_reasons": {
+          "accepted": 3901,
+          "insufficient_history": 125,
+          "target_after_cutoff": 1
+        }
+      },
+      "sample_sha256": "37ae2ca4df00582594ff32a374ab31caaf6d24aa1f0a26fef3b04fc3eb30874c",
+      "sample_bytes": 26168,
+      "company_factors_sha256": "0bb16493cbfd3b8dbb4eb6e699bac6d103472044f04afe6f2f02ee0b36a83a4c",
+      "factor_audit": {
+        "missing_component": 888,
+        "accepted": 638
+      }
+    }
+  ],
+  "samples": 105,
+  "supervised_counts": {
+    "train": 80,
+    "validation": 25
+  },
+  "all_modalities_and_macro_verified": true,
+  "original_65_samples_exactly_equal": true,
+  "final_test_opened": false,
+  "runtime_seconds_inside_preparation": 17.60331582100116,
+  "process_peak_rss_mib_at_receipt": 1979.4140625,
+  "review_dictionary_fingerprint": "d343e7f153116e7904939eec697b7f52bdbc8ead749cd9d735d0011233e21153",
+  "checks": [
+    "source_locators_and_spans",
+    "complete_row_parity_on_original_cohort",
+    "temporal_availability",
+    "finite_vectors",
+    "price_window_shape",
+    "target_counts"
+  ],
+  "limits": [
+    "Sin instant\u00e1neas editoriales hist\u00f3ricas inmutables.",
+    "La selecci\u00f3n no representa todo el universo ni la tasa de errores del corpus.",
+    "No se ampl\u00eda el corte de 2018 del selector de piloto.",
+    "La integridad no certifica la veracidad de cada afirmaci\u00f3n econ\u00f3mica del editor."
+  ]
+}

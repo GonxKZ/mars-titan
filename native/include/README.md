@@ -1,7 +1,7 @@
 # Contratos públicos nativos
 
-Directorio reservado para futuras cabeceras de C y C++ de MARS-TITAN. No contiene una API implementada.
+`mars_titan/simulation.h` declara la interfaz C17 del cálculo contable. Define dimensiones, tamaños binarios, propiedad de los buffers y códigos de error. Las entradas se prestan durante cada llamada y los resultados usan memoria independiente.
 
-Cada interfaz deberá declarar tipos, dimensiones, propiedad de la memoria, errores y requisitos de dispositivo. Las decisiones de enlace con Python y de estabilidad de ABI se tomarán cuando exista una necesidad concreta de integración.
+`mars_titan/financial_session.hpp` define la cinta de mercado, las posiciones persistentes, las acciones corporativas, el estado recuperable y las políticas de referencia en C++20. Cada sesión posee su estado y puede compartir una cinta inmutable con otras sesiones.
 
-Las cabeceras no incluirán reglas de partición temporal, selección de modelos o construcción del objetivo financiero. Esas responsabilidades pertenecen a los módulos científicos correspondientes.
+`mars_titan/simulation_files.hpp` declara lectura Parquet, comprobación de identidades y persistencia del ejecutable autónomo. No requiere un intérprete Python. La versión inicial ejecuta validación sintética y conserva el test cerrado. La admisión histórica sigue pendiente de acreditar los ajustes OHLC y las acciones corporativas.

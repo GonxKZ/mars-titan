@@ -1,0 +1,1896 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-29",
+  "purpose": "Comprobar continuidad exacta en CUDA al atravesar un reinicio de episodio.",
+  "hardware": {
+    "torch": "2.14.0+cu130",
+    "cuda": true,
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU"
+  },
+  "binary_sha256": "dfe8764418395ebd8dbca718fcc9328e553ac3ebf44d8b4d62b9c5c400172b27",
+  "language": "C++20",
+  "backend": "LibTorch",
+  "device": "cuda:0",
+  "seed": 42,
+  "environments": 16,
+  "total_transitions": 4096,
+  "stop_after": 2048,
+  "rollout_transitions": 256,
+  "train_worlds": 256,
+  "validation_worlds": 8,
+  "final_test_opened": false,
+  "precision": {
+    "observations": "FP32",
+    "parameters": "FP32",
+    "advantages": "FP64",
+    "deterministic": true
+  },
+  "variants": [
+    {
+      "variant": "ppo",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 4.180452924018027,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.301113878,
+            "evaluation_seconds": 0.6392502739999999,
+            "setup_seconds": 1.088930317,
+            "training_seconds": 1.3807672820000012
+          },
+          "ram_peak_bytes": 1329819648,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 3.0863135440158658,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.166486994,
+            "evaluation_seconds": 0.37515425699999994,
+            "setup_seconds": 1.004343777,
+            "training_seconds": 0.8094061630000008
+          },
+          "ram_peak_bytes": 1324490752,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 3.0823358969937544,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.13910308,
+            "evaluation_seconds": 0.23479768699999998,
+            "setup_seconds": 1.07747395,
+            "training_seconds": 0.906550043
+          },
+          "ram_peak_bytes": 1330020352,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "double_dqn",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 9.904009396006586,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 3841,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17862,
+          "timings": {
+            "checkpoint_seconds": 0.753834974,
+            "evaluation_seconds": 0.642384535,
+            "setup_seconds": 1.002508195,
+            "training_seconds": 6.811043986000005
+          },
+          "ram_peak_bytes": 1291329536,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 5.696165960980579,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 1793,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17862,
+          "timings": {
+            "checkpoint_seconds": 0.32039384,
+            "evaluation_seconds": 0.399123308,
+            "setup_seconds": 0.943946592,
+            "training_seconds": 3.3343693629999995
+          },
+          "ram_peak_bytes": 1266860032,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 6.303151834988967,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 3841,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17862,
+          "timings": {
+            "checkpoint_seconds": 0.45495828,
+            "evaluation_seconds": 0.250760886,
+            "setup_seconds": 1.071906353,
+            "training_seconds": 3.827570077000002
+          },
+          "ram_peak_bytes": 1293893632,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_window",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 4.155729286023416,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 53399,
+          "timings": {
+            "checkpoint_seconds": 0.33331401699999996,
+            "evaluation_seconds": 0.713353137,
+            "setup_seconds": 0.947676247,
+            "training_seconds": 1.4069474309999999
+          },
+          "ram_peak_bytes": 1346138112,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 3.1889836190093774,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 53399,
+          "timings": {
+            "checkpoint_seconds": 0.185730991,
+            "evaluation_seconds": 0.43982085200000004,
+            "setup_seconds": 0.974131892,
+            "training_seconds": 0.8902587590000001
+          },
+          "ram_peak_bytes": 1335537664,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 3.082389706018148,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 53399,
+          "timings": {
+            "checkpoint_seconds": 0.16303758999999998,
+            "evaluation_seconds": 0.275680526,
+            "setup_seconds": 0.99503142,
+            "training_seconds": 0.9485292210000006
+          },
+          "ram_peak_bytes": 1345662976,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_gru",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 5.828111926995916,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 272,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 52871,
+          "timings": {
+            "checkpoint_seconds": 0.7817550949999998,
+            "evaluation_seconds": 1.143396318,
+            "setup_seconds": 0.996314375,
+            "training_seconds": 2.182953365999999
+          },
+          "ram_peak_bytes": 1455583232,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 4.0833152549748775,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 52871,
+          "timings": {
+            "checkpoint_seconds": 0.452521472,
+            "evaluation_seconds": 0.6896899940000001,
+            "setup_seconds": 0.980576704,
+            "training_seconds": 1.2442616549999999
+          },
+          "ram_peak_bytes": 1448189952,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 3.927950150013203,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 272,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 52871,
+          "timings": {
+            "checkpoint_seconds": 0.366236949,
+            "evaluation_seconds": 0.46317181799999996,
+            "setup_seconds": 1.055073616,
+            "training_seconds": 1.340413193
+          },
+          "ram_peak_bytes": 1461489664,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_episodic",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 4.623302618972957,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.514544548,
+            "evaluation_seconds": 0.935929593,
+            "setup_seconds": 0.970582521,
+            "training_seconds": 1.4689654399999998
+          },
+          "ram_peak_bytes": 1368707072,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 3.353837986011058,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.279673689,
+            "evaluation_seconds": 0.557049338,
+            "setup_seconds": 0.947350849,
+            "training_seconds": 0.8686050019999999
+          },
+          "ram_peak_bytes": 1339105280,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 3.350279476988362,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.25089774099999995,
+            "evaluation_seconds": 0.376629053,
+            "setup_seconds": 1.032518067,
+            "training_seconds": 0.9897989270000003
+          },
+          "ram_peak_bytes": 1379536896,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_hmm",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 5.200314372981666,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.396736691,
+            "evaluation_seconds": 1.0749525480000002,
+            "setup_seconds": 0.972386697,
+            "training_seconds": 1.8535574119999996
+          },
+          "ram_peak_bytes": 1329967104,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 3.854533504025312,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.20287286100000002,
+            "evaluation_seconds": 0.5492735990000001,
+            "setup_seconds": 1.003749716,
+            "training_seconds": 0.9730645279999993
+          },
+          "ram_peak_bytes": 1324785664,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 3.897278103977442,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.18036954800000002,
+            "evaluation_seconds": 0.373900729,
+            "setup_seconds": 1.082027524,
+            "training_seconds": 1.1129279149999993
+          },
+          "ram_peak_bytes": 1330262016,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_episodic_hmm",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 7.031397469021613,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.7179203300000001,
+            "evaluation_seconds": 1.6899881690000003,
+            "setup_seconds": 0.985051784,
+            "training_seconds": 2.413745397000001
+          },
+          "ram_peak_bytes": 1370181632,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 4.370543831988471,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.365007889,
+            "evaluation_seconds": 0.7954720479999999,
+            "setup_seconds": 0.986395646,
+            "training_seconds": 1.0525156079999998
+          },
+          "ram_peak_bytes": 1338388480,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 4.226672632008558,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 0,
+          "auxiliary_samples": 0,
+          "parameters": 17927,
+          "timings": {
+            "checkpoint_seconds": 0.300846253,
+            "evaluation_seconds": 0.548092825,
+            "setup_seconds": 1.132748961,
+            "training_seconds": 1.196065288
+          },
+          "ram_peak_bytes": 1380483072,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_recent_aux",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 7.439229901996441,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 17,
+          "auxiliary_samples": 1088,
+          "parameters": 17992,
+          "timings": {
+            "checkpoint_seconds": 1.055063373,
+            "evaluation_seconds": 1.6915822859999998,
+            "setup_seconds": 1.076994101,
+            "training_seconds": 2.452150498999999
+          },
+          "ram_peak_bytes": 1405042688,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 4.951007156982087,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 8,
+          "auxiliary_samples": 512,
+          "parameters": 17992,
+          "timings": {
+            "checkpoint_seconds": 0.592665539,
+            "evaluation_seconds": 0.9480309819999999,
+            "setup_seconds": 1.059579125,
+            "training_seconds": 1.2261757190000007
+          },
+          "ram_peak_bytes": 1372557312,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 4.463515631010523,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 17,
+          "auxiliary_samples": 1088,
+          "parameters": 17992,
+          "timings": {
+            "checkpoint_seconds": 0.43678697000000005,
+            "evaluation_seconds": 0.591530427,
+            "setup_seconds": 1.129850299,
+            "training_seconds": 1.2394384810000003
+          },
+          "ram_peak_bytes": 1422860288,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    },
+    {
+      "variant": "ppo_replay_aux",
+      "exact_parameters": true,
+      "exact_trace": true,
+      "runs": [
+        {
+          "condition": "continuous",
+          "resumed": false,
+          "process_seconds": 7.419387464993633,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 17,
+          "auxiliary_samples": 1088,
+          "parameters": 17992,
+          "timings": {
+            "checkpoint_seconds": 1.070063269,
+            "evaluation_seconds": 1.626927011,
+            "setup_seconds": 1.063882996,
+            "training_seconds": 2.43022248
+          },
+          "ram_peak_bytes": 1407979520,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        },
+        {
+          "condition": "recovered",
+          "resumed": false,
+          "process_seconds": 4.695747845980804,
+          "status": "paused",
+          "transitions": 2048,
+          "observed_transitions": 3072,
+          "optimizer_steps": 128,
+          "auxiliary_steps": 8,
+          "auxiliary_samples": 512,
+          "parameters": 17992,
+          "timings": {
+            "checkpoint_seconds": 0.49103399200000003,
+            "evaluation_seconds": 0.818641433,
+            "setup_seconds": 1.071971329,
+            "training_seconds": 1.2144911819999995
+          },
+          "ram_peak_bytes": 1372938240,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 3072
+        },
+        {
+          "condition": "recovered",
+          "resumed": true,
+          "process_seconds": 4.515102603996638,
+          "status": "completed",
+          "transitions": 4096,
+          "observed_transitions": 6144,
+          "optimizer_steps": 260,
+          "auxiliary_steps": 17,
+          "auxiliary_samples": 1088,
+          "parameters": 17992,
+          "timings": {
+            "checkpoint_seconds": 0.47376978899999994,
+            "evaluation_seconds": 0.644923023,
+            "setup_seconds": 1.064442732,
+            "training_seconds": 1.4111503949999995
+          },
+          "ram_peak_bytes": 1417474048,
+          "vram_peak_bytes": null,
+          "confirmed_trace_rows": 6144
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Son comprobaciones de funcionamiento, no resultados de la comparación principal.",
+    "Las duraciones corresponden a una ejecución por condición, sin estimar dispersión ni speedup.",
+    "No se ha medido el pico de VRAM ni la energía en esta comprobación.",
+    "El generador aporta tres conceptos macro simulados, sin equivalencia con las cuatro modalidades y los 140 indicadores reales.",
+    "Las comprobaciones corresponden a los binarios identificados. No acreditan cambios posteriores por el hecho de compartir configuración."
+  ],
+  "check_id": "cuda-adaptive-v3",
+  "source_artifact_sha256": "b14544534f6e86b680b8531e4f11cadfb6f31c7e9b163072906542e680efdedc",
+  "previous_checks": [
+    {
+      "id": "initial_v1",
+      "binary_sha256": "1e62c180e42086c2ffb0fa029e8558bcd2bbb2c43f0803eac389ea22e88e63aa",
+      "variants": [
+        {
+          "variant": "ppo",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.1222656200116035,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.114360575,
+                "evaluation_seconds": 0.349151174,
+                "setup_seconds": 1.014542476,
+                "training_seconds": 0.7166352729999999
+              },
+              "ram_peak_bytes": 1327587328,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.9191594580188394,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.08038762999999999,
+                "evaluation_seconds": 0.23198974499999997,
+                "setup_seconds": 0.98712208,
+                "training_seconds": 0.5504130869999999
+              },
+              "ram_peak_bytes": 1327575040,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.6299103949859273,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.047088798,
+                "evaluation_seconds": 0.068625965,
+                "setup_seconds": 1.04569838,
+                "training_seconds": 0.5017723420000001
+              },
+              "ram_peak_bytes": 1331245056,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "double_dqn",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 5.524133595987223,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 769,
+              "parameters": 17862,
+              "timings": {
+                "checkpoint_seconds": 0.218572379,
+                "evaluation_seconds": 0.42944799499999997,
+                "setup_seconds": 1.063081435,
+                "training_seconds": 2.9471536209999996
+              },
+              "ram_peak_bytes": 1258221568,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 3.338024626020342,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 257,
+              "parameters": 17862,
+              "timings": {
+                "checkpoint_seconds": 0.112617959,
+                "evaluation_seconds": 0.246545479,
+                "setup_seconds": 1.101442458,
+                "training_seconds": 0.9418794109999999
+              },
+              "ram_peak_bytes": 1257009152,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 3.2454260880185757,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 769,
+              "parameters": 17862,
+              "timings": {
+                "checkpoint_seconds": 0.08219915800000001,
+                "evaluation_seconds": 0.06620114,
+                "setup_seconds": 1.111687765,
+                "training_seconds": 1.301072405
+              },
+              "ram_peak_bytes": 1261285376,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_window",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 2.7888577849953435,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 53399,
+              "timings": {
+                "checkpoint_seconds": 0.098415593,
+                "evaluation_seconds": 0.32340845900000004,
+                "setup_seconds": 0.961113602,
+                "training_seconds": 0.7231847
+              },
+              "ram_peak_bytes": 1334136832,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.5830338509986177,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 53399,
+              "timings": {
+                "checkpoint_seconds": 0.079445075,
+                "evaluation_seconds": 0.245705022,
+                "setup_seconds": 0.971863153,
+                "training_seconds": 0.5780436780000003
+              },
+              "ram_peak_bytes": 1334034432,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.3826192599954084,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 53399,
+              "timings": {
+                "checkpoint_seconds": 0.04659351,
+                "evaluation_seconds": 0.075518555,
+                "setup_seconds": 1.022891895,
+                "training_seconds": 0.511187115
+              },
+              "ram_peak_bytes": 1337307136,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_gru",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.3260441940219607,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 52871,
+              "timings": {
+                "checkpoint_seconds": 0.263992405,
+                "evaluation_seconds": 0.46540113799999994,
+                "setup_seconds": 1.013610552,
+                "training_seconds": 0.846536059
+              },
+              "ram_peak_bytes": 1446424576,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.8974254750064574,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 52871,
+              "timings": {
+                "checkpoint_seconds": 0.21691799300000003,
+                "evaluation_seconds": 0.347914385,
+                "setup_seconds": 0.947808119,
+                "training_seconds": 0.6822691919999999
+              },
+              "ram_peak_bytes": 1447428096,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.600551955983974,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 52871,
+              "timings": {
+                "checkpoint_seconds": 0.125838949,
+                "evaluation_seconds": 0.123197172,
+                "setup_seconds": 1.03805122,
+                "training_seconds": 0.5987874999999999
+              },
+              "ram_peak_bytes": 1454800896,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_episodic",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 2.988341638003476,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.15275641,
+                "evaluation_seconds": 0.39656212199999996,
+                "setup_seconds": 1.031793544,
+                "training_seconds": 0.6955169109999996
+              },
+              "ram_peak_bytes": 1338261504,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.7504814530257136,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.10300325699999999,
+                "evaluation_seconds": 0.290390047,
+                "setup_seconds": 1.042438785,
+                "training_seconds": 0.5920600570000002
+              },
+              "ram_peak_bytes": 1339785216,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.388479061977705,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.068075503,
+                "evaluation_seconds": 0.095760468,
+                "setup_seconds": 1.008358293,
+                "training_seconds": 0.5120295709999998
+              },
+              "ram_peak_bytes": 1350246400,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_hmm",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 2.747887206991436,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.098478738,
+                "evaluation_seconds": 0.30277963399999996,
+                "setup_seconds": 0.939450378,
+                "training_seconds": 0.6874920379999997
+              },
+              "ram_peak_bytes": 1327980544,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.8039826810127124,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.082318328,
+                "evaluation_seconds": 0.265634088,
+                "setup_seconds": 1.000374069,
+                "training_seconds": 0.6114107480000002
+              },
+              "ram_peak_bytes": 1327947776,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.8312958030146547,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.051006548,
+                "evaluation_seconds": 0.08010723,
+                "setup_seconds": 1.113291075,
+                "training_seconds": 0.5004236169999999
+              },
+              "ram_peak_bytes": 1331499008,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.2593781930045225,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.149087471,
+                "evaluation_seconds": 0.40252121400000007,
+                "setup_seconds": 1.078298253,
+                "training_seconds": 0.6796921209999996
+              },
+              "ram_peak_bytes": 1340243968,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.6795474470127374,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.114906335,
+                "evaluation_seconds": 0.312205265,
+                "setup_seconds": 0.957966397,
+                "training_seconds": 0.5961183680000001
+              },
+              "ram_peak_bytes": 1337176064,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.513419544993667,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.076078205,
+                "evaluation_seconds": 0.11261629,
+                "setup_seconds": 1.119115907,
+                "training_seconds": 0.515903875
+              },
+              "ram_peak_bytes": 1348624384,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_recent_aux",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.0845723419915885,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.22244522400000002,
+                "evaluation_seconds": 0.405160709,
+                "setup_seconds": 1.008108887,
+                "training_seconds": 0.7332138910000001
+              },
+              "ram_peak_bytes": 1375019008,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.745823723002104,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.14967566,
+                "evaluation_seconds": 0.30429653,
+                "setup_seconds": 0.975564913,
+                "training_seconds": 0.6278283999999996
+              },
+              "ram_peak_bytes": 1374068736,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.6120565790042747,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.114800359,
+                "evaluation_seconds": 0.10533762,
+                "setup_seconds": 1.124449818,
+                "training_seconds": 0.5600396489999998
+              },
+              "ram_peak_bytes": 1383358464,
+              "vram_peak_bytes": null
+            }
+          ]
+        },
+        {
+          "variant": "ppo_replay_aux",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.1126854839967564,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.20806697399999996,
+                "evaluation_seconds": 0.430603135,
+                "setup_seconds": 0.953906007,
+                "training_seconds": 0.7669177829999997
+              },
+              "ram_peak_bytes": 1375318016,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.7234714250080287,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.14450239599999998,
+                "evaluation_seconds": 0.292178384,
+                "setup_seconds": 0.992044528,
+                "training_seconds": 0.6030324570000001
+              },
+              "ram_peak_bytes": 1374314496,
+              "vram_peak_bytes": null
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.4523298439744394,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.10975797300000001,
+                "evaluation_seconds": 0.102898781,
+                "setup_seconds": 1.031968935,
+                "training_seconds": 0.5154960410000001
+              },
+              "ram_peak_bytes": 1383026688,
+              "vram_peak_bytes": null
+            }
+          ]
+        }
+      ],
+      "note": "Comprobación anterior a las optimizaciones del recorrido. Se conserva como evidencia histórica, sin comparar sus tiempos con v2 como una aceleración."
+    },
+    {
+      "schema_version": 1,
+      "date": "2026-09-29",
+      "purpose": "Comprobar continuidad exacta de nueve variantes nativas en CUDA.",
+      "hardware": {
+        "torch": "2.14.0+cu130",
+        "cuda": true,
+        "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU"
+      },
+      "binary_sha256": "4cde4019baec572bb5ee2c9a71783f983fa9f0f9431f7a7bf369a729052ee24c",
+      "language": "C++20",
+      "backend": "LibTorch",
+      "device": "cuda:0",
+      "seed": 42,
+      "environments": 16,
+      "total_transitions": 1024,
+      "stop_after": 512,
+      "rollout_transitions": 256,
+      "train_worlds": 256,
+      "validation_worlds": 8,
+      "final_test_opened": false,
+      "precision": {
+        "observations": "FP32",
+        "parameters": "FP32",
+        "advantages": "FP64",
+        "deterministic": true
+      },
+      "variants": [
+        {
+          "variant": "ppo",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.145615657005692,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.139735618,
+                "evaluation_seconds": 0.368488956,
+                "setup_seconds": 1.021196529,
+                "training_seconds": 0.7548060480000003
+              },
+              "ram_peak_bytes": 1324548096,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.876983704016311,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.08775322199999999,
+                "evaluation_seconds": 0.222988308,
+                "setup_seconds": 1.004087845,
+                "training_seconds": 0.527542796
+              },
+              "ram_peak_bytes": 1324437504,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.5938766749750357,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.043805896999999996,
+                "evaluation_seconds": 0.060939277,
+                "setup_seconds": 1.055514322,
+                "training_seconds": 0.48441143199999986
+              },
+              "ram_peak_bytes": 1327837184,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "double_dqn",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.7157831830263603,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 769,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17862,
+              "timings": {
+                "checkpoint_seconds": 0.175799842,
+                "evaluation_seconds": 0.275076386,
+                "setup_seconds": 1.016768128,
+                "training_seconds": 1.561193689
+              },
+              "ram_peak_bytes": 1259839488,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 3.5619336479867343,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 257,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17862,
+              "timings": {
+                "checkpoint_seconds": 0.135285779,
+                "evaluation_seconds": 0.278183944,
+                "setup_seconds": 1.006020801,
+                "training_seconds": 1.156050093
+              },
+              "ram_peak_bytes": 1258704896,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 4.20428090900532,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 769,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17862,
+              "timings": {
+                "checkpoint_seconds": 0.127183592,
+                "evaluation_seconds": 0.088601055,
+                "setup_seconds": 1.067398654,
+                "training_seconds": 1.9202487849999998
+              },
+              "ram_peak_bytes": 1262637056,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_window",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.12731035501929,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 53399,
+              "timings": {
+                "checkpoint_seconds": 0.12308913300000002,
+                "evaluation_seconds": 0.32385379999999997,
+                "setup_seconds": 1.000644935,
+                "training_seconds": 0.6635018639999998
+              },
+              "ram_peak_bytes": 1335554048,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.65630869299639,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 53399,
+              "timings": {
+                "checkpoint_seconds": 0.08985821800000002,
+                "evaluation_seconds": 0.228895336,
+                "setup_seconds": 0.967407364,
+                "training_seconds": 0.536129022
+              },
+              "ram_peak_bytes": 1335717888,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.504380467988085,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 53399,
+              "timings": {
+                "checkpoint_seconds": 0.053952096,
+                "evaluation_seconds": 0.074341984,
+                "setup_seconds": 1.023274393,
+                "training_seconds": 0.49369483999999997
+              },
+              "ram_peak_bytes": 1338970112,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_gru",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 4.031121783016715,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 52871,
+              "timings": {
+                "checkpoint_seconds": 0.325044845,
+                "evaluation_seconds": 0.5443191629999999,
+                "setup_seconds": 1.130762202,
+                "training_seconds": 0.8941655449999998
+              },
+              "ram_peak_bytes": 1447559168,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 3.32812611098052,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 52871,
+              "timings": {
+                "checkpoint_seconds": 0.20972885100000002,
+                "evaluation_seconds": 0.357780144,
+                "setup_seconds": 1.054882899,
+                "training_seconds": 0.6565154530000001
+              },
+              "ram_peak_bytes": 1446936576,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.869922534999205,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 52871,
+              "timings": {
+                "checkpoint_seconds": 0.12926569999999998,
+                "evaluation_seconds": 0.114772567,
+                "setup_seconds": 1.086725759,
+                "training_seconds": 0.5965301830000002
+              },
+              "ram_peak_bytes": 1457393664,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_episodic",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 2.902678781974828,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.172249676,
+                "evaluation_seconds": 0.36792583500000003,
+                "setup_seconds": 1.006993665,
+                "training_seconds": 0.6138207470000003
+              },
+              "ram_peak_bytes": 1335353344,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.752395294024609,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.12122329500000001,
+                "evaluation_seconds": 0.287919472,
+                "setup_seconds": 1.017477584,
+                "training_seconds": 0.535006962
+              },
+              "ram_peak_bytes": 1334394880,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.7190084799949545,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.087644293,
+                "evaluation_seconds": 0.097175917,
+                "setup_seconds": 1.099053606,
+                "training_seconds": 0.4825609650000002
+              },
+              "ram_peak_bytes": 1344954368,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_hmm",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.271179884992307,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.12448595600000001,
+                "evaluation_seconds": 0.369512192,
+                "setup_seconds": 1.022940178,
+                "training_seconds": 0.6663321690000003
+              },
+              "ram_peak_bytes": 1324732416,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.9819184390071314,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.086594452,
+                "evaluation_seconds": 0.233047169,
+                "setup_seconds": 1.06708731,
+                "training_seconds": 0.519088497
+              },
+              "ram_peak_bytes": 1324568576,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.690800862998003,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.051489135000000005,
+                "evaluation_seconds": 0.068890249,
+                "setup_seconds": 1.102670794,
+                "training_seconds": 0.480182213
+              },
+              "ram_peak_bytes": 1328390144,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_episodic_hmm",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.328362532018218,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.17843610399999998,
+                "evaluation_seconds": 0.437532246,
+                "setup_seconds": 1.004422016,
+                "training_seconds": 0.683588959
+              },
+              "ram_peak_bytes": 1335689216,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 3.022034013993107,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.11380352299999999,
+                "evaluation_seconds": 0.299414314,
+                "setup_seconds": 1.049112389,
+                "training_seconds": 0.54597826
+              },
+              "ram_peak_bytes": 1334378496,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.746663822006667,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 0,
+              "auxiliary_samples": 0,
+              "parameters": 17927,
+              "timings": {
+                "checkpoint_seconds": 0.081527849,
+                "evaluation_seconds": 0.114948985,
+                "setup_seconds": 1.10287948,
+                "training_seconds": 0.496906921
+              },
+              "ram_peak_bytes": 1345662976,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_recent_aux",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.5058463620080147,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 4,
+              "auxiliary_samples": 256,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.24890067500000002,
+                "evaluation_seconds": 0.431858838,
+                "setup_seconds": 1.051976443,
+                "training_seconds": 0.713422069
+              },
+              "ram_peak_bytes": 1371545600,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 2.8983957509917673,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 2,
+              "auxiliary_samples": 128,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.142556635,
+                "evaluation_seconds": 0.282379302,
+                "setup_seconds": 1.005035017,
+                "training_seconds": 0.5404508210000003
+              },
+              "ram_peak_bytes": 1369853952,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.557277239015093,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 4,
+              "auxiliary_samples": 256,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.123143439,
+                "evaluation_seconds": 0.10730515,
+                "setup_seconds": 1.048036255,
+                "training_seconds": 0.505912936
+              },
+              "ram_peak_bytes": 1379115008,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        },
+        {
+          "variant": "ppo_replay_aux",
+          "exact_parameters": true,
+          "exact_trace": true,
+          "runs": [
+            {
+              "condition": "continuous",
+              "resumed": false,
+              "process_seconds": 3.5561025550123304,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 4,
+              "auxiliary_samples": 256,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.245350952,
+                "evaluation_seconds": 0.451266993,
+                "setup_seconds": 1.047908984,
+                "training_seconds": 0.7136687410000001
+              },
+              "ram_peak_bytes": 1372626944,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            },
+            {
+              "condition": "recovered",
+              "resumed": false,
+              "process_seconds": 3.0147887009952683,
+              "status": "paused",
+              "transitions": 512,
+              "observed_transitions": 1536,
+              "optimizer_steps": 32,
+              "auxiliary_steps": 2,
+              "auxiliary_samples": 128,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.156573858,
+                "evaluation_seconds": 0.288111967,
+                "setup_seconds": 1.000588967,
+                "training_seconds": 0.540090078
+              },
+              "ram_peak_bytes": 1370701824,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 1536
+            },
+            {
+              "condition": "recovered",
+              "resumed": true,
+              "process_seconds": 2.7052935760002583,
+              "status": "completed",
+              "transitions": 1024,
+              "observed_transitions": 2048,
+              "optimizer_steps": 64,
+              "auxiliary_steps": 4,
+              "auxiliary_samples": 256,
+              "parameters": 17992,
+              "timings": {
+                "checkpoint_seconds": 0.114767818,
+                "evaluation_seconds": 0.096910858,
+                "setup_seconds": 1.097396766,
+                "training_seconds": 0.510103115
+              },
+              "ram_peak_bytes": 1379684352,
+              "vram_peak_bytes": null,
+              "confirmed_trace_rows": 2048
+            }
+          ]
+        }
+      ],
+      "limits": [
+        "Son comprobaciones de funcionamiento, no resultados de la comparación principal.",
+        "Las duraciones corresponden a una ejecución por condición, sin estimar dispersión ni speedup.",
+        "No se ha medido el pico de VRAM ni la energía en esta comprobación.",
+        "El generador aporta tres conceptos macro simulados, sin equivalencia con las cuatro modalidades y los 140 indicadores reales.",
+        "Las comprobaciones corresponden a los binarios identificados. No acreditan cambios posteriores por el hecho de compartir configuración."
+      ],
+      "check_id": "pipeline_v2",
+      "source_artifact_sha256": "05d5b664fc7a14578f3c60e4bfb6fcc389aca1a27abc8611566ba37d68e82d1b"
+    }
+  ]
+}

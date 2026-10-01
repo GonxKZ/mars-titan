@@ -1,0 +1,11 @@
+{
+  "measurement_date": "2026-09-21",
+  "tool": "GNU time",
+  "scope": "Proceso uv con el ejecutor GRU, incluido arranque e importaciones. El máximo RSS no es una suma simultánea de procesos.",
+  "report": "reports/resources/strict-gru-probe.json",
+  "output": "data/interim/strict-gru-20260921",
+  "wall_seconds": 5.9,
+  "max_rss_kib": 1417004,
+  "exit_status": 0,
+  "command": "CUBLAS_WORKSPACE_CONFIG=:4096:8 /usr/bin/time -f 'wall_seconds=%e\\nmax_rss_kib=%M\\nexit_status=%x' uv run --locked --extra research --extra cuda --extra encoders python -m mars_titan.gru_probe --prepared data/processed/news-expansion-20260921 --samples data/processed/bounded-samples-20260921-v2/US --output data/interim/strict-gru-20260921 --report reports/resources/strict-gru-probe.json --epochs 3"
+}

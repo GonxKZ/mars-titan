@@ -1,0 +1,888 @@
+{
+  "schema_version": 1,
+  "first_reference_period": "2022-10",
+  "last_reference_period": "2023-11",
+  "documents": [
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/fb30cb8791924291b5365d3e092bc803/index.html",
+      "sha256": "3efa89b11f732297cfa98120c0f81bc1c22639fc65ea8d51324896701e415fb1",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2022-09"
+      ],
+      "availability_bound": "2022-10-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/fe7254937c4c48a587b0a6e3c1d6dba5/index.html",
+      "sha256": "9ad0d3172ef69808b9778c9bea8f6343edbe6fc2a3bd76dc85eb5ac740bae89f",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2022-09"
+      ],
+      "availability_bound": "2022-10-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/1da4d3e592a842789438683f9edf5c1f/index.html",
+      "sha256": "26dc376657e70990ae6b5f5bc2c2f28f324aa4570ec024dbb7891e916ab7a2c6",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2022-09"
+      ],
+      "availability_bound": "2022-10-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202210/t20221016_1889302.html",
+      "sha256": "c82c0811b1b9050b8028427c9780e7f5f762adbf763332ac6f0ef36fd6169168",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2022-09"
+      ],
+      "availability_bound": "2022-10-16",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202210/t20221025_1889668.html",
+      "sha256": "a130942b3b99b9a05c82b3ee334c691019556dbc164bc66bcdffa465b5a72265",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2022-09"
+      ],
+      "availability_bound": "2022-10-25",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202211/t20221101_1889909.html",
+      "sha256": "46d84f0bceaca96fd78548d51b02a88a317970bffcf12a4fc3938955f06e701b",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2022-10"
+      ],
+      "availability_bound": "2022-11-01",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202211/t20221109_1890149.html",
+      "sha256": "a4cd02dfd2d5e203111e959d5683905dfc1e3f6a1dcd6309de6520ad8137aa2c",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2022-10"
+      ],
+      "availability_bound": "2022-11-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/e15a1be918ed495488bf16af0fb7214f/index.html",
+      "sha256": "3902891b3302de8fff3cf3231be7e3e8175b230806798d4751ea279cb266f397",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2022-10"
+      ],
+      "availability_bound": "2022-11-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/aa9f6708343245359814138dad70f74a/index.html",
+      "sha256": "abfb0038f89cd072ab5bd3c4eac79ffd0cecc8bb2182805188478bb778d71440",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2022-10"
+      ],
+      "availability_bound": "2022-11-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/ccf42a3544a54780a7ea31e6de181a99/index.html",
+      "sha256": "767928ae1949485b528b7209df2e30eb0b7fb1a970881324aebf7a95de4ff368",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2022-10"
+      ],
+      "availability_bound": "2022-11-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202211/t20221116_1890343.html",
+      "sha256": "414f8ed2d72f837336eb7d2a3783d9ead39a6a21fb1e111659c7d982472c6f95",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2022-10"
+      ],
+      "availability_bound": "2022-11-16",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202212/t20221205_1890803.html",
+      "sha256": "6bf9bfcb750ac00dcf12cfad91b9953fe351e862ca7c7912e66b91d1695e378f",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2022-11"
+      ],
+      "availability_bound": "2022-12-05",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/a0e7f0189181456d9fcde9ee5e423584/index.html",
+      "sha256": "6f919be1b766c93c38de5307c5130a640caf57084ff867fd25a2a418c40b8afd",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2022-11"
+      ],
+      "availability_bound": "2022-12-12",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/905a82aff74f46b2a85829522d016afc/index.html",
+      "sha256": "0b8ff0816de1d819f1beeefee2fc369e03b2dfb4149c16c79e61268dfb3cb9f2",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2022-11"
+      ],
+      "availability_bound": "2022-12-12",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/708d5dd012744ead95a53fe8c58cacbd/index.html",
+      "sha256": "5783115ccd4f81c5d477ed11cdf53315b9abfb1f7379ecbb6c9065f8a559e98b",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2022-11"
+      ],
+      "availability_bound": "2022-12-12",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202212/t20221215_1891103.html",
+      "sha256": "8806a47e2344e51c98a9c6de187aec314f8e8404e82bd4ac63c19ea71ece4bdb",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2022-11"
+      ],
+      "availability_bound": "2022-12-15",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202212/t20221226_1891214.html",
+      "sha256": "aa06f7d7115a3a5714101e81cee4e450d9ff4a0007d0a45ce481a59b5be49f6a",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2022-11"
+      ],
+      "availability_bound": "2022-12-26",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202301/t20230106_1891506.html",
+      "sha256": "42ab02f1f75875c7dea95d2ceb13b71d672ee9cabaa1770418f9b65aaf2e9ae9",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2022-12"
+      ],
+      "availability_bound": "2023-01-06",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/568387ff70be457590732b5e044f8e18/index.html",
+      "sha256": "6061c0028cace705425b7b0d7b7f0075aca4e5e0ddc95042bb049367b2120ca1",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2022-12"
+      ],
+      "availability_bound": "2023-01-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/76eb157c3e964915b9adcba2f4d0c643/index.html",
+      "sha256": "04ba0fce14973c7c6b399edcabc20d3028d1335faeed67fd257364a120c97bce",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2022-12"
+      ],
+      "availability_bound": "2023-01-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/54aa3f53ef374d53a4ad4f86753ab3b0/index.html",
+      "sha256": "b049e5b3cfd37f0adf730ced8a6aa728e2ca045aa744a8a2a6c4caf93ab5b423",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2022-12"
+      ],
+      "availability_bound": "2023-01-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202301/t20230113_1891633.html",
+      "sha256": "9449f47517e3896140dbf3248e5b82e45af727d803abb85bd2e0a73fbfb2017e",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2022-12"
+      ],
+      "availability_bound": "2023-01-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202301/t20230118_1892296.html",
+      "sha256": "b7cbd8df6028c573691f7ed7dbdb6b25a22fbcbc15efd2669920b6dddc7c474c",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2022-12"
+      ],
+      "availability_bound": "2023-01-18",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202302/t20230201_1892629.html",
+      "sha256": "9050d0475bc79e553dfc4c5d43a8fcea776c46d733157dda852a4d044b754771",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-01"
+      ],
+      "availability_bound": "2023-02-01",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/1421ef5774954fd795d2e2312daf0470/index.html",
+      "sha256": "8779a48f0b358491bfc6045d9b076be06dacfbf3bf4afcd4fc6568de867d641d",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-01"
+      ],
+      "availability_bound": "2023-02-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/08913263a9fc4b398ca36a34d3356ed7/index.html",
+      "sha256": "cea003c7d11aca9c34be83b2bd75d2dfa35bfc75d35adc272f458ad75051e536",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-01"
+      ],
+      "availability_bound": "2023-02-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/b18b9809242245ebbd594f3380862d5b/index.html",
+      "sha256": "a27176748e23c4c84aedb6586787144c73d92b3ac83f8e9b6cdbb372b772d240",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-01"
+      ],
+      "availability_bound": "2023-02-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202302/t20230213_1902713.html",
+      "sha256": "5950391fb2ed5858bbbf989bdf5144bb7f099b8917bb3dfddeb4e3dadfa7690e",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-01"
+      ],
+      "availability_bound": "2023-02-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202303/t20230301_1920496.html",
+      "sha256": "64799b7afadfa613e8c1c8e730c5bba3b8133243132612910842a341580f81d1",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-02"
+      ],
+      "availability_bound": "2023-03-02",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202303/t20230310_1936996.html",
+      "sha256": "1a24244d1ce5bf9283231d193f622e16ba4fe9002e3f38772af6e0764507d746",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-02"
+      ],
+      "availability_bound": "2023-03-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/588b2401df5344f68b78d51b7396d743/index.html",
+      "sha256": "806c03f7d9facde119c76b299408b7f5ee6ae537f9f36d778ecee2ac930b1ee0",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-02"
+      ],
+      "availability_bound": "2023-03-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/10efa07960ae4dc687872f7a52489a7c/index.html",
+      "sha256": "c798315bf68ba3300b46eb62102e8ae0fdc5719726331570b2f7b4d0e5ddefd6",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-02"
+      ],
+      "availability_bound": "2023-03-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/6c813ffa481e407bb7a42052cedb0dd4/index.html",
+      "sha256": "f50bb562997a214916de1b227edb19c81f1821ef609fc5aa96d5c116c0fe32f6",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-02"
+      ],
+      "availability_bound": "2023-03-10",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202303/t20230317_1937565.html",
+      "sha256": "6594b401e1a3dcdf0884feeacf9911800bd607eec707ee93522006ef8e8d6618",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-01",
+        "2023-02"
+      ],
+      "availability_bound": "2023-03-17",
+      "exclusion": "nonmonthly_reference_period"
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202304/t20230403_1938320.html",
+      "sha256": "e84ddf87e68d97b3ab2e50d5f92e2f9def165d65e8936bb1019203ad878830cb",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-03"
+      ],
+      "availability_bound": "2023-04-03",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/532709cd6dc346c6abd925556437511d/index.html",
+      "sha256": "78235b37d49da0de67b734c2f4bde85f6f52b5da309849a793866206b2c7a9e9",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-03"
+      ],
+      "availability_bound": "2023-04-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/c512e1903d2940028ca5285cc9a2287e/index.html",
+      "sha256": "70f5b0739b56b5e085baa9bb271cde37aac05261bd9318f7f5413842db1b95f2",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-03"
+      ],
+      "availability_bound": "2023-04-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/369d4ffc82a6446ea356b571029c4951/index.html",
+      "sha256": "b9342952e6fb5a82e8e88aa49932b30d95bc7ab6ef04e524475fbd7c0d4a5f05",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-03"
+      ],
+      "availability_bound": "2023-04-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202304/t20230413_1938599.html",
+      "sha256": "11e899f5470a9d1a594ba4f96c77777dca6a873e42dde0d8c53b7426a5495af5",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-03"
+      ],
+      "availability_bound": "2023-04-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202304/t20230420_1938879.html",
+      "sha256": "cd1bb58b4122bd4209a56cc1a2edeef422a5855b3e4e3058b051a74f58474db3",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-03"
+      ],
+      "availability_bound": "2023-04-20",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/1bb8759c90de4353b2a93e00438375e3/index.html",
+      "sha256": "a48db0d71709831a9292c6aa6e1684d7b34ab8b4efb509a8f17b7763015aad69",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-04"
+      ],
+      "availability_bound": "2023-05-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/b0bb99815f124e06929d73a4c93c2be2/index.html",
+      "sha256": "b7d1534a006fd24880a5684363650a3041d2b31f03867b62568aba3acbd8cf63",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-04"
+      ],
+      "availability_bound": "2023-05-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/8fa958b90e6644ef8f209316f9665174/index.html",
+      "sha256": "d08a55adb09aed9d020062c703b3d05f489407a2657dacc928d9d162dee83ccc",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-04"
+      ],
+      "availability_bound": "2023-05-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202305/t20230517_1939612.html",
+      "sha256": "03dd6eae943751ce93ce287731eb8ea9523f52c8ecf3917bddecd71b5e98bf4e",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-04"
+      ],
+      "availability_bound": "2023-05-17",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202305/t20230518_1939734.html",
+      "sha256": "f0ea22d3511cef42e6b50256ae0a49ea3a17d232b27c5b55f4fcf95e1797bac1",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-04"
+      ],
+      "availability_bound": "2023-05-18",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202305/t20230519_1939831.html",
+      "sha256": "57e422267acf0ed19fbcee7ac8c264409058eb605dc0feffeceedf2af1c3479a",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-04"
+      ],
+      "availability_bound": "2023-05-19",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202306/t20230602_1940321.html",
+      "sha256": "657d233195469b9c7f0ea100b833bacec01ccd66b0090687225295ea11544e62",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-05"
+      ],
+      "availability_bound": "2023-06-02",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/0755aafdab32428daa12f2cf682c81ba/index.html",
+      "sha256": "31c4d3f99601b711ef3772670e2aeb5d4bab0bf851e1d109b8f480892a4cec18",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-05"
+      ],
+      "availability_bound": "2023-06-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/92cec080515049f58811a7108ada6c34/index.html",
+      "sha256": "7e52aaef564efdd3c45aa958ad7a8556f933b31de3e720a0aaf55ed0f42d0e04",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-05"
+      ],
+      "availability_bound": "2023-06-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/4559dc18c87b4b88b779001dfb2218d8/index.html",
+      "sha256": "2bb3e8ae863b5ee01d5c1edecc55ce8e9637bf6c130edd77e98208b2162e812a",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-05"
+      ],
+      "availability_bound": "2023-06-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202306/t20230614_1940613.html",
+      "sha256": "4ad05c92de5a772870f38112aba7d722ded07e49560c79f339430ab2b683ff9f",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-05"
+      ],
+      "availability_bound": "2023-06-14",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202306/t20230620_1940783.html",
+      "sha256": "e43191437f2f75302983e9f89b59e617c8884f7696f89821c06a0c05955c6b17",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-05"
+      ],
+      "availability_bound": "2023-06-20",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202307/t20230704_1941008.html",
+      "sha256": "0f03d6234a9af654b168786f04b71da456f5aa4e169912a5d9a4785726638266",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-06"
+      ],
+      "availability_bound": "2023-07-04",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/33ed4f226f484e66a50446175026c639/index.html",
+      "sha256": "633005d7cb86259172bca7fbdf4b19ce00eb676f6b65e06b87b1a7627a8c9038",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-06"
+      ],
+      "availability_bound": "2023-07-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/626f0af44cca4c10a7352dac70b2f3e6/index.html",
+      "sha256": "d2af4b92bd13838d69d43f81979b44e4ee95f493617137906fa17177f6abf493",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-06"
+      ],
+      "availability_bound": "2023-07-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/305c194d33c5458d9c9f17e8d7e2e130/index.html",
+      "sha256": "f76a54252bee2e6f787ba1c11067a30e02b36a74664ef4e9b837e8c8b7b1d7c1",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-06"
+      ],
+      "availability_bound": "2023-07-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202307/t20230712_1941199.html",
+      "sha256": "23180f686a2f88baa2bb98806ccccca3a5b964de2c4761768af343ad7df5bd16",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-06"
+      ],
+      "availability_bound": "2023-07-12",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202307/t20230726_1941518.html",
+      "sha256": "9202adc1be26d956cc1ed9a42b66792d9cfcb67e5aaf4ed569c7587ab50e8ba5",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-06"
+      ],
+      "availability_bound": "2023-07-26",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202308/t20230803_1941759.html",
+      "sha256": "9c75cf4cb223b6a9619352c3bdabf6d0ffdd1507bc32ca30c022f4954de2ddb0",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-07"
+      ],
+      "availability_bound": "2023-08-03",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/88fe2f6caa7d46e8ba029def777c7831/index.html",
+      "sha256": "e61f59508c264b023ebe26eb07cbd7dbd71e51e7ef3006a94e84ffedc12d628e",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-07"
+      ],
+      "availability_bound": "2023-08-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/47f1e744b5654016a25bf9127823073a/index.html",
+      "sha256": "d6d785ad907f0d1cb3c0288aa77c96602847fe3fc89e5386ebda51990f2a8f41",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-07"
+      ],
+      "availability_bound": "2023-08-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/a277a71d6e5d436fabb53029fc2c51e6/index.html",
+      "sha256": "4f160d594dff2ea9f0e91c2770e0bec8a3e830b825224f92b68e60926d45ac11",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-07"
+      ],
+      "availability_bound": "2023-08-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202308/t20230817_1942096.html",
+      "sha256": "d0daa0aa9062ae0e980567a4b13b0a552e7a82a008688c816211fafb11fc050e",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-07"
+      ],
+      "availability_bound": "2023-08-17",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202308/t20230818_1942121.html",
+      "sha256": "b4937624dd63e64dc8dcdc3c9d626e084be939414dd7238c5c5fd97d0d8e7632",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-07"
+      ],
+      "availability_bound": "2023-08-18",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202309/t20230904_1942549.html",
+      "sha256": "b07b56ba115dbb455efbd996d7822a81c57fbfc7f1ce09eaef6aa3f24ba681f2",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-08"
+      ],
+      "availability_bound": "2023-09-04",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/f30cb865aa774555bccb5ae49470007c/index.html",
+      "sha256": "06afa7188db6d59cfa54b43a9fbfe44716f85e9641629e86002d3675a1a1a5be",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-08"
+      ],
+      "availability_bound": "2023-09-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/723d31a0915a4e2caf97b1fa02030640/index.html",
+      "sha256": "34b47d79845cdc05fde8b40f2f294424703f496db10377ac521d79caba2675c1",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-08"
+      ],
+      "availability_bound": "2023-09-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/8c86d4d42f4649fab6b8087f5f8ae74b/index.html",
+      "sha256": "596508c23fda00057798363c9efa297286e67aa35707a37b2ba8a511f8a99326",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-08"
+      ],
+      "availability_bound": "2023-09-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202309/t20230914_1942831.html",
+      "sha256": "af731e1460bf91d833b4d7cf4241f59ab68994c9eb9cdd505645d5e76cc75d6d",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-08"
+      ],
+      "availability_bound": "2023-09-14",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202309/t20230926_1943199.html",
+      "sha256": "e028cb9b08ecbfe46a36dd109721328df3728561f32f1a7f6058b0e3cf438c55",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-08"
+      ],
+      "availability_bound": "2023-09-26",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202310/t20231011_1943478.html",
+      "sha256": "907d6ae24d4291d89047519d9170cdfdf8643506cbcf00ec57e7a0714349571e",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-09"
+      ],
+      "availability_bound": "2023-10-11",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/13726e91dd8d4423b12ec14955d6601a/index.html",
+      "sha256": "69da8217eb1b5993021c1a94d7c17cfc32014523e6ca9e728a973d39480f5270",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-09"
+      ],
+      "availability_bound": "2023-10-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/46d26f1e0c4240eab705ce0ea2a40ebc/index.html",
+      "sha256": "6ce178e9dddd9bf1bd57956abb9112ecb62a2f3573d1360021fd605fa92634ce",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-09"
+      ],
+      "availability_bound": "2023-10-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/8e5312084c0040a2b8dadae2badf1e63/index.html",
+      "sha256": "e6e0ce4d3df7964e87da5dddfb14c2928889bb709b53f868b6522cf7f2229159",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-09"
+      ],
+      "availability_bound": "2023-10-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202310/t20231024_1943876.html",
+      "sha256": "d8d9c152eaa50dbb8deb0c0b0304e3587a698b15382a257e69338c81b8ef6857",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-09"
+      ],
+      "availability_bound": "2023-10-24",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202310/t20231026_1943921.html",
+      "sha256": "ee17bc40ccacb0d2f6e230281bdb9e8318cfaa1dd05189ba578ca50c3ccae32c",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-09"
+      ],
+      "availability_bound": "2023-10-26",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202311/t20231107_1944255.html",
+      "sha256": "5b29c61fb3a338d9cf4b53bd4474171192496e5b185ed6b69263363911c9e892",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-10"
+      ],
+      "availability_bound": "2023-11-07",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/8393556d383747a3bc6ad513618ae523/index.html",
+      "sha256": "bdc8ad4a48e35e8d3d2d9eba9596a7223f7574fd7447b76d64d587becbf67425",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-10"
+      ],
+      "availability_bound": "2023-11-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/821ce1dded74440e9a4d06208af2170c/index.html",
+      "sha256": "57575d60c266fb0de622a47acb0a5b020266f6573b2396bab6f5e4871cdf497d",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-10"
+      ],
+      "availability_bound": "2023-11-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/f75e8897cc0c4408ae0f3037fdbd48b4/index.html",
+      "sha256": "37023bef69c50f481e01a187b174144110bfcc1013f57f1c20ecc198b2fb0693",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-10"
+      ],
+      "availability_bound": "2023-11-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202311/t20231114_1944486.html",
+      "sha256": "cae6308bf3fc3b01351b008c0fad7b54d3ce8a7d76fd0e1bc8f1ecac82224490",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-10"
+      ],
+      "availability_bound": "2023-11-14",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202311/t20231128_1944960.html",
+      "sha256": "d4c74ad135902d50b0de29daf5053ddc7083d06104e8ba7e364ddf99ef9f3e5c",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-10"
+      ],
+      "availability_bound": "2023-11-28",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202312/t20231201_1945102.html",
+      "sha256": "491249c8195546946746673f608f6f3173763cbd329326bb2d303634357914e9",
+      "indicator_id": "cn_manufacturing_pmi",
+      "reference_periods": [
+        "2023-11"
+      ],
+      "availability_bound": "2023-12-01",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/b21be1ab65c94424a612a7666d605a1b/index.html",
+      "sha256": "3d5ff1cd071a9150b6eea9b70860700170ca962fa536d6641edf90304324e027",
+      "indicator_id": "cn_m2_stock",
+      "reference_periods": [
+        "2023-11"
+      ],
+      "availability_bound": "2023-12-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/5514fd0fcd584a21b5f5f761fead459a/index.html",
+      "sha256": "6580f20115f9a8e67b1923099b73ec74b8739da4bf34c8291bddd2ac55aa048a",
+      "indicator_id": "cn_tsf_flow",
+      "reference_periods": [
+        "2023-11"
+      ],
+      "availability_bound": "2023-12-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/116225/1046bc429f1745ffb1d8ddbc0d53fd4d/index.html",
+      "sha256": "42bc57bb5f48a4a09ef75d5edc65c91ea83203093e03aee3eaf090032cfbf1d9",
+      "indicator_id": "cn_tsf_stock",
+      "reference_periods": [
+        "2023-11"
+      ],
+      "availability_bound": "2023-12-13",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202312/t20231214_1945526.html",
+      "sha256": "fe5d395965f4a90e16cc530614d837245b9f7ae2a40707ff3ba4ee5a90513533",
+      "indicator_id": "cn_cpi_yoy_published",
+      "reference_periods": [
+        "2023-11"
+      ],
+      "availability_bound": "2023-12-14",
+      "exclusion": null
+    },
+    {
+      "url": "https://www.stats.gov.cn/english/PressRelease/202312/t20231221_1945702.html",
+      "sha256": "1fde0b8929b12114ef72f23baece56dad57ef678622a5144312b97507ab69860",
+      "indicator_id": "cn_industrial_yoy_published",
+      "reference_periods": [
+        "2023-11"
+      ],
+      "availability_bound": "2023-12-21",
+      "exclusion": null
+    }
+  ]
+}

@@ -11,7 +11,7 @@ repository-code: "https://github.com/GonxKZ/mars-titan"
 url: "https://github.com/GonxKZ/mars-titan"
 license: MIT
 keywords:
-  - financial forecasting
-  - adaptive memory
-  - multimodal learning
-  - reproducible research
+  - predicción financiera
+  - memoria adaptativa
+  - aprendizaje multimodal
+  - investigación reproducible

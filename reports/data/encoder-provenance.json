@@ -1,0 +1,50 @@
+{
+  "atol": 0.000001,
+  "checked_at_utc": "2026-09-19T23:23:02.243893+00:00",
+  "cuda_peak_allocated_bytes": 546401792,
+  "cuda_peak_reserved_bytes": 578813952,
+  "encoders": {
+    "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+    "device": "cuda:0",
+    "historical_simulation": false,
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "precision": "float32",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b"
+    },
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizer_class": "TokenizersBackend",
+    "tokenizers_version": "0.23.2",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0"
+  },
+  "image_max_abs_difference": 0,
+  "initialization_seconds": 3.868696289999207,
+  "peak_rss_mib": 2584.4765625,
+  "repeat_seconds": 0.01781311200102209,
+  "rtol": 0.000001,
+  "scope": "synthetic_encoder_parity_only",
+  "state_sha256_after": [
+    "bf1dd1bf2aa5e62a2407b2f29eba8c1bcdb13ae670666e70c1cc81bab8b37e00",
+    "c6fc025cae67cee295fa18eff0998f3ae5f0e7a7d662ca38ab7be77ad49665c9"
+  ],
+  "state_sha256_before": [
+    "bf1dd1bf2aa5e62a2407b2f29eba8c1bcdb13ae670666e70c1cc81bab8b37e00",
+    "c6fc025cae67cee295fa18eff0998f3ae5f0e7a7d662ca38ab7be77ad49665c9"
+  ],
+  "text_max_abs_difference": 0,
+  "total_seconds": 5.184888422998483,
+  "execution_context": "isolated_pytest_process",
+  "command": "MARS_ENCODER_INTEGRATION=1 HF_HUB_OFFLINE=1 uv run --locked --extra cuda --extra encoders pytest tests/data/test_encoder_provenance_integration.py -q -s"
+}

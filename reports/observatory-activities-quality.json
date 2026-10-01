@@ -1,0 +1,217 @@
+{
+  "tool": "coverage.py 7.16.1 (ramas) y radon 6.0.1 (complejidad ciclomática)",
+  "convention": "CRAP = CC² × (1 − cobertura de líneas ejecutables de la función)³ + CC. Diagnóstico, no prueba de corrección.",
+  "totals": {
+    "covered_lines": 413,
+    "num_statements": 461,
+    "percent_covered": 85.9304084720121,
+    "percent_covered_display": "86",
+    "missing_lines": 48,
+    "excluded_lines": 0,
+    "percent_statements_covered": 89.587852494577,
+    "percent_statements_covered_display": "90",
+    "num_branches": 200,
+    "num_partial_branches": 43,
+    "covered_branches": 155,
+    "missing_branches": 45,
+    "percent_branches_covered": 77.5,
+    "percent_branches_covered_display": "78"
+  },
+  "functions": [
+    {
+      "file": "src/mars_titan/observatory/activities.py",
+      "name": "classify",
+      "complexity": 12,
+      "line_coverage": 0.9090909090909091,
+      "crap": 12.108189331329827
+    },
+    {
+      "file": "src/mars_titan/observatory/activities.py",
+      "name": "financial_validation",
+      "complexity": 22,
+      "line_coverage": 0.8928571428571429,
+      "crap": 22.595298833819243
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "digest",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "identifier",
+      "complexity": 3,
+      "line_coverage": 0.75,
+      "crap": 3.140625
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "finite",
+      "complexity": 4,
+      "line_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "utc",
+      "complexity": 3,
+      "line_coverage": 0.8571428571428571,
+      "crap": 3.0262390670553936
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "planned_runs",
+      "complexity": 8,
+      "line_coverage": 0.9,
+      "crap": 8.064
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "safe_path",
+      "complexity": 5,
+      "line_coverage": 0.9,
+      "crap": 5.025
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "lock_held",
+      "complexity": 5,
+      "line_coverage": 0.9333333333333333,
+      "crap": 5.007407407407407
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "public_run",
+      "complexity": 53,
+      "line_coverage": 0.8793103448275862,
+      "crap": 57.938122719258686
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "validation_metrics",
+      "complexity": 15,
+      "line_coverage": 0.9473684210526315,
+      "crap": 15.032803615687419
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "validate_record",
+      "complexity": 34,
+      "line_coverage": 0.7777777777777778,
+      "crap": 46.685871056241425
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "write_pages",
+      "complexity": 10,
+      "line_coverage": 0.9473684210526315,
+      "crap": 10.014579384749963
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "read",
+      "complexity": 11,
+      "line_coverage": 0.8928571428571429,
+      "crap": 11.14882470845481
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "collect",
+      "complexity": 29,
+      "line_coverage": 0.8297872340425532,
+      "crap": 33.14736619053582
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "_campaign",
+      "complexity": 18,
+      "line_coverage": 0.9655172413793104,
+      "crap": 18.013284677518552
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "__init__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "__enter__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "__exit__",
+      "complexity": 1,
+      "line_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "read",
+      "complexity": 11,
+      "line_coverage": 0.8928571428571429,
+      "crap": 11.14882470845481
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "collect",
+      "complexity": 29,
+      "line_coverage": 0.8297872340425532,
+      "crap": 33.14736619053582
+    },
+    {
+      "file": "src/mars_titan/observatory/collector.py",
+      "name": "_campaign",
+      "complexity": 18,
+      "line_coverage": 0.9655172413793104,
+      "crap": 18.013284677518552
+    }
+  ],
+  "python_tests": 110,
+  "javascript_tests": 25,
+  "mutations": [
+    {
+      "mutation": "test protegido",
+      "detected": true,
+      "test": "test_financial_results_remain_closed_for_test"
+    },
+    {
+      "mutation": "actividad comparable",
+      "detected": true,
+      "test": "test_comparison_separates_activities_and_objectives"
+    },
+    {
+      "mutation": "procedencia declarada",
+      "detected": true,
+      "test": "test_new_producer_rejects_inconsistent_contract"
+    }
+  ],
+  "limits": "Pruebas locales de contratos y navegador. Sin entrenamiento, GPU ni despliegue público."
+}

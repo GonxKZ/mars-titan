@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-27T23:08:56.346650+00:00",
+  "source_sha256": "b363ceff9fa297b1e3e95c350f6cc862ccf57585ff8f7ae9195a04e520c68c65",
+  "tests": {
+    "passed": 283,
+    "command": "uv run pytest tests/data/test_macro*.py -q"
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "convention": "Sentencias y ramas del proceso principal.",
+    "summary": {
+      "covered_lines": 160,
+      "num_statements": 174,
+      "percent_covered": 88.21138211382114,
+      "percent_covered_display": "88",
+      "missing_lines": 14,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.95402298850574,
+      "percent_statements_covered_display": "92",
+      "num_branches": 72,
+      "num_partial_branches": 15,
+      "covered_branches": 57,
+      "missing_branches": 15,
+      "percent_branches_covered": 79.16666666666667,
+      "percent_branches_covered_display": "79"
+    }
+  },
+  "complexity": {
+    "tool": "lizard 1.24.0",
+    "crap_convention": "CC² × (1 − cobertura de sentencias)³ + CC",
+    "functions": [
+      {
+        "name": "__init__",
+        "complexity": 1,
+        "covered_statements": 7,
+        "statements": 7,
+        "crap": 1.0
+      },
+      {
+        "name": "_advance",
+        "complexity": 7,
+        "covered_statements": 15,
+        "statements": 15,
+        "crap": 7.0
+      },
+      {
+        "name": "through",
+        "complexity": 4,
+        "covered_statements": 12,
+        "statements": 12,
+        "crap": 4.0
+      },
+      {
+        "name": "compose_macro_edition",
+        "complexity": 47,
+        "covered_statements": 94,
+        "statements": 105,
+        "crap": 49.54
+      },
+      {
+        "name": "main",
+        "complexity": 8,
+        "covered_statements": 14,
+        "statements": 16,
+        "crap": 8.125
+      }
+    ]
+  },
+  "mutations": {
+    "cases": [
+      {
+        "mutation": "solape",
+        "detected": true
+      },
+      {
+        "mutation": "duplicados",
+        "detected": true
+      },
+      {
+        "mutation": "filas_ausentes",
+        "detected": true
+      }
+    ],
+    "convention": "Mutación dirigida en copias aisladas. Incluye rechazo temprano y diagnóstico de duplicados y solapes."
+  },
+  "numerical_parity": {
+    "rows": 528360,
+    "columns": 9,
+    "mismatches": 0,
+    "method": "DuckDB EXCEPT ALL en ambos sentidos sobre la unión explícita de las fuentes. Comparación exacta de valores, ausencias, unidades, fechas y procedencia."
+  },
+  "timings": [
+    {
+      "elapsed_seconds": 1.2746299150021514,
+      "peak_rss_mib": 173.87109375,
+      "input_file_bytes": 2428577,
+      "output_bytes": 2626721,
+      "largest_month_bytes": 581774,
+      "rows": 528360,
+      "process_seconds": 1.8578865640010918
+    },
+    {
+      "elapsed_seconds": 1.2485053929995047,
+      "peak_rss_mib": 173.71484375,
+      "input_file_bytes": 2428577,
+      "output_bytes": 2626721,
+      "largest_month_bytes": 581774,
+      "rows": 528360,
+      "process_seconds": 1.6505278549993818
+    },
+    {
+      "elapsed_seconds": 1.2336418470003991,
+      "peak_rss_mib": 173.62890625,
+      "input_file_bytes": 2428577,
+      "output_bytes": 2626721,
+      "largest_month_bytes": 581774,
+      "rows": 528360,
+      "process_seconds": 1.6520994809980039
+    }
+  ],
+  "profiling": {
+    "tool": "cProfile",
+    "process_seconds_instrumented": 1.769,
+    "arrow_compute_wrapper_seconds": 0.312,
+    "parquet_write_seconds": 0.15,
+    "arrow_take_seconds": 0.104,
+    "scope": "Composición completa con imports, lectura, comprobación, ordenación, escritura y confirmación. No se midieron contadores de hardware."
+  },
+  "admission": {
+    "source_sha256": "06d6c38f56fb4a44fe9c271bb3f45c36b3523f7cff676d5915a7b8a5e74f902b",
+    "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+    "total_decisions": 3774,
+    "complete_decisions": 257,
+    "excluded_decisions": 3517,
+    "duplicate_indicator_decisions": 0,
+    "elapsed_seconds": 1.8570508480006538,
+    "peak_rss_mib": 143.29296875
+  },
+  "limits": [
+    "Mediciones con caché local caliente tras el recorrido inicial y comprobaciones locales concurrentes. No son una demostración de aceleración.",
+    "El tamaño de los archivos no representa bytes físicos de disco leídos. No se midieron energía ni transferencias GPU.",
+    "La composición y la admisión macro no acreditan por sí solas las cuatro modalidades y etiquetas de cada activo."
+  ]
+}

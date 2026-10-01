@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-29T11:02:31.046381+00:00",
+  "scope": "Verificación local de la implementación, sin conclusión sobre calidad financiera.",
+  "native_binary_sha256": "dfe8764418395ebd8dbca718fcc9328e553ac3ebf44d8b4d62b9c5c400172b27",
+  "training_runtime_commit": "fb0337827e1a98c09c45162615cd4625acf7ccc7",
+  "final_test_opened": false,
+  "checks": [
+    {
+      "name": "Suite Python general",
+      "passed": 2447,
+      "skipped": 1,
+      "seconds": 302.98,
+      "limit": "La extracción real de codificadores requiere activación explícita. Los cambios posteriores de observatorio y benchmark se comprobaron por separado."
+    },
+    {
+      "name": "Coordinador, lanzador y benchmark",
+      "passed": 90,
+      "seconds": 62.52
+    },
+    {
+      "name": "Observatorio, publicación y parada",
+      "passed": 98,
+      "seconds": 0.53,
+      "limit": "La admisión posterior del bloqueo .campaign.lock añade una regresión propia."
+    },
+    {
+      "name": "CTest Release",
+      "passed": 14
+    },
+    {
+      "name": "CTest con cobertura LLVM",
+      "passed": 14
+    },
+    {
+      "name": "Integración del ejecutor nativo instrumentado",
+      "passed": 42,
+      "seconds": 25.5
+    },
+    {
+      "name": "Entrenador final con ASan, UBSan y detección de fugas",
+      "passed": 1,
+      "scope": "Ejecutable de pruebas del entrenador, con casos de recuperación, memoria y sensibilidad."
+    },
+    {
+      "name": "Política con ASan, UBSan y detección de fugas",
+      "passed": 46,
+      "evidence": "adaptive-policy-verification.json"
+    },
+    {
+      "name": "TSan y MSan independientes",
+      "passed": 2,
+      "scope": "FinancialBatch, con biblioteca estándar instrumentada para MSan. LibTorch no se presenta como instrumentado por estos perfiles."
+    },
+    {
+      "name": "Fuzzing del núcleo y sesión financiera",
+      "passed": 2,
+      "runs_per_case": 1000
+    },
+    {
+      "name": "Clang-tidy y Clang Static Analyzer",
+      "status": "passed",
+      "sources": [
+        "native/src/ppo_training.cpp",
+        "native/src/ppo_experiment.cpp"
+      ],
+      "tests": [
+        "native/tests/ppo_training_tests.cpp"
+      ]
+    },
+    {
+      "name": "Ayuda y simulación cash del ejecutable instrumentado",
+      "status": "passed",
+      "scope": "Una fuente sintética de validación. Sin aprendizaje ni GPU."
+    },
+    {
+      "name": "Bloqueo del coordinador y observación nativa",
+      "passed": 92,
+      "seconds": 0.29,
+      "scope": "Incluye el bloqueo .campaign.lock realmente mantenido y el estado running observado."
+    }
+  ],
+  "regressions": [
+    "Observaciones de contexto incompatibles con la cartera recuperada.",
+    "Episodios inventados y saltos de fuente al restaurar.",
+    "Recuento de decisiones incompatible con los ticks confirmados.",
+    "Prefijos y copias GRU fuera de la cuota del rollout.",
+    "Falsos cambios de acción al redondear softmax.",
+    "Logits enmascarados no finitos con probabilidades finitas.",
+    "Media de nueve drawdowns completos fuera de [0,1].",
+    "Parquet modificado durante una medida.",
+    "Fecha de progreso confirmada durante la lectura y comparación entre fechas con distinta precisión.",
+    "Campañas en espera de GPU y bloqueos de proceso no reconocidos."
+  ],
+  "coverage": {
+    "tools": {
+      "coverage": "LLVM 21 LCOV export",
+      "complexity": "lizard 1.17.31"
+    },
+    "convention": "LF/LH y BRF/BRH de LLVM LCOV, solo fuentes y cabeceras propias.",
+    "totals": {
+      "lines": 9560,
+      "covered_lines": 8676,
+      "branches": 5458,
+      "covered_branches": 3830
+    },
+    "changed_modules": [
+      {
+        "path": "native/src/decision_trace.cpp",
+        "source_sha256": "2472aa46c9f738494146146e32b57ac654631b0c23d320d8972f80af86e499c5",
+        "lines": 616,
+        "covered_lines": 589,
+        "branches": 290,
+        "covered_branches": 204
+      },
+      {
+        "path": "native/src/episodic_memory.cpp",
+        "source_sha256": "d0ce501ea14ef29ce8c8072c7c4541e0b270c25d6c8d926b2298b49fd1d6ef4c",
+        "lines": 450,
+        "covered_lines": 446,
+        "branches": 240,
+        "covered_branches": 180
+      },
+      {
+        "path": "native/src/learning_replay.cpp",
+        "source_sha256": "a5b8ddadd5bfdf2be126d0c26f8e606d64507bcb8639bc9cf023513d08d6a7de",
+        "lines": 309,
+        "covered_lines": 307,
+        "branches": 138,
+        "covered_branches": 109
+      },
+      {
+        "path": "native/src/policy_context.cpp",
+        "source_sha256": "818d2f008c40e26c812ead78e7edccb1e46148ed47a3eaa6211dd03374ab0bfb",
+        "lines": 693,
+        "covered_lines": 685,
+        "branches": 400,
+        "covered_branches": 290
+      },
+      {
+        "path": "native/src/ppo_experiment.cpp",
+        "source_sha256": "aa743c4308041b263f2812cb21128179646027419329864b91772e37c0a80eea",
+        "lines": 1550,
+        "covered_lines": 1476,
+        "branches": 926,
+        "covered_branches": 623
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "source_sha256": "b0d54ed761c0fc6cdabdfc3330e7164364e92555f35edad5484b663f4dab3217",
+        "lines": 1044,
+        "covered_lines": 1032,
+        "branches": 564,
+        "covered_branches": 437
+      },
+      {
+        "path": "native/src/ppo_training.cpp",
+        "source_sha256": "ea9a3db6934f7c1a571b68aa41e2eb33994493a21e2edbb81720cb82c5939e10",
+        "lines": 1179,
+        "covered_lines": 1151,
+        "branches": 586,
+        "covered_branches": 462
+      }
+    ],
+    "crap_convention": "CCN² × (1 − cobertura de líneas de la función)³ + CCN.",
+    "hotspots": [
+      {
+        "path": "native/src/simulation_files.cpp",
+        "function": "mars_titan::simulation::validate_receipt( const Json & report , const FinancialSession & session , const Json & expected)",
+        "cyclomatic_complexity": 26,
+        "coverage_fraction": 0.0,
+        "crap": 702.0
+      },
+      {
+        "path": "native/src/simulation_files.cpp",
+        "function": "mars_titan::simulation::run_comparison( std :: shared_ptr<const MarketTape> tape , const ComparisonOptions & options , const std :: function<bool()> & stop_requested)",
+        "cyclomatic_complexity": 19,
+        "coverage_fraction": 0.0,
+        "crap": 380.0
+      },
+      {
+        "path": "native/src/financial_session.cpp",
+        "function": "mars_titan::simulation::validate_snapshot( const SessionSnapshot & state , const MarketTape & tape , const Parameters & parameters)",
+        "cyclomatic_complexity": 76,
+        "coverage_fraction": 0.8571428571428571,
+        "crap": 92.83965014577261
+      },
+      {
+        "path": "native/src/financial_session.cpp",
+        "function": "mars_titan::simulation::MarketTape::validate() const",
+        "cyclomatic_complexity": 62,
+        "coverage_fraction": 0.8,
+        "crap": 92.75199999999998
+      },
+      {
+        "path": "native/src/simulation.cpp",
+        "function": "step_accounts( uint32_t asset_count , uint32_t account_count , const uint32_t * currencies , const double * lots , const uint8_t * retired , const double * prices , const mt_position_v1 * previous_positions , const mt_account_v1 * previous_accounts , double cost_rate , double participation , int64_t previous_close , int64_t open_at , int64_t close_at , mt_position_v1 * next_positions , mt_account_v1 * next_accounts , mt_trade_v1 * trades , char * error , std :: size_t error_capacity)",
+        "cyclomatic_complexity": 56,
+        "coverage_fraction": 0.8235294117647058,
+        "crap": 73.23427640952576
+      },
+      {
+        "path": "native/src/ppo_experiment.cpp",
+        "function": "mars_titan::learning::run_audit( const PpoExperimentOptions & options , const ExperimentConfig & config , const std :: function<bool()> & stop , std :: chrono :: steady_clock :: time_point started)",
+        "cyclomatic_complexity": 62,
+        "coverage_fraction": 0.9346938775510204,
+        "crap": 63.070643966374554
+      },
+      {
+        "path": "native/src/ppo_training.cpp",
+        "function": "mars_titan::learning::PpoTrainer::advance( const PpoDecisionObserver & observer)",
+        "cyclomatic_complexity": 60,
+        "coverage_fraction": 0.9419642857142857,
+        "crap": 60.70370154200073
+      },
+      {
+        "path": "native/src/simulation_main.cpp",
+        "function": "parse( int argc , char ** argv)",
+        "cyclomatic_complexity": 28,
+        "coverage_fraction": 0.6615384615384615,
+        "crap": 58.39793172507966
+      }
+    ],
+    "diagnostics": "Permanecen 20 avisos hash=0 de mapas vacíos de CashMovements::add y reconciled. Sus cuerpos usados tienen perfiles reales. Se ejecutó mars-titan-sim para incorporar el main que faltaba en la primera exportación.",
+    "limits": [
+      "CRAP une las líneas DA ejecutadas de las instancias en el intervalo de Lizard.",
+      "Las lambdas pueden compartir líneas con la función que las contiene.",
+      "Una función sin líneas instrumentadas conserva cobertura cero en este diagnóstico.",
+      "CRAP combina complejidad y recorridos observados, no demuestra ausencia de errores.",
+      "Cobertura de CPU, no cobertura de kernels CUDA. Las dependencias precompiladas no quedan instrumentadas íntegramente.",
+      "Hay caminos de simulación anteriores a esta entrega que no recorre esta selección de pruebas."
+    ]
+  },
+  "cuda_recovery": {
+    "variants": 9,
+    "total_transitions": 4096,
+    "stop_after": 2048,
+    "parameters_and_traces_exact": true,
+    "evidence": "adaptive-cuda-recovery-20260929.json"
+  },
+  "browser": {
+    "viewports": [
+      320,
+      390,
+      768,
+      1024,
+      1440
+    ],
+    "history_pages": 16,
+    "history_rows": 968,
+    "duplicate_keys": 0,
+    "page_errors": 0,
+    "scope": "Instantánea real del comienzo del piloto. La corrección posterior de fases móviles tiene su propia regresión de navegador."
+  }
+}
