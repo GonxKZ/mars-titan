@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-01T23:10:46.333071Z",
+  "generated_at": "2026-10-01T23:16:01.246461Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -720,18 +720,18 @@
       "status": "running",
       "phase": "validation",
       "started_at": "2026-10-01T23:00:23.958429Z",
-      "updated_at": "2026-10-01T23:10:43.420513Z",
-      "heartbeat_at": "2026-10-01T23:10:45.936671Z",
-      "completed_steps": 9384,
+      "updated_at": "2026-10-01T23:15:47.385817Z",
+      "heartbeat_at": "2026-10-01T23:16:00.926701Z",
+      "completed_steps": 14076,
       "total_steps": null,
-      "epoch": 34,
+      "epoch": 51,
       "max_epochs": 100,
       "seed": 42,
       "fold": "US",
       "comparison_group": "c9f3c4efbd66223d257d45e6c724a47897c70f506f98869ae9e8f144989e6d48",
       "metrics": {
-        "mae": 0.015240643370391448,
-        "mse": 0.0005796975223196617,
+        "mae": 0.014647540894632197,
+        "mse": 0.0005614672779493191,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -742,7 +742,7 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": 6603.667547031724
+        "samples_per_second": 6826.624279955086
       },
       "history": [
         {
@@ -948,10 +948,112 @@
           "recorded_at": null,
           "loss": null,
           "mae": 0.015240643370391448
+        },
+        {
+          "step": 35,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01481427295573417
+        },
+        {
+          "step": 36,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01535680084082812
+        },
+        {
+          "step": 37,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014876758298155652
+        },
+        {
+          "step": 38,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014781884020902572
+        },
+        {
+          "step": 39,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014763109156307366
+        },
+        {
+          "step": 40,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014973127720750146
+        },
+        {
+          "step": 41,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014775279917524623
+        },
+        {
+          "step": 42,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01506725782386117
+        },
+        {
+          "step": 43,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014699349935025008
+        },
+        {
+          "step": 44,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014742910028525512
+        },
+        {
+          "step": 45,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01466125205385076
+        },
+        {
+          "step": 46,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01502908537616749
+        },
+        {
+          "step": 47,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014671389962311343
+        },
+        {
+          "step": 48,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014663246969207252
+        },
+        {
+          "step": 49,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014883456102865893
+        },
+        {
+          "step": 50,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01531740124691576
+        },
+        {
+          "step": 51,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014647540894632197
         }
       ],
       "checkpoint": {
-        "step": 9384,
+        "step": 14076,
         "saved_at": null,
         "resumable": null
       },
@@ -966,7 +1068,7 @@
         "condition": null,
         "parent_model": null,
         "configuration_sha256": "f85113abaa785723adb9b2cf15c0afc2849c42def80c2620217c0fa549978e08",
-        "source_sha256": "32d2581de87fcddf42c8ed28fa2727efc85d0e8552e414a406a9e4ddc36e2654",
+        "source_sha256": "62d8533e5e11ec65e61a9935dd152c99b2863610948590ba83756c132f210b92",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 141272,
