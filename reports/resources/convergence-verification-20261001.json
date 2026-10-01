@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-01T18:09:16.597018+00:00",
+  "scientific_code_revision": "1b24171a91017debb222a8cb221fde094372c042",
+  "observatory_fix_revision": "c08f2da",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "vram_mib": 8188,
+    "driver": "595.91.07"
+  },
+  "software": {
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "pytest": "9.1.1",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "xgboost": "3.3.0",
+    "cupy": "14.2.0",
+    "clang": "21.1.8",
+    "cpp_standard": 20
+  },
+  "verification": {
+    "full_python": {
+      "passed": 2616,
+      "skipped": 0,
+      "warnings": 105,
+      "seconds": 369.3,
+      "cuda_integration": true,
+      "real_encoders": true,
+      "hmmlearn": "0.3.3"
+    },
+    "release_ctest": {
+      "passed": 14,
+      "failed": 0,
+      "seconds": 2.91
+    },
+    "observatory_after_final_fix": {
+      "passed": 110,
+      "seconds": 0.7,
+      "overlaps_full_suite": true
+    },
+    "node": {
+      "passed": 27,
+      "failed": 0
+    },
+    "native_asan_ubsan": {
+      "passed": 15,
+      "dependencies_instrumented": false
+    },
+    "native_static_analysis": {
+      "clang_tidy": "21.1.6",
+      "clang_check": "21",
+      "own_code_diagnostics": 0
+    },
+    "targeted_mutations": {
+      "boosting": 7,
+      "supervised": 2,
+      "native": 2,
+      "all_detected": true
+    }
+  },
+  "iteration_inventory": {
+    "budget_exhausted_improving": 3,
+    "stopped_under_previous_patience": 34,
+    "stopped_before_new_minimum_and_patience_window": 24,
+    "paired_fixed_budget_control": 96,
+    "budget_exhausted": 3
+  },
+  "boosting_diagnostic": {
+    "summary": [
+      {
+        "rounds": 4,
+        "mode": "before",
+        "repetitions": 5,
+        "median_seconds": 0.1626767980051227,
+        "minimum_seconds": 0.15847460500663146,
+        "maximum_seconds": 0.16849991696653888,
+        "median_fit_seconds": 0.0833910449873656,
+        "median_replay_seconds": 0.0,
+        "replayed_rounds": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "rounds": 4,
+        "mode": "after",
+        "repetitions": 5,
+        "median_seconds": 0.15965221700025722,
+        "minimum_seconds": 0.1573618840193376,
+        "maximum_seconds": 0.16757021995726973,
+        "median_fit_seconds": 0.08167519199196249,
+        "median_replay_seconds": 0.0,
+        "replayed_rounds": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "rounds": 4,
+        "mode": "recovery",
+        "repetitions": 3,
+        "median_seconds": 0.17051089397864416,
+        "minimum_seconds": 0.16909945296356454,
+        "maximum_seconds": 0.17261332302587107,
+        "median_fit_seconds": 0.0712476140470244,
+        "median_replay_seconds": 0.003637301968410611,
+        "replayed_rounds": [
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "rounds": 64,
+        "mode": "before",
+        "repetitions": 5,
+        "median_seconds": 0.362977012002375,
+        "minimum_seconds": 0.35394532000645995,
+        "maximum_seconds": 0.3703518390539102,
+        "median_fit_seconds": 0.28285453701391816,
+        "median_replay_seconds": 0.0,
+        "replayed_rounds": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "rounds": 64,
+        "mode": "after",
+        "repetitions": 5,
+        "median_seconds": 0.3583789179683663,
+        "minimum_seconds": 0.3533879500464536,
+        "maximum_seconds": 0.3632093819906004,
+        "median_fit_seconds": 0.2783012050203979,
+        "median_replay_seconds": 0.0,
+        "replayed_rounds": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "rounds": 64,
+        "mode": "recovery",
+        "repetitions": 3,
+        "median_seconds": 0.28915220801718533,
+        "minimum_seconds": 0.28268753399606794,
+        "maximum_seconds": 0.30258256604429334,
+        "median_fit_seconds": 0.18425633700098842,
+        "median_replay_seconds": 0.015811891993507743,
+        "replayed_rounds": [
+          32,
+          32,
+          32
+        ]
+      }
+    ],
+    "warmup_per_case": 1,
+    "train_rows": 24,
+    "validation_rows": 9,
+    "features": 325
+  },
+  "limits": [
+    "La duración de la suite no es una medida de rendimiento. Hubo otra carga CUDA durante parte de la ejecución.",
+    "La medición de boosting utiliza una fixture pequeña y no estima 2000 rondas ni el corpus real.",
+    "La instrumentación nativa no cubre LibTorch ni Arrow del entorno. No se repitieron TSan y MSan, sin cambios de concurrencia.",
+    "Las políticas nuevas se verifican funcionalmente. No se declara una mejora predictiva antes de ejecutar su comparación.",
+    "Los escenarios financieros son sintéticos. No acreditan OHLC históricos ni cobertura macro real de 140 indicadores."
+  ],
+  "final_test_opened": false
+}

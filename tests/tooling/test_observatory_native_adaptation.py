@@ -250,3 +250,139 @@ def test_native_registry_still_rejects_a_future_receipt(tmp_path):
     report["updated_at"] = "2099-01-01T00:00:00Z"
     with pytest.raises(ValueError, match="posterior"):
         native_registry(tmp_path, report=report)
+
+
+def convergence_report(model="ppo"):
+    report = native_report(model)
+    report.update(
+        schema_version=3,
+        agent_variant=model,
+        transitions=32,
+        observed_transitions=112,
+        optimizer_steps=6,
+        evaluation_transitions=16,
+        evaluations=3,
+        evaluation_cursors=[0, 31, 32],
+        stale_evaluations=2,
+        stopping_reason="budget_exhausted",
+        selection=dict(
+            early_stopping=True,
+            min_transitions=16,
+            patience=8,
+            min_delta=0.0001,
+            metric="ruin_count_then_mean_log_growth",
+            policy="greedy_argmax",
+        ),
+        resources=dict(
+            ram_peak_bytes=16 * 1024**2,
+            ram_peak_method="procfs_VmHWM",
+            vram_peak_bytes=None,
+        ),
+    )
+    return report
+
+
+def test_convergence_receipt_has_explicit_native_classification():
+    from mars_titan.observatory.activities import classify, native_adaptation
+
+    report = convergence_report()
+    assert native_adaptation(report)
+    assert classify(report, {}, {}) == ("rl", "rl")
+
+
+def test_convergence_registry_collects_progress_without_exposing_selection_or_audit(tmp_path):
+    folder = tmp_path / "campaign"
+    report = convergence_report()
+    audit = native_report("ppo")
+    audit.update(
+        kind="native_ppo_audit",
+        activity="evaluation",
+        phase="evaluation",
+        partition="audit",
+        financial_validation=dict(net_return=987654321),
+        resources=report["resources"],
+    )
+    audit.pop("global_step")
+    audit.pop("total_steps")
+    records = []
+    for stage, receipt in (("main", report), ("audit", audit)):
+        child = folder / stage / "ppo-42"
+        child.mkdir(parents=True)
+        (child / "run.json").write_text(json.dumps(receipt))
+        records.append(
+            dict(
+                path=f"{stage}/ppo-42",
+                stage=stage,
+                variant="ppo",
+                seed=42,
+                status="completed",
+                planned_transitions=32,
+                transitions=32,
+                config_sha256="a" * 64,
+            )
+        )
+    (folder / "registry.json").write_text(
+        json.dumps(dict(schema_version=1, kind="adaptive_campaign", planned_runs=2, runs=records))
+    )
+    source = dict(
+        id="native-convergence",
+        path="campaign",
+        kind="archive",
+        domain="synthetic",
+        summary="registry.json",
+    )
+    with Collector(tmp_path, tmp_path / "cache.sqlite") as collector:
+        snapshot = collector.collect([source])
+    assert len(snapshot["runs"]) == 2
+    training = next(run for run in snapshot["runs"] if run["activity"] == "rl")
+    assert training["completed_steps"] == training["total_steps"] == 32
+    assert training["metrics"]["ram_peak_mib"] == 16
+    assert training["metrics"]["vram_peak_mib"] is None
+    assert training["financial_validation"] is None
+    assert training["history"] == []
+    reserved = next(run for run in snapshot["runs"] if run["activity"] == "evaluation")
+    assert reserved["status"] == "completed" and reserved["financial_validation"] is None
+    assert all(value is None for value in reserved["metrics"].values())
+    assert reserved["history"] == [] and reserved["test_released"] is False
+    for forbidden in ("987654321", "/private/trace", "evaluation_cursors", "min_transitions"):
+        assert forbidden not in json.dumps(snapshot)
+
+
+@pytest.mark.parametrize("version", [4, 99, "3"])
+def test_convergence_does_not_admit_unknown_producer_versions(tmp_path, version):
+    report = convergence_report()
+    report["schema_version"] = version
+    with pytest.raises(ValueError):
+        collect(tmp_path, report)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("kind", "unrecognised"),
+        ("activity", "initial_training"),
+        ("backend", "unrecognised"),
+        ("domain", "real"),
+        ("analysis_domain", "real"),
+        ("final_test_opened", True),
+    ],
+)
+def test_convergence_keeps_native_contract_checks(tmp_path, field, value):
+    report = convergence_report()
+    report[field] = value
+    with pytest.raises(ValueError):
+        collect(tmp_path, report)
+
+
+@pytest.mark.parametrize("version", [3, 4])
+def test_native_audit_keeps_its_declared_schema(tmp_path, version):
+    report = native_report("ppo")
+    report.update(
+        schema_version=version,
+        kind="native_ppo_audit",
+        activity="evaluation",
+        phase="evaluation",
+        partition="audit",
+    )
+    with pytest.raises(ValueError):
+        collect(tmp_path, report)

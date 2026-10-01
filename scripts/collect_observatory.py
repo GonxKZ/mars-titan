@@ -24,8 +24,12 @@ def main():
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--publish-checkout", type=Path)
+    parser.add_argument("--max-files", type=int, default=4096)
+    parser.add_argument("--max-bytes", type=int, default=64 * 1024**2)
     parser.add_argument("--watch", action="store_true")
     args = parser.parse_args()
+    if not 1 <= args.max_files <= 65536 or not 1 <= args.max_bytes <= 1024**3:
+        parser.error("Presupuesto del recolector fuera de los límites admitidos")
     for destination in (args.state_dir, args.output):
         if destination.resolve().is_relative_to((args.root / "data").resolve()):
             parser.error("El estado y la salida deben quedar fuera de los datos científicos")
@@ -51,7 +55,12 @@ def main():
                 cleanup.callback(worker.close)
             with (args.state_dir / "collector.lock").open("a") as lock:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                with Collector(args.root, args.state_dir / "sources.sqlite") as collector:
+                with Collector(
+                    args.root,
+                    args.state_dir / "sources.sqlite",
+                    max_files=args.max_files,
+                    max_bytes=args.max_bytes,
+                ) as collector:
                     while not stop_requested:
                         started = time.monotonic()
                         try:

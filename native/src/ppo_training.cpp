@@ -24,7 +24,6 @@ constexpr std::size_t maximum_rollout_bytes = std::size_t{512} * 1024 * 1024;
 constexpr std::size_t packed_fields = 3;
 constexpr std::size_t digest_characters = 64;
 constexpr std::size_t recurrent_width = 64;
-constexpr std::size_t dqn_learning_warmup = 256;
 constexpr uint64_t replay_seed_offset = 0xc6a4a7935bd1e995ULL;
 
 struct RolloutShape {

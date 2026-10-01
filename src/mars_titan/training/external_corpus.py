@@ -14,6 +14,7 @@ import numpy as np
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.models.baselines.boosting_selection import BoostingSelection, ValidationCache
 from mars_titan.models.baselines.external_boosting import (
     ExternalBoostingModel,
     _libraries,
@@ -41,6 +42,7 @@ def _identity(dataset, options, cp, xgb):
         "evaluation/split_readiness.py",
         "training/cohort_contract.py",
         "models/baselines/external_boosting.py",
+        "models/baselines/boosting_selection.py",
         "models/baselines/inputs.py",
         "evaluation/session_metrics.py",
         "data/streaming.py",
@@ -72,6 +74,72 @@ def _load(output, checkpoint, rows):
     return ExternalBoostingModel.load(path, checkpoint["sha256"], training_rows=rows)
 
 
+def _prune_selection(output, report):
+    """Retirar solo modelos propios tras confirmar el recibo que conserva sus sustitutos."""
+    recent = report["recovery_checkpoints"]
+    if (
+        not isinstance(recent, list)
+        or not 1 <= len(recent) <= 2
+        or recent[-1] != report["recovery_checkpoint"]
+    ):
+        raise ValueError("La recuperación no conserva uno o dos checkpoints recientes")
+    retained = recent + [report["checkpoint"]]
+    for record in retained:
+        if not isinstance(record, dict) or not re.fullmatch(
+            r"checkpoints/attempt-\d{4}-round-\d{4}\.ubj", record.get("path", "")
+        ):
+            raise ValueError("La retención solo admite rutas propias de modelos confirmados")
+        path = output / record["path"]
+        safe_destination(path)
+        if not path.is_file() or sha256(path) != record["sha256"]:
+            raise ValueError("No se retiran modelos sin confirmar todos sus sustitutos")
+    keep = {record["path"] for record in retained}
+    directory = output / "checkpoints"
+    for path in directory.iterdir():
+        if (
+            re.fullmatch(r"attempt-\d{4}-round-\d{4}\.ubj", path.name)
+            and str(path.relative_to(output)) not in keep
+        ):
+            safe_destination(path)
+            path.unlink()
+
+
+def _confirm_selection(output, report, model):
+    state = model.audit["selection"]
+    options = report["identity"]["options"]
+    BoostingSelection(options["selection"], options["rounds"], state=state)
+    count = model.booster.num_boosted_rounds()
+    if state["completed_rounds"] != count:
+        raise ValueError("La recuperación necesita el booster de la última evaluación completa")
+    path = output / "checkpoints" / f"attempt-{len(report['attempts']):04}-round-{count:04}.ubj"
+    record = dict(path=str(path.relative_to(output)), sha256=model.save(path), rounds=count)
+    recent = (report.get("recovery_checkpoints", []) + [record])[-2:]
+    best = record if state["selected_round"] == count else report["checkpoint"]
+    if (
+        best is None
+        or state["selected_round"] != count
+        and (report.get("selected_round") != state["selected_round"])
+    ):
+        raise ValueError("El mejor modelo no tiene un checkpoint confirmado")
+    confirmed = dict(
+        report,
+        checkpoint=best,
+        recovery_checkpoint=record,
+        recovery_checkpoints=recent,
+        fitted_rows=model.training_rows,
+        consumed_training_rows=model.training_rows * count,
+        completed_rounds=count,
+        selected_round=state["selected_round"],
+        stop_reason=state["stop_reason"],
+        selection=dict(state),
+        audit=model.audit,
+    )
+    atomic_json(output / "run.json", confirmed)
+    report.clear()
+    report.update(confirmed)
+    _prune_selection(output, report)
+
+
 def run_external_reference(
     manifest,
     output,
@@ -86,12 +154,21 @@ def run_external_reference(
     max_host_cache_bytes=16 * 1024**3,
     on_host=True,
     checkpoint_interval=10,
+    selection=None,
+    max_validation_cache_bytes=16 * 1024**3,
     resume=False,
     stop=None,
 ):
     """Recorrer todas las filas admitidas sin abrir el test ni reducir la población."""
     if type(batch_size) is not int or not 1 <= batch_size <= 4096 or type(resume) is not bool:
         raise ValueError("El lote o el modo de recuperación no son válidos")
+    if selection is not None:
+        BoostingSelection(selection, rounds)
+        if (
+            type(max_validation_cache_bytes) is not int
+            or not 1 <= max_validation_cache_bytes <= 32 * 1024**3
+        ):
+            raise ValueError("El presupuesto de caché de validación no es válido")
     dataset, output = CorpusDataset(Path(manifest)), Path(output)
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan entrenamiento y validación no vacíos")
@@ -116,6 +193,9 @@ def run_external_reference(
         on_host=on_host,
         checkpoint_interval=checkpoint_interval,
     )
+    if selection is not None:
+        options["selection"] = dict(selection)
+        options["max_validation_cache_bytes"] = max_validation_cache_bytes
     identity = _identity(dataset, options, cp, xgb)
     output.mkdir(parents=True, exist_ok=resume)
     lock = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
@@ -125,7 +205,7 @@ def run_external_reference(
             read_manifest(output / "run.json", 8 * 1024**2)[0]
             if resume
             else dict(
-                schema_version=1,
+                schema_version=2 if selection is not None else 1,
                 model="xgboost_external_cuda",
                 device="cuda:0",
                 identity=identity,
@@ -143,14 +223,41 @@ def run_external_reference(
         )
         if report.get("identity") != identity:
             raise ValueError("La identidad de datos, código o configuración ha cambiado")
+        if selection is not None:
+            if report.get("schema_version") != 2:
+                raise ValueError("La selección necesita un recibo de la edición declarada")
+            if report["checkpoint"]:
+                _prune_selection(output, report)
         parent = (
-            _load(output, report["checkpoint"], report["samples"]["train"])
+            _load(
+                output,
+                report["recovery_checkpoint"] if selection is not None else report["checkpoint"],
+                report["samples"]["train"],
+            )
             if report["checkpoint"]
             else None
         )
+        if selection is not None and parent is not None:
+            state = BoostingSelection(selection, rounds, state=report["selection"]).state
+            if (
+                parent.audit.get("selection") != state
+                or parent.audit["rounds"] != state["completed_rounds"]
+            ):
+                raise ValueError(
+                    "El booster y la selección no pertenecen al mismo punto confirmado"
+                )
         if report["status"] == "completed":
-            if parent is None or parent.audit["rounds"] != rounds:
+            if parent is None or (
+                selection is None
+                and parent.audit["rounds"] != rounds
+                or selection is not None
+                and not report["selection"]["stop_reason"]
+            ):
                 raise ValueError("La referencia terminada no conserva todas sus rondas")
+            if selection is not None:
+                selected = _load(output, report["checkpoint"], report["samples"]["train"])
+                if selected.audit["rounds"] != report["selected_round"]:
+                    raise ValueError("El modelo seleccionado no conserva su ronda")
             for partition in ("train", "validation"):
                 item = report["predictions"][partition]
                 path = output / f"{partition}-predictions.parquet"
@@ -183,6 +290,17 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
         if _identity(dataset, options, cp, xgb) != report["identity"]:
             raise ValueError("El código científico ha cambiado durante el ajuste")
         count = model.booster.num_boosted_rounds()
+        if "selection" in options:
+            state = model.audit["selection"]
+            if (
+                state["selected_round"] == count
+                or count % options["checkpoint_interval"] == 0
+                or state["stop_reason"] is not None
+                or stop.requested
+            ):
+                observed_memory()
+                _confirm_selection(output, report, model)
+            return stop.requested
         path = output / "checkpoints" / f"attempt-{len(report['attempts']):04}-round-{count:04}.ubj"
         digest = model.save(path)
         report.update(
@@ -202,6 +320,19 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
                 raise _Paused
             yield _matrix(batch, np.float32), batch["target"]
 
+    def validation():
+        for batch in dataset.batches(
+            partition="validation", batch_size=batch_size, epoch=0, seed=0
+        ):
+            if stop.requested:
+                raise _Paused
+            yield (
+                _matrix(batch, np.float32),
+                batch["target"],
+                batch["market"],
+                batch["prediction_at"],
+            )
+
     try:
         observed_memory()
         atomic_json(output / "run.json", report)
@@ -209,16 +340,43 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
             raise _Paused
         fit_start = time.perf_counter()
         with tempfile.TemporaryDirectory(prefix="external-", dir=output) as temporary:
+            validation_options = {}
+            if "selection" in options:
+                cached = ValidationCache(
+                    validation,
+                    Path(temporary) / "validation",
+                    expected_rows=report["samples"]["validation"],
+                    max_bytes=options["max_validation_cache_bytes"],
+                )
+                attempt["validation_cache_bytes"] = cached.bytes
+                validation_options = dict(
+                    validation_factory=cached,
+                    validation_rows=report["samples"]["validation"],
+                    stop_requested=lambda: stop.requested,
+                )
             model = fit_external_boosting(
                 factory,
                 Path(temporary) / "pages",
                 expected_rows=report["samples"]["train"],
-                **{key: value for key, value in options.items() if key != "batch_size"},
+                **{
+                    key: value
+                    for key, value in options.items()
+                    if key not in {"batch_size", "max_validation_cache_bytes"}
+                },
                 resume=parent,
                 checkpoint=confirm,
+                **validation_options,
             )
         attempt["fit_seconds"] = time.perf_counter() - fit_start
-        if report["completed_rounds"] != options["rounds"]:
+        if "selection" in options:
+            attempt["replayed_rounds"] = model.audit.get("replayed_rounds", 0)
+            attempt["replay_seconds"] = model.audit.get("replay_seconds", 0.0)
+            attempt["replayed_training_rows"] = (
+                attempt["replayed_rounds"] * report["samples"]["train"]
+            )
+        if stop.requested:
+            raise _Paused
+        if "selection" not in options and report["completed_rounds"] != options["rounds"]:
             confirm(model)
         restored = _load(output, report["checkpoint"], report["samples"]["train"])
         predictions = {}
@@ -230,6 +388,13 @@ def _execute(dataset, output, report, parent, cp, xgb, stop):
                 model, restored, dataset, partition, batch_size, path, dtype=np.float32
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
+        if "selection" in options and (
+            not report["selection"]["stop_reason"]
+            or report["selected_round"] != restored.booster.num_boosted_rounds()
+            or predictions["validation"]["metrics"]["session_mae"]
+            != report["selection"]["best_session_mae"]
+        ):
+            raise ValueError("La evaluación final no coincide con el mejor modelo seleccionado")
         if _identity(dataset, options, cp, xgb) != report["identity"]:
             raise ValueError("La identidad cambió durante la evaluación")
         report.update(status="completed", predictions=predictions, restored_predictions_equal=True)
