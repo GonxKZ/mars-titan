@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-02T09:58:32.214872Z",
+  "generated_at": "2026-10-02T10:03:47.223687Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -722,18 +722,18 @@
       "status": "running",
       "phase": "validation",
       "started_at": "2026-10-02T09:58:26.938118Z",
-      "updated_at": "2026-10-02T09:58:26.938187Z",
-      "heartbeat_at": "2026-10-02T09:58:31.815107Z",
-      "completed_steps": 0,
+      "updated_at": "2026-10-02T10:03:30.295681Z",
+      "heartbeat_at": "2026-10-02T10:03:46.830885Z",
+      "completed_steps": 5490,
       "total_steps": null,
-      "epoch": null,
+      "epoch": 15,
       "max_epochs": 100,
       "seed": 44,
       "fold": "US",
       "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
       "metrics": {
-        "mae": null,
-        "mse": null,
+        "mae": 0.014712181599673661,
+        "mse": 0.000489227397941611,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -744,11 +744,102 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": null
+        "samples_per_second": 6597.0672735057515
       },
-      "history": [],
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.019891348006629124
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017407501104725057
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.016577407488757957
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015740745201849732
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014967722089039839
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014955386108224862
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014794458023367844
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014738678241036463
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015215680071451548
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01824393018049662
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01468389508117063
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014576889319544624
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014890341431738705
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014448173999434055
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014712181599673661
+        }
+      ],
       "checkpoint": {
-        "step": 0,
+        "step": 5490,
         "saved_at": null,
         "resumable": null
       },
@@ -763,7 +854,7 @@
         "condition": null,
         "parent_model": null,
         "configuration_sha256": "af096199d530df7dd0959321c3f8addbc57ae1c17fdc3a05a2dabb664bcaa88a",
-        "source_sha256": "d2d09338a128c52b96f197d05ddb6dd2b02eb42a7e91144e3be42e72552898b7",
+        "source_sha256": "a6a4625523a61182b2f1905bbda6acd7ddbcf233df2cf2d209b590aab2cc4e0d",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 187246,
