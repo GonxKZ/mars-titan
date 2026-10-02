@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-02T11:07:17.035497Z",
+  "generated_at": "2026-10-02T11:11:32.036812Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -425,11 +425,11 @@
         "neural-convergence-20261001-fold-000"
       ],
       "counts": {
-        "completed": 5,
+        "completed": 6,
         "running": 1,
-        "not_started": 11
+        "not_started": 10
       },
-      "registered_runs": 6
+      "registered_runs": 7
     },
     {
       "id": "posttraining-convergence-20261001-fold-000",
@@ -3691,7 +3691,7 @@
       }
     },
     {
-      "run_id": "tabular-convergence-20261001-fold-000-7a26c2fd5b14a12e31c1",
+      "run_id": "tabular-convergence-20261001-fold-000-31208af9d7b57b7639b0",
       "attempt_id": "attempt-0001",
       "model_id": "xgboost",
       "activity": "initial_training",
@@ -3700,7 +3700,7 @@
       "phase": "validation",
       "started_at": null,
       "updated_at": null,
-      "heartbeat_at": "2026-10-02T11:07:16.123149Z",
+      "heartbeat_at": "2026-10-02T11:11:31.117077Z",
       "completed_steps": null,
       "total_steps": null,
       "epoch": null,
@@ -5149,7 +5149,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 1436,
+    "total_runs": 1437,
     "page_size": 64,
     "pages": [
       "pages/8e91f90c160594b959665069d89c92c3246b7b0689c74f9c16d4876e1ad7db2f.json",
@@ -5172,8 +5172,8 @@
       "pages/7e13cd26492edd99b19055b584e0b827a0b5e26e1ef67735519afc53046fadff.json",
       "pages/001ae7ef7456f2c99d53655c6fe83501d34af086eea04780b01aae03486fe8df.json",
       "pages/b58338c107460f07254baa1d4063ec812233342b3369fa66308a764d149076a4.json",
-      "pages/89982253edeef8914493b0175ac8625c224d5611536067810da06d5e3f21053d.json",
-      "pages/11cd2b99a3250d56e9fec1a4576aa28641111bc5d167c60fe86e071134fc6471.json"
+      "pages/0e00212b4b0858a5978fc98447d21b11a164c81e242afceb3dc3449b09ac8353.json",
+      "pages/e2be0d148b3df0f2bd42663e4d4c3a142fa5622cd352f9f2131b8144e23aab21.json"
     ]
   }
 }
