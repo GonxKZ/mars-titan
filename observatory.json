@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-02T12:36:18.538207Z",
+  "generated_at": "2026-10-02T12:38:49.314844Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -439,11 +439,11 @@
         "neural-convergence-20261001-fold-000"
       ],
       "counts": {
-        "running": 10,
-        "completed": 9,
-        "not_started": 113
+        "running": 11,
+        "completed": 10,
+        "not_started": 111
       },
-      "registered_runs": 19
+      "registered_runs": 21
     },
     {
       "id": "neural-convergence-20261001-fold-001",
@@ -902,6 +902,68 @@
       }
     },
     {
+      "run_id": "posttraining-convergence-20261001-fold-000-854935a5508c12e6bd80",
+      "attempt_id": "legacy",
+      "model_id": "adaptation",
+      "activity": "predictive_adaptation",
+      "variant_id": "30e5ad1f7761bb76",
+      "status": "running",
+      "phase": "validation",
+      "started_at": null,
+      "updated_at": "2026-10-02T12:38:47.656812Z",
+      "heartbeat_at": "2026-10-02T12:38:48.326601Z",
+      "completed_steps": 0,
+      "total_steps": 27050,
+      "epoch": null,
+      "max_epochs": 50,
+      "seed": 43,
+      "fold": "unidentified",
+      "comparison_group": "cb3d0e000749685d33f9393286365a9baf3691917624d542f4f94f3937c2154d",
+      "metrics": {
+        "mae": null,
+        "mse": null,
+        "rank_ic": null,
+        "coverage_80": null,
+        "coverage_95": null,
+        "loss": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "vram_peak_mib": null,
+        "ram_peak_mib": null,
+        "elapsed_seconds": null,
+        "samples_per_second": null
+      },
+      "history": [],
+      "checkpoint": {
+        "step": 0,
+        "saved_at": null,
+        "resumable": null
+      },
+      "financial_validation": null,
+      "test_released": false,
+      "metadata": {
+        "campaign": "posttraining-convergence-20261001-fold-000",
+        "domain": "real",
+        "method": "mae",
+        "parent_frozen": null,
+        "currency": null,
+        "condition": "real",
+        "parent_model": "rnn",
+        "configuration_sha256": "30e5ad1f7761bb76eab6c1065358f48e47040ad6a7daa18f539e2660db099c60",
+        "source_sha256": "3ab3fc1deda08c3a62b60ecb8fe88d74276ed0b8ec5816b7f9f2836651159027",
+        "history_axis": "epoch",
+        "progress_time_source": "receipt_mtime",
+        "train_rows": 121190,
+        "validation_rows": 39462,
+        "parent": "e05f0f55a486b0a86f1c5ce2f5a7d7b9c44d45124a95a1dbf3715b63651a3e79",
+        "error_type": null,
+        "ram_peak_scope": null,
+        "executable_peak_rss_mib": null,
+        "process_lifetime_peak_rss_mib": null
+      }
+    },
+    {
       "run_id": "posttraining-convergence-20261001-fold-000-99e5568cc49711e05780",
       "attempt_id": "legacy",
       "model_id": "adaptation",
@@ -1096,9 +1158,9 @@
       "status": "running",
       "phase": "validation",
       "started_at": null,
-      "updated_at": "2026-10-02T12:36:16.147351Z",
-      "heartbeat_at": "2026-10-02T12:36:17.515199Z",
-      "completed_steps": 0,
+      "updated_at": "2026-10-02T12:36:17.832355Z",
+      "heartbeat_at": "2026-10-02T12:38:33.025171Z",
+      "completed_steps": 6492,
       "total_steps": 27050,
       "epoch": null,
       "max_epochs": 50,
@@ -1122,7 +1184,7 @@
       },
       "history": [],
       "checkpoint": {
-        "step": 0,
+        "step": 6492,
         "saved_at": null,
         "resumable": null
       },
@@ -1137,7 +1199,7 @@
         "condition": "real",
         "parent_model": "rnn",
         "configuration_sha256": "88b22cfd2ea882bdbd0d67521d7af698575696515ccc35f37de980e02e109f0e",
-        "source_sha256": "d51d96fdeca35e8f414a98ecf392a3ca312ec67c2b0d617ca530afb92a04ca88",
+        "source_sha256": "fa5925c559d8051f9e6d4a66ad1b2c9028e96b3d3735cb3e5bf2993ba33ee9bd",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 121190,
@@ -4775,127 +4837,34 @@
         "executable_peak_rss_mib": null,
         "process_lifetime_peak_rss_mib": 1719.5078125
       }
-    },
-    {
-      "run_id": "adaptation-check-20260923-a1d9766f1c7558bdd1f6",
-      "attempt_id": "legacy",
-      "model_id": "adaptation",
-      "activity": "predictive_adaptation",
-      "variant_id": "f37b58860c5a5d79",
-      "status": "completed",
-      "phase": "validation",
-      "started_at": null,
-      "updated_at": "2026-09-23T11:50:40.399887Z",
-      "heartbeat_at": null,
-      "completed_steps": 5,
-      "total_steps": null,
-      "epoch": 5,
-      "max_epochs": 5,
-      "seed": 44,
-      "fold": "unidentified",
-      "comparison_group": "a456bbf0e716cd7615dc4f12a76ecf2d4c80ad69e9fa2fdf3fd3c208f1df2013",
-      "metrics": {
-        "mae": 0.03252523401298281,
-        "mse": 0.0016593926780481443,
-        "rank_ic": null,
-        "coverage_80": null,
-        "coverage_95": null,
-        "loss": null,
-        "latency_p50_ms": null,
-        "latency_p95_ms": null,
-        "latency_p99_ms": null,
-        "vram_peak_mib": 73.5029296875,
-        "ram_peak_mib": 1719.5078125,
-        "elapsed_seconds": 0.8665199160022894,
-        "samples_per_second": null
-      },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.03252523401298281
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.032472849191197285
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.0325114183927789
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.03253202492380206
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.03260916332696528
-        }
-      ],
-      "checkpoint": {
-        "step": 5,
-        "saved_at": null,
-        "resumable": null
-      },
-      "financial_validation": null,
-      "test_released": false,
-      "metadata": {
-        "campaign": "adaptation-check-20260923",
-        "domain": "technical",
-        "method": "reinforce",
-        "parent_frozen": true,
-        "currency": null,
-        "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "f37b58860c5a5d793ab6625021360c80b8e8b5ea09edf086692ac3ab2a79d4e1",
-        "source_sha256": "db8279e5e5dab37e608a7d193da3dd2247172d69470bdac0e0e707c222dc8aff",
-        "history_axis": "epoch",
-        "progress_time_source": "receipt_mtime",
-        "train_rows": 245,
-        "validation_rows": 225,
-        "parent": null,
-        "error_type": null,
-        "ram_peak_scope": "process_lifetime",
-        "executable_peak_rss_mib": null,
-        "process_lifetime_peak_rss_mib": 1719.5078125
-      }
     }
   ],
   "pagination": {
-    "total_runs": 1466,
+    "total_runs": 1468,
     "page_size": 64,
     "pages": [
-      "pages/68c5711c055e465a17e2ad27beb747821c8de775d4017f7cac950e6de73c64b4.json",
-      "pages/533c7c72cfe6611009b555a61f4b9b1808762b8fca2ef7fcab30ea48c2d2710e.json",
-      "pages/deff58574c5c8802f4ab33d704597079034dec1fe59bcf473dfe47d4c9901e14.json",
-      "pages/158c92499be1e79cf6b0b65f906b07dd5c6a39a9ca2e365bc479eec5a9d7dca9.json",
-      "pages/d87f562654892350fbfcc34963624b90ca994aa6ad34457dd2a46dea769e9862.json",
-      "pages/e128e6c0fb427919177400cbcad5347574313c56cbc32d67a51d3e00e29db58f.json",
-      "pages/b77bfbde43ba334f761271d4d8f1820c0359483ff5b5d417fb3e526d3e8722d7.json",
-      "pages/4aa350e8498c4deaa8d63798977803c4a12de83f27a3bbd98e8d9b0e1c6111a0.json",
-      "pages/0fbdfdd51085d74141b28083a547854b6c2db71b18e13a0fdfab328cf6924519.json",
-      "pages/b7ebb1e6417f0b1b67159fc83b059bd97b855c7b084a10bfa3771bd6585030b1.json",
-      "pages/86d913e962db4ede319fc00e86fd6438d2dd3a1ca722da45940197aff81b571f.json",
-      "pages/f87cfa0b74bcdb7416e9e148eddf9d6a317bc7e69e95b059b644cfac1eaaa704.json",
-      "pages/82dd089408e39ea76290156259c4160796f89d02c36df229f473494a53baf36e.json",
-      "pages/96a93d3d7624cf31a84841b719dd3a4458b5f752298db4df1fa5265548ac371b.json",
-      "pages/682e2e93f7bf0faa280fdb61a9f41b38c88db5cd6d0a0da12c4d9763e3816fb3.json",
-      "pages/437120d43dc2d428625b973f2a24d9aac568baaecf857101d3c2b5ec806fc122.json",
-      "pages/f7e39ac72fb93505a07aab448416e6e8dc9a0d8e7250a5c94c5e2100df22b9eb.json",
-      "pages/e70fd71fcb87f7571ab22cc2d795f1f0b2b896c6ef3292b686ee5c7bb0ba4b16.json",
-      "pages/2a459cbdbbd74a747d3d7a1ae8bd42b6ea8292f4f38ec557f9e19dac46dc80a4.json",
-      "pages/c22fbe99b20f06895dfedf33194d04784158872718013a79a0bdbcd4c11bf565.json",
-      "pages/e1aa9a71cdb77c836e3b7f9d7a60a893864cddc981e0b7d624a20528e51926f6.json",
-      "pages/cf94eeb1fd3d932cc99b8a67b4c39e424d87269a928a2df5a286c353219ff2f8.json"
+      "pages/06f1557a103a60aabb750968ff7c3a526d5fe04fb10500ec3197f8cbe59e1785.json",
+      "pages/d93ea9eb750a592209f226ffd755f7457c179e40642256ae1e87c7f7a1866651.json",
+      "pages/8d53f70fc5eeeffbc64110dcceb83c48c4f650ac75f1daae475ceb3ac1f19733.json",
+      "pages/c43a6c2fbdc3e2637408757f0f81f51e7353ed6cd3ab8077ec197c080f103fbc.json",
+      "pages/cbc52928070a22eddf65137360105cc2f37e6fecfa99c1fe85f893cda3cb2325.json",
+      "pages/cc078e743dfed04d41ad0e3c94a7f60bd7972117dd0c60b274cea7c0236429a9.json",
+      "pages/74ec8b9d6e987eead97bc403e1bb84972a2d8a41ae7092f2f8afc9788150bcab.json",
+      "pages/e2fd997607c96332a628ffdf1a3c3849edd34f7bc8bcb7a62460d5bd0e1fc585.json",
+      "pages/532ca3d70187a1dccaf6346466197ac105072e0cfedb620952ba8177a10e7106.json",
+      "pages/ee9f54206fc08b1427d8e9426f887c70adf1e7d8d0ac9484723b703db7ae2ec6.json",
+      "pages/169577e9fcc8374562a031786f9bea839449af94e7964c59fd2d7859f0da51b7.json",
+      "pages/854fb69f95714028e55e2174fac139a5378e61a688efea075c7ce6b5e6554eb7.json",
+      "pages/d74be3db5fb4bd2f54eaf5a52e8535bc2b1464340f97bb89a1da966411a37a08.json",
+      "pages/d66239d1974cac9e0f7e41d42e2fe72156b0b56b4f9723246cc3b99c2733c2d0.json",
+      "pages/0ffafd2a93a07168e24634e3c6b7639455645b642a403bafc057dd63571dfb3f.json",
+      "pages/a70c029032a66ee37b2d49c7e15e1737c550426c5a5e7ce6a1dbd8bf385bed46.json",
+      "pages/5f2f8f6f6213b9b482a868ff5e40396756febba45412ba40f1a0cbba41d9f9d8.json",
+      "pages/ab4a77469813ae0adf641a88d3f72afa54ebfb3928c7eb1d40d819711566f054.json",
+      "pages/ce3976e16aec1514f2e5bd4f49431a7cc7a1337bda3c688352898e5098c3e954.json",
+      "pages/1984ec05b58993c9e123ca8b4d94d230ba6b3003440c51656c202b727ab06763.json",
+      "pages/c1e4bccb046f2d0cb4f86e9f1f2221a5137ebd33a05573448e8d850aac837caa.json",
+      "pages/2f697459e7c2a735748d0755f8cd115542bbbfd578783972d7133fc74912ef0c.json"
     ]
   }
 }
