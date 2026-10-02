@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-02T21:47:05.341963Z",
+  "generated_at": "2026-10-02T21:49:50.314874Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -481,10 +481,10 @@
       ],
       "counts": {
         "running": 24,
-        "completed": 24,
-        "not_started": 84
+        "completed": 25,
+        "not_started": 83
       },
-      "registered_runs": 48
+      "registered_runs": 49
     },
     {
       "id": "neural-convergence-20261001-fold-002",
@@ -4688,7 +4688,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 1776,
+    "total_runs": 1777,
     "page_size": 64,
     "pages": [
       "pages/81bb3550eb800c4e52e2455c8419675028096b94bfc993a4b76fd6ee0e8d1ca5.json",
@@ -4710,14 +4710,14 @@
       "pages/c8cc8bb159a88ad68da25230f2a0679c0b4f65eaacb83c0d127c5995205e10ce.json",
       "pages/4bb9f2abf441cbf369b943a878494519a30b3785a0ca2995a2b9ca2b1ae7e368.json",
       "pages/74ea29a77fd239e7826675a08c56a06f32d218354f3408b287a43dad6c7290a3.json",
-      "pages/f0a58cf93ecde72f1231ca45d54c1f6a1d196ff9568db1bd2e8b50dbd7597f13.json",
-      "pages/791215cd5d72249e85017f906bac459c0c6cdedc7cb836835f3081f5481065be.json",
-      "pages/eaeee19565492f5cce946690dafeb1d8c88fb727cb7941920cd4de75fc3d06e2.json",
-      "pages/8673872e6e3b754d1efe7a9ef9a0d3bca51aca2126c43ed485402f358cf62ed3.json",
-      "pages/77d04d49504ccbb4bbfe357ce6baa53695aad79dc82fc8234d1494d9940a3903.json",
-      "pages/a20d78839b03732f7831a0bc962602734e99e8af820578068a2051b260c38c0c.json",
-      "pages/662b3aa872ba86b1214fead57b2dba04027ff1a78b009276d33418b5bd4f166a.json",
-      "pages/8e445b50eff42ed74410861333cb89ca594757af2dd6ee2b3a602cc93a465f17.json"
+      "pages/4434bfda3bae149160b163e262c92956ac0b40999ee0347833f2b85c7f7737df.json",
+      "pages/e1120dd9d621e3e272bae8d4e3a7ce685784c800a0f5de5b48cc8a56b7bcca1d.json",
+      "pages/2bdeb6d36e012a8ea259aabe982098c9a453c2d431280e04f41f8f2d697a0e77.json",
+      "pages/13f8a56055d3802cc97759874332ddb7ff48a04376426cbb722f86d1c638eed3.json",
+      "pages/c1b8f886f7a509ac320a98e863f472693f0c360c1f472420df752b75bd7e60b2.json",
+      "pages/1486452ec82d175b42160ab44cb9eaf910f3f3a8be400535adeae4e15c4a5823.json",
+      "pages/04e6a8ff9183eeb2971dfddb6867b76c22050122a93e9d72de8d2447cc095b05.json",
+      "pages/165994bce8a76366f9f44b319ab12db1ec8b3af0b6e099fdbed20fc97f494199.json"
     ]
   }
 }
