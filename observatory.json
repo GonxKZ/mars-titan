@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-02T09:48:47.219704Z",
+  "generated_at": "2026-10-02T09:53:47.043186Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -525,11 +525,11 @@
       "status": "running",
       "dependencies": [],
       "counts": {
-        "completed": 26,
+        "completed": 27,
         "running": 1,
-        "not_started": 13
+        "not_started": 12
       },
-      "registered_runs": 27
+      "registered_runs": 28
     },
     {
       "id": "tabular-convergence-20261001-fold-003",
@@ -714,26 +714,26 @@
   ],
   "runs": [
     {
-      "run_id": "neural-convergence-20261001-fold-003-e98f834d4b42bf4cae59",
+      "run_id": "neural-convergence-20261001-fold-003-a9f65dafb534e9828e43",
       "attempt_id": "legacy",
       "model_id": "gru",
-      "activity": "initial_training",
-      "variant_id": "2c99772e99a85028",
+      "activity": "supervised_continuation",
+      "variant_id": "40df9a5951024bfa",
       "status": "running",
       "phase": "validation",
-      "started_at": "2026-10-02T09:38:17.628979Z",
-      "updated_at": "2026-10-02T09:48:31.554345Z",
-      "heartbeat_at": "2026-10-02T09:48:46.824944Z",
-      "completed_steps": 10980,
+      "started_at": "2026-10-02T09:53:41.795336Z",
+      "updated_at": "2026-10-02T09:53:41.795401Z",
+      "heartbeat_at": "2026-10-02T09:53:46.634394Z",
+      "completed_steps": 0,
       "total_steps": null,
-      "epoch": 30,
-      "max_epochs": 100,
+      "epoch": null,
+      "max_epochs": 5,
       "seed": 43,
       "fold": "US",
-      "comparison_group": "95533b8b5a1d0276bcbfca1710938c9a122691f09f792249f4687e4ce59f3508",
+      "comparison_group": "9fcbf8a4a6ab9a5835cb16196d3135ea175e26cb6f1edf22ac4a46ae9292805e",
       "metrics": {
-        "mae": 0.014835707425974846,
-        "mse": 0.0004961832089248821,
+        "mae": null,
+        "mse": null,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -744,192 +744,11 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": 6296.885320842916
+        "samples_per_second": null
       },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.0229205273859966
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017926342417099447
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016863107963623152
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017509420006917405
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01582952288639882
-        },
-        {
-          "step": 6,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01526623034667881
-        },
-        {
-          "step": 7,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01528681505932054
-        },
-        {
-          "step": 8,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017997464273190517
-        },
-        {
-          "step": 9,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015082374927096963
-        },
-        {
-          "step": 10,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.018059830834899048
-        },
-        {
-          "step": 11,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015129313267147613
-        },
-        {
-          "step": 12,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015842883808649715
-        },
-        {
-          "step": 13,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015320611317178831
-        },
-        {
-          "step": 14,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015088051678603743
-        },
-        {
-          "step": 15,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015536815988314127
-        },
-        {
-          "step": 16,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015496187803065088
-        },
-        {
-          "step": 17,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014645085577017852
-        },
-        {
-          "step": 18,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014803132837939163
-        },
-        {
-          "step": 19,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016456668905861036
-        },
-        {
-          "step": 20,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016033146254938457
-        },
-        {
-          "step": 21,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014734251205203058
-        },
-        {
-          "step": 22,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014543139866194536
-        },
-        {
-          "step": 23,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014608790643440697
-        },
-        {
-          "step": 24,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015349707136385586
-        },
-        {
-          "step": 25,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014795250949997237
-        },
-        {
-          "step": 26,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014642875275709276
-        },
-        {
-          "step": 27,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015715441527680098
-        },
-        {
-          "step": 28,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015038082227911191
-        },
-        {
-          "step": 29,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014531022799429895
-        },
-        {
-          "step": 30,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.014835707425974846
-        }
-      ],
+      "history": [],
       "checkpoint": {
-        "step": 10980,
+        "step": 0,
         "saved_at": null,
         "resumable": null
       },
@@ -938,18 +757,18 @@
       "metadata": {
         "campaign": "neural-convergence-20261001-fold-003",
         "domain": "real",
-        "method": "initial_training",
+        "method": "supervised_continuation",
         "parent_frozen": null,
         "currency": null,
         "condition": null,
-        "parent_model": null,
-        "configuration_sha256": "2c99772e99a8502802050d0c5195ecdd8c2e832d7ecc16816475a2e4d51ad264",
-        "source_sha256": "e5d1d2e73efd823e7911047d9d5efdf73da77f0d93fbecb7a77daf5908d10a4c",
+        "parent_model": "gru",
+        "configuration_sha256": "40df9a5951024bfa2867e7d95ede37cae5041bd54c1882901166ed86b3abca81",
+        "source_sha256": "4b866898a9d0b1eb394b6e8137854d5907be66d01b7573ac489d293abd0f010b",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 187246,
         "validation_rows": 41544,
-        "parent": null,
+        "parent": "e98f834d4b42bf4cae5955b86b4a0a8851946df8a41d94c82639a83f76931d5b",
         "error_type": null,
         "ram_peak_scope": null,
         "executable_peak_rss_mib": null,
@@ -5329,7 +5148,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 1417,
+    "total_runs": 1418,
     "page_size": 64,
     "pages": [
       "pages/8e91f90c160594b959665069d89c92c3246b7b0689c74f9c16d4876e1ad7db2f.json",
@@ -5342,18 +5161,18 @@
       "pages/f9030348a47a7b821bf313c443820df3dd62407a7ea5cc1f22228ac41a3bba51.json",
       "pages/0dfebe5a5d1a3e0a9d7d54a434efdae6590b0e08642c3a3246592f81012a927a.json",
       "pages/5c2f673426c64c2960529191dc072dfa5e7587669a35ada15bfb72122d3967e0.json",
-      "pages/3b46e838b7377ed95dafe1465f1e6e9b9697d068203b99d73da3bc2d0c895a37.json",
-      "pages/9a5c6b656e65e3a4ae6c98d4530e4dba5f2caf380ab6b7802ae508a8de21b923.json",
-      "pages/fc8fe8f45b1bbb4dfb8141471ff0488fc540b6539c9d0d580f1e3ef652149004.json",
-      "pages/0023e1711be78b1da9a6d67ee5de3c7f6bbc83e24ad26c6f7dacf1844473889b.json",
-      "pages/d6fbb458c32d3fe75ec7082275df39a35bfe954fce6fd0207d0503e9f8b2caad.json",
-      "pages/3ca815538d80ae17a565b2a184ab05791b33f28c767f668022706a4024f6ece7.json",
-      "pages/45f7918f5d79f902c5a35211eccb428679407be87d8f6cc4539f88cc3d69312d.json",
-      "pages/72bf36bf39ce60359c5b5709804a4ff9b502db88fe76f78c271573b88e038f57.json",
-      "pages/74fa164430b7ab597da220315dd77d81527c37f619794077dabb9765b6e58a67.json",
-      "pages/7ebf4ed997ef34981cd259d9a4ee0381edd2d3162898d46dea367dd446389448.json",
-      "pages/9199ac6bea1e2ed85bcae2816cf06e0de1f67474a3fc84011d4bcd3fb530bbaa.json",
-      "pages/28cb0cd78b3f618220dd3255c93df84b5937f63c492278a12728287ae72d1a1d.json"
+      "pages/74e9793b4e5a5d5e1520efade5c37bf576d178784445685f1c76f627303c0eb9.json",
+      "pages/b4b4e5c6cee91dc2a30dde8b8424d0e1404a721e69d2928efc9d0fb9207b0261.json",
+      "pages/5dc644ba376bdfc57593c2b0a3d82e000dadd9205371cb1d472258c3c5b4be70.json",
+      "pages/fda91fd490b1ab325cdf236a565ccb8e32d15097b1881518f09d7bd9c723b2cb.json",
+      "pages/2b94ef0a996e9a516c5d345ab1954295680ee8458f26f0699233f72ca701c432.json",
+      "pages/555c26ebc56a0917e1cdcd70a919b1e372bf4e1cb08d0d428004cf468a1e8e18.json",
+      "pages/179556d27a8857917b623eae0092cba37646ce61db1fa5401d7925842b830fba.json",
+      "pages/8fd88dd4eb01b227b40dffe0519d7cf16bd6d275ee1db5c3f7cd7f3e2cda8207.json",
+      "pages/c61ccde4e4661c5d5c974f72c37dd572853f8ba0f603ce668e42bf1a7a6c2e28.json",
+      "pages/6b5a130ecbf7b83ccec63307b254b3b8245c8d37ae64758d3766f8a0b9c29c80.json",
+      "pages/86764563c4900eaf019579ede151d91cf63089bf51c9a30808ab6b59c518cde7.json",
+      "pages/14c24ac04d1bc97c61c78abdbc6ed019681d74815ec521e4babba150bb95895e.json"
     ]
   }
 }
