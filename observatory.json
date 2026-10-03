@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-03T04:28:15.841381Z",
+  "generated_at": "2026-10-03T04:29:58.635032Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -502,14 +502,16 @@
       "id": "tabular-convergence-20261001-fold-002",
       "domain": "real",
       "planned_runs": 17,
-      "status": "blocked",
+      "status": "running",
       "dependencies": [
         "neural-convergence-20261001-fold-002"
       ],
       "counts": {
-        "not_started": 17
+        "completed": 1,
+        "running": 1,
+        "not_started": 15
       },
-      "registered_runs": 0
+      "registered_runs": 2
     },
     {
       "id": "posttraining-convergence-20261001-fold-002",
@@ -4688,40 +4690,40 @@
     }
   ],
   "pagination": {
-    "total_runs": 1992,
+    "total_runs": 1994,
     "page_size": 64,
     "pages": [
       "pages/dea090c1fa86abaa1af8030d56f98076e1d480c812bef4610f6f835a0bcd213d.json",
       "pages/f07a6f09697c2b01f85e6541fb6d0d6694091a59c69d88c3f0579c3dfb49310a.json",
       "pages/1b4765ba1961fff720dca4779652909b693204aee5af10e3b7083247a955a7b5.json",
-      "pages/9ace26d1af53f47cd5eac52ebe78f181ff64733b6f3567b337b7b20aaffe22c5.json",
-      "pages/6641cc02f8133fdde7fa31f5d138bee862ab70e0a824274d60e057aa2ac0791e.json",
-      "pages/83fdf2e6d2c1ea3cf41e48fe3ed10fd0e6adff24c84009657b50e082926e1f88.json",
-      "pages/f3fbc935efd37419fe3a725cdad76899d38903d5343abdd63ac2daec6eafffad.json",
-      "pages/0c19c0644b4d0de10c608c89fe34049d39c10a440f9d17658a803e91f72f364d.json",
-      "pages/68833d2ae150b69819dcea332e4a9fc652ce0a4b137db88b54aecc83934fad58.json",
-      "pages/a387d275035469e5e21d283756965e69c42d9d66098665c58ef1177d2681b288.json",
-      "pages/790d31a6ace3b44af7428210eda8016bdc30ce25c092898d7c718485798ae2da.json",
-      "pages/233742345a9730df33f76e6e7bb2219a74dac9a75b0419029a0497564f1368c2.json",
-      "pages/4e6b3ac191214a11498ab25765fb562dc6ea3787b4689d1ee4deb614e3eb6fc9.json",
-      "pages/28ff9622ea0281cd141f6fd6b3974b6928182cb9f3c7342539a5eaefbebcda12.json",
-      "pages/58459780fa144d627959e18ec3b570df39c86d6355c44cb18e40c6c408f61175.json",
-      "pages/9a5c6b656e65e3a4ae6c98d4530e4dba5f2caf380ab6b7802ae508a8de21b923.json",
-      "pages/fc8fe8f45b1bbb4dfb8141471ff0488fc540b6539c9d0d580f1e3ef652149004.json",
-      "pages/0023e1711be78b1da9a6d67ee5de3c7f6bbc83e24ad26c6f7dacf1844473889b.json",
-      "pages/7548fd4c4f70a1089b965145f07d2cd3045c81f102de310c483498d51eb6b159.json",
-      "pages/fc49b8b0f74e3240d2484e1cc9f745a57c769b788075a7844067ad6ece67c951.json",
-      "pages/97186ee601bf90b855428374af014228e85c9986c7b8aad171f41e4ff59c0584.json",
-      "pages/814dd71906efaac5cfee7ae5f8337fe0c870fd59fa5e9cb042ace8310447e25c.json",
-      "pages/8e3f3685a192539de21b55c080cf38fb02c018a8a3af21b158d1270a5e8bb0d2.json",
-      "pages/a329713b34676979338c88e95960dd02047a18d09de42586fc9451654dcec522.json",
-      "pages/98e2ebcf4a42e23d2aa981556ce9c5e335dcefca958ce5fb483299f54964c04e.json",
-      "pages/612f097dc70c5346c47ea83c985bb5630dec11e7804f9cea211706debb2db4dd.json",
-      "pages/1f42183a053bfa4bf709911eff67be9767caaf6cb1162e4457a48e1a63ac6b07.json",
-      "pages/90ce88da57e315c8eadbea50ee6efc4197d0cae984925b301a096247eb9a3030.json",
-      "pages/e9722a27a355df727282c7ea2996d65072c60d337d1ce42019a0e4f70fd1e3d2.json",
-      "pages/8ab4bf80ed6e93b9e897e6a174dbad095d89d8ef02d2e3e8dafe6293ada5addf.json",
-      "pages/883abf5f5188589fd3396fec5e6161667869f35c5e0393c3e0fe2e643bd02a66.json"
+      "pages/542c3112722eb954c236aea24dabdf93b4651bf8be8c6d9eb98d812b27c05ae0.json",
+      "pages/e16294005d7ead11661c5539088c493233196dc0cb8217d19bc575864aaba638.json",
+      "pages/8cfc5aa7932b7e0e8db6889f3060d3e1a2d8af5c259b5924a8e4d13833f7c642.json",
+      "pages/d2e3d8be389fea5712b7ee70ef52f2303360cb46c42dd56ee02e1d40c4443d58.json",
+      "pages/ad8bd269c73f9f5597896dcfe5e3306edab1c0d45fc3f4df5397c0cb4a3cc76a.json",
+      "pages/f93c71133fea2718c733224928d4b151b8c64e58e16bf535efa62c81d2e121a3.json",
+      "pages/3d79d2579d909320604e1a3bd6474f5100182b9d19353ed6f7a93b1877eb5f7a.json",
+      "pages/60b7c61b812de0ef512a1d3b0f8691ebcc960aac203fe380f0ca30573df41a29.json",
+      "pages/eb3a1c9bd8789e4afa8b244052afd7f3fe559e60c2338fd74f4db53090b6a4b4.json",
+      "pages/36b167a788de4076a849edac5bbe59bd2aa8f7cf40d2ae79b080651efb384c00.json",
+      "pages/179f748b843fb5ea2dff8ca3b69cfbcf5eddae3185fb5e00e1bddbc58966cf26.json",
+      "pages/bc5a89e4bb719a07998a8d7fcce760a3b2f94d4f0797417400006ea056303615.json",
+      "pages/b4b4e5c6cee91dc2a30dde8b8424d0e1404a721e69d2928efc9d0fb9207b0261.json",
+      "pages/5dc644ba376bdfc57593c2b0a3d82e000dadd9205371cb1d472258c3c5b4be70.json",
+      "pages/fda91fd490b1ab325cdf236a565ccb8e32d15097b1881518f09d7bd9c723b2cb.json",
+      "pages/81654b36dfa3942ec009b780f25d97df3d65801ad119a96bd32cff69ae551807.json",
+      "pages/718c7ec398eaab50ca67bc572aaa73ae03263c0dca69e74c17818f3abeca38b9.json",
+      "pages/e3ad027649f3ee341f43b315b822d7275e714bce4266c0274269a6fc0514d657.json",
+      "pages/8746df60ceb8a94f862a9b5bfa41fafda64421f785424dda7e1232cc980f26a8.json",
+      "pages/67e1fc8d9b6d04826ecc7a72fa3a8539e6985e40766055cc5969d45a01dbdab8.json",
+      "pages/529cc09a2f6974541dd38446177fc49b7d298de4ace2b7e925f44101958d95f9.json",
+      "pages/4148fc118b90d005a6b57143e09924d9cfb2ba3e666d0adcd8891223c3e093fe.json",
+      "pages/cfea39f385a99231bfa84a6ed61d68328cc27ad81224d3bb6b9db12f6540af41.json",
+      "pages/e2f7dad2d9c3289446695f3ff5efd9cac15e574a38bdc2581d092123525db384.json",
+      "pages/ea3e331b60802da39571c3f273ccda9fc4db49bf96b891cb056be0559455aa2c.json",
+      "pages/a0ca66a4620240bf2efac814f5041ffc275ea3fbf5f312ce5ed40bcf32ed6ad3.json",
+      "pages/c0a52725ade74cefb37b9bacc3e5f1e538df3c5215957bf79b721217a50741fc.json",
+      "pages/14c24ac04d1bc97c61c78abdbc6ed019681d74815ec521e4babba150bb95895e.json"
     ]
   }
 }
