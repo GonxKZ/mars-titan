@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-03T05:43:51.914839Z",
+  "generated_at": "2026-10-03T05:46:25.002912Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -507,11 +507,11 @@
         "neural-convergence-20261001-fold-002"
       ],
       "counts": {
-        "completed": 13,
+        "completed": 14,
         "running": 1,
-        "not_started": 3
+        "not_started": 2
       },
-      "registered_runs": 14
+      "registered_runs": 15
     },
     {
       "id": "posttraining-convergence-20261001-fold-002",
@@ -4690,13 +4690,13 @@
     }
   ],
   "pagination": {
-    "total_runs": 2006,
+    "total_runs": 2007,
     "page_size": 64,
     "pages": [
       "pages/dea090c1fa86abaa1af8030d56f98076e1d480c812bef4610f6f835a0bcd213d.json",
       "pages/f07a6f09697c2b01f85e6541fb6d0d6694091a59c69d88c3f0579c3dfb49310a.json",
       "pages/1b4765ba1961fff720dca4779652909b693204aee5af10e3b7083247a955a7b5.json",
-      "pages/ecc2840fe6cb2ed1d03ae3043a2524e5b8dbe78963e964237b12615df38a2b20.json",
+      "pages/7b027b76008215dc8b00763d675fcc03032e4fe14595fdca7d0a07cf3f5955bd.json",
       "pages/e16294005d7ead11661c5539088c493233196dc0cb8217d19bc575864aaba638.json",
       "pages/8cfc5aa7932b7e0e8db6889f3060d3e1a2d8af5c259b5924a8e4d13833f7c642.json",
       "pages/d2e3d8be389fea5712b7ee70ef52f2303360cb46c42dd56ee02e1d40c4443d58.json",
@@ -4722,8 +4722,8 @@
       "pages/e2f7dad2d9c3289446695f3ff5efd9cac15e574a38bdc2581d092123525db384.json",
       "pages/ea3e331b60802da39571c3f273ccda9fc4db49bf96b891cb056be0559455aa2c.json",
       "pages/a0ca66a4620240bf2efac814f5041ffc275ea3fbf5f312ce5ed40bcf32ed6ad3.json",
-      "pages/8d22811e1519e0ec26fb5208354c0dc8fa948b51b04e2b090aa844616d2cdcdf.json",
-      "pages/0815a8e37d24c665008e2234e0474df55c84be344a22b6c9ba7eea447dc08fbd.json"
+      "pages/612ac42c8fae48df46970367f6404d4288092b3f316ac72f1c03cb72b59b0663.json",
+      "pages/e8fa616b94a2484a5c7506ae3b7d73e26e7a0e7ad62a5a640e342afff1ed0219.json"
     ]
   }
 }
