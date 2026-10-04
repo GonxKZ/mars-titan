@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-04T19:39:46.422132Z",
+  "generated_at": "2026-10-04T19:42:42.006057Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -548,11 +548,11 @@
         "neural-convergence-20261001-fold-003"
       ],
       "counts": {
-        "completed": 12,
+        "completed": 13,
         "running": 1,
-        "not_started": 4
+        "not_started": 3
       },
-      "registered_runs": 13
+      "registered_runs": 14
     },
     {
       "id": "posttraining-convergence-20261001-fold-003",
@@ -4693,7 +4693,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 2286,
+    "total_runs": 2287,
     "page_size": 64,
     "pages": [
       "pages/dea090c1fa86abaa1af8030d56f98076e1d480c812bef4610f6f835a0bcd213d.json",
@@ -4701,7 +4701,7 @@
       "pages/b91529fff0180f72c8d002cca8a3321c29768442ed818dd4987381ccef5176ca.json",
       "pages/fca5e7f2f3f605d26c16773508bd59883188782099aacc375fc198984cba6de4.json",
       "pages/e6874012c122a70f6fcb2c359e020ccc0227b064fe4b8cb3b499b9dfc166d845.json",
-      "pages/2eaaf2cc5d1972ecc1437af27de0b0b3f111d15269c347e07416427987c08f7c.json",
+      "pages/f29fb2f8dcbb3a31d780721f979f3319481dc9b25604a0cafc776477cd09e7ee.json",
       "pages/fed4bc57246fed27315bd557b08b868122256989f114ef5b3990886e6b175165.json",
       "pages/ee8427edf8db9060e3fc818a772e96f7df05368fcba75247db23bc19fe1cd66b.json",
       "pages/d8b8cc9eac0f7e779b2fbedd9afd491c7d1824e82db0bde70e29191df30d8312.json",
@@ -4730,7 +4730,7 @@
       "pages/1448a398454399a21df2a4994b6584a45dd13561c10aa0aadba3c3e470234cc8.json",
       "pages/742d5a1bf279abd71acbbb093c49268b2658b826d57c171e445b90528d200d59.json",
       "pages/4c6c4ea3538aebf53a0c9d29e82db2145e075e247780fbb36fb5814dcd097780.json",
-      "pages/2bb4c484efa2561594c32d434b7cecb0ddd570564394dc417c4551fab63585b9.json"
+      "pages/8d5b500cf54173a89c142219e07fafcebb49b569059772ca3208c575f27e0d8f.json"
     ]
   }
 }
