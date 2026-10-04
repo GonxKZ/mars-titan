@@ -1,0 +1,1016 @@
+[
+  {
+    "id": "kahneman2009intuitive",
+    "title": "Conditions for intuitive expertise: A failure to disagree",
+    "authors": [
+      "Daniel Kahneman",
+      "Gary Klein"
+    ],
+    "year": 2009,
+    "doi": "10.1037/a0016755",
+    "url": "https://doi.org/10.1037/a0016755",
+    "pdf_url": "https://www.pef.uni-lj.si/wp-content/uploads/2026/05/Kahneman_Klein_2009_Conditions-for-Intuitive-Expertise_A-Failure-to-disagree_Am_Psi.pdf",
+    "journal": "American Psychologist",
+    "volume": "64",
+    "issue": "6",
+    "pages": "515-526",
+    "access": "Artículo teórico y revisión narrativa publicados en septiembre de 2009. No es un experimento nuevo ni un metaanálisis. Metadatos contrastados en PubMed y PDF del artículo original. Lectura parcial de The Definition of Expertise, Skilled Intuition as Recognition y Professional Intuitions, páginas 519-523.",
+    "relevance": "Distinguir experiencia, habilidad y confianza según la regularidad del entorno y las oportunidades de aprender mediante feedback.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "spens2026compressive",
+    "title": "Hippocampo-neocortical interaction as compressive retrieval-augmented generation",
+    "authors": [
+      "Eleanor Spens",
+      "Neil Burgess"
+    ],
+    "year": 2026,
+    "publication_date": "2026-06-25",
+    "doi": "10.1038/s41467-026-74357-6",
+    "url": "https://www.nature.com/articles/s41467-026-74357-6",
+    "journal": "Nature Communications",
+    "volume": "17",
+    "article_number": "7971",
+    "access": "Artículo revisado por pares y publicado. Modelo computacional, no identificación fisiológica del hipocampo con RAG. Metadatos editoriales y PubMed contrastados. Lectura parcial de Implementing the model via compressive retrieval-augmented generation, The compression and encoding of episodic memory, Inference from memory as retrieval-augmented generation y discusión.",
+    "relevance": "Contrastar compresión y consolidación episódica sin reconstruir cifras, fechas o etiquetas a partir de memoria generativa.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "mattar2018prioritized",
+    "title": "Prioritized memory access explains planning and hippocampal replay",
+    "authors": [
+      "Marcelo G. Mattar",
+      "Nathaniel D. Daw"
+    ],
+    "year": 2018,
+    "publication_date": "2018-10-22",
+    "doi": "10.1038/s41593-018-0232-z",
+    "url": "https://www.nature.com/articles/s41593-018-0232-z",
+    "pdf_url": "https://www.princeton.edu/~ndaw/md18.pdf",
+    "journal": "Nature Neuroscience",
+    "volume": "21",
+    "pages": "1609-1617",
+    "access": "Artículo revisado por pares y publicado. Teoría normativa y simulaciones de navegación. Lectura parcial de introducción, resultados y figura 1 en las páginas 1-3 del PDF de los autores.",
+    "relevance": "Separar utilidad prevista de recuperar un episodio y magnitud del error, incluyendo el coste de encontrar episodios útiles.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "antonov2025replay",
+    "title": "Exploring replay",
+    "authors": [
+      "Georgy Antonov",
+      "Peter Dayan"
+    ],
+    "year": 2025,
+    "publication_date": "2025-02-15",
+    "doi": "10.1038/s41467-025-56731-y",
+    "url": "https://www.nature.com/articles/s41467-025-56731-y",
+    "journal": "Nature Communications",
+    "volume": "16",
+    "issue": "1",
+    "article_number": "1657",
+    "access": "Artículo revisado por pares y publicado. Modelo computacional de replay bajo incertidumbre y observabilidad parcial. Lectura parcial de Exploratory replay in the Tolman maze, resultados sobre secuencias y discusión. Volumen, número de artículo y DOI comprobados en metadatos editoriales.",
+    "relevance": "Evaluar priorización contextual bajo incertidumbre sin trasladar la exploración de acciones a un predictor pasivo de precios.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "roscow2025replay",
+    "title": "Post-learning replay of hippocampal-striatal activity is biased by reward-prediction signals",
+    "authors": [
+      "Emma L. Roscow",
+      "Timothy Howe",
+      "Nathan F. Lepora",
+      "Matthew W. Jones"
+    ],
+    "year": 2025,
+    "publication_date": "2025-11-24",
+    "doi": "10.1038/s41467-025-65354-2",
+    "url": "https://www.nature.com/articles/s41467-025-65354-2",
+    "journal": "Nature Communications",
+    "volume": "16",
+    "issue": "1",
+    "article_number": "10394",
+    "access": "Artículo revisado por pares y publicado. Conducta de seis ratas, registros neuronales de otra cohorte de tres y modelización. Lectura parcial de resultados iniciales, comparación de políticas de replay, discusión y Behavioural task en el HTML editorial.",
+    "relevance": "Distinguir recompensa y error de predicción al estudiar replay, sin equiparar ese error al error absoluto financiero.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "piray2024uncertainty",
+    "title": "Computational processes of simultaneous learning of stochasticity and volatility in humans",
+    "authors": [
+      "Payam Piray",
+      "Nathaniel D. Daw"
+    ],
+    "year": 2024,
+    "publication_date": "2024-10-21",
+    "doi": "10.1038/s41467-024-53459-z",
+    "url": "https://www.nature.com/articles/s41467-024-53459-z",
+    "journal": "Nature Communications",
+    "volume": "15",
+    "article_number": "9073",
+    "access": "Artículo revisado por pares y publicado. Dos experimentos conductuales humanos y comparación de modelos, sin registro neuronal directo. Lectura parcial de Experiment 1, réplica del experimento 2, figura 1, comparación de modelos y discusión. Metadatos contrastados con PubMed.",
+    "relevance": "Separar cambio del proceso y ruido de observación antes de modular escrituras o actualizaciones por sorpresa.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "baror2026context",
+    "title": "The role of context in continuity and segmentation",
+    "authors": [
+      "Shira Baror",
+      "Mor Cohen",
+      "Nofar Haik",
+      "Guy Avraham",
+      "Aya Ben-Yakov"
+    ],
+    "year": 2026,
+    "publication_date": "2026-02-11",
+    "doi": "10.1038/s41562-026-02403-w",
+    "url": "https://www.nature.com/articles/s41562-026-02403-w",
+    "journal": "Nature Human Behaviour",
+    "volume": "10",
+    "pages": "988-1005",
+    "access": "Registered Report revisado por pares y publicado. Tres experimentos conductuales humanos. Lectura parcial de resultados, experimentos 1-3, figura 1 y discusión sobre la ausencia de evidencia de un mecanismo compartido entre continuidad y segmentación.",
+    "relevance": "Contrastar límites contextuales y continuidad por separado, sin imponer reinicios completos de memoria.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "koolschijn2026association",
+    "title": "Noradrenaline causes a spread of association in the hippocampal cognitive map",
+    "authors": [
+      "Renée S. Koolschijn",
+      "Prakriti Parthasarathy",
+      "Michael Browning",
+      "Xenia Przygodda",
+      "Liliana P. Capitão",
+      "William T. Clarke",
+      "Tim P. Vogels",
+      "Jill X. O'Reilly",
+      "Helen C. Barron"
+    ],
+    "year": 2026,
+    "publication_date": "2026-03-14",
+    "doi": "10.1038/s41467-026-70659-x",
+    "url": "https://www.nature.com/articles/s41467-026-70659-x",
+    "journal": "Nature Communications",
+    "volume": "17",
+    "article_number": "3961",
+    "access": "Artículo revisado por pares y publicado. Intervención farmacológica humana aleatorizada y doble ciego, fMRI y modelización. Lectura parcial de diseño experimental, resultados conductuales, marcadores fisiológicos y modelo de plasticidad.",
+    "relevance": "Considerar sobregeneralización y distorsión al ampliar asociaciones, sin identificar neuromodulación con una puerta escalar.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "davidson2025metacognition",
+    "title": "An Automatic Domain-General Error Signal Is Shared across Tasks and Predicts Confidence in Different Sensory Modalities",
+    "authors": [
+      "Matthew J. Davidson",
+      "Sriraj Aiyer",
+      "Nick Yeung"
+    ],
+    "year": 2025,
+    "publication_date": "2025-05-22",
+    "doi": "10.1523/ENEURO.0124-25.2025",
+    "url": "https://www.eneuro.org/content/12/6/ENEURO.0124-25.2025",
+    "journal": "eNeuro",
+    "volume": "12",
+    "issue": "6",
+    "article_number": "ENEURO.0124-25.2025",
+    "access": "Artículo revisado por pares y publicado. EEG humano con dos tareas perceptivas binarias. Lectura parcial de resumen, clasificación multivariante, generalización entre modalidades y discusión en el HTML editorial.",
+    "relevance": "Evaluar una señal de fiabilidad fuera de muestra y distinguirla de confianza verbal o estabilidad numérica.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "fernandezvelasco2025planning",
+    "title": "Expert navigators deploy rational complexity–based decision precaching for large-scale real-world planning",
+    "authors": [
+      "Pablo Fernandez Velasco",
+      "Eva-Maria Griesbauer",
+      "Iva K. Brunec",
+      "Jeremy Morley",
+      "Ed Manley",
+      "Daniel C. McNamee",
+      "Hugo J. Spiers"
+    ],
+    "year": 2025,
+    "publication_date": "2025-01-23",
+    "doi": "10.1073/pnas.2407814122",
+    "url": "https://doi.org/10.1073/pnas.2407814122",
+    "journal": "Proceedings of the National Academy of Sciences",
+    "volume": "122",
+    "issue": "4",
+    "article_number": "e2407814122",
+    "access": "Artículo revisado por pares y publicado, actualizado con corrección editorial. Estudio conductual de planificación verbal y modelos descriptivos, no registro directo de memoria. Lectura parcial de resumen, planteamiento, discusión, ficha editorial y corrección del 23 de mayo de 2025.",
+    "relevance": "Contrastar recuperación anticipada y cálculo en puntos informativos sin atribuir transferencia de expertise a finanzas.",
+    "corrections": [
+      {
+        "title": "Correction for Fernandez Velasco et al., Expert navigators deploy rational complexity–based decision precaching for large-scale real-world planning",
+        "doi": "10.1073/pnas.2509414122",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12130864/",
+        "publication_date": "2025-05-23",
+        "journal": "Proceedings of the National Academy of Sciences",
+        "volume": "122",
+        "issue": "21",
+        "article_number": "e2509414122",
+        "access": "Corrección publicada. Consultados los cambios en la lista de predictores significativos y la etiqueta del eje de la figura 1D. La ficha del artículo señala su actualización el 22 de mayo."
+      }
+    ],
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "vanopheusden2023expertise",
+    "title": "Expertise increases planning depth in human gameplay",
+    "authors": [
+      "Bas van Opheusden",
+      "Ionatan Kuperwajs",
+      "Gianni Galbiati",
+      "Zahy Bnaya",
+      "Yunqi Li",
+      "Wei Ji Ma"
+    ],
+    "year": 2023,
+    "publication_date": "2023-05-31",
+    "doi": "10.1038/s41586-023-06124-2",
+    "url": "https://www.nature.com/articles/s41586-023-06124-2",
+    "pdf_url": "https://www.cns.nyu.edu/malab/static/files/publications/2023_Opheusden%2CKuperwajs%2CGalbiati%2CBnayaLi%2CMa.pdf",
+    "journal": "Nature",
+    "volume": "618",
+    "issue": "7967",
+    "pages": "1000-1005",
+    "access": "Artículo revisado por pares y publicado. Evidencia conductual y modelo cognitivo de búsqueda. Lectura parcial de resumen, formulación del problema y discusión. Volumen y páginas comprobados en metadatos editoriales.",
+    "relevance": "Separar experiencia observada, profundidad inferida y recurrencia computacional sin trasladar habilidad de juegos a mercados.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "callaway2022planning",
+    "title": "Rational use of cognitive resources in human planning",
+    "authors": [
+      "Frederick Callaway",
+      "Bas van Opheusden",
+      "Sayan Gul",
+      "Priyam Das",
+      "Paul M. Krueger",
+      "Thomas L. Griffiths",
+      "Falk Lieder"
+    ],
+    "year": 2022,
+    "publication_date": "2022-04-28",
+    "doi": "10.1038/s41562-022-01332-8",
+    "url": "https://www.nature.com/articles/s41562-022-01332-8",
+    "pdf_url": "https://cocosci.princeton.edu/papers/callawayrationaluse.pdf",
+    "journal": "Nature Human Behaviour",
+    "volume": "6",
+    "pages": "1112-1125",
+    "access": "Artículo revisado por pares y publicado. Modelo de metarrazonamiento y cuatro experimentos conductuales Mouselab-MDP. Lectura parcial de introducción, Model, Task: Mouselab-MDP, Experiment 1 y reglas de selección y parada, páginas 1-5 del PDF de los autores.",
+    "relevance": "Contrastar valor predictivo incremental y coste para decidir qué calcular y cuándo detener el refinamiento.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "li2024master",
+    "title": "MASTER: Market-Guided Stock Transformer for Stock Price Forecasting",
+    "authors": [
+      "Tong Li",
+      "Zhaoyang Liu",
+      "Yanyan Shen",
+      "Xue Wang",
+      "Haokun Chen",
+      "Sen Huang"
+    ],
+    "year": 2024,
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/27767",
+    "doi": "10.1609/aaai.v38i1.27767",
+    "pdf_url": "https://ojs.aaai.org/index.php/AAAI/article/download/27767/27575",
+    "venue": "Proceedings of the AAAI Conference on Artificial Intelligence",
+    "volume": "38",
+    "issue": "1",
+    "pages": "162–170",
+    "publication_date": "2024-03-25",
+    "access": "Artículo revisado por pares. Ficha editorial y PDF abiertos. Leídos el resumen, el análisis de complejidad de las páginas 165–166 y el diseño experimental y la evaluación de la página 166. Metadatos corroborados en la ficha editorial. El registro Crossref respondió HTTP 200.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://ojs.aaai.org/index.php/AAAI/article/download/27767/27575",
+      "passages": [
+        "Resumen",
+        "Complexity Analysis, páginas 165–166",
+        "Experiments: Datasets y Evaluation, página 166"
+      ]
+    },
+    "verification_sources": [
+      "https://ojs.aaai.org/index.php/AAAI/article/view/27767",
+      "https://api.crossref.org/works/10.1609/aaai.v38i1.27767"
+    ],
+    "relevance": "Contexto de mercado y agregación entre activos como controles de la recuperación contextual. Sus resultados sobre CSI300/800 a cinco sesiones no validan el MAE residual diario ni justifican automáticamente atención cuadrática sobre todo el universo.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "zhou2026contextrouting",
+    "title": "When Does Context Routing Help? A Systematic Study of Multi-Modal Fusion in Time Series Forecasting",
+    "authors": [
+      "Ruizhe Zhou",
+      "Gaoyuan Du",
+      "Xiaoyang Liu",
+      "Haoqi Yao",
+      "Deepayan Chakrabarti",
+      "Jiating Lin",
+      "Yixuan Shen"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2608.25128v1",
+    "doi": "10.48550/arXiv.2608.25128",
+    "pdf_url": "https://arxiv.org/pdf/2608.25128v1",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v1 del 25 de agosto de 2026. Ficha y HTML completos accesibles. Leídas las secciones 2–4 y la discusión. La cabecera del manuscrito menciona MILETS 2026, pero no se ha corroborado independientemente esa aceptación. El DOI identifica el preprint, no una publicación revisada por pares.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2026-08-25",
+      "url": "https://arxiv.org/html/2608.25128v1",
+      "passages": [
+        "Sección 2: información mutua, residualización y prueba de permutación",
+        "Sección 3: datos y modelos",
+        "Sección 4 y tabla 1: contribución del contexto",
+        "Sección 5: discusión y límites"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/2608.25128v1",
+      "https://arxiv.org/html/2608.25128v1"
+    ],
+    "relevance": "Controles para distinguir información contextual y capacidad añadida. Su experimento financiero predice precios con noticias, no retornos residuales. La sustitución de información mutua condicional por información del residual lineal exige una objeción matemática separada de sus resultados experimentales.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "zhao2026financialrag",
+    "title": "Point-in-Time Financial RAG with Frozen LLMs and Market-Feedback Adaptive Retrieval",
+    "authors": [
+      "Zijie Zhao",
+      "Roy E. Welsch"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2605.31201v2",
+    "doi": "10.48550/arXiv.2605.31201",
+    "pdf_url": "https://arxiv.org/pdf/2605.31201v2",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Preprint v2 del 21 de junio de 2026. Ficha y HTML completos accesibles. Leídos método, evaluación, discusión y apéndice A. No se ha corroborado una publicación revisada por pares. Se conserva el título de v2, distinto del título inicial de v1.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "date": "2026-06-21",
+      "url": "https://arxiv.org/html/2605.31201v2",
+      "passages": [
+        "Sección 3: lector congelado y actualización de memoria con etiquetas maduras",
+        "Sección 4: particiones, controles de feedback y diagnóstico de cartera",
+        "Sección 5: utilidad de fuentes, realimentación y selección del universo",
+        "Apéndice A: detalles de recuperación y adaptación"
+      ]
+    },
+    "latest_publication": null,
+    "verification_sources": [
+      "https://arxiv.org/abs/2605.31201v2",
+      "https://arxiv.org/html/2605.31201v2"
+    ],
+    "relevance": "Antecedente de recuperación financiera adaptada por feedback maduro con predictor congelado. Permite contrastar adaptación de lectura, utilidad marginal y realimentación endógena. La utilidad predictiva de una fuente no acredita su veracidad ni un efecto causal económico.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "levy2026cautionahead",
+    "title": "Caution Ahead: Numerical Reasoning and Look-Ahead Bias in AI Models",
+    "authors": [
+      "Bradford Levy"
+    ],
+    "year": 2026,
+    "url": "https://doi.org/10.1111/1475-679x.70058",
+    "doi": "10.1111/1475-679x.70058",
+    "pdf_url": null,
+    "venue": "Journal of Accounting Research",
+    "volume": "64",
+    "issue": "3",
+    "pages": "1139–1188",
+    "publication_date": "2026-05-06",
+    "access": "Artículo revisado por pares y declarado de acceso abierto por la editorial. Texto HTML editorial consultado. Leídos la introducción, los resultados de razonamiento numérico allí descritos y las tablas 6–7 sobre predicción contable. Autoría, fecha, volumen y páginas corroborados en la ficha editorial. El registro Crossref respondió HTTP 200. No se atribuye lectura de una versión previa.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://onlinelibrary.wiley.com/doi/10.1111/1475-679x.70058",
+      "passages": [
+        "Sección 1: introducción y experimentos de razonamiento numérico",
+        "Tabla 6: predicción contable con perturbaciones de los datos",
+        "Tabla 7: comparación con aprendizaje tabular"
+      ]
+    },
+    "verification_sources": [
+      "https://onlinelibrary.wiley.com/doi/10.1111/1475-679x.70058",
+      "https://api.crossref.org/works/10.1111/1475-679x.70058"
+    ],
+    "relevance": "Controles de conocimiento retrospectivo y sensibilidad a identidad numérica en representaciones financieras. Motiva separar cálculos exactos y predicción. No demuestra incapacidad universal de los modelos ni convierte toda degradación por perturbación en prueba concluyente de memorización.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "qian2025agentmarketarena",
+    "title": "When Agents Trade: Live Multi-Market Trading Benchmark for LLM Agents",
+    "authors": [
+      "Lingfei Qian",
+      "Xueqing Peng",
+      "Yan Wang",
+      "Vincent Jim Zhang",
+      "Huan He",
+      "Hanley Smith",
+      "Yi Han",
+      "Yueru He",
+      "Haohang Li",
+      "Yupeng Cao",
+      "Yangyang Yu",
+      "Alejandro Lopez-Lira",
+      "Peng Lu",
+      "Jian-Yun Nie",
+      "Guojun Xiong",
+      "Jimin Huang",
+      "Sophia Ananiadou"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2510.11695v2",
+    "doi": "10.48550/arXiv.2510.11695",
+    "pdf_url": "https://arxiv.org/pdf/2510.11695v2",
+    "venue": "arXiv",
+    "volume": null,
+    "pages": null,
+    "access": "Referencia leída: preprint v2 del 30 de octubre de 2025, con título y orden de autores propios. Leídos el protocolo, los resultados y el control de noticias. Los autores declaran una publicación posterior en WWW 2026 con otro título y orden de autoría, registrada por separado. El DOI editorial declarado devolvió HTTP 404 en doi.org y Crossref el 4 de octubre de 2026. ACM devolvió HTTP 403. No se atribuye lectura de la edición editorial ni se considera resuelto ese DOI.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "date": "2025-10-30",
+      "url": "https://arxiv.org/html/2510.11695v2",
+      "passages": [
+        "Sección 3.1: control de calidad de noticias",
+        "Sección 3.2: protocolo de ejecución de agentes",
+        "Secciones 4–5 y tabla de resultados: comparación de agentes y mercados",
+        "Apéndice A: detalles de verificación de noticias"
+      ]
+    },
+    "latest_publication": {
+      "title": "When Agents Trade: Live Multi-Market Trading Arena for LLM Agents",
+      "authors": [
+        "Lingfei Qian",
+        "Xueqing Peng",
+        "Hanley Smith",
+        "Yi Han",
+        "Yueru He",
+        "Haohang Li",
+        "Yupeng Cao",
+        "Yangyang Yu",
+        "Guojun Xiong",
+        "Peng Lu",
+        "Yan Wang",
+        "Vincent Jim Zhang",
+        "Huan He",
+        "Alejandro Lopez-Lira",
+        "Jimin Huang",
+        "Jian-Yun Nie",
+        "Sophia Ananiadou"
+      ],
+      "year": 2026,
+      "venue": "Proceedings of the ACM Web Conference 2026",
+      "volume": null,
+      "pages": "7833–7844",
+      "publisher": "ACM",
+      "url": "https://thefin.ai/research.html",
+      "doi": "10.1145/3774904.3792821",
+      "status": "Publicación declarada por los autores. Título, orden de autoría, año, congreso y páginas corroborados en su página. Registro editorial y resolución del DOI pendientes de corroboración.",
+      "doi_verification": {
+        "date": "2026-10-04",
+        "resolver_url": "https://doi.org/10.1145/3774904.3792821",
+        "resolver_http_status": 404,
+        "crossref_url": "https://api.crossref.org/works/10.1145/3774904.3792821",
+        "crossref_http_status": 404,
+        "publisher_url": "https://dl.acm.org/doi/10.1145/3774904.3792821",
+        "publisher_http_status": 403
+      },
+      "full_text_read": false,
+      "verification_sources": [
+        "https://thefin.ai/research.html"
+      ]
+    },
+    "verification_sources": [
+      "https://arxiv.org/abs/2510.11695v2",
+      "https://arxiv.org/html/2510.11695v2",
+      "https://thefin.ai/research.html"
+    ],
+    "relevance": "Evaluación prospectiva con entradas comunes y decisiones sincronizadas en carteras simuladas. El ensayo leído incluye dos acciones y dos criptomonedas durante dos meses. La revisión humana de noticias no equivale a comparar resultados con profesionales de inversión.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "hatamizadeh2026gateddelta2",
+    "title": "Gated DeltaNet-2: Decoupling Erase and Write in Linear Attention",
+    "authors": [
+      "Ali Hatamizadeh",
+      "Yejin Choi",
+      "Jan Kautz"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2605.22791v1",
+    "pdf_url": "https://arxiv.org/pdf/2605.22791v1",
+    "doi": "10.48550/arXiv.2605.22791",
+    "doi_type": "DOI de arXiv, no DOI de actas",
+    "venue": "arXiv",
+    "publication_status": "Informe técnico. No se ha confirmado una publicación revisada por pares.",
+    "version": "arXiv:2605.22791v1, presentado el 21 de mayo de 2026. La cabecera del PDF está fechada el 22 de mayo de 2026.",
+    "sections_read": [
+      {
+        "version": "arXiv:2605.22791v1",
+        "url": "https://arxiv.org/pdf/2605.22791v1",
+        "sections": [
+          "3.1. Decoupling erase and write, ecuaciones 8–12",
+          "3.2. Fast-weight update perspective, tabla 1 y ecuaciones 13–15",
+          "4. Experiments, configuración común, igualdad de tamaño del estado y ablaciones de puertas"
+        ]
+      }
+    ],
+    "metadata_evidence": [
+      "https://arxiv.org/abs/2605.22791v1",
+      "https://arxiv.org/pdf/2605.22791v1"
+    ],
+    "verification_date": "2026-10-04",
+    "access": "Preprint arXiv v1 presentado el 21 de mayo de 2026. La cabecera del PDF indica el 22 de mayo. Autoría y título comprobados en ficha y PDF. Consultados los apartados 3.1–3.2, ecuaciones 8–15 y tabla 1, y la configuración y las ablaciones de la sección 4. No se ha confirmado una publicación revisada por pares.",
+    "relevance": "Separar borrado y escritura de la memoria sin aumentar el tamaño del estado. La transición asimétrica no hereda automáticamente la contracción euclídea del caso escalar. Los resultados de lenguaje no acreditan utilidad para retornos residuales.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ]
+  },
+  {
+    "id": "behrouz2026memorycaching",
+    "title": "Memory Caching: RNNs with Growing Memory",
+    "authors": [
+      "Ali Behrouz",
+      "Zeman Li",
+      "Yuan Deng",
+      "Peilin Zhong",
+      "Meisam Razaviyayn",
+      "Vahab Mirrokni"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v306/behrouz26a.html",
+    "pdf_url": "https://raw.githubusercontent.com/mlresearch/v306/main/assets/behrouz26a/behrouz26a.pdf",
+    "venue": "Proceedings of the 43rd International Conference on Machine Learning",
+    "series": "Proceedings of Machine Learning Research",
+    "volume": "306",
+    "pages": "7342–7360",
+    "publication_status": "ICML 2026, publicado en actas revisadas por pares. El volumen PMLR se publicó el 29 de septiembre de 2026.",
+    "version": "PDF editorial PMLR 306. Copia previa asociada: arXiv:2602.24281v1, 27 de febrero de 2026.",
+    "sections_read": [
+      {
+        "version": "arXiv:2602.24281v1",
+        "url": "https://arxiv.org/html/2602.24281v1",
+        "sections": [
+          "3.1. Residual Memory",
+          "3.2. Memory Soup",
+          "3.3. Sparse Selective Caching (SSC) of Memories",
+          "3.4. Caching Checkpoints or Independent Compressors?",
+          "4.2. The Effect of Segmentation on Capacity and Complexity",
+          "4.3. Memory Caching for Titans and Linear Attention Variants"
+        ]
+      },
+      {
+        "version": "PMLR 306, PDF editorial",
+        "url": "https://raw.githubusercontent.com/mlresearch/v306/main/assets/behrouz26a/behrouz26a.pdf",
+        "sections": [
+          "Portada, autores y resumen"
+        ]
+      }
+    ],
+    "metadata_evidence": [
+      "https://proceedings.mlr.press/v306/behrouz26a.html",
+      "https://proceedings.mlr.press/v306/",
+      "https://raw.githubusercontent.com/mlresearch/v306/main/assets/behrouz26a/behrouz26a.pdf",
+      "https://arxiv.org/abs/2602.24281v1"
+    ],
+    "verification_notes": "No se asigna un DOI editorial que no figura en la ficha PMLR. La numeración de secciones cambia entre el preprint y las actas. Los apartados 4.2 y 4.3 anteriores corresponden expresamente al preprint.",
+    "verification_date": "2026-10-04",
+    "access": "ICML 2026, PMLR 306:7342–7360. Autoría y publicación comprobadas en actas y portada editorial. Consultados los apartados 3.1–3.4 y 4.2–4.3 del preprint arXiv 2602.24281v1. La numeración cambia en las actas. No se atribuye lectura íntegra del PDF editorial.",
+    "relevance": "Antecedente de recuperación de estados recurrentes, mezcla de memorias y selección dispersa. Mantener capacidad y descarte explícitos, y contabilizar almacenamiento y búsqueda aunque solo se lean pocos estados.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ]
+  },
+  {
+    "id": "yang2024memory3",
+    "title": "Memory³: Language Modeling with Explicit Memory",
+    "authors": [
+      "Hongkang Yang",
+      "Zehao Lin",
+      "Wenjin Wang",
+      "Hao Wu",
+      "Zhiyu Li",
+      "Bo Tang",
+      "Wenqiang Wei",
+      "Jinbo Wang",
+      "Zeyun Tang",
+      "Shichao Song",
+      "Chenyang Xi",
+      "Yu Yu",
+      "Kai Chen",
+      "Feiyu Xiong",
+      "Linpeng Tang",
+      "Weinan E"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2407.01178v1",
+    "pdf_url": "https://arxiv.org/pdf/2407.01178v1",
+    "doi": "10.4208/jml.240708",
+    "doi_type": "DOI editorial",
+    "venue": "Journal of Machine Learning",
+    "volume": "3",
+    "number": "3",
+    "pages": "300–346",
+    "publication_status": "Artículo de revista de 2024. Los dieciséis autores y el DOI concuerdan entre arXiv y los metadatos editoriales depositados en Crossref. El volumen, número, páginas y fecha editorial se han comprobado en Crossref.",
+    "version": "Copia consultada arXiv:2407.01178v1, presentada el 1 de julio de 2024. Crossref fecha la publicación editorial el 21 de septiembre de 2024.",
+    "sections_read": [
+      {
+        "version": "arXiv:2407.01178v1",
+        "url": "https://arxiv.org/html/2407.01178v1",
+        "sections": [
+          "3.1. Inference Process",
+          "3.2. Writing and Reading Memory, descripción inicial del formato KV",
+          "3.3. Memory Sparsification and Storage, compresión y tamaño del banco"
+        ]
+      }
+    ],
+    "metadata_evidence": [
+      "https://arxiv.org/abs/2407.01178v1",
+      "https://api.crossref.org/works/10.4208/jml.240708"
+    ],
+    "verification_notes": "La grafía Memory³ representa el superíndice del título original. Para BibTeX puede expresarse como Memory$^3$. El DOI se ha comprobado en Crossref y en la ficha arXiv. La página editorial no resultó accesible mediante el lector web, por lo que no se afirma una comprobación directa de esa página.",
+    "verification_date": "2026-10-04",
+    "access": "Artículo de Journal of Machine Learning 3(3):300–346, 2024. Autores y DOI contrastados con arXiv y metadatos editoriales de Crossref. Consultados los apartados 3.1–3.3 de arXiv 2407.01178v1, en particular lectura, formato KV, compresión y almacenamiento. La página editorial no resultó accesible al lector web.",
+    "relevance": "Antecedente de memoria explícita precodificada separada de los parámetros. Su banco comprimido completo de 4,02 TB y su modelo de 2.400 millones de parámetros no constituyen un presupuesto reproducible en el equipo local.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ]
+  },
+  {
+    "id": "he2024peer",
+    "title": "Mixture of A Million Experts",
+    "authors": [
+      "Xu Owen He"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2407.04153v1",
+    "pdf_url": "https://arxiv.org/pdf/2407.04153v1",
+    "doi": "10.48550/arXiv.2407.04153",
+    "doi_type": "DOI de arXiv, no DOI de actas",
+    "venue": "arXiv",
+    "publication_status": "Preprint. No se ha confirmado una publicación revisada por pares.",
+    "version": "arXiv:2407.04153v1, presentado el 4 de julio de 2024.",
+    "sections_read": [
+      {
+        "version": "arXiv:2407.04153v1",
+        "url": "https://arxiv.org/html/2407.04153v1",
+        "sections": [
+          "2. Method, PEER Overview",
+          "2. Method, Product Key Retrieval",
+          "2. Method, Parameter Efficient Experts and Multi-Head Retrieval",
+          "2. Method, Why A Large Number of Small Experts?",
+          "3.1. Pretraining isoFLOP Analysis, configuración",
+          "3.3. Ablations, número de expertos y expertos activos"
+        ]
+      }
+    ],
+    "metadata_evidence": [
+      "https://arxiv.org/abs/2407.04153v1"
+    ],
+    "verification_date": "2026-10-04",
+    "access": "Preprint arXiv 2407.04153v1 del 4 de julio de 2024. Autor único comprobado en la ficha. Consultados el método de la sección 2, la configuración de 3.1 y las ablaciones de 3.3. No se ha confirmado una publicación revisada por pares.",
+    "relevance": "Distinguir expertos pequeños, parámetros activos y almacenamiento total. La recuperación por claves producto reduce búsqueda, pero los pesos y el optimizador de los expertos siguen teniendo coste.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ]
+  },
+  {
+    "id": "joulani2013delayed",
+    "title": "Online Learning under Delayed Feedback",
+    "authors": [
+      "Pooria Joulani",
+      "Andras Gyorgy",
+      "Csaba Szepesvari"
+    ],
+    "year": 2013,
+    "url": "https://proceedings.mlr.press/v28/joulani13.html",
+    "pdf_url": "https://proceedings.mlr.press/v28/joulani13.pdf",
+    "venue": "Proceedings of the 30th International Conference on Machine Learning",
+    "series": "Proceedings of Machine Learning Research",
+    "volume": "28",
+    "number": "3",
+    "pages": "1453–1461",
+    "access": "ICML 2013, actas revisadas por pares. Título, autores, volumen, número y páginas comprobados en PMLR. Leídas las secciones 2–3 del PDF publicado, sobre formulación y tratamiento de realimentación retrasada.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://proceedings.mlr.press/v28/joulani13.pdf",
+      "passages": [
+        "Secciones 2–3: formulación de aprendizaje online y realimentación retrasada"
+      ]
+    },
+    "relevance": "Tratar la llegada de etiquetas como parte del algoritmo. Las cotas dependen del tipo de pérdidas y del modelo de retrasos, no garantizan aprendizaje financiero ni autorizan utilizar etiquetas inmaduras.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "gibbs2024onlineconformal",
+    "title": "Conformal Inference for Online Prediction with Arbitrary Distribution Shifts",
+    "authors": [
+      "Isaac Gibbs",
+      "Emmanuel J. Candès"
+    ],
+    "year": 2024,
+    "url": "https://www.jmlr.org/papers/v25/22-1218.html",
+    "pdf_url": "https://www.jmlr.org/papers/volume25/22-1218/22-1218.pdf",
+    "journal": "Journal of Machine Learning Research",
+    "volume": "25",
+    "number": "162",
+    "pages": "1–36",
+    "access": "Artículo JMLR 25(162):1–36 de 2024, revisado por pares. Metadatos y PDF editoriales comprobados. Leídos el apartado 2.3, algoritmo 1 y páginas 8–11. No se atribuye lectura completa del artículo.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.jmlr.org/papers/volume25/22-1218/22-1218.pdf",
+      "passages": [
+        "Apartado 2.3 y algoritmo 1",
+        "Páginas 8–11: adaptación de la tasa de actualización y condiciones de las garantías"
+      ]
+    },
+    "relevance": "Comparar calibración secuencial con adaptación de su tasa bajo cambio de distribución. Distinguir cobertura y pérdida acumuladas de una garantía condicional para cada activo o sesión.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "lai2024siftrls",
+    "title": "SIFt-RLS: Subspace of Information Forgetting Recursive Least Squares",
+    "authors": [
+      "Brian Lai",
+      "Dennis S. Bernstein"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2404.10844v1",
+    "pdf_url": "https://arxiv.org/pdf/2404.10844v1",
+    "doi": "10.48550/arXiv.2404.10844",
+    "venue": "arXiv",
+    "access": "Preprint arXiv 2404.10844v1, presentado el 16 de abril de 2024. Metadatos comprobados en arXiv. Consultados el resumen y la sección 4 sobre el algoritmo y su coste. El DOI identifica el preprint. No se atribuye a esta versión una publicación en Automatica.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "date": "2024-04-16",
+      "url": "https://arxiv.org/pdf/2404.10844v1",
+      "passages": [
+        "Resumen",
+        "Sección 4: algoritmo y coste computacional"
+      ]
+    },
+    "relevance": "Contrastar olvido restringido al subespacio de información y el coste de una matriz de covarianza. Sus resultados de estabilidad tienen condiciones específicas y no se trasladan a ruido financiero o parámetros cambiantes sin otro análisis.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "ryabchenko2025capacity",
+    "title": "Capacity-Constrained Online Learning with Delays: Scheduling Frameworks and Regret Trade-offs",
+    "authors": [
+      "Alexander Ryabchenko",
+      "Idan Attias",
+      "Daniel M. Roy"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v291/ryabchenko25a.html",
+    "pdf_url": "https://arxiv.org/pdf/2503.19856v2",
+    "venue": "Proceedings of Thirty Eighth Conference on Learning Theory",
+    "series": "Proceedings of Machine Learning Research",
+    "volume": "291",
+    "pages": "4973–5014",
+    "access": "COLT 2025, PMLR 291:4973–5014, revisado por pares. Metadatos editoriales comprobados. La lectura corresponde al preprint arXiv 2503.19856v2, introducción, formulación y sección 5. No se atribuye lectura completa de la edición editorial.",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "url": "https://arxiv.org/pdf/2503.19856v2",
+      "passages": [
+        "Introducción",
+        "Formulación del problema y capacidad para seguir etiquetas pendientes",
+        "Sección 5"
+      ]
+    },
+    "relevance": "Dimensionar el seguimiento de resultados retrasados como una capacidad limitada. Las cotas distinguen conocimiento previo del retraso y posibilidad de interrumpir el seguimiento, supuestos que deben comprobarse antes de usarlas.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      5,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "parikh2014proximal",
+    "title": "Proximal Algorithms",
+    "authors": [
+      "Neal Parikh",
+      "Stephen Boyd"
+    ],
+    "year": 2014,
+    "url": "https://www.nparikh.org/publications/prox_algs/",
+    "pdf_url": "https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf",
+    "doi": "10.1561/2400000003",
+    "journal": "Foundations and Trends in Optimization",
+    "volume": "1",
+    "number": "3",
+    "pages": "127–239",
+    "access": "Monografía publicada en Foundations and Trends in Optimization 1(3):127–239, 2014. Datos editoriales comprobados en la página de Parikh, el resumen editorial y Crossref. La copia de autor consultada conserva una portada de 2013, páginas 123–231 y un campo DOI sin completar. Leídos los apartados 1.1–1.2 sobre definición e interpretación y el apartado 2.3 sobre no expansión, páginas 130–132 de la copia de autor. El DOI registrado pertenece a la edición editorial, no al borrador.",
+    "read_version": {
+      "type": "author_manuscript",
+      "url": "https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf",
+      "year_on_cover": 2013,
+      "pages_on_cover": "123–231",
+      "passages": [
+        "1.1. Definition",
+        "1.2. Interpretations",
+        "2.3. Fixed points, páginas 130–132: no expansión firme y convergencia"
+      ]
+    },
+    "verification_sources": [
+      "https://www.nparikh.org/publications/prox_algs/",
+      "https://www.nowpublishers.com/article/DownloadSummary/OPT-003",
+      "https://api.crossref.org/works/10.1561/2400000003"
+    ],
+    "relevance": "Definir actualizaciones proximales y proyecciones con sus condiciones de convexidad, cierre y dominio. La no expansión del operador proximal no implica contracción estricta ni se transmite a cualquier puerta o actualización explícita.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "freund1997hedge",
+    "title": "A Decision-Theoretic Generalization of On-Line Learning and an Application to Boosting",
+    "authors": [
+      "Yoav Freund",
+      "Robert E. Schapire"
+    ],
+    "year": 1997,
+    "url": "https://doi.org/10.1006/jcss.1997.1504",
+    "pdf_url": "https://www.schapire.net/papers/FreundSc95.pdf",
+    "doi": "10.1006/jcss.1997.1504",
+    "journal": "Journal of Computer and System Sciences",
+    "volume": "55",
+    "number": "1",
+    "pages": "119–139",
+    "access": "Artículo publicado en Journal of Computer and System Sciences 55(1):119–139, 1997. DOI y datos editoriales contrastados con Crossref y la copia de autor. El PDF de 35 páginas está fechado el 19 de diciembre de 1996 y su nota inicial identifica la publicación de 1997. Leídas las páginas 1–4, formulación de pérdidas acotadas, sección 2 y figura 1 de Hedge. No se atribuye lectura integral.",
+    "read_version": {
+      "type": "author_manuscript",
+      "date": "1996-12-19",
+      "url": "https://www.schapire.net/papers/FreundSc95.pdf",
+      "passages": [
+        "Páginas 1–4",
+        "Sección 2 y figura 1: algoritmo Hedge y pérdidas acotadas"
+      ]
+    },
+    "verification_sources": [
+      "https://www.schapire.net/publist.html",
+      "https://www.schapire.net/papers/FreundSc95.pdf",
+      "https://api.crossref.org/works/10.1006/jcss.1997.1504"
+    ],
+    "relevance": "Usar una mezcla de expertos como control de ponderación adaptativa. Las garantías originales requieren pérdidas acotadas y no se aplican directamente a un MAE sin límite ni a resultados aún no observados.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  }
+]
