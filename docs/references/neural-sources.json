@@ -351,5 +351,43 @@
       5
     ],
     "verification_date": "2026-09-18"
+  },
+  {
+    "id": "hu2022lora",
+    "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+    "authors": [
+      "Edward J. Hu",
+      "Yelong Shen",
+      "Phillip Wallis",
+      "Zeyuan Allen-Zhu",
+      "Yuanzhi Li",
+      "Shean Wang",
+      "Lu Wang",
+      "Weizhu Chen"
+    ],
+    "year": 2022,
+    "url": "https://www.microsoft.com/en-us/research/publication/lora-low-rank-adaptation-of-large-language-models/",
+    "pdf_url": "https://arxiv.org/pdf/2106.09685v2",
+    "access": "ICLR 2022, confirmado en la ficha de Microsoft Research. OpenReview presentó una verificación de navegador. PDF arXiv v2 abierto y leído en §4.1–4.2, páginas 4–5, sobre factorización, inicialización, fusión y límites. La copia de consulta es de octubre de 2021 y se distingue de la publicación de 2022. No se han reproducido sus experimentos.",
+    "redistribution": "unknown",
+    "relevance": "Adaptación de bajo rango con matriz base congelada. Comparar parámetros entrenables y coste total en matrices existentes, sin trasladar resultados de lenguaje a retornos financieros.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "read_version": {
+      "type": "preprint",
+      "version": "v2",
+      "year": 2021,
+      "url": "https://arxiv.org/abs/2106.09685v2",
+      "doi": "10.48550/arXiv.2106.09685"
+    },
+    "publication": {
+      "venue": "International Conference on Learning Representations",
+      "year": 2022,
+      "url": "https://www.microsoft.com/en-us/research/publication/lora-low-rank-adaptation-of-large-language-models/"
+    }
   }
 ]

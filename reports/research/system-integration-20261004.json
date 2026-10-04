@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-04T21:34:43.828810+00:00",
+  "kind": "architecture_inspection_and_arithmetic",
+  "source_revision": "96cab3616f78e6713b451b01437c816ba7bd010b",
+  "candidate_implemented": false,
+  "candidate_trained": false,
+  "inspected_files_sha256": {
+    "src/mars_titan/data/cohort_samples.py": "1e8fc33c92787b8f6fbb9d82daca87d89fe7c1df00d2b73c80731ee5ab1ca631",
+    "src/mars_titan/data/embeddings.py": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+    "src/mars_titan/training/corpus_inputs.py": "cd7cedc66c1e1d259aaabaad2722f73c08acb50555ff5a1113f73b0f4bac338f",
+    "src/mars_titan/models/baselines/multimodal.py": "1584a79abe760e9b62cfc9cd4add34e3c07a5e0a854e661c11cd061157add766",
+    "src/mars_titan/models/predictive_adaptation.py": "128b5ab4dc9153016d3922e5d2565673485b316e017fd27299ec49baa92fe9ff",
+    "src/mars_titan/posttraining/inputs.py": "cf7ad11237093f257993bef77b20441fe4b44b7eb69d031e5243c1647ddb5843",
+    "src/mars_titan/posttraining/heldout.py": "03f23898558e5cc1769d0d6ebf69ebf7a7a3f0dcbe9f533768a51f6efd710829",
+    "src/mars_titan/environments/corpus_source.py": "cf9254e4b2e8646c8a10d39ccfefca7deeb225b2531a6cbbaa76692ecca7779e",
+    "src/mars_titan/environments/prediction.py": "a0c957fcf892c0e37103599e1465b01682cb15d5e7f8224719b49c0c0ae5e768",
+    "native/src/episodic_memory.cpp": "4f93a304209fa0d40aeb6488878470e26f832673c67ef1a378cc212db716cb55",
+    "native/src/markov_filter.cpp": "8c03093ba269f9376e40cfaf16b403e880905b008b9af3cdc5460d52c01f649e",
+    "native/src/policy_context.cpp": "818d2f008c40e26c812ead78e7edccb1e46148ed47a3eaa6211dd03374ab0bfb",
+    "native/src/ppo_training.cpp": "f45c13b3d252ec5ee3fcacf6e9cbb61408c3f748a6accebb807b3f584293f02c",
+    "src/mars_titan/training/checkpoints.py": "f303e432c164d16b84cd379e89dc42196bbd0d00a91aa385e7766c628c2bb941"
+  },
+  "existing_contract_tests": {
+    "counts": {
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "seconds": 7.545,
+    "cases": [
+      {
+        "module": "tests.environments.test_causal_prediction",
+        "name": "test_rewards_are_delayed_until_maturity_and_all_rows_are_credited_once"
+      },
+      {
+        "module": "tests.environments.test_causal_prediction",
+        "name": "test_snapshot_restores_queue_cursor_and_action_rng_exactly"
+      },
+      {
+        "module": "tests.environments.test_causal_prediction",
+        "name": "test_queue_overflow_and_invalid_action_do_not_change_confirmed_state"
+      },
+      {
+        "module": "tests.posttraining.test_inputs",
+        "name": "test_augmented_epochs_preserve_every_real_row_and_match_exact_updates"
+      },
+      {
+        "module": "tests.posttraining.test_inputs",
+        "name": "test_cursor_replays_only_unconfirmed_rows[real]"
+      },
+      {
+        "module": "tests.posttraining.test_inputs",
+        "name": "test_cursor_replays_only_unconfirmed_rows[real_resampled]"
+      },
+      {
+        "module": "tests.posttraining.test_inputs",
+        "name": "test_cursor_replays_only_unconfirmed_rows[real_synthetic]"
+      },
+      {
+        "module": "tests.evaluation.test_session_metrics",
+        "name": "test_physical_batches_and_market_order_do_not_change_session_means"
+      },
+      {
+        "module": "tests.evaluation.test_splits",
+        "name": "test_future_inputs_missing_macro_and_test_rows_never_enter_development"
+      },
+      {
+        "module": "tests.evaluation.test_splits",
+        "name": "test_label_at_exact_boundary_is_not_mature_in_the_previous_partition"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_keeps_early_improvement_then_counts_only_later_epochs"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_recovery_after_initial_decline_and_later_improvement_reset_patience"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_can_keep_epoch_zero"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_rejects_ambiguous_or_unbounded_values[True]"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_rejects_ambiguous_or_unbounded_values[-1]"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_rejects_ambiguous_or_unbounded_values[1.0]"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_rejects_ambiguous_or_unbounded_values[nan]"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_rejects_ambiguous_or_unbounded_values[inf]"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_rejects_ambiguous_or_unbounded_values[1000]"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_minimum_must_leave_at_least_one_later_evaluation"
+      },
+      {
+        "module": "tests.training.test_selection_minimum",
+        "name": "test_old_policy_and_serialized_state_are_unchanged"
+      },
+      {
+        "module": "tests.training.test_checkpoint_recovery",
+        "name": "test_disk_failure_preserves_previous_commit"
+      },
+      {
+        "module": "tests.training.test_checkpoint_recovery",
+        "name": "test_killed_writer_never_publishes_partial_checkpoint"
+      },
+      {
+        "module": "tests.training.test_checkpoint_recovery",
+        "name": "test_corrupt_latest_falls_back_explicitly_to_last_valid_state"
+      }
+    ]
+  },
+  "arithmetic": {
+    "reference_defaults": {
+      "context": 64,
+      "company_ratios_enabled": true,
+      "macro_indicators": 140,
+      "dimensions": {
+        "prices": 320,
+        "news": 384,
+        "charts": 512,
+        "fundamentals": 45,
+        "macro": 420
+      },
+      "flattened_values": 1681,
+      "fp32_bytes_per_row": 6724,
+      "batch_128_kib": 840.5
+    },
+    "candidate_bank": {
+      "entries": 8192,
+      "base_width": 256,
+      "key_width": 128,
+      "vector_bytes": 12582912,
+      "double_vector_bytes": 25165824,
+      "scores_128_queries_bytes": 4194304,
+      "query_multiply_add_operations": 268435456,
+      "convention": "Una multiplicación y una suma cuentan como dos operaciones. No incluye top-k, proyecciones o movimiento real de memoria."
+    },
+    "native_policy": {
+      "assets": 16,
+      "context_fields": 11,
+      "adaptive_context": true,
+      "base_input_width": 207,
+      "window_input_width": 3312,
+      "gru_history_bytes": 3391488,
+      "memory_full_snapshot_tensor_bytes": 589824,
+      "resident_key_cache_bytes": 524288,
+      "maximum_memories_per_current_episode": 255
+    },
+    "lora": {
+      "frozen_fusion_shape": [
+        64,
+        320
+      ],
+      "rank": 4,
+      "trainable_adapter_parameters": 1536,
+      "fully_trainable_matrix_parameters": 20480,
+      "ratio": 0.075,
+      "stored_weights_with_adapter": 22016,
+      "head_shape": [
+        1,
+        64
+      ],
+      "head_rank": 1,
+      "head_adapter_parameters": 65,
+      "head_full_parameters": 64
+    },
+    "recurrence_example": {
+      "decisions": 100,
+      "counts_by_k": {
+        "1": 70,
+        "2": 20,
+        "4": 10
+      },
+      "adaptive_block_applications": 150,
+      "fixed_k4_applications": 400,
+      "fixed_k1_applications": 100,
+      "reduction_vs_k4": 0.625,
+      "timing_measured": false
+    },
+    "update_order": {
+      "rho": 0.5,
+      "initial": 0,
+      "u": 1,
+      "v": 2,
+      "u_then_v": 2.5,
+      "v_then_u": 2.0,
+      "one_u": 1,
+      "two_u": 1.5
+    },
+    "microbatch_example": {
+      "losses": [
+        1,
+        1,
+        9
+      ],
+      "cohort_mean": 3.6666666666666665,
+      "unweighted_mean_of_two_microbatches": 5
+    },
+    "pooling_example": {
+      "documents": [
+        [
+          1,
+          -1
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "pooled_means": [
+        0,
+        0
+      ],
+      "targets": [
+        1,
+        0
+      ],
+      "minimum_mae_from_pooled_mean": 0.5,
+      "mae_with_full_documents": 0
+    }
+  },
+  "limits": [
+    "Las dimensiones son las del código y los supuestos declarados, sin leer el corpus activo.",
+    "No son benchmarks ni picos de RAM o VRAM medidos.",
+    "Las pruebas ejercitan contratos existentes, no el candidato ni su integración futura.",
+    "No se han ejecutado entrenamientos ni rutas CUDA nuevas."
+  ]
+}
