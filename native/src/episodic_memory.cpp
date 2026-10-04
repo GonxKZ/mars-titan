@@ -3,6 +3,7 @@
 
 #include <ATen/ATen.h>
 #include <ATen/core/grad_mode.h>
+#include <c10/util/ScopeExit.h>
 #include <torch/serialize/archive.h>
 
 #include <algorithm>
@@ -36,10 +37,12 @@ constexpr int64_t maturity_column = 3;
 constexpr int64_t reward_valid_column = 4;
 constexpr int64_t label_valid_column = 5;
 using ReservoirEngine = std::mt19937_64;
+using QueryRow = std::array<double, episodic_memory_width>;
 static_assert(std::is_trivially_copyable_v<MemoryRecord>);
 static_assert(std::is_nothrow_copy_assignable_v<ReservoirEngine>);
-constexpr std::size_t maximum_record_bytes = 1024;
-static_assert(sizeof(MemoryRecord) + sizeof(MemoryVector) <= maximum_record_bytes);
+// La admisión del contexto reserva hasta 2 MiB por banco.
+static_assert(sizeof(MemoryRecord) + sizeof(QueryRow) <=
+              maximum_episodic_archive_bytes / episodic_memory_capacity);
 
 void require(bool condition, const char* message) {
     if (!condition) {
@@ -236,9 +239,9 @@ struct EpisodicMemory::Impl {
           rng(initial_rng(seed, scope)),
           keys(at::zeros(
               {static_cast<int64_t>(capacity), static_cast<int64_t>(episodic_memory_width)},
-              at::kFloat)) {
+              at::kDouble)) {
         records.reserve(capacity);
-        key_storage = {keys.data_ptr<float>(), capacity * episodic_memory_width};
+        key_storage = {keys.data_ptr<double>(), capacity * episodic_memory_width};
     }
 
     [[nodiscard]] bool valid(const PreparedMemoryWrite::Impl* candidate) const noexcept {
@@ -255,15 +258,21 @@ struct EpisodicMemory::Impl {
         const auto rows =
             records.size() +
             ((candidate && candidate->slot && *candidate->slot == records.size()) ? 1 : 0);
-        auto matrix = at::empty(
-            {static_cast<int64_t>(rows), static_cast<int64_t>(episodic_memory_width)}, at::kDouble);
-        matrix.narrow(0, 0, static_cast<int64_t>(records.size()))
-            .copy_(keys.narrow(0, 0, static_cast<int64_t>(records.size())));
+        const auto matrix = keys.narrow(0, 0, static_cast<int64_t>(rows));
+        QueryRow saved_row{};
+        std::span<double> overwritten;
+        const auto restore_row = c10::make_scope_exit([&]() noexcept {
+            if (!overwritten.empty()) {
+                std::copy_n(saved_row.begin(), overwritten.size(), overwritten.begin());
+            }
+        });
         if (candidate && candidate->slot) {
-            matrix.select(0, static_cast<int64_t>(*candidate->slot))
-                .copy_(vector_tensor(candidate->record.key));
+            overwritten = key_storage.subspan(*candidate->slot * episodic_memory_width,
+                                               episodic_memory_width);
+            std::copy(overwritten.begin(), overwritten.end(), saved_row.begin());
+            std::copy(candidate->record.key.begin(), candidate->record.key.end(), overwritten.begin());
         }
-        // La misma GEMV evita cambiar el redondeo entre consulta provisional y confirmada.
+        // La GEMV conserva el redondeo. La fila provisional se restaura incluso si falla la consulta.
         const auto scores = at::matmul(matrix, normalized);
         std::array<std::pair<double, const MemoryRecord*>, episodic_memory_capacity> eligible{};
         std::size_t count = 0;
@@ -310,7 +319,7 @@ struct EpisodicMemory::Impl {
     ReservoirEngine rng;
     std::vector<MemoryRecord> records;
     at::Tensor keys;
-    std::span<float> key_storage;
+    std::span<double> key_storage;
 };
 
 EpisodicMemory::EpisodicMemory(MemoryScope scope, uint64_t seed, std::size_t capacity) {
@@ -386,7 +395,7 @@ MemorySnapshot EpisodicMemory::snapshot() const {
     result.confirmed_at = impl_->confirmed_at;
     result.reservoir_rng = encode_rng(impl_->rng);
     const auto rows = static_cast<int64_t>(impl_->records.size());
-    result.keys = impl_->keys.narrow(0, 0, rows).clone();
+    result.keys = impl_->keys.narrow(0, 0, rows).to(at::kFloat);
     result.values = at::empty({rows, static_cast<int64_t>(episodic_memory_width)}, at::kFloat);
     result.metadata = at::empty({rows, metadata_width}, at::kLong);
     result.outcomes = at::empty({rows, outcome_width}, at::kDouble);

@@ -87,7 +87,7 @@ def execute(
         command.extend(("--device", "cpu", "--diagnostic"))
     result = subprocess.run(
         [*command, *extra],
-        env=dict(os.environ, CUDA_VISIBLE_DEVICES="-1", **(environment or {})),
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": "-1", **(environment or {})},
         pass_fds=pass_fds,
         capture_output=True,
         text=True,

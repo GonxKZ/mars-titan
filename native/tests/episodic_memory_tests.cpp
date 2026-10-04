@@ -3,13 +3,19 @@
 
 #include <ATen/ATen.h>
 #include <ATen/Parallel.h>
+#include <c10/core/Allocator.h>
+#include <c10/core/CPUAllocator.h>
+#include <c10/util/ScopeExit.h>
+#include <c10/util/ThreadLocalDebugInfo.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <limits>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -29,6 +35,41 @@ constexpr int64_t second_confirmation = 5;
 constexpr double reward_scale = 10;
 constexpr std::size_t minimum_inclusion = 20;
 constexpr std::size_t maximum_inclusion = 85;
+
+struct QueryAllocations final : c10::MemoryReportingInfoBase {
+    std::size_t bytes = 0;
+    std::size_t largest = 0;
+    void reportMemoryUsage(void*, int64_t allocation, std::size_t, std::size_t,
+                           c10::Device device) override {
+        if (device.is_cpu() && allocation > 0) {
+            const auto size = static_cast<std::size_t>(allocation);
+            bytes += size;
+            largest = std::max(largest, size);
+        }
+    }
+    [[nodiscard]] bool memoryProfilingEnabled() const override { return true; }
+};
+
+template <typename Operation> QueryAllocations allocations(Operation&& operation) {
+    const auto report = std::make_shared<QueryAllocations>();
+    const c10::DebugInfoGuard guard(c10::DebugInfoKind::PROFILER_STATE, report);
+    std::forward<Operation>(operation)();
+    return *report;
+}
+
+struct RejectScoreAllocation final : c10::Allocator {
+    explicit RejectScoreAllocation(c10::Allocator& allocator) : upstream(allocator) {}
+    c10::DataPtr allocate(std::size_t bytes) override {
+        if (bytes == sizeof(double)) {
+            throw std::bad_alloc();
+        }
+        return upstream.get().allocate(bytes);
+    }
+    void copy_data(void* destination, const void* source, std::size_t count) const override {
+        upstream.get().copy_data(destination, source, count);
+    }
+    std::reference_wrapper<c10::Allocator> upstream;
+};
 
 void require(bool condition, std::string_view message) {
     if (!condition) {
@@ -308,6 +349,82 @@ void reservoir_inclusion_is_not_biased_to_recent_or_early_records() {
                         }),
             "El muestreo no conserva una inclusión compatible con el reservorio uniforme");
 }
+
+void queries_bound_temporary_storage_to_scores() {
+    EpisodicMemory memory(scope(), seed);
+    for (uint64_t id = 1; id <= episodic_memory_capacity; ++id) {
+        write(memory, record(id));
+    }
+    auto candidate = memory.prepare_write(record(episodic_memory_capacity + 1, key(0, 1)),
+                                           final_time);
+    const auto committed = allocations([&] { static_cast<void>(memory.query(key(), final_time)); });
+    const auto prepared = allocations([&] {
+        static_cast<void>(memory.query_prepared(key(), final_time, candidate));
+    });
+    std::cout << "Asignaciones por consulta (confirmada/provisional): " << committed.bytes
+              << '/' << prepared.bytes << " bytes\n";
+    constexpr std::size_t score_bytes = episodic_memory_capacity * sizeof(double);
+    for (const auto& measured : {committed, prepared}) {
+        require(measured.bytes > 0 && measured.largest <= score_bytes &&
+                    measured.bytes <= 2 * score_bytes,
+                "La consulta vuelve a materializar la matriz de claves completa");
+    }
+}
+
+void abandoned_queries_leave_committed_keys_and_rng_unchanged() {
+    for (const std::size_t capacity : {std::size_t{1}, small_capacity, episodic_memory_capacity}) {
+        EpisodicMemory memory(scope(), seed, capacity);
+        for (uint64_t id = 1; id <= capacity; ++id) {
+            write(memory, record(id));
+        }
+        const auto before = memory.snapshot();
+        const auto expected = memory.query(key(), final_time);
+        for (uint64_t id = capacity + 1; id <= capacity + dense_records; ++id) {
+            auto candidate = memory.prepare_write(record(id, key(0, 1)), final_time);
+            static_cast<void>(memory.query_prepared(key(), final_time, candidate));
+            static_cast<void>(memory.query_prepared(key(0, 1), final_time, candidate, id));
+            rejected([&] { static_cast<void>(memory.query_prepared(MemoryVector{}, final_time, candidate)); });
+            same_query(expected, memory.query(key(), final_time));
+        }
+        const auto after = memory.snapshot();
+        require(at::equal(before.keys, after.keys) && before.reservoir_rng == after.reservoir_rng &&
+                    before.seen == after.seen && before.last_id == after.last_id,
+                "Descartar consultas provisionales cambió claves, contadores o RNG");
+    }
+}
+
+void failed_provisional_query_restores_the_committed_row() {
+    EpisodicMemory memory(scope(), seed, 1);
+    write(memory, record(1));
+    const auto before = memory.query(key(), final_time);
+    for (uint64_t id = 2; id <= dense_records; ++id) {
+        auto candidate = memory.prepare_write(record(id, key(0, 1)), final_time);
+        const auto provisional = memory.query_prepared(key(), final_time, candidate);
+        if (provisional.neighbors[0].record.id != id) {
+            require(memory.commit(std::move(candidate)), "No avanzó el RNG tras descartar el registro");
+            continue;
+        }
+        bool failed = false;
+        {
+            auto* upstream = c10::GetCPUAllocator();
+            RejectScoreAllocation allocator(*upstream);
+            const auto restore = c10::make_scope_exit([&] { c10::SetCPUAllocator(upstream); });
+            c10::SetCPUAllocator(&allocator);
+            try {
+                static_cast<void>(memory.query_prepared(key(), final_time, candidate));
+            } catch (const std::bad_alloc&) {
+                failed = true;
+            }
+        }
+        require(failed, "No se ejercitó el fallo al asignar las puntuaciones");
+        same_query(before, memory.query(key(), final_time));
+        same_query(provisional, memory.query_prepared(key(), final_time, candidate));
+        require(memory.commit(std::move(candidate)), "El fallo invalidó una escritura todavía coherente");
+        same_query(provisional, memory.query(key(), final_time));
+        return;
+    }
+    throw std::runtime_error("La prueba no encontró una sustitución del reservorio");
+}
 } // namespace
 
 int main() {
@@ -321,6 +438,9 @@ int main() {
         stale_and_foreign_tokens_are_rejected_without_changes();
         malformed_inputs_and_incompatible_scopes_fail_atomically();
         reservoir_inclusion_is_not_biased_to_recent_or_early_records();
+        abandoned_queries_leave_committed_keys_and_rng_unchanged();
+        failed_provisional_query_restores_the_committed_row();
+        queries_bound_temporary_storage_to_scores();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;
