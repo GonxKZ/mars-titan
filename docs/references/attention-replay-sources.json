@@ -1,0 +1,1566 @@
+[
+  {
+    "id": "liu2026attention",
+    "title": "Neural dissociation of attention and working memory through inhibitory control",
+    "authors": [
+      "Yueyao Liu",
+      "Yingtao Fu",
+      "Enze Tang",
+      "Hang Wu",
+      "Junrong Han",
+      "Musi Xie",
+      "Yihui Zhang",
+      "Bo Peng",
+      "Jinhao Huang",
+      "Hanjun Liu",
+      "Hui Chen",
+      "Pengmin Qin"
+    ],
+    "year": 2026,
+    "publication_date": "2025-12-02",
+    "version_of_record_date": "2026-01-03",
+    "journal": "Nature Communications",
+    "volume": "17",
+    "article_number": "22",
+    "doi": "10.1038/s41467-025-66553-7",
+    "url": "https://www.nature.com/articles/s41467-025-66553-7",
+    "access": "Artículo publicado. Lectura parcial del HTML editorial, incluidos resultados conductuales, estimulación y límites. Año de cita según la edición editorial.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.nature.com/articles/s41467-025-66553-7",
+      "passages": [
+        "Abstract",
+        "Results: Attended information can be blocked from working memory",
+        "Resultados de tDCS y TMS, figuras 6–8",
+        "Discussion",
+        "Methods: Participants"
+      ]
+    },
+    "verification_sources": [
+      "https://www.nature.com/articles/s41467-025-66553-7"
+    ],
+    "evidence_type": "human_behavior_neuroimaging_and_stimulation",
+    "relevance": "Separar selección atencional y escritura. Las intervenciones no ofrecen una regla simple trasladable a redes artificiales.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "gong2025focusing",
+    "title": "Focusing attention in working and long-term memory through dissociable mechanisms",
+    "authors": [
+      "Dongyu Gong",
+      "Dejan Draschkow",
+      "Anna C. Nobre"
+    ],
+    "year": 2025,
+    "publication_date": "2025-05-03",
+    "journal": "Nature Communications",
+    "volume": "16",
+    "article_number": "4126",
+    "doi": "10.1038/s41467-025-59359-0",
+    "url": "https://www.nature.com/articles/s41467-025-59359-0",
+    "access": "Artículo publicado. Leídos resumen, diseño y resultados seleccionados, discusión y participantes del experimento 1. No se declara lectura de suplementos.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.nature.com/articles/s41467-025-59359-0",
+      "passages": [
+        "Abstract",
+        "Results: diseño de los tres experimentos y figuras 1–6",
+        "Discussion",
+        "Methods: Experiment 1, Participants"
+      ]
+    },
+    "verification_sources": [
+      "https://www.nature.com/articles/s41467-025-59359-0",
+      "https://pubmed.ncbi.nlm.nih.gov/40319062/"
+    ],
+    "evidence_type": "human_behavior_and_eye_tracking",
+    "relevance": "Distinguir acceso a memoria de trabajo y a largo plazo, sin generalizar desde asociaciones visuales sencillas a cualquier contenido.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "babu2026value",
+    "title": "Strategy effects and value directed recall of sub- and supra-span word lists",
+    "authors": [
+      "Harini J. Babu",
+      "Tiffany K. Jantz",
+      "Kathy Y. Xie",
+      "Patricia A. Reuter-Lorenz"
+    ],
+    "year": 2026,
+    "publication_date": "2026-05-19",
+    "journal": "Memory & Cognition",
+    "volume": "54",
+    "pages": "1609–1631",
+    "doi": "10.3758/s13421-025-01828-4",
+    "url": "https://link.springer.com/article/10.3758/s13421-025-01828-4",
+    "access": "Artículo publicado. Lectura parcial del HTML editorial y contraste de metadatos con Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://link.springer.com/article/10.3758/s13421-025-01828-4",
+      "passages": [
+        "Abstract",
+        "Experiment 1: Method y Results",
+        "A cost of value-based encoding for short lists?",
+        "Limitations and future directions"
+      ]
+    },
+    "verification_sources": [
+      "https://link.springer.com/article/10.3758/s13421-025-01828-4",
+      "https://api.crossref.org/works/10.3758/s13421-025-01828-4"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "La prioridad puede perjudicar recuerdos relegados sin compensación. Medir beneficio global y coste del selector.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "karpicke2008retrieval",
+    "title": "The Critical Importance of Retrieval for Learning",
+    "authors": [
+      "Jeffrey D. Karpicke",
+      "Henry L. Roediger III"
+    ],
+    "year": 2008,
+    "publication_date": "2008-02-15",
+    "journal": "Science",
+    "volume": "319",
+    "issue": "5865",
+    "pages": "966–968",
+    "doi": "10.1126/science.1152408",
+    "url": "https://doi.org/10.1126/science.1152408",
+    "pdf_url": "https://learninglab.psych.purdue.edu/downloads/2008/2008_Karpicke_Roediger_Science.pdf",
+    "access": "Ficha editorial, PubMed y Crossref contrastados. PDF editorial del laboratorio accesible. Leídas las páginas 966–967, sin lectura del suplemento.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://learninglab.psych.purdue.edu/downloads/2008/2008_Karpicke_Roediger_Science.pdf",
+      "passages": [
+        "Resumen y planteamiento, página 966",
+        "Tabla 1: condiciones y número de ensayos",
+        "Diseño y resultados de recuerdo demorado, página 967"
+      ]
+    },
+    "verification_sources": [
+      "https://doi.org/10.1126/science.1152408",
+      "https://pubmed.ncbi.nlm.nih.gov/18276894/",
+      "https://api.crossref.org/works/10.1126/science.1152408"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "Fundamento para distinguir recuperación y reexposición. El número de ensayos no es idéntico entre todas las condiciones.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "butowska2024variableretrieval",
+    "title": "The role of variable retrieval in effective learning",
+    "authors": [
+      "Ewa Butowska-Buczyńska",
+      "Paulina Kliś",
+      "Katarzyna Zawadzka",
+      "Maciej Hanczakowski"
+    ],
+    "year": 2024,
+    "publication_date": "2024-10-25",
+    "journal": "Proceedings of the National Academy of Sciences",
+    "volume": "121",
+    "issue": "44",
+    "article_number": "e2413511121",
+    "doi": "10.1073/pnas.2413511121",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11536137/",
+    "access": "Artículo publicado. Leídos resumen, resultados seleccionados, discusión y método inicial en PMC. Autoría y fechas contrastadas con PubMed y Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11536137/",
+      "passages": [
+        "Abstract",
+        "Results: Experiments 1a, 1b, 2a, 2b y 3",
+        "Discussion",
+        "Materials and Methods: Experiments 1a and 1b"
+      ]
+    },
+    "verification_sources": [
+      "https://pmc.ncbi.nlm.nih.gov/articles/PMC11536137/",
+      "https://pubmed.ncbi.nlm.nih.gov/39453748/",
+      "https://api.crossref.org/works/10.1073/pnas.2413511121"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "Comparar variación de claves, espaciado y feedback. Cambiar la clave de una respuesta no crea una etiqueta independiente.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "cowan2024variability",
+    "title": "The effects of mnemonic variability and spacing on memory over multiple timescales",
+    "authors": [
+      "Emily T. Cowan",
+      "Yiwen Zhang",
+      "Benjamin M. Rottman",
+      "Vishnu P. Murty"
+    ],
+    "year": 2024,
+    "publication_date": "2024-03-12",
+    "journal": "Proceedings of the National Academy of Sciences",
+    "volume": "121",
+    "issue": "12",
+    "article_number": "e2311077121",
+    "doi": "10.1073/pnas.2311077121",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10962934/",
+    "access": "Artículo publicado. Leídos resumen, resultados seleccionados, discusión y participantes en PMC. Metadatos contrastados con Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10962934/",
+      "passages": [
+        "Abstract",
+        "Results: Item Memory at Long Timescales y Item Memory with Short Spacing Timescales",
+        "Discussion",
+        "Materials and Methods: Participants"
+      ]
+    },
+    "verification_sources": [
+      "https://pmc.ncbi.nlm.nih.gov/articles/PMC10962934/",
+      "https://api.crossref.org/works/10.1073/pnas.2311077121"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "Los efectos de diversidad y espaciado dependen de si se recuerda un ítem o una asociación y de la escala temporal.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "higham2023spaced",
+    "title": "Spaced Retrieval Practice: Can Restudying Trump Retrieval?",
+    "authors": [
+      "Philip A. Higham",
+      "Greta M. Fastrich",
+      "Rosalind Potts",
+      "Kou Murayama",
+      "Jade S. Pickering",
+      "Julie A. Hadwin"
+    ],
+    "year": 2023,
+    "publication_date": "2023-09-26",
+    "journal": "Educational Psychology Review",
+    "volume": "35",
+    "article_number": "98",
+    "doi": "10.1007/s10648-023-09809-2",
+    "url": "https://link.springer.com/article/10.1007/s10648-023-09809-2",
+    "access": "Artículo publicado. Lectura parcial de HTML editorial, con resultados y discusión. Metadatos contrastados con UCL Discovery y Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://link.springer.com/article/10.1007/s10648-023-09809-2",
+      "passages": [
+        "Abstract",
+        "Successive Relearning",
+        "Resultados y discusión del experimento 3",
+        "General Discussion: Response Format y Spaced Restudying"
+      ]
+    },
+    "verification_sources": [
+      "https://link.springer.com/article/10.1007/s10648-023-09809-2",
+      "https://discovery.ucl.ac.uk/id/eprint/10177745/",
+      "https://api.crossref.org/works/10.1007/s10648-023-09809-2"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "La forma de practicar y los juicios de memoria alteran la comparación. No atribuir el resultado solo al número de repeticiones.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "cao2026variability",
+    "title": "Striking the Balance: How Variability Shapes Retrieval Practice and Worked Examples for Transfer Learning",
+    "authors": [
+      "Meng Cao",
+      "Paulo F. Carvalho"
+    ],
+    "year": 2026,
+    "publication_date": "2026-05-12",
+    "journal": "Educational Psychology Review",
+    "volume": "38",
+    "article_number": "71",
+    "doi": "10.1007/s10648-026-10169-w",
+    "url": "https://link.springer.com/article/10.1007/s10648-026-10169-w",
+    "access": "Artículo publicado online en mayo de 2026. Leídos resumen, métodos y resultados de ambos experimentos y discusión seleccionada. Crossref contrastado.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://link.springer.com/article/10.1007/s10648-026-10169-w",
+      "passages": [
+        "Abstract",
+        "Experiment 1: Methods y Results and Discussion",
+        "Experiment 2: Methods y Results and Discussion",
+        "General Discussion: Task Demands Shape the Role of Variability"
+      ]
+    },
+    "verification_sources": [
+      "https://link.springer.com/article/10.1007/s10648-026-10169-w",
+      "https://api.crossref.org/works/10.1007/s10648-026-10169-w"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "Comparar diversidad y repetición contando conocimiento previo y tiempo. La transferencia depende de las reglas que deban inducirse.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "planells2026practice",
+    "title": "Which practice makes perfect? The role of variability and agency in learning adaptive problem solving",
+    "authors": [
+      "Hannah Planells",
+      "Giulia Serino",
+      "Ori Ossmy"
+    ],
+    "year": 2026,
+    "publication_date": "2026-07-31",
+    "issue_date": "2026-09",
+    "journal": "Acta Psychologica",
+    "volume": "269",
+    "article_number": "107546",
+    "doi": "10.1016/j.actpsy.2026.107546",
+    "url": "https://doi.org/10.1016/j.actpsy.2026.107546",
+    "pdf_url": "https://www.physicalcoglab.co.uk/_files/ugd/e7bc20_5bd66046683a47a29125bfe235aa031a.pdf",
+    "access": "PDF editorial de once páginas enlazado por el laboratorio. Lectura parcial de métodos, resultados y límites. Se utiliza la edición final, no el preprint SSRN.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.physicalcoglab.co.uk/_files/ugd/e7bc20_5bd66046683a47a29125bfe235aa031a.pdf",
+      "passages": [
+        "Resumen, página 1",
+        "Methods 2.1–2.5, páginas 3–6",
+        "Results 3.1, página 6",
+        "Discusión de observación y límites, páginas 8–9"
+      ]
+    },
+    "verification_sources": [
+      "https://www.sciencedirect.com/science/article/pii/S0001691826013478",
+      "https://www.physicalcoglab.co.uk/publications",
+      "https://api.crossref.org/works/10.1016/j.actpsy.2026.107546"
+    ],
+    "evidence_type": "human_behavior",
+    "relevance": "Contraste directo entre diversidad y repetición con 48 ensayos. El feedback observado y la transferencia dentro del dominio limitan la extrapolación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "holton2026transfer",
+    "title": "Humans and neural networks show similar patterns of transfer and interference during continual learning",
+    "authors": [
+      "Eleanor Holton",
+      "Lukas Braun",
+      "Jessica AF Thompson",
+      "Jan Grohn",
+      "Christopher Summerfield"
+    ],
+    "year": 2026,
+    "publication_date": "2025-10-30",
+    "issue_date": "2026-01",
+    "journal": "Nature Human Behaviour",
+    "volume": "10",
+    "pages": "111–125",
+    "doi": "10.1038/s41562-025-02318-y",
+    "url": "https://www.nature.com/articles/s41562-025-02318-y",
+    "access": "Artículo publicado online en 2025 y citado en volumen de 2026. Lectura parcial del HTML editorial y metadatos contrastados con Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.nature.com/articles/s41562-025-02318-y",
+      "passages": [
+        "Abstract",
+        "Results: diseño, Defining transfer and interference y ANN studies",
+        "Comparación de representaciones rich y lazy",
+        "Discussion",
+        "Methods: Participants y Task design"
+      ]
+    },
+    "verification_sources": [
+      "https://www.nature.com/articles/s41562-025-02318-y",
+      "https://api.crossref.org/works/10.1038/s41562-025-02318-y"
+    ],
+    "evidence_type": "human_behavior_and_computational_model",
+    "relevance": "Compartir estructura favorece transferencia y puede aumentar interferencia. El parecido conductual no identifica representaciones cerebrales equivalentes.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "liu2025bridge",
+    "title": "Cognitive Mechanisms Underlying Memory Advantages in Bridge Experts: Based on Suit Categorization and Honor Card Rules",
+    "authors": [
+      "Yanzhe Liu",
+      "Yan Liu",
+      "Bingjie Zhao",
+      "Qihan Zhang"
+    ],
+    "year": 2025,
+    "publication_date": "2025-01-24",
+    "journal": "Behavioral Sciences",
+    "volume": "15",
+    "issue": "2",
+    "article_number": "125",
+    "doi": "10.3390/bs15020125",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11852315/",
+    "access": "Artículo publicado. Leídos resumen, participantes y diseño seleccionados, discusión de mecanismos, transferencia y límites. Metadatos contrastados con Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11852315/",
+      "passages": [
+        "Abstract",
+        "2.1.1 Participants",
+        "3.1.1 Participants y 3.1.2 Experimental Design",
+        "3.3 Discussion",
+        "4.2 The Transfer of Memory Advantage in Bridge Experts",
+        "4.4 Limitations and Future Prospects"
+      ]
+    },
+    "verification_sources": [
+      "https://pmc.ncbi.nlm.nih.gov/articles/PMC11852315/",
+      "https://api.crossref.org/works/10.3390/bs15020125"
+    ],
+    "evidence_type": "human_expertise_comparison",
+    "relevance": "Separar familiaridad y conocimiento relacional. La comparación observacional y la transferencia cercana no acreditan capacidad general de anticipación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "schaul2016per",
+    "title": "Prioritized Experience Replay",
+    "authors": [
+      "Tom Schaul",
+      "John Quan",
+      "Ioannis Antonoglou",
+      "David Silver"
+    ],
+    "year": 2016,
+    "url": "https://arxiv.org/abs/1511.05952v4",
+    "doi": "10.48550/arXiv.1511.05952",
+    "doi_type": "arxiv",
+    "pdf_url": "https://arxiv.org/pdf/1511.05952v4",
+    "access": "Ficha y PDF abiertos. Leídos los apartados 3.2 a 3.4 y el algoritmo 1, especialmente muestreo, corrección y coste.",
+    "version": "arXiv v4, 25 de febrero de 2016",
+    "passages": [
+      "§3.2–3.4, pp. 3–5",
+      "Algoritmo 1, p. 5"
+    ],
+    "publication_status": "Publicado en ICLR 2016, según ficha y portada del PDF.",
+    "relevance": "Antecedente de prioridad, mezcla estocástica y corrección por importancia. Una pérdida alta puede concentrar ruido y reducir diversidad.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "venue": "International Conference on Learning Representations"
+  },
+  {
+    "id": "aljundi2019gss",
+    "title": "Gradient based sample selection for online continual learning",
+    "authors": [
+      "Rahaf Aljundi",
+      "Min Lin",
+      "Baptiste Goujaud",
+      "Yoshua Bengio"
+    ],
+    "year": 2019,
+    "url": "https://proceedings.neurips.cc/paper/2019/hash/e562cd9c0768d5464b64cf61da7fc6bb-Abstract.html",
+    "doi": null,
+    "pdf_url": "https://proceedings.neurips.cc/paper/2019/file/e562cd9c0768d5464b64cf61da7fc6bb-Paper.pdf",
+    "access": "Ficha y PDF de actas abiertos. Leídos los apartados 3.3 a 3.6 y el algoritmo 2. El preprint v4 se contrastó con la edición publicada.",
+    "version": "PDF de NeurIPS 2019",
+    "passages": [
+      "§3.3–3.6, pp. 4–6",
+      "Algoritmo 2"
+    ],
+    "publication_status": "NeurIPS 2019, actas verificadas.",
+    "relevance": "Diversidad mediante gradientes. El objetivo geométrico se aproxima con un criterio empírico y una selección voraz, sin garantía general de ausencia de olvido.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "venue": "Advances in Neural Information Processing Systems"
+  },
+  {
+    "id": "mindermann2022rholoss",
+    "title": "Prioritized Training on Points that are Learnable, Worth Learning, and not yet Learnt",
+    "authors": [
+      "Sören Mindermann",
+      "Jan M Brauner",
+      "Muhammed T Razzak",
+      "Mrinank Sharma",
+      "Andreas Kirsch",
+      "Winnie Xu",
+      "Benedikt Höltgen",
+      "Aidan N Gomez",
+      "Adrien Morisot",
+      "Sebastian Farquhar",
+      "Yarin Gal"
+    ],
+    "year": 2022,
+    "url": "https://proceedings.mlr.press/v162/mindermann22a.html",
+    "doi": null,
+    "pdf_url": "https://proceedings.mlr.press/v162/mindermann22a/mindermann22a.pdf",
+    "access": "Ficha y PDF abiertos. Leídos derivación, algoritmo y aproximaciones que sustituyen inferencia bayesiana por entrenamiento de redes.",
+    "version": "ICML 2022, PMLR 162, pp. 15630–15649",
+    "passages": [
+      "§3, ecuaciones (1)–(3) y algoritmo 1",
+      "§4.1, aproximaciones 0–3"
+    ],
+    "publication_status": "ICML 2022, actas verificadas.",
+    "relevance": "Priorizar pérdida aproximadamente reducible. El modelo auxiliar no es un oráculo de ruido y un holdout futuro violaría el contrato temporal.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "venue": "Proceedings of the 39th International Conference on Machine Learning",
+    "series": "Proceedings of Machine Learning Research",
+    "volume": "162",
+    "pages": "15630–15649"
+  },
+  {
+    "id": "tong2025csrel",
+    "title": "Coreset Selection via Reducible Loss in Continual Learning",
+    "authors": [
+      "Ruilin Tong",
+      "Yuhang Liu",
+      "Javen Qinfeng Shi",
+      "Dong Gong"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/24a8d40f6656e542f3fd43bac678e71b-Abstract-Conference.html",
+    "doi": null,
+    "pdf_url": "https://proceedings.iclr.cc/paper_files/paper/2025/file/24a8d40f6656e542f3fd43bac678e71b-Paper-Conference.pdf",
+    "access": "Ficha y PDF abiertos. Leídos formulación, selección, variante streaming y coste, sin auditoría completa de los experimentos.",
+    "version": "PDF de ICLR 2025",
+    "passages": [
+      "§3.1–4.3, pp. 3–6",
+      "§5.3, p. 10",
+      "Apéndices O–Q, pp. 28–29"
+    ],
+    "publication_status": "ICLR 2025, actas verificadas.",
+    "relevance": "Selección de memoria con pérdida reducible. Evita calcular gradientes para puntuar, pero requiere entrenar modelos auxiliares o aproximarlos.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "venue": "International Conference on Learning Representations 2025"
+  },
+  {
+    "id": "carrascodavis2025uper",
+    "title": "Uncertainty Prioritized Experience Replay",
+    "authors": [
+      "Rodrigo Antonio Carrasco-Davis",
+      "Sebastian Lee",
+      "Claudia Clopath",
+      "Will Dabney"
+    ],
+    "year": 2025,
+    "url": "https://rlj.cs.umass.edu/2025/papers/Paper45.html",
+    "doi": null,
+    "pdf_url": "https://rlj.cs.umass.edu/2025/papers/RLJ_RLC_2025_45.pdf",
+    "access": "Ficha editorial, HTML arXiv v1 y PDF editorial abiertos. Leídos descomposición, derivación gaussiana, ejemplos ruidosos y límites del ensemble.",
+    "version": "Reinforcement Learning Journal 6, pp. 585–623, 2025",
+    "passages": [
+      "§2.3.4–3.2",
+      "§4.1",
+      "Suplemento SM 3.1–3.2 y SM 3.7"
+    ],
+    "publication_status": "Reinforcement Learning Journal 2025, presentado en RLC 2025.",
+    "relevance": "Separar incertidumbre epistémica y aleatoria al priorizar. La información gaussiana de una nueva muestra no prueba el valor de repetir una observación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "journal": "Reinforcement Learning Journal",
+    "volume": "6",
+    "pages": "585–623"
+  },
+  {
+    "id": "abbes2025replayalignment",
+    "title": "Revisiting Replay and Gradient Alignment for Continual Pre-Training of Large Language Models",
+    "authors": [
+      "Istabrak Abbes",
+      "Gopeshh Subbaraj",
+      "Matthew Riemer",
+      "Nizar Islah",
+      "Benjamin Thérien",
+      "Tsuguchika Tabaru",
+      "Hiroaki Kingetsu",
+      "Sarath Chandar",
+      "Irina Rish"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2508.01908v1",
+    "doi": "10.48550/arXiv.2508.01908",
+    "doi_type": "arxiv",
+    "pdf_url": "https://arxiv.org/pdf/2508.01908v1",
+    "access": "HTML y PDF v1 abiertos. Contrastados con ficha PMLR y PDF de actas. Leídos §3, §5.4, §6 y algoritmos.",
+    "version": "Ficha anclada en arXiv v1 del 3 de agosto de 2025",
+    "passages": [
+      "§3.1–3.2",
+      "§5.4 y §6",
+      "Algoritmos 1–3"
+    ],
+    "publication_status": "Hay actas PMLR 330 (2026). Su ficha omite a Benjamin Thérien, mientras el PDF conserva nueve autores y cabecera CoLLAs 2025. Se mantienen los metadatos del preprint.",
+    "publication_url": "https://proceedings.mlr.press/v330/abbes26a.html",
+    "publication_pdf_url": "https://raw.githubusercontent.com/mlresearch/v330/main/assets/abbes26a/abbes26a.pdf",
+    "relevance": "Replay y alineamiento aproximado mediante Reptile. Contar copia de parámetros y almacenamiento completo, sin extrapolar escalado LLM.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "wang2025replayplasticity",
+    "title": "Experience Replay Addresses Loss of Plasticity in Continual Learning",
+    "authors": [
+      "Jiuqi Wang",
+      "Rohan Chandra",
+      "Shangtong Zhang"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2503.20018v1",
+    "doi": "10.48550/arXiv.2503.20018",
+    "doi_type": "arxiv",
+    "pdf_url": "https://arxiv.org/pdf/2503.20018v1",
+    "access": "Ficha, HTML y PDF abiertos. Leídos formulación, regresión, discusión y limitaciones.",
+    "version": "arXiv v1, 25 de marzo de 2025",
+    "passages": [
+      "§2–3, pp. 2–4",
+      "§7–8, p. 8"
+    ],
+    "publication_status": "Preprint v1. No se corroboró una edición editorial de este trabajo.",
+    "relevance": "Procesa ejemplos anteriores como contexto de un Transformer. No demuestra que repetir gradientes elimine toda pérdida de plasticidad.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "atreya2026srt",
+    "title": "When to Review: Spaced Repetition for Continual Pre-Training of Language Models",
+    "authors": [
+      "Alankar Atreya",
+      "Devesh Batra",
+      "Yoages Kumar Mantri",
+      "Geremy Bantug",
+      "Greig A Cowan",
+      "Raad Khraishi"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2608.17530v1",
+    "doi": "10.48550/arXiv.2608.17530",
+    "doi_type": "arxiv",
+    "pdf_url": "https://arxiv.org/pdf/2608.17530v1",
+    "access": "Ficha, HTML y PDF abiertos. Leídos método, controles, coste y discusión. Contradicción entre reutilizar el forward (§3.2) y añadir otro (§5.4).",
+    "version": "arXiv v1, 18 de agosto de 2026",
+    "passages": [
+      "§3.2, p. 3",
+      "§4.3",
+      "§5.4, p. 6",
+      "Tabla 3, p. 8"
+    ],
+    "publication_status": "Preprint v1, sin edición editorial corroborada.",
+    "relevance": "Calendario por experiencia y medición del olvido previo a actualizar. Mantener la forma de pérdida no conserva la distribución de entrenamiento.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "muennighoff2025dataconstrained",
+    "title": "Scaling Data-Constrained Language Models",
+    "authors": [
+      "Niklas Muennighoff",
+      "Alexander M. Rush",
+      "Boaz Barak",
+      "Teven Le Scao",
+      "Aleksandra Piktus",
+      "Nouamane Tazi",
+      "Sampo Pyysalo",
+      "Thomas Wolf",
+      "Colin Raffel"
+    ],
+    "year": 2025,
+    "url": "https://jmlr.org/papers/v26/24-1000.html",
+    "doi": null,
+    "pdf_url": "https://jmlr.org/papers/volume26/24-1000/24-1000.pdf",
+    "access": "Ficha y PDF editorial abiertos. Leídas formulación del valor de repetición, diseño, resultados pertinentes y sensibilidad a hiperparámetros.",
+    "version": "JMLR 26(53), pp. 1–66, 2025",
+    "passages": [
+      "§3, pp. 5–6",
+      "§4",
+      "§5.2",
+      "§10.2"
+    ],
+    "publication_status": "JMLR 2025, edición editorial verificada.",
+    "relevance": "Distinguir datos únicos y exposiciones. La ley ajustada de lenguaje no fija un número universal de repeticiones útil para finanzas.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "journal": "Journal of Machine Learning Research",
+    "volume": "26",
+    "number": "53",
+    "pages": "1–66"
+  },
+  {
+    "id": "mucllari2025noisetolerant",
+    "title": "Noise-Tolerant Coreset-Based Class Incremental Continual Learning",
+    "authors": [
+      "Edison Mucllari",
+      "Aswin Raghavan",
+      "Zachary Alan Daniels"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2504.16763v1",
+    "doi": null,
+    "pdf_url": "https://arxiv.org/pdf/2504.16763v1",
+    "access": "Ficha, HTML y PDF abiertos. Leídos §2–4 y pasajes de la prueba. Página 3 renderizada y revisada visualmente para comprobar las ecuaciones (7) y (9).",
+    "version": "arXiv v1, 23 de abril de 2025",
+    "passages": [
+      "§2–4",
+      "Ecuaciones (7) y (9), p. 3",
+      "Teorema 4, p. 3"
+    ],
+    "publication_status": "Preprint v1, sin edición editorial corroborada.",
+    "relevance": "Ruido de etiquetas y entradas en clasificación incremental. La aditividad del jacobiano usada en la derivación no vale para redes generales.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "garciasantaclara2026regressionreplay",
+    "title": "Continual Learning for non-stationary regression via Memory-Efficient Replay",
+    "authors": [
+      "Pablo García-Santaclara",
+      "Bruno Fernández-Castro",
+      "Rebeca P. Díaz-Redondo",
+      "Martín Alonso-Gamarra"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/abs/2602.09720v1",
+    "doi": null,
+    "pdf_url": "https://arxiv.org/pdf/2602.09720v1",
+    "access": "Ficha, HTML y PDF abiertos. Leídos metodología, escenarios de evaluación y memoria.",
+    "version": "arXiv v1, 10 de febrero de 2026",
+    "passages": [
+      "§IV",
+      "§V-A2 y §V-B",
+      "§V-C, tabla VIII, p. 11"
+    ],
+    "publication_status": "Preprint v1, sin edición editorial corroborada.",
+    "relevance": "Antecedente de replay para regresión con deriva. Los prototipos sintéticos y su proporción respecto a filas no prueban memoria acotada ni fidelidad de eventos.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  },
+  {
+    "id": "awasthi2023batchdrift",
+    "title": "Theory and Algorithm for Batch Distribution Drift Problems",
+    "authors": [
+      "Pranjal Awasthi",
+      "Corinna Cortes",
+      "Christopher Mohri"
+    ],
+    "year": 2023,
+    "url": "https://proceedings.mlr.press/v206/awasthi23b.html",
+    "doi": null,
+    "pdf_url": "https://proceedings.mlr.press/v206/awasthi23b/awasthi23b.pdf",
+    "access": "Ficha y PDF abiertos. Leídos supuestos, cotas para pesos fijos y adaptativos, formulación DRIFT/SDRIFT y límites de datos sin etiquetas.",
+    "version": "AISTATS 2023, PMLR 206, pp. 9826–9851",
+    "passages": [
+      "§2–4",
+      "Teoremas 1–2, pp. 3–4",
+      "Apéndice D"
+    ],
+    "publication_status": "AISTATS 2023, actas verificadas.",
+    "relevance": "Equilibrio entre discrepancia con el objetivo y concentración de pesos. Sus cotas usan pérdidas acotadas e independencia dentro de segmentos.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "venue": "Proceedings of The 26th International Conference on Artificial Intelligence and Statistics",
+    "series": "Proceedings of Machine Learning Research",
+    "volume": "206",
+    "pages": "9826–9851"
+  },
+  {
+    "id": "raposo2024mixturedepths",
+    "title": "Mixture-of-Depths: Dynamically allocating compute in transformer-based language models",
+    "authors": [
+      "David Raposo",
+      "Sam Ritter",
+      "Blake Richards",
+      "Timothy Lillicrap",
+      "Peter Conway Humphreys",
+      "Adam Santoro"
+    ],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2404.02258v1",
+    "pdf_url": "https://arxiv.org/pdf/2404.02258v1",
+    "venue": "arXiv",
+    "access": "Preprint v1 del 2 de abril de 2024. Título y seis autores comprobados en la ficha arXiv. Consultados pasajes de método y la discusión del enrutamiento no causal. No se ha corroborado una edición revisada por pares.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/pdf/2404.02258v1",
+      "passages": [
+        "Sección 3.1: presupuesto de cómputo y capacidad",
+        "Sección 3.2: rutas de atención y conexión residual",
+        "Sección 3.3: selección aprendida y control aleatorio",
+        "Introducción y sección 2: limitación causal del top-k sobre secuencias"
+      ],
+      "version": "v1",
+      "date": "2024-04-02"
+    },
+    "relevance": "Asignar un presupuesto explícito de refinamiento a ejemplos de una cohorte. Comparar con distribución uniforme y aleatoria del mismo trabajo. El top-k entre sesiones futuras viola el corte, y el tamaño del microlote no debe decidir qué activos reciben más cálculo.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.48550/arXiv.2404.02258"
+  },
+  {
+    "id": "bae2025mixturerecursions",
+    "title": "Mixture-of-Recursions: Learning Dynamic Recursive Depths for Adaptive Token-Level Computation",
+    "authors": [
+      "Sangmin Bae",
+      "Yujin Kim",
+      "Reza Bayat",
+      "Sungnyun Kim",
+      "Jiyoun Ha",
+      "Tal Schuster",
+      "Adam Fisch",
+      "Hrayr Harutyunyan",
+      "Ziwei Ji",
+      "Aaron Courville",
+      "Se-Young Yun"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2507.10524v3",
+    "pdf_url": "https://arxiv.org/pdf/2507.10524v3",
+    "venue": "arXiv",
+    "access": "Preprint v3 del 25 de octubre de 2025. Autoría y versión comprobadas en arXiv. Consultados los diseños de enrutamiento y caché, incluida la limitación causal reconocida en la tabla 2. No se ha corroborado una edición editorial.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/pdf/2507.10524v3",
+      "passages": [
+        "Sección 2.1: parámetros compartidos y procesamiento por profundidad",
+        "Sección 2.2.1: expert-choice y token-choice",
+        "Sección 2.2.2: caché por recurrencia y compartición de KV",
+        "Tabla 2: fuga temporal, balanceo y costes de caché"
+      ],
+      "version": "v3",
+      "date": "2025-10-25"
+    },
+    "relevance": "Separar reutilización de parámetros, elección de profundidad y revisión de la memoria consultada. Para la variante ampliada, una puerta causal después de K=1 puede elegir entre K=1,2,4. Comparar con K fijo y reparto aleatorio de igual coste, contabilizando la puerta, cachés y latencias de cola.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.48550/arXiv.2507.10524"
+  },
+  {
+    "id": "qiu2025gatedattention",
+    "title": "Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free",
+    "authors": [
+      "Zihan Qiu",
+      "Zekun Wang",
+      "Bo Zheng",
+      "Zeyu Huang",
+      "Kaiyue Wen",
+      "Songlin Yang",
+      "Rui Men",
+      "Le Yu",
+      "Fei Huang",
+      "Suozhi Huang",
+      "Dayiheng Liu",
+      "Jingren Zhou",
+      "Junyang Lin"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/904e89bb4e632e75fb47f093b620b257-Abstract-Conference.html",
+    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/904e89bb4e632e75fb47f093b620b257-Paper-Conference.pdf",
+    "venue": "Advances in Neural Information Processing Systems",
+    "access": "NeurIPS 2025, revisado por pares. DOI y autoría contrastados en actas. Leídos pasajes de la introducción, sección 2, configuración 3.1 y comparación inicial de variantes. No se atribuye lectura integral.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/904e89bb4e632e75fb47f093b620b257-Paper-Conference.pdf",
+      "passages": [
+        "Introducción: efecto de una puerta con un solo experto",
+        "Sección 2: posiciones de las puertas y ecuación 5",
+        "Sección 3.1: modelos y configuración",
+        "Sección 3 y tabla 1: variantes por cabeza y por elemento"
+      ]
+    },
+    "relevance": "Contrastar una puerta sobre la lectura de memoria con una mezcla constante. Una puerta posterior a la atención modula la representación después de pagar esa atención. Su valor numérico no mide por sí mismo fiabilidad, explicación o ahorro de cómputo.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.52202/085713-3345",
+    "volume": "38"
+  },
+  {
+    "id": "yuan2025nativesparse",
+    "title": "Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention",
+    "authors": [
+      "Jingyang Yuan",
+      "Huazuo Gao",
+      "Damai Dai",
+      "Junyu Luo",
+      "Liang Zhao",
+      "Zhengyan Zhang",
+      "Zhenda Xie",
+      "Y. X. Wei",
+      "Lean Wang",
+      "Zhiping Xiao",
+      "Yuqing Wang",
+      "Chong Ruan",
+      "Ming Zhang",
+      "Wenfeng Liang",
+      "Wangding Zeng"
+    ],
+    "year": 2025,
+    "url": "https://aclanthology.org/2025.acl-long.1126/",
+    "pdf_url": "https://aclanthology.org/2025.acl-long.1126.pdf",
+    "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    "access": "ACL 2025, revisado por pares. Metadatos editoriales y pasajes del PDF comprobados. La autoría sigue la cabecera del PDF, que usa Y. X. Wei. La ficha ACL desarrolla ese nombre como Yuxing Wei.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://aclanthology.org/2025.acl-long.1126.pdf",
+      "passages": [
+        "Sección 2.2: combinación de compresión, selección y ventana",
+        "Sección 2.3.1: compresión de bloques",
+        "Sección 2.3.2: selección de claves y valores",
+        "Introducción: escala de 27B parámetros, 260B tokens y medidas de kernels en A100"
+      ]
+    },
+    "relevance": "Una lectura puede combinar resumen reciente y episodios exactos seleccionados, manteniendo capacidad y referencias. Comparar con búsqueda exacta y recuperación uniforme. Comprimir para decidir qué leer no demuestra que se puedan eliminar señales externas ni evita el coste de construir el resumen.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.18653/v1/2025.acl-long.1126",
+    "pages": "23078–23097"
+  },
+  {
+    "id": "xiao2025flashmoba",
+    "title": "Optimizing Mixture of Block Attention",
+    "authors": [
+      "Guangxuan Xiao",
+      "Junxian Guo",
+      "Kasra Mazaheri",
+      "Song Han"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2511.11571v2",
+    "pdf_url": "https://arxiv.org/pdf/2511.11571v2",
+    "venue": "arXiv",
+    "access": "Preprint v2 del 19 de diciembre de 2025. Cuatro autores comprobados en arXiv. Consultadas formulación, supuestos estadísticos, limitaciones de la selección por bloques y configuración de GPU. No se ha confirmado una publicación revisada por pares.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/pdf/2511.11571v2",
+      "passages": [
+        "Sección 2: media de claves y selección top-k de bloques",
+        "Secciones 3.1–3.2: supuestos y relación entre dimensión y tamaño de bloque",
+        "Sección 4.1: coste de índices, selección y accesos no contiguos",
+        "Sección 5.1: configuración de ocho H100 de 80 GB"
+      ],
+      "version": "v2",
+      "date": "2025-12-19"
+    },
+    "relevance": "Comprobar si resumir varios episodios diluye acontecimientos raros. Igualar episodios leídos y medir también la búsqueda. La relación señal-ruido derivada pertenece a su modelo estadístico, no a toda noticia financiera. Los resultados de kernels no predicen latencia en RTX 4070.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.48550/arXiv.2511.11571"
+  },
+  {
+    "id": "tandon2025ttte2e",
+    "title": "End-to-End Test-Time Training for Long Context",
+    "authors": [
+      "Arnuv Tandon",
+      "Karan Dalal",
+      "Xinhao Li",
+      "Daniel Koceja",
+      "Marcel Rød",
+      "Sam Buchanan",
+      "Xiaolong Wang",
+      "Jure Leskovec",
+      "Sanmi Koyejo",
+      "Tatsunori Hashimoto",
+      "Carlos Guestrin",
+      "Jed McCaleb",
+      "Yejin Choi",
+      "Yu Sun"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2512.23675v2",
+    "pdf_url": "https://arxiv.org/pdf/2512.23675v2",
+    "venue": "arXiv",
+    "access": "Preprint v2 del 31 de diciembre de 2025. Catorce autores y versión comprobados en arXiv. Leídos los pasajes de formulación, metaaprendizaje, lotes internos y parámetros congelados. No se ha corroborado una publicación editorial.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/pdf/2512.23675v2",
+      "passages": [
+        "Sección 2.1: actualización mediante predicción del siguiente token",
+        "Sección 2.2: aprendizaje de la inicialización y gradientes de gradientes",
+        "Sección 2.3: lotes de adaptación y ventana local",
+        "Sección 2.3.1: MLP adaptables, capas congeladas y rama estática",
+        "Figura 1: condiciones de latencia en H100"
+      ],
+      "version": "v2",
+      "date": "2025-12-31"
+    },
+    "relevance": "Delimitar una variante online con un subconjunto adaptable y una referencia estática. En retornos, las etiquetas llegan más tarde que los tokens del contexto lingüístico. Debe compararse con reajuste simple de igual información y actualizaciones, contando optimizador, metaentrenamiento y reconstrucción de estado.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.48550/arXiv.2512.23675"
+  },
+  {
+    "id": "ge2025hrmperspectives",
+    "title": "Hierarchical Reasoning Models: Perspectives and Misconceptions",
+    "authors": [
+      "Renee Ge",
+      "Qianli Liao",
+      "Tomaso Poggio"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2510.00355v2",
+    "pdf_url": "https://arxiv.org/pdf/2510.00355v2",
+    "venue": "arXiv",
+    "access": "Preprint v2 del 7 de octubre de 2025. La ficha declara errores en resultados de v1, retirada de esos resultados y cambio de conclusiones. Se conserva el título y las conclusiones de v2. Leídos pasajes sobre jerarquía, entrenamiento y parada, no el artículo completo.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/pdf/2510.00355v2",
+      "passages": [
+        "Sección 2: comparación de los módulos jerárquicos con un módulo ampliado",
+        "Sección 3: interpretación del gradiente de un paso y sus límites",
+        "Sección 4: diferencia entre parada en entrenamiento y evaluación",
+        "Secciones 5.1.1–5.1.2: ablación del módulo H y formulación de la parada"
+      ],
+      "version": "v2",
+      "date": "2025-10-07"
+    },
+    "relevance": "Exigir controles que separen jerarquía, profundidad y supervisión intermedia. La puerta usada durante ajuste y la política realmente evaluada deben coincidir. Sudoku y laberintos tienen reglas verificables, mientras el retorno futuro conserva incertidumbre y no admite la misma recompensa binaria de solución.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.48550/arXiv.2510.00355"
+  },
+  {
+    "id": "hu2025timefilter",
+    "title": "TimeFilter: Patch-Specific Spatial-Temporal Graph Filtration for Time Series Forecasting",
+    "authors": [
+      "Yifan Hu",
+      "Guibin Zhang",
+      "Peiyuan Liu",
+      "Disen Lan",
+      "Naiqi Li",
+      "Dawei Cheng",
+      "Tao Dai",
+      "Shu-Tao Xia",
+      "Shirui Pan"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/hu25ac.html",
+    "pdf_url": "https://raw.githubusercontent.com/mlresearch/v267/main/assets/hu25ac/hu25ac.pdf",
+    "venue": "Proceedings of the 42nd International Conference on Machine Learning",
+    "access": "ICML 2025, PMLR 267:24893–24911, revisado por pares. Autoría y metadatos contrastados en PMLR. Consultados definición del grafo, filtrado por parche, asignación de expertos y condiciones de eficiencia. No se atribuye evaluación financiera residual.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://raw.githubusercontent.com/mlresearch/v267/main/assets/hu25ac/hu25ac.pdf",
+      "passages": [
+        "Sección 3.2: matriz de dependencias de dimensión n=C×N",
+        "Sección 4.1: grafo k-NN y ecuación 3",
+        "Sección 4.2: filtros temporal, espacial y combinado y asignación top-p",
+        "Sección 4.3: agregación del grafo filtrado",
+        "Sección 5: ajuste del tamaño de parche al ampliar la ventana y análisis de eficiencia"
+      ]
+    },
+    "relevance": "Comparar filtrado causal de relaciones con una fusión compartida, fijando las entradas observadas. Una arista anulada no elimina la variable que ayudó a construir el grafo. La selección de variables para dejar de adquirirlas necesita otro modelo reentrenado y un coste de adquisición explícito.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "pages": "24893–24911",
+    "volume": "267"
+  },
+  {
+    "id": "wang2025stockmem",
+    "title": "StockMem: An Event-Reflection Memory Framework for Stock Forecasting",
+    "authors": [
+      "He Wang",
+      "Wenyilin Xiao",
+      "Songqiao Han",
+      "Hailiang Huang"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2512.02720v1",
+    "pdf_url": null,
+    "venue": "arXiv",
+    "access": "Preprint v1 del 2 de diciembre de 2025. Autoría y fecha comprobadas en arXiv. Leído el HTML de método y configuración. El intento de acceso directo al PDF devolvió HTTP 406, por lo que no se atribuye lectura de ese PDF. La fecha de plantilla de 2009 del HTML no se usa como fecha de publicación.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/html/2512.02720v1",
+      "passages": [
+        "HTML, secciones 3.1–3.4: extracción, unión, seguimiento y recuperación de eventos",
+        "Sección 3.2: incorporación del ejemplo y su etiqueta después de predecir",
+        "Sección 4.1: cuatro empresas tecnológicas, Q1/Q2 de 2024 y exclusión de retornos entre −1 % y 1 %"
+      ],
+      "version": "v1",
+      "date": "2025-12-02"
+    },
+    "relevance": "Antecedente de memoria estructurada de eventos y resultados financieros. No demuestra identificación causal ni predicción de ocurrencia de eventos. En MARS-TITAN, conservar la cohorte completa, fechas reales de maduración y una instantánea común antes de publicar las escrituras.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.48550/arXiv.2512.02720",
+    "verification_notes": "Texto consultado: https://arxiv.org/html/2512.02720v1"
+  },
+  {
+    "id": "tan2026hawkesattention",
+    "title": "From Hawkes Processes to Attention: Time-Modulated Mechanisms for Event Sequences",
+    "authors": [
+      "Xinzi Tan",
+      "Kejian Zhang",
+      "Junhan Yu",
+      "Doudou Zhou"
+    ],
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v300/tan26a.html",
+    "pdf_url": "https://raw.githubusercontent.com/mlresearch/v300/main/assets/tan26a/tan26a.pdf",
+    "venue": "Proceedings of The 29th International Conference on Artificial Intelligence and Statistics",
+    "access": "AISTATS 2026, PMLR 300:2584–2592, revisado por pares. Metadatos y PDF comprobados. Consultados la formulación de intensidad, núcleos por tipo, pérdida, muestreo y los conjuntos de eventos de la sección 3. La tabla principal usa Taobao, Amazon, Taxi y StackOverflow, no retornos financieros.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://raw.githubusercontent.com/mlresearch/v300/main/assets/tan26a/tan26a.pdf",
+      "passages": [
+        "Secciones 2.1–2.2: intensidad condicionada a historia y núcleos por tipo",
+        "Secciones 2.3–2.4: atención temporal, ecuaciones 15–17 y aproximación Monte Carlo",
+        "Secciones 3.1–3.4: datos, predicción de tipo y tiempo, métricas y RTX 4090",
+        "Discusión de memoria: término cuadrático de atención"
+      ]
+    },
+    "relevance": "Una cabeza auxiliar puede predecir tipo y tiempo de eventos públicos, con objetivos separados del retorno. Comparar con calendarios conocidos, tasas históricas y Markov filtrado. La intensidad estima frecuencia condicional, no el contenido de una noticia ni su efecto causal en precios.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "pages": "2584–2592",
+    "volume": "300"
+  },
+  {
+    "id": "dai2025dailyoracle",
+    "title": "Are LLMs Prescient? A Continuous Evaluation using Daily News as the Oracle",
+    "authors": [
+      "Hui Dai",
+      "Ryan Teehan",
+      "Mengye Ren"
+    ],
+    "year": 2025,
+    "url": "https://proceedings.mlr.press/v267/dai25l.html",
+    "pdf_url": "https://raw.githubusercontent.com/mlresearch/v267/main/assets/dai25l/dai25l.pdf",
+    "venue": "Proceedings of the 42nd International Conference on Machine Learning",
+    "access": "ICML 2025, PMLR 267:12179–12213, revisado por pares. Metadatos editoriales comprobados. Leídos construcción, filtrado, revisión humana y cortes de acceso a noticias. La extracción textual del PDF produjo avisos de tipografía, sin impedir leer estos pasajes.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://raw.githubusercontent.com/mlresearch/v267/main/assets/dai25l/dai25l.pdf",
+      "passages": [
+        "Sección 3.1: generación y filtrado de preguntas a partir de noticias",
+        "Sección 3.2: fechas y composición del conjunto",
+        "Sección 3.3: revisión humana de 60 preguntas por cuatro anotadores",
+        "Sección 4.1: corte de preentrenamiento y recuperación de noticias anterior a la resolución"
+      ]
+    },
+    "relevance": "Separar pronóstico prospectivo y reconstrucción de un resultado ya aprendido. Registrar cuándo se fijan pregunta, taxonomía y etiqueta. Generar preguntas después de conocer la noticia exige controlar pistas retrospectivas. El acierto en preguntas de eventos no acredita mejora del MAE residual.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "pages": "12179–12213",
+    "volume": "267"
+  },
+  {
+    "id": "zhang2025simplicityevents",
+    "title": "The Power of Simplicity in LLM-Based Event Forecasting",
+    "authors": [
+      "Meiru Zhang",
+      "Auss Abbood",
+      "Zaiqiao Meng",
+      "Nigel Collier"
+    ],
+    "year": 2025,
+    "url": "https://aclanthology.org/2025.realm-1.32/",
+    "pdf_url": "https://aclanthology.org/2025.realm-1.32.pdf",
+    "venue": "Proceedings of the 1st Workshop for Research on Agent Language Models (REALM 2025)",
+    "access": "Artículo de taller REALM 2025 publicado en ACL Anthology, no artículo de las actas principales de ACL. DOI, autores y páginas comprobados. Leídos configuración, contraste RAG/ReAct, tipos de contexto y limitaciones de recuperación fija.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://aclanthology.org/2025.realm-1.32.pdf",
+      "passages": [
+        "Sección 2.1: relaciones CAMEO entre países y fechas de corte de MIRAI",
+        "Sección 2.2: recuperación única y tipos de contexto",
+        "Secciones 3.1–3.2: contexto estructurado y control con las mismas observaciones",
+        "Sección 6: límites de los recuentos fijos de 30 eventos y 15 titulares"
+      ]
+    },
+    "relevance": "Contrastar estadísticas de eventos, episodios estructurados y titulares sobre la misma población. El artículo cuestiona que más iteraciones o texto mejoren siempre un pronóstico. Sus resultados dependen del modelo y la tarea internacional, y no justifican eliminar noticias o macro del candidato original.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "doi": "10.18653/v1/2025.realm-1.32",
+    "pages": "454–470"
+  },
+  {
+    "id": "cogitate2025adversarial",
+    "title": "Adversarial testing of global neuronal workspace and integrated information theories of consciousness",
+    "authors": [
+      "Cogitate Consortium",
+      "Oscar Ferrante",
+      "Urszula Gorska-Klimowska",
+      "Simon Henin",
+      "Rony Hirschhorn",
+      "Aya Khalaf",
+      "Alex Lepauvre",
+      "Ling Liu",
+      "David Richter",
+      "Yamil Vidal",
+      "Niccolò Bonacchi",
+      "Tanya Brown",
+      "Praveen Sripad",
+      "Marcelo Armendariz",
+      "Katarina Bendtz",
+      "Tara Ghafari",
+      "Dorottya Hetenyi",
+      "Jay Jeschke",
+      "Csaba Kozma",
+      "David R. Mazumder",
+      "Stephanie Montenegro",
+      "Alia Seedat",
+      "Abdelrahman Sharafeldin",
+      "Shujun Yang",
+      "Sylvain Baillet",
+      "David J. Chalmers",
+      "Radoslaw M. Cichy",
+      "Francis Fallon",
+      "Theofanis I. Panagiotaropoulos",
+      "Hal Blumenfeld",
+      "Floris P. de Lange",
+      "Sasha Devore",
+      "Ole Jensen",
+      "Gabriel Kreiman",
+      "Huan Luo",
+      "Melanie Boly",
+      "Stanislas Dehaene",
+      "Christof Koch",
+      "Giulio Tononi",
+      "Michael Pitts",
+      "Liad Mudrik",
+      "Lucia Melloni"
+    ],
+    "year": 2025,
+    "doi": "10.1038/s41586-025-08888-1",
+    "url": "https://www.nature.com/articles/s41586-025-08888-1",
+    "journal": "Nature",
+    "access": "Artículo revisado por pares, publicado el 30 de abril de 2025. Lectura parcial del resumen, introducción, predicciones prerregistradas y discusión del HTML editorial. Autoría y metadatos corroborados en Crossref. Estudio humano con fMRI, MEG e iEEG, no evaluación de un modelo financiero.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.nature.com/articles/s41586-025-08888-1",
+      "passages": [
+        "Abstract",
+        "Preregistered predictions and analyses",
+        "Discussion"
+      ]
+    },
+    "relevance": "Delimitar afirmaciones sobre consciencia y adoptar predicciones rivales y criterios de refutación. Los resultados no identifican una arquitectura de IA consciente.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "volume": "642",
+    "issue": "8066",
+    "pages": "133-142"
+  },
+  {
+    "id": "kumaran2026confidence",
+    "title": "Causal evidence that language models use confidence to drive behaviour",
+    "authors": [
+      "Dharshan Kumaran",
+      "Nathaniel Daw",
+      "Simon Osindero",
+      "Petar Veličković",
+      "Viorica Patraucean"
+    ],
+    "year": 2026,
+    "doi": "10.1038/s42256-026-01293-x",
+    "url": "https://www.nature.com/articles/s42256-026-01293-x",
+    "journal": "Nature Machine Intelligence",
+    "access": "Artículo revisado por pares, publicado el 7 de septiembre de 2026. Leídos resumen, diseño, resultados de las fases 1–4 y discusión, incluidos límites de generalización desde preguntas factuales de opción múltiple. Metadatos corroborados en Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://www.nature.com/articles/s42256-026-01293-x",
+      "passages": [
+        "Results: phases 1–4",
+        "Verbal confidence as an independent predictor of abstention behaviour",
+        "Discussion"
+      ]
+    },
+    "relevance": "Separar estimación de confianza y política que la utiliza. La influencia causal de una señal en la abstención no acredita que esa señal sea exacta, que mejore regresión financiera ni que exista experiencia subjetiva.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "volume": "8",
+    "issue": "9",
+    "pages": "1411-1425"
+  },
+  {
+    "id": "rahnev2025metacognition",
+    "title": "A comprehensive assessment of current methods for measuring metacognition",
+    "authors": [
+      "Dobromir Rahnev"
+    ],
+    "year": 2025,
+    "doi": "10.1038/s41467-025-56117-0",
+    "url": "https://www.nature.com/articles/s41467-025-56117-0",
+    "journal": "Nature Communications",
+    "access": "Artículo revisado por pares, publicado el 15 de enero de 2025. Consultados resumen, metadatos y leyendas de las figuras 1–7 en PubMed. Crossref corrobora autor y DOI. El acceso directo al HTML editorial falló y PMC solicitó verificación de navegador. No se atribuye lectura integral.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/39814749/",
+      "passages": [
+        "Resumen y figuras 1–7 en https://pubmed.ncbi.nlm.nih.gov/39814749/"
+      ]
+    },
+    "relevance": "Separar discriminación de errores, sesgo, desempeño de la tarea y fiabilidad entre sesiones al medir una función de autoevaluación. No trasladar métricas de elección binaria a MAE sin definir su adaptación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "volume": "16",
+    "issue": "1",
+    "article_number": "701"
+  },
+  {
+    "id": "gneiting2007scoring",
+    "title": "Strictly Proper Scoring Rules, Prediction, and Estimation",
+    "authors": [
+      "Tilmann Gneiting",
+      "Adrian E Raftery"
+    ],
+    "year": 2007,
+    "doi": "10.1198/016214506000001437",
+    "url": "https://doi.org/10.1198/016214506000001437",
+    "journal": "Journal of the American Statistical Association",
+    "access": "Artículo publicado en JASA 102(477):359–378, 2007. Copia editorial ofrecida por el autor. Leídas la introducción, sección 3 sobre probabilidades categóricas y binarias y pasajes de la sección 6 sobre cuantiles e intervalos. Metadatos corroborados en Crossref.",
+    "read_version": {
+      "type": "published_article",
+      "url": "https://sites.stat.washington.edu/people/raftery/Research/PDF/Gneiting2007jasa.pdf",
+      "passages": [
+        "Sección 1: introducción",
+        "Sección 3, ejemplos 1 y log score",
+        "Sección 6: cuantiles e intervalos"
+      ]
+    },
+    "relevance": "Evaluar probabilidades de eventos con Brier y log score y separar calibración de concentración. Una puntuación propia no garantiza calibración bajo cualquier cambio de distribución.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04",
+    "volume": "102",
+    "issue": "477",
+    "pages": "359-378",
+    "pdf_url": "https://sites.stat.washington.edu/people/raftery/Research/PDF/Gneiting2007jasa.pdf"
+  },
+  {
+    "id": "butlin2026indicators",
+    "title": "Identifying indicators of consciousness in AI systems",
+    "authors": [
+      "Patrick Butlin",
+      "Robert Long",
+      "Tim Bayne",
+      "Yoshua Bengio",
+      "Jonathan Birch",
+      "David Chalmers",
+      "Axel Constant",
+      "George Deane",
+      "Eric Elmoznino",
+      "Stephen M. Fleming",
+      "Xu Ji",
+      "Ryota Kanai",
+      "Colin Klein",
+      "Grace Lindsay",
+      "Matthias Michel",
+      "Liad Mudrik",
+      "Megan A. K. Peters",
+      "Eric Schwitzgebel",
+      "Jonathan Simon",
+      "Rufin VanRullen"
+    ],
+    "year": 2026,
+    "doi": "10.1016/j.tics.2025.10.011",
+    "url": "https://doi.org/10.1016/j.tics.2025.10.011",
+    "journal": "Trends in Cognitive Sciences",
+    "volume": "30",
+    "issue": "6",
+    "pages": "488–501",
+    "publication_date": "2026-06",
+    "online_date": "2025-11-10",
+    "access": "Artículo de opinión y revisión. Edición de junio de 2026, publicada online el 10 de noviembre de 2025. Autoría, DOI, fechas y paginación contrastados en PubMed. Consultados resumen y extractos editoriales sobre indicadores derivados de teorías. El acceso directo al texto completo falló. No se atribuye lectura integral ni un experimento propio.",
+    "read_version": {
+      "type": "published_article_abstract_and_excerpts",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/41219038/",
+      "passages": [
+        "Resumen y metadatos",
+        "Extracto editorial: What does it tell us if a system possesses indicator properties?"
+      ]
+    },
+    "relevance": "Distinguir funciones de autoevaluación observables e indicadores teóricos de una atribución demostrada de consciencia. No utilizar atención o recurrencia como certificación.",
+    "redistribution": "unknown",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-04"
+  }
+]

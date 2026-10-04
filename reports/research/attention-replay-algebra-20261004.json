@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-04T20:32:10.051157+00:00",
+  "kind": "finite_algebraic_examples",
+  "candidate_implemented": false,
+  "model_trained": false,
+  "device": "cpu",
+  "dtype": "float64",
+  "numpy": "2.5.3",
+  "python": "3.12.14",
+  "source_sha256": "aa0eaac97186d2a0aa0f595f53764343ebebc4a5ebd7924fc3931a0cee2e783e",
+  "importance": {
+    "cases": 27,
+    "clipping_cases": 81,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "buffer_sizes": [
+      2,
+      17,
+      64
+    ],
+    "epsilon": [
+      0.05,
+      0.2,
+      1
+    ],
+    "gradient_dimension": 4,
+    "maximum_expectation_error": 2.220446049250313e-16,
+    "maximum_clipping_bias_formula_error": 2.220446049250313e-16,
+    "second_moment_atol": 2e-12,
+    "atol": 2e-14,
+    "rtol": 2e-14
+  },
+  "zero_support": {
+    "cases": 3,
+    "maximum_expectation_error": 0.0
+  },
+  "repetition": {
+    "noisy_label_cases": [
+      {
+        "step": 0.1,
+        "noise": -2.0,
+        "future_error_after_64": 1.9976419630844524
+      },
+      {
+        "step": 0.1,
+        "noise": 2.0,
+        "future_error_after_64": 1.9976419630844524
+      },
+      {
+        "step": 0.5,
+        "noise": -2.0,
+        "future_error_after_64": 2.0
+      },
+      {
+        "step": 0.5,
+        "noise": 2.0,
+        "future_error_after_64": 2.0
+      },
+      {
+        "step": 0.9,
+        "noise": -2.0,
+        "future_error_after_64": 2.0
+      },
+      {
+        "step": 0.9,
+        "noise": 2.0,
+        "future_error_after_64": 2.0
+      }
+    ],
+    "duplicate_groups": 7,
+    "copies_per_group": 4,
+    "individual_variance": 2.5,
+    "actual_mean_variance": 0.357142857142857,
+    "incorrect_independence_variance": 0.08928571428571429,
+    "effective_count_in_this_example": 7.0000000000000036
+  },
+  "information": {
+    "unobserved_independent_signal": {
+      "values": [
+        -1.0,
+        1.0
+      ],
+      "observed_signal_mae": 0.0,
+      "reduced_signal_minimum_mae_on_grid": 1.0,
+      "grid": [
+        -2,
+        2,
+        401
+      ]
+    },
+    "distillation": {
+      "values": [
+        0.0,
+        10.0
+      ],
+      "probabilities": [
+        0.9,
+        0.1
+      ],
+      "mean_target": 1.0,
+      "median_target": 0.0,
+      "mean_mae": 1.8,
+      "median_mae": 1.0
+    }
+  },
+  "bayes_and_calibration": {
+    "duplicate_evidence": {
+      "prior": 0.5,
+      "likelihood_ratio": 3.0,
+      "one_observation": 0.75,
+      "five_copies_counted_as_independent": 0.9959016393442623
+    },
+    "bayes_prior_difference_amplification": 24.05517294466588,
+    "constant_calibrated_risk": {
+      "binary_errors": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "forecast": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "brier": 0.25,
+      "ideal_brier": 0.0
+    }
+  },
+  "curvature": {
+    "step": 3.0,
+    "alignment": 1.0,
+    "loss_before": 0.5,
+    "loss_after": 2.0
+  },
+  "limits": [
+    "Ejemplos finitos que acompañan derivaciones, sin resultados financieros.",
+    "No se entrenan modelos ni se leen datasets o el test final.",
+    "La independencia y la estructura de covarianza solo rigen los ejemplos declarados.",
+    "La cuadrícula de predicciones comprueba el ejemplo, no demuestra la cota universal.",
+    "No son benchmarks ni comprobaciones de una implementación CUDA."
+  ]
+}
