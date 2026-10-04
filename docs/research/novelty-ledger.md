@@ -25,6 +25,16 @@ La [revisión de memoria, contexto y adaptación](neuroarchitecture-review.md) c
 
 N5 se estudia antes de combinarlo con N6. N7 constituye otro eje, no una optimización silenciosa de N1. Se mantienen presupuestos y criterios predefinidos y se contabilizan generación de predicciones de desarrollo, rutas auxiliares y selección. Las [comprobaciones algebraicas](memory-mathematics.md) ejecutadas no cuentan como resultados predictivos de estas hipótesis.
 
+La segunda ampliación del 4 de octubre concreta [atención y repetición](attention-replay-review.md) y [eventos y presupuesto de señales](event-signal-comparison.md). Conserva N1 como pregunta principal. Los contrastes siguientes no cambian la campaña activa y necesitan un registro independiente antes de ejecutarse.
+
+| ID | Pregunta | Diferencia que se mediría | Control y descarte |
+| --- | --- | --- | --- |
+| N8 | ¿Separar las repeticiones mejora retención y error futuro con las mismas exposiciones? | Ordenar el mismo multiconjunto de episodios maduros, antes de introducir un calendario adaptativo o prioridades. SRT y la literatura de recuperación ya estudian cuándo repetir. | Igualar ejemplos, exposiciones, actualizaciones y bytes. Descartar si el beneficio se limita al búfer o empeora MAE futuro. La selección por utilidad y la corrección por importancia forman otro eje. |
+| N9 | ¿Aprender eventos públicos aporta señal útil al retorno residual? | Comparar eventos empresariales y macroeconómicos, políticos y sociales, separados y con representación compartida. Daily Oracle, MIRAI, StockMem y Hawkes Attention aportan antecedentes con tareas distintas. | Mismas fuentes, objetivos auxiliares y presupuesto al comparar arquitectura. Separar ocurrencia, contenido y retorno. Descartar si la ganancia procede de información retrospectiva o perjudica al objetivo principal. |
+| N10 | ¿Puede una vista reducida conservar calidad con menor coste? | Distinguir compresión, transformaciones redundantes, retirada de fuentes y destilación. Auditar todos los módulos, incluido HMM, memoria y calibración. | Misma cohorte admitida completa, modelo reducido reajustado y margen de no inferioridad predefinido. Descartar si hay acceso indirecto a señales eliminadas, daño relevante por contexto o ahorro solo aparente. |
+
+N10 define un contraste de información distinto de las ablaciones internas que mantienen todas las entradas. La referencia completa conserva las cuatro modalidades y macro. Ninguna variante reducida amplía su población relajando admisión. El [apéndice de repetición y señales](attention-replay-mathematics.md) explica por qué más exposiciones no crean hechos nuevos y por qué retirar información no puede garantizar calidad ante cualquier evento.
+
 ## Diseño mínimo para N1 y N2
 
 Se conservarán el mismo codificador, entradas, objetivo residual, particiones y presupuesto de búsqueda. Para N1 se comparan ausencia de memoria, memoria uniforme, selección solo por error y selección por sorpresa completa. Esta última conserva error maduro, anomalía y relevancia económica conforme a O3. La diversidad se estudia por separado como criterio adicional, con escalas y pesos fijados en desarrollo. Para N2 se comparan K = 1, 2 y 4, además de puertas solo si los pasos adicionales muestran valor durante desarrollo.
