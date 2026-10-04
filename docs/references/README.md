@@ -1,6 +1,6 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **150 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **84 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **190 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. El manifiesto histórico registra **84 PDF** descargados desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
 La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
@@ -14,6 +14,13 @@ variante ampliada](../research/neuroarchitecture-review.md) y su [formulación
 matemática](../research/memory-mathematics.md) distinguen antecedentes, hipótesis
 y condiciones de comparación. Las cifras de descarga del manifiesto corresponden
 a su preparación histórica.
+
+La revisión de atención, práctica y eventos del 4 de octubre incorpora otras
+40 referencias. La [síntesis](../research/attention-replay-review.md) conecta los
+mecanismos con controles verificables. La comparación de [eventos y señales
+reducidas](../research/event-signal-comparison.md) y el [análisis
+matemático](../research/attention-replay-mathematics.md) mantienen separadas las
+tareas y las condiciones de cada resultado.
 
 ## Contenido
 
@@ -30,6 +37,7 @@ a su preparación histórica.
 | Falsación y límites | [Revisión adversarial](../research/adversarial-review.md) | [adversarial-sources.json](adversarial-sources.json) | [adversarial.bib](adversarial.bib) |
 | Regímenes de mercado | [Markov](../research/markov-regimes.md) | [markov-sources.json](markov-sources.json) | [markov.bib](markov.bib) |
 | Memoria, variante ampliada y fundamentos matemáticos | [Revisión](../research/neuroarchitecture-review.md), [matemáticas](../research/memory-mathematics.md) | [neuroarchitecture-sources.json](neuroarchitecture-sources.json) | [neuroarchitecture.bib](neuroarchitecture.bib) |
+| Atención, práctica, eventos y reducción de señales | [Síntesis](../research/attention-replay-review.md), [eventos y señales](../research/event-signal-comparison.md), [matemáticas](../research/attention-replay-mathematics.md) | [attention-replay-sources.json](attention-replay-sources.json) | [attention-replay.bib](attention-replay.bib) |
 | Catálogo auxiliar de símbolos | [FinanceDatabase](../data/finance-database-review.md) | [finance-sources.json](finance-sources.json) | [finance.bib](finance.bib) |
 | Publicaciones aportadas | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
 
