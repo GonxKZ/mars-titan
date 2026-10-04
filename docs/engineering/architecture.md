@@ -4,6 +4,8 @@ MARS-TITAN se diseña como una comparación reproducible de componentes. La estr
 
 La [especificación candidata](../research/candidate-architecture.md) desarrolla memoria episódica, retención, recurrencia y actualización coherente. Su [revisión adversarial](../research/adversarial-review.md) recoge objeciones y pruebas pendientes. La comparación principal prioriza una variante compacta sobre 128 activos propuestos, dentro de 32 GB de RAM y 8 GB de VRAM.
 
+La [revisión de integración del 4 de octubre de 2026](../research/system-integration.md) contrasta este diseño con el código existente. Sitúa las ampliaciones en una vista común de información y un ciclo cronológico de decisión y maduración, con módulos separados de lectura, escritura y replay. Las referencias ya implementadas recorren su universo admitido según sus configuraciones. La cifra de 128 pertenece al dimensionamiento propuesto del candidato, que continúa sin implementar ni entrenar.
+
 ## Límites entre componentes
 
 | Componente | Entrada | Salida y responsabilidad |
@@ -21,7 +23,7 @@ La [especificación candidata](../research/candidate-architecture.md) desarrolla
 
 El codificador de precios podrá ser una GRU pequeña o una TCN. El texto se representará con embeddings congelados y una proyección de dimensión reducida, con procedencia y fecha del modelo documentadas. La fusión incluirá máscaras de modalidad y un mecanismo sencillo de combinación antes de introducir atención adicional.
 
-La primera memoria será global. Una consulta dependerá de la representación actual y recuperará un vector de contexto que la cabeza combine con el estado temporal. El estado y sus operaciones `read`, `update`, `reset` y `snapshot` deben tener responsabilidades separadas. Estas son interfaces previstas, todavía sin código. Después se podrá comparar la separación mercado/sector/activo manteniendo control de capacidad total.
+La primera memoria del candidato será global. Una consulta dependerá de la representación actual y recuperará un vector de contexto que la cabeza combine con el estado temporal. El estado y sus operaciones `read`, `update`, `reset` y `snapshot` deben tener responsabilidades separadas. Estas son interfaces previstas para el candidato. La memoria nativa ya implementada pertenece a los comparadores financieros y tiene otro ámbito y dimensiones. Después se podrá comparar la separación mercado/sector/activo manteniendo control de capacidad total.
 
 La actualización se estudiará en dos referencias separadas. Un banco episódico inserta y recupera eventos con lectura aprendida. Una memoria asociativa neural modifica un estado de pesos rápidos mediante una regla explícita. No son mecanismos equivalentes. La [candidata](../research/candidate-architecture.md) especifica esa separación y reserva su combinación para una extensión. En la variante neural se documentará qué gradientes se propagan, cuáles se detienen y qué estado persiste. Una adaptación no se denomina reproducción de Titans sin comprobar su correspondencia con [Titans, TTT y MIRAS](../references/neural-review.md).
 
@@ -39,6 +41,8 @@ La primera salida incierta puede ser una cabeza de cuantiles. Se medirán pérdi
 
 ## Python, C y C++/CUDA
 
-Python será la referencia de corrección. `native/` contiene únicamente la configuración CMake y los límites previstos para código nativo. Un kernel solo se justifica cuando un perfil identifique un coste relevante que no resuelvan operaciones existentes de PyTorch. Se compararán resultados, gradientes, tipos, tamaños vacíos/no contiguos y errores de dispositivo antes de sustituir la referencia.
+Python mantiene las referencias científicas y parte de la preparación. `native/` contiene C++20 para contabilidad, simulación por lotes, filtrado HMM, memoria episódica, replay, políticas y recuperación, además de los ejecutables `mars-titan-sim` y `mars-titan-ppo`. Estos componentes no constituyen una implementación del candidato. La revisión de integración distingue qué contratos reutilizar y qué semánticas financieras deben permanecer separadas.
+
+La ruta intensiva futura del candidato se propone como un ejecutable C++20 con LibTorch y bibliotecas matemáticas existentes, con una referencia de corrección y artefactos comparables. Un kernel propio solo se justifica cuando un perfil identifique un coste que no resuelvan mejor esas primitivas. Se compararán resultados, gradientes, tipos, formas, recuperación y errores de dispositivo antes de sustituir una referencia. El uso de C++ no acredita por sí solo una aceleración de operaciones que ya ejecutan código nativo.
 
 El diseño evita servicios distribuidos, colas remotas y un despliegue en producción. Los artefactos de experimento son archivos locales con un registro estructurado. Se incorporará un gestor adicional solo si resuelve una necesidad observada.
