@@ -1,6 +1,6 @@
 # Revisión de memoria adaptativa, multimodalidad e incertidumbre
 
-MARS-TITAN. Autor: Gonzalo García Lama. Revisión comprobada el 18 de septiembre de 2026. Este documento sirve de apoyo a la comparación experimental. Las propuestas de arquitectura son hipótesis que se deben contrastar, no resultados del proyecto.
+MARS-TITAN. Autor: Gonzalo García Lama. Revisión inicial del 18 de septiembre de 2026. Las fichas de ATLAS y MIRAS y el alcance multimodal se actualizaron el 4 de octubre. Este documento sirve de apoyo a la comparación experimental. Las propuestas de arquitectura son hipótesis que se deben contrastar, no resultados del proyecto.
 
 Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `neural-sources.json` y `neural.bib`. EnbPI (`xu2021enbpi`) y ACI (`gibbs2021aci`) usan las entradas canónicas de `finance-sources.json` y `finance.bib` para evitar duplicados. Se ha comprobado un PDF abierto de cada trabajo. En TTT y MIRAS se distingue la publicación de la copia arXiv accesible. Acceso abierto y permiso de redistribución son cuestiones diferentes. El campo `redistribution` permanece en `unknown` cuando no se ha verificado expresamente ese permiso.
 
@@ -31,11 +31,11 @@ Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `ne
 
 ### 4. MIRAS: `behrouz2026miras`
 
-**Estado:** ICLR 2026, corroborado por el PDF indexado de OpenReview y la página del autor. Copia arXiv accesible de 2025. Organiza el diseño alrededor de la memoria asociativa, su objetivo interno, la retención y el algoritmo de actualización. Esta separación resulta útil para diseñar ablaciones comprensibles. No exige implementar sus tres modelos completos. En MARS-TITAN puede servir para justificar por qué se cambia un componente cada vez. [Ficha](https://openreview.net/forum?id=gZyEJ2kMow), [confirmación del autor](https://alibehrouz.com/publications/).
+**Estado:** ICLR 2026, confirmado en las actas oficiales. Se conserva la copia arXiv v1 de 2025 como documento de consulta. Organiza el diseño alrededor de la memoria asociativa, su objetivo interno, la retención y el algoritmo de actualización. Esta separación resulta útil para diseñar ablaciones comprensibles. No exige implementar sus tres modelos completos. En MARS-TITAN puede servir para justificar por qué se cambia un componente cada vez. [Actas](https://proceedings.iclr.cc/paper_files/paper/2026/hash/d55f39791f04745b2e0c8abebf3dd5d7-Abstract-Conference.html).
 
 ### 5. ATLAS: `behrouz2025atlas`
 
-**Estado:** versión arXiv de 2025 comprobada. El primer autor lo lista en ICML 2026, sin ficha independiente de actas accesible verificada aquí. Extiende la actualización de memoria para considerar contexto presente y pasado. Los autores distinguen esta memorización del aprendizaje persistente entre contextos independientes. La idea aprovechable sería un historial acotado de observaciones pasadas. No implica que el sistema reescriba su código ni justifica reutilizar datos posteriores al instante de predicción. [Artículo](https://arxiv.org/abs/2505.23735), [estado declarado por el autor](https://alibehrouz.com/publications/).
+**Estado:** ICML 2026, PMLR 306:7361–7390. Las actas se publicaron el 29 de septiembre de 2026. Se conserva la copia descargada arXiv v1 de 2025. Extiende la actualización de memoria para considerar contexto presente y pasado. La idea aprovechable sería un historial acotado de observaciones pasadas, contabilizando sus lecturas y actualizaciones. No implica que el sistema reescriba su código ni justifica reutilizar datos posteriores al instante de predicción. [Actas](https://proceedings.mlr.press/v306/behrouz26b.html), [copia de consulta](https://arxiv.org/abs/2505.23735v1).
 
 ### 6. SEAL: `zweiger2025seal`
 
@@ -107,7 +107,7 @@ Las siguientes son decisiones metodológicas propuestas para el proyecto, no pro
 
 La contribución defendible consiste en comprobar si una memoria adaptativa compacta aporta valor incremental al pronóstico residual, frente a alternativas comparables. La literatura consultada motiva esa pregunta. No proporciona su respuesta. El uso de una variable residual, una máscara temporal o una ablación no identifica por sí mismo un efecto causal. Las expresiones adecuadas son «capacidad predictiva», «aportación incremental» y «sensibilidad a la modalidad».
 
-Una implementación mínima puede extraer el texto una sola vez con pesos congelados, proyectarlo junto a las variables temporales y añadir una memoria pequeña. Se propone comenzar por precios y noticias y ampliar a tablas o imágenes únicamente cuando su disponibilidad esté justificada. Si se cambia el método de fusión a la vez que la memoria, será difícil atribuir una mejora al componente estudiado. Esta es una decisión de diseño inferida de los mecanismos de [Titans](https://proceedings.neurips.cc/paper_files/paper/2025/hash/a4ca07aa108036f80cbb5b82285fd4b1-Abstract-Conference.html) y la organización de [MIRAS](https://arxiv.org/abs/2504.13173), no una arquitectura validada por esas publicaciones.
+El [contrato de comparación](../engineering/comparison-campaign.md) exige precios, noticias, fundamentales, gráficos y contexto macro en todas las condiciones. Cada entrada debe tener disponibilidad temporal verificada, con sus máscaras y antigüedad. Una implementación mínima puede precalcular representaciones con codificadores congelados, mantener una fusión común y comparar memorias pequeñas. Si se cambia la fusión a la vez que la memoria, será difícil atribuir una mejora al componente estudiado. Esta decisión se apoya en los mecanismos de [Titans](https://proceedings.neurips.cc/paper_files/paper/2025/hash/a4ca07aa108036f80cbb5b82285fd4b1-Abstract-Conference.html) y la organización de [MIRAS](https://arxiv.org/abs/2504.13173), sin constituir una arquitectura validada por esas publicaciones.
 
 | Comparación propuesta | Pregunta que permite contestar |
 |---|---|
@@ -115,7 +115,7 @@ Una implementación mínima puede extraer el texto una sola vez con pesos congel
 | DLinear, TCN y PatchTST pequeños | ¿Mejora el método frente a familias temporales distintas? |
 | Mismo modelo multimodal sin módulo de memoria | ¿Compensa añadir el módulo bajo un presupuesto comparable? |
 | Misma memoria con y sin actualización durante evaluación | ¿La adaptación añade valor sobre la capacidad aprendida durante entrenamiento? |
-| Precios frente a precios y texto con fusión fija | ¿Qué aporta la modalidad textual bajo el mismo protocolo? |
+| Lectura de memoria normal frente a lectura anulada, con las cuatro modalidades y macro | ¿Qué aporta la recuperación bajo las mismas entradas? |
 | Memoria con retención y actualización simplificadas | ¿Qué parte de su regla explica el comportamiento observado? |
 
 Cada fila necesita el mismo objetivo, universo, fechas y entradas disponibles. Igualar aproximadamente parámetros ayuda, pero no sustituye registrar tiempo de entrenamiento, latencia y memoria máxima. Los hiperparámetros se eligen en validación temporal. El conjunto final de prueba no decide qué arquitectura, semillas o periodos se publican.

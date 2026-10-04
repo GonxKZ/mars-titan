@@ -88,9 +88,9 @@
       "Vahab Mirrokni"
     ],
     "year": 2026,
-    "url": "https://openreview.net/forum?id=gZyEJ2kMow",
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2026/hash/d55f39791f04745b2e0c8abebf3dd5d7-Abstract-Conference.html",
     "pdf_url": "https://arxiv.org/pdf/2504.13173",
-    "access": "Publicación ICLR 2026 corroborada por el PDF indexado de OpenReview y la página del autor. PDF arXiv 2025 abierto verificado. Acceso directo OpenReview presenta verificación de navegador.",
+    "access": "ICLR 2026, revisado por pares, confirmado en las actas oficiales. La copia descargada corresponde a arXiv:2504.13173v1, de 2025, y conserva su URL original de PDF. La ficha de actas y la copia arXiv se han comprobado por separado.",
     "redistribution": "unknown",
     "relevance": "Ordenar la arquitectura y las ablaciones por memoria, objetivo interno, retención y regla de actualización.",
     "phase": [
@@ -98,7 +98,7 @@
       4,
       6
     ],
-    "verification_date": "2026-09-18"
+    "verification_date": "2026-10-04"
   },
   {
     "id": "behrouz2025atlas",
@@ -113,10 +113,10 @@
       "Meisam Razaviyayn",
       "Vahab Mirrokni"
     ],
-    "year": 2025,
-    "url": "https://arxiv.org/abs/2505.23735",
+    "year": 2026,
+    "url": "https://proceedings.mlr.press/v306/behrouz26b.html",
     "pdf_url": "https://arxiv.org/pdf/2505.23735",
-    "access": "Preprint/PDF 2025 abierto verificado. La página del primer autor lo lista en ICML 2026. No se verificó una ficha independiente de actas accesible, por lo que se conserva la cita arXiv.",
+    "access": "ICML 2026, PMLR 306:7361–7390, revisado por pares. Actas publicadas el 29 de septiembre de 2026 y comprobadas el 4 de octubre. La copia descargada corresponde a arXiv:2505.23735v1, de 2025, y conserva su URL original de PDF. La publicación editorial y esa copia de consulta se distinguen expresamente.",
     "redistribution": "unknown",
     "relevance": "Inspiración para revisar contexto pasado acotado al actualizar memoria. No requiere autoedición del código ni demuestra causalidad financiera.",
     "phase": [
@@ -124,7 +124,21 @@
       4,
       6
     ],
-    "verification_date": "2026-09-18"
+    "verification_date": "2026-10-04",
+    "read_version": {
+      "type": "preprint",
+      "version": "v1",
+      "year": 2025,
+      "url": "https://arxiv.org/abs/2505.23735v1"
+    },
+    "publication": {
+      "venue": "Proceedings of the 43rd International Conference on Machine Learning",
+      "series": "Proceedings of Machine Learning Research",
+      "volume": "306",
+      "pages": "7361–7390",
+      "year": 2026,
+      "url": "https://proceedings.mlr.press/v306/behrouz26b.html"
+    }
   },
   {
     "id": "zweiger2025seal",
