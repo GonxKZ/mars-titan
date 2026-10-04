@@ -1,0 +1,127 @@
+{
+  "checked_at": "2026-10-04T20:38:18.039996+00:00",
+  "scope": "reports/research/check_attention_replay_algebra.py",
+  "source_sha256": "aa0eaac97186d2a0aa0f595f53764343ebebc4a5ebd7924fc3931a0cee2e783e",
+  "tools": {
+    "coverage.py": "7.16.2",
+    "lizard": "1.24.0"
+  },
+  "coverage_convention": "Líneas ejecutables y ramas de coverage.py. CRAP usa cobertura de líneas por función.",
+  "complexity_convention": "CCN de Lizard para Python.",
+  "crap_formula": "CCN² × (1 − cobertura de líneas)³ + CCN",
+  "coverage": {
+    "covered_lines": 126,
+    "num_statements": 127,
+    "percent_covered": 97.93103448275862,
+    "percent_covered_display": "98",
+    "missing_lines": 1,
+    "excluded_lines": 0,
+    "percent_statements_covered": 99.21259842519684,
+    "percent_statements_covered_display": "99",
+    "num_branches": 18,
+    "num_partial_branches": 2,
+    "covered_branches": 16,
+    "missing_branches": 2,
+    "percent_branches_covered": 88.88888888888889,
+    "percent_branches_covered_display": "89"
+  },
+  "functions": [
+    {
+      "name": "require",
+      "complexity": 2,
+      "covered_statements": 2,
+      "statements": 3,
+      "crap": 2.1481481481481484
+    },
+    {
+      "name": "check_importance",
+      "complexity": 3,
+      "covered_statements": 27,
+      "statements": 27,
+      "crap": 3.0
+    },
+    {
+      "name": "check_zero_support",
+      "complexity": 2,
+      "covered_statements": 16,
+      "statements": 16,
+      "crap": 2.0
+    },
+    {
+      "name": "check_repetition",
+      "complexity": 3,
+      "covered_statements": 22,
+      "statements": 22,
+      "crap": 3.0
+    },
+    {
+      "name": "check_signal_and_distillation",
+      "complexity": 1,
+      "covered_statements": 14,
+      "statements": 14,
+      "crap": 1.0
+    },
+    {
+      "name": "posterior",
+      "complexity": 1,
+      "covered_statements": 2,
+      "statements": 2,
+      "crap": 1.0
+    },
+    {
+      "name": "check_bayes_and_calibration",
+      "complexity": 2,
+      "covered_statements": 16,
+      "statements": 16,
+      "crap": 2.0
+    },
+    {
+      "name": "check_curvature",
+      "complexity": 2,
+      "covered_statements": 8,
+      "statements": 8,
+      "crap": 2.0
+    },
+    {
+      "name": "main",
+      "complexity": 2,
+      "covered_statements": 9,
+      "statements": 9,
+      "crap": 2.0
+    }
+  ],
+  "mutation": {
+    "checked_at": "2026-10-04T20:36:44.459664+00:00",
+    "mutations": [
+      {
+        "id": "omit_importance_correction",
+        "detected": true,
+        "exit_code": 1,
+        "failure_type": "AssertionError"
+      },
+      {
+        "id": "divide_zero_probability",
+        "detected": true,
+        "exit_code": 1,
+        "failure_type": "FloatingPointError"
+      },
+      {
+        "id": "count_duplicates_independently",
+        "detected": true,
+        "exit_code": 1,
+        "failure_type": "AssertionError"
+      },
+      {
+        "id": "omit_curvature_term",
+        "detected": true,
+        "exit_code": 1,
+        "failure_type": "AssertionError"
+      }
+    ]
+  },
+  "limits": [
+    "Cuatro mutaciones dirigidas, sin enumeración exhaustiva de fallos.",
+    "No se verifica un modelo ni una ruta CUDA.",
+    "La cobertura no prueba teoremas ni garantiza ausencia de errores."
+  ]
+}

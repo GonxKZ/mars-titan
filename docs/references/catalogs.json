@@ -9,5 +9,6 @@
   {"sources": "deepseek-sources.json", "bibliography": "deepseek.bib"},
   {"sources": "adversarial-sources.json", "bibliography": "adversarial.bib"},
   {"sources": "markov-sources.json", "bibliography": "markov.bib"},
-  {"sources": "neuroarchitecture-sources.json", "bibliography": "neuroarchitecture.bib"}
+  {"sources": "neuroarchitecture-sources.json", "bibliography": "neuroarchitecture.bib"},
+  {"sources": "attention-replay-sources.json", "bibliography": "attention-replay.bib"}
 ]
