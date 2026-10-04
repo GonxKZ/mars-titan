@@ -1,12 +1,19 @@
 # Biblioteca y estado del arte
 
-La biblioteca reúne **123 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **84 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
+La biblioteca reúne **150 referencias bibliográficas** sobre finanzas, aprendizaje y memoria, recurrencia, incertidumbre, macroeconomía y eficiencia. Se han descargado **84 PDF** desde editoriales, repositorios académicos o enlaces ofrecidos por sus autores. Incluye cinco libros completos. Otros recursos se consultan en HTML o requieren acceso editorial. Los identificadores, versiones y estados de acceso están registrados, sin equiparar descarga con lectura integral.
 
-La revisión tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
+La revisión inicial tiene alcance documentado y fecha de corte del 18 de septiembre de 2026. Las ampliaciones posteriores registran su propia fecha de consulta. No se presenta como una búsqueda sistemática exhaustiva de toda la literatura ni como lectura íntegra de todos los libros descargados. Su objetivo es sostener las decisiones iniciales y señalar qué lectura detallada necesita cada experimento.
 
 La actualización del 21 de septiembre incorpora diez referencias sobre Markov,
 detección de cambios y FinanceDatabase. Añade dos PDF locales sin volver a
 atribuir lectura o validación a las colecciones anteriores.
+
+La ampliación del 4 de octubre añade 27 referencias sobre mecanismos de memoria,
+adaptación, evaluación financiera y fundamentos matemáticos. La [revisión de la
+variante ampliada](../research/neuroarchitecture-review.md) y su [formulación
+matemática](../research/memory-mathematics.md) distinguen antecedentes, hipótesis
+y condiciones de comparación. Las cifras de descarga del manifiesto corresponden
+a su preparación histórica.
 
 ## Contenido
 
@@ -22,6 +29,7 @@ atribuir lectura o validación a las colecciones anteriores.
 | DeepSeek y transferencia al equipo local | [Qué técnicas pueden servir](deepseek-review.md) | [deepseek-sources.json](deepseek-sources.json) | [deepseek.bib](deepseek.bib) |
 | Falsación y límites | [Revisión adversarial](../research/adversarial-review.md) | [adversarial-sources.json](adversarial-sources.json) | [adversarial.bib](adversarial.bib) |
 | Regímenes de mercado | [Markov](../research/markov-regimes.md) | [markov-sources.json](markov-sources.json) | [markov.bib](markov.bib) |
+| Memoria, variante ampliada y fundamentos matemáticos | [Revisión](../research/neuroarchitecture-review.md), [matemáticas](../research/memory-mathematics.md) | [neuroarchitecture-sources.json](neuroarchitecture-sources.json) | [neuroarchitecture.bib](neuroarchitecture.bib) |
 | Catálogo auxiliar de símbolos | [FinanceDatabase](../data/finance-database-review.md) | [finance-sources.json](finance-sources.json) | [finance.bib](finance.bib) |
 | Publicaciones aportadas | [Finanzas y herramientas](social-finance.md), [arquitectura y rendimiento](social-neural.md) | URL y resultado de acceso dentro de cada nota | Solo se incorporan a la base científica las fuentes primarias que correspondan. |
 
