@@ -1,0 +1,104 @@
+{
+  "checked_at": "2026-10-04T19:28:11.296189+00:00",
+  "scope": "reports/research/check_memory_algebra.py",
+  "tools": {
+    "coverage.py": "7.16.2",
+    "lizard": "1.24.0"
+  },
+  "coverage_convention": "Líneas ejecutables y ramas de coverage.py. CRAP usa la fracción de líneas ejecutables de cada función.",
+  "complexity_convention": "CCN de Lizard para Python, sin sustituir análisis de comportamiento.",
+  "crap_formula": "CCN² × (1 − cobertura de líneas)³ + CCN",
+  "coverage": {
+    "covered_lines": 110,
+    "num_statements": 111,
+    "percent_covered": 97.63779527559055,
+    "percent_covered_display": "98",
+    "missing_lines": 1,
+    "excluded_lines": 0,
+    "percent_statements_covered": 99.09909909909909,
+    "percent_statements_covered_display": "99",
+    "num_branches": 16,
+    "num_partial_branches": 2,
+    "covered_branches": 14,
+    "missing_branches": 2,
+    "percent_branches_covered": 87.5,
+    "percent_branches_covered_display": "88"
+  },
+  "functions": [
+    {
+      "name": "entropy",
+      "complexity": 2,
+      "covered_statements": 3,
+      "statements": 3,
+      "crap": 2.0
+    },
+    {
+      "name": "require",
+      "complexity": 2,
+      "covered_statements": 2,
+      "statements": 3,
+      "crap": 2.1481481481481484
+    },
+    {
+      "name": "check_scalar_delta",
+      "complexity": 4,
+      "covered_statements": 20,
+      "statements": 20,
+      "crap": 4.0
+    },
+    {
+      "name": "check_channel_gate",
+      "complexity": 2,
+      "covered_statements": 12,
+      "statements": 12,
+      "crap": 2.0
+    },
+    {
+      "name": "check_proximal_cohort",
+      "complexity": 5,
+      "covered_statements": 38,
+      "statements": 38,
+      "crap": 5.0
+    },
+    {
+      "name": "check_information_and_losses",
+      "complexity": 6,
+      "covered_statements": 14,
+      "statements": 14,
+      "crap": 6.0
+    },
+    {
+      "name": "main",
+      "complexity": 2,
+      "covered_statements": 9,
+      "statements": 9,
+      "crap": 2.0
+    }
+  ],
+  "mutation": {
+    "checked_at": "2026-10-04T19:27:33.778819+00:00",
+    "mutations": [
+      {
+        "id": "omit_scalar_forgetting",
+        "exit_code": 1,
+        "detected_by_assertion": true
+      },
+      {
+        "id": "transpose_channel_erase",
+        "exit_code": 1,
+        "detected_by_assertion": true
+      },
+      {
+        "id": "renormalize_microbatches",
+        "exit_code": 1,
+        "detected_by_assertion": true
+      }
+    ]
+  },
+  "limits": [
+    "Las mutaciones son tres cambios dirigidos, no mutación exhaustiva.",
+    "No se verifica una implementación del candidato ni una ruta CUDA.",
+    "La cobertura no demuestra la validez de un teorema ni ausencia de errores."
+  ],
+  "source_sha256": "d8f03eb62605b579d066e381993af44c2b8cbc555392f3586ac349f9c6cb3bf0"
+}

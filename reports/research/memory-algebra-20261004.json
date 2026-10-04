@@ -1,0 +1,149 @@
+{
+  "schema_version": 2,
+  "checked_at": "2026-10-04T19:25:01.377417+00:00",
+  "kind": "algebraic_checks",
+  "candidate_implemented": false,
+  "model_trained": false,
+  "device": "cpu",
+  "dtype": "float64",
+  "numpy": "2.5.3",
+  "python": "3.12.14",
+  "source_sha256": "d8f03eb62605b579d066e381993af44c2b8cbc555392f3586ac349f9c6cb3bf0",
+  "scalar_delta": {
+    "random_cases": 360,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "dimensions": [
+      2,
+      8,
+      32
+    ],
+    "maximum_norm_formula_difference": 6.661338147750939e-16,
+    "atol": 2e-14,
+    "rtol": 2e-14,
+    "decay_counterexample": {
+      "forgetting_fraction": 0.1,
+      "step": 1.95,
+      "key_norm": 1,
+      "spectral_norm": 1.0499999999999998
+    }
+  },
+  "channel_gate": {
+    "key": [
+      0.7071067811865475,
+      0.7071067811865475
+    ],
+    "erase": [
+      0.9,
+      0.1
+    ],
+    "retention": 0.95,
+    "operator": [
+      [
+        0.5225,
+        -0.047499999999999994
+      ],
+      [
+        -0.42749999999999994,
+        0.9025
+      ]
+    ],
+    "probe": [
+      1.0,
+      -2.0
+    ],
+    "squared_norm_gain": 1.0730724999999999,
+    "spectral_norm": 1.0415466993504114,
+    "spectral_radius": 0.95,
+    "boundary_operator_norm": 1.1441228056353687
+  },
+  "proximal_cohort": {
+    "cases": 162,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "key_dimensions": [
+      2,
+      8,
+      32
+    ],
+    "value_dimension": 3,
+    "cohort_rows": [
+      1,
+      17
+    ],
+    "steps": [
+      0,
+      0.2,
+      100
+    ],
+    "retentions": [
+      0,
+      0.95,
+      1
+    ],
+    "maximum_scaled_equation_residual": 3.1437485529531726e-16,
+    "maximum_permutation_or_block_difference": 3.519406988061746e-14,
+    "maximum_condition_number": 101.00000000000078,
+    "atol": 2e-11,
+    "rtol": 2e-11
+  },
+  "conditional_information": {
+    "distribution": "X y C Rademacher independientes, Y=X*C",
+    "atoms": [
+      [
+        -1,
+        -1,
+        1
+      ],
+      [
+        -1,
+        1,
+        -1
+      ],
+      [
+        1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "covariance_x_y": 0.0,
+    "mutual_information_c_y_bits": 0.0,
+    "conditional_information_c_y_given_x_bits": 1.0
+  },
+  "kalman_example": {
+    "prior_variance": 1,
+    "innovation_variance": 5,
+    "gains": [
+      0.8,
+      0.4
+    ]
+  },
+  "clipped_loss": {
+    "target": 0,
+    "predictions": [
+      0.0,
+      4.0
+    ],
+    "clip": 1,
+    "loss_of_mixture": 1.0,
+    "mixture_of_losses": 0.5
+  },
+  "limits": [
+    "Comprobaciones finitas. No demuestran estabilidad global ni resultados financieros.",
+    "Las cotas comparan estados con las mismas entradas, pesos y puertas.",
+    "Amplificar una norma en un paso no demuestra divergencia al repetir el operador.",
+    "La verificación proximal usa cohortes no vacías y tolerancias, no paridad bit a bit.",
+    "Sin datos experimentales, acceso al test final ni mediciones de rendimiento."
+  ]
+}

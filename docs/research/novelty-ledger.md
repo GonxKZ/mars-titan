@@ -13,6 +13,18 @@ Estado: propuestas contrastables. No hay una mejora experimental demostrada ni u
 
 N1 es la hipótesis principal. N2 puede entrar con una decisión temprana de continuidad. N3 solo se ejecuta si N1 y N2 justifican el coste. N4 es una extensión. Esta jerarquía protege la comparación y la entrega frente a una combinación de todos los mecanismos sin atribución posible.
 
+## Contrastes ampliados del 4 de octubre de 2026
+
+La [revisión de memoria, contexto y adaptación](neuroarchitecture-review.md) conserva el candidato y añade una línea separada. Estos contrastes son exploratorios hasta fijar su protocolo. No modifican las campañas en marcha ni autorizan implementar o entrenar MARS-TITAN.
+
+| ID | Pregunta | Antecedente y diferencia que se mediría | Control y descarte |
+| --- | --- | --- | --- |
+| N5 | ¿Una lectura contextual aporta utilidad frente a la lectura original del mismo banco? | TRA y Financial RAG ya adaptan rutas o recuperación con errores históricos. Se mediría utilidad pareada de dos pronósticos emitidos antes de la etiqueta, con cuatro modalidades y macro. | Primero una trayectoria de memoria común anclada a la predicción base, después estados independientes para medir el sistema completo. Descartar si mezcla constante o adaptación sin contexto igualan el resultado a coste comparable. |
+| N6 | ¿Separar escala del error y persistencia del cambio mejora la escritura? | Piray y Daw distinguen ruido de observación y cambio latente. La adaptación financiera es una hipótesis, no una identificación de esas causas. | Mismos candidatos, cuotas, bytes y escrituras. Contrastes de ausencia de señal, ruido, saltos y cambios persistentes. Descartar si selección uniforme o por error domina, o si el mecanismo retiene contaminación. |
+| N7 | ¿Una actualización proximal de cohorte mejora calidad o estabilidad con un coste aceptable? | Operadores proximales, reglas delta y RLS son conocidos. El apéndice deriva condiciones para una escritura conjunta concreta. | Comparar con delta normalizada y una referencia pertinente de olvido. La regla cambia el algoritmo. Contracción bajo entradas fijas no demuestra mejor MAE ni estabilidad de la red completa. |
+
+N5 se estudia antes de combinarlo con N6. N7 constituye otro eje, no una optimización silenciosa de N1. Se mantienen presupuestos y criterios predefinidos y se contabilizan generación de predicciones de desarrollo, rutas auxiliares y selección. Las [comprobaciones algebraicas](memory-mathematics.md) ejecutadas no cuentan como resultados predictivos de estas hipótesis.
+
 ## Diseño mínimo para N1 y N2
 
 Se conservarán el mismo codificador, entradas, objetivo residual, particiones y presupuesto de búsqueda. Para N1 se comparan ausencia de memoria, memoria uniforme, selección solo por error y selección por sorpresa completa. Esta última conserva error maduro, anomalía y relevancia económica conforme a O3. La diversidad se estudia por separado como criterio adicional, con escalas y pesos fijados en desarrollo. Para N2 se comparan K = 1, 2 y 4, además de puertas solo si los pasos adicionales muestran valor durante desarrollo.
