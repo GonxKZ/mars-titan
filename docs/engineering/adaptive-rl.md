@@ -43,6 +43,8 @@ El entrenador mantiene 16 entornos activos y rota por el catálogo de entrenamie
 
 La memoria episódica conserva hasta 1024 registros por entorno y episodio. Sus claves y valores tienen 64 componentes. La proyección usa la semilla fija 1729. La consulta respeta mundo, partición, fold, representación, entorno y fecha de maduración. Los valores recuperados se combinan por media uniforme, sin interpretar la similitud como confianza financiera. Un cambio de fuente reinicia el ámbito de memoria.
 
+La [caché FP64 de consulta](../../reports/resources/episodic-query-20261004.md) evita convertir toda la matriz antes de cada GEMV. La fila provisional se restaura al salir y los snapshots siguen siendo FP32. El informe cuantifica el aumento de memoria residente, la reducción de asignaciones temporales y los tiempos del recorrido CUDA, con paridad entre versiones.
+
 La GRU conserva el prefijo del episodio y reconstruye sus estados con los parámetros actuales antes de actualizar cada secuencia. Los reinicios separan episodios y el relleno no contribuye a la pérdida. Un estado oculto previo a una actualización no se reutiliza como si perteneciera a los pesos nuevos.
 
 El HMM se ajusta una vez con `hmmlearn==0.3.3`, usando solo las secuencias de entrenamiento y las variables observadas de retorno, volatilidad y dispersión. Exporta prior, transiciones, medias y varianzas para `MarkovFilter` en C++. Su manifiesto identifica todas las fuentes del ajuste. La inferencia utiliza filtrado hacia delante, sin Viterbi ni suavizado con observaciones futuras. El ajuste es offline sobre entrenamiento, como declara `training_context_point_in_time=false`, y no demuestra que esos estados tengan una interpretación económica real.
