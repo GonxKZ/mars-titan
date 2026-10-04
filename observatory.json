@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-04T18:35:01.994901Z",
+  "generated_at": "2026-10-04T18:41:30.289671Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -548,11 +548,11 @@
         "neural-convergence-20261001-fold-003"
       ],
       "counts": {
-        "completed": 4,
+        "completed": 5,
         "running": 1,
-        "not_started": 12
+        "not_started": 11
       },
-      "registered_runs": 5
+      "registered_runs": 6
     },
     {
       "id": "posttraining-convergence-20261001-fold-003",
@@ -4693,7 +4693,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 2278,
+    "total_runs": 2279,
     "page_size": 64,
     "pages": [
       "pages/dea090c1fa86abaa1af8030d56f98076e1d480c812bef4610f6f835a0bcd213d.json",
@@ -4701,7 +4701,7 @@
       "pages/b91529fff0180f72c8d002cca8a3321c29768442ed818dd4987381ccef5176ca.json",
       "pages/fca5e7f2f3f605d26c16773508bd59883188782099aacc375fc198984cba6de4.json",
       "pages/e6874012c122a70f6fcb2c359e020ccc0227b064fe4b8cb3b499b9dfc166d845.json",
-      "pages/d25465b4878e4108c3335bc15fd88f32840127bd122574586acebe2b35ba0590.json",
+      "pages/8b793ea6b4b7a4d3b9a480f9dff881ea0d277422772a8ac57b1759dd8462ca67.json",
       "pages/fed4bc57246fed27315bd557b08b868122256989f114ef5b3990886e6b175165.json",
       "pages/ee8427edf8db9060e3fc818a772e96f7df05368fcba75247db23bc19fe1cd66b.json",
       "pages/d8b8cc9eac0f7e779b2fbedd9afd491c7d1824e82db0bde70e29191df30d8312.json",
@@ -4729,8 +4729,8 @@
       "pages/339d560c16e9bbb4b9eb65b0b68e767d044d959e5fb370e93c0b2b4bddb595d3.json",
       "pages/1448a398454399a21df2a4994b6584a45dd13561c10aa0aadba3c3e470234cc8.json",
       "pages/742d5a1bf279abd71acbbb093c49268b2658b826d57c171e445b90528d200d59.json",
-      "pages/7d79125f1252e2ea21e4dd9f412188256a79e3ad5b695e020b88c0f3509dd502.json",
-      "pages/6cf28828dccb78b3cb71255a0d5fb4c4893c70dc6048494d4f36ac824e315d18.json"
+      "pages/ec1bde3157054ca17735538dbe6d8e57ec97b7a4df6496606880608897914776.json",
+      "pages/bbc56ce4a5825289e6fd9e74b29c079bcb5044985b4492df5d3d60d13f1f4dbf.json"
     ]
   }
 }
