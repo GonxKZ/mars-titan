@@ -1,8 +1,8 @@
 # Revisión de memoria adaptativa, multimodalidad e incertidumbre
 
-MARS-TITAN. Autor: Gonzalo García Lama. Revisión inicial del 18 de septiembre de 2026. Las fichas de ATLAS y MIRAS y el alcance multimodal se actualizaron el 4 de octubre. Este documento sirve de apoyo a la comparación experimental. Las propuestas de arquitectura son hipótesis que se deben contrastar, no resultados del proyecto.
+MARS-TITAN. Autor: Gonzalo García Lama. Revisión inicial del 18 de septiembre de 2026. Las fichas de ATLAS y MIRAS y el alcance multimodal se actualizaron el 4 de octubre. En esa fecha se añadió LoRA para la revisión de integración y adaptadores. Este documento sirve de apoyo a la comparación experimental. Las propuestas de arquitectura son hipótesis que se deben contrastar, no resultados del proyecto.
 
-Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `neural-sources.json` y `neural.bib`. EnbPI (`xu2021enbpi`) y ACI (`gibbs2021aci`) usan las entradas canónicas de `finance-sources.json` y `finance.bib` para evitar duplicados. Se ha comprobado un PDF abierto de cada trabajo. En TTT y MIRAS se distingue la publicación de la copia arXiv accesible. Acceso abierto y permiso de redistribución son cuestiones diferentes. El campo `redistribution` permanece en `unknown` cuando no se ha verificado expresamente ese permiso.
+Las 18 referencias tienen ficha y entrada bibliográfica: 16 se mantienen en `neural-sources.json` y `neural.bib`. EnbPI (`xu2021enbpi`) y ACI (`gibbs2021aci`) usan las entradas canónicas de `finance-sources.json` y `finance.bib` para evitar duplicados. Se ha comprobado un PDF abierto de cada trabajo. En TTT, MIRAS y LoRA se distingue la publicación de la copia arXiv accesible. Acceso abierto y permiso de redistribución son cuestiones diferentes. El campo `redistribution` permanece en `unknown` cuando no se ha verificado expresamente ese permiso.
 
 ## Correspondencia con los objetivos
 
@@ -10,7 +10,7 @@ Las 17 referencias tienen ficha y entrada bibliográfica: 15 se mantienen en `ne
 |---|---|
 | 1. Datos multimodales y disponibilidad temporal | FinMultiTime, FinBERT y antecedentes de fusión financiera. Revisión de qué información estaba disponible en cada instante. |
 | 2. Retorno residual | Distinguir el objetivo del proyecto de las tareas de sentimiento, dirección y sorpresa de beneficios usadas por otros autores. La justificación financiera del residual corresponde a su revisión específica. |
-| 3. Arquitectura e incertidumbre | Titans, TTT y MIRAS como base. ATLAS, SEAL y Nested Learning para delimitar avances y alcance. |
+| 3. Arquitectura e incertidumbre | Titans, TTT y MIRAS como base. ATLAS, SEAL y Nested Learning para delimitar avances y alcance. LoRA para contrastar adaptación de bajo rango sobre matrices existentes. |
 | 4. Referencias y ablaciones | DLinear, TCN, PatchTST y comparaciones con la misma entrada y presupuesto. |
 | 5. Evaluación walk-forward | Comparación temporal y evaluación de intervalos con EnbPI y ACI, sin utilizar etiquetas antes de que estén disponibles. |
 | 6. Análisis crítico | Separar evidencia publicada, extrapolaciones al problema financiero y límites de recursos y datos. |
@@ -88,6 +88,10 @@ Entrada canónica compartida con la revisión financiera: [finance-sources.json]
 Entrada canónica compartida con la revisión financiera: [finance-sources.json](finance-sources.json) y [finance.bib](finance.bib).
 
 **Estado:** NeurIPS 2021, revisado por pares. Adapta la calibración conforme cambia la distribución y estudia la frecuencia de cobertura a largo plazo. Esta propiedad no equivale a cobertura condicional para cada activo o fecha, ni garantiza intervalos estrechos. Para el proyecto interesa evaluar cobertura por periodos y anchura, junto al promedio global. El retraso con que se observa un retorno futuro debe respetarse también al actualizar el calibrador. [Artículo](https://proceedings.neurips.cc/paper/2021/hash/0d441de75945e5acbc865406fc9a2559-Abstract.html).
+
+### 18. LoRA: `hu2022lora`
+
+**Estado:** ICLR 2022, confirmado en la ficha de Microsoft Research. Se consultó arXiv v2 de octubre de 2021, §4.1–4.2, páginas 4–5. Mantiene la matriz base congelada y entrena una actualización de bajo rango. La base sigue almacenada, y la versión sin fusionar añade productos. Reducir parámetros entrenables no demuestra menor tiempo total, especialmente en cabezas pequeñas. En MARS-TITAN se contrastaría con ajustar la misma matriz completa y con la corrección residual existente. Sus resultados en modelos de lenguaje no acreditan calidad financiera. [Ficha de los autores](https://www.microsoft.com/en-us/research/publication/lora-low-rank-adaptation-of-large-language-models/), [PDF consultado](https://arxiv.org/pdf/2106.09685v2).
 
 ## Auditoría bibliográfica de FinMultiTime
 
