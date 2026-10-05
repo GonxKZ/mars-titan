@@ -45,7 +45,11 @@ def add_special_tokens(tokens: list[int], cls_id: int, sep_id: int) -> list[int]
 class EmbeddingCache:
     """Una fila confirmada por representación. Los valores corruptos nunca se reutilizan."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, read_only: bool = False):
+        if read_only:
+            self.db = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
+            self.db.execute("PRAGMA query_only=ON")
+            return
         path.parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(path)
         self.db.execute("PRAGMA journal_mode=WAL")
@@ -59,14 +63,20 @@ class EmbeddingCache:
         text = json.dumps(identity, sort_keys=True, allow_nan=False)
         return hashlib.sha256(text.encode()).hexdigest(), text
 
-    def get(self, identity: dict) -> np.ndarray | None:
+    def get(self, identity: dict, *, max_bytes: int = 64 * 1024**2) -> np.ndarray | None:
+        if type(max_bytes) is not int or not 1 <= max_bytes <= 64 * 1024**2:
+            raise ValueError("El presupuesto de la representación no es válido")
         key, description = self.identity(identity)
         row = self.db.execute(
-            "SELECT identity,vector,checksum FROM embeddings WHERE key=?", (key,)
+            "SELECT identity,CASE WHEN length(vector)<=? THEN vector END,checksum,length(vector) "
+            "FROM embeddings WHERE key=?",
+            (max_bytes, key),
         ).fetchone()
         if row is None:
             return None
-        if row[0] != description or hashlib.sha256(row[1]).hexdigest() != row[2]:
+        if type(row[3]) is not int or not 0 < row[3] <= max_bytes:
+            raise ValueError("La representación de la caché supera su presupuesto")
+        if row[0] != description or len(row[1]) % 4 or hashlib.sha256(row[1]).hexdigest() != row[2]:
             raise ValueError("La caché de representaciones está corrupta")
         result = np.frombuffer(row[1], dtype="<f4").copy()
         if not np.isfinite(result).all() or not result.size:

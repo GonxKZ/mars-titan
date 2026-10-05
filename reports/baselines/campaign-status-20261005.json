@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-10-05T12:52:51.573123+00:00",
+  "runtime_revision": "39ef706fe18b7698d8a00686f7559d280bc16b05",
+  "operational_revisions": {
+    "supervisor": "2d0dd5d63cb1a98f8c9262d73fbea268260e8a70",
+    "receipts": "ccc82e689b0d060d43f6125d67a4a3432eb19409"
+  },
+  "final_test_opened": false,
+  "candidate_implemented": false,
+  "candidate_trained": false,
+  "stages": {
+    "references": {
+      "status": "completed",
+      "completed_runs": 160,
+      "planned_runs": 160,
+      "receipt_sha256": "6566328d854cc012479d3bdfc367ff290b23e31b7b0f66d171e2ea1c9e68790e"
+    },
+    "completion": {
+      "status": "completed",
+      "completed_runs": 1352,
+      "planned_runs": 1352,
+      "receipt_sha256": "3000a191124491a031ab61e72fbe53944716311053edd94e9b1b6b74f86be587",
+      "breakdown": {
+        "tabular": 68,
+        "posttraining": 528,
+        "evaluation": 756
+      }
+    },
+    "financial": {
+      "status": "running",
+      "phase": "auxiliary",
+      "completed_runs": 47,
+      "planned_runs": 48,
+      "final_test_opened": false,
+      "domain": "synthetic",
+      "plan_scope": "Casos registrados de las fases preparadas. El plan crece al preparar auditoría y auxiliares admitidas.",
+      "identity_sha256": "4ccc9e236c8bdbfbd053dd9c93b707655941a8e2285faf5e2ec18e4f58781b97",
+      "snapshot_sha256": "107359f613e300227e4f8332c526dc021e6851a22f2a3db641cd20b159aae35b"
+    }
+  },
+  "limitations": [
+    "Los recuentos no son una comparación de calidad predictiva.",
+    "No se publican métricas reservadas de calibración o auditoría.",
+    "El aviso de compactación de GRU queda registrado en la tarea de rendimiento 145.",
+    "La investigación de asignaciones al cerrar LibTorch sigue en la tarea 202."
+  ]
+}

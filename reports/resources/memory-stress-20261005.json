@@ -1,0 +1,2221 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-05T09:46:32.665892+00:00",
+  "implementation_commit": "1c7be02f00b4b602598b99158259c63d15c702e0",
+  "build": {
+    "compiler": "Ubuntu Clang 21.1.8 (6ubuntu1)",
+    "libtorch": "2.14.0+cu130",
+    "source_sha256": "378cb6f4a7b5bcca9b11009ef349bd3b23bb48aaa5213cbba44bf6e1ebfc43a4",
+    "standard": 202002,
+    "stdlib": 20260321,
+    "threads": 1
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "physical_cores": 8,
+    "logical_cpus": 16,
+    "platform": "Linux x86_64"
+  },
+  "protocol": {
+    "warmup_executions": 1,
+    "measured_repetitions": 3,
+    "threads": 1,
+    "device": "cpu",
+    "noise_standard_deviation": 0.25,
+    "delay_ticks": 8,
+    "data_seed": 42,
+    "retention_seed": 73,
+    "invalid_every": 97,
+    "timing": "Reloj monótono del motor y /usr/bin/time para el proceso completo",
+    "concurrent_work": "Actividad de desarrollo en el equipo, sin detener otras aplicaciones",
+    "latency": "Límite superior de intervalos log2 en nanosegundos, no percentiles exactos",
+    "bytes": "Contabilidad estructural. No se midió tráfico de memoria con contadores",
+    "energy_joules": null,
+    "monetary_cost": null
+  },
+  "measurements": [
+    {
+      "scenario": "recurrence",
+      "steps": 256,
+      "capacity": 16,
+      "regime_length": 64,
+      "invalid_observations": 2,
+      "data_digest": "11484211061013235510",
+      "baseline": {
+        "evaluated": 254,
+        "mae_latent_evaluation_only": 0.43973279719999747,
+        "mae_observed": 0.5057020745378957,
+        "rmse_observed": 0.6907627625224545
+      },
+      "policies": [
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.20820435898433923,
+          "mae_observed": 0.33650583620654756,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.15328004861646022,
+              "mae_observed": 0.3006817131256247,
+              "rmse_observed": 0.4063496937253062
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.2932907095804221,
+              "mae_observed": 0.4214701785233065,
+              "rmse_observed": 0.6889682487191706
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.2470248714465112,
+              "mae_observed": 0.3416246857331307,
+              "rmse_observed": 0.5151367926523583
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.1394774221337359,
+              "mae_observed": 0.2827341527386416,
+              "rmse_observed": 0.347735988530556
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "13738842350327878104",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "15344709304660844052",
+          "rmse_observed": 0.506157945468101,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.21071649827597014,
+          "mae_observed": 0.3439693836611407,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.15983009914684979,
+              "mae_observed": 0.303501903765123,
+              "rmse_observed": 0.4088153260738569
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.2980525338953975,
+              "mae_observed": 0.4378604153388115,
+              "rmse_observed": 0.7195561012779509
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.24917184958030236,
+              "mae_observed": 0.3580745844222294,
+              "rmse_observed": 0.5484194262086346
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.13600882870077213,
+              "mae_observed": 0.2768590799935558,
+              "rmse_observed": 0.3359339417011166
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "6871224111120598181",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "18176855934015687811",
+          "rmse_observed": 0.5237425856001476,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.4777649435024795,
+          "mae_observed": 0.5652686683507347,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.1644567038477719,
+              "mae_observed": 0.3076067660866609,
+              "rmse_observed": 0.40842704865087026
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.39893310187562026,
+              "mae_observed": 0.5099694028344092,
+              "rmse_observed": 0.7805365752802055
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.473403246880737,
+              "mae_observed": 0.5739731809370767,
+              "rmse_observed": 0.7174042508436426
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.8793091013466856,
+              "mae_observed": 0.8734770281428518,
+              "rmse_observed": 0.9657443937343275
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "16205120535225369783",
+          "priority_candidates_examined": 3808,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "9346567451452755558",
+          "rmse_observed": 0.7444135522635623,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 0.29,
+          "user_seconds": 0.24,
+          "system_seconds": 0.04,
+          "peak_rss_bytes_external": 119185408,
+          "engine_seconds": 0.005507434,
+          "steps_per_second": 46482.626936609675,
+          "query_seconds_by_policy": [
+            0.0026465130000000005,
+            0.001186796999999999,
+            0.0011297509999999996
+          ],
+          "write_seconds_by_policy": [
+            0.00010106999999999998,
+            7.799699999999991e-05,
+            6.309000000000006e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 65536,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 0.33,
+          "user_seconds": 0.27,
+          "system_seconds": 0.06,
+          "peak_rss_bytes_external": 119091200,
+          "engine_seconds": 0.006518137,
+          "steps_per_second": 39275.02597751474,
+          "query_seconds_by_policy": [
+            0.0029839689999999986,
+            0.0014970860000000001,
+            0.0013748359999999995
+          ],
+          "write_seconds_by_policy": [
+            0.00011286399999999998,
+            8.607099999999997e-05,
+            7.427799999999997e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 32768,
+            "p95": 65536,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 0.31,
+          "user_seconds": 0.25,
+          "system_seconds": 0.05,
+          "peak_rss_bytes_external": 118919168,
+          "engine_seconds": 0.003302875,
+          "steps_per_second": 77508.23146501154,
+          "query_seconds_by_policy": [
+            0.001480539999999999,
+            0.0007316639999999998,
+            0.0007171060000000004
+          ],
+          "write_seconds_by_policy": [
+            5.876399999999998e-05,
+            5.732400000000003e-05,
+            5.5971000000000044e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 16384,
+            "p99": 32768
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "recurrence",
+      "steps": 8192,
+      "capacity": 1024,
+      "regime_length": 2048,
+      "invalid_observations": 84,
+      "data_digest": "3616305429052210939",
+      "baseline": {
+        "evaluated": 8108,
+        "mae_latent_evaluation_only": 0.04626510477624744,
+        "mae_observed": 0.22643512203516183,
+        "rmse_observed": 0.2778165524556278
+      },
+      "policies": [
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.10399782494843174,
+          "mae_observed": 0.23822495979609298,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10113842910263855,
+              "mae_observed": 0.23879676422008256,
+              "rmse_observed": 0.2872443516354505
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10750468586792675,
+              "mae_observed": 0.24254081987188547,
+              "rmse_observed": 0.3006550082354803
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10503467147828366,
+              "mae_observed": 0.23403662272983325,
+              "rmse_observed": 0.28362465257668984
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10231351334487604,
+              "mae_observed": 0.23752563236256963,
+              "rmse_observed": 0.28487348498577414
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "18272035735076319812",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "3112387614462228123",
+          "rmse_observed": 0.2891792685864324,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.10423770963975992,
+          "mae_observed": 0.23892136899529098,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10193087011039541,
+              "mae_observed": 0.23622047673499344,
+              "rmse_observed": 0.2849122703360216
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.1056441440527081,
+              "mae_observed": 0.24334075408127026,
+              "rmse_observed": 0.30295146222576996
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10661611047032529,
+              "mae_observed": 0.23589352355456952,
+              "rmse_observed": 0.28827657413901814
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.1027597139256112,
+              "mae_observed": 0.24023072161033004,
+              "rmse_observed": 0.28625263108713717
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "9531896929314035150",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "15749228332605957898",
+          "rmse_observed": 0.29068821022463054,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.12657343624516046,
+          "mae_observed": 0.2492713555975776,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10982862314002521,
+              "mae_observed": 0.24079987825244642,
+              "rmse_observed": 0.2902408892727885
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.13110084163566488,
+              "mae_observed": 0.25599618805346125,
+              "rmse_observed": 0.3196852862916449
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.1310983622239413,
+              "mae_observed": 0.2505778486418699,
+              "rmse_observed": 0.3045008210734875
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.13426591798100987,
+              "mae_observed": 0.24971150744253248,
+              "rmse_observed": 0.30096273263207673
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "14156979124748465479",
+          "priority_candidates_examined": 7254016,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "16757939327018329669",
+          "rmse_observed": 0.30403033259241774,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 1.66,
+          "user_seconds": 1.58,
+          "system_seconds": 0.07,
+          "peak_rss_bytes_external": 127676416,
+          "engine_seconds": 1.224882667,
+          "steps_per_second": 6687.987527869884,
+          "query_seconds_by_policy": [
+            0.40085832800000093,
+            0.39265497000000127,
+            0.3958201960000008
+          ],
+          "write_seconds_by_policy": [
+            0.006880123000000121,
+            0.003603789000000028,
+            0.010404151000000464
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 1.85,
+          "user_seconds": 1.78,
+          "system_seconds": 0.06,
+          "peak_rss_bytes_external": 127852544,
+          "engine_seconds": 1.410896298,
+          "steps_per_second": 5806.238212980271,
+          "query_seconds_by_policy": [
+            0.46082929600000094,
+            0.45727609900000155,
+            0.45517056599999983
+          ],
+          "write_seconds_by_policy": [
+            0.006958505000000149,
+            0.00386799900000001,
+            0.01113947700000038
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 1.63,
+          "user_seconds": 1.57,
+          "system_seconds": 0.05,
+          "peak_rss_bytes_external": 127832064,
+          "engine_seconds": 1.195410827,
+          "steps_per_second": 6852.874187662013,
+          "query_seconds_by_policy": [
+            0.39042217799999784,
+            0.38641861399999944,
+            0.38459667399999886
+          ],
+          "write_seconds_by_policy": [
+            0.006568605000000169,
+            0.003464327000000047,
+            0.010204652000000406
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "recurrence",
+      "steps": 32768,
+      "capacity": 1024,
+      "regime_length": 8192,
+      "invalid_observations": 337,
+      "data_digest": "14283983846682366524",
+      "baseline": {
+        "evaluated": 32431,
+        "mae_latent_evaluation_only": 0.035517877664695836,
+        "mae_observed": 0.2200154274463587,
+        "rmse_observed": 0.2587216109894282
+      },
+      "policies": [
+        {
+          "bytes_written": 35284928,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 32431,
+          "evictions": 31407,
+          "mae_latent_evaluation_only": 0.10198431712147521,
+          "mae_observed": 0.23508593866301455,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.10258208566152462,
+              "mae_observed": 0.23594102775063383,
+              "rmse_observed": 0.282562789355096
+            },
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.1031373616358081,
+              "mae_observed": 0.23446264016421897,
+              "rmse_observed": 0.28278704389503373
+            },
+            {
+              "evaluated": 8107,
+              "mae_latent_evaluation_only": 0.10195464207247208,
+              "mae_observed": 0.2366616726425726,
+              "rmse_observed": 0.2835258241643512
+            },
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.10026317545612186,
+              "mae_observed": 0.23327860843774575,
+              "rmse_observed": 0.2771989931895079
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "3376284291824851021",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 32680488,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "7337149025859194588",
+          "rmse_observed": 0.28152987311131233,
+          "saturated": true,
+          "size": 1024,
+          "writes": 32431
+        },
+        {
+          "bytes_written": 35284928,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 32431,
+          "evictions": 31407,
+          "mae_latent_evaluation_only": 0.10224500118517288,
+          "mae_observed": 0.23570657366142195,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.10187206413819858,
+              "mae_observed": 0.23701490975952905,
+              "rmse_observed": 0.2835233561415068
+            },
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.10293861906505712,
+              "mae_observed": 0.2355714222829411,
+              "rmse_observed": 0.28370330580893705
+            },
+            {
+              "evaluated": 8107,
+              "mae_latent_evaluation_only": 0.10225186900458481,
+              "mae_observed": 0.23746668620251932,
+              "rmse_observed": 0.2841228470091647
+            },
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.10191745337989172,
+              "mae_observed": 0.2327734934841422,
+              "rmse_observed": 0.27772716082861104
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "8289777348321920741",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 32680488,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "10301605268074224735",
+          "rmse_observed": 0.2822813749694759,
+          "saturated": true,
+          "size": 1024,
+          "writes": 32431
+        },
+        {
+          "bytes_written": 35284928,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 32431,
+          "evictions": 31407,
+          "mae_latent_evaluation_only": 0.1367586254841214,
+          "mae_observed": 0.2499956104301572,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.1271284685801192,
+              "mae_observed": 0.24712527723707461,
+              "rmse_observed": 0.2990463283053243
+            },
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.14077777507629075,
+              "mae_observed": 0.25073849368613405,
+              "rmse_observed": 0.3069502754519082
+            },
+            {
+              "evaluated": 8107,
+              "mae_latent_evaluation_only": 0.13540166560815012,
+              "mae_observed": 0.2507568305003532,
+              "rmse_observed": 0.3040495155545052
+            },
+            {
+              "evaluated": 8108,
+              "mae_latent_evaluation_only": 0.14372642531130708,
+              "mae_observed": 0.25136193418213226,
+              "rmse_observed": 0.304368150100519
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "10695597645554572141",
+          "priority_candidates_examined": 32160768,
+          "query_candidates_examined": 32680488,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "5266127422519050226",
+          "rmse_observed": 0.3036170385390061,
+          "saturated": true,
+          "size": 1024,
+          "writes": 32431
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 5.42,
+          "user_seconds": 5.34,
+          "system_seconds": 0.07,
+          "peak_rss_bytes_external": 127836160,
+          "engine_seconds": 4.968559926,
+          "steps_per_second": 6595.0698971201255,
+          "query_seconds_by_policy": [
+            1.6105050140000128,
+            1.6091785990000214,
+            1.6162841440000075
+          ],
+          "write_seconds_by_policy": [
+            0.022847623999999865,
+            0.013002860000000852,
+            0.04224961199998663
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 5.41,
+          "user_seconds": 5.32,
+          "system_seconds": 0.07,
+          "peak_rss_bytes_external": 128032768,
+          "engine_seconds": 4.940495314,
+          "steps_per_second": 6632.533363030329,
+          "query_seconds_by_policy": [
+            1.6034093440000157,
+            1.6066277650000065,
+            1.5966801340000112
+          ],
+          "write_seconds_by_policy": [
+            0.023835959000000274,
+            0.012835027000000802,
+            0.042282754999987945
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 5.34,
+          "user_seconds": 5.25,
+          "system_seconds": 0.07,
+          "peak_rss_bytes_external": 128032768,
+          "engine_seconds": 4.908777779,
+          "steps_per_second": 6675.388757703224,
+          "query_seconds_by_policy": [
+            1.5897049670000163,
+            1.586184112,
+            1.5985835380000017
+          ],
+          "write_seconds_by_policy": [
+            0.023611060000000142,
+            0.013166806000000577,
+            0.042151999999990884
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "persistent",
+      "steps": 256,
+      "capacity": 16,
+      "regime_length": 64,
+      "invalid_observations": 2,
+      "data_digest": "12942075676657102470",
+      "baseline": {
+        "evaluated": 254,
+        "mae_latent_evaluation_only": 0.43973279719999747,
+        "mae_observed": 0.5057020745378957,
+        "rmse_observed": 0.6907627625224545
+      },
+      "policies": [
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.3574706030655966,
+          "mae_observed": 0.4690228017817786,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.15328004861646022,
+              "mae_observed": 0.3006817131256247,
+              "rmse_observed": 0.4063496937253062
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.6113761089558577,
+              "mae_observed": 0.7127497628965266,
+              "rmse_observed": 0.9569775798390304
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.4411115449074473,
+              "mae_observed": 0.5317900181478447,
+              "rmse_observed": 0.7299015732469872
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.2260281956970232,
+              "mae_observed": 0.33254548870775635,
+              "rmse_observed": 0.40259897477075346
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "11922069026487858679",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "15344709304660844052",
+          "rmse_observed": 0.6657282016457466,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.2895688786735389,
+          "mae_observed": 0.4151503268923388,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.15983009914684979,
+              "mae_observed": 0.303501903765123,
+              "rmse_observed": 0.4088153260738569
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.4501810945820897,
+              "mae_observed": 0.5730285906089639,
+              "rmse_observed": 0.841093871923433
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.3579091359427469,
+              "mae_observed": 0.46081941965147405,
+              "rmse_observed": 0.6628969024070056
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.19132976474084293,
+              "mae_observed": 0.32429868450201754,
+              "rmse_observed": 0.3869348526372434
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "17793929005997383463",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "18176855934015687811",
+          "rmse_observed": 0.6045135575435531,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 1.0227227073384748,
+          "mae_observed": 1.073005069132215,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.1644567038477719,
+              "mae_observed": 0.3076067660866609,
+              "rmse_observed": 0.40842704865087026
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.806597400078014,
+              "mae_observed": 0.8307147471557036,
+              "rmse_observed": 1.13876477096984
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 1.2918459874013501,
+              "mae_observed": 1.3302544820617892,
+              "rmse_observed": 1.4056224743643668
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 1.8373422098272048,
+              "mae_observed": 1.8315101366233708,
+              "rmse_observed": 1.9058970214963882
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "15848972868933460014",
+          "priority_candidates_examined": 3808,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "9346567451452755558",
+          "rmse_observed": 1.3275799218760873,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 0.31,
+          "user_seconds": 0.25,
+          "system_seconds": 0.05,
+          "peak_rss_bytes_external": 119296000,
+          "engine_seconds": 0.004611609,
+          "steps_per_second": 55512.07832233825,
+          "query_seconds_by_policy": [
+            0.0024527770000000006,
+            0.0008736389999999996,
+            0.000843389
+          ],
+          "write_seconds_by_policy": [
+            7.037399999999992e-05,
+            6.04630000000001e-05,
+            5.775900000000006e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 32768,
+            "p99": 65536
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 0.3,
+          "user_seconds": 0.24,
+          "system_seconds": 0.05,
+          "peak_rss_bytes_external": 119083008,
+          "engine_seconds": 0.005824051,
+          "steps_per_second": 43955.65904213407,
+          "query_seconds_by_policy": [
+            0.002764304999999998,
+            0.001246369999999999,
+            0.001239479000000001
+          ],
+          "write_seconds_by_policy": [
+            9.644e-05,
+            7.435400000000003e-05,
+            6.525400000000005e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 65536,
+            "p99": 65536
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 0.31,
+          "user_seconds": 0.25,
+          "system_seconds": 0.05,
+          "peak_rss_bytes_external": 119209984,
+          "engine_seconds": 0.006027844,
+          "steps_per_second": 42469.5795047118,
+          "query_seconds_by_policy": [
+            0.002767354000000001,
+            0.001421603,
+            0.001254615999999999
+          ],
+          "write_seconds_by_policy": [
+            0.000117301,
+            8.301899999999999e-05,
+            6.736599999999998e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 65536,
+            "p99": 65536
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "persistent",
+      "steps": 8192,
+      "capacity": 1024,
+      "regime_length": 2048,
+      "invalid_observations": 84,
+      "data_digest": "8826548715196348225",
+      "baseline": {
+        "evaluated": 8108,
+        "mae_latent_evaluation_only": 0.04626510477624744,
+        "mae_observed": 0.22643512203516183,
+        "rmse_observed": 0.2778165524556278
+      },
+      "policies": [
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.4856234704710875,
+          "mae_observed": 0.5479379762309782,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10113842910263855,
+              "mae_observed": 0.23879676422008256,
+              "rmse_observed": 0.2872443516354505
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.9135326805162043,
+              "mae_observed": 0.9384797002520082,
+              "rmse_observed": 1.1315532312832304
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.5812662457875566,
+              "mae_observed": 0.6121563813569105,
+              "rmse_observed": 0.7594695751655406
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.3465565264779498,
+              "mae_observed": 0.4023190590949173,
+              "rmse_observed": 0.5079358136709612
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "15781735182638151678",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "3112387614462228123",
+          "rmse_observed": 0.7412345882353469,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.32855372787156706,
+          "mae_observed": 0.42666836940419384,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10193087011039541,
+              "mae_observed": 0.23622047673499344,
+              "rmse_observed": 0.2849122703360216
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.5747704535455523,
+              "mae_observed": 0.6627731655094553,
+              "rmse_observed": 0.9223644289081825
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.4420551764745798,
+              "mae_observed": 0.5133456762278199,
+              "rmse_observed": 0.7026711837687912
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.1954584113557356,
+              "mae_observed": 0.2943341591445113,
+              "rmse_observed": 0.36150274600672627
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "3274014886048247502",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "15749228332605957898",
+          "rmse_observed": 0.6237712259660145,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.6751690620103619,
+          "mae_observed": 0.72182926279891,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10982862314002521,
+              "mae_observed": 0.24079987825244642,
+              "rmse_observed": 0.2902408892727885
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 1.3276094842047859,
+              "mae_observed": 1.3318633784200167,
+              "rmse_observed": 1.4548731882781811
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.5241435304530572,
+              "mae_observed": 0.5618954588235376,
+              "rmse_observed": 0.6910957115562311
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.7390946102435811,
+              "mae_observed": 0.7527583356996181,
+              "rmse_observed": 0.8930661825601584
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "7355456867184981996",
+          "priority_candidates_examined": 7254016,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "16757939327018329669",
+          "rmse_observed": 0.9322119202118899,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 1.65,
+          "user_seconds": 1.57,
+          "system_seconds": 0.07,
+          "peak_rss_bytes_external": 127782912,
+          "engine_seconds": 1.183532289,
+          "steps_per_second": 6921.653153140125,
+          "query_seconds_by_policy": [
+            0.3894182330000012,
+            0.38002693099999946,
+            0.3813623830000004
+          ],
+          "write_seconds_by_policy": [
+            0.0060574260000001105,
+            0.003451753000000056,
+            0.009924832000000508
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 1.61,
+          "user_seconds": 1.54,
+          "system_seconds": 0.06,
+          "peak_rss_bytes_external": 127950848,
+          "engine_seconds": 1.191969926,
+          "steps_per_second": 6872.65661768047,
+          "query_seconds_by_policy": [
+            0.3905780850000009,
+            0.3835005900000003,
+            0.3848577489999986
+          ],
+          "write_seconds_by_policy": [
+            0.0062825530000000344,
+            0.0034572060000001,
+            0.010158379000000368
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 1.7,
+          "user_seconds": 1.62,
+          "system_seconds": 0.07,
+          "peak_rss_bytes_external": 128004096,
+          "engine_seconds": 1.269728395,
+          "steps_per_second": 6451.773491290632,
+          "query_seconds_by_policy": [
+            0.41523407500000026,
+            0.4085238479999993,
+            0.41058035599999854
+          ],
+          "write_seconds_by_policy": [
+            0.006980530000000089,
+            0.003650626000000028,
+            0.010656781000000472
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 1048576,
+            "p99": 1048576
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "noise",
+      "steps": 256,
+      "capacity": 16,
+      "regime_length": 64,
+      "invalid_observations": 2,
+      "data_digest": "18437513417587156376",
+      "baseline": {
+        "evaluated": 254,
+        "mae_latent_evaluation_only": 0.03129277573312014,
+        "mae_observed": 0.21541962000646114,
+        "rmse_observed": 0.2515835964470486
+      },
+      "policies": [
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.09456043446176998,
+          "mae_observed": 0.2391016131299125,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.07515504861646015,
+              "mae_observed": 0.22268906814303308,
+              "rmse_observed": 0.2609758017551121
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.09774393474470826,
+              "mae_observed": 0.2400411974598494,
+              "rmse_observed": 0.2830130640183386
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.11080257392632258,
+              "mae_observed": 0.23419077110758874,
+              "rmse_observed": 0.2853021676328058
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.09459039081960138,
+              "mae_observed": 0.25982388226964237,
+              "rmse_observed": 0.306823938163876
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "1850043880026819583",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "12788868828061237292",
+          "rmse_observed": 0.28440652338198275,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.09315223793881679,
+          "mae_observed": 0.24077595604439253,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.08170509914684979,
+              "mae_observed": 0.2255092587825312,
+              "rmse_observed": 0.2647985391650551
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.1004151468588902,
+              "mae_observed": 0.24356380097432365,
+              "rmse_observed": 0.28786508919412607
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.10150722728188087,
+              "mae_observed": 0.23734878209172122,
+              "rmse_observed": 0.28342096824192115
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.08903056020493035,
+              "mae_observed": 0.2569787104435103,
+              "rmse_observed": 0.3004575925981865
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "7982659379609599680",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "7176373119545538530",
+          "rmse_observed": 0.28434489729224566,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.1455234040524944,
+          "mae_observed": 0.2581600410586673,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.09412598461286825,
+              "mae_observed": 0.24530621013983955,
+              "rmse_observed": 0.29120244386423333
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.08527632731235542,
+              "mae_observed": 0.22875479605985805,
+              "rmse_observed": 0.2632463218278553
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.27018948864643894,
+              "mae_observed": 0.28564409100123145,
+              "rmse_observed": 0.35484110277317815
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.13133882095332622,
+              "mae_observed": 0.27270284133495115,
+              "rmse_observed": 0.32447264518639735
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "1556187510049494816",
+          "priority_candidates_examined": 3808,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "5903530214278081989",
+          "rmse_observed": 0.31047410630367045,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 0.19,
+          "user_seconds": 0.15,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 119193600,
+          "engine_seconds": 0.003249806,
+          "steps_per_second": 78773.93296707557,
+          "query_seconds_by_policy": [
+            0.001466421000000001,
+            0.0007104769999999994,
+            0.0007011109999999994
+          ],
+          "write_seconds_by_policy": [
+            5.7536e-05,
+            5.6206000000000004e-05,
+            5.5301000000000025e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 16384,
+            "p99": 32768
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 0.2,
+          "user_seconds": 0.16,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 119209984,
+          "engine_seconds": 0.004830701,
+          "steps_per_second": 52994.37907665989,
+          "query_seconds_by_policy": [
+            0.0020908140000000007,
+            0.0011267750000000006,
+            0.0011072150000000004
+          ],
+          "write_seconds_by_policy": [
+            7.7346e-05,
+            7.563800000000001e-05,
+            7.456899999999997e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 32768,
+            "p99": 32768
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 0.2,
+          "user_seconds": 0.16,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 119123968,
+          "engine_seconds": 0.003207306,
+          "steps_per_second": 79817.76606285774,
+          "query_seconds_by_policy": [
+            0.0014442519999999987,
+            0.0007055039999999998,
+            0.0006963869999999999
+          ],
+          "write_seconds_by_policy": [
+            5.426900000000004e-05,
+            5.3125000000000085e-05,
+            5.7551000000000086e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 16384,
+            "p99": 32768
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "noise",
+      "steps": 8192,
+      "capacity": 1024,
+      "regime_length": 2048,
+      "invalid_observations": 84,
+      "data_digest": "18305665953489967534",
+      "baseline": {
+        "evaluated": 8108,
+        "mae_latent_evaluation_only": 0.032595430814059134,
+        "mae_observed": 0.2178497265764612,
+        "rmse_observed": 0.25353476043395673
+      },
+      "policies": [
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.10127414915648551,
+          "mae_observed": 0.2356518753445615,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.09867172954664438,
+              "mae_observed": 0.23633424360889072,
+              "rmse_observed": 0.2818621894172581
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10146721779046215,
+              "mae_observed": 0.23703687327858916,
+              "rmse_observed": 0.28027635846741816
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10264413594395817,
+              "mae_observed": 0.23171075212819592,
+              "rmse_observed": 0.27676549816790746
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10231351334487603,
+              "mae_observed": 0.2375256323625696,
+              "rmse_observed": 0.2848734849857742
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "2350977900449343210",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "6796459836521977229",
+          "rmse_observed": 0.2809595942315006,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.10049135743602193,
+          "mae_observed": 0.23573335870254175,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.09946417055440135,
+              "mae_observed": 0.23375795612380162,
+              "rmse_observed": 0.2794852018705932
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.09937860945679824,
+              "mae_observed": 0.23767040927610483,
+              "rmse_observed": 0.2815176289788699
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10194988685941045,
+              "mae_observed": 0.23213364349817442,
+              "rmse_observed": 0.27682527345374675
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10117276287347769,
+              "mae_observed": 0.2393714259120857,
+              "rmse_observed": 0.2846135970658156
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "8612158088814859390",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "2217065328415814725",
+          "rmse_observed": 0.2806248764578861,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.12931378377752986,
+          "mae_observed": 0.24890604818640108,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.10659165081583621,
+              "mae_observed": 0.2375706127604859,
+              "rmse_observed": 0.28437640031274997
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.13159081437183748,
+              "mae_observed": 0.25366431689076574,
+              "rmse_observed": 0.30606274283708534
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.13738651221780154,
+              "mae_observed": 0.24892352435743126,
+              "rmse_observed": 0.3010592166169142
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.14168615770464416,
+              "mae_observed": 0.25546573873692263,
+              "rmse_observed": 0.30951379637717147
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "5091433569054631932",
+          "priority_candidates_examined": 7254016,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "9513148008384357690",
+          "rmse_observed": 0.3004079649683069,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 0.83,
+          "user_seconds": 0.76,
+          "system_seconds": 0.05,
+          "peak_rss_bytes_external": 129245184,
+          "engine_seconds": 0.519111768,
+          "steps_per_second": 15780.801948608492,
+          "query_seconds_by_policy": [
+            0.16769037000000003,
+            0.16603629100000092,
+            0.16532417799999954
+          ],
+          "write_seconds_by_policy": [
+            0.0031182309999999076,
+            0.002364387000000075,
+            0.007633727000000211
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 65536,
+            "p95": 131072,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 0.85,
+          "user_seconds": 0.8,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 129245184,
+          "engine_seconds": 0.548043243,
+          "steps_per_second": 14947.725575735272,
+          "query_seconds_by_policy": [
+            0.177208990999999,
+            0.175706639999999,
+            0.17452049799999986
+          ],
+          "write_seconds_by_policy": [
+            0.003257695999999976,
+            0.002477654000000103,
+            0.0076807920000002096
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 65536,
+            "p95": 131072,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 0.83,
+          "user_seconds": 0.79,
+          "system_seconds": 0.04,
+          "peak_rss_bytes_external": 129236992,
+          "engine_seconds": 0.539255043,
+          "steps_per_second": 15191.327566314478,
+          "query_seconds_by_policy": [
+            0.174711857,
+            0.1726546010000005,
+            0.1715703579999995
+          ],
+          "write_seconds_by_policy": [
+            0.0031206029999999644,
+            0.0025501060000000645,
+            0.007739805000000123
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 65536,
+            "p95": 131072,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "outliers",
+      "steps": 256,
+      "capacity": 16,
+      "regime_length": 64,
+      "invalid_observations": 2,
+      "data_digest": "5472300736462075062",
+      "baseline": {
+        "evaluated": 254,
+        "mae_latent_evaluation_only": 0.5700250370231229,
+        "mae_observed": 0.8450600541399645,
+        "rmse_observed": 1.6223600408198577
+      },
+      "policies": [
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.3683558197362107,
+          "mae_observed": 0.7375167551063929,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.21388985193430501,
+              "mae_observed": 0.5981950761384185,
+              "rmse_observed": 1.5192235769375027
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.2807529450228823,
+              "mae_observed": 0.651507351367583,
+              "rmse_observed": 1.5271418659832545
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.5356823191342204,
+              "mae_observed": 0.9108954481271367,
+              "rmse_observed": 1.8011896642344936
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.44289402743127454,
+              "mae_observed": 0.7889285572677871,
+              "rmse_observed": 1.6535586194713254
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "745411341567582054",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "7239668439423352926",
+          "rmse_observed": 1.629614133958543,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.3356140298794443,
+          "mae_observed": 0.6983710975655639,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.21873713381683563,
+              "mae_observed": 0.5955866260415943,
+              "rmse_observed": 1.4998557302236102
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.37366157786158594,
+              "mae_observed": 0.7560401564822825,
+              "rmse_observed": 1.6030253422878074
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.444096621135773,
+              "mae_observed": 0.7919809468377137,
+              "rmse_observed": 1.65987087850322
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.3060940296370159,
+              "mae_observed": 0.6500222898252984,
+              "rmse_observed": 1.5738397808797362
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "1753973888436097833",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "11667330064571351446",
+          "rmse_observed": 1.5851711534952886,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        },
+        {
+          "bytes_written": 276352,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 254,
+          "evictions": 238,
+          "mae_latent_evaluation_only": 0.9194074162259199,
+          "mae_observed": 1.2173030869193124,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 0.2686020155257829,
+              "mae_observed": 0.6438566315568939,
+              "rmse_observed": 1.5401024784554809
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 0.7718015939063876,
+              "mae_observed": 1.0757552299027218,
+              "rmse_observed": 1.9085824210871858
+            },
+            {
+              "evaluated": 64,
+              "mae_latent_evaluation_only": 1.2310854038173096,
+              "mae_observed": 1.4955165449515313,
+              "rmse_observed": 2.2082185571709685
+            },
+            {
+              "evaluated": 63,
+              "mae_latent_evaluation_only": 1.4115236264654485,
+              "mae_observed": 1.6587701793189655,
+              "rmse_observed": 2.21370763487045
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "18248235155775324139",
+          "priority_candidates_examined": 3808,
+          "query_candidates_examined": 3864,
+          "reserved_bank_payload_bytes": 17408,
+          "retained_digest": "533678025962407531",
+          "rmse_observed": 1.9862738984182486,
+          "saturated": true,
+          "size": 16,
+          "writes": 254
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 0.19,
+          "user_seconds": 0.16,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 119271424,
+          "engine_seconds": 0.003264644,
+          "steps_per_second": 78415.90078428153,
+          "query_seconds_by_policy": [
+            0.001462824999999999,
+            0.0007291159999999997,
+            0.0007072499999999999
+          ],
+          "write_seconds_by_policy": [
+            5.6853e-05,
+            5.624300000000003e-05,
+            5.498100000000006e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 16384,
+            "p99": 16384
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 0.19,
+          "user_seconds": 0.15,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 119226368,
+          "engine_seconds": 0.003258963,
+          "steps_per_second": 78552.59479779303,
+          "query_seconds_by_policy": [
+            0.0014441280000000003,
+            0.0007252490000000004,
+            0.0007230240000000001
+          ],
+          "write_seconds_by_policy": [
+            5.6465999999999984e-05,
+            5.460400000000003e-05,
+            5.381200000000006e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 16384,
+            "p99": 16384
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 0.19,
+          "user_seconds": 0.15,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 119468032,
+          "engine_seconds": 0.003227874,
+          "steps_per_second": 79309.16758212991,
+          "query_seconds_by_policy": [
+            0.0014427869999999992,
+            0.0007135730000000001,
+            0.0007004730000000007
+          ],
+          "write_seconds_by_policy": [
+            6.0048000000000025e-05,
+            5.5048000000000026e-05,
+            5.389900000000004e-05
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 16384,
+            "p95": 16384,
+            "p99": 32768
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    },
+    {
+      "scenario": "outliers",
+      "steps": 8192,
+      "capacity": 1024,
+      "regime_length": 2048,
+      "invalid_observations": 84,
+      "data_digest": "15917932797481820861",
+      "baseline": {
+        "evaluated": 8108,
+        "mae_latent_evaluation_only": 0.21296439329922628,
+        "mae_observed": 0.5371773268014717,
+        "rmse_observed": 1.4854312352725885
+      },
+      "policies": [
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.35157089412548426,
+          "mae_observed": 0.7088653917320631,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.29463252182299726,
+              "mae_observed": 0.6566215236544932,
+              "rmse_observed": 1.610433657565899
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.3281482632800589,
+              "mae_observed": 0.6865095445512402,
+              "rmse_observed": 1.6333787466103433
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.3970794829859475,
+              "mae_observed": 0.7528495744931546,
+              "rmse_observed": 1.6800816369796516
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.38642330841293754,
+              "mae_observed": 0.7394809242293688,
+              "rmse_observed": 1.6694174824543848
+            }
+          ],
+          "policy": "uniform",
+          "prediction_digest": "3566724699580110628",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "9810950641806446151",
+          "rmse_observed": 1.6485639002583472,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.3547621046775016,
+          "mae_observed": 0.7140332347910224,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.30432188737951726,
+              "mae_observed": 0.6659964661513929,
+              "rmse_observed": 1.6240296631565705
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.33157167943838484,
+              "mae_observed": 0.6913448963373492,
+              "rmse_observed": 1.641761048472725
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.4357521941826269,
+              "mae_observed": 0.7905050683655537,
+              "rmse_observed": 1.71850578584213
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.3474026577094644,
+              "mae_observed": 0.7082865083097939,
+              "rmse_observed": 1.6565385003798894
+            }
+          ],
+          "policy": "recent",
+          "prediction_digest": "9893143243837491034",
+          "priority_candidates_examined": 0,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "6033081624683630354",
+          "rmse_observed": 1.6605897767290754,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        },
+        {
+          "bytes_written": 8821504,
+          "capacity_exceeded_by_candidates": true,
+          "evaluated": 8108,
+          "evictions": 7084,
+          "mae_latent_evaluation_only": 0.8697710441908095,
+          "mae_observed": 1.183079868433141,
+          "phases_evaluation_only": [
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.34362204025780946,
+              "mae_observed": 0.701213043321238,
+              "rmse_observed": 1.6428527597449591
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 0.6848290513046343,
+              "mae_observed": 0.9991773570142226,
+              "rmse_observed": 1.8672893557074661
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 1.0861038021308687,
+              "mae_observed": 1.3736655687006198,
+              "rmse_observed": 2.1880475960708257
+            },
+            {
+              "evaluated": 2027,
+              "mae_latent_evaluation_only": 1.3645292830699203,
+              "mae_observed": 1.6582635046964966,
+              "rmse_observed": 2.462911163141126
+            }
+          ],
+          "policy": "selective",
+          "prediction_digest": "1521112405382499641",
+          "priority_candidates_examined": 7254016,
+          "query_candidates_examined": 7773736,
+          "reserved_bank_payload_bytes": 1114112,
+          "retained_digest": "9492623686575776069",
+          "rmse_observed": 2.0639294082124358,
+          "saturated": true,
+          "size": 1024,
+          "writes": 8108
+        }
+      ],
+      "runs": [
+        {
+          "repeat": 1,
+          "process_seconds": 0.82,
+          "user_seconds": 0.78,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 129249280,
+          "engine_seconds": 0.521445156,
+          "steps_per_second": 15710.18525292428,
+          "query_seconds_by_policy": [
+            0.1696963810000004,
+            0.16663163600000022,
+            0.16514218999999924
+          ],
+          "write_seconds_by_policy": [
+            0.0029955439999999013,
+            0.002357288000000066,
+            0.007583948000000263
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 65536,
+            "p95": 131072,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 2,
+          "process_seconds": 0.81,
+          "user_seconds": 0.76,
+          "system_seconds": 0.03,
+          "peak_rss_bytes_external": 129064960,
+          "engine_seconds": 0.512537062,
+          "steps_per_second": 15983.234398764316,
+          "query_seconds_by_policy": [
+            0.16555404599999965,
+            0.16323336399999994,
+            0.1642785840000001
+          ],
+          "write_seconds_by_policy": [
+            0.002896011999999915,
+            0.0022734020000000532,
+            0.0074979110000003716
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 65536,
+            "p95": 131072,
+            "p99": 131072
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        },
+        {
+          "repeat": 3,
+          "process_seconds": 0.86,
+          "user_seconds": 0.81,
+          "system_seconds": 0.04,
+          "peak_rss_bytes_external": 129232896,
+          "engine_seconds": 0.559066273,
+          "steps_per_second": 14653.003401619972,
+          "query_seconds_by_policy": [
+            0.18321313300000083,
+            0.1760260770000005,
+            0.1792398290000003
+          ],
+          "write_seconds_by_policy": [
+            0.0031445189999999125,
+            0.0024321700000000733,
+            0.007725683000000134
+          ],
+          "latency_log2_upper_ns": {
+            "p50": 131072,
+            "p95": 131072,
+            "p99": 262144
+          },
+          "peak_pending": 5,
+          "peak_pending_payload_bytes": 3080
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "tdd": "Pruebas del banco y de la CLI fallaron antes de sus implementaciones",
+    "debug_ctest": {
+      "passed": 2,
+      "failed": 0
+    },
+    "release_ctest": {
+      "passed": 2,
+      "failed": 0
+    },
+    "asan_ubsan_ctest": {
+      "passed": 2,
+      "failed": 0,
+      "leak_detection": true
+    },
+    "clang_static_analyzer": {
+      "version": "21.1.8",
+      "diagnostics": 0
+    },
+    "clang_tidy": {
+      "version": "21.1.6",
+      "diagnostics_after_local_posix_annotations": 0
+    },
+    "lifetime": "Análisis experimental de Clang 21.1.8 y _GLIBCXX_ASSERTIONS",
+    "fuzz": {
+      "runs": 500,
+      "seed": 212,
+      "max_len": 131072,
+      "seconds": 10,
+      "failures": 0
+    },
+    "mutations": [
+      {
+        "mutation": "maturity_filter",
+        "exit_code": 1,
+        "failure": "La consulta intermedia revela una etiqueta antes de su maduración"
+      },
+      {
+        "mutation": "priority_eviction",
+        "exit_code": 1,
+        "failure": "La política selectiva pierde la prioridad madura o rechaza al nuevo candidato"
+      },
+      {
+        "mutation": "feature_rng_recovery",
+        "exit_code": 1,
+        "failure": "Reanudar cambia predicciones, pendientes, memoria o métricas"
+      }
+    ],
+    "coverage": {
+      "tool": "LLVM coverage 21.1.8",
+      "scope": "Fuentes propias del control, sin pruebas ni dependencias",
+      "lines": {
+        "count": 1015,
+        "covered": 960,
+        "percent": 94.58128078817734
+      },
+      "branches": {
+        "count": 480,
+        "covered": 355,
+        "notcovered": 125,
+        "percent": 73.95833333333334
+      }
+    },
+    "crap": {
+      "tool": "Lizard 1.24.0 + LLVM coverage 21.1.8",
+      "convention": "Complejidad ciclomática y cobertura de líneas ejecutables por función. CRAP=C²(1-cobertura)³+C.",
+      "line_counting": "Líneas con contador de llvm-cov show dentro de los límites de función de Lizard",
+      "maximum": {
+        "name": "mars_titan::stress::Experiment::restore",
+        "file": "native/src/memory_stress.cpp",
+        "start": 404,
+        "complexity": 37,
+        "covered_lines": 119,
+        "lines": 119,
+        "crap": 37.0
+      },
+      "largest_functions": [
+        {
+          "name": "mars_titan::stress::Experiment::restore",
+          "file": "native/src/memory_stress.cpp",
+          "start": 404,
+          "complexity": 37,
+          "covered_lines": 119,
+          "lines": 119,
+          "crap": 37.0
+        },
+        {
+          "name": "parse_options",
+          "file": "native/src/memory_stress_main.cpp",
+          "start": 135,
+          "complexity": 29,
+          "covered_lines": 63,
+          "lines": 74,
+          "crap": 31.762351193414016
+        },
+        {
+          "name": "write_atomic",
+          "file": "native/src/memory_stress_main.cpp",
+          "start": 67,
+          "complexity": 14,
+          "covered_lines": 39,
+          "lines": 63,
+          "crap": 24.835978835978835
+        },
+        {
+          "name": "mars_titan::stress::RetentionBank::restore",
+          "file": "native/src/memory_retention.cpp",
+          "start": 149,
+          "complexity": 17,
+          "covered_lines": 37,
+          "lines": 37,
+          "crap": 17.0
+        }
+      ]
+    },
+    "limits": [
+      "LibTorch precompilado sin instrumentación propia",
+      "MSan y TSan no ejecutados, necesitan dependencias compatibles instrumentadas",
+      "Sin entrenamiento, GPU, datos de mercado ni prueba del candidato"
+    ]
+  },
+  "recovery": {
+    "equivalent": true,
+    "checkpoint_bytes": 5628337,
+    "checkpoint_sha256": "52015907b587b7143069b9f8f4c4fa9e19f7ed1cfa98a7a0519f957f2816db58",
+    "stop_timing": "0.79 0.72 0.05 135628",
+    "resume_timing": "0.71 0.65 0.05 141612",
+    "checkpoint_seconds": 0.148998548,
+    "complete_state_equivalent": true,
+    "state_comparison": "Campos íntegros de ambos checkpoints, salvo tiempos e histograma de latencia"
+  }
+}

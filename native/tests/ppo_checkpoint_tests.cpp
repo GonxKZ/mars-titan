@@ -14,6 +14,7 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -22,7 +23,8 @@ using mars_titan::learning::PpoCheckpointStore;
 using mars_titan::simulation::atomic_json_file;
 using mars_titan::simulation::content_sha256;
 using mars_titan::simulation::read_bounded_file;
-constexpr std::size_t small_file_limit = 64 * 1024;
+constexpr std::size_t small_file_limit = std::size_t{64} * 1024;
+constexpr int test_seed = 71;
 
 void require(bool condition, std::string_view message) {
     if (!condition) {
@@ -32,7 +34,7 @@ void require(bool condition, std::string_view message) {
 
 template <typename Function> void rejected(Function&& action, std::string_view message) {
     try {
-        action();
+        std::forward<Function>(action)();
     } catch (const std::exception&) {
         return;
     }
@@ -55,10 +57,12 @@ class TemporaryDirectory {
     }
     TemporaryDirectory(const TemporaryDirectory&) = delete;
     TemporaryDirectory& operator=(const TemporaryDirectory&) = delete;
+    TemporaryDirectory(TemporaryDirectory&&) = delete;
+    TemporaryDirectory& operator=(TemporaryDirectory&&) = delete;
     std::filesystem::path path;
 };
 
-Json identity() { return Json{{"experiment", "ppo-local"}, {"seed", 71}, {"schema", 1}}; }
+Json identity() { return Json{{"experiment", "ppo-local"}, {"seed", test_seed}, {"schema", 1}}; }
 
 std::vector<std::filesystem::path> bundles(const std::filesystem::path& directory) {
     std::vector<std::filesystem::path> result;
@@ -105,14 +109,18 @@ void retention_keeps_two_recent_and_the_selected_best() {
     TemporaryDirectory temporary;
     const auto output = temporary.path / "output";
     PpoCheckpointStore store(output, identity());
-    for (int cursor = 1; cursor <= 5; ++cursor) {
+    constexpr int checkpoints_before_improvement = 5;
+    constexpr int improved_cursor = checkpoints_before_improvement + 1;
+    for (int cursor = 1; cursor <= checkpoints_before_improvement; ++cursor) {
         static_cast<void>(store.save(Json{{"cursor", cursor}}, "pesos", "rollout", cursor == 1));
     }
     require(bundles(output).size() == 3, "La retención debe limitarse a dos recientes y el mejor");
     require(store.load_best().metadata.at("cursor") == 1, "El mejor no cambia sin selección");
-    require(store.load_latest().metadata.at("cursor") == 5, "El reciente no conserva el cursor");
-    static_cast<void>(store.save(Json{{"cursor", 6}}, "pesos", "rollout", true));
-    require(bundles(output).size() == 2 && store.load_best().metadata.at("cursor") == 6,
+    require(store.load_latest().metadata.at("cursor") == checkpoints_before_improvement,
+            "El reciente no conserva el cursor");
+    static_cast<void>(store.save(Json{{"cursor", improved_cursor}}, "pesos", "rollout", true));
+    require(bundles(output).size() == 2 &&
+                store.load_best().metadata.at("cursor") == improved_cursor,
             "Una mejora debe liberar el mejor anterior tras confirmar el índice");
 }
 
@@ -128,7 +136,8 @@ void repeated_checkpoint_is_idempotent_and_foreign_files_survive() {
     const auto foreign = output / "ppo-externo";
     std::filesystem::create_directory(foreign);
     write_bytes(foreign / "weights.pt", "pesos ajenos");
-    for (int cursor = 2; cursor < 7; ++cursor) {
+    constexpr int replacement_checkpoints = 5;
+    for (int cursor = 2; cursor < 2 + replacement_checkpoints; ++cursor) {
         static_cast<void>(store.save(Json{{"cursor", cursor}}, "pesos", "rollout", true));
     }
     require(read_bounded_file(output / "weights-external.pt", small_file_limit) ==
@@ -168,7 +177,7 @@ void identity_index_and_all_blobs_are_validated() {
         receipt = store.save(Json{{"cursor", 1}}, "pesos", "rollout", true);
     }
     auto different = identity();
-    different["seed"] = 72;
+    different["seed"] = test_seed + 1;
     rejected([&] { PpoCheckpointStore wrong(output, different, true); },
              "Una identidad distinta debe rechazarse");
     const auto folder = output / receipt.at("bundle").get<std::string>();

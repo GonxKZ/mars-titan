@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-05T12:50:40.797183+00:00",
+  "scope": "Integración de controles experimentales y seguimiento de campañas comparativas",
+  "base_revision": "86084f1b1734dc33860a98505e3ae6f9eee91c31",
+  "candidate_implemented": false,
+  "candidate_trained": false,
+  "final_test_opened": false,
+  "python_suite": {
+    "passed": 2746,
+    "skipped": 19,
+    "warnings": 8,
+    "pytest_seconds": 315.57,
+    "log_sha256": "3dac8b1cfa58b584266cb66751921c57cc93a078d4fb019ade9c362eba82bb5c",
+    "scope_note": "La suite completa precede a los últimos cambios mecánicos C++. Después se repitieron los cuatro perfiles nativos y las rutas CUDA afectadas. El código Python no cambió."
+  },
+  "native_profiles": {
+    "release": {
+      "passed": 24,
+      "failed": 0,
+      "ctest_seconds": 8.72,
+      "log_sha256": "9518d1129ef77fcc804df543a22c2d367ffa1d230015dc21155266092c11a222"
+    },
+    "asan_ubsan": {
+      "passed": 24,
+      "failed": 0,
+      "ctest_seconds": 38.56,
+      "log_sha256": "029eb90807413c180e3d6650c87f986660f311ca5a8ad091a1fd0dd9484e9fa9"
+    },
+    "static_analysis": {
+      "passed": 24,
+      "failed": 0,
+      "ctest_seconds": 13.28,
+      "log_sha256": "add56639e526c309868ca421e9440473456bef67c1b2ac28b7e1985c780602dc"
+    },
+    "coverage": {
+      "passed": 24,
+      "failed": 0,
+      "ctest_seconds": 13.48,
+      "log_sha256": "1f3b4253510a3c4ed022aeea8fbe54ac0c234af555d0fa0d63d10ec9f90273ae"
+    }
+  },
+  "diagnostics": {
+    "compiler": "Clang 21.1.8",
+    "clang_tidy": "21.1.6",
+    "standard": "C++20",
+    "warnings_as_errors": true,
+    "lifetime_analysis": "Lifetime Safety experimental",
+    "clang_tidy_build_exit_code": 0,
+    "clang_static_analyzer_exit_code": 0,
+    "coverage_without_tests_configure_exit_code": 0,
+    "production_diagnostics_disabled": false,
+    "test_suppressions": [
+      "Literales que definen entradas y oráculos independientes en las pruebas de replay y adaptadores",
+      "Conversión intencional a ArtifactKind:uint8_t de un byte sin enumerador para comprobar su rechazo"
+    ]
+  },
+  "cuda": {
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "checkpoint_recovery_seeds": [
+      42,
+      43,
+      44
+    ],
+    "checkpoint_recovery_passed": 3,
+    "adapter_test_exit_code": 0,
+    "adapter_cli_exit_code": 0,
+    "adapter_cli_rows": 8,
+    "adapter_cli_steps": 4,
+    "adapter_cli_max_reference_error": 2.220446049e-16,
+    "other_evidence": [
+      "reports/resources/gpu-supervisor-20261005.json",
+      "reports/resources/information-encoder-cuda-20261005.json",
+      "reports/engineering/adapter-output-identities-20261005.json"
+    ]
+  },
+  "coverage": {
+    "tool": "llvm-cov 21",
+    "convention": "Líneas y ramas del código nativo propio, excluidos tests y dependencias",
+    "fresh_profiles": true,
+    "report_exit_code": 0,
+    "mismatched_function_warnings": 26,
+    "diagnosis": [
+      "main del simulador y de PPO sin perfil de ejecución en CTest",
+      "Instancias sin uso de CashMovements::add y CashMovements::reconciled con hash cero en binarios enlazados"
+    ],
+    "aggregate_used_as_acceptance_threshold": false
+  },
+  "limits": [
+    "Ocho omisiones de la suite completa necesitan hmmlearn, no instalado en el entorno comprobado",
+    "Once omisiones de la suite completa requieren activación CUDA explícita. Las rutas modificadas se comprobaron por separado",
+    "Las dependencias precompiladas no están instrumentadas por los sanitizadores de los objetivos propios",
+    "No se han ejecutado MSan, TSan ni perfiles Windows para estos controles LibTorch",
+    "Los tiempos de las pruebas no son benchmarks de modelos ni acreditan un speedup",
+    "Las investigaciones de compactación GRU y cierre de recursos LibTorch permanecen abiertas en #145 y #202"
+  ],
+  "source_sha256": {
+    "native/CMakeLists.txt": "3621ab7565853d6bfd26dfc02fab4a0cad0c3c8c2db78d479be8ef97d65bdd3c",
+    "native/CMakePresets.json": "5f08edc1ec87d4dda4329304d922ee921c9c5c899019996f0e56432b0f29d523",
+    "native/cmake/Coverage.cmake": "473150549ee39f69b14d2a523e67741654b43dd9e6f4e4a24b73f77eb2ad3814",
+    "native/cmake/MemoryStress.cmake": "a1c00c78673f1d635278e7d357e26be6bfcc40ca6f6e9a25d26d0e6b330d7187",
+    "native/include/mars_titan/adapter_control.hpp": "1c1d5a6b6928cc47e69b03cf2b63b1a5a52009fcb09ca2dce3f0daef727bcad6",
+    "native/include/mars_titan/replay_schedule.hpp": "eef0e78a90d0daf0233e281666f0ee100486f4c791674984ae3d4ae923f02fac",
+    "native/src/adapter_control.cpp": "49d48fb1efdcf9bc8a9c55ce09e0f847a966cda6a9457121c343a5f7720d8713",
+    "native/src/adapter_control_main.cpp": "e05b4082b50d2c4ba42adfce1775ec506e47a884f723e004d19301569cc0b641",
+    "native/src/ppo_checkpoints.cpp": "38cc09e4fceed610b663c393c2f5aa3ccba7978a91dd61691553a6b30d6a6213",
+    "native/src/replay_control_main.cpp": "ac003fe4109903feb94b9c16e8f269769d9eb2ab5322daaa47fd7bf6fb728b48",
+    "native/src/replay_schedule.cpp": "1ff638f0371a890d52c7a8802275893141ce6b50af6db422184b9814da830cd2",
+    "native/tests/adapter_control_tests.cpp": "893284056cf7cb515d46da47ddc9f886019f4dfca4a2bc073665fbb8dbc712e6",
+    "native/tests/ppo_checkpoint_tests.cpp": "b112dc8dc6b4bf34d0820ee20b0047b39695434f2a44814a1488d12a9b457359",
+    "native/tests/replay_schedule_tests.cpp": "3522f0e91c9ced0691beb28d5d6a024899431eac5d9d8d3e56a0dff4a0645014"
+  }
+}
