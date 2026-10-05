@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "episodes": 8192,
+  "exposures_per_episode": 4,
+  "batch_size": 64,
+  "seed": 71,
+  "learning_rate": 0.03,
+  "warmups": 1,
+  "repetitions": 7,
+  "results": [
+    {
+      "order": "uniform",
+      "updates": 512,
+      "index_bytes": 131072,
+      "checkpoint_bytes": 136018,
+      "build_mean_ms": 0.2640907143,
+      "replay_mean_ms": 0.1053818571,
+      "total_min_ms": 0.33875,
+      "total_median_ms": 0.352046,
+      "total_max_ms": 0.480127,
+      "exposures_per_second": 93078745.39,
+      "final_weight": 0.002660872245,
+      "old_target_mae": 1.002660872,
+      "new_target_mae": 0.9973391278
+    },
+    {
+      "order": "recent",
+      "updates": 512,
+      "index_bytes": 131072,
+      "checkpoint_bytes": 136018,
+      "build_mean_ms": 0.1723242857,
+      "replay_mean_ms": 0.04916314286,
+      "total_min_ms": 0.219425,
+      "total_median_ms": 0.219585,
+      "total_max_ms": 0.226368,
+      "exposures_per_second": 149226950.8,
+      "final_weight": -0.9991786944,
+      "old_target_mae": 0.0008213055701,
+      "new_target_mae": 1.999178694
+    },
+    {
+      "order": "spaced",
+      "updates": 512,
+      "index_bytes": 131072,
+      "checkpoint_bytes": 136018,
+      "build_mean_ms": 0.8460078571,
+      "replay_mean_ms": 0.06351285714,
+      "total_min_ms": 0.903718,
+      "total_median_ms": 0.905953,
+      "total_max_ms": 0.923676,
+      "exposures_per_second": 36169646.77,
+      "final_weight": 0.0005498271582,
+      "old_target_mae": 1.000549827,
+      "new_target_mae": 0.9994501728
+    }
+  ],
+  "recorded_on": "2026-10-05",
+  "scope": "Control técnico escalar con datos definidos en el ejecutable, sin datos financieros",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "architecture": "x86_64",
+    "gpu_used": false
+  },
+  "software": {
+    "compiler": "Clang 21.1.8",
+    "standard": "C++20",
+    "build": "Release",
+    "threads": 1
+  },
+  "process": {
+    "process_seconds": 0.04,
+    "peak_rss_kib": 6056
+  },
+  "unmeasured": [
+    "energía",
+    "coste monetario",
+    "contadores de hardware",
+    "interferencia exacta de otros procesos"
+  ],
+  "verification": {
+    "ctest": "3/3 Debug, 3/3 ASan+UBSan, 3/3 LLVM coverage",
+    "static_analysis": "Clang Static Analyzer 21 sin diagnósticos",
+    "lifetime": "Clang Lifetime Safety experimental activado",
+    "coverage_tool": "llvm-cov 21, líneas y ramas de archivos propios",
+    "replay_schedule_line_coverage_pct": 98.6,
+    "replay_schedule_branch_coverage_pct": 81.25,
+    "complexity_tool": "Lizard, CCN por función",
+    "max_ccn": 17,
+    "crap_formula": "CCN^2 * (1 - cobertura_de_líneas)^3 + CCN",
+    "max_crap": 17.0,
+    "crap_coverage_convention": "líneas ejecutables de intervalos LLVM dentro de cada función Lizard",
+    "mutations": [
+      "maduración",
+      "confirmación del token",
+      "identidad de episodios"
+    ],
+    "clang_tidy": "No instalado en el entorno de esta comprobación",
+    "fuzz": "libFuzzer con ASan y UBSan, semilla 71, 1000 entradas, máximo 4096 bytes"
+  }
+}
