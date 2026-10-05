@@ -48,7 +48,8 @@ function(mars_titan_coverage_report)
                    ppo_policy_tests ppo_training_tests ppo_checkpoint_tests ppo_inputs_tests
                    episodic_memory_tests policy_context_tests decision_trace_tests learning_replay_tests mars-titan-ppo
                    memory_stress_tests mars-titan-memory-stress replay_schedule_tests mars-titan-replay-control
-                   adapter_control_tests mars-titan-adapter-control cohort_execution_tests mars-titan-cohorts)
+                   adapter_control_tests mars-titan-adapter-control cohort_execution_tests mars-titan-cohorts
+                   financial_controls_tests mars-titan-financial-controls)
         if(TARGET ${target})
             list(APPEND objects "$<TARGET_FILE:${target}>")
             list(APPEND targets ${target})
