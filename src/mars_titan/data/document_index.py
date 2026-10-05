@@ -291,6 +291,7 @@ def prepare_document_index(
             cache.close()
         if _sources(sources, output)[0] != inputs:
             raise ValueError("Una fuente cambió durante la preparación del índice")
+        _check_parquet(stage / "documents.parquet", max_group_bytes)
         report = dict(
             schema_version=1,
             kind="document_index",

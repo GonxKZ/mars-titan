@@ -362,3 +362,19 @@ def test_executable_example_uses_separate_synthetic_sources_and_shared_cache(tmp
     assert report["comparison"]["encoded_documents"] == 0
     assert report["comparison"]["mean"] == report["comparison"]["selected_mean"]
     assert json.loads((output / "control.json").read_text())["historical_evidence"] is False
+
+
+def test_damaged_staged_parquet_is_rejected_before_publishing_manifest(tmp_path, monkeypatch):
+    sources, cache = fixture(tmp_path)
+    output = tmp_path / "index"
+    original = api().atomic_parquet_batches
+
+    def damaged(path, tables):
+        count = original(path, tables)
+        path.write_bytes(b"truncated")
+        return count
+
+    monkeypatch.setattr(api(), "atomic_parquet_batches", damaged)
+    with pytest.raises(ValueError, match="Parquet|regular"):
+        api().prepare_document_index(sources, output, cache_path=cache, encoder_sha256=ENCODER)
+    assert not output.exists()
