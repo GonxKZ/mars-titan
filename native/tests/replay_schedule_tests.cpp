@@ -10,6 +10,8 @@
 
 namespace {
 using namespace mars_titan::controls;
+// Las constantes de estos casos expresan los datos y la solución esperada del calendario.
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
 void require(bool condition, const char* message) {
     if (!condition)
         throw std::runtime_error(message);
@@ -155,6 +157,7 @@ void independent_rng_and_many_shapes() {
     const auto external_before = external;
     for (std::size_t count = 1; count <= 32; ++count) {
         std::vector<MatureEpisode> data;
+        data.reserve(count);
         for (std::size_t index = 0; index < count; ++index)
             data.push_back({index + 1, 0, 1, 3});
         auto settings = config(ReplayOrder::spaced);
@@ -177,6 +180,7 @@ void independent_rng_and_many_shapes() {
     ReplaySchedule right(right_settings, episodes());
     require(consume(left) != consume(right), "La semilla de orden no tiene efecto");
 }
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers)
 } // namespace
 int main() {
     try {

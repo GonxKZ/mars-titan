@@ -8,12 +8,15 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <span>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
 
 namespace {
 using namespace mars_titan::controls;
+// Los literales son entradas, límites adversariales y resultados analíticos de las pruebas.
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
 void require(bool condition, const char* message) {
     if (!condition)
         throw std::runtime_error(message);
@@ -78,6 +81,8 @@ void dependencies_follow_the_changed_stage() {
     rejected([&] { require_compatible(ArtifactKind::prediction, unbound, unbound); });
     changed.view = 0;
     rejected([&] { static_cast<void>(invalidated(original, changed)); });
+    // El enum tiene base uint8_t. Se comprueba el rechazo de un byte sin enumerador asociado.
+    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     rejected([&] { require_compatible(static_cast<ArtifactKind>(255), original, original); });
 }
 void divergent_restores_reject_stale_predictions(std::string_view device) {
@@ -418,10 +423,12 @@ void rejects_parameter_ranges_before_allocating() {
                                base().t());
     });
 }
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers)
 } // namespace
 int main(int argc, char** argv) {
     try {
-        const std::string_view device = argc == 2 ? argv[1] : "cpu";
+        const std::span arguments(argv, static_cast<std::size_t>(argc));
+        const std::string_view device = arguments.size() == 2 ? arguments[1] : "cpu";
         at::set_num_threads(1);
         at::set_num_interop_threads(1);
         divergent_restores_reject_stale_predictions(device);

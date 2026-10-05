@@ -6,6 +6,8 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <memory>
+#include <span>
 #include <stdexcept>
 #include <string_view>
 #include <vector>
@@ -14,10 +16,26 @@ namespace {
 using namespace mars_titan::controls;
 using Clock = std::chrono::steady_clock;
 constexpr double learning_rate = 0.03;
+constexpr std::size_t maximum_argument_count = 6;
+constexpr std::size_t repetitions_argument = 5;
+constexpr std::size_t maximum_episodes = 1U << 20;
+constexpr std::size_t maximum_exposures_per_episode = 1024;
+constexpr std::size_t maximum_total_exposures = 1U << 24;
+constexpr std::size_t maximum_batch_size = 1U << 20;
+constexpr std::size_t maximum_seed = 1U << 30;
+constexpr std::size_t maximum_repetitions = 101;
+constexpr std::size_t default_episodes = 1024;
+constexpr std::size_t default_exposures = 4;
+constexpr std::size_t default_batch_size = 32;
+constexpr std::size_t default_seed = 71;
+constexpr std::size_t default_repetitions = 7;
+constexpr int json_precision = 10;
+constexpr double milliseconds_per_second = 1000.0;
 std::size_t parse(std::string_view value, std::size_t limit) {
     std::size_t parsed = 0;
-    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), parsed);
-    if (error != std::errc{} || end != value.data() + value.size() || parsed == 0 || parsed > limit)
+    const auto last = std::to_address(value.end());
+    const auto [end, error] = std::from_chars(std::to_address(value.begin()), last, parsed);
+    if (error != std::errc{} || end != last || parsed == 0 || parsed > limit)
         throw std::invalid_argument(
             "Los argumentos deben ser enteros positivos dentro del presupuesto");
     return parsed;
@@ -55,27 +73,34 @@ Result run(const ReplayScheduleConfig& settings, const std::vector<MatureEpisode
 } // namespace
 int main(int argc, char** argv) {
     try {
-        if (argc == 2 && std::string_view(argv[1]) == "--help") {
+        const std::span arguments(argv, static_cast<std::size_t>(argc));
+        if (arguments.size() == 2 && std::string_view(arguments[1]) == "--help") {
             std::cout << "Uso: mars-titan-replay-control [episodios exposiciones lote semilla "
                          "repeticiones]\n"
                          "Control escalar de dos objetivos temporales, sin datos financieros.\n";
             return 0;
         }
-        if (argc > 6)
+        if (arguments.size() > maximum_argument_count)
             throw std::invalid_argument("El control admite como máximo cinco argumentos");
-        const auto count = argc > 1 ? parse(argv[1], 1U << 20) : 1024;
-        const auto exposures = argc > 2 ? parse(argv[2], 1024) : 4;
-        const auto batch = argc > 3 ? parse(argv[3], 1U << 20) : 32;
-        const auto seed = argc > 4 ? parse(argv[4], 1U << 30) : 71;
-        const auto repetitions = argc > 5 ? parse(argv[5], 101) : 7;
-        if (count > (1U << 24) / exposures)
+        const auto count =
+            arguments.size() > 1 ? parse(arguments[1], maximum_episodes) : default_episodes;
+        const auto exposures = arguments.size() > 2
+                                   ? parse(arguments[2], maximum_exposures_per_episode)
+                                   : default_exposures;
+        const auto batch =
+            arguments.size() > 3 ? parse(arguments[3], maximum_batch_size) : default_batch_size;
+        const auto seed = arguments.size() > 4 ? parse(arguments[4], maximum_seed) : default_seed;
+        const auto repetitions = arguments.size() > repetitions_argument
+                                     ? parse(arguments[repetitions_argument], maximum_repetitions)
+                                     : default_repetitions;
+        if (count > maximum_total_exposures / exposures)
             throw std::invalid_argument(
                 "El producto de episodios y exposiciones excede el presupuesto");
         std::vector<MatureEpisode> rows;
         rows.reserve(count);
         for (std::size_t index = 0; index < count; ++index)
             rows.push_back({index + 1, index, index + 1, static_cast<uint32_t>(exposures)});
-        std::cout << std::setprecision(10) << "{\"schema\":1,\"episodes\":" << count
+        std::cout << std::setprecision(json_precision) << "{\"schema\":1,\"episodes\":" << count
                   << ",\"exposures_per_episode\":" << exposures << ",\"batch_size\":" << batch
                   << ",\"seed\":" << seed << ",\"learning_rate\":" << learning_rate
                   << ",\"warmups\":1,\"repetitions\":" << repetitions << ",\"results\":[";
@@ -87,7 +112,7 @@ int main(int argc, char** argv) {
                                                 .order_seed = seed,
                                                 .batch_size = batch,
                                                 .minimum_distance = count,
-                                                .max_exposures = 1U << 24};
+                                                .max_exposures = maximum_total_exposures};
             static_cast<void>(run(settings, rows));
             std::vector<double> elapsed;
             double build = 0;
@@ -113,7 +138,7 @@ int main(int argc, char** argv) {
                       << ",\"total_min_ms\":" << elapsed.front()
                       << ",\"total_median_ms\":" << elapsed[elapsed.size() / 2]
                       << ",\"total_max_ms\":" << elapsed.back() << ",\"exposures_per_second\":"
-                      << total * 1000.0 / elapsed[elapsed.size() / 2]
+                      << total * milliseconds_per_second / elapsed[elapsed.size() / 2]
                       << ",\"final_weight\":" << result.weight
                       << ",\"old_target_mae\":" << std::abs(-1.0 - result.weight)
                       << ",\"new_target_mae\":" << std::abs(1.0 - result.weight) << '}';

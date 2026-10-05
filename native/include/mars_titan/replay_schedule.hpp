@@ -20,14 +20,17 @@ struct MatureEpisode {
 };
 
 struct ReplayScheduleConfig {
+    static constexpr std::size_t default_max_exposures = 1U << 20;
+    static constexpr std::size_t default_max_bytes = 128U << 20;
+
     std::string run_id;
     ReplayOrder order = ReplayOrder::uniform;
     uint64_t cutoff = 0;
     uint64_t order_seed = 0;
     std::size_t batch_size = 1;
     std::size_t minimum_distance = 1;
-    std::size_t max_exposures = 1U << 20;
-    std::size_t max_bytes = 128U << 20;
+    std::size_t max_exposures = default_max_exposures;
+    std::size_t max_bytes = default_max_bytes;
     bool operator==(const ReplayScheduleConfig&) const = default;
 };
 

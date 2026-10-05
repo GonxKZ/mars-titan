@@ -25,6 +25,10 @@ constexpr std::size_t maximum_bytes = 512U << 20;
 constexpr std::size_t archive_limit = 128U << 20;
 constexpr uint64_t archive_magic = 0x315250544144544dULL;
 constexpr std::size_t archive_version = 2;
+constexpr std::size_t maximum_identity_bytes = 128;
+constexpr std::size_t fixed_state_overhead_bytes = 64U << 10;
+constexpr std::size_t archive_overhead_bytes = 512;
+constexpr double restored_score_tolerance = 1e-12;
 
 void require(bool condition, const char* message) {
     if (!condition)
@@ -42,8 +46,9 @@ std::size_t parameter_count(const AdapterConfig& config) {
 void check_config(const AdapterConfig& config) {
     static_cast<void>(adapter_kind_name(config.kind));
     check_versions(config.versions);
-    require(!config.problem_id.empty() && config.problem_id.size() <= 128 &&
-                !config.validation_id.empty() && config.validation_id.size() <= 128,
+    require(!config.problem_id.empty() && config.problem_id.size() <= maximum_identity_bytes &&
+                !config.validation_id.empty() &&
+                config.validation_id.size() <= maximum_identity_bytes,
             "El control necesita identidades acotadas del problema y de la validación");
     require(config.inputs > 0 && config.inputs <= maximum_width && config.outputs > 0 &&
                 config.outputs <= maximum_width && config.rank > 0 &&
@@ -57,7 +62,7 @@ void check_config(const AdapterConfig& config) {
                 std::isfinite(config.minimum_improvement) && config.minimum_improvement >= 0,
             "Las opciones de SGD o de selección no son finitas o están fuera de rango");
     require(config.max_steps > 0 && config.max_steps <= maximum_steps && config.max_rows > 0 &&
-                config.max_rows <= maximum_rows && config.max_bytes > (64U << 10) &&
+                config.max_rows <= maximum_rows && config.max_bytes > fixed_state_overhead_bytes &&
                 config.max_bytes <= maximum_bytes &&
                 config.versions.output <= std::numeric_limits<uint64_t>::max() - config.max_steps,
             "El control supera su presupuesto de pasos, filas, memoria o versiones");
@@ -71,7 +76,7 @@ void check_budget(const AdapterConfig& config, std::size_t validation_rows,
         uint64_t{6} * config.inputs * config.outputs + uint64_t{16} * parameter_count(config) +
         uint64_t{7} * validation_rows * (config.inputs + config.outputs) +
         uint64_t{3} * batch_rows * (config.inputs + 2 * config.outputs + 2 * config.rank);
-    require(elements <= (config.max_bytes - (64U << 10)) / sizeof(double),
+    require(elements <= (config.max_bytes - fixed_state_overhead_bytes) / sizeof(double),
             "El presupuesto no cubre parámetros, momentum, selección y tensores temporales");
 }
 void check_tensor(const at::Tensor& tensor, at::IntArrayRef shape, const at::Device& device) {
@@ -132,10 +137,12 @@ void check_parameters(const std::vector<at::Tensor>& tensors, const AdapterConfi
     for (std::size_t index = 0; index < shapes.size(); ++index)
         check_tensor(tensors[index], shapes[index], at::kCPU);
 }
-std::array<uint8_t, 8> integer_bytes(uint64_t value) {
-    std::array<uint8_t, 8> bytes{};
+std::array<uint8_t, sizeof(uint64_t)> integer_bytes(uint64_t value) {
+    std::array<uint8_t, sizeof(uint64_t)> bytes{};
     for (unsigned int byte = 0; byte < bytes.size(); ++byte)
-        bytes[byte] = static_cast<uint8_t>((value >> (8 * byte)) & 0xffU);
+        bytes.at(byte) = static_cast<uint8_t>(
+            (value >> (std::numeric_limits<uint8_t>::digits * byte)) &
+            std::numeric_limits<uint8_t>::max());
     return bytes;
 }
 class StateDigest {
@@ -447,7 +454,8 @@ void AdapterControl::restore(const AdapterSnapshot& state) {
                            : mse(forward(state.config, candidate->base, candidate->best_parameters,
                                          candidate->validation_inputs),
                                  candidate->validation_targets);
-    require(std::abs(score - state.best_mse) <= 1e-12 * std::max(1.0, std::abs(score)),
+    require(std::abs(score - state.best_mse) <=
+                restored_score_tolerance * std::max(1.0, std::abs(score)),
             "La métrica guardada no corresponde al estado seleccionado");
     candidate->steps = state.steps;
     candidate->best_step = state.best_step;
@@ -481,8 +489,8 @@ std::size_t AdapterControl::state_tensor_bytes() const noexcept {
 
 namespace {
 void write_integer(std::string& output, uint64_t value) {
-    const auto bytes = integer_bytes(value);
-    output.append(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    const auto bytes = std::bit_cast<std::array<char, sizeof(uint64_t)>>(integer_bytes(value));
+    output.append(bytes.data(), bytes.size());
 }
 void write_string(std::string& output, const std::string& value) {
     write_integer(output, value.size());
@@ -498,10 +506,11 @@ class Reader {
   public:
     explicit Reader(std::string_view data) : data_(data) {}
     uint64_t integer() {
-        const auto bytes = take(8);
+        const auto bytes = take(sizeof(uint64_t));
         uint64_t result = 0;
-        for (unsigned int byte = 0; byte < 8; ++byte)
-            result |= static_cast<uint64_t>(static_cast<unsigned char>(bytes[byte])) << (8 * byte);
+        for (unsigned int byte = 0; byte < bytes.size(); ++byte)
+            result |= static_cast<uint64_t>(static_cast<unsigned char>(bytes[byte]))
+                      << (std::numeric_limits<uint8_t>::digits * byte);
         return result;
     }
     std::size_t size() {
@@ -512,7 +521,8 @@ class Reader {
     }
     std::string string() {
         const auto count = size();
-        require(count > 0 && count <= 128, "La identidad del checkpoint no está acotada");
+        require(count > 0 && count <= maximum_identity_bytes,
+                "La identidad del checkpoint no está acotada");
         return std::string(take(count));
     }
     double number() { return std::bit_cast<double>(integer()); }
@@ -554,7 +564,7 @@ std::string serialize_adapter(const AdapterSnapshot& state) {
     AdapterControl checked(state.config, state.base, state.validation_inputs,
                            state.validation_targets);
     checked.restore(state);
-    require(checked.state_tensor_bytes() <= archive_limit - 512,
+    require(checked.state_tensor_bytes() <= archive_limit - archive_overhead_bytes,
             "El estado no cabe en el presupuesto del archivo de recuperación");
     std::string output;
     const auto& config = state.config;
@@ -575,9 +585,11 @@ std::string serialize_adapter(const AdapterSnapshot& state) {
          {versions.view, versions.representation, versions.keys, versions.query, versions.output})
         write_integer(output, value);
     write_integer(output, versions.output_state.has_value());
-    if (versions.output_state)
-        output.append(reinterpret_cast<const char*>(versions.output_state->data()),
-                      versions.output_state->size());
+    if (versions.output_state) {
+        const auto bytes =
+            std::bit_cast<std::array<char, output_identity_bytes>>(*versions.output_state);
+        output.append(bytes.data(), bytes.size());
+    }
     write_integer(output, rows(state.validation_inputs));
     write_integer(output, state.steps);
     write_integer(output, state.best_step);
