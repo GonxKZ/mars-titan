@@ -1,0 +1,573 @@
+{
+  "tools": {
+    "coverage": "7.16.2",
+    "radon": "6.0.1",
+    "pytest": "9.1.1"
+  },
+  "convention": "Cobertura de sentencias y ramas de coverage.py. CRAP = CC\u00b2 \u00d7 (1 \u2212 cobertura de sentencias)\u00b3 + CC, usando los intervalos de Radon.",
+  "totals": {
+    "covered_lines": 819,
+    "num_statements": 843,
+    "percent_covered": 96.30331753554502,
+    "percent_covered_display": "96",
+    "missing_lines": 24,
+    "excluded_lines": 0,
+    "percent_statements_covered": 97.15302491103203,
+    "percent_statements_covered_display": "97",
+    "num_branches": 212,
+    "num_partial_branches": 9,
+    "covered_branches": 197,
+    "missing_branches": 15,
+    "percent_branches_covered": 92.9245283018868,
+    "percent_branches_covered_display": "93"
+  },
+  "files": {
+    "src/mars_titan/evaluation/campaign_comparison.py": {
+      "covered_lines": 161,
+      "num_statements": 177,
+      "percent_covered": 89.27038626609442,
+      "percent_covered_display": "89",
+      "missing_lines": 16,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.96045197740114,
+      "percent_statements_covered_display": "91",
+      "num_branches": 56,
+      "num_partial_branches": 3,
+      "covered_branches": 47,
+      "missing_branches": 9,
+      "percent_branches_covered": 83.92857142857143,
+      "percent_branches_covered_display": "84"
+    },
+    "src/mars_titan/evaluation/comparison_sources.py": {
+      "covered_lines": 245,
+      "num_statements": 248,
+      "percent_covered": 97.77070063694268,
+      "percent_covered_display": "98",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.79032258064517,
+      "percent_statements_covered_display": "99",
+      "num_branches": 66,
+      "num_partial_branches": 4,
+      "covered_branches": 62,
+      "missing_branches": 4,
+      "percent_branches_covered": 93.93939393939394,
+      "percent_branches_covered_display": "94"
+    },
+    "src/mars_titan/evaluation/financial_comparison.py": {
+      "covered_lines": 197,
+      "num_statements": 199,
+      "percent_covered": 98.78542510121457,
+      "percent_covered_display": "99",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.99497487437186,
+      "percent_statements_covered_display": "99",
+      "num_branches": 48,
+      "num_partial_branches": 1,
+      "covered_branches": 47,
+      "missing_branches": 1,
+      "percent_branches_covered": 97.91666666666667,
+      "percent_branches_covered_display": "98"
+    },
+    "src/mars_titan/evaluation/prediction_statistics.py": {
+      "covered_lines": 216,
+      "num_statements": 219,
+      "percent_covered": 98.46743295019157,
+      "percent_covered_display": "98",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.63013698630137,
+      "percent_statements_covered_display": "99",
+      "num_branches": 42,
+      "num_partial_branches": 1,
+      "covered_branches": 41,
+      "missing_branches": 1,
+      "percent_branches_covered": 97.61904761904762,
+      "percent_branches_covered_display": "98"
+    }
+  },
+  "functions": [
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "aggregate_results",
+      "line": 44,
+      "complexity": 56,
+      "coverage": 1.0,
+      "crap": 56.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_admit",
+      "line": 177,
+      "complexity": 55,
+      "coverage": 1.0,
+      "crap": 55.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "predictive_sources",
+      "line": 448,
+      "complexity": 34,
+      "coverage": 0.9795918367346939,
+      "crap": 34.00982583787368
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_fold_sources",
+      "line": 318,
+      "complexity": 27,
+      "coverage": 1.0,
+      "crap": 27.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_episodes",
+      "line": 115,
+      "complexity": 25,
+      "coverage": 1.0,
+      "crap": 25.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "_case",
+      "line": 175,
+      "complexity": 21,
+      "coverage": 0.8461538461538461,
+      "crap": 22.605826126536186
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "review_predictions",
+      "line": 138,
+      "complexity": 22,
+      "coverage": 1.0,
+      "crap": 22.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "compare_campaigns",
+      "line": 259,
+      "complexity": 18,
+      "coverage": 1.0,
+      "crap": 18.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_cohort",
+      "line": 240,
+      "complexity": 18,
+      "coverage": 1.0,
+      "crap": 18.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_population",
+      "line": 66,
+      "complexity": 16,
+      "coverage": 1.0,
+      "crap": 16.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_temporal",
+      "line": 168,
+      "complexity": 15,
+      "coverage": 1.0,
+      "crap": 15.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "compare_financial_campaign",
+      "line": 413,
+      "complexity": 14,
+      "coverage": 0.9655172413793104,
+      "crap": 14.008036409856903
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_aggregates",
+      "line": 354,
+      "complexity": 12,
+      "coverage": 1.0,
+      "crap": 12.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_paired_worlds",
+      "line": 382,
+      "complexity": 11,
+      "coverage": 1.0,
+      "crap": 11.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_metadata",
+      "line": 278,
+      "complexity": 10,
+      "coverage": 0.9285714285714286,
+      "crap": 10.036443148688047
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_jobs",
+      "line": 116,
+      "complexity": 10,
+      "coverage": 1.0,
+      "crap": 10.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "_declared",
+      "line": 114,
+      "complexity": 10,
+      "coverage": 1.0,
+      "crap": 10.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_runs",
+      "line": 94,
+      "complexity": 9,
+      "coverage": 1.0,
+      "crap": 9.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_parents",
+      "line": 209,
+      "complexity": 9,
+      "coverage": 1.0,
+      "crap": 9.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "resampled_means",
+      "line": 312,
+      "complexity": 9,
+      "coverage": 1.0,
+      "crap": 9.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "block_intervals",
+      "line": 339,
+      "complexity": 9,
+      "coverage": 1.0,
+      "crap": 9.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_closed",
+      "line": 34,
+      "complexity": 6,
+      "coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "path",
+      "line": 54,
+      "complexity": 6,
+      "coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "_correlation",
+      "line": 97,
+      "complexity": 6,
+      "coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "get",
+      "line": 74,
+      "complexity": 6,
+      "coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "_bounds",
+      "line": 31,
+      "complexity": 5,
+      "coverage": 0.75,
+      "crap": 5.390625
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "_effects",
+      "line": 297,
+      "complexity": 5,
+      "coverage": 0.875,
+      "crap": 5.048828125
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "main",
+      "line": 395,
+      "complexity": 2,
+      "coverage": 0.09090909090909091,
+      "crap": 5.005259203606311
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "InitialPolicyCache",
+      "line": 63,
+      "complexity": 5,
+      "coverage": 1.0,
+      "crap": 5.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "_csv",
+      "line": 249,
+      "complexity": 4,
+      "coverage": 0.875,
+      "crap": 4.03125
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_Reader",
+      "line": 49,
+      "complexity": 4,
+      "coverage": 0.967741935483871,
+      "crap": 4.000537074955523
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "_mean",
+      "line": 39,
+      "complexity": 4,
+      "coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "json",
+      "line": 70,
+      "complexity": 4,
+      "coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "initial_policy",
+      "line": 44,
+      "complexity": 4,
+      "coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "_mean_defined",
+      "line": 109,
+      "complexity": 4,
+      "coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "label",
+      "line": 87,
+      "complexity": 3,
+      "coverage": 0.8,
+      "crap": 3.072
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_closed",
+      "line": 57,
+      "complexity": 3,
+      "coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "_require",
+      "line": 30,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_require",
+      "line": 17,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_digest",
+      "line": 22,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "_family",
+      "line": 30,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_require",
+      "line": 23,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_json",
+      "line": 36,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_inside",
+      "line": 45,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_mean",
+      "line": 350,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "main",
+      "line": 501,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "_require",
+      "line": 26,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/prediction_statistics.py",
+      "name": "__init__",
+      "line": 66,
+      "complexity": 2,
+      "coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/campaign_comparison.py",
+      "name": "_key",
+      "line": 35,
+      "complexity": 1,
+      "coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/comparison_sources.py",
+      "name": "__init__",
+      "line": 50,
+      "complexity": 1,
+      "coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_digest",
+      "line": 28,
+      "complexity": 1,
+      "coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/evaluation/financial_comparison.py",
+      "name": "_csv",
+      "line": 403,
+      "complexity": 1,
+      "coverage": 1.0,
+      "crap": 1.0
+    }
+  ],
+  "exit_code": 0,
+  "mutations": [
+    {
+      "name": "equal_session_weight",
+      "returncode": 1,
+      "detected": true,
+      "selection": "sessions_receive_equal_weight"
+    },
+    {
+      "name": "population_identity",
+      "returncode": 1,
+      "detected": true,
+      "selection": "target_or_population_changes"
+    },
+    {
+      "name": "bootstrap_normalization",
+      "returncode": 1,
+      "detected": true,
+      "selection": "resampling_uses_shared_blocks"
+    },
+    {
+      "name": "heldout_boundary",
+      "returncode": 1,
+      "detected": true,
+      "selection": "bounds"
+    }
+  ],
+  "financial_mutations": [
+    {
+      "mutation": "seed_average",
+      "test": "test_pairs_worlds_after_averaging_policy_seeds",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "mutation": "receipt_hash",
+      "test": "test_rejects_corrupted_confirmed_bytes[controls]",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "mutation": "warmup",
+      "test": "test_rejects_incoherent_audits_and_controls_without_creating_output[warmup]",
+      "exit_code": 1,
+      "detected": true
+    }
+  ],
+  "source_grid_mutations": {
+    "source_sha256": "detected",
+    "training_samples": "detected"
+  },
+  "tests_passed": 73,
+  "local_suite": {
+    "passed": 2819,
+    "skipped": 19,
+    "warnings": 8,
+    "seconds": 332.51,
+    "cuda_visible": true,
+    "native_profile": "native-controls-release",
+    "skipped_reasons": {
+      "requires_explicit_exclusive_cuda": 11,
+      "hmmlearn_not_installed": 8
+    },
+    "log_sha256": "e3b88587a0561eef75fb7a3c5c79db3f1b87b647d4cc8c40c21ee337cf2979b1"
+  }
+}

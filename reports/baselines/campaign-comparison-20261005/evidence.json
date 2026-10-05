@@ -1,0 +1,267 @@
+{
+  "predictive": {
+    "report_sha256": "d4748731ff90c866c67207d79df6f0df9ec975e9551b7ab861d30b2db0f34c38",
+    "counts": {
+      "prediction_files": 1512,
+      "included_files": 1376,
+      "models": 756,
+      "by_stage": {
+        "reference": 320,
+        "tabular": 136,
+        "posttraining": 1056
+      }
+    },
+    "provenance": {
+      "schema_version": 1,
+      "reference_sha256": "6566328d854cc012479d3bdfc367ff290b23e31b7b0f66d171e2ea1c9e68790e",
+      "completion_sha256": "3000a191124491a031ab61e72fbe53944716311053edd94e9b1b6b74f86be587",
+      "final_test_opened": false,
+      "domain": "real",
+      "folds": [
+        {
+          "id": "fold-000",
+          "counts": {
+            "train": 121190,
+            "validation": 39462,
+            "calibration": 24391,
+            "evaluation": 19716
+          },
+          "cohort_id": "original_audited",
+          "manifest_sha256": "70e0d2023b6109c8814b7d68ad988c33d4e7b0c858ad1b019b56238462904db4",
+          "windows": {
+            "calibration": [
+              "2023-08-01",
+              "2023-09-01"
+            ],
+            "evaluation": [
+              "2023-09-01",
+              "2023-10-01"
+            ]
+          },
+          "sources": {
+            "reference": {
+              "path": "reference/fold-000/summary.json",
+              "sha256": "420fdea0fcd1f04560eb25f1fbf71b0d1cc94ad45bd08dd54326f748400fa407"
+            },
+            "tabular": {
+              "path": "completion/fold-000/tabular/summary.json",
+              "sha256": "c0869a36cd9e43e7009a576739a87bf4bb31addf830e2f8b5a17bde01fac8e8a"
+            },
+            "posttraining": {
+              "path": "completion/fold-000/posttraining/summary.json",
+              "sha256": "0b6e5f31428c1dd34fedd7dde44f3d6b61b3375046ad2dc46ff6ee224ee78489"
+            },
+            "evaluation": {
+              "path": "completion/fold-000/evaluation/summary.json",
+              "sha256": "021fd6e53cdec287ecca2b8b97e37b817be1c710eccb2a51e347168efb537ec5"
+            }
+          },
+          "prediction_files": 378,
+          "included_files": 344
+        },
+        {
+          "id": "fold-001",
+          "counts": {
+            "train": 141272,
+            "validation": 44959,
+            "calibration": 19716,
+            "evaluation": 20839
+          },
+          "cohort_id": "original_audited",
+          "manifest_sha256": "fe2e8297f15d319f585c82945f5e0fc9310dec0a92b169134e3e01b59707da3d",
+          "windows": {
+            "calibration": [
+              "2023-09-01",
+              "2023-10-01"
+            ],
+            "evaluation": [
+              "2023-10-01",
+              "2023-11-01"
+            ]
+          },
+          "sources": {
+            "reference": {
+              "path": "reference/fold-001/summary.json",
+              "sha256": "46248a63784839525d4bb76412bf15ad3b4768cc781ec608b102dfb80934a9e1"
+            },
+            "tabular": {
+              "path": "completion/fold-001/tabular/summary.json",
+              "sha256": "f9efdab18da4b4698f7fea68884386eacc9dd1e295c8ac9109364ea753281564"
+            },
+            "posttraining": {
+              "path": "completion/fold-001/posttraining/summary.json",
+              "sha256": "fa13dd865bb316bda0e300e208c9fc99cf2c4ba5ce0042d04634784068cb2baf"
+            },
+            "evaluation": {
+              "path": "completion/fold-001/evaluation/summary.json",
+              "sha256": "e636bc4f6fb2c710ccb224fb77454fd4da6b3e2538d41acda5335a9a549a0702"
+            }
+          },
+          "prediction_files": 378,
+          "included_files": 344
+        },
+        {
+          "id": "fold-002",
+          "counts": {
+            "train": 161673,
+            "validation": 45089,
+            "calibration": 20839,
+            "evaluation": 20454
+          },
+          "cohort_id": "original_audited",
+          "manifest_sha256": "fe27f801ae88035f2e030894cc2e0de2e724a688fffb97e6b9231e056e37c1b5",
+          "windows": {
+            "calibration": [
+              "2023-10-01",
+              "2023-11-01"
+            ],
+            "evaluation": [
+              "2023-11-01",
+              "2023-12-01"
+            ]
+          },
+          "sources": {
+            "reference": {
+              "path": "reference/fold-002/summary.json",
+              "sha256": "94abf42621f15dbc5fabb18063c48fbca3b9427f5e29edda9f3459b72d4299f3"
+            },
+            "tabular": {
+              "path": "completion/fold-002/tabular/summary.json",
+              "sha256": "a4bc7b05e7cde8fe032a12abbbdd097456ebb2a2f553a547488aa59fd1be844c"
+            },
+            "posttraining": {
+              "path": "completion/fold-002/posttraining/summary.json",
+              "sha256": "4669139196ae8d4c36ce72302fe2420cb4fc73495ad4fe5b3cabcc7872ba4fbf"
+            },
+            "evaluation": {
+              "path": "completion/fold-002/evaluation/summary.json",
+              "sha256": "ad104ec652fb2e9889181858b4d4b845959f80ba3745ea3ccd08e7645e609c6d"
+            }
+          },
+          "prediction_files": 378,
+          "included_files": 344
+        },
+        {
+          "id": "fold-003",
+          "counts": {
+            "train": 187246,
+            "validation": 41544,
+            "calibration": 20454,
+            "evaluation": 11653
+          },
+          "cohort_id": "original_audited",
+          "manifest_sha256": "526f6dc4b5c51a8d86f2ed8d02dfa4a0e877f2ba030e86559b860699f802fcb7",
+          "windows": {
+            "calibration": [
+              "2023-11-01",
+              "2023-12-01"
+            ],
+            "evaluation": [
+              "2023-12-01",
+              "2024-01-01"
+            ]
+          },
+          "sources": {
+            "reference": {
+              "path": "reference/fold-003/summary.json",
+              "sha256": "f9377a7ce668249cfec31b485908a9ea3bdc706d8e50d23acae62d7d471fc7fa"
+            },
+            "tabular": {
+              "path": "completion/fold-003/tabular/summary.json",
+              "sha256": "d88bc0a7dc694fcd5585d33adabd29aaafcd98a0245d40db89b1c335f882c7f9"
+            },
+            "posttraining": {
+              "path": "completion/fold-003/posttraining/summary.json",
+              "sha256": "ca2eb322ae20962524b714fb4973c8b908d79454ea276a3ed24b996f380c7e29"
+            },
+            "evaluation": {
+              "path": "completion/fold-003/evaluation/summary.json",
+              "sha256": "8fc4cc61c928aba9403985a93d2cb014eb454adf4af137dcfc9c98044fb199ff"
+            }
+          },
+          "prediction_files": 378,
+          "included_files": 344
+        }
+      ],
+      "counts": {
+        "prediction_files": 1512,
+        "included_files": 1376,
+        "models": 756,
+        "by_stage": {
+          "reference": 320,
+          "tabular": 136,
+          "posttraining": 1056
+        }
+      }
+    },
+    "method": {
+      "primary": "session_mae",
+      "aggregate": "equal_fold_means_of_seed_mean_errors",
+      "inference": "exploratory_moving_session_blocks",
+      "block_lengths": [
+        1,
+        5,
+        10,
+        20
+      ],
+      "repetitions": 2000,
+      "seed": 42,
+      "confidence": 0.95,
+      "multiplicity_adjusted": false,
+      "pooled_fold_interval": false,
+      "numeric_tolerances": {
+        "absolute": 1e-12,
+        "relative": 1e-10
+      },
+      "parent_prediction_tolerances": {
+        "neural_absolute": 1e-06,
+        "neural_relative": 1e-05,
+        "ridge_absolute": 1e-09,
+        "ridge_relative": 1e-10
+      }
+    },
+    "versions": {
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "pyarrow": "25.0.1"
+    },
+    "analysis_source_sha256": {
+      "evaluation/comparison_sources.py": "4f21bdd64d2580f627c9370b61ffaddc0cc245464fb8c25317a546baf55a4f6c",
+      "evaluation/prediction_statistics.py": "83fc2c05449f4bb9d3deefcf9fcf2c72f8b31d0f6f00da6358601714f256f678",
+      "evaluation/campaign_comparison.py": "7407c64668b72c0949ef7c64c19c79cd30b3e81d140def456407e39c3c7383cd"
+    }
+  },
+  "financial": {
+    "report_sha256": "40f4ced406e50af91a2d9cefc958191f9817956d4e673bde893584938065acc5",
+    "counts": {
+      "audit_episodes": 41472,
+      "control_episodes": 9216,
+      "paired_world_rows": 82944
+    },
+    "provenance": {
+      "campaign_sha256": "0cd0ce97bbcd992374a795ca3e23cd65ceb0d68b7ed770986e383ece520ae30c",
+      "identity_sha256": "24490c34e4c831082e1eee79199d943f68e66bb68ab66b7f12b1e4029557857f",
+      "freeze_sha256": "c46e95165cad050272f6406b1e4abc4094ea246ed62631e8c595bf447025e44f",
+      "controls_sha256": "bac9c2c4884019ca7b532bdc46e1d88c2505f4dc152c3570afc8c9d4c5d6c3b8",
+      "catalog_sha256": "81048649d2660b64f90f06b025ec20d6b6a5e0791ba6844b3db34811ba6f0b65",
+      "campaign_snapshot_sha256": "8d80e95d0c2498caa2fe5b24829de5d874af125d478921f9bbb3b9c3633c7b24"
+    }
+  },
+  "artifacts": {
+    "financial-aggregates.csv": "feea623229150c707a85ae9292053474529e2a3dc4f60000cd5ca20ce6e5832a",
+    "financial-paired_summary.csv": "a70962e9d2abfb4dbe6ad0f17ff86b1f9ea9d68aaabcd1bf288c9c82431e2b1d",
+    "financial-scenarios.png": "3e83c370355b6d5e5be5812b79781f181cff8c8c3ec028969d053cc27eb047b4",
+    "financial-scenarios.svg": "ca3f0e7614e6057622616d786c1d2bfd3bca3e04629119ffab1d356c07a4efca",
+    "predictive-cases.csv": "3f6a5d510c31d0f1f1333c01cdd34c8a4fd685de0ccc2411476113e32c66b07a",
+    "predictive-folds.csv": "5e9c2c458d10419c2510d50f9e07d81bf997c34ea367986d8f4fda5bd64165e3",
+    "predictive-intervals.csv": "c43bda4101586a6a15a82119d8da42161d5aa538409ef5c88e5efa91a19bee9c",
+    "predictive-methods.csv": "6d41a120eb5b62e9e330e860be5abff26b02945155f1a89a51fefd9a334f134c",
+    "predictive-periods.png": "41cb17036777019e5c21761a6712125884c0f40b2cba67080d859e440f27f7af",
+    "predictive-periods.svg": "c02d74105f784faded05880d1ec07d5064134d648db627326f12f5b36392dbeb"
+  },
+  "renderer": {
+    "matplotlib": "3.11.2",
+    "script_sha256": "fce6d0c060909fcc26a2cd73187588fc9ecfc47f0c5e002841be0e482d2d4d24",
+    "csv_line_endings": "LF"
+  }
+}
