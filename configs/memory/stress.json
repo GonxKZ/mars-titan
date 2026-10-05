@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "config": {
+    "steps": 8192,
+    "capacity": 1024,
+    "regime_length": 2048,
+    "delay": 8,
+    "data_seed": 42,
+    "retention_seed": 73,
+    "noise": 0.25,
+    "invalid_every": 97,
+    "scenario": "recurrence"
+  }
+}
