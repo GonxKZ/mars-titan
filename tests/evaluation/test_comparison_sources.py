@@ -18,8 +18,9 @@ def save(path, value):
 
 
 class Campaign:
-    def __init__(self, root, *, materialize=False):
+    def __init__(self, root, *, materialize=False, matching=False):
         self.materialize = materialize
+        self.matching = matching
         self.reference = root / "reference"
         self.completion = root / "completion"
         self.fold = "fold-000"
@@ -69,6 +70,8 @@ class Campaign:
         self.add("tabular", "ridge", "ridge", "search", None)
         self.add("posttraining", "rnn/seed-42/real/neural_mae", "rnn", "posttraining", 42)
         self.add("posttraining", "rnn/seed-42/real/mae", "rnn", "posttraining", 42)
+        if matching:
+            self.add("posttraining", "rnn/seed-43/real/neural_mae", "rnn", "posttraining", 43)
         self.result_changes = {}
         self.job_changes = {}
         self.publish()
@@ -138,11 +141,17 @@ class Campaign:
                 key = f"{stage}/{row['id']}"
                 report = self.originals[key]
                 if stage == "posttraining":
-                    parent = self.originals["reference/search/winner"]
+                    parent_id = (
+                        "finalist/rnn-s43"
+                        if self.matching and row["case"]["seed"] == 43
+                        else "search/winner"
+                    )
+                    parent = self.originals[f"reference/{parent_id}"]
+                    parent_report = self.folder("reference") / "runs" / parent_id / "run.json"
                     report["identity"]["parent"] = dict(
                         ordered_manifest_sha256="c" * 64,
                         source_sha256=self.manifest_hash,
-                        parent_report_sha256=proofs["rnn"]["sha256"],
+                        parent_report_sha256=hashlib.sha256(parent_report.read_bytes()).hexdigest(),
                         checkpoint_sha256=parent["checkpoint"]["sha256"],
                         model="rnn",
                         counts=self.counts,
@@ -219,6 +228,29 @@ class Campaign:
                 summary["counts"] = self.counts
             else:
                 summary["identity"] = dict(proof=self.proof | {"parents": proofs})
+                if self.matching:
+                    paired = {}
+                    for family, chosen in proofs.items():
+                        paired[family] = {}
+                        for seed in (42, 43):
+                            record = dict(chosen)
+                            if family == "rnn" and seed == 43:
+                                parent_path = (
+                                    self.folder("reference") / "runs/finalist/rnn-s43/run.json"
+                                )
+                                record.update(
+                                    report=str(parent_path),
+                                    sha256=hashlib.sha256(parent_path.read_bytes()).hexdigest(),
+                                    run_id="finalist/rnn-s43",
+                                )
+                            record.update(
+                                parent_seed=None if family == "ridge" else seed,
+                                shared_deterministic=family == "ridge",
+                            )
+                            paired[family][str(seed)] = record
+                    summary["identity"]["proof"].update(
+                        schema_version=2, parent_seed_policy="matching", parents_by_seed=paired
+                    )
             path = self.folder(stage) / "summary.json"
             signature = save(path, summary)
             summaries[stage] = dict(path=str(path), sha256=signature)
@@ -393,6 +425,20 @@ def test_includes_search_winner_and_preserves_distinct_continuations(campaign):
     assert new["bounds"] == ["2023-12-01", "2024-01-01"]
     assert isinstance(new["path"], Path)
     assert str(campaign.reference.parent) not in json.dumps(provenance)
+
+
+def test_matching_campaign_keeps_finalist_parents_and_temporal_population(tmp_path):
+    campaign = Campaign(tmp_path, matching=True)
+    rows, provenance = sources(campaign)
+    child = next(row for row in rows if row["id"] == "posttraining/rnn/seed-43/real/neural_mae")
+    assert child["parent_id"] == "reference/finalist/rnn-s43"
+    assert child["seed"] == 43
+    assert child["bounds"] == ["2023-11-01", "2023-12-01"]
+    assert provenance["final_test_opened"] is False
+    campaign.originals["reference/finalist/rnn-s43"]["identity"]["case"]["loss"] = "mse"
+    campaign.publish()
+    with pytest.raises(ValueError, match="configuración"):
+        sources(campaign)
 
 
 def test_admission_does_not_require_opening_weights_or_prediction_files(campaign):
