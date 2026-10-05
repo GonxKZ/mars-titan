@@ -19,6 +19,22 @@ def _receipt(path, expected=None):
     if not path.is_file():
         raise ValueError("Falta el resultado confirmado del proceso")
     report, _ = read_manifest(path, 8 * 1024**2)
+    if (
+        not isinstance(report, dict)
+        or not isinstance(report.get("status"), str)
+        or report["status"]
+        not in {
+            "running",
+            "pending",
+            "queued",
+            "waiting",
+            "paused",
+            "blocked",
+            "failed",
+            "completed",
+        }
+    ):
+        raise ValueError("El resultado contiene un estado desconocido")
     count, planned = report.get("completed_runs"), report.get("planned_runs")
     if (
         type(count) is not int
@@ -67,10 +83,23 @@ def stage_plan(folds, *, tabular_runs, adjustment_runs, reference_runs=40):
     return stages
 
 
-def run_child(command, receipt, expected, stop, observe, *, poll_seconds=5, grace_seconds=620):
+def run_child(
+    command,
+    receipt,
+    expected,
+    stop,
+    observe,
+    *,
+    poll_seconds=5,
+    grace_seconds=620,
+    receipt_reader=None,
+):
     """Propagar la parada y exigir un recibo completo antes de abrir la etapa siguiente."""
     if stop.requested:
         raise InterruptedError("Campaña pausada antes de iniciar otra etapa")
+    reader = _receipt if receipt_reader is None else receipt_reader
+    if not callable(reader):
+        raise ValueError("El lector de recibos debe ser invocable")
     process = subprocess.Popen(command)
     deadline = None
     try:
@@ -90,13 +119,24 @@ def run_child(command, receipt, expected, stop, observe, *, poll_seconds=5, grac
                 break
             except subprocess.TimeoutExpired:
                 if receipt.exists():
-                    observe(_receipt(receipt, expected))
+                    try:
+                        result = reader(receipt, expected)
+                    except BlockingIOError:
+                        continue
+                    observe(result)
         if code != 0:
-            if stop.requested or code == 2:
+            if code == 2 and receipt.exists():
+                result = reader(receipt, expected)
+                if result["status"] in {"blocked", "failed", "completed"}:
+                    raise RuntimeError("El código de pausa no corresponde al estado del recibo")
+                observe(result)
+            if code == 2 or stop.requested and code < 0:
                 raise InterruptedError("La etapa se ha detenido sin declararse completa")
             raise RuntimeError(f"La etapa terminó con código {code}")
-        result = _receipt(receipt, expected)
+        result = reader(receipt, expected)
         observe(result)
+        if result["status"] in {"blocked", "failed"}:
+            raise RuntimeError("La etapa conserva un fallo confirmado en su recibo")
         if result["status"] != "completed":
             raise InterruptedError("La etapa conserva trabajo pendiente")
         return result

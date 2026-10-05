@@ -1,0 +1,456 @@
+"""Recibos operativos con el esquema de campaña y datos sintéticos reducidos."""
+
+import copy
+import hashlib
+import json
+import subprocess
+import sys
+
+import pytest
+
+from mars_titan.simulation import campaign_receipts as reader
+
+
+def digest(value):
+    encoded = json.dumps(
+        value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+    )
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def write(path, value):
+    temporary = path.with_suffix(".pending")
+    temporary.write_text(json.dumps(value, ensure_ascii=False))
+    temporary.replace(path)
+
+
+def case(stage, variant, *, completed=False):
+    return dict(
+        id=f"{stage}-{variant}-42",
+        stage=stage,
+        variant=variant,
+        seed=42,
+        transitions=0 if stage == "audit" else 128,
+        confirmed_transitions=0 if stage == "audit" or not completed else 128,
+        output=f"{stage}/{variant}-42",
+        config_sha256="b" * 64,
+        status="completed" if completed else "running",
+        receipt_sha256="c" * 64 if completed else None,
+    )
+
+
+def publications(identity, state):
+    report = dict(
+        schema_version=1,
+        kind="adaptive_campaign",
+        status=state["status"],
+        phase=state["phase"],
+        updated_at=state["updated_at"],
+        identity_sha256=digest(identity),
+        completed_cases=sum(item["status"] == "completed" for item in state["cases"]),
+        final_test_opened=False,
+        parent_frozen=True,
+        domain="synthetic",
+        analysis_domain="technical",
+        budget_complete=state["budget_complete"],
+        audit_opened=state["audit_opened"],
+        selection_frozen=state["freeze_sha256"] is not None,
+    )
+    registry = dict(
+        schema_version=1,
+        kind="adaptive_campaign",
+        status=state["status"],
+        planned_runs=len(state["cases"]),
+        runs=[
+            dict(
+                path=item["output"],
+                stage=item["stage"],
+                variant=item["variant"],
+                seed=item["seed"],
+                status=item["status"],
+                config_sha256=item["config_sha256"],
+                planned_transitions=item["transitions"],
+                transitions=item.get("confirmed_transitions", 0),
+            )
+            for item in state["cases"]
+        ],
+    )
+    return report, registry
+
+
+def publish(root, identity, state):
+    report, registry = publications(identity, state)
+    write(root / "identity.json", identity)
+    write(root / "campaign.json", dict(payload=state, sha256=digest(state)))
+    write(root / "run.json", report)
+    write(root / "registry.json", registry)
+    return root / "registry.json"
+
+
+@pytest.fixture
+def campaign(tmp_path):
+    identity = dict(
+        schema_version=1,
+        kind="adaptive_campaign",
+        final_test_opened=False,
+        settings=dict(variants=["ppo", "ppo_hmm"], seeds=[42], final_test_opened=False),
+        base_configuration=dict(final_test_opened=False),
+    )
+    state = dict(
+        schema_version=1,
+        identity_sha256=digest(identity),
+        status="running",
+        phase="pilot",
+        cases=[case("pilot", "ppo", completed=True), case("pilot", "ppo_hmm")],
+        choice=None,
+        gate=None,
+        freeze_sha256=None,
+        audit_opened=False,
+        budget_complete=True,
+        active_case="pilot-ppo_hmm-42",
+        updated_at="2026-01-01T00:00:00+00:00",
+    )
+    publish(tmp_path, identity, state)
+    return tmp_path, identity, state
+
+
+def finish(identity, state):
+    state.update(
+        status="completed",
+        phase="completed",
+        active_case=None,
+        choice={"transitions": 128},
+        gate={"enabled": False},
+        freeze_sha256="d" * 64,
+        audit_opened=True,
+    )
+    state["cases"] = [
+        case(stage, variant, completed=True)
+        for stage in ("pilot", "main", "audit")
+        for variant in identity["settings"]["variants"]
+    ]
+
+
+def test_real_registry_schema_normalizes_only_verified_progress(campaign):
+    root, _, _ = campaign
+    result = reader.read_adaptive_receipt(root / "registry.json")
+    assert result["completed_runs"] == 1 and result["planned_runs"] == 2
+    assert result["status"] == "running" and result["final_test_opened"] is False
+    assert set(result) == {
+        "kind",
+        "status",
+        "phase",
+        "completed_runs",
+        "planned_runs",
+        "identity_sha256",
+        "snapshot_sha256",
+        "final_test_opened",
+    }
+
+
+def test_plan_expands_with_main_and_audit_without_inventing_completion(campaign):
+    root, identity, state = campaign
+    state["cases"][1] = case("pilot", "ppo_hmm", completed=True)
+    state.update(phase="main", choice={"transitions": 128}, active_case=None)
+    state["cases"].extend(case("main", variant) for variant in identity["settings"]["variants"])
+    path = publish(root, identity, state)
+    result = reader.read_adaptive_receipt(path)
+    assert (result["completed_runs"], result["planned_runs"], result["status"]) == (2, 4, "running")
+    finish(identity, state)
+    publish(root, identity, state)
+    result = reader.read_adaptive_receipt(path, expected=6)
+    assert (result["completed_runs"], result["planned_runs"], result["status"]) == (
+        6,
+        6,
+        "completed",
+    )
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(path, expected=4)
+
+
+@pytest.mark.parametrize("status", ["paused", "blocked", "failed"])
+def test_non_success_states_are_preserved(campaign, status):
+    root, identity, state = campaign
+    state["status"] = status
+    result = reader.read_adaptive_receipt(publish(root, identity, state))
+    assert result["status"] == status
+    assert result["completed_runs"] == 1
+
+
+@pytest.mark.parametrize("target", ["identity", "settings", "base", "run"])
+@pytest.mark.parametrize("value", [None, True, 0])
+def test_reservation_requires_explicit_false_in_each_source(campaign, target, value):
+    root, identity, state = campaign
+    if target == "identity":
+        identity["final_test_opened"] = value
+    elif target == "settings":
+        identity["settings"]["final_test_opened"] = value
+    elif target == "base":
+        identity["base_configuration"]["final_test_opened"] = value
+    state["identity_sha256"] = digest(identity)
+    publish(root, identity, state)
+    if target == "run":
+        report = json.loads((root / "run.json").read_text())
+        report["final_test_opened"] = value
+        write(root / "run.json", report)
+    with pytest.raises(ValueError, match="reserva"):
+        reader.read_adaptive_receipt(root / "registry.json")
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "duplicate",
+        "unknown_status",
+        "identity",
+        "hash",
+        "plan",
+        "count",
+        "future_registry",
+        "missing_run",
+        "missing_identity",
+        "bad_path",
+    ],
+)
+def test_corruption_is_not_a_transient_publication(campaign, change):
+    root, identity, state = campaign
+    report, registry = publications(identity, state)
+    if change == "duplicate":
+        state["cases"].append(copy.deepcopy(state["cases"][0]))
+        publish(root, identity, state)
+    elif change == "unknown_status":
+        state["cases"][0]["status"] = "whatever"
+        publish(root, identity, state)
+    elif change == "identity":
+        state["identity_sha256"] = "e" * 64
+        publish(root, identity, state)
+    elif change == "hash":
+        write(root / "campaign.json", dict(payload=state, sha256="e" * 64))
+    elif change == "plan":
+        registry["planned_runs"] = 3
+        write(root / "registry.json", registry)
+    elif change == "count":
+        report["completed_cases"] = 2
+        write(root / "run.json", report)
+    elif change == "future_registry":
+        registry["runs"][1]["status"] = "completed"
+        write(root / "registry.json", registry)
+    elif change == "bad_path":
+        registry["runs"][0]["path"] = "../outside"
+        write(root / "registry.json", registry)
+    else:
+        (root / ("run.json" if change == "missing_run" else "identity.json")).unlink()
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(root / "registry.json")
+
+
+@pytest.mark.parametrize(
+    "change", ["pending", "phase", "audit", "freeze", "budget", "missing_main"]
+)
+def test_terminal_receipt_requires_every_declared_stage(campaign, change):
+    root, identity, state = campaign
+    finish(identity, state)
+    if change == "pending":
+        state["cases"][-1]["status"] = "pending"
+    elif change == "phase":
+        state["phase"] = "pilot"
+    elif change == "audit":
+        state["audit_opened"] = False
+    elif change == "freeze":
+        state["freeze_sha256"] = None
+    elif change == "budget":
+        state["budget_complete"] = False
+    else:
+        state["cases"] = [row for row in state["cases"] if row["stage"] != "main"]
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(publish(root, identity, state))
+
+
+def test_journal_then_report_then_registry_is_a_transient_publication(campaign):
+    root, identity, state = campaign
+    state["cases"][1] = case("pilot", "ppo_hmm", completed=True)
+    state["active_case"] = None
+    state["updated_at"] = "2026-01-01T00:00:01+00:00"
+    write(root / "campaign.json", dict(payload=state, sha256=digest(state)))
+    with pytest.raises(BlockingIOError):
+        reader.read_adaptive_receipt(root / "registry.json")
+    report, registry = publications(identity, state)
+    write(root / "run.json", report)
+    with pytest.raises(BlockingIOError):
+        reader.read_adaptive_receipt(root / "registry.json")
+    write(root / "registry.json", registry)
+    assert reader.read_adaptive_receipt(root / "registry.json")["completed_runs"] == 2
+
+
+def test_registry_rows_are_unique_even_if_completed_count_matches(campaign):
+    root, _, _ = campaign
+    registry = json.loads((root / "registry.json").read_text())
+    registry["runs"][1] = copy.deepcopy(registry["runs"][0])
+    write(root / "registry.json", registry)
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(root / "registry.json")
+
+
+def test_duplicate_json_fields_and_symlinks_are_rejected(campaign):
+    root, _, _ = campaign
+    path = root / "registry.json"
+    original = path.read_bytes()
+    path.write_text('{"schema_version":1,"schema_version":1}')
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(path)
+    path.unlink()
+    other = root / "other.json"
+    other.write_bytes(original)
+    path.symlink_to(other)
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(path)
+
+
+def test_helper_loads_from_an_external_file_with_only_the_standard_library(campaign):
+    root, _, _ = campaign
+    script = (
+        "import importlib.util,sys\n"
+        "spec=importlib.util.spec_from_file_location('operational_receipts',sys.argv[1])\n"
+        "module=importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(module)\n"
+        "assert module.read_adaptive_receipt(sys.argv[2])['completed_runs']==1\n"
+        "assert 'mars_titan' not in sys.modules\n"
+    )
+    subprocess.run(
+        [sys.executable, "-I", "-S", "-c", script, reader.__file__, str(root / "registry.json")],
+        check=True,
+    )
+
+
+def test_child_observes_dynamic_plan_and_waits_for_atomic_publication(campaign):
+    from types import SimpleNamespace
+
+    from mars_titan.posttraining.completion import run_child
+
+    root, identity, state = campaign
+    finish(identity, state)
+    state["updated_at"] = "2026-01-01T00:00:01+00:00"
+    report, registry = publications(identity, state)
+    documents = {
+        "campaign.json": dict(payload=state, sha256=digest(state)),
+        "run.json": report,
+        "registry.json": registry,
+    }
+    script = (
+        "import json,sys,time\nfrom pathlib import Path\n"
+        "root=Path(sys.argv[1]); time.sleep(.08)\n"
+        "for name,value in json.loads(sys.argv[2]).items():\n"
+        " path=root/name; temporary=path.with_suffix('.pending')\n"
+        " temporary.write_text(json.dumps(value)); temporary.replace(path); time.sleep(.05)\n"
+    )
+    seen = []
+    result = run_child(
+        [sys.executable, "-c", script, str(root), json.dumps(documents)],
+        root / "registry.json",
+        None,
+        SimpleNamespace(requested=False),
+        seen.append,
+        poll_seconds=0.01,
+        grace_seconds=1,
+        receipt_reader=reader.read_adaptive_receipt,
+    )
+    assert any(row["completed_runs"] == 1 and row["planned_runs"] == 2 for row in seen)
+    assert result["completed_runs"] == result["planned_runs"] == 6
+    assert seen[-1]["status"] == "completed"
+
+
+@pytest.mark.parametrize(
+    "status,exception",
+    [("paused", InterruptedError), ("blocked", RuntimeError), ("failed", RuntimeError)],
+)
+@pytest.mark.parametrize("code", [0, 2])
+def test_runner_preserves_failure_and_pause_states(campaign, status, exception, code):
+    from types import SimpleNamespace
+
+    from mars_titan.posttraining.completion import run_child
+
+    root, identity, state = campaign
+    state["status"] = status
+    publish(root, identity, state)
+    with pytest.raises(exception):
+        run_child(
+            [sys.executable, "-c", f"raise SystemExit({code})"],
+            root / "registry.json",
+            None,
+            SimpleNamespace(requested=False),
+            lambda _: None,
+            poll_seconds=0.01,
+            grace_seconds=1,
+            receipt_reader=reader.read_adaptive_receipt,
+        )
+
+
+def test_reader_retries_when_journal_changes_between_file_reads(campaign, monkeypatch):
+    root, identity, state = campaign
+    original = reader._read
+    changed = False
+
+    def read_and_publish(path):
+        nonlocal changed
+        value = original(path)
+        if path.name == "registry.json" and not changed:
+            changed = True
+            state["cases"][1] = case("pilot", "ppo_hmm", completed=True)
+            state["active_case"] = None
+            state["updated_at"] = "2026-01-01T00:00:01+00:00"
+            publish(root, identity, state)
+        return value
+
+    monkeypatch.setattr(reader, "_read", read_and_publish)
+    assert reader.read_adaptive_receipt(root / "registry.json")["completed_runs"] == 2
+
+
+def test_terminal_exit_cannot_confirm_a_half_published_receipt(campaign):
+    from types import SimpleNamespace
+
+    from mars_titan.posttraining.completion import run_child
+
+    root, identity, state = campaign
+    finish(identity, state)
+    state["updated_at"] = "2026-01-01T00:00:01+00:00"
+    write(root / "campaign.json", dict(payload=state, sha256=digest(state)))
+    with pytest.raises(BlockingIOError):
+        run_child(
+            [sys.executable, "-c", "pass"],
+            root / "registry.json",
+            None,
+            SimpleNamespace(requested=False),
+            lambda _: None,
+            poll_seconds=0.1,
+            grace_seconds=1,
+            receipt_reader=reader.read_adaptive_receipt,
+        )
+
+
+def test_auxiliary_gate_expands_the_declared_audit_plan(campaign):
+    root, identity, state = campaign
+    finish(identity, state)
+    state["gate"] = {"enabled": True}
+    auxiliary = ("ppo_recent_aux", "ppo_replay_aux")
+    state["cases"] = [
+        case(stage, variant, completed=True)
+        for stage, variants in (
+            ("pilot", identity["settings"]["variants"]),
+            ("main", identity["settings"]["variants"]),
+            ("auxiliary", auxiliary),
+            ("audit", (*identity["settings"]["variants"], *auxiliary)),
+        )
+        for variant in variants
+    ]
+    result = reader.read_adaptive_receipt(publish(root, identity, state))
+    assert result["completed_runs"] == result["planned_runs"] == 10
+
+
+def test_publication_does_not_assume_a_monotonic_wall_clock(campaign):
+    root, _, state = campaign
+    state["cases"][1] = case("pilot", "ppo_hmm", completed=True)
+    state["active_case"] = None
+    state["updated_at"] = "2025-12-31T23:59:59+00:00"
+    write(root / "campaign.json", dict(payload=state, sha256=digest(state)))
+    with pytest.raises(BlockingIOError):
+        reader.read_adaptive_receipt(root / "registry.json")
