@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-05T08:28:48.793440Z",
+  "generated_at": "2026-10-05T09:57:24.211207Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -572,7 +572,7 @@
       "id": "adaptive-convergence-20261001",
       "domain": "synthetic",
       "planned_runs": 21,
-      "status": "paused",
+      "status": "running",
       "dependencies": [],
       "counts": {
         "completed": 1,
