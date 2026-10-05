@@ -3,20 +3,24 @@
 
 #include <ATen/core/Tensor.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace mars_titan::controls {
+using OutputIdentity = std::array<uint8_t, 32>;
 struct SemanticVersions {
     uint64_t view = 1;
     uint64_t representation = 1;
     uint64_t keys = 1;
     uint64_t query = 1;
     uint64_t output = 1;
+    std::optional<OutputIdentity> output_state{};
     bool operator==(const SemanticVersions&) const = default;
 };
 enum class ArtifactKind : uint8_t { representation, memory, read, prediction };

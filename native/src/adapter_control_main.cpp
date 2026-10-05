@@ -76,6 +76,18 @@ void synchronize(const std::string& device) {
 double elapsed(Clock::time_point before, Clock::time_point after) {
     return std::chrono::duration<double, std::milli>(after - before).count();
 }
+std::string encoded_identity(const SemanticVersions& versions) {
+    if (!versions.output_state)
+        throw std::runtime_error("El control no ha acreditado la identidad de su salida");
+    constexpr std::string_view digits = "0123456789abcdef";
+    std::string result;
+    result.reserve(2 * versions.output_state->size());
+    for (const auto byte : *versions.output_state) {
+        result.push_back(digits[byte >> 4U]);
+        result.push_back(digits[byte & 0x0fU]);
+    }
+    return result;
+}
 struct Data {
     at::Tensor base;
     at::Tensor train_inputs;
@@ -111,6 +123,8 @@ struct Trial {
     std::size_t archive_bytes = 0;
     int64_t peak_cuda_allocated_bytes = 0;
     int64_t peak_cuda_reserved_bytes = 0;
+    std::string current_identity{};
+    std::string selected_identity{};
 };
 Trial run(const Options& options, const AdapterConfig& config, const Data& data,
           const at::Tensor& expected, const at::Tensor& expected_selected) {
@@ -131,15 +145,22 @@ Trial run(const Options& options, const AdapterConfig& config, const Data& data,
     std::size_t checkpoint_bytes = 0;
     for (std::size_t step = 0; step < options.steps; ++step) {
         static_cast<void>(control.train(x, y));
+        static_cast<void>(control.versions());
         if (step + 1 == (options.steps + 1) / 2) {
             synchronize(options.device);
             const auto checkpoint_start = Clock::now();
+            const auto current_identity = control.versions();
+            const auto selected_identity = control.versions(true);
             const auto archive = serialize_adapter(control.snapshot());
             checkpoint_bytes = archive.size();
             const auto state = deserialize_adapter(archive);
             AdapterControl restored(config, data.base, data.validation_inputs,
                                     data.validation_targets, options.device);
             restored.restore(state);
+            if (restored.versions() != current_identity ||
+                restored.versions(true) != selected_identity)
+                throw std::runtime_error(
+                    "La recuperación cambia la identidad del estado de salida");
             control = std::move(restored);
             synchronize(options.device);
             recovery += elapsed(checkpoint_start, Clock::now());
@@ -155,6 +176,8 @@ Trial run(const Options& options, const AdapterConfig& config, const Data& data,
         throw std::runtime_error(
             "La ejecución recuperada no coincide con la referencia CPU ininterrumpida");
     const auto state = control.snapshot();
+    const auto current_identity = encoded_identity(control.versions());
+    const auto selected_identity = encoded_identity(control.versions(true));
     Trial result{elapsed(start, initialized),
                  elapsed(initialized, trained) - recovery,
                  recovery,
@@ -166,7 +189,9 @@ Trial run(const Options& options, const AdapterConfig& config, const Data& data,
                  control.state_tensor_bytes(),
                  checkpoint_bytes,
                  0,
-                 0};
+                 0,
+                 current_identity,
+                 selected_identity};
     if (options.device == "cuda:0") {
         const auto stats = at::accelerator::getDeviceStats(0);
         result.peak_cuda_allocated_bytes = stats.allocated_bytes[0].peak;
@@ -240,6 +265,8 @@ int main(int argc, char** argv) {
                       << ",\"best_step\":" << result.best_step
                       << ",\"selected_validation_mse\":" << result.selected_mse
                       << ",\"max_reference_error\":" << result.reference_error
+                      << ",\"current_output_sha256\":\"" << result.current_identity
+                      << "\",\"selected_output_sha256\":\"" << result.selected_identity << '"'
                       << ",\"setup_mean_ms\":" << setup / repetitions
                       << ",\"training_mean_ms\":" << training / repetitions
                       << ",\"recovery_mean_ms\":" << recovery / repetitions

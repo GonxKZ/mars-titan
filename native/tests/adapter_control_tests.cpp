@@ -42,7 +42,8 @@ AdapterConfig config(AdapterKind kind) {
             .max_steps = 8};
 }
 void dependencies_follow_the_changed_stage() {
-    const SemanticVersions original;
+    AdapterControl control(config(AdapterKind::full), base(), inputs(), base().t());
+    const auto original = control.versions();
     auto changed = original;
     changed.output++;
     auto result = invalidated(original, changed);
@@ -73,23 +74,146 @@ void dependencies_follow_the_changed_stage() {
         rejected([&] { require_compatible(ArtifactKind::memory, original, changed); });
     }
     require_compatible(ArtifactKind::prediction, original, original);
+    const SemanticVersions unbound;
+    rejected([&] { require_compatible(ArtifactKind::prediction, unbound, unbound); });
     changed.view = 0;
     rejected([&] { static_cast<void>(invalidated(original, changed)); });
     rejected([&] { require_compatible(static_cast<ArtifactKind>(255), original, original); });
+}
+void divergent_restores_reject_stale_predictions(std::string_view device) {
+    const auto x_cpu = at::ones({1, 1}, at::kDouble);
+    const auto zero = at::zeros_like(x_cpu);
+    const auto x = x_cpu.to(at::Device(std::string(device)));
+    for (const auto kind : {AdapterKind::full, AdapterKind::residual, AdapterKind::low_rank}) {
+        auto settings = config(kind);
+        settings.inputs = settings.outputs = settings.rank = 1;
+        AdapterControl control(settings, zero, x_cpu, zero, device);
+        const auto initial = control.snapshot();
+        const auto parent_identity = control.versions(true);
+        static_cast<void>(control.train(x, x));
+        const auto first_prediction = control.predict(x).item<double>();
+        const auto first_identity = control.versions();
+        require_compatible(ArtifactKind::prediction, parent_identity, control.versions(true));
+        control.restore(initial);
+        static_cast<void>(control.train(x, -x));
+        const auto second_identity = control.versions();
+        require(first_prediction != control.predict(x).item<double>() &&
+                    first_identity.output == second_identity.output,
+                "La regresión no reproduce trayectorias distintas con los mismos pasos");
+        rejected(
+            [&] { require_compatible(ArtifactKind::prediction, first_identity, second_identity); });
+        require_compatible(ArtifactKind::memory, first_identity, second_identity);
+        require_compatible(ArtifactKind::read, first_identity, second_identity);
+        require_compatible(ArtifactKind::prediction, parent_identity, control.versions(true));
+        const auto state = deserialize_adapter(serialize_adapter(control.snapshot()));
+        AdapterControl resumed(settings, zero, x_cpu, zero, device);
+        resumed.restore(state);
+        require(resumed.versions() == second_identity && resumed.versions(true) == parent_identity,
+                "La recuperación no reproduce las identidades del estado actual y seleccionado");
+        static_cast<void>(resumed.predict(x));
+        static_cast<void>(resumed.predict(x * 2));
+        require(resumed.versions() == second_identity,
+                "Una lectura cambia la identidad de los parámetros sin una actualización");
+    }
+}
+void different_modes_and_states_have_distinct_identities(std::string_view device) {
+    const auto x_cpu = at::ones({1, 1}, at::kDouble);
+    const auto zero = at::zeros_like(x_cpu);
+    const auto x = x_cpu.to(at::Device(std::string(device)));
+    auto settings = config(AdapterKind::full);
+    settings.inputs = settings.outputs = settings.rank = 1;
+    AdapterControl full(settings, zero, x_cpu, zero, device);
+    settings.kind = AdapterKind::low_rank;
+    AdapterControl low_rank(settings, zero, x_cpu, zero, device);
+    static_cast<void>(full.train(x, x));
+    static_cast<void>(low_rank.train(x, x));
+    require(full.predict(x).item<double>() != low_rank.predict(x).item<double>() &&
+                full.versions().output == low_rank.versions().output,
+            "La regresión no reproduce dos clases con salidas distintas y el mismo contador");
+    rejected([&] {
+        require_compatible(ArtifactKind::prediction, full.versions(), low_rank.versions());
+    });
+    AdapterControl same(settings, zero, x_cpu, zero, device);
+    static_cast<void>(same.train(x, x));
+    require(same.versions() == low_rank.versions(),
+            "El mismo contenido produce identidades distintas en dos controles");
+    const auto prior = low_rank.versions();
+    auto changed = low_rank.snapshot();
+    changed.parameters[0] += 0.25;
+    low_rank.restore(changed);
+    rejected([&] { require_compatible(ArtifactKind::prediction, prior, low_rank.versions()); });
+}
+void different_selected_states_at_the_same_step_are_incompatible(std::string_view device) {
+    const auto x_cpu = at::ones({1, 1}, at::kDouble);
+    const auto zero = at::zeros_like(x_cpu);
+    const auto x = x_cpu.to(at::Device(std::string(device)));
+    for (const auto kind : {AdapterKind::full, AdapterKind::residual, AdapterKind::low_rank}) {
+        auto settings = config(kind);
+        settings.inputs = settings.outputs = settings.rank = 1;
+        settings.learning_rate = 0.01;
+        AdapterControl control(settings, zero, x_cpu, x_cpu, device);
+        const auto initial = control.snapshot();
+        const auto initial_identity = control.versions(true);
+        static_cast<void>(control.train(x, x));
+        const auto first = control.versions(true);
+        require(first.output_state != initial_identity.output_state,
+                "La selección conserva una huella cacheada del padre después de mejorar");
+        const auto first_value = control.predict(x, true).item<double>();
+        require(control.snapshot().best_step == 1, "La primera actualización no mejora al padre");
+        control.restore(initial);
+        static_cast<void>(control.train(x, x * 2));
+        require(control.snapshot().best_step == 1 &&
+                    control.versions(true).output == first.output &&
+                    first_value != control.predict(x, true).item<double>(),
+                "La regresión no produce dos selecciones distintas en el mismo paso");
+        rejected(
+            [&] { require_compatible(ArtifactKind::prediction, first, control.versions(true)); });
+        const auto selected = control.versions(true);
+        static_cast<void>(control.train(x, x * -10));
+        require(control.snapshot().best_step == 1 && control.versions(true) == selected &&
+                    control.versions().output_state != selected.output_state,
+                "Una actualización peor mezcla la identidad actual con la seleccionada");
+        control.restore(deserialize_adapter(serialize_adapter(control.snapshot())));
+        require(control.versions(true) == selected,
+                "El checkpoint no conserva la identidad del mejor estado distinto del padre");
+    }
+}
+void serialized_dependency_identities_are_preserved() {
+    auto settings = config(AdapterKind::full);
+    AdapterControl origin(settings, base(), inputs(), base().t());
+    settings.versions = origin.versions();
+    AdapterControl bound(settings, base(), inputs(), base().t());
+    const auto state = bound.snapshot();
+    const auto archive = serialize_adapter(state);
+    const auto restored = deserialize_adapter(archive);
+    require(restored.config.versions == settings.versions,
+            "El archivo pierde una identidad de salida declarada como dependencia");
+    const auto identity = bound.versions();
+    bound.restore(restored);
+    require(bound.versions() == identity, "La identidad cambia al recuperar las dependencias");
+    auto previous_format = archive;
+    previous_format[8] = 1;
+    rejected([&] { static_cast<void>(deserialize_adapter(previous_format)); });
 }
 void full_and_residual_match_two_analytical_updates(std::string_view device) {
     for (const auto kind : {AdapterKind::full, AdapterKind::residual}) {
         const auto x = inputs().to(at::Device(std::string(device)));
         const auto y = at::zeros_like(x);
         AdapterControl control(config(kind), base(), inputs(), at::zeros_like(inputs()), device);
+        const auto initial_identity = control.versions();
         close(control.predict(x), base().t());
         require(control.trainable_parameters() == 4,
                 "El recuento de parámetros completos es incorrecto");
         const auto first_loss = control.train(x, y);
         require(std::abs(first_loss - 1.5625) < 1e-12, "La pérdida no usa el denominador global");
         close(control.predict(x), base().t() * 0.95);
+        const auto first_identity = control.versions();
+        require(first_identity.output_state != initial_identity.output_state,
+                "La primera actualización conserva una huella cacheada de otros pesos");
         static_cast<void>(control.train(x, y));
         close(control.predict(x), base().t() * 0.8775);
+        require(control.versions().output_state != first_identity.output_state,
+                "La siguiente actualización no invalida la huella anterior");
         close(control.snapshot().base, base());
         require(control.versions().output == 3 && control.versions().representation == 1,
                 "La actualización cambia versiones de etapas congeladas");
@@ -300,6 +424,10 @@ int main(int argc, char** argv) {
         const std::string_view device = argc == 2 ? argv[1] : "cpu";
         at::set_num_threads(1);
         at::set_num_interop_threads(1);
+        divergent_restores_reject_stale_predictions(device);
+        different_modes_and_states_have_distinct_identities(device);
+        different_selected_states_at_the_same_step_are_incompatible(device);
+        serialized_dependency_identities_are_preserved();
         dependencies_follow_the_changed_stage();
         full_and_residual_match_two_analytical_updates(device);
         low_rank_matches_an_independent_scalar_gradient(device);

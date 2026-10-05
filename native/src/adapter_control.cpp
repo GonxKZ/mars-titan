@@ -4,6 +4,7 @@
 #include <ATen/CPUGeneratorImpl.h>
 #include <ATen/Context.h>
 #include <ATen/core/grad_mode.h>
+#include <openssl/evp.h>
 #include <torch/optim/sgd.h>
 
 #include <algorithm>
@@ -23,7 +24,7 @@ constexpr std::size_t maximum_steps = 1U << 20;
 constexpr std::size_t maximum_bytes = 512U << 20;
 constexpr std::size_t archive_limit = 128U << 20;
 constexpr uint64_t archive_magic = 0x315250544144544dULL;
-constexpr std::size_t archive_version = 1;
+constexpr std::size_t archive_version = 2;
 
 void require(bool condition, const char* message) {
     if (!condition)
@@ -131,6 +132,75 @@ void check_parameters(const std::vector<at::Tensor>& tensors, const AdapterConfi
     for (std::size_t index = 0; index < shapes.size(); ++index)
         check_tensor(tensors[index], shapes[index], at::kCPU);
 }
+std::array<uint8_t, 8> integer_bytes(uint64_t value) {
+    std::array<uint8_t, 8> bytes{};
+    for (unsigned int byte = 0; byte < bytes.size(); ++byte)
+        bytes[byte] = static_cast<uint8_t>((value >> (8 * byte)) & 0xffU);
+    return bytes;
+}
+class StateDigest {
+  public:
+    StateDigest() : context_(EVP_MD_CTX_new(), &EVP_MD_CTX_free) {
+        if (!context_ || EVP_DigestInit_ex(context_.get(), EVP_sha256(), nullptr) != 1)
+            throw std::runtime_error("OpenSSL no pudo iniciar la huella del estado de salida");
+    }
+    void bytes(std::span<const std::byte> values) {
+        if (EVP_DigestUpdate(context_.get(), values.data(), values.size()) != 1)
+            throw std::runtime_error("OpenSSL no pudo incorporar los valores de la salida");
+    }
+    void integer(uint64_t value) {
+        const auto encoded = integer_bytes(value);
+        bytes(std::as_bytes(std::span(encoded)));
+    }
+    void text(std::string_view value) {
+        integer(value.size());
+        bytes(std::as_bytes(std::span(value.data(), value.size())));
+    }
+    void tensor(const at::Tensor& value) {
+        const auto cpu = value.detach().to(at::kCPU).contiguous();
+        integer(static_cast<uint64_t>(cpu.dim()));
+        for (const auto dimension : cpu.sizes())
+            integer(static_cast<uint64_t>(dimension));
+        const auto values =
+            std::span(cpu.const_data_ptr<double>(), static_cast<std::size_t>(cpu.numel()));
+        if constexpr (std::endian::native == std::endian::little)
+            bytes(std::as_bytes(values));
+        else
+            for (const auto element : values)
+                integer(std::bit_cast<uint64_t>(element));
+    }
+    OutputIdentity finish() {
+        OutputIdentity result{};
+        unsigned int size = 0;
+        if (EVP_DigestFinal_ex(context_.get(), result.data(), &size) != 1 || size != result.size())
+            throw std::runtime_error("OpenSSL no ha calculado una huella SHA256 válida");
+        return result;
+    }
+
+  private:
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context_;
+};
+OutputIdentity output_identity(const AdapterConfig& config, const at::Tensor& base,
+                               const std::vector<at::Tensor>& parameters, bool parent_only) {
+    StateDigest digest;
+    digest.text("mars-titan-adapter-output-fp64-v1");
+    digest.text(config.problem_id);
+    const auto& versions = config.versions;
+    for (const auto value :
+         {static_cast<uint64_t>(config.kind), uint64_t{parent_only},
+          static_cast<uint64_t>(config.inputs), static_cast<uint64_t>(config.outputs),
+          static_cast<uint64_t>(config.rank), versions.view, versions.representation, versions.keys,
+          versions.query, versions.output})
+        digest.integer(value);
+    digest.integer(versions.output_state.has_value());
+    if (versions.output_state)
+        digest.bytes(std::as_bytes(std::span(*versions.output_state)));
+    digest.tensor(base);
+    if (!parent_only)
+        for (const auto& parameter : parameters)
+            digest.tensor(parameter);
+    return digest.finish();
+}
 } // namespace
 
 InvalidatedArtifacts invalidated(const SemanticVersions& before, const SemanticVersions& after) {
@@ -140,7 +210,9 @@ InvalidatedArtifacts invalidated(const SemanticVersions& before, const SemanticV
         before.view != after.view || before.representation != after.representation;
     const auto memory = representations || before.keys != after.keys;
     const auto reads = memory || before.query != after.query;
-    return {representations, memory, reads, reads || before.output != after.output};
+    return {representations, memory, reads,
+            reads || before.output != after.output || !before.output_state || !after.output_state ||
+                before.output_state != after.output_state};
 }
 void require_compatible(ArtifactKind artifact, const SemanticVersions& stored,
                         const SemanticVersions& current) {
@@ -188,6 +260,8 @@ struct AdapterControl::Impl {
     std::size_t steps = 0;
     std::size_t best_step = 0;
     double best_mse = 0;
+    mutable std::optional<OutputIdentity> current_identity;
+    mutable std::optional<OutputIdentity> best_identity;
 
     Impl(AdapterConfig settings, const at::Tensor& parent, const at::Tensor& input,
          const at::Tensor& target, const at::Device& selected_device)
@@ -303,8 +377,10 @@ double AdapterControl::train(const at::Tensor& inputs, const at::Tensor& targets
             impl_->best_parameters = std::move(best);
             impl_->best_mse = score;
             impl_->best_step = impl_->steps + 1;
+            impl_->best_identity.reset();
         }
         ++impl_->steps;
+        impl_->current_identity.reset();
     } catch (...) {
         const auto momentum = impl_->momentum();
         for (std::size_t index = 0; index < previous.size(); ++index) {
@@ -381,6 +457,12 @@ void AdapterControl::restore(const AdapterSnapshot& state) {
 SemanticVersions AdapterControl::versions(bool selected) const {
     auto result = impl_->config.versions;
     result.output += selected ? impl_->best_step : impl_->steps;
+    auto& cached = selected ? impl_->best_identity : impl_->current_identity;
+    if (!cached)
+        cached = output_identity(impl_->config, impl_->base,
+                                 selected ? impl_->best_parameters : impl_->parameters,
+                                 selected && impl_->best_step == 0);
+    result.output_state = cached;
     return result;
 }
 std::size_t AdapterControl::trainable_parameters() const noexcept {
@@ -399,8 +481,8 @@ std::size_t AdapterControl::state_tensor_bytes() const noexcept {
 
 namespace {
 void write_integer(std::string& output, uint64_t value) {
-    for (unsigned int byte = 0; byte < 8; ++byte)
-        output.push_back(static_cast<char>((value >> (8 * byte)) & 0xffU));
+    const auto bytes = integer_bytes(value);
+    output.append(reinterpret_cast<const char*>(bytes.data()), bytes.size());
 }
 void write_string(std::string& output, const std::string& value) {
     write_integer(output, value.size());
@@ -434,6 +516,18 @@ class Reader {
         return std::string(take(count));
     }
     double number() { return std::bit_cast<double>(integer()); }
+    std::optional<OutputIdentity> identity() {
+        const auto present = integer();
+        require(present <= 1, "El indicador de identidad del checkpoint no es válido");
+        if (present == 0)
+            return std::nullopt;
+        OutputIdentity result{};
+        const auto bytes = take(result.size());
+        std::transform(bytes.begin(), bytes.end(), result.begin(), [](char value) {
+            return static_cast<uint8_t>(static_cast<unsigned char>(value));
+        });
+        return result;
+    }
     at::Tensor tensor(std::size_t row_count, std::size_t columns) {
         require(row_count * columns <= (data_.size() - cursor_) / sizeof(double),
                 "Faltan valores de un tensor del checkpoint");
@@ -480,6 +574,10 @@ std::string serialize_adapter(const AdapterSnapshot& state) {
     for (const auto value :
          {versions.view, versions.representation, versions.keys, versions.query, versions.output})
         write_integer(output, value);
+    write_integer(output, versions.output_state.has_value());
+    if (versions.output_state)
+        output.append(reinterpret_cast<const char*>(versions.output_state->data()),
+                      versions.output_state->size());
     write_integer(output, rows(state.validation_inputs));
     write_integer(output, state.steps);
     write_integer(output, state.best_step);
@@ -518,6 +616,7 @@ AdapterSnapshot deserialize_adapter(std::string_view archive) {
     config.max_bytes = input.size();
     config.versions = {input.integer(), input.integer(), input.integer(), input.integer(),
                        input.integer()};
+    config.versions.output_state = input.identity();
     check_config(config);
     const auto validation_rows = input.size();
     check_budget(config, validation_rows, 0);
