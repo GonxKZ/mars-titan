@@ -381,6 +381,8 @@ class CorpusDataset:
                     columns = ["prediction_at", "price_end_index", *VECTORS] + (
                         ["cohort_id"] if self.cohort else []
                     )
+                    if self.temporal:
+                        columns.remove("macro")
                     if "input_availability" in file.schema_arrow.names:
                         columns.append("input_availability")
                         if "macro_available_at" in file.schema_arrow.names:
