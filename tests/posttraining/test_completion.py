@@ -255,3 +255,15 @@ def test_stage_worker_calls_one_backend_and_takes_no_nested_gpu_lease(tmp_path, 
     assert calls == (
         ["lease", "backend", "check", "release"] if stage == "tabular" else ["backend"]
     )
+
+
+@pytest.mark.parametrize("status", [None, "unknown", []])
+def test_predictive_receipt_rejects_unknown_status(tmp_path, status):
+    from mars_titan.posttraining.completion import _receipt
+
+    path = tmp_path / "summary.json"
+    path.write_text(
+        json.dumps(dict(status=status, completed_runs=0, planned_runs=1, final_test_opened=False))
+    )
+    with pytest.raises(ValueError):
+        _receipt(path)
