@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-05T11:50:09.013663Z",
+  "generated_at": "2026-10-05T11:55:33.315617Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -736,9 +736,9 @@
       "status": "running",
       "phase": "train",
       "started_at": null,
-      "updated_at": "2026-10-05T11:50:07Z",
-      "heartbeat_at": "2026-10-05T11:50:08.194985Z",
-      "completed_steps": 178176,
+      "updated_at": "2026-10-05T11:55:29Z",
+      "heartbeat_at": "2026-10-05T11:55:32.587809Z",
+      "completed_steps": 358400,
       "total_steps": 1048576,
       "epoch": null,
       "max_epochs": null,
@@ -756,7 +756,7 @@
         "latency_p95_ms": null,
         "latency_p99_ms": null,
         "vram_peak_mib": null,
-        "ram_peak_mib": 1266.30859375,
+        "ram_peak_mib": 1271.2890625,
         "elapsed_seconds": null,
         "samples_per_second": null
       },
@@ -777,7 +777,7 @@
         "condition": null,
         "parent_model": null,
         "configuration_sha256": "f66207d86c980d8a21de72fcfa20d91846f1155a91fc4abd245fec10f7bc3973",
-        "source_sha256": "ce596ed9b180beace90848509ac8bad9bc038a0a7690f78c18e006a8a6b1b40e",
+        "source_sha256": "a635af3edefe2a33c17f668f3d124a6549b1de9710834137d99e99e7aed30e40",
         "history_axis": "none",
         "progress_time_source": "receipt_timestamp",
         "train_rows": null,
@@ -785,7 +785,7 @@
         "parent": null,
         "error_type": null,
         "ram_peak_scope": "executable",
-        "executable_peak_rss_mib": 1266.30859375,
+        "executable_peak_rss_mib": 1271.2890625,
         "process_lifetime_peak_rss_mib": null
       }
     },
