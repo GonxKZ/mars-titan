@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from datetime import datetime
+from itertools import pairwise
 from pathlib import Path
 
 MAX_BYTES = 32 * 1024**2
@@ -40,20 +41,20 @@ def _unique(pairs):
     return result
 
 
-def _read(path):
+def _read(path, maximum=MAX_BYTES, *, with_hash=False):
     _require(
         not any(part.is_symlink() for part in (path, *path.parents)) and path.is_file(),
         "Falta un archivo regular del recibo",
     )
     with path.open("rb") as source:
-        payload = source.read(MAX_BYTES + 1)
-    _require(0 < len(payload) <= MAX_BYTES, "El recibo está vacío o supera su presupuesto")
+        payload = source.read(maximum + 1)
+    _require(0 < len(payload) <= maximum, "El recibo está vacío o supera su presupuesto")
     try:
         result = json.loads(payload, object_pairs_hook=_unique)
     except (UnicodeError, RecursionError) as error:
         raise ValueError("El recibo no contiene JSON legible") from error
     _require(isinstance(result, dict), "El recibo debe ser un objeto JSON")
-    return result
+    return (result, hashlib.sha256(payload).hexdigest()) if with_hash else result
 
 
 def _digest(value):
@@ -126,6 +127,10 @@ def _identity(value):
         all(item.get("final_test_opened") is False for item in (value, settings, base)),
         "La identidad no acredita la reserva cerrada",
     )
+    _require(
+        type(settings.get("schema_version")) is int and settings["schema_version"] in (1, 2),
+        "La versión de la configuración no está reconocida",
+    )
     variants, seeds = settings.get("variants"), settings.get("seeds")
     _require(
         isinstance(variants, list)
@@ -183,7 +188,90 @@ def _projection(case):
     )
 
 
-def _state(value, identity):
+def _training_completion(case, identity, root):
+    if case["status"] != "completed" or case["stage"] == "audit":
+        return
+    confirmed, planned = case.get("confirmed_transitions", 0), case["transitions"]
+    schema = identity["settings"]["schema_version"]
+    reason = case.get("stopping_reason")
+    if confirmed == planned:
+        _require(
+            reason == "budget_exhausted" if schema == 2 else reason in (None, "budget_exhausted"),
+            "El caso completo no acredita el agotamiento de su presupuesto",
+        )
+        return
+    _require(
+        schema == 2 and case["stage"] in {"main", "auxiliary"} and reason == "early_stop",
+        "El caso completo no acredita sus transiciones o una parada permitida",
+    )
+    native, digest = _read(root / case["output"] / "run.json", 8 * 1024**2, with_hash=True)
+    _require(digest == case["receipt_sha256"], "El recibo de parada temprana no conserva su huella")
+    selection = identity["base_configuration"].get("selection")
+    _require(
+        isinstance(selection, dict) and selection.get("early_stopping") is True,
+        "La configuración no admite parada temprana",
+    )
+    minimum = _integer(selection.get("min_transitions"))
+    patience = _integer(selection.get("patience"))
+    _require(
+        minimum < confirmed < planned
+        and patience > 0
+        and _integer(case.get("optimizer_steps")) > 0,
+        "La parada no acredita transiciones mínimas y actualizaciones",
+    )
+    _require(
+        type(native.get("schema_version")) is int
+        and native["schema_version"] == 3
+        and native.get("kind") == "native_ppo"
+        and native.get("status") == "completed"
+        and type(native.get("seed")) is int
+        and native["seed"] == case["seed"]
+        and native.get("agent_variant") == case["variant"]
+        and native.get("device") == "cuda:0"
+        and native.get("diagnostic") is False
+        and native.get("parent_frozen") is True
+        and native.get("final_test_opened") is False
+        and native.get("identity_sha256") == _hash(case.get("training_identity_sha256"))
+        and _integer(native.get("transitions")) == confirmed
+        and _integer(native.get("total_steps")) == planned
+        and _integer(native.get("optimizer_steps")) == case["optimizer_steps"]
+        and native.get("stopping_reason") == "early_stop"
+        and native.get("selection") == dict(selection, policy="greedy_argmax"),
+        "El recibo no acredita identidad, reserva y contadores de la parada",
+    )
+    history = native.get("evaluation_cursors")
+    _require(
+        isinstance(history, list) and 2 <= len(history) <= 4096,
+        "Faltan las evaluaciones completas de la parada",
+    )
+    cursors = [_integer(cursor, maximum=confirmed) for cursor in history]
+    interval = _integer(identity["settings"].get("evaluation_transitions"))
+    environments = _integer(identity["base_configuration"].get("environments"))
+    _require(
+        interval > 0
+        and environments > 0
+        and cursors[0] == 0
+        and cursors[-1] == confirmed
+        and all(
+            interval <= current - previous < interval + environments
+            for previous, current in pairwise(cursors)
+        )
+        and _integer(native.get("evaluations")) == len(cursors),
+        "Los cursores no conservan la programación de validaciones",
+    )
+    best = native.get("best")
+    _require(isinstance(best, dict), "Falta el cursor seleccionado")
+    best_cursor = _integer(best.get("transitions"), maximum=confirmed)
+    stale = _integer(native.get("stale_evaluations"))
+    _require(
+        best_cursor in cursors
+        and stale >= patience
+        and stale == sum(cursor > max(minimum, best_cursor) for cursor in cursors),
+        "La parada no acredita su paciencia con evaluaciones completas",
+    )
+
+
+def _state(value, identity, root):
     _schema(value)
     variants, seeds = _identity(identity)
     _require(
@@ -249,7 +337,12 @@ def _state(value, identity):
         )
         expected = {(variant, seed) for variant in allowed for seed in seeds}
         actual = {(row["variant"], row["seed"]) for row in rows if row["stage"] == stage}
-        _require(actual == expected, "La etapa no conserva todos sus casos únicos")
+        _require(
+            actual == expected if status == "completed" else actual <= expected,
+            "La etapa no conserva sus casos declarados",
+        )
+    for case in cases:
+        _training_completion(case, identity, root)
     if status == "completed":
         required = {"pilot", "main", "audit"} | ({"auxiliary"} if enabled else set())
         _require(
@@ -329,6 +422,7 @@ def _registry(value, state, rows):
         _status(row["status"])
         _require(
             type(row["seed"]) is int
+            and _integer(row["planned_transitions"]) == expected["planned_transitions"]
             and all(
                 row[field] == expected[field] for field in ROW_FIELDS - {"status", "transitions"}
             )
@@ -352,7 +446,7 @@ def read_adaptive_receipt(path, expected=None):
             break
     else:
         raise BlockingIOError("El diario cambió durante las lecturas acotadas")
-    rows = _state(state, identity)
+    rows = _state(state, identity, path.parent)
     complete_report = _run(report, state, identity)
     complete_registry = _registry(registry, state, rows)
     if not complete_report or not complete_registry:

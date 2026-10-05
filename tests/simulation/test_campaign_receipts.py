@@ -93,7 +93,9 @@ def campaign(tmp_path):
         schema_version=1,
         kind="adaptive_campaign",
         final_test_opened=False,
-        settings=dict(variants=["ppo", "ppo_hmm"], seeds=[42], final_test_opened=False),
+        settings=dict(
+            schema_version=1, variants=["ppo", "ppo_hmm"], seeds=[42], final_test_opened=False
+        ),
         base_configuration=dict(final_test_opened=False),
     )
     state = dict(
@@ -454,3 +456,147 @@ def test_publication_does_not_assume_a_monotonic_wall_clock(campaign):
     write(root / "campaign.json", dict(payload=state, sha256=digest(state)))
     with pytest.raises(BlockingIOError):
         reader.read_adaptive_receipt(root / "registry.json")
+
+
+def test_nonterminal_plan_can_be_partial_after_configuration_failure(campaign):
+    root, identity, state = campaign
+    state["cases"][1] = case("pilot", "ppo_hmm", completed=True)
+    state["cases"].append(case("main", "ppo"))
+    state.update(status="blocked", phase="main", choice={"transitions": 128}, active_case=None)
+    result = reader.read_adaptive_receipt(publish(root, identity, state))
+    assert (result["completed_runs"], result["planned_runs"], result["status"]) == (2, 3, "blocked")
+    state.update(status="completed", phase="completed")
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(publish(root, identity, state))
+
+
+@pytest.mark.parametrize("stage", ["pilot", "main"])
+@pytest.mark.parametrize("confirmed", [0, 64])
+def test_completed_budget_requires_confirmed_transitions(campaign, stage, confirmed):
+    root, identity, state = campaign
+    finish(identity, state)
+    target = next(row for row in state["cases"] if row["stage"] == stage)
+    target["confirmed_transitions"] = confirmed
+    with pytest.raises(ValueError, match="transiciones|presupuesto"):
+        reader.read_adaptive_receipt(publish(root, identity, state))
+
+
+def early_case(campaign, stage="main"):
+    root, identity, state = campaign
+    finish(identity, state)
+    identity["settings"].update(schema_version=2, evaluation_transitions=16)
+    identity["base_configuration"].update(
+        environments=4,
+        selection=dict(
+            early_stopping=True,
+            min_transitions=16,
+            patience=2,
+            min_delta=0.0001,
+            metric="ruin_count_then_mean_log_growth",
+        ),
+    )
+    if stage == "auxiliary":
+        state["gate"] = {"enabled": True}
+        for variant in ("ppo_recent_aux", "ppo_replay_aux"):
+            state["cases"].extend(
+                (case("auxiliary", variant, completed=True), case("audit", variant, completed=True))
+            )
+    for row in state["cases"]:
+        if row["stage"] != "audit":
+            row["stopping_reason"] = "budget_exhausted"
+    target = next(row for row in state["cases"] if row["stage"] == stage)
+    target.update(
+        confirmed_transitions=64,
+        stopping_reason="early_stop",
+        optimizer_steps=8,
+        training_identity_sha256="e" * 64,
+    )
+    native = dict(
+        schema_version=3,
+        kind="native_ppo",
+        status="completed",
+        seed=42,
+        agent_variant=target["variant"],
+        device="cuda:0",
+        diagnostic=False,
+        final_test_opened=False,
+        parent_frozen=True,
+        identity_sha256="e" * 64,
+        transitions=64,
+        total_steps=128,
+        stopping_reason="early_stop",
+        optimizer_steps=8,
+        selection=dict(identity["base_configuration"]["selection"], policy="greedy_argmax"),
+        evaluation_cursors=[0, 16, 32, 48, 64],
+        evaluations=5,
+        stale_evaluations=3,
+        best=dict(transitions=16),
+    )
+    path = root / target["output"] / "run.json"
+    path.parent.mkdir(parents=True)
+    write(path, native)
+    target["receipt_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    state["identity_sha256"] = digest(identity)
+    publish(root, identity, state)
+    return target, native, path
+
+
+@pytest.mark.parametrize("stage", ["main", "auxiliary"])
+def test_early_stop_needs_a_hashed_native_receipt_and_permitted_stage(campaign, stage):
+    root, _, _ = campaign
+    early_case(campaign, stage)
+    result = reader.read_adaptive_receipt(root / "registry.json")
+    assert result["status"] == "completed"
+    assert result["completed_runs"] == result["planned_runs"] == (6 if stage == "main" else 10)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "schema",
+        "missing_reason",
+        "missing_receipt",
+        "hash",
+        "patience",
+        "transitions",
+        "reservation",
+        "optimizer",
+        "pilot",
+    ],
+)
+def test_unverified_early_stop_cannot_complete_the_campaign(campaign, change):
+    root, identity, state = campaign
+    target, native, path = early_case(campaign, "pilot" if change == "pilot" else "main")
+    if change == "schema":
+        identity["settings"]["schema_version"] = 1
+    elif change == "missing_reason":
+        target.pop("stopping_reason")
+    elif change == "patience":
+        native["stale_evaluations"] = 1
+    elif change == "transitions":
+        native["transitions"] = 48
+    elif change == "reservation":
+        native["final_test_opened"] = True
+    elif change == "optimizer":
+        target["optimizer_steps"] = native["optimizer_steps"] = 0
+    elif change == "hash":
+        native["unexpected"] = "changed"
+    write(path, native)
+    if change != "hash":
+        target["receipt_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    if change == "missing_receipt":
+        path.unlink()
+    state["identity_sha256"] = digest(identity)
+    publish(root, identity, state)
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(root / "registry.json")
+
+
+def test_registry_transition_budget_must_remain_an_integer(campaign):
+    root, _, _ = campaign
+    path = root / "registry.json"
+    value = json.loads(path.read_text())
+    value["runs"][0]["planned_transitions"] = 128.0
+    write(path, value)
+    with pytest.raises(ValueError):
+        reader.read_adaptive_receipt(path)
