@@ -351,3 +351,4 @@ elseif(MARS_TITAN_BUILD_FUZZER)
 endif()
 
 include(cmake/MemoryStress.cmake)
+include(cmake/LearningControls.cmake)
