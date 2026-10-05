@@ -1,0 +1,203 @@
+{
+  "measured_at_utc": "2026-10-05T17:33:14.481396+00:00",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "python": "3.12.14",
+  "versions": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "pyarrow": "25.0.1"
+  },
+  "source_sha256": {
+    "evaluation/comparison_sources.py": "4f21bdd64d2580f627c9370b61ffaddc0cc245464fb8c25317a546baf55a4f6c",
+    "evaluation/prediction_statistics.py": "83fc2c05449f4bb9d3deefcf9fcf2c72f8b31d0f6f00da6358601714f256f678",
+    "evaluation/campaign_comparison.py": "7407c64668b72c0949ef7c64c19c79cd30b3e81d140def456407e39c3c7383cd"
+  },
+  "measurements": [
+    {
+      "cache_mib": 0,
+      "repetition": 0,
+      "warmup": true,
+      "process_wall_seconds": 45.65798887499841,
+      "user_seconds": 44.12,
+      "system_seconds": 1.5,
+      "peak_rss_bytes": 375033856,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 361062400,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 0,
+          "retained_bytes": 0,
+          "hits": 0,
+          "misses": 1056
+        },
+        "elapsed_before_receipt_seconds": 44.62169089799863
+      }
+    },
+    {
+      "cache_mib": 8,
+      "repetition": 0,
+      "warmup": true,
+      "process_wall_seconds": 37.67707989500195,
+      "user_seconds": 36.18,
+      "system_seconds": 1.47,
+      "peak_rss_bytes": 378421248,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 365539328,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 8388608,
+          "retained_bytes": 4838928,
+          "hits": 1008,
+          "misses": 48
+        },
+        "elapsed_before_receipt_seconds": 36.81498238501081
+      }
+    },
+    {
+      "cache_mib": 8,
+      "repetition": 1,
+      "warmup": false,
+      "process_wall_seconds": 37.58883312800026,
+      "user_seconds": 36.11,
+      "system_seconds": 1.45,
+      "peak_rss_bytes": 379523072,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 365617152,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 8388608,
+          "retained_bytes": 4838928,
+          "hits": 1008,
+          "misses": 48
+        },
+        "elapsed_before_receipt_seconds": 36.73691595099808
+      }
+    },
+    {
+      "cache_mib": 0,
+      "repetition": 1,
+      "warmup": false,
+      "process_wall_seconds": 46.965005885009305,
+      "user_seconds": 45.43,
+      "system_seconds": 1.49,
+      "peak_rss_bytes": 376553472,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 360361984,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 0,
+          "retained_bytes": 0,
+          "hits": 0,
+          "misses": 1056
+        },
+        "elapsed_before_receipt_seconds": 46.10620886700053
+      }
+    },
+    {
+      "cache_mib": 0,
+      "repetition": 2,
+      "warmup": false,
+      "process_wall_seconds": 45.640403099008836,
+      "user_seconds": 44.22,
+      "system_seconds": 1.39,
+      "peak_rss_bytes": 374775808,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 360828928,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 0,
+          "retained_bytes": 0,
+          "hits": 0,
+          "misses": 1056
+        },
+        "elapsed_before_receipt_seconds": 44.78259967600752
+      }
+    },
+    {
+      "cache_mib": 8,
+      "repetition": 2,
+      "warmup": false,
+      "process_wall_seconds": 37.45463533900329,
+      "user_seconds": 35.98,
+      "system_seconds": 1.45,
+      "peak_rss_bytes": 379617280,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 365727744,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 8388608,
+          "retained_bytes": 4838928,
+          "hits": 1008,
+          "misses": 48
+        },
+        "elapsed_before_receipt_seconds": 36.562068913000985
+      }
+    },
+    {
+      "cache_mib": 8,
+      "repetition": 3,
+      "warmup": false,
+      "process_wall_seconds": 37.20896181600983,
+      "user_seconds": 35.73,
+      "system_seconds": 1.45,
+      "peak_rss_bytes": 379121664,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 366243840,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 8388608,
+          "retained_bytes": 4838928,
+          "hits": 1008,
+          "misses": 48
+        },
+        "elapsed_before_receipt_seconds": 36.36819601900061
+      }
+    },
+    {
+      "cache_mib": 0,
+      "repetition": 3,
+      "warmup": false,
+      "process_wall_seconds": 47.26517801100272,
+      "user_seconds": 45.75,
+      "system_seconds": 1.48,
+      "peak_rss_bytes": 375758848,
+      "resources": {
+        "hashed_prediction_bytes": 947946963,
+        "process_lifetime_peak_rss_bytes": 360632320,
+        "gpu_used": false,
+        "initial_policy_cache": {
+          "limit_bytes": 0,
+          "retained_bytes": 0,
+          "hits": 0,
+          "misses": 1056
+        },
+        "elapsed_before_receipt_seconds": 46.395303634009906
+      }
+    }
+  ],
+  "median_seconds": {
+    "0": 46.965005885009305,
+    "8": 37.45463533900329
+  },
+  "speedup": 1.2539170508517117,
+  "scientific_outputs_exact": true,
+  "thread_limits": {
+    "OPENBLAS_NUM_THREADS": 1,
+    "OMP_NUM_THREADS": 1
+  },
+  "gpu_used": false,
+  "energy_joules": null,
+  "monetary_cost": null,
+  "limits": [
+    "Procesos completos, con cach\u00e9s de sistema ya utilizadas y orden alternado.",
+    "No se detuvieron aplicaciones ajenas. No se midieron energ\u00eda, transferencias f\u00edsicas de disco ni latencia de servicio."
+  ]
+}

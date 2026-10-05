@@ -1,0 +1,347 @@
+{
+  "schema_version": 2,
+  "verified_at": "2026-10-05T17:36:21.014262+00:00",
+  "previous_verification_sha256": "644ccf5203f8b3a1d93fb053a0b6dca31f1101693906c04eecea88e5bea94162",
+  "language_standard": "C++20",
+  "compiler": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+  "standard_library": "libstdc++",
+  "architecture": "x86_64",
+  "arrow_version": "25.0.1",
+  "native_source_sha256": "81b4ab41bf0059a1628235f47dca28730f51ed7646576e040a55900a6ed51a2a",
+  "native_build_sha256": "ba2f9f9c36a2d84e7aec1b07a024e479f1f79ee85a4e7eaeded6e44cc6524df5",
+  "binary_sha256": "f69c45da98d3b2946c77ad4ddc0529a4d7437ec94a49d2575986f83c71c8e445",
+  "files": {
+    "native/include/mars_titan/financial_controls.hpp": "01ef6ca2caa1b88a9c3986aa15f83293920fe4b5bc3deefa42c9f87460ab499d",
+    "native/src/financial_controls.cpp": "28273f2ec316bd2ec80f7e64005845003efc04e4860817f8200adedfab1aabde",
+    "native/src/financial_controls_main.cpp": "c33e5857de90710a33165a09d0acd2be957886354a1a9653e85cc4786c85a5f6",
+    "native/tests/financial_controls_tests.cpp": "c3b24f5306c1f767cfc2bb5aa5c2fb962be81ae75cca124def9a1a7ff0c837af",
+    "native/cmake/FinancialControls.cmake": "97ef70390d0bd1ba8f254ba00d859d080129c41a7bef52fda0aaf6b01fcac85e",
+    "native/CMakeLists.txt": "c93adc21f764d17bcbfe6a50c2f026301fd350e22a9728337cbad25198c77a4d",
+    "native/CMakePresets.json": "09fda08bd94a1f1bdff36c8ba1524a29db86390977050ef2160e9c92fa0a1561",
+    "native/cmake/Coverage.cmake": "4c4a1fc75771cee9a304538843285daed7a8b4a857b345d822ea43524b17030e"
+  },
+  "identity_hash_scope": "raw_file_bytes",
+  "campaign_file_sha256": "0cd0ce97bbcd992374a795ca3e23cd65ceb0d68b7ed770986e383ece520ae30c",
+  "freeze_file_sha256": "c46e95165cad050272f6406b1e4abc4094ea246ed62631e8c595bf447025e44f",
+  "identity_file_sha256": "24490c34e4c831082e1eee79199d943f68e66bb68ab66b7f12b1e4029557857f",
+  "campaign_canonical_identity_sha256": "4ccc9e236c8bdbfbd053dd9c93b707655941a8e2285faf5e2ec18e4f58781b97",
+  "selected_cases": 27,
+  "completed_audits": 27,
+  "audit_worlds": 512,
+  "review": {
+    "corrected_files": [
+      "native/src/financial_controls.cpp",
+      "native/tests/financial_controls_tests.cpp"
+    ],
+    "fixed_behavior": [
+      "El cat\u00e1logo index.json se resuelve desde el directorio actual y permite una salida externa.",
+      "Una salida relativa nueva dentro de la campa\u00f1a o del cat\u00e1logo se rechaza antes de crearla."
+    ],
+    "red_green": [
+      {
+        "test": "catalog_filename_uses_the_current_directory",
+        "previous_ctest_exit": 8,
+        "previous_message": "La salida debe estar separada de la campa\u00f1a y del cat\u00e1logo",
+        "final": "passed"
+      },
+      {
+        "test": "relative_output_cannot_write_inside_the_catalog",
+        "previous_ctest_exit": 8,
+        "previous_message": "Se acept\u00f3 una entrada inv\u00e1lida",
+        "final": "passed"
+      }
+    ],
+    "identity_limit": "El C++ verifica las tres huellas brutas autorizadas. La coherencia can\u00f3nica del conjunto revisado se confirm\u00f3 aqu\u00ed con la serializaci\u00f3n Python del productor."
+  },
+  "tests": {
+    "release": {
+      "ctest_passed": 3,
+      "failed": 0
+    },
+    "static_analysis": {
+      "ctest_passed": 3,
+      "failed": 0,
+      "clang_tidy": true,
+      "clang_static_analyzer": true,
+      "lifetime_safety": "experimental"
+    },
+    "asan_ubsan": {
+      "ctest_passed": 3,
+      "failed": 0
+    },
+    "coverage": {
+      "checks_passed": 4,
+      "failed": 0
+    },
+    "cli_relative_catalog_sigint": {
+      "returncode": 2,
+      "status": "interrupted",
+      "completed_worlds": 22,
+      "completed_episodes": 396,
+      "sha256": "14fc2f73a65534851e042d1e7ed83dab6dea4764ca81131ad386cd9171fa0b4c"
+    }
+  },
+  "execution": {
+    "status": "completed",
+    "episodes": 9216,
+    "invalid_episodes": 0,
+    "financial_transitions": 2350080,
+    "controlled_transitions_after_warmup": 1760256,
+    "warmup_transitions": 589824,
+    "market_parquet_bytes": 86507016,
+    "market_rows": 2097152,
+    "workers": 1,
+    "repetitions": 5,
+    "warmups": 1,
+    "gpu": false,
+    "training": false,
+    "decision_start": 64,
+    "all_samples_exact_reference_parity": true,
+    "wall_seconds": {
+      "minimum": 3.0056353569962084,
+      "median": 3.0669808680104325,
+      "mean": 3.1223929165978914,
+      "maximum": 3.439063591999002,
+      "sample_stdev": 0.18028933414859066
+    },
+    "max_rss_bytes": 59056128,
+    "energy": null,
+    "cost": null
+  },
+  "coverage": {
+    "tools": {
+      "coverage": "LLVM 21 LCOV export",
+      "complexity": "lizard 1.17.31"
+    },
+    "coverage_convention": "LF/LH y BRF/BRH de LLVM LCOV, solo fuentes y cabeceras propias.",
+    "crap_convention": "CCN\u00b2 \u00d7 (1 \u2212 cobertura de l\u00edneas de la funci\u00f3n)\u00b3 + CCN.",
+    "files": [
+      {
+        "path": "native/src/financial_controls.cpp",
+        "branches": {
+          "count": 256,
+          "covered": 159,
+          "notcovered": 97,
+          "percent": 62.109375
+        },
+        "functions": {
+          "count": 14,
+          "covered": 13,
+          "percent": 92.85714285714286
+        },
+        "instantiations": {
+          "count": 14,
+          "covered": 13,
+          "percent": 92.85714285714286
+        },
+        "lines": {
+          "count": 290,
+          "covered": 241,
+          "percent": 83.10344827586206
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 221,
+          "covered": 194,
+          "notcovered": 27,
+          "percent": 87.78280542986425
+        }
+      },
+      {
+        "path": "native/src/financial_controls_main.cpp",
+        "branches": {
+          "count": 30,
+          "covered": 22,
+          "notcovered": 8,
+          "percent": 73.33333333333333
+        },
+        "functions": {
+          "count": 3,
+          "covered": 1,
+          "percent": 33.33333333333333
+        },
+        "instantiations": {
+          "count": 3,
+          "covered": 1,
+          "percent": 33.33333333333333
+        },
+        "lines": {
+          "count": 51,
+          "covered": 43,
+          "percent": 84.31372549019608
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 50,
+          "covered": 44,
+          "notcovered": 6,
+          "percent": 88
+        }
+      }
+    ],
+    "functions": [
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::authorize( const FinancialControlsOptions & options)",
+        "start_line": 86,
+        "end_line": 213,
+        "cyclomatic_complexity": 64,
+        "executable_lines": 128,
+        "covered_lines": 128,
+        "coverage_fraction": 1.0,
+        "crap": 64.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::run_financial_controls( const FinancialControlsOptions & options , const std :: function<bool()> & stop_requested)",
+        "start_line": 242,
+        "end_line": 333,
+        "cyclomatic_complexity": 19,
+        "executable_lines": 91,
+        "covered_lines": 48,
+        "coverage_fraction": 0.5274725274725275,
+        "crap": 57.08801957612488
+      },
+      {
+        "path": "native/src/financial_controls_main.cpp",
+        "function": "main( int argc , char ** argv)",
+        "start_line": 19,
+        "end_line": 67,
+        "cyclomatic_complexity": 16,
+        "executable_lines": 49,
+        "covered_lines": 43,
+        "coverage_fraction": 0.8775510204081632,
+        "crap": 16.47000824486396
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::metrics_json( const FinancialMetrics & metrics)",
+        "start_line": 215,
+        "end_line": 220,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 6,
+        "covered_lines": 0,
+        "coverage_fraction": 0.0,
+        "crap": 12.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::contains( const std :: filesystem :: path & parent , const std :: filesystem :: path & child)",
+        "start_line": 46,
+        "end_line": 58,
+        "cyclomatic_complexity": 6,
+        "executable_lines": 13,
+        "covered_lines": 13,
+        "coverage_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::valid_digest( std :: string_view value)",
+        "start_line": 39,
+        "end_line": 44,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 6,
+        "covered_lines": 6,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::evaluate_financial_control( std :: shared_ptr<const MarketTape> tape , ReferencePolicy policy , Parameters parameters , std :: size_t first_decision)",
+        "start_line": 229,
+        "end_line": 240,
+        "cyclomatic_complexity": 5,
+        "executable_lines": 10,
+        "covered_lines": 10,
+        "coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::relative_path( const std :: filesystem :: path & root , const Json & value)",
+        "start_line": 60,
+        "end_line": 70,
+        "cyclomatic_complexity": 4,
+        "executable_lines": 11,
+        "covered_lines": 11,
+        "coverage_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::warmed_reference_action( ReferencePolicy policy , std :: size_t cursor , std :: size_t first_decision)",
+        "start_line": 223,
+        "end_line": 227,
+        "cyclomatic_complexity": 3,
+        "executable_lines": 4,
+        "covered_lines": 4,
+        "coverage_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::require( bool condition , std :: string_view message)",
+        "start_line": 33,
+        "end_line": 37,
+        "cyclomatic_complexity": 2,
+        "executable_lines": 5,
+        "covered_lines": 5,
+        "coverage_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/financial_controls_main.cpp",
+        "function": "stop( int)",
+        "start_line": 16,
+        "end_line": 16,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 1,
+        "covered_lines": 0,
+        "coverage_fraction": 0.0,
+        "crap": 2.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::document( const std :: filesystem :: path & path , std :: size_t maximum = journal_bytes)",
+        "start_line": 72,
+        "end_line": 74,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "path": "native/src/financial_controls.cpp",
+        "function": "mars_titan::simulation::closed_test( const Json & value)",
+        "start_line": 76,
+        "end_line": 78,
+        "cyclomatic_complexity": 1,
+        "executable_lines": 3,
+        "covered_lines": 3,
+        "coverage_fraction": 1.0,
+        "crap": 1.0
+      }
+    ],
+    "limits": [
+      "CRAP une las l\u00edneas DA ejecutadas de las instancias en el intervalo de Lizard.",
+      "Las lambdas pueden compartir l\u00edneas con la funci\u00f3n que las contiene.",
+      "Una funci\u00f3n sin l\u00edneas instrumentadas conserva cobertura cero en este diagn\u00f3stico.",
+      "CRAP combina complejidad y recorridos observados, no demuestra ausencia de errores.",
+      "La cobertura se obtuvo con las pruebas y las comprobaciones de CLI. Las seis evaluaciones completas se ejecutaron en Release sin instrumentaci\u00f3n.",
+      "LLVM informa de cuatro entradas CashMovements con hash cero en el n\u00facleo anterior. No corresponden a las dos fuentes nuevas y no se presenta cobertura global.",
+      "ASan/UBSan instrumentan c\u00f3digo propio. Arrow y OpenSSL est\u00e1n precompilados."
+    ]
+  }
+}
