@@ -1,13 +1,17 @@
 """La vista se resuelve después del contexto macro temporal y conserva la cohorte."""
 
+import csv
 import importlib
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
 
+from mars_titan.data import company_factors
+from mars_titan.data.storage import sha256
 from mars_titan.training.corpus_inputs import CorpusDataset
 from tests.data.test_information_views import api, specification
 from tests.training.test_corpus_inputs import corpus
@@ -111,6 +115,10 @@ def test_corpus_factory_tracks_macro_formulas_accounting_ratios_and_price_normal
         context_sessions=2,
         news_lookback_sessions=5,
     )
+    meta["macro_catalog_sha256"] = sha256(Path("data/catalogs/macro-indicators.csv"))
+    meta["representation"]["representation_code"]["company_factors.py"] = sha256(
+        Path(company_factors.__file__)
+    )
     path.write_text(json.dumps(meta))
     source = CorpusDataset(path)
     module = importlib.import_module("mars_titan.training.information_inputs")
@@ -134,6 +142,76 @@ def test_corpus_factory_tracks_macro_formulas_accounting_ratios_and_price_normal
     )
     assert denominator["block"] is None
     assert denominator["name"] in full.manifest["allowed_variables"]
+
+
+def test_corpus_factory_rejects_changed_dependencies_for_the_same_materialized_rows(tmp_path):
+    from mars_titan.training.information_inputs import corpus_view
+    from scripts.example_information_views import control
+
+    manifest = control(tmp_path / "control", 1, 8)
+    source = CorpusDataset(manifest)
+    original = Path("data/catalogs/macro-indicators.csv")
+    with original.open() as stream:
+        rows = list(csv.DictReader(stream))
+    for row in rows:
+        if row["id"] == "us_cpi_yoy":
+            row.update(kind="raw", formula="", input_ids="")
+    changed = tmp_path / "changed.csv"
+    with changed.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    assert corpus_view(source, macro_catalog=original).without(variables=["macro/us_cpi"])
+    with pytest.raises(ValueError, match="catálogo|procedencia"):
+        corpus_view(source, macro_catalog=changed)
+
+
+def test_corpus_factory_requires_declared_catalog_provenance(tmp_path):
+    from mars_titan.training.information_inputs import corpus_view
+    from scripts.example_information_views import control
+
+    manifest = control(tmp_path / "control", 1, 8)
+    meta = json.loads(manifest.read_text())
+    meta.pop("macro_catalog_sha256", None)
+    manifest.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="catálogo|procedencia"):
+        corpus_view(CorpusDataset(manifest), macro_catalog="data/catalogs/macro-indicators.csv")
+
+
+def test_corpus_factory_rejects_accounting_dependencies_from_another_producer(tmp_path):
+    from mars_titan.training.information_inputs import corpus_view
+    from scripts.example_information_views import control
+
+    manifest = control(tmp_path / "control", 1, 8)
+    meta = json.loads(manifest.read_text())
+    meta["representation"]["fundamental_concepts"][1] = "company:current_ratio:ratio"
+    meta["representation"]["representation_code"]["company_factors.py"] = "0" * 64
+    manifest.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="ratio|contable|procedencia"):
+        corpus_view(CorpusDataset(manifest), macro_catalog="data/catalogs/macro-indicators.csv")
+
+
+def test_temporal_corpus_binds_catalog_to_the_verified_admission(request, tmp_path):
+    from mars_titan.training.information_inputs import corpus_view
+
+    files = request.getfixturevalue("inputs")
+    parent = json.loads(files[0].read_text())
+    parent["representation"] = dict(
+        fundamental_concepts=["us-gaap:Assets:USD"],
+        macro_indicators=["us_cpi", "us_unemployment"],
+        encoders={"kind": "synthetic_control"},
+        representation_code={"control": "f" * 64},
+        text_aggregation="mean",
+        context_sessions=2,
+        news_lookback_sessions=5,
+    )
+    files[0].write_text(json.dumps(parent))
+    prepare(files, tmp_path / "views")
+    source = CorpusDataset(tmp_path / "views/fold-000/manifest.json")
+    verified_catalog = tmp_path / "catalog/catalog.csv"
+    assert corpus_view(source, macro_catalog=verified_catalog)
+    with pytest.raises(ValueError, match="catálogo|procedencia"):
+        corpus_view(source, macro_catalog="data/catalogs/macro-indicators.csv")
 
 
 def test_corpus_factory_does_not_guess_an_unidentified_representation(tmp_path):

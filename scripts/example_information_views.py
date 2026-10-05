@@ -87,6 +87,9 @@ def control(output, assets, rows):
             cohort_complete=False,
             counts=dict(train=assets * rows, validation=0),
             historical_evidence=False,
+            macro_catalog_sha256=sha256(
+                Path(__file__).parents[1] / "data/catalogs/macro-indicators.csv"
+            ),
             representation=dict(
                 fundamental_concepts=[
                     "us-gaap:AssetsCurrent:USD",

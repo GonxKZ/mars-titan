@@ -1,0 +1,78 @@
+{
+  "checked_at": "2026-10-05T10:26:02.416900+00:00",
+  "source_sha256": "40550bb2a93df56c3f1b5071444437f9e84201da76403f6426f4b1f8c64857f3",
+  "related_cpu_tests": 88,
+  "coverage_tests": 33,
+  "coverage_version": "7.16.2",
+  "radon_version": "6.0.1",
+  "coverage": {
+    "covered_lines": 77,
+    "num_statements": 83,
+    "percent_covered": 89.91596638655462,
+    "percent_covered_display": "90",
+    "missing_lines": 6,
+    "excluded_lines": 0,
+    "percent_statements_covered": 92.7710843373494,
+    "percent_statements_covered_display": "93",
+    "num_branches": 36,
+    "num_partial_branches": 6,
+    "covered_branches": 30,
+    "missing_branches": 6,
+    "percent_branches_covered": 83.33333333333333,
+    "percent_branches_covered_display": "83"
+  },
+  "functions": [
+    {
+      "name": "_node",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "_numeric_nodes",
+      "complexity": 11,
+      "statement_coverage": 1.0,
+      "crap": 11.0
+    },
+    {
+      "name": "corpus_view",
+      "complexity": 32,
+      "statement_coverage": 0.8421052631578947,
+      "crap": 36.030908295669924
+    },
+    {
+      "name": "__init__",
+      "complexity": 2,
+      "statement_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "name": "batches",
+      "complexity": 7,
+      "statement_coverage": 1.0,
+      "crap": 7.0
+    }
+  ],
+  "mutations": [
+    {
+      "mutation": "accept_wrong_catalog",
+      "test": "test_corpus_factory_rejects_changed_dependencies_for_the_same_materialized_rows",
+      "detected": true
+    },
+    {
+      "mutation": "accept_wrong_accounting_producer",
+      "test": "test_corpus_factory_rejects_accounting_dependencies_from_another_producer",
+      "detected": true
+    }
+  ],
+  "regressions": [
+    "same_names_changed_macro_dependencies",
+    "missing_catalog_provenance",
+    "catalog_not_matching_temporal_admission",
+    "different_accounting_producer"
+  ],
+  "limitations": [
+    "Control técnico de contratos, sin entrenamiento ni calidad financiera.",
+    "La procedencia es una declaración del productor ligada a la identidad del corpus. No se acredita retrospectivamente añadiendo campos."
+  ]
+}

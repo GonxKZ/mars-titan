@@ -10,6 +10,10 @@ El manifiesto identifica la cohorte de origen, representación, dimensiones, var
 
 `corpus_view(dataset, macro_catalog=...)` deriva ese contrato de la representación existente. Reutiliza `FACTOR_DEFINITIONS` para ratios contables y el catálogo macro con sus fórmulas y retardos. Incluye las dependencias que no tienen una columna propia en el tensor. Por ejemplo, el denominador de un ratio sigue siendo información utilizada aunque no aparezca como característica separada.
 
+El catálogo se contrasta con `catalog_sha256` de la admisión del panel temporal efectivo. También se verifica la huella de ese recibo y su vínculo con el panel. En un corpus sin vista temporal, el productor debe haber registrado `macro_catalog_sha256` en el manifiesto al preparar sus datos. Si falta esa procedencia, la fábrica rechaza la vista. Añadir después una declaración a datos antiguos no acredita su origen. Los controles sintéticos registran expresamente su catálogo y no se presentan como materializaciones históricas.
+
+Cuando existen ratios empresariales, `representation_code["company_factors.py"]` debe coincidir con la implementación de la que se obtienen sus dependencias. Así, un catálogo actualizado o una fórmula contable distinta no cambian silenciosamente qué entradas se retiran de vectores ya calculados.
+
 Los precios `open`, `high` y `low` normalizados dependen del primer `close` de la ventana. Los gráficos dependen del prefijo de precios. Retirar `prices/close` también retira esas rutas. Retirar `macro/us_cpi` elimina las variables derivadas que dependen de ella, incluidas sus máscaras y edades. Los nombres y las posiciones proceden de los manifiestos y del catálogo. No se deducen por la dimensión de un vector.
 
 `view.without(sources=..., variables=...)` calcula la retirada transitiva y crea otra identidad. La vista completa devuelve valores exactamente iguales a los del lector original, en buffers separados. La vista reducida conserva los cinco bloques que requieren las referencias existentes. Esta implementación no reduce sus dimensiones ni promete ahorro de lectura, codificación o inferencia. Retirar físicamente columnas sería otra transformación que necesitaría su propia comprobación.
@@ -46,6 +50,10 @@ Los seis consumidores ejecutan una suma de control de las señales retiradas, qu
 ## Pruebas y medidas
 
 El 5 de octubre de 2026 pasaron 117 pruebas CPU relacionadas con vistas, documentos, cachés, materialización y lectores de corpus. La integración comprueba la sustitución macro efectiva en entrenamiento, validación, calibración y evaluación. Las pruebas cubren conservación de filas y etiquetas, recuperación, perturbaciones de entradas retiradas, dependencias indirectas y artefactos corruptos o incompatibles, incluida una corrupción antes de publicar el índice.
+
+La revisión posterior reprodujo y corrigió la aceptación de un catálogo distinto con los mismos identificadores. Las regresiones mantienen iguales los datos mientras cambian las dependencias, comprueban la vinculación con la admisión temporal y rechazan procedencia ausente o una implementación contable incompatible. No se modificaron los datos ni los manifiestos de las campañas existentes.
+
+Después de esa corrección pasaron 88 pruebas relacionadas y dos mutaciones adicionales detectaron la retirada de las comprobaciones de procedencia macro y contable. La [evidencia](../../reports/resources/information-view-provenance-20261005.json) registra 77/83 sentencias y 30/36 ramas de `information_inputs.py`, con CRAP máximo 36,03. El ejemplo completo de 512 filas se volvió a ejecutar con la nueva declaración de procedencia.
 
 Se detectaron seis mutaciones dirigidas: omitir la huella del vector documental, ampliar la ventana hasta el futuro, conservar máscaras y edades de una variable retirada, ignorar la vista de ajuste del padre, omitir la transformación posterior a macro y admitir un cursor interior nulo.
 

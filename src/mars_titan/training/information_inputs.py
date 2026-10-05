@@ -4,7 +4,8 @@ import copy
 import csv
 from pathlib import Path
 
-from mars_titan.data.company_factors import FACTOR_DEFINITIONS
+from mars_titan.data import company_factors
+from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.information_views import InformationView, _digest
 from mars_titan.data.macro import _catalog
 from mars_titan.data.storage import sha256
@@ -75,10 +76,29 @@ def corpus_view(dataset, *, macro_catalog):
     if catalog.is_symlink() or not catalog.is_file() or catalog.stat().st_size > 2 * 1024**2:
         raise ValueError("El catálogo macro excede su presupuesto o no es regular")
     catalog_hash = sha256(catalog)
+    expected_catalog = dataset.manifest.get("macro_catalog_sha256")
+    if dataset.temporal is not None:
+        temporal = dataset.temporal
+        temporal.verify()
+        admission, admission_hash = read_manifest(temporal.admission_path, 8 * 1024**2)
+        if (
+            admission_hash != temporal.contract["admission_sha256"]
+            or admission.get("source_sha256") != temporal.contract["macro_sha256"]
+        ):
+            raise ValueError("La procedencia del panel macro no conserva su admisión")
+        expected_catalog = admission.get("catalog_sha256")
+    if expected_catalog != catalog_hash:
+        raise ValueError("Falta la procedencia del catálogo macro o no corresponde al corpus")
     with catalog.open() as stream:
         entries, dependencies, _, _ = _catalog(list(csv.DictReader(stream)))
     if sha256(catalog) != catalog_hash or not set(indicators) <= entries.keys():
         raise ValueError("El catálogo cambió o falta una variable de la representación")
+    code = representation.get("representation_code")
+    if any(name.startswith("company:") for name in concepts) and (
+        not isinstance(code, dict)
+        or code.get("company_factors.py") != sha256(Path(company_factors.__file__))
+    ):
+        raise ValueError("La procedencia de los ratios contables no acredita sus dependencias")
     variables = []
     for column, name in enumerate(("open", "high", "low", "close", "volume")):
         variables.append(
@@ -118,7 +138,7 @@ def corpus_view(dataset, *, macro_catalog):
     factors = {
         f"company:{name}:ratio": {f"us-gaap:{tag}:USD" for tag, _ in terms}
         | {f"us-gaap:{denominator}:USD"}
-        for name, terms, denominator in FACTOR_DEFINITIONS
+        for name, terms, denominator in company_factors.FACTOR_DEFINITIONS
     }
     if any(name.startswith("company:") and name not in factors for name in concepts):
         raise ValueError("Falta la definición de dependencias de un ratio contable")
