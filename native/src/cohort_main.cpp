@@ -16,7 +16,8 @@
 namespace {
 using namespace mars_titan::cohorts;
 using Clock = std::chrono::steady_clock;
-constexpr std::size_t feature_width = 4;
+constexpr std::size_t default_features = 4;
+constexpr std::size_t maximum_features = 4096;
 constexpr std::size_t maximum_assets = 512;
 constexpr std::size_t maximum_steps = 10000;
 constexpr std::size_t maximum_recoveries = 100;
@@ -28,6 +29,7 @@ constexpr std::string_view asset_prefix = "US/CONTROL";
 struct Options {
     std::filesystem::path output;
     std::size_t assets = 16;
+    std::size_t features = default_features;
     std::size_t cohorts = 128;
     std::size_t batch = 32;
     std::size_t seed = 42;
@@ -75,6 +77,8 @@ Options options(std::span<char*> args) {
             result.output = value;
         } else if (key == "--assets") {
             result.assets = integer(value, maximum_assets);
+        } else if (key == "--features") {
+            result.features = integer(value, maximum_features);
         } else if (key == "--cohorts") {
             result.cohorts = integer(value, maximum_steps);
         } else if (key == "--batch") {
@@ -87,8 +91,8 @@ Options options(std::span<char*> args) {
             throw std::invalid_argument("Argumento desconocido: " + std::string(key));
         }
     }
-    if (result.output.empty() || result.assets == 0 || result.cohorts == 0 || result.batch == 0 ||
-        result.recovery_repeats == 0) {
+    if (result.output.empty() || result.assets == 0 || result.features == 0 ||
+        result.cohorts == 0 || result.batch == 0 || result.recovery_repeats == 0) {
         throw std::invalid_argument("Se requiere --output y presupuestos positivos");
     }
     return result;
@@ -104,16 +108,19 @@ double signal(std::size_t seed, std::size_t step, std::size_t asset, std::size_t
 Definition definition(const Options& args) {
     using mars_titan::simulation::content_sha256;
     Definition result;
-    result.identity = {content_sha256(Json{{"kind", "synthetic_numeric_stream_v1"},
-                                           {"assets", args.assets},
-                                           {"seed", args.seed}}
-                                          .dump()),
-                       content_sha256("numeric-observations-without-targets-v1"),
-                       content_sha256("four-float64-features-v1"),
-                       content_sha256("mean-features-plus-horizon-and-delayed-bias-v1")};
+    result.identity = {
+        content_sha256(Json{{"kind", "synthetic_numeric_stream_v1"},
+                            {"assets", args.assets},
+                            {"features", args.features},
+                            {"seed", args.seed}}
+                           .dump()),
+        content_sha256("numeric-observations-without-targets-v1"),
+        content_sha256(Json{{"kind", "numeric_float64_v1"}, {"width", args.features}}.dump()),
+        content_sha256("mean-features-plus-horizon-and-delayed-bias-v1")};
     result.tasks = {{"signal", 1}, {"signal", 3}};
     result.initial_state = Json{{"bias", 0.0}, {"feedback_count", 0}};
-    result.limits.feature_width = feature_width;
+    result.limits.feature_width = args.features;
+    result.limits.max_assets = maximum_assets;
     return result;
 }
 Callbacks callbacks(const std::shared_ptr<Metrics>& metrics) {
@@ -124,7 +131,7 @@ Callbacks callbacks(const std::shared_ptr<Metrics>& metrics) {
             values.reserve(observations.size());
             for (const auto& row : observations) {
                 const double mean = std::accumulate(row.features.begin(), row.features.end(), 0.0) /
-                                    static_cast<double>(feature_width);
+                                    static_cast<double>(row.features.size());
                 values.push_back(mean + state.at("bias").get<double>() +
                                  static_cast<double>(task.horizon) * horizon_weight);
             }
@@ -154,7 +161,7 @@ Cohort observation(const Options& args, std::size_t cursor) {
     result.observations.reserve(args.assets);
     for (std::size_t asset = 0; asset < args.assets; ++asset) {
         Observation row{std::string(asset_prefix) + std::to_string(asset), result.cutoff, {}};
-        for (std::size_t feature = 0; feature < feature_width; ++feature) {
+        for (std::size_t feature = 0; feature < args.features; ++feature) {
             row.features.push_back(signal(args.seed, cursor, asset, feature));
         }
         result.observations.push_back(std::move(row));
@@ -178,10 +185,10 @@ std::vector<Feedback> labels(const Options& args, const Executor& run, std::int6
         const auto asset = integer(std::string_view(prediction.asset).substr(asset_prefix.size()),
                                    args.assets - 1);
         double mean = 0;
-        for (std::size_t feature = 0; feature < feature_width; ++feature) {
-            mean += signal(args.seed, prediction.generation - 1, asset, feature) /
-                    static_cast<double>(feature_width);
+        for (std::size_t feature = 0; feature < args.features; ++feature) {
+            mean += signal(args.seed, prediction.generation - 1, asset, feature);
         }
+        mean /= static_cast<double>(args.features);
         result.push_back(
             {prediction.id, 0, available,
              mean + static_cast<double>(prediction.task.horizon) * horizon_weight + gain});
@@ -261,11 +268,11 @@ Json run(const Options& args) {
         {"checkpoint_retention", 2},
         {"replay_exposure_ids", exposures},
         {"assets", args.assets},
-        {"features", feature_width},
+        {"features", args.features},
         {"seed", args.seed},
         {"physical_batch", args.batch},
         {"measured_cohorts", steps.size()},
-        {"input_bytes", rows * feature_width * sizeof(double)},
+        {"input_bytes", rows * args.features * sizeof(double)},
         {"step_seconds", steps},
         {"step_p50_seconds", percentile(steps, median)},
         {"step_p95_seconds", percentile(steps, tail)},
@@ -291,7 +298,15 @@ int main(int argc, char** argv) {
         if (argc < 1) {
             throw std::invalid_argument("Faltan los argumentos del ejecutable");
         }
-        const auto args = options(std::span(argv, static_cast<std::size_t>(argc)));
+        const auto arguments = std::span(argv, static_cast<std::size_t>(argc));
+        if (arguments.size() == 2 && std::string_view(arguments[1]) == "--help") {
+            std::cout << "Uso: mars-titan-cohorts --output DIRECTORIO [--resume] [--reverse]\n"
+                         "  --cohorts N  --assets N  --features N  --batch N\n"
+                         "  --seed N  --recovery-repeats N\n"
+                         "Control numérico sintético con publicación y recuperación completas.\n";
+            return 0;
+        }
+        const auto args = options(arguments);
         const auto report = run(args);
         mars_titan::simulation::atomic_json_file(args.output / "report.json", report,
                                                  default_file_bytes);

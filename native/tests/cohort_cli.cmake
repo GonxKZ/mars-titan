@@ -4,6 +4,11 @@ endif()
 string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef suffix)
 set(folder "${COHORT_TEST_ROOT}/cohort-cli-${suffix}")
 file(MAKE_DIRECTORY "${folder}")
+execute_process(COMMAND "${COHORT_EXECUTABLE}" --help
+    RESULT_VARIABLE result OUTPUT_VARIABLE help ERROR_VARIABLE error)
+if(NOT result EQUAL 0 OR NOT help MATCHES "--features")
+    message(FATAL_ERROR "La ayuda no describe el ancho configurable: ${error}")
+endif()
 foreach(variant reference resumed)
     if(variant STREQUAL "reference")
         set(steps 12)
@@ -11,14 +16,14 @@ foreach(variant reference resumed)
         set(steps 4)
     endif()
     execute_process(COMMAND "${COHORT_EXECUTABLE}" --output "${folder}/${variant}"
-        --cohorts ${steps} --assets 3 --batch 1 --recovery-repeats 2
+        --cohorts ${steps} --assets 3 --features 8 --batch 1 --recovery-repeats 2
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
     if(NOT result EQUAL 0)
         message(FATAL_ERROR "El control ${variant} no terminó: ${error}")
     endif()
 endforeach()
 execute_process(COMMAND "${COHORT_EXECUTABLE}" --output "${folder}/resumed" --resume
-    --cohorts 12 --assets 3 --batch 3 --reverse --recovery-repeats 2
+    --cohorts 12 --assets 3 --features 8 --batch 3 --reverse --recovery-repeats 2
     RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
 if(NOT result EQUAL 0)
     message(FATAL_ERROR "La continuación no terminó: ${error}")
@@ -33,7 +38,17 @@ foreach(key snapshot_sha256 history_sha256 committed_cohorts pending)
     endif()
 endforeach()
 string(JSON recoveries LENGTH "${resumed}" recovery_seconds)
+string(JSON features GET "${resumed}" features)
+if(NOT features EQUAL 8)
+    message(FATAL_ERROR "El control no conserva el ancho solicitado")
+endif()
 if(NOT recoveries EQUAL 2)
     message(FATAL_ERROR "Faltan las medidas completas de reapertura")
+endif()
+execute_process(COMMAND "${COHORT_EXECUTABLE}" --output "${folder}/resumed" --resume
+    --cohorts 12 --assets 3 --features 9 --batch 3
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(result EQUAL 0)
+    message(FATAL_ERROR "La continuación admite una representación de otra dimensión")
 endif()
 file(REMOVE_RECURSE "${folder}")
