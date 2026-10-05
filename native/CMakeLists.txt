@@ -350,4 +350,5 @@ elseif(MARS_TITAN_BUILD_FUZZER)
     message(FATAL_ERROR "El fuzzing necesita la biblioteca de simulación")
 endif()
 
+include(cmake/MemoryStress.cmake)
 include(cmake/LearningControls.cmake)
