@@ -6,6 +6,8 @@ import select
 import subprocess
 import sys
 import time
+from contextlib import nullcontext
+from types import SimpleNamespace
 
 import pytest
 
@@ -109,6 +111,66 @@ def test_stale_process_generation_does_not_signal_a_live_process():
         child.wait(timeout=3)
 
 
+def test_recycled_group_leader_does_not_admit_an_unrelated_tree(monkeypatch):
+    engine = module()
+    table = {
+        1234: (1, 1234, 99, "S"),
+        2222: (1234, 1234, 100, "S"),
+        3337: (1, 3337, 5, "S"),
+    }
+    monkeypatch.setattr(
+        engine.os,
+        "scandir",
+        lambda _: nullcontext(iter(SimpleNamespace(name=str(pid)) for pid in table)),
+    )
+    monkeypatch.setattr(engine, "_process_info", table.get)
+    assert engine._owned_processes(1234, {1234: 11, 3337: 5}) == {3337: 5}
+
+
+def test_spontaneous_exit_during_probe_is_not_restarted_as_a_pause(tmp_path):
+    engine = module()
+    ready, gate = tmp_path / "ready", tmp_path / "gate"
+    code = f"""
+import os,time
+from pathlib import Path
+ready=Path({str(ready)!r})
+gate=Path({str(gate)!r})
+if gate.exists(): raise SystemExit(2)
+ready.write_text(str(os.getpid()))
+while not gate.exists(): time.sleep(.001)
+raise SystemExit(2)
+"""
+    triggered = False
+
+    def probe():
+        nonlocal triggered
+        if ready.exists() and not triggered:
+            triggered = True
+            pid = int(ready.read_text())
+            gate.write_text("salida espontánea")
+            deadline = time.monotonic() + 2
+            while time.monotonic() < deadline:
+                info = engine._process_info(pid)
+                if info is None or info[3] == "Z":
+                    break
+                time.sleep(0.001)
+            return snapshot(100)
+        return snapshot()
+
+    result = engine.supervise(
+        [sys.executable, "-c", code],
+        tmp_path / "state.json",
+        probe=probe,
+        poll_seconds=0.01,
+        cooldown_seconds=0,
+        pause_timeout=0.1,
+        pause_exit_codes=(0, 2),
+    )
+    state = json.loads((tmp_path / "state.json").read_text())
+    assert result == 2 and state["status"] == "failed"
+    assert state["starts"] == 1 and state["pauses"] == 0
+
+
 def test_declared_pause_exit_code_resumes_only_after_requested_pause(tmp_path):
     engine = module()
     ready, checkpoint, resumed = (tmp_path / n for n in ("ready", "checkpoint", "resumed"))
@@ -176,8 +238,8 @@ while True: time.sleep(.01)
         assert select.select([child.stdout], [], [], 5)[0]
         worker = int(child.stdout.readline())
         started = time.monotonic()
-        code, forced = engine._stop_child(child, 3)
-        assert code == 0 and not forced
+        code, forced, signalled = engine._stop_child(child, 3)
+        assert code == 0 and not forced and signalled
         assert checkpoint.read_text() == "confirmed"
         assert time.monotonic() - started >= 0.2
     finally:
@@ -381,8 +443,8 @@ while True: time.sleep(.01)
         assert select.select([child.stdout], [], [], 5)[0]
         assert child.stdout.readline().strip() == "ready"
         started = time.monotonic()
-        code, forced = engine._stop_child(child, 3)
-        assert code == 0 and not forced
+        code, forced, signalled = engine._stop_child(child, 3)
+        assert code == 0 and not forced and signalled
         assert checkpoint.read_text() == "confirmed"
         assert time.monotonic() - started >= 0.2
     finally:

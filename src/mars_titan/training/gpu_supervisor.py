@@ -101,7 +101,7 @@ def _is_descendant(pid, ancestor):
     return False
 
 
-def _owned_processes(group, previous=None):
+def _owned_processes(group, previous=None, root_generation=None):
     """Conservar descendientes observados aunque su lanzador ya haya terminado."""
     previous = previous or {}
     table, children = {}, {}
@@ -116,8 +116,14 @@ def _owned_processes(group, previous=None):
             if info is not None:
                 table[pid] = info
                 children.setdefault(info[0], []).append(pid)
+    leader = table.get(group)
+    if root_generation is None:
+        root_generation = previous.get(group)
+    trusted_group = leader is not None and leader[2] == root_generation
     pending = [
-        pid for pid, info in table.items() if info[1] == group or previous.get(pid) == info[2]
+        pid
+        for pid, info in table.items()
+        if (trusted_group and info[1] == group) or previous.get(pid) == info[2]
     ]
     owned = {}
     seen = set()
@@ -138,16 +144,18 @@ def _signal_process(pid, generation, sig):
     try:
         descriptor = os.pidfd_open(pid)
     except ProcessLookupError:
-        return
+        return False
     try:
         info = _process_info(pid)
         if info is not None and info[2] == generation:
             try:
                 signal.pidfd_send_signal(descriptor, sig)
+                return True
             except ProcessLookupError:
                 pass
     finally:
         os.close(descriptor)
+    return False
 
 
 def memory_reason(snapshot, required_mib, child_group=None):
@@ -200,26 +208,38 @@ class _Status:
         self.last, self.saved_at = key, now
 
 
-def _stop_child(child, timeout, owned=None):
+def _exited(child):
+    """Observar la salida sin liberar aún la identidad del líder del grupo."""
+    return (
+        child.returncode is not None
+        or os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT) is not None
+    )
+
+
+def _stop_child(child, timeout, owned=None, root_generation=None):
     """Esperar los procesos propios, incluidas sesiones nativas descendientes."""
     deadline = time.monotonic() + timeout
+    if root_generation is None and child.returncode is None:
+        root = _process_info(child.pid)
+        root_generation = root[2] if root is not None else None
     sent = set()
+    signalled = False
     while True:
-        owned = _owned_processes(child.pid, owned)
+        owned = _owned_processes(child.pid, owned, root_generation)
         for pid, generation in owned.items():
             identity = pid, generation
             if identity not in sent:
-                _signal_process(pid, generation, signal.SIGTERM)
+                delivered = _signal_process(pid, generation, signal.SIGTERM)
+                signalled = signalled or (pid == child.pid and delivered)
                 sent.add(identity)
-        code = child.poll()
-        if code is not None and not owned:
-            return code, False
+        if _exited(child) and not owned:
+            return child.wait(), False, signalled
         if time.monotonic() >= deadline:
             break
         time.sleep(min(0.05, max(0, deadline - time.monotonic())))
     for pid, generation in owned.items():
         _signal_process(pid, generation, signal.SIGKILL)
-    return child.wait(), True
+    return child.wait(), True, signalled
 
 
 def supervise(
@@ -259,6 +279,7 @@ def supervise(
     lock = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     child = None
     owned = {}
+    root_generation = None
     stop = stop or StopFlag()
     status = _Status(path)
     starts, pauses, ready_at = 0, 0, 0.0
@@ -266,10 +287,9 @@ def supervise(
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         while not stop.requested:
             if child is not None:
-                owned = _owned_processes(child.pid, owned)
-            if child is not None and child.poll() is not None:
-                code = child.returncode
-                _, forced = _stop_child(child, pause_timeout, owned)
+                owned = _owned_processes(child.pid, owned, root_generation)
+            if child is not None and _exited(child):
+                code, forced, _ = _stop_child(child, pause_timeout, owned, root_generation)
                 child = None
                 if forced:
                     status.save(
@@ -294,7 +314,11 @@ def supervise(
                     return 2
                 if not reason and time.monotonic() >= ready_at and not stop.requested:
                     child = subprocess.Popen(command, start_new_session=True)
-                    owned = {}
+                    root = _process_info(child.pid)
+                    if root is None:
+                        raise RuntimeError("No se puede acreditar el proceso recién iniciado")
+                    root_generation = root[2]
+                    owned = {child.pid: root_generation}
                     starts += 1
                     status.save("running", starts, pauses, snapshot=snapshot)
                 else:
@@ -303,8 +327,13 @@ def supervise(
                     )
             elif reason:
                 status.save("pausing", starts, pauses, reason, snapshot)
-                code, forced = _stop_child(child, pause_timeout, owned)
+                code, forced, signalled = _stop_child(child, pause_timeout, owned, root_generation)
                 child = None
+                if not signalled and not forced:
+                    status.save(
+                        "completed" if code == 0 else "failed", starts, pauses, returncode=code
+                    )
+                    return code if code >= 0 else 128 - code
                 pauses += 1
                 if forced or code not in pause_exit_codes or pauses >= max_pauses:
                     status.save(
@@ -325,16 +354,16 @@ def supervise(
             time.sleep(poll_seconds)
         status.save("stopping", starts, pauses)
         if child is not None:
-            code, forced = _stop_child(child, pause_timeout, owned)
+            code, forced, signalled = _stop_child(child, pause_timeout, owned, root_generation)
             child = None
-            if forced or code not in pause_exit_codes:
+            if forced or code not in pause_exit_codes or (code != 0 and not signalled):
                 status.save("failed", starts, pauses, "parada_no_confirmada", returncode=code)
                 return 75
         status.save("stopped", starts, pauses)
         return 0
     finally:
         if child is not None:
-            _stop_child(child, pause_timeout, owned)
+            _stop_child(child, pause_timeout, owned, root_generation)
         os.close(lock)
 
 

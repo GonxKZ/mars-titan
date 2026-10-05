@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-10-05T09:25:08.290182+00:00",
+  "checked_at": "2026-10-05T09:42:36.688894+00:00",
   "kind": "supervisor_correctness_and_recovery",
-  "source_sha256": "1b2c6296a0b597742714bc7bc79f358676c9b3f1e676b55c474908aeb3d5c5c8",
+  "source_sha256": "4ec7890e9ae9d9cd77ad2d8cdac3b8363d15f23a34f0560348b040755e0afca1",
   "cpu_tests": {
-    "passed": 27,
+    "passed": 29,
     "failed": 0
   },
   "repository_suite": {
@@ -13,11 +13,13 @@
     "passed_after_setting_verified_native_paths": 140,
     "skipped": 18,
     "source_native_matches_verified_build": true,
-    "warnings": "Avisos de límites infinitos de observación de Gymnasium y de obsolescencia de torch.jit.save. Se conservan los registros completos."
+    "warnings": "Avisos de límites infinitos de observación de Gymnasium y de obsolescencia de torch.jit.save. Se conservan los registros completos.",
+    "revision_before_review_fixes": "042e30b",
+    "review_regressions": "Dos casos adicionales RED→GREEN y repetición de 29 pruebas CPU y una CUDA sobre la corrección posterior."
   },
   "cuda": {
     "passed": 1,
-    "seconds": 5.39,
+    "seconds": 5.31,
     "device": "cuda:0",
     "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
     "torch": "2.14.0+cu130",
@@ -47,20 +49,20 @@
     "radon_version": "6.0.1",
     "convention": "Cobertura de sentencias por función. CRAP=C²(1-c)³+C. Ramas informadas por separado. No incluye subprocesos CLI.",
     "coverage": {
-      "covered_lines": 215,
-      "num_statements": 259,
-      "percent_covered": 83.47578347578347,
+      "covered_lines": 231,
+      "num_statements": 278,
+      "percent_covered": 83.33333333333333,
       "percent_covered_display": "83",
-      "missing_lines": 44,
+      "missing_lines": 47,
       "excluded_lines": 0,
-      "percent_statements_covered": 83.01158301158301,
+      "percent_statements_covered": 83.09352517985612,
       "percent_statements_covered_display": "83",
-      "num_branches": 92,
-      "num_partial_branches": 12,
-      "covered_branches": 78,
-      "missing_branches": 14,
-      "percent_branches_covered": 84.78260869565217,
-      "percent_branches_covered_display": "85"
+      "num_branches": 100,
+      "num_partial_branches": 14,
+      "covered_branches": 84,
+      "missing_branches": 16,
+      "percent_branches_covered": 84.0,
+      "percent_branches_covered_display": "84"
     },
     "functions": [
       {
@@ -78,8 +80,8 @@
       {
         "name": "_process_info",
         "complexity": 3,
-        "line_coverage": 0.875,
-        "crap": 3.017578125
+        "line_coverage": 0.625,
+        "crap": 3.474609375
       },
       {
         "name": "_is_descendant",
@@ -89,15 +91,15 @@
       },
       {
         "name": "_owned_processes",
-        "complexity": 12,
-        "line_coverage": 0.9629629629629629,
-        "crap": 12.007315957933242
+        "complexity": 15,
+        "line_coverage": 0.967741935483871,
+        "crap": 15.007552616562048
       },
       {
         "name": "_signal_process",
         "complexity": 5,
-        "line_coverage": 0.6923076923076923,
-        "crap": 5.728265817023214
+        "line_coverage": 0.7333333333333333,
+        "crap": 5.474074074074075
       },
       {
         "name": "memory_reason",
@@ -106,16 +108,22 @@
         "crap": 9.864360491579427
       },
       {
-        "name": "_stop_child",
-        "complexity": 8,
+        "name": "_exited",
+        "complexity": 2,
         "line_coverage": 1.0,
-        "crap": 8.0
+        "crap": 2.0
+      },
+      {
+        "name": "_stop_child",
+        "complexity": 13,
+        "line_coverage": 1.0,
+        "crap": 13.0
       },
       {
         "name": "supervise",
-        "complexity": 49,
-        "line_coverage": 0.8955223880597015,
-        "crap": 51.73817923082294
+        "complexity": 56,
+        "line_coverage": 0.8918918918918919,
+        "crap": 59.9623319448009
       },
       {
         "name": "main",
@@ -170,12 +178,18 @@
     "process_peak_rss_bytes": 25886720,
     "owned_processes": 3,
     "concurrent_work": "Pruebas y compilaciones de desarrollo CPU. La campaña científica estaba detenida.",
-    "scope": "Diagnóstico del seguimiento de procesos, no comparación de velocidad del entrenamiento."
+    "scope": "Diagnóstico del seguimiento de procesos, no comparación de velocidad del entrenamiento.",
+    "source_revision": "042e30b"
   },
   "limitations": [
     "Supervisión Linux con /proc y pidfd.",
     "El comando debe permanecer en primer plano y confirmar su checkpoint antes del código de pausa declarado.",
     "No garantiza ausencia de OOM entre consultas.",
     "No se ha medido energía."
-  ]
+  ],
+  "review_regressions": [
+    "test_recycled_group_leader_does_not_admit_an_unrelated_tree",
+    "test_spontaneous_exit_during_probe_is_not_restarted_as_a_pause"
+  ],
+  "mutation_source_revision": "042e30b"
 }
