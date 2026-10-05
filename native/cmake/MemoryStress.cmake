@@ -54,7 +54,7 @@ if(BUILD_TESTING)
     set_property(TEST memory_stress_cli APPEND PROPERTY ENVIRONMENT
         "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
 endif()
-if(MARS_TITAN_ENABLE_COVERAGE)
+if(MARS_TITAN_ENABLE_COVERAGE AND TARGET memory_stress_tests)
     add_custom_target(memory-stress-coverage-report
         COMMAND "${CMAKE_COMMAND}"
             "-DPROFILE_DIR=${MARS_TITAN_COVERAGE_DIR}"

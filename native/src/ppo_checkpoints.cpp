@@ -20,8 +20,10 @@ using simulation::parse_bounded_json;
 using simulation::read_bounded_file;
 using simulation::read_json_int64;
 using simulation::require_safe_path;
-constexpr std::size_t index_limit = 64 * 1024;
-constexpr std::size_t identity_limit = 1024 * 1024;
+constexpr std::size_t index_limit = std::size_t{64} * 1024;
+constexpr std::size_t identity_limit = std::size_t{1024} * 1024;
+constexpr std::size_t index_member_count = 5;
+constexpr std::size_t maximum_initial_entries = 16;
 constexpr std::size_t digest_length = 64;
 constexpr std::size_t retained_recent = 2;
 constexpr std::size_t maximum_retired = 3;
@@ -89,7 +91,7 @@ std::vector<Json> active_records(const Json& index) {
 }
 
 void validate_index(const Json& index, const std::string& identity_digest) {
-    if (!index.is_object() || index.size() != 5 ||
+    if (!index.is_object() || index.size() != index_member_count ||
         read_json_int64(index.at("schema_version")) != 1 ||
         index.at("identity_sha256") != identity_digest || !index.at("recent").is_array() ||
         index.at("recent").size() > retained_recent || !index.at("retired").is_array() ||
@@ -241,8 +243,9 @@ struct PpoCheckpointStore::Impl {
             std::size_t entries = 0;
             for (const auto& item : std::filesystem::directory_iterator(output)) {
                 const auto name = item.path().filename().string();
-                if (++entries > 16 || (name != "identity.json" && name != ".run.lock" &&
-                                       !name.starts_with(".ppo-index.json.pending-"))) {
+                if (++entries > maximum_initial_entries ||
+                    (name != "identity.json" && name != ".run.lock" &&
+                     !name.starts_with(".ppo-index.json.pending-"))) {
                     throw std::invalid_argument(
                         "Falta el índice y la salida ya contiene otros archivos");
                 }
@@ -329,9 +332,9 @@ struct PpoCheckpointStore::Impl {
         index_bytes = envelope.dump();
     }
 
-    void ensure_bundle(const Json& record, const Json& description, std::string_view metadata,
-                       std::string_view policy, std::string_view rollout) const {
-        const auto directory = output / record.at("bundle").get<std::string>();
+    void ensure_bundle(const std::filesystem::path& directory, const Json& description,
+                       std::string_view metadata, std::string_view policy,
+                       std::string_view rollout) const {
         require_safe_path(directory);
         if (!std::filesystem::create_directory(directory)) {
             check_directory_contents(directory);
@@ -339,8 +342,7 @@ struct PpoCheckpointStore::Impl {
         const std::array<std::string_view, 3> payloads{metadata, policy, rollout};
         // Completa únicamente archivos ausentes. Un archivo previo se verifica y nunca se
         // sustituye.
-        for (std::size_t position = 0; position < payload_names.size(); ++position) {
-            const auto name = payload_names[position];
+        for (const auto name : payload_names) {
             const auto path = directory / name;
             require_safe_path(path);
             if (std::filesystem::exists(path)) {
@@ -353,9 +355,9 @@ struct PpoCheckpointStore::Impl {
             throw std::invalid_argument("No se sustituye un manifiesto previo distinto");
         }
         for (std::size_t position = 0; position < payload_names.size(); ++position) {
-            const auto name = payload_names[position];
+            const auto name = payload_names.at(position);
             if (!std::filesystem::exists(directory / name)) {
-                atomic_binary_file(directory / name, payloads[position], payload_limit(name),
+                atomic_binary_file(directory / name, payloads.at(position), payload_limit(name),
                                    false);
             }
         }
@@ -402,7 +404,7 @@ struct PpoCheckpointStore::Impl {
         const auto existed = std::filesystem::exists(directory);
         const auto previous_index_bytes = index_bytes;
         try {
-            ensure_bundle(record, description, metadata_text, policy, rollout);
+            ensure_bundle(directory, description, metadata_text, policy, rollout);
             require_unchanged();
             publish(next);
         } catch (const std::exception& publication_error) {

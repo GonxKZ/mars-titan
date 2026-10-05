@@ -228,6 +228,48 @@
         "MARS_TITAN_BUILD_RUNNER": "ON",
         "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"
       }
+    },
+    {
+      "name": "native-controls",
+      "hidden": true,
+      "cacheVariables": {
+        "MARS_TITAN_BUILD_MEMORY_STRESS": "ON",
+        "MARS_TITAN_BUILD_LEARNING_CONTROLS": "ON",
+        "MARS_TITAN_BUILD_ADAPTER_CONTROLS": "ON",
+        "MARS_TITAN_BUILD_COHORT_EXECUTION": "ON"
+      }
+    },
+    {
+      "name": "native-controls-release",
+      "displayName": "Controles experimentales C++20",
+      "inherits": [
+        "native-controls",
+        "native-ppo-release"
+      ]
+    },
+    {
+      "name": "native-controls-asan-ubsan",
+      "displayName": "Controles con ASan y UBSan",
+      "inherits": [
+        "native-controls",
+        "native-ppo-asan-ubsan"
+      ]
+    },
+    {
+      "name": "native-controls-static-analysis",
+      "displayName": "Controles con análisis estático",
+      "inherits": [
+        "native-controls",
+        "native-ppo-static-analysis"
+      ]
+    },
+    {
+      "name": "native-controls-coverage",
+      "displayName": "Cobertura conjunta de controles",
+      "inherits": [
+        "native-controls",
+        "native-ppo-coverage"
+      ]
     }
   ],
   "buildPresets": [
@@ -253,7 +295,11 @@
     {"name":"native-ppo-debug","inherits":"native-build","configurePreset":"native-ppo-debug","jobs":1},
     {"name":"native-ppo-asan-ubsan","inherits":"native-build","configurePreset":"native-ppo-asan-ubsan","jobs":1},
     {"name":"native-ppo-static-analysis","inherits":"native-build","configurePreset":"native-ppo-static-analysis","jobs":1,"targets":["all","static-analysis"]},
-    {"name":"native-ppo-coverage","inherits":"native-build","configurePreset":"native-ppo-coverage","jobs":1}
+    {"name":"native-ppo-coverage","inherits":"native-build","configurePreset":"native-ppo-coverage","jobs":1},
+    {"name":"native-controls-release","inherits":"native-build","configurePreset":"native-controls-release","jobs":1},
+    {"name":"native-controls-asan-ubsan","inherits":"native-build","configurePreset":"native-controls-asan-ubsan","jobs":1},
+    {"name":"native-controls-static-analysis","inherits":"native-build","configurePreset":"native-controls-static-analysis","jobs":1,"targets":["all","static-analysis"]},
+    {"name":"native-controls-coverage","inherits":"native-build","configurePreset":"native-controls-coverage","jobs":1}
   ],
   "testPresets": [
     {"name":"native-test","hidden":true,"output":{"outputOnFailure":true},"execution":{"jobs":2,"noTestsAction":"error","stopOnFailure":true},"environment":{"DEBUGINFOD_URLS":""}},
@@ -278,6 +324,10 @@
     {"name":"native-ppo-debug","inherits":"native-test","configurePreset":"native-ppo-debug"},
     {"name":"native-ppo-asan-ubsan","inherits":"native-test","configurePreset":"native-ppo-asan-ubsan"},
     {"name":"native-ppo-static-analysis","inherits":"native-test","configurePreset":"native-ppo-static-analysis"},
-    {"name":"native-ppo-coverage","inherits":"native-test","configurePreset":"native-ppo-coverage"}
+    {"name":"native-ppo-coverage","inherits":"native-test","configurePreset":"native-ppo-coverage"},
+    {"name":"native-controls-release","inherits":"native-test","configurePreset":"native-controls-release"},
+    {"name":"native-controls-asan-ubsan","inherits":"native-test","configurePreset":"native-controls-asan-ubsan"},
+    {"name":"native-controls-static-analysis","inherits":"native-test","configurePreset":"native-controls-static-analysis"},
+    {"name":"native-controls-coverage","inherits":"native-test","configurePreset":"native-controls-coverage"}
   ]
 }

@@ -13,7 +13,8 @@
 #include <vector>
 
 namespace mars_titan::controls {
-using OutputIdentity = std::array<uint8_t, 32>;
+inline constexpr std::size_t output_identity_bytes = 32;
+using OutputIdentity = std::array<uint8_t, output_identity_bytes>;
 struct SemanticVersions {
     uint64_t view = 1;
     uint64_t representation = 1;
@@ -37,19 +38,26 @@ void require_compatible(ArtifactKind artifact, const SemanticVersions& stored,
 
 enum class AdapterKind : uint8_t { full, residual, low_rank };
 struct AdapterConfig {
+    static constexpr uint64_t default_seed = 71;
+    static constexpr double default_learning_rate = 0.05;
+    static constexpr double default_momentum = 0.5;
+    static constexpr std::size_t default_max_steps = 64;
+    static constexpr std::size_t default_max_rows = 4096;
+    static constexpr std::size_t default_max_bytes = 128U << 20;
+
     std::string problem_id = "matrix-control-v1";
     std::string validation_id = "matrix-validation-v1";
     AdapterKind kind = AdapterKind::full;
     std::size_t inputs = 4;
     std::size_t outputs = 3;
     std::size_t rank = 2;
-    uint64_t seed = 71;
-    double learning_rate = 0.05;
-    double momentum = 0.5;
+    uint64_t seed = default_seed;
+    double learning_rate = default_learning_rate;
+    double momentum = default_momentum;
     double minimum_improvement = 0;
-    std::size_t max_steps = 64;
-    std::size_t max_rows = 4096;
-    std::size_t max_bytes = 128U << 20;
+    std::size_t max_steps = default_max_steps;
+    std::size_t max_rows = default_max_rows;
+    std::size_t max_bytes = default_max_bytes;
     SemanticVersions versions{};
     bool operator==(const AdapterConfig&) const = default;
 };

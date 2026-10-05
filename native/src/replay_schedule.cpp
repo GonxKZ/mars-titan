@@ -17,6 +17,8 @@ constexpr std::size_t maximum_bytes = 512U << 20;
 constexpr std::size_t maximum_archive_bytes = 128U << 20;
 constexpr std::size_t temporary_bytes_per_episode = 128;
 constexpr std::size_t fixed_overhead = 4096;
+constexpr std::size_t maximum_run_id_bytes = 128;
+constexpr std::size_t minimum_episode_archive_bytes = 8;
 constexpr uint64_t format_version = 1;
 
 void require(bool condition, const char* message) {
@@ -26,7 +28,7 @@ void require(bool condition, const char* message) {
 std::size_t validate(const ReplayScheduleConfig& config, std::span<const MatureEpisode> episodes) {
     static_cast<void>(replay_order_name(config.order));
     require(
-        !config.run_id.empty() && config.run_id.size() <= 128 &&
+        !config.run_id.empty() && config.run_id.size() <= maximum_run_id_bytes &&
             config.run_id.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                             "0123456789_-.:") == std::string::npos,
         "El replay necesita una identidad breve y explícita, distinta del feedback");
@@ -221,7 +223,8 @@ ReplayScheduleSnapshot deserialize_schedule(std::string_view archive) {
         config.batch_size >> config.minimum_distance >> config.max_exposures >> config.max_bytes >>
         result.cursor >> result.updates >> count;
     require(static_cast<bool>(input) && version == format_version && order <= 2 && count > 0 &&
-                count <= maximum_episodes && count <= archive.size() / 8,
+                count <= maximum_episodes &&
+                count <= archive.size() / minimum_episode_archive_bytes,
             "La cabecera o el número de episodios del checkpoint no son válidos");
     config.order = static_cast<ReplayOrder>(order);
     result.episodes.reserve(count);
