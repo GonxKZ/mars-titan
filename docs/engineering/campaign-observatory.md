@@ -181,6 +181,12 @@ preparación del paquete. Actions no ejecuta pruebas, entrenamientos ni recolecc
 El código del workflow debe promocionarse a `main` antes de activar los envíos
 periódicos.
 
+El grupo de concurrencia permite terminar el despliegue en curso y mantiene una
+única ejecución pendiente. Una nueva petición sustituye a la pendiente, sin
+cancelar la que ya publica. `cancel-in-progress: false` evita que una sucesión de
+estados terminales interrumpa repetidamente el despliegue. Este comportamiento
+corresponde al [contrato de concurrencia de GitHub](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+
 GitHub Pages sirve archivos estáticos. Actualizar el navegador consulta el último
 paquete desplegado, sin ejecutar el recolector local. El periodo local no garantiza
 la latencia de publicación de GitHub.
