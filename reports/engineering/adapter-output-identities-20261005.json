@@ -1,0 +1,272 @@
+{
+  "recorded_on": "2026-10-05",
+  "scope": "Identidad de contenido de la salida y recuperación de trayectorias divergentes",
+  "before": {
+    "commit": "34fa545",
+    "record": "adapter-controls-20261005.json",
+    "identity_contract": "Contadores de pasos sin huella de contenido",
+    "cpu_median_ms": {
+      "full": 4.609676,
+      "residual": 5.622753,
+      "low_rank": 5.074591
+    },
+    "cuda_median_ms": {
+      "full": 11.099597,
+      "residual": 12.01005,
+      "low_rank": 15.326201
+    }
+  },
+  "after": {
+    "identity_contract": "SHA-256 por contenido y contador, con cachés independientes para estado actual y seleccionado",
+    "checkpoint_version": 2,
+    "hash_backend": "OpenSSL Crypto 3.5.5, API EVP",
+    "measurement_policy": "Se solicita identidad tras cada actualización, antes y después de recuperar y para la selección final. Ese trabajo está dentro de los tiempos",
+    "cpu": {
+      "schema": 1,
+      "device": "cpu",
+      "dtype": "float64",
+      "rows": 128,
+      "inputs": 64,
+      "outputs": 32,
+      "rank": 4,
+      "steps": 16,
+      "seed": 71,
+      "warmups": 1,
+      "repetitions": 7,
+      "parent_validation_mse": 0.2526736543,
+      "reference_steps_per_kind": 16,
+      "transfer_bytes_measured": null,
+      "results": [
+        {
+          "kind": "full",
+          "trainable_parameters": 2048,
+          "state_tensor_bytes": 163840,
+          "checkpoint_bytes": 164077,
+          "best_step": 16,
+          "selected_validation_mse": 0.2121369756,
+          "max_reference_error": 0,
+          "current_output_sha256": "b89807b3d1ab8b5b5d8dbae8657bbfe85895686c7c1e8a5c038994a364c41a42",
+          "selected_output_sha256": "b89807b3d1ab8b5b5d8dbae8657bbfe85895686c7c1e8a5c038994a364c41a42",
+          "setup_mean_ms": 0.1036294286,
+          "training_mean_ms": 4.295952429,
+          "recovery_mean_ms": 1.251981857,
+          "total_min_ms": 5.386459,
+          "total_median_ms": 5.789728,
+          "total_max_ms": 7.302716,
+          "training_rows_per_second": 476727.8116,
+          "peak_cuda_allocated_bytes": null,
+          "peak_cuda_reserved_bytes": null
+        },
+        {
+          "kind": "residual",
+          "trainable_parameters": 2048,
+          "state_tensor_bytes": 163840,
+          "checkpoint_bytes": 164077,
+          "best_step": 16,
+          "selected_validation_mse": 0.2121369756,
+          "max_reference_error": 0,
+          "current_output_sha256": "b38d66387a5424cfde06b6b3393ed66d1d6d5a32d3952d54092ba7cc825e090e",
+          "selected_output_sha256": "b38d66387a5424cfde06b6b3393ed66d1d6d5a32d3952d54092ba7cc825e090e",
+          "setup_mean_ms": 0.1007625714,
+          "training_mean_ms": 4.670140714,
+          "recovery_mean_ms": 1.245555714,
+          "total_min_ms": 6.154074,
+          "total_median_ms": 6.285621,
+          "total_max_ms": 6.428671,
+          "training_rows_per_second": 438530.6836,
+          "peak_cuda_allocated_bytes": null,
+          "peak_cuda_reserved_bytes": null
+        },
+        {
+          "kind": "low_rank",
+          "trainable_parameters": 384,
+          "state_tensor_bytes": 123904,
+          "checkpoint_bytes": 124141,
+          "best_step": 16,
+          "selected_validation_mse": 0.250933339,
+          "max_reference_error": 0,
+          "current_output_sha256": "97f954a49618f02eb923d561d1dc6c57a29b7efcd179be21d5c1d271c63d2e89",
+          "selected_output_sha256": "97f954a49618f02eb923d561d1dc6c57a29b7efcd179be21d5c1d271c63d2e89",
+          "setup_mean_ms": 0.1019028571,
+          "training_mean_ms": 4.219249143,
+          "recovery_mean_ms": 1.174022571,
+          "total_min_ms": 5.476118,
+          "total_median_ms": 5.670513,
+          "total_max_ms": 5.978894,
+          "training_rows_per_second": 485394.4222,
+          "peak_cuda_allocated_bytes": null,
+          "peak_cuda_reserved_bytes": null
+        }
+      ],
+      "process": {
+        "process_seconds": 0.81,
+        "peak_rss_kib": 513372
+      }
+    },
+    "cuda": {
+      "schema": 1,
+      "device": "cuda:0",
+      "dtype": "float64",
+      "rows": 128,
+      "inputs": 64,
+      "outputs": 32,
+      "rank": 4,
+      "steps": 16,
+      "seed": 71,
+      "warmups": 1,
+      "repetitions": 7,
+      "parent_validation_mse": 0.2526736543,
+      "reference_steps_per_kind": 16,
+      "transfer_bytes_measured": null,
+      "results": [
+        {
+          "kind": "full",
+          "trainable_parameters": 2048,
+          "state_tensor_bytes": 163840,
+          "checkpoint_bytes": 164077,
+          "best_step": 16,
+          "selected_validation_mse": 0.2121369756,
+          "max_reference_error": 2.220446049e-15,
+          "current_output_sha256": "ce71a3e3e183f5152016dc976819c67f77048b9493b28b3763199fc5d015f87e",
+          "selected_output_sha256": "ce71a3e3e183f5152016dc976819c67f77048b9493b28b3763199fc5d015f87e",
+          "setup_mean_ms": 0.2535115714,
+          "training_mean_ms": 10.06080357,
+          "recovery_mean_ms": 1.628355143,
+          "total_min_ms": 11.054197,
+          "total_median_ms": 12.360696,
+          "total_max_ms": 13.93027,
+          "training_rows_per_second": 203562.2687,
+          "peak_cuda_allocated_bytes": 17744384,
+          "peak_cuda_reserved_bytes": 23068672
+        },
+        {
+          "kind": "residual",
+          "trainable_parameters": 2048,
+          "state_tensor_bytes": 163840,
+          "checkpoint_bytes": 164077,
+          "best_step": 16,
+          "selected_validation_mse": 0.2121369756,
+          "max_reference_error": 1.33226763e-15,
+          "current_output_sha256": "533781f65cadc4f68ec03d8435997a78cc47c5794c30ad2e444fdb7acf9721fc",
+          "selected_output_sha256": "533781f65cadc4f68ec03d8435997a78cc47c5794c30ad2e444fdb7acf9721fc",
+          "setup_mean_ms": 0.2278475714,
+          "training_mean_ms": 10.42815114,
+          "recovery_mean_ms": 1.690217143,
+          "total_min_ms": 12.32007,
+          "total_median_ms": 12.799481,
+          "total_max_ms": 13.911244,
+          "training_rows_per_second": 196391.4765,
+          "peak_cuda_allocated_bytes": 17744384,
+          "peak_cuda_reserved_bytes": 23068672
+        },
+        {
+          "kind": "low_rank",
+          "trainable_parameters": 384,
+          "state_tensor_bytes": 123904,
+          "checkpoint_bytes": 124141,
+          "best_step": 16,
+          "selected_validation_mse": 0.250933339,
+          "max_reference_error": 1.33226763e-15,
+          "current_output_sha256": "190df598ba362e41cc1b75f17d169abed55c284a82316677a0e290cc907df06a",
+          "selected_output_sha256": "190df598ba362e41cc1b75f17d169abed55c284a82316677a0e290cc907df06a",
+          "setup_mean_ms": 0.2621521429,
+          "training_mean_ms": 13.31933857,
+          "recovery_mean_ms": 1.817817143,
+          "total_min_ms": 15.507418,
+          "total_median_ms": 15.80555,
+          "total_max_ms": 16.649058,
+          "training_rows_per_second": 153761.3891,
+          "peak_cuda_allocated_bytes": 17614848,
+          "peak_cuda_reserved_bytes": 23068672
+        }
+      ],
+      "process": {
+        "process_seconds": 1.39,
+        "user_seconds": 0.73,
+        "system_seconds": 0.55,
+        "peak_rss_kib": 786888,
+        "exit_code": 0
+      }
+    }
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "architecture": "x86_64",
+    "gpu_used": true,
+    "gpu_device": "cuda:0",
+    "gpu_model": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "gpu_memory_mib": 8188,
+    "driver": "595.91.07"
+  },
+  "software": {
+    "compiler": "Clang 21.1.8",
+    "standard": "C++20",
+    "libtorch": "2.14.0+cu130",
+    "build": "Release",
+    "intraop_threads": 1,
+    "interop_threads": 1,
+    "cuda_linked": true
+  },
+  "verification": {
+    "red": "La regresión de restauración divergente falla en el código previo porque acepta la predicción antigua",
+    "green": "6/6 CTest CPU en Debug, Release, ASan+UBSan y cobertura. Pruebas y CLI CUDA completados con exit 0",
+    "regressions": [
+      "trayectorias con los mismos pasos",
+      "tipos de adaptación distintos",
+      "pesos distintos con igual contador",
+      "selecciones distintas en el mismo paso",
+      "selección antigua frente al estado actual",
+      "rechazo de huellas ausentes",
+      "invalidación de ambas cachés al cambiar sus pesos",
+      "identidad estable al recuperar",
+      "dependencia inicial serializada",
+      "rechazo del formato anterior"
+    ],
+    "static_analysis": "Clang Static Analyzer 21 sin diagnósticos",
+    "lifetime": "Lifetime Safety experimental de Clang 21 activado",
+    "fuzz": "1000 entradas con libFuzzer, ASan y UBSan, semilla 71, máximo 4096 bytes, dos checkpoints v2 iniciales con y sin dependencia de salida",
+    "coverage_tool": "llvm-cov 21, líneas y ramas de la biblioteca",
+    "line_coverage_pct": 98.41,
+    "branch_coverage_pct": 83.1,
+    "complexity_tool": "Lizard 1.24.0",
+    "max_ccn": 24,
+    "max_crap": 24.0,
+    "crap_formula": "CCN^2 * (1 - cobertura_de_líneas)^3 + CCN",
+    "crap_coverage_convention": "líneas ejecutables de intervalos LLVM dentro de cada función Lizard",
+    "mutations": [
+      {
+        "mutation": "ignore_content_identity",
+        "detected": true,
+        "stderr": "Se aceptó un estado de adaptación inválido"
+      },
+      {
+        "mutation": "accept_missing_identity",
+        "detected": true,
+        "stderr": "Se aceptó un estado de adaptación inválido"
+      },
+      {
+        "mutation": "reuse_current_cache",
+        "detected": true,
+        "stderr": "La primera actualización conserva una huella cacheada de otros pesos"
+      },
+      {
+        "mutation": "reuse_selected_cache",
+        "detected": true,
+        "stderr": "La selección conserva una huella cacheada del padre después de mejorar"
+      }
+    ]
+  },
+  "limits": [
+    "No se ha medido el volumen real de transferencias",
+    "No se han medido energía ni coste monetario",
+    "No se han aislado las interferencias de otros procesos",
+    "LibTorch y OpenSSL precompilados no están instrumentados con los sanitizadores del control",
+    "Las huellas distinguen diferencias de bits FP64 aunque estén dentro de la tolerancia numérica"
+  ],
+  "source_sha256": {
+    "native/include/mars_titan/adapter_control.hpp": "9f1b25e1904bb84ae1c3316e239900cb6f88356629c2ab4179125d5ddbca3620",
+    "native/src/adapter_control.cpp": "8ef1d96369d2206571c6963811014a4e96089ea12c6ea21e9f12106c539dab07",
+    "native/src/adapter_control_main.cpp": "3ce5c85cfde7cfede2e99d6c4889797aaab7877def473d331dd62e2199bc2173",
+    "native/tests/adapter_control_tests.cpp": "6de98f0d68e8498999a47ec067ca2429dc68347bda07a9ab9e755e2f76ed2201"
+  }
+}

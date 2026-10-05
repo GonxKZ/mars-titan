@@ -27,11 +27,12 @@ class NewsWindows:
         "cohort_id",
         "availability_rule",
     )
+    dictionary_columns = ("text",)
 
     def __init__(self, path, *, max_group_bytes=16 * 1024**2):
         if type(max_group_bytes) is not int or max_group_bytes < 1:
             raise ValueError("El presupuesto de grupos debe ser positivo")
-        self.file = pq.ParquetFile(path, read_dictionary=["text"])
+        self.file = pq.ParquetFile(path, read_dictionary=list(self.dictionary_columns))
         self.cache, self.ranges = OrderedDict(), []
         self.max_group_bytes = max_group_bytes
         try:
