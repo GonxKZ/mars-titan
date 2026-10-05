@@ -169,6 +169,16 @@ def test_reserved_dates_are_rejected_before_loading_targets(tmp_path, monkeypatc
         review_predictions(data)
 
 
+def test_bounds_cannot_authorize_reserved_labels(tmp_path):
+    data = source(
+        tmp_path,
+        panel(prediction_at=[datetime(2024, 1, day, tzinfo=UTC) for day in (3, 3, 4)]),
+        bounds=["2024-01-01", "2025-01-01"],
+    )
+    with pytest.raises(ValueError, match="reserva"):
+        review_predictions(data)
+
+
 def test_rank_ic_is_computed_per_session_and_constant_cases_remain_undefined(tmp_path):
     dates = [datetime(2023, 1, day, tzinfo=UTC) for day in (3, 3, 3, 4, 4, 4)]
     table = pa.table(
