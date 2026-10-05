@@ -55,6 +55,8 @@ La revisión posterior reprodujo y corrigió la aceptación de un catálogo dist
 
 Después de esa corrección pasaron 88 pruebas relacionadas y dos mutaciones adicionales detectaron la retirada de las comprobaciones de procedencia macro y contable. La [evidencia](../../reports/resources/information-view-provenance-20261005.json) registra 77/83 sentencias y 30/36 ramas de `information_inputs.py`, con CRAP máximo 36,03. El ejemplo completo de 512 filas se volvió a ejecutar con la nueva declaración de procedencia.
 
+La [integración CUDA de los codificadores](../../reports/resources/information-encoder-cuda-20261005.json) también pasó en esta revisión. MiniLM y ResNet18 conservaron exactamente las huellas de sus pesos y repitieron las representaciones con diferencia máxima cero. El pico asignado fue de 546.401.792 bytes y la prueba terminó en 11,74 s. Utilizó textos y un gráfico de control, sin datos financieros ni entrenamiento. Esta comprobación no convierte las vistas en una operación GPU ni mide su calidad predictiva.
+
 Se detectaron seis mutaciones dirigidas: omitir la huella del vector documental, ampliar la ventana hasta el futuro, conservar máscaras y edades de una variable retirada, ignorar la vista de ajuste del padre, omitir la transformación posterior a macro y admitir un cursor interior nulo.
 
 Coverage.py 7.16.2, con ramas activadas, dio un 88 % para `document_index.py`, un 85 % para `information_views.py` y un 90 % para `information_inputs.py`, combinando líneas y ramas. Los subprocesos de los ejemplos se verificaron funcionalmente, sin incluirlos en esa cobertura. La cobertura del archivo `embeddings.py` incluye el codificador CUDA que no se ejecutó en esta comprobación CPU, por lo que su 50 % no describe únicamente los cambios de caché.
