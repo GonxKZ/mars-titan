@@ -34,3 +34,13 @@ foreach(bad IN ITEMS "--unknown" "--capacity;0" "--noise;nan" "--device;cuda:0"
         message(FATAL_ERROR "La CLI acepta argumentos inválidos: ${bad}")
     endif()
 endforeach()
+file(MAKE_DIRECTORY "${WORK}/destination-directory")
+execute_process(COMMAND "${PROGRAM}" ${arguments} --output "${WORK}/destination-directory"
+    RESULT_VARIABLE result OUTPUT_QUIET ERROR_QUIET)
+if(result EQUAL 0)
+    message(FATAL_ERROR "La publicación sustituyó un directorio por un informe")
+endif()
+file(GLOB leftovers "${WORK}/destination-directory.pending.*")
+if(leftovers)
+    message(FATAL_ERROR "La publicación fallida dejó un archivo provisional")
+endif()

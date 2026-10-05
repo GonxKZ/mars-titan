@@ -111,6 +111,15 @@ void invalid_and_future_records_leave_bank_unchanged() {
     require(bank.query(record(1).key, 2).count == 0 && bank.query(record(1).key, 3).count == 1,
             "La consulta admite una etiqueta antes de madurar");
     rejected([&] { static_cast<void>(bank.query(MemoryVector{}, 4)); });
+
+    RetentionBank delayed(Retention::recent, 4, alternate_seed);
+    auto later = record(1);
+    constexpr int64_t late_maturity = 11;
+    later.maturity_at = late_maturity;
+    delayed.write(later, late_maturity, 0);
+    require(delayed.query(later.key, next_confirmation).count == 0 &&
+                delayed.query(later.key, late_maturity).count == 1,
+            "La consulta intermedia revela una etiqueta antes de su maduración");
 }
 
 void uniform_eviction_is_not_a_fixed_slot() {
@@ -170,6 +179,12 @@ Json comparable(const Experiment& experiment) {
     return report;
 }
 
+Json recoverable_state(const Experiment& experiment) {
+    auto state = Json::parse(experiment.checkpoint());
+    state.erase("measurements");
+    return state;
+}
+
 void interruption_restores_pending_predictions_rng_and_memory() {
     for (const auto scenario :
          {Scenario::recurrence, Scenario::persistent, Scenario::noise, Scenario::outliers}) {
@@ -187,6 +202,8 @@ void interruption_restores_pending_predictions_rng_and_memory() {
             resumed.run_until(config.steps);
             require(comparable(full) == comparable(resumed),
                     "Reanudar cambia predicciones, pendientes, memoria o métricas");
+            require(recoverable_state(full) == recoverable_state(resumed),
+                    "Reanudar cambia claves, prioridades, RNG o estado confirmado");
         }
         const auto result = comparable(full);
         require(result.at("completed") == true && result.at("pending") == 0,
