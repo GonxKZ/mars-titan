@@ -67,6 +67,129 @@ def test_admission_rejects_low_memory_and_foreign_compute():
     assert engine.memory_reason(snapshot(7400, [os.getpid()]), 768, os.getpgrp()) is None
 
 
+def test_compute_descendant_in_a_new_session_is_owned():
+    engine = module()
+    code = """
+import signal,subprocess,sys,time
+worker=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)'],start_new_session=True)
+def stop(*_):
+    worker.terminate()
+    worker.wait(timeout=3)
+    raise SystemExit(0)
+signal.signal(signal.SIGTERM,stop)
+print(worker.pid,flush=True)
+while True: time.sleep(.01)
+"""
+    child = subprocess.Popen(
+        [sys.executable, "-c", code], start_new_session=True, stdout=subprocess.PIPE, text=True
+    )
+    try:
+        assert select.select([child.stdout], [], [], 5)[0]
+        worker = int(child.stdout.readline())
+        assert os.getpgid(worker) != child.pid
+        assert engine.memory_reason(snapshot(7400, [worker]), 768, child.pid) is None
+        assert engine.memory_reason(snapshot(7400, [os.getpid()]), 768, child.pid) == (
+            "otro_proceso_cuda"
+        )
+    finally:
+        child.terminate()
+        child.wait(timeout=5)
+
+
+def test_stale_process_generation_does_not_signal_a_live_process():
+    engine = module()
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        generation = engine._process_info(child.pid)[2]
+        engine._signal_process(child.pid, generation + 1, 15)
+        with pytest.raises(subprocess.TimeoutExpired):
+            child.wait(timeout=0.1)
+    finally:
+        child.terminate()
+        child.wait(timeout=3)
+
+
+def test_declared_pause_exit_code_resumes_only_after_requested_pause(tmp_path):
+    engine = module()
+    ready, checkpoint, resumed = (tmp_path / n for n in ("ready", "checkpoint", "resumed"))
+    code = f"""
+import signal,time
+from pathlib import Path
+checkpoint=Path({str(checkpoint)!r})
+if checkpoint.exists():
+    Path({str(resumed)!r}).write_text(checkpoint.read_text())
+else:
+    def stop(*_):
+        checkpoint.write_text('confirmed')
+        raise SystemExit(2)
+    signal.signal(signal.SIGTERM,stop)
+    Path({str(ready)!r}).write_text('ready')
+    while True: time.sleep(.01)
+"""
+    result = engine.supervise(
+        [sys.executable, "-c", code],
+        tmp_path / "state.json",
+        probe=lambda: snapshot(100 if ready.exists() and not checkpoint.exists() else 7400),
+        poll_seconds=0.01,
+        cooldown_seconds=0,
+        pause_timeout=2,
+        pause_exit_codes=(0, 2),
+    )
+    assert result == 0 and resumed.read_text() == "confirmed"
+    state = json.loads((tmp_path / "state.json").read_text())
+    assert state["starts"] == 2 and state["pauses"] == 1
+    assert state["status"] == "completed"
+    result = engine.supervise(
+        [sys.executable, "-c", "raise SystemExit(2)"],
+        tmp_path / "failed.json",
+        probe=snapshot,
+        poll_seconds=0.01,
+        pause_exit_codes=(0, 2),
+    )
+    assert result == 2
+    assert json.loads((tmp_path / "failed.json").read_text())["status"] == "failed"
+
+
+def test_pause_waits_for_checkpoint_in_a_descendant_session(tmp_path):
+    engine = module()
+    checkpoint = tmp_path / "confirmed"
+    code = f"""
+import os,signal,time
+from pathlib import Path
+if os.fork()==0:
+    os.setsid()
+    def stop(*_):
+        time.sleep(.2)
+        Path({str(checkpoint)!r}).write_text('confirmed')
+        os._exit(0)
+    signal.signal(signal.SIGTERM,stop)
+    print(os.getpid(),flush=True)
+    while True: time.sleep(.01)
+signal.signal(signal.SIGTERM,lambda *_: os._exit(0))
+while True: time.sleep(.01)
+"""
+    child = subprocess.Popen(
+        [sys.executable, "-c", code], start_new_session=True, stdout=subprocess.PIPE, text=True
+    )
+    worker = None
+    try:
+        assert select.select([child.stdout], [], [], 5)[0]
+        worker = int(child.stdout.readline())
+        started = time.monotonic()
+        code, forced = engine._stop_child(child, 3)
+        assert code == 0 and not forced
+        assert checkpoint.read_text() == "confirmed"
+        assert time.monotonic() - started >= 0.2
+    finally:
+        for pid in (child.pid, worker):
+            if pid:
+                try:
+                    os.kill(pid, 9)
+                except ProcessLookupError:
+                    pass
+        child.wait(timeout=2)
+
+
 def test_low_memory_waits_without_starting_the_command(tmp_path):
     engine = module()
     stop = engine.StopFlag()
@@ -348,6 +471,11 @@ def test_signal_stops_the_cli_while_waiting_without_launching(tmp_path):
         dict(reserve_mib=7000),
         dict(poll_seconds=float("nan")),
         dict(max_pauses=0),
+        dict(pause_exit_codes=()),
+        dict(pause_exit_codes=(True,)),
+        dict(pause_exit_codes=(-1,)),
+        dict(pause_exit_codes=(256,)),
+        dict(pause_exit_codes=2),
     ],
 )
 def test_invalid_admission_configuration_fails_before_launch(tmp_path, options):

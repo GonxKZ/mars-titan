@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-05T09:25:08.290182+00:00",
+  "kind": "supervisor_correctness_and_recovery",
+  "source_sha256": "1b2c6296a0b597742714bc7bc79f358676c9b3f1e676b55c474908aeb3d5c5c8",
+  "cpu_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "repository_suite": {
+    "passed_initially": 2486,
+    "failed_missing_native_artifacts": 140,
+    "passed_after_setting_verified_native_paths": 140,
+    "skipped": 18,
+    "source_native_matches_verified_build": true,
+    "warnings": "Avisos de límites infinitos de observación de Gymnasium y de obsolescencia de torch.jit.save. Se conservan los registros completos."
+  },
+  "cuda": {
+    "passed": 1,
+    "seconds": 5.39,
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "runtime": "13.0",
+    "driver": "595.91.07",
+    "operation": "Tensor FP64 de 4096 valores en proceso descendiente, pausa declarada y restauración exacta"
+  },
+  "mutations": [
+    {
+      "mutation": "reject_owned_session",
+      "test": "test_compute_descendant_in_a_new_session_is_owned",
+      "detected": true
+    },
+    {
+      "mutation": "reject_declared_pause",
+      "test": "test_declared_pause_exit_code_resumes_only_after_requested_pause",
+      "detected": true
+    },
+    {
+      "mutation": "signal_reused_pid",
+      "test": "test_stale_process_generation_does_not_signal_a_live_process",
+      "detected": true
+    }
+  ],
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Cobertura de sentencias por función. CRAP=C²(1-c)³+C. Ramas informadas por separado. No incluye subprocesos CLI.",
+    "coverage": {
+      "covered_lines": 215,
+      "num_statements": 259,
+      "percent_covered": 83.47578347578347,
+      "percent_covered_display": "83",
+      "missing_lines": 44,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.01158301158301,
+      "percent_statements_covered_display": "83",
+      "num_branches": 92,
+      "num_partial_branches": 12,
+      "covered_branches": 78,
+      "missing_branches": 14,
+      "percent_branches_covered": 84.78260869565217,
+      "percent_branches_covered_display": "85"
+    },
+    "functions": [
+      {
+        "name": "parse_gpu",
+        "complexity": 16,
+        "line_coverage": 0.9032258064516129,
+        "crap": 16.232016380786142
+      },
+      {
+        "name": "read_gpu",
+        "complexity": 1,
+        "line_coverage": 0.3333333333333333,
+        "crap": 1.2962962962962963
+      },
+      {
+        "name": "_process_info",
+        "complexity": 3,
+        "line_coverage": 0.875,
+        "crap": 3.017578125
+      },
+      {
+        "name": "_is_descendant",
+        "complexity": 6,
+        "line_coverage": 0.9090909090909091,
+        "crap": 6.027047332832457
+      },
+      {
+        "name": "_owned_processes",
+        "complexity": 12,
+        "line_coverage": 0.9629629629629629,
+        "crap": 12.007315957933242
+      },
+      {
+        "name": "_signal_process",
+        "complexity": 5,
+        "line_coverage": 0.6923076923076923,
+        "crap": 5.728265817023214
+      },
+      {
+        "name": "memory_reason",
+        "complexity": 8,
+        "line_coverage": 0.6923076923076923,
+        "crap": 9.864360491579427
+      },
+      {
+        "name": "_stop_child",
+        "complexity": 8,
+        "line_coverage": 1.0,
+        "crap": 8.0
+      },
+      {
+        "name": "supervise",
+        "complexity": 49,
+        "line_coverage": 0.8955223880597015,
+        "crap": 51.73817923082294
+      },
+      {
+        "name": "main",
+        "complexity": 4,
+        "line_coverage": 0.05263157894736842,
+        "crap": 17.60431549788599
+      },
+      {
+        "name": "GpuSnapshot",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "name": "StopFlag",
+        "complexity": 2,
+        "line_coverage": 0.75,
+        "crap": 2.0625
+      },
+      {
+        "name": "request",
+        "complexity": 1,
+        "line_coverage": 0.5,
+        "crap": 1.125
+      },
+      {
+        "name": "_Status",
+        "complexity": 5,
+        "line_coverage": 0.9545454545454546,
+        "crap": 5.002347858752818
+      },
+      {
+        "name": "__init__",
+        "complexity": 1,
+        "line_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "name": "save",
+        "complexity": 6,
+        "line_coverage": 0.9411764705882353,
+        "crap": 6.007327498473438
+      }
+    ]
+  },
+  "process_scan": {
+    "warmup": 3,
+    "repetitions": 30,
+    "median_ms": 10.719945500000001,
+    "min_ms": 10.46742,
+    "max_ms": 12.234658,
+    "process_peak_rss_bytes": 25886720,
+    "owned_processes": 3,
+    "concurrent_work": "Pruebas y compilaciones de desarrollo CPU. La campaña científica estaba detenida.",
+    "scope": "Diagnóstico del seguimiento de procesos, no comparación de velocidad del entrenamiento."
+  },
+  "limitations": [
+    "Supervisión Linux con /proc y pidfd.",
+    "El comando debe permanecer en primer plano y confirmar su checkpoint antes del código de pausa declarado.",
+    "No garantiza ausencia de OOM entre consultas.",
+    "No se ha medido energía."
+  ]
+}
