@@ -18,7 +18,8 @@ def save(path, value):
 
 
 class Campaign:
-    def __init__(self, root):
+    def __init__(self, root, *, materialize=False):
+        self.materialize = materialize
         self.reference = root / "reference"
         self.completion = root / "completion"
         self.fold = "fold-000"
@@ -89,6 +90,14 @@ class Campaign:
             path="missing-weights.pt", sha256=hashlib.sha256(name.encode()).hexdigest()
         )
         identity = dict(manifest_sha256=self.manifest_hash, case=case, initialization=None)
+        if stage == "posttraining":
+            identity["grid"] = dict(
+                schema_version=1,
+                values=[index / 10 for index in range(-10, 11)],
+                scale=0.1,
+                source_sha256=self.manifest_hash,
+                training_samples=self.counts["train"],
+            )
         report = dict(
             status="completed",
             final_test_opened=False,
@@ -251,6 +260,34 @@ class Campaign:
             )
             report.update(self.result_changes.get(job["id"], {}))
             path = self.completion / self.fold / "evaluation/runs" / job["id"] / "run.json"
+            if self.materialize:
+                from datetime import UTC, datetime
+
+                import pyarrow as pa
+                import pyarrow.parquet as pq
+
+                path.parent.mkdir(parents=True, exist_ok=True)
+                for month, part in ((11, "calibration"), (12, "evaluation")):
+                    table = pa.table(
+                        dict(
+                            sample_id=["a", "b"],
+                            asset_id=["US/A", "US/B"],
+                            market=["US", "US"],
+                            prediction_at=pa.array(
+                                [datetime(2023, month, 2, tzinfo=UTC)] * 2,
+                                pa.timestamp("us", tz="UTC"),
+                            ),
+                            target=[0.1, 0.1],
+                            prediction=[0.0, 0.0],
+                            parent=[0.0, 0.0],
+                            zero=[0.0, 0.0],
+                        )
+                    )
+                    parquet = path.parent / f"{part}.parquet"
+                    pq.write_table(table, parquet)
+                    report["predictions"][part]["sha256"] = hashlib.sha256(
+                        parquet.read_bytes()
+                    ).hexdigest()
             signature = save(path, report)
             evaluated[job["id"]] = dict(
                 path=str(path.relative_to(self.completion / self.fold / "evaluation")),
@@ -417,7 +454,7 @@ def test_external_prediction_path_is_rejected_without_reading_it(campaign):
 
 def test_preserves_training_grid_baseline_and_resource_evidence(campaign):
     original = campaign.originals["posttraining/rnn/seed-42/real/neural_mae"]
-    grid = dict(offsets=[-1.0, 0.0, 1.0], scale=0.2)
+    grid = original["identity"]["grid"] | {"scale": 0.2}
     original["identity"]["grid"] = grid
     original["baseline"] = dict(primary="median", session_mae=0.2)
     original["budget"] = dict(updates=20)
@@ -430,6 +467,22 @@ def test_preserves_training_grid_baseline_and_resource_evidence(campaign):
     assert metadata["budget"] == dict(updates=20)
     assert metadata["stop_reason"] == "validation_plateau"
     assert metadata["attempts"] == [dict(seconds=1.5)]
+
+
+@pytest.mark.parametrize("defect", ["missing", "invalid", "source", "population"])
+def test_adjustment_grid_must_belong_to_the_declared_training_cohort(campaign, defect):
+    identity = campaign.originals["posttraining/rnn/seed-42/real/neural_mae"]["identity"]
+    if defect == "missing":
+        identity.pop("grid")
+    elif defect == "invalid":
+        identity["grid"]["scale"] = 0.0
+    elif defect == "source":
+        identity["grid"]["source_sha256"] = "f" * 64
+    else:
+        identity["grid"]["training_samples"] = 999
+    campaign.publish()
+    with pytest.raises(ValueError, match="rejilla"):
+        sources(campaign)
 
 
 def test_rejects_duplicate_json_keys(campaign):
@@ -470,6 +523,8 @@ def test_does_not_follow_other_paths_inside_the_temporal_metadata(campaign):
     for original in campaign.originals.values():
         if "identity" in original:
             original["identity"]["manifest_sha256"] = campaign.manifest_hash
+            if "grid" in original["identity"]:
+                original["identity"]["grid"]["source_sha256"] = campaign.manifest_hash
         else:
             original["manifest_sha256"] = campaign.manifest_hash
     campaign.publish()

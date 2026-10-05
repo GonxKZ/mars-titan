@@ -5,6 +5,7 @@ from collections import Counter
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.environments.actions import ActionGrid
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
 
 _HELDOUT = ("calibration", "evaluation")
@@ -247,6 +248,11 @@ def _cohort(original, stage, manifest, signature, ordered_hash, parent):
             "La ejecución no conserva la identidad y población de la cohorte",
         )
         return
+    grid = ActionGrid.from_dict(identity.get("grid"))
+    _require(
+        grid.source_sha256 == signature and grid.training_samples == manifest["counts"]["train"],
+        "La rejilla no corresponde al entrenamiento de la cohorte congelada",
+    )
     inherited, dataset = identity["parent"], identity["dataset"]
     _require(
         original.get("domain") == "real"
