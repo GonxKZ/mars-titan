@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-06T08:05:02.328724Z",
+  "generated_at": "2026-10-06T08:06:17.230179Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -754,10 +754,11 @@
       "status": "running",
       "dependencies": [],
       "counts": {
+        "completed": 1,
         "running": 1,
-        "not_started": 39
+        "not_started": 38
       },
-      "registered_runs": 1
+      "registered_runs": 2
     },
     {
       "id": "tabular-real-expanded-20261006-fold-002",
@@ -1318,26 +1319,26 @@
   ],
   "runs": [
     {
-      "run_id": "neural-real-expanded-20261006-fold-002-f3bf981a4922cd1a3a1d",
+      "run_id": "neural-real-expanded-20261006-fold-002-9f7b055a6e47c24eaac3",
       "attempt_id": "legacy",
       "model_id": "rnn",
       "activity": "initial_training",
-      "variant_id": "4bcf4467deec1ea5",
+      "variant_id": "f85113abaa785723",
       "status": "running",
       "phase": "validation",
-      "started_at": "2026-10-06T07:59:39.037136Z",
-      "updated_at": "2026-10-06T08:04:53.875013Z",
-      "heartbeat_at": "2026-10-06T08:05:02.066783Z",
-      "completed_steps": 9270,
+      "started_at": null,
+      "updated_at": null,
+      "heartbeat_at": "2026-10-06T08:06:16.979023Z",
+      "completed_steps": null,
       "total_steps": null,
-      "epoch": 30,
+      "epoch": null,
       "max_epochs": 100,
       "seed": 42,
       "fold": "US",
-      "comparison_group": "e9ecd7c8efde3c61a3033165d28689a1c938c282c019eae7684dfaa5a8cda694",
+      "comparison_group": null,
       "metrics": {
-        "mae": 0.01559326209550322,
-        "mse": 0.0006221466562084268,
+        "mae": null,
+        "mse": null,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -1348,192 +1349,11 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": 11420.961023332347
+        "samples_per_second": null
       },
-      "history": [
-        {
-          "step": 1,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.02383259508518316
-        },
-        {
-          "step": 2,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.02020282340357362
-        },
-        {
-          "step": 3,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.017354257942708895
-        },
-        {
-          "step": 4,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01741776756399662
-        },
-        {
-          "step": 5,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01672947951699912
-        },
-        {
-          "step": 6,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016219523529327897
-        },
-        {
-          "step": 7,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016019291910808794
-        },
-        {
-          "step": 8,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016310452326389068
-        },
-        {
-          "step": 9,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015825710086585273
-        },
-        {
-          "step": 10,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01594177747977607
-        },
-        {
-          "step": 11,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015684948147954993
-        },
-        {
-          "step": 12,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.016990649558296173
-        },
-        {
-          "step": 13,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01568792263069258
-        },
-        {
-          "step": 14,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015769375640135138
-        },
-        {
-          "step": 15,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01570048540057813
-        },
-        {
-          "step": 16,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015805503198602057
-        },
-        {
-          "step": 17,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015624866296235395
-        },
-        {
-          "step": 18,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01559152585189689
-        },
-        {
-          "step": 19,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01646654925726535
-        },
-        {
-          "step": 20,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01568244693676825
-        },
-        {
-          "step": 21,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01565986243296077
-        },
-        {
-          "step": 22,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01564060952955622
-        },
-        {
-          "step": 23,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015592817325367467
-        },
-        {
-          "step": 24,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01553218044386831
-        },
-        {
-          "step": 25,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01605184325740173
-        },
-        {
-          "step": 26,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015703257381075086
-        },
-        {
-          "step": 27,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015477007952594837
-        },
-        {
-          "step": 28,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015558336261213756
-        },
-        {
-          "step": 29,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.015686080281170637
-        },
-        {
-          "step": 30,
-          "recorded_at": null,
-          "loss": null,
-          "mae": 0.01559326209550322
-        }
-      ],
+      "history": [],
       "checkpoint": {
-        "step": 9270,
+        "step": null,
         "saved_at": null,
         "resumable": null
       },
@@ -1547,12 +1367,12 @@
         "currency": null,
         "condition": null,
         "parent_model": null,
-        "configuration_sha256": "4bcf4467deec1ea5cfbab470d9dc2123dd2ea7c5e50c3675039060b202b6a587",
-        "source_sha256": "34a26a37020a2fe3adbb634198a0d0f46652fc9baf2b682344d8d1ff3d4f5895",
+        "configuration_sha256": "f85113abaa785723adb9b2cf15c0afc2849c42def80c2620217c0fa549978e08",
+        "source_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
-        "train_rows": 157762,
-        "validation_rows": 44145,
+        "train_rows": null,
+        "validation_rows": null,
         "parent": null,
         "error_type": null,
         "ram_peak_scope": null,
@@ -7421,7 +7241,7 @@
     }
   ],
   "pagination": {
-    "total_runs": 2888,
+    "total_runs": 2889,
     "page_size": 64,
     "pages": [
       "pages/78f347cf9415262919320f2e1816f30b1ba824a8986b8e2a0f243812c814461d.json",
@@ -7449,26 +7269,26 @@
       "pages/9bbffd8560a8973b62da205299fc53401ee476c0418c92a39ca55b2a22c0c6fc.json",
       "pages/0622798059647a8e9b31320b3dc0719a92b332d0ef45a83369c581928c0f5e49.json",
       "pages/8ae1c4ec864dfead09c6257e6ac39495e1b8e52f011e373d790342592973a217.json",
-      "pages/d6ca4eaf53b8d8099671f0dfd0259a26f18ea62fecaf226f190508228fbcb0af.json",
-      "pages/43e0ad5256b44d2d528335aac6c6f8474c91f51d4b01fca8e01659aad5a018d2.json",
-      "pages/be62136123af03fb527f12b8d223e2bc6c6f96df84f9e8de70e4b026683cf7f0.json",
-      "pages/66906d606092e8fcaddf6b537818def233a7843e9a22ebee5cf0beb55abcc912.json",
-      "pages/10a3d08c82bff0e51daa174224eccc792e687cb34296d2aa49946ca255082e98.json",
-      "pages/d0fd247c08a194272d4096851b14bd51fe72144611ee9d6f1cc3c199a7947ebc.json",
-      "pages/b5a7afa52c27a9408b090ec5d9767ba0b3d9ecec38c8b5e86f994d962433f29a.json",
-      "pages/e27df283f4bb31f7a9306b4dbf97477f1dd0d390f020dac5cc130bb3908d2443.json",
-      "pages/244740e2bd5185cd5d1b8a83ce1d66d4bbcf77c7dcd681f12277d18fd1b6ca7a.json",
-      "pages/c9a724f835b577a0bdeafcdebe92ab585548f8c48746afb0969a05d9f2b3544a.json",
-      "pages/56dccfc0873b6a06ff085c4401665fa7e94170d4ad4e30767312bc431514e60b.json",
-      "pages/73324ab9ca95ef2af1a13748c95d6b12dc57e27493f7d993702169450fb26fa8.json",
-      "pages/4f711adb7deebe99f6773853b3c3cdb42e0477a2ca62bf207e8b81d25f5cc502.json",
-      "pages/fa39958e2cf11de19c9ab7aa30be69501dbc40ea4d7e0499a1af54278716bd48.json",
-      "pages/7d1b706f1fc6ad822c1dc054dd313b713cde62716c9de0cb5e7cb7070abfa9a6.json",
-      "pages/6f0fb5f9c5122730e87d82e1166a84a3d2d0364580ad3e5f9adfdad02994764d.json",
-      "pages/47ea411412d92abc539bf312a449d402d214260b25d612c0bde16177c23edbb4.json",
-      "pages/604e56185fb180674dc56adeaa68ba5237ed674740d69781adc10a87aa17fe66.json",
-      "pages/7c519dd02063d8bd1807f5acece667668a443d2f57fae7f1b3e525d25dda9848.json",
-      "pages/fcbdeecc7f6c4194254f0db84e9bb4f95d885c69575ce9c2de3b2ef7314393e3.json"
+      "pages/0d1d4823cdfbc2df4cd31ad207437de43264246565037e9edcc76b3896680fae.json",
+      "pages/0ae0d9c9bb97944d7f1d0cff917924697b13e59c9c040f4bfab5d87aaaa98dec.json",
+      "pages/001744d442e0be2f5e518938ee5d96045570085e82f50949a0e6cb93d9fcb10a.json",
+      "pages/221834471ac916eca3e0253c318fb27344cba809ca33b869d5afcb75e52ba922.json",
+      "pages/e3af0e93c6f0aa222e8894f287198cc697ee24d691777ae6a3b438aeae17e55c.json",
+      "pages/1c81b3a969ceed3e0ff116ce581576938205d2e0666bb864cd3be6f567d6580b.json",
+      "pages/c4a6af20374451d78eaab00ccce9bbc347820891c3cf19d99f7612e993e25dd5.json",
+      "pages/fa7cc4570a753da397f41cecbceb0219fdd1147c4c23c0dc55f02a2cd67fd741.json",
+      "pages/ea71b40b028bd5faa9095e5665ff4cc5f5e5c0108fd951c5c4b12a56886ac3c6.json",
+      "pages/38500530122da114cd7c788912e0c204b35967cd14d44800274c65ca25f5ca1f.json",
+      "pages/d63e93a8fa0526896aee0a4b77edc95b231f7d60db0ee7a4312ffdc0f4913ee8.json",
+      "pages/6968111e51a9affd7387c64f0a6bb2c5787ef9c222c1840402d171ccd674f1cb.json",
+      "pages/1adc34b92c2818d5b01bdd5c88acf37f26aec6dac9dd8e67c62a0aec453ccdab.json",
+      "pages/eebd0cc19805bcb9efbebca683ca0f5dc19b36a6830cfad9e821818868b11c6e.json",
+      "pages/7d3e5b11fc7ae1c4635d5a117b859c6723a6d82dab39c2e46be651703085697e.json",
+      "pages/a75897b3724e30394bde3240dc87788c24fe54765aaf2550b14e29d56ddbb445.json",
+      "pages/f8de042c92623cacbd65d3a6523be626b929b59df06174d06fff3f131e78d868.json",
+      "pages/b655d05b2b11e346e8e75979046f1dae826e7d2c2dddb56b9fb69ef334ff3e76.json",
+      "pages/8e194554874a5773ebb7697d7c05a3576911bf1cb5242157d262fb2488b0ddc2.json",
+      "pages/46bbe67b23b0f45dbfd6d2bbaa94e8108b5d359f3e8c4b17dd6357f85453233d.json"
     ]
   }
 }
