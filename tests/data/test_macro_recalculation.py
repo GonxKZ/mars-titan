@@ -258,3 +258,31 @@ def test_history_must_precede_the_output_and_stay_bounded(source, tmp_path, hist
             history_start=history_start,
         )
     assert not output.exists()
+
+
+def test_cli_keeps_history_before_the_requested_output(source, tmp_path):
+    from mars_titan.data.macro_recalculation import main
+
+    acquisition, catalog = source
+    output = tmp_path / "cli-window"
+    main(
+        [
+            "--source",
+            str(acquisition),
+            "--catalog",
+            str(catalog),
+            "--output",
+            str(output),
+            "--market",
+            "CN",
+            "--start",
+            "2023-01-10",
+            "--end",
+            "2023-01-11",
+            "--history-start",
+            "2023-01-01",
+        ]
+    )
+    rows = pq.read_table(output / "macro.parquet").to_pylist()
+    assert len(rows) == 2
+    assert all(row["available_at"] == datetime(2023, 1, 9, 7, 5, tzinfo=UTC) for row in rows)
