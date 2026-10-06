@@ -223,14 +223,16 @@
     "final_test_opened": false
   },
   "archive_checks": {
-    "availability_api_attempts": 2,
+    "availability_api_attempts": 3,
     "availability_api_statuses": [
+      429,
       429,
       429
     ],
     "cdx_status": "timeout_after_30_seconds",
     "historical_snapshot_verified": false,
-    "interpretation": "No se pudo consultar una copia histórica. Estos errores no demuestran que no exista."
+    "interpretation": "No se pudo consultar una copia histórica. Estos errores no demuestran que no exista.",
+    "last_availability_check_at_utc": "2026-10-06T17:05:08.092511+00:00"
   },
   "decision": {
     "admitted_new_sessions": 0,
@@ -240,5 +242,47 @@
   },
   "matrix_retrieved_at_utc": "2026-09-27T21:15:34.806643+00:00",
   "matrix_version_note": "Copia ya conservada de la recuperación GSCPI. El enlace actual puede devolver otras columnas o versiones.",
-  "updated_at_utc": "2026-10-06T13:22:04.761381+00:00"
+  "updated_at_utc": "2026-10-06T17:23:28.403773+00:00",
+  "fraser_archive_check": {
+    "verified_at_utc": "2026-10-06T17:23:28.403773+00:00",
+    "method": "Igualdad binaria y SHA256 frente a los dos adjuntos de New York Fed ya auditados. Comprobación de los identificadores, fechas de catálogo y cabeceras HTTP.",
+    "copies": [
+      {
+        "month": "march",
+        "record_url": "https://fraser.stlouisfed.org/title/9884/item/734953/content/xlsx/frbny_libertystreet_20220303",
+        "download_url": "https://fraser.stlouisfed.org/files/docs/publications/frbnylse/frbny_libertystreet_20220303.xlsx",
+        "metadata_url": "https://fraser.stlouisfed.org/metadata.php?id=734953&json=1&type=item",
+        "sha256": "12603bf24d9245631d53142212e064dec9246d16d4c49130ddb791f49d7843a3",
+        "bytes": 148711,
+        "identical_to_current_provider_attachment": true,
+        "metadata_sha256": "71b2d21332949d373aef61ceee464fbfb4339228458189fdce4e09552b738fff",
+        "date_issued": "2022-03-03",
+        "record_created_at": "2026-08-24 15:30:14",
+        "record_updated_at": "2026-08-25 13:40:08",
+        "http_date": "Tue, 06 Oct 2026 17:20:35 GMT",
+        "http_last_modified": null,
+        "publication_timestamp_verified": false
+      },
+      {
+        "month": "may",
+        "record_url": "https://fraser.stlouisfed.org/title/9884/item/734967/content/xls/frbny_libertystreet_20220518",
+        "download_url": "https://fraser.stlouisfed.org/files/docs/publications/frbnylse/frbny_libertystreet_20220518.xls",
+        "metadata_url": "https://fraser.stlouisfed.org/metadata.php?id=734967&json=1&type=item",
+        "sha256": "67ceec476acd9b8a840531132a4f53c7ab092200fb79ff68b8786fca4fc322a7",
+        "bytes": 99840,
+        "identical_to_current_provider_attachment": true,
+        "metadata_sha256": "3d9c77c007c2e5e8fe7d39bbdb35239021f9601e312779ad357e1b7d033b1d73",
+        "date_issued": "2022-05-18",
+        "record_created_at": "2026-08-24 15:30:56",
+        "record_updated_at": "2026-08-25 13:40:33",
+        "http_date": "Tue, 06 Oct 2026 17:20:35 GMT",
+        "http_last_modified": null,
+        "publication_timestamp_verified": false
+      }
+    ],
+    "interpretation": "Las fichas asocian los adjuntos a los artículos de 2022, pero sus registros se crearon en agosto de 2026. No indican una captura contemporánea. La copia de mayo contiene el mismo periodo posterior al artículo que el adjunto actual. La fecha bibliográfica no acredita la disponibilidad histórica de estos bytes.",
+    "admitted_new_sessions": 0,
+    "active_edition_modified": false,
+    "script_sha256": "2ce2c46380d9a4f46611b9fabaffa9d9b3c475dd0cc797adb7cab4d0d9f0c164"
+  }
 }

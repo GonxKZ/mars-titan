@@ -35,4 +35,8 @@ La [revisión del 6 de octubre](../../reports/data/gscpi-release-audit-20261006.
 
 Con los otros 138 indicadores de la edición ampliada, resolver GSCPI y su cambio mensual podría recuperar siete sesiones, del 20 al 31 de mayo de 2022. Es un diagnóstico de cobertura macro, no un recuento de muestras multimodales admitidas. Para usar el adjunto de marzo falta una copia histórica o confirmación del proveedor que vincule su serie global con una publicación anterior al 20 de mayo.
 
-La consulta al archivo histórico devolvió HTTP 429 en dos intentos y otra consulta agotó su tiempo de espera. Esto no demuestra que no exista una copia. No se han admitido sesiones adicionales ni cambiado los datos de la campaña activa.
+La consulta a Internet Archive devolvió HTTP 429 en tres intentos y otra consulta agotó su tiempo de espera. Esto no demuestra que no exista una copia. No se han admitido sesiones adicionales ni cambiado los datos de la campaña activa.
+
+El contraste posterior con FRASER descargó las copias de [marzo](https://fraser.stlouisfed.org/title/9884/item/734953/content/xlsx/frbny_libertystreet_20220303) y [mayo](https://fraser.stlouisfed.org/title/9884/item/734967/content/xls/frbny_libertystreet_20220518). Ambas coinciden byte a byte con los adjuntos actuales de New York Fed. Los registros de catálogo se crearon el 24 de agosto de 2026 y no indican una captura contemporánea a los artículos.
+
+La copia de mayo conserva también el periodo de mayo de 2022, posterior al artículo del día 18 que solo presenta datos hasta abril. Por tanto, la fecha bibliográfica de FRASER tampoco acredita cuándo estuvieron disponibles esos valores concretos. Las huellas y los metadatos constan en `fraser_archive_check` del informe. Este contraste no incorpora nuevas sesiones.
