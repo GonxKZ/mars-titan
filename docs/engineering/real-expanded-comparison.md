@@ -22,6 +22,8 @@ La cohorte conserva la categoría `original_audited`: usa los contenidos distrib
 
 La representación contable ampliada separa los conceptos monetarios USD y CAD, con 23 conceptos y 69 números entre valores, máscaras y antigüedades. No realiza conversiones de moneda. La proyección conserva exactamente los 45 números originales y las representaciones de noticias y gráficos de las muestras USD. Añade 319 muestras de CP y 394 de ENB. CGC sigue sin emitir muestras por falta de noticias en sus ventanas. ABUS y URG tienen hechos CAD antiguos, pero ya disponen de balances USD durante el periodo nuevo.
 
+La [revisión de monedas y taxonomías](../../reports/data/prepared-accounting-coverage-20261006.json) abarca los 2.641 activos preparados, incluidos los dos casos chinos sin publicación contable acreditada. Sus 2.982.064 hechos contables utilizan `us-gaap`, sin IFRS. En los doce activos con otras unidades se identifican 1.388 decisiones que ya están en la edición y 3.376 combinaciones de activo y sesión sin noticia en la ventana requerida. Los saldos en otras monedas no añaden decisiones dentro del periodo contrastado. Los 403 preparados sin fundamentales se explican por 390 casos estadounidenses con fuentes vacías, once con disponibilidad posterior al corte y los dos casos chinos citados.
+
 La edición definitiva conserva los mismos Parquet que el primer intento y corrige su contrato de publicación. `encoder_contract` comprueba el vínculo con la supervisión. La recuperación recalcula los recuentos desde las etiquetas y rechaza recibos alterados. La continuación reutilizó todas las representaciones CAD desde las cachés, sin volver a ejecutar los codificadores.
 
 ## Particiones y selección
