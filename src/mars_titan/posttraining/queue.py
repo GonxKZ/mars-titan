@@ -23,6 +23,7 @@ from mars_titan.training.predictive_parents import _verified_file
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
+from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import NEURAL, load_parent
 from .preparation import EpisodeFactory, encoder_contract, prepare_augmentation
 from .run import MODES, code_identity, run_case, validate_case
@@ -58,9 +59,14 @@ def read_design(path):
     } | options
     if real_only:
         keys -= {"fraction", "decisions", "warmup"}
+    matching = plan.get("schema_version") == 2
+    if matching:
+        keys.add("parent_seed_policy")
     if (
         set(plan) != keys
-        or plan["schema_version"] != 1
+        or type(plan["schema_version"]) is not int
+        or plan["schema_version"] not in (1, 2)
+        or (matching and plan.get("parent_seed_policy") != "matching")
         or (not real_only and plan["conditions"] != list(CONDITIONS))
         or plan["modes"] != list(MODES[:6])
         or plan["neural_controls"] != list(MODES[6:])
@@ -105,7 +111,7 @@ def read_design(path):
 def _queue_code():
     return code_identity() | {
         f"posttraining/{name}": sha256(Path(__file__).with_name(name))
-        for name in ("queue.py", "preparation.py")
+        for name in ("queue.py", "preparation.py", "parent_selection.py")
     }
 
 
@@ -126,6 +132,20 @@ def _confirm_artifact(summary, root, path):
         raise ValueError("Un artefacto confirmado de la cola ha cambiado")
     artifacts[name] = digest
     atomic_json(root / "summary.json", summary)
+
+
+def _parent_groups(proof, seeds):
+    matched = matching_seeds(proof)
+    if matched is not None and matched != sorted(seeds):
+        raise ValueError("Los padres no cubren las semillas del diseño")
+    for kind, record in proof["parents"].items():
+        if matched is None:
+            yield kind, record, seeds, None
+        elif kind == "ridge":
+            yield kind, parent_for_seed(proof, kind, seeds[0]), seeds, "shared"
+        else:
+            for seed in seeds:
+                yield kind, parent_for_seed(proof, kind, seed), [seed], f"seed-{seed}"
 
 
 def _prepare_augmentations(plan, train, output, binding, summary, stop, lease):
@@ -176,7 +196,11 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
     # La admisión precede a pesos, fuentes grandes y preparación de codificadores.
     with GpuLease() as lease:
         torch.set_num_threads(4)
-        proof = selected_parents(reference, tabular, arm)
+        proof = (
+            matching_parents(reference, tabular, arm, seeds=plan["seeds"])
+            if plan["schema_version"] == 2
+            else selected_parents(reference, tabular, arm)
+        )
         binding = encoder_contract(Path(proof["manifest"]), encoded)
         if binding["supervision_sha256"] != proof["manifest_sha256"]:
             raise ValueError("La supervisión ha cambiado tras verificar los padres")
@@ -208,7 +232,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                 read_manifest(output / "summary.json", 8 * 1024**2)[0]
                 if confirmed
                 else dict(
-                    schema_version=1,
+                    schema_version=plan["schema_version"],
                     kind="real_continuations_queue"
                     if plan["conditions"] == ["real"]
                     else "paired_posttraining_queue",
@@ -245,7 +269,9 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                     augmentations = _prepare_augmentations(
                         plan, train, output, binding, summary, stop, lease
                     )
-                    for kind, parent_record in proof["parents"].items():
+                    for kind, parent_record, seeds, cache_name in _parent_groups(
+                        proof, plan["seeds"]
+                    ):
                         if stop.requested:
                             raise InterruptedError
                         path = Path(parent_record["report"])
@@ -253,14 +279,15 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                             raise ValueError("El informe del padre ha cambiado")
                         parent = load_parent(ordered_path, path, lease=lease)
                         folder = output / "parents" / kind
-                        folder.mkdir(parents=True, exist_ok=True)
+                        cache_folder = folder / cache_name if cache_name else folder
+                        cache_folder.mkdir(parents=True, exist_ok=True)
                         with ParentCache(
-                            folder / "predictions.sqlite",
+                            cache_folder / "predictions.sqlite",
                             parent.identity["checkpoint_sha256"],
                             fingerprint(binding),
                             parent.predict,
                         ) as cache:
-                            norm_path = folder / "normalization.json"
+                            norm_path = cache_folder / "normalization.json"
                             if norm_path.exists():
                                 normalization = read_manifest(norm_path, 4 * 1024**2)[0]
                             else:
@@ -270,7 +297,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                                 )
                                 atomic_json(norm_path, normalization)
                             _confirm_artifact(summary, output, norm_path)
-                            for seed in plan["seeds"]:
+                            for seed in seeds:
                                 extra_folder = output / "augmentation" / f"seed-{seed}"
                                 context = (
                                     EpisodeFactory(extra_folder, augmentations[seed])

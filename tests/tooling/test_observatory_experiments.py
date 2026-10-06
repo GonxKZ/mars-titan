@@ -85,6 +85,39 @@ def test_paired_plan_counts_modes_seeds_conditions_and_declared_families():
     assert planned_runs("paired_posttraining", config, parents=PARENTS) == 44
 
 
+def test_matching_parent_design_has_one_run_per_seed_and_objective(tmp_path):
+    config = configuration("baselines/real-matched-posttraining.json")
+    assert planned_runs("paired_posttraining", config, parents=PARENTS) == 132
+    dump(tmp_path / "design.json", config)
+    entry = {
+        **source("paired_posttraining", "real"),
+        "configuration": "design.json",
+        "parents": PARENTS,
+    }
+    with Collector(tmp_path, tmp_path / "cache.sqlite") as collector:
+        for _ in range(2):
+            report = collector.collect([entry])
+            assert len(report["campaigns"]) == 1
+            assert report["campaigns"][0]["planned_runs"] == 132
+            assert report["runs"] == []
+
+
+@pytest.mark.parametrize("policy", [None, "shared", True])
+def test_matching_parent_design_rejects_an_undeclared_or_different_policy(policy):
+    config = configuration("baselines/real-matched-posttraining.json")
+    config["parent_seed_policy"] = policy
+    with pytest.raises(ValueError):
+        planned_runs("paired_posttraining", config, parents=PARENTS)
+
+
+@pytest.mark.parametrize("version", [True, 2])
+def test_financial_design_does_not_inherit_predictive_design_versions(version):
+    config = configuration("simulation/comparators.json")
+    config["schema_version"] = version
+    with pytest.raises(ValueError):
+        planned_runs("financial", config)
+
+
 @pytest.mark.parametrize("parents", [6, {}, {"gru": "unknown"}, {"gru": ["neural"]}])
 def test_paired_plan_rejects_missing_or_unknown_families(parents):
     with pytest.raises(ValueError):
@@ -190,6 +223,7 @@ def test_paired_dictionary_receipts_keep_primary_metrics_and_parent(mode, tmp_pa
         runs = collector.collect([source("paired_posttraining", "real")])["runs"]
     assert len(runs) == 1
     run = runs[0]
+    assert run["fold"] is None
     assert run["activity"] == report["activity"]
     assert run["model_id"] == ("gru" if mode.startswith("neural_") else "adaptation")
     assert run["metrics"]["mae"] == run["history"][0]["mae"] == 0.2

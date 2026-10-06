@@ -34,7 +34,7 @@ def main():
         if destination.resolve().is_relative_to((args.root / "data").resolve()):
             parser.error("El estado y la salida deben quedar fuera de los datos científicos")
     config = json.loads(args.config.read_text())
-    if config.get("schema_version") != 1 or not 1 <= len(config["sources"]) <= 64:
+    if config.get("schema_version") != 1 or not 1 <= len(config["sources"]) <= 128:
         parser.error("Configuración de campañas inválida")
     args.state_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")

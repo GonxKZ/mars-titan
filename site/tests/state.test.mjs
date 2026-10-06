@@ -147,6 +147,16 @@ test("el registro paginado conserva épocas sin inventar horas y rechaza rutas e
   assert.throws(() => validateSnapshot({...input, pagination: {...input.pagination, pages: ["https://example.org/private"]}}));
 });
 
+test("admite la campaña ampliada junto al historial y mantiene un límite de fuentes", () => {
+  const campaigns = Array.from({length: 84}, (_, i) => ({id: `campaign-${i}`, domain: "real",
+    status: "queued", planned_runs: 132, registered_runs: 0, counts: {not_started: 132}}));
+  const result = validateSnapshot({...snapshot(), schema_version: 2, campaigns});
+  assert.equal(result.campaigns.length, 84);
+  assert.equal(new Set(result.campaigns.map(c => c.id)).size, 84);
+  const tooMany = Array.from({length: 129}, (_, i) => ({...campaigns[0], id: `campaign-${i}`}));
+  assert.throws(() => validateSnapshot({...snapshot(), schema_version: 2, campaigns: tooMany}), /campaigns/);
+});
+
 test("un estado o fase desconocidos permanecen desconocidos", () => {
   const output = validateSnapshot(snapshot([run({ status: null, phase: null })]));
   assert.equal(output.runs[0].status, null);

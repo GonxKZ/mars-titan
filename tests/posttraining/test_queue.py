@@ -71,6 +71,27 @@ def test_real_continuation_design_declares_selection_without_augmentation(tmp_pa
         assert item["case"]["epochs"] == 5
 
 
+def test_matching_design_is_explicit_and_preserves_all_132_real_cases(tmp_path):
+    plan = read_design(Path("configs/baselines/real-continuations-v2.json"))[0]
+    plan.update(schema_version=2, parent_seed_policy="matching")
+    config = tmp_path / "matching.json"
+    atomic_json(config, plan)
+    admitted, cases, _ = read_design(config)
+    assert admitted["parent_seed_policy"] == "matching"
+    assert (
+        sum(len(cases(kind)) for kind in ("rnn", "lstm", "gru", "dlinear", "ridge", "xgboost"))
+        == 132
+    )
+    for change in ({"schema_version": 1}, {"parent_seed_policy": "shared"}):
+        atomic_json(config, plan | change)
+        with pytest.raises(ValueError):
+            read_design(config)
+    plan.pop("parent_seed_policy")
+    atomic_json(config, plan)
+    with pytest.raises(ValueError):
+        read_design(config)
+
+
 def test_versioned_designs_keep_parameters_and_make_stopping_explicit():
     legacy, _, _ = read_design(Path("configs/baselines/paired-posttraining.json"))
     paired, _, _ = read_design(Path("configs/baselines/paired-posttraining-v2.json"))
@@ -191,7 +212,7 @@ def test_partial_augmentation_receipt_cannot_change_the_matched_budget(tmp_path,
         prepare_augmentation(source, output, encoders, **kwargs)
 
 
-@pytest.mark.parametrize("edition", ["legacy", "paired_v2", "real_v2"])
+@pytest.mark.parametrize("edition", ["legacy", "paired_v2", "real_v2", "matching"])
 def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
     tmp_path, monkeypatch, edition
 ):
@@ -248,6 +269,21 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
         counts=counts,
         parents={"gru": dict(report=str(parent_report), sha256=sha256(parent_report))},
     )
+    if edition == "matching":
+        bindings = {}
+        for seed in (7, 8):
+            path = roots / f"parent-{seed}.json"
+            atomic_json(path, dict(seed=seed))
+            bindings[str(seed)] = dict(
+                report=str(path),
+                sha256=sha256(path),
+                run_id=f"gru-{seed}",
+                parent_seed=seed,
+                shared_deterministic=False,
+            )
+        proof.update(
+            schema_version=2, parent_seed_policy="matching", parents_by_seed={"gru": bindings}
+        )
 
     class CpuLease:
         def __enter__(self):
@@ -287,16 +323,23 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
         atomic_json(output / "manifest.json", meta)
         return meta
 
-    def parent(*_args, **_kwargs):
-        torch.manual_seed(1)
+    loaded_parents = []
+
+    def parent(_ordered, report_path, **_kwargs):
+        seed = read_manifest(report_path)[0].get("seed", 1)
+        loaded_parents.append(seed)
+        torch.manual_seed(seed)
         shapes = fixture_sources["train"].shapes
         model = MultimodalReference(
             "gru", {k: s[-1] for k, s in shapes.items()}, context=4, hidden_size=32
         )
-        return FrozenParent(model, dict(model="gru", checkpoint_sha256="a" * 64), shapes, "cpu")
+        return FrozenParent(
+            model, dict(model="gru", checkpoint_sha256=str(seed) * 64), shapes, "cpu"
+        )
 
     monkeypatch.setattr(module, "GpuLease", CpuLease)
     monkeypatch.setattr(module, "selected_parents", lambda *_args: proof)
+    monkeypatch.setattr(module, "matching_parents", lambda *_args, **_kwargs: proof)
     monkeypatch.setattr(module, "prepare_causal_corpus", ordered)
     monkeypatch.setattr(module, "ParquetCohortSource", Source)
     monkeypatch.setattr(module, "FrozenEncoders", TestEncoders)
@@ -316,10 +359,10 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
         plan["selection"] = dict(
             version=2,
             metric="session_mae",
-            patience=2 if edition == "real_v2" else None,
+            patience=2 if edition in {"real_v2", "matching"} else None,
             min_delta=0.0,
         )
-    if edition == "real_v2":
+    if edition in {"real_v2", "matching"}:
         plan["conditions"] = ["real"]
         for key in ("fraction", "decisions", "warmup"):
             plan.pop(key)
@@ -329,6 +372,8 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
 
         for name in ("FrozenEncoders", "prepare_augmentation", "fit_volatility", "EpisodeFactory"):
             monkeypatch.setattr(module, name, forbidden)
+    if edition == "matching":
+        plan.update(schema_version=2, parent_seed_policy="matching", seeds=[7, 8])
     config = tmp_path / "config.json"
     atomic_json(config, plan)
     output = tmp_path / "queue"
@@ -337,28 +382,50 @@ def test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run(
     assert paused["status"] == "paused" and paused["completed_runs"] == 1
     record = next(iter(paused["runs"].values()))
     previous = sha256(output / record["path"])
+    if edition == "matching":
+        atomic_json(config, plan | {"seeds": [7]})
+        with pytest.raises(ValueError, match="identidad"):
+            run_queue(*args)
+        atomic_json(config, plan)
     completed = run_queue(*args)
     assert completed["status"] == "completed"
     assert (
         completed["completed_runs"]
         == completed["planned_runs"]
-        == (8 if edition == "real_v2" else 24)
+        == (16 if edition == "matching" else 8 if edition == "real_v2" else 24)
     )
     assert sha256(output / record["path"]) == previous
-    condition = "real" if edition == "real_v2" else "real_synthetic"
+    condition = "real" if edition in {"real_v2", "matching"} else "real_synthetic"
     result = read_manifest(
         output / f"parents/gru/runs/seed-7/{condition}/neural_mae/run.json", 8 * 1024**2
     )[0]
-    assert result["budget"]["rows"] == (16 if edition == "real_v2" else 20)
+    assert result["budget"]["rows"] == (16 if edition in {"real_v2", "matching"} else 20)
     assert result["epochs"][0]["validation"]["samples"] == 8
     assert result["final_test_opened"] is False
     if edition != "legacy":
         assert result["baseline"]["samples"] == 8
         assert completed["selection_policy"] == result["selection_policy"]
-    if edition == "real_v2":
+    if edition in {"real_v2", "matching"}:
         assert not (output / "augmentation").exists()
         assert not (output / "calibration.json").exists()
-    path = output / "parents/gru/normalization.json"
+    if edition == "matching":
+        assert loaded_parents == [7, 7, 8]
+        normalizations = []
+        for seed in (7, 8):
+            folder = output / "parents/gru" / f"seed-{seed}"
+            assert (folder / "predictions.sqlite").is_file()
+            normalizations.append(read_manifest(folder / "normalization.json")[0])
+            receipt = read_manifest(
+                output / f"parents/gru/runs/seed-{seed}/real/neural_mae/run.json"
+            )[0]
+            assert receipt["identity"]["parent"]["checkpoint_sha256"] == str(seed) * 64
+        assert normalizations[0]["parent_sha256"] != normalizations[1]["parent_sha256"]
+        assert normalizations[0]["mean"][-1] != normalizations[1]["mean"][-1]
+    path = (
+        output
+        / "parents/gru"
+        / ("seed-7/normalization.json" if edition == "matching" else "normalization.json")
+    )
     changed = read_manifest(path)[0]
     changed["mean"][0] += 1
     atomic_json(path, changed)

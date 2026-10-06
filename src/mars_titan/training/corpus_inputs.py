@@ -108,10 +108,16 @@ def _price_contexts(prices, ends, context):
 class CorpusDataset:
     """Validar una edición y reutilizar sus huellas mientras no cambien los archivos."""
 
-    def __init__(self, manifest: Path, *, cache_bytes: int = 1024**3):
+    def __init__(
+        self, manifest: Path, *, cache_bytes: int = 1024**3, cache_sample_tables: bool = False
+    ):
         if type(cache_bytes) is not int or not 0 <= cache_bytes <= 4 * 1024**3:
             raise ValueError("La caché de entrada debe estar entre cero y cuatro GiB")
+        if type(cache_sample_tables) is not bool:
+            raise ValueError("La caché de tablas necesita una opción booleana explícita")
         self.cache_limit = cache_bytes
+        self.cache_sample_tables = cache_sample_tables
+        self.cache_entry_limit = 16384 if cache_sample_tables else 8192
         self.cached_bytes = 0
         self._cache = OrderedDict()
         self.path = Path(manifest)
@@ -200,29 +206,35 @@ class CorpusDataset:
     def _cached(self, key, signature):
         if key not in self._cache:
             return None
-        previous, arrays, size = self._cache[key]
+        previous, value, size = self._cache[key]
         if previous != signature:
             self._cache.pop(key)
             self.cached_bytes -= size
             return None
         self._cache.move_to_end(key)
-        return arrays
+        return value
 
-    def _remember(self, key, signature, arrays):
-        size = sum(array.nbytes for array in arrays)
+    def _remember(self, key, signature, value):
+        size = (
+            value.get_total_buffer_size()
+            if isinstance(value, pa.Table)
+            else sum(array.nbytes for array in value)
+        )
         if self.cache_limit == 0 or size > self.cache_limit:
             return
         if key in self._cache:
             _, _, previous_size = self._cache.pop(key)
             self.cached_bytes -= previous_size
         while self._cache and (
-            self.cached_bytes + size > self.cache_limit or len(self._cache) >= 8192
+            self.cached_bytes + size > self.cache_limit
+            or len(self._cache) >= self.cache_entry_limit
         ):
             _, (_, _, previous_size) = self._cache.popitem(last=False)
             self.cached_bytes -= previous_size
-        for array in arrays:
-            array.flags.writeable = False
-        self._cache[key] = signature, arrays, size
+        if not isinstance(value, pa.Table):
+            for array in value:
+                array.flags.writeable = False
+        self._cache[key] = signature, value, size
         self.cached_bytes += size
 
     @staticmethod
@@ -345,7 +357,8 @@ class CorpusDataset:
         for asset_position in range(cursor["asset"], len(order)):
             asset = self.assets[int(order[asset_position])]
             key = f"{asset['market']}/{asset['symbol']}"
-            with pq.ParquetFile(self._file(asset, "samples")) as file:
+            path = self._file(asset, "samples")
+            with pq.ParquetFile(path) as file:
                 positions, prediction, target, maturity = self._labels(
                     asset, partition, file.metadata.num_rows
                 )
@@ -381,6 +394,8 @@ class CorpusDataset:
                     columns = ["prediction_at", "price_end_index", *VECTORS] + (
                         ["cohort_id"] if self.cohort else []
                     )
+                    if self.temporal:
+                        columns.remove("macro")
                     if "input_availability" in file.schema_arrow.names:
                         columns.append("input_availability")
                         if "macro_available_at" in file.schema_arrow.names:
@@ -393,7 +408,12 @@ class CorpusDataset:
                     )
                     if size > MAX_TABLE_BYTES:
                         raise ValueError("El grupo de características supera 64 MiB")
-                    table = file.read_row_group(int(group), columns=columns, use_threads=False)
+                    cache_key = "samples", path, int(group), tuple(columns)
+                    signature = self.verified[path]
+                    table = self._cached(cache_key, signature) if self.cache_sample_tables else None
+                    cache_miss = table is None
+                    if cache_miss:
+                        table = file.read_row_group(int(group), columns=columns, use_threads=False)
                     validate_cohort_rows(table, self.cohort)
                     if table.nbytes > MAX_TABLE_BYTES:
                         raise ValueError("El grupo decodificado supera el presupuesto")
@@ -429,6 +449,8 @@ class CorpusDataset:
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
+                    if self.cache_sample_tables and cache_miss:
+                        self._remember(cache_key, signature, table)
                     for offset in range(start, len(indexes), 256):
                         labels = indexes[offset : offset + 256]
                         block_rows = positions[labels] - offsets[group]

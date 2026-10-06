@@ -216,8 +216,38 @@ def _exited(child):
     )
 
 
+def _live_roots(owned):
+    """Elegir procesos propios vivos que no tengan otro ancestro propio vivo."""
+    states = {}
+
+    def info(pid):
+        if pid not in states:
+            states[pid] = _process_info(pid)
+        return states[pid]
+
+    live = {}
+    for pid, generation in owned.items():
+        state = info(pid)
+        if state is not None and state[2] == generation and state[3] not in {"Z", "X", "x"}:
+            live[pid] = generation
+    roots = {}
+    for pid, generation in live.items():
+        ancestor, seen = info(pid)[0], {pid}
+        while ancestor > 1:
+            if ancestor in seen or len(seen) >= 256:
+                raise RuntimeError("No se puede acreditar una ascendencia de procesos acotada")
+            seen.add(ancestor)
+            if ancestor in live:
+                break
+            state = info(ancestor)
+            ancestor = state[0] if state is not None else 0
+        else:
+            roots[pid] = generation
+    return roots
+
+
 def _stop_child(child, timeout, owned=None, root_generation=None):
-    """Esperar los procesos propios, incluidas sesiones nativas descendientes."""
+    """Detener las raíces propias vivas y esperar su cierre antes de avanzar a sus hijos."""
     deadline = time.monotonic() + timeout
     if root_generation is None and child.returncode is None:
         root = _process_info(child.pid)
@@ -226,13 +256,15 @@ def _stop_child(child, timeout, owned=None, root_generation=None):
     signalled = False
     while True:
         owned = _owned_processes(child.pid, owned, root_generation)
-        for pid, generation in owned.items():
+        leader_exited = _exited(child)
+        # Cada raíz propaga TERM. Otro envío puede interrumpir el cierre de sus hijos.
+        for pid, generation in _live_roots(owned).items():
             identity = pid, generation
             if identity not in sent:
                 delivered = _signal_process(pid, generation, signal.SIGTERM)
                 signalled = signalled or (pid == child.pid and delivered)
                 sent.add(identity)
-        if _exited(child) and not owned:
+        if leader_exited and not owned:
             return child.wait(), False, signalled
         if time.monotonic() >= deadline:
             break

@@ -6,19 +6,40 @@ sin hora se llevan al final del día de origen y a la siguiente sesión estricta
 del mercado objetivo. Esta regla sacrifica inmediatez al cruzar zonas horarias.
 """
 
+import hashlib
 import math
 import re
 from bisect import bisect_left, bisect_right, insort
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, time, timedelta
 from graphlib import CycleError, TopologicalSorter
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from mars_titan.data.macro_formulas import Formula, MissingCalculation
-from mars_titan.data.macro_model_vintages import model_vintage_contract, validate_monthly_bound
+from mars_titan.data.macro_model_vintages import (
+    STRESS_HISTORY_POLICY,
+    model_vintage_contract,
+    validate_monthly_bound,
+)
 from mars_titan.data.macro_release_contracts import release_exclusion, validate_release_observation
 from mars_titan.data.temporal import MarketClock
+
+
+def _validate_daily_lag_policy(policy):
+    if not isinstance(policy, str) or policy not in {"source_records", "valid_observations"}:
+        raise ValueError("La política de retardos diarios no está admitida")
+
+
+def macro_calculation_contract(*, daily_lag_policy: str = "source_records") -> dict:
+    """Identificar la regla y el motor para el recibo de una edición nueva."""
+    _validate_daily_lag_policy(daily_lag_policy)
+    return {
+        "daily_lag_policy": daily_lag_policy,
+        "daily_lag_policy_version": 1,
+        "code_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+    }
 
 
 @dataclass(frozen=True)
@@ -49,6 +70,7 @@ def _exclusion(entry: dict) -> str | None:
         "ALFRED_OR_RELEASE_ARCHIVE",
         "ALFRED_MODEL_VINTAGES",
         "NYFED_MONTHLY_VINTAGES",
+        STRESS_HISTORY_POLICY,
     }:
         return "vintages_not_admissible"
     return None
@@ -113,6 +135,8 @@ def _events(rows: Iterable[dict], entries: dict, clock: MarketClock):
         identifier = row["indicator_id"]
         if identifier not in entries or entries[identifier]["kind"] != "raw":
             raise ValueError(f"La entrada no es un indicador original del catálogo: {identifier}")
+        if entries[identifier].get("vintage_policy") == STRESS_HISTORY_POLICY:
+            raise ValueError("La historia compuesta requiere composición de paneles acreditados")
         start = date.fromisoformat(row["realtime_start"])
         original_start = date.fromisoformat(
             row.get("original_realtime_start", row["realtime_start"])
@@ -208,9 +232,12 @@ def _lag(period: date, offset: int, frequency: str, periods: list[date]) -> date
 
 
 class _Snapshot:
-    def __init__(self, entries, dependencies, formulas, order, state, raw_periods):
+    def __init__(
+        self, entries, dependencies, formulas, order, state, raw_periods, daily_lag_policy
+    ):
         self.entries, self.dependencies, self.formulas = entries, dependencies, formulas
         self.state, self.periods = state, dict(raw_periods)
+        self.daily_lag_policy = daily_lag_policy
         self.cache = {}
         for identifier in order:
             if identifier in formulas:
@@ -229,14 +256,42 @@ class _Snapshot:
             self.cache[key] = self._derived(identifier, period)
         return self.cache[key]
 
+    def _lagged_value(self, identifier, period, offset):
+        frequency = self.entries[identifier]["frequency"]
+        if (
+            period is None
+            or not offset
+            or frequency != "D"
+            or self.daily_lag_policy == "source_records"
+        ):
+            previous = (
+                _lag(period, offset, frequency, self.periods[identifier])
+                if period is not None
+                else None
+            )
+            return self.value(identifier, previous)
+        periods = self.periods[identifier]
+        position = bisect_left(periods, period) - 1
+        remaining, available, hashes = offset, None, set()
+        while position >= 0:
+            observation = self.value(identifier, periods[position])
+            hashes.update(observation.hashes)
+            if observation.available_at is not None and (
+                available is None or observation.available_at > available
+            ):
+                available = observation.available_at
+            if observation.value is not None and observation.reason is None:
+                remaining -= 1
+                if not remaining:
+                    # Las omisiones conocidas también determinan qué periodo se selecciona.
+                    return replace(observation, available_at=available, hashes=frozenset(hashes))
+            position -= 1
+        return _Value(None, available, frozenset(hashes), "insufficient_valid_observations")
+
     def _derived(self, identifier: str, period: date | None) -> _Value:
         formula = self.formulas[identifier]
         observations = {
-            (dep, offset): self.value(
-                dep, _lag(period, offset, self.entries[dep]["frequency"], self.periods[dep])
-            )
-            if period is not None
-            else self.value(dep, None)
+            (dep, offset): self._lagged_value(dep, period, offset)
             for dep, offset in formula.references
         }
         timestamps = [v.available_at for v in observations.values() if v.available_at is not None]
@@ -268,14 +323,25 @@ class _Snapshot:
         return None, value
 
 
-def calculate_macro(rows: Iterable[dict], catalog: list[dict], clock: MarketClock) -> list[dict]:
+def calculate_macro(
+    rows: Iterable[dict],
+    catalog: list[dict],
+    clock: MarketClock,
+    *,
+    daily_lag_policy: str = "source_records",
+) -> list[dict]:
     """Emite todos los indicadores por decisión, incluidas ausencias explicadas.
 
     El estado conserva cada periodo conocido, incluidas sus ausencias explícitas.
     Se recorren los eventos una vez y se reutiliza la instantánea entre decisiones
     sin novedades. No se consultan redes ni se filtra el archivo por cada sesión.
     Q_END se identifica por el inicio de su trimestre, conservando su unidad de saldo.
+
+    valid_observations cuenta valores admitidos en retardos D positivos. No cambia
+    el periodo actual ni los retardos de calendario. Su uso exige registrar
+    macro_calculation_contract en una edición distinta de la predeterminada.
     """
+    _validate_daily_lag_policy(daily_lag_policy)
     entries, dependencies, formulas, order = _catalog(catalog)
     events = _events(rows, entries, clock)
     state = {identifier: {} for identifier in entries if identifier not in formulas}
@@ -296,7 +362,9 @@ def calculate_macro(rows: Iterable[dict], catalog: list[dict], clock: MarketCloc
                 changed = True
             index += 1
         if changed:
-            snapshot = _Snapshot(entries, dependencies, formulas, order, state, periods)
+            snapshot = _Snapshot(
+                entries, dependencies, formulas, order, state, periods, daily_lag_policy
+            )
             cached = {identifier: snapshot.latest(identifier) for identifier in entries}
         for identifier, (period, value) in cached.items():
             output.append(

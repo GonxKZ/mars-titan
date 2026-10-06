@@ -127,6 +127,24 @@ def test_recycled_group_leader_does_not_admit_an_unrelated_tree(monkeypatch):
     assert engine._owned_processes(1234, {1234: 11, 3337: 5}) == {3337: 5}
 
 
+def test_live_roots_wait_for_owned_ancestors_and_ignore_recycled_generations(monkeypatch):
+    engine = module()
+    table = {
+        100: (1, 100, 10, "S"),
+        200: (100, 200, 20, "S"),
+        300: (200, 300, 30, "S"),
+        400: (1, 400, 40, "S"),
+        500: (400, 500, 51, "S"),
+    }
+    monkeypatch.setattr(engine, "_process_info", table.get)
+    owned = {100: 10, 200: 20, 300: 30, 400: 40, 500: 50}
+    assert engine._live_roots(owned) == {100: 10, 400: 40}
+    table[100] = (1, 100, 10, "Z")
+    assert engine._live_roots(owned) == {200: 20, 400: 40}
+    table[100] = (1, 100, 10, "S")
+    assert engine._live_roots({100: 10, 300: 30}) == {100: 10}
+
+
 def test_spontaneous_exit_during_probe_is_not_restarted_as_a_pause(tmp_path):
     engine = module()
     ready, gate = tmp_path / "ready", tmp_path / "gate"
@@ -250,6 +268,104 @@ while True: time.sleep(.01)
                 except ProcessLookupError:
                     pass
         child.wait(timeout=2)
+
+
+@pytest.mark.parametrize("orphaned_launcher", [False, True])
+def test_cooperative_launcher_does_not_receive_a_duplicate_term_for_its_worker(
+    tmp_path, monkeypatch, orphaned_launcher
+):
+    import signal
+
+    engine = module()
+    ready, closing, checkpoint, gate = (
+        tmp_path / name for name in ("ready", "closing", "checkpoint", "gate")
+    )
+    result_file = tmp_path / "worker-result"
+    worker_file = tmp_path / "worker.py"
+    worker_file.write_text(f"""
+import os,signal,time
+from pathlib import Path
+stopping=False
+def stop(*_):
+    global stopping
+    stopping=True
+signal.signal(signal.SIGTERM,stop)
+Path({str(ready)!r}).write_text(str(os.getpid()))
+while not stopping: time.sleep(.001)
+Path({str(checkpoint)!r}).write_text('confirmed')
+signal.signal(signal.SIGTERM,signal.SIG_DFL)
+Path({str(closing)!r}).write_text('closing')
+while not Path({str(gate)!r}).exists(): time.sleep(.001)
+raise SystemExit(2)
+""")
+    launcher = f"""
+import signal,subprocess,sys,time
+from pathlib import Path
+stopping=False
+def stop(*_):
+    global stopping
+    stopping=True
+signal.signal(signal.SIGTERM,stop)
+worker=subprocess.Popen([sys.executable,{str(worker_file)!r}],start_new_session=True)
+while not Path({str(ready)!r}).exists(): time.sleep(.001)
+print(worker.pid,flush=True)
+forwarded=False
+while worker.poll() is None:
+    if stopping and not forwarded:
+        worker.terminate()
+        forwarded=True
+    time.sleep(.001)
+Path({str(result_file)!r}).write_text(str(worker.returncode))
+raise SystemExit(worker.returncode)
+"""
+    if orphaned_launcher:
+        launcher_file = tmp_path / "launcher.py"
+        launcher_file.write_text(launcher)
+        launcher = f"""
+import os,signal,subprocess,sys,time
+signal.signal(signal.SIGTERM,lambda *_: os._exit(0))
+child=subprocess.Popen([sys.executable,{str(launcher_file)!r}],start_new_session=True,stdout=subprocess.PIPE,text=True)
+print(child.pid,child.stdout.readline().strip(),flush=True)
+while True: time.sleep(.001)
+"""
+    child = subprocess.Popen(
+        [sys.executable, "-c", launcher], start_new_session=True, stdout=subprocess.PIPE, text=True
+    )
+    signal_process, owned_processes = engine._signal_process, engine._owned_processes
+    generations = {}
+    try:
+        assert select.select([child.stdout], [], [], 5)[0]
+        descendants = [int(pid) for pid in child.stdout.readline().split()]
+        launcher_pid, worker = descendants if orphaned_launcher else (child.pid, descendants[0])
+        generations = {
+            pid: engine._process_info(pid)[2] for pid in {child.pid, launcher_pid, worker}
+        }
+
+        def acknowledged_signal(pid, generation, sig):
+            delivered = signal_process(pid, generation, sig)
+            if pid in {launcher_pid, worker} and sig == signal.SIGTERM and delivered:
+                deadline = time.monotonic() + 2
+                while not closing.exists() and time.monotonic() < deadline:
+                    time.sleep(0.001)
+                assert closing.exists(), "El lanzador no propagó la señal de cierre"
+            return delivered
+
+        def release_after_signal_pass(*args, **kwargs):
+            if closing.exists():
+                gate.touch()
+            return owned_processes(*args, **kwargs)
+
+        monkeypatch.setattr(engine, "_signal_process", acknowledged_signal)
+        monkeypatch.setattr(engine, "_owned_processes", release_after_signal_pass)
+        code, forced, signalled = engine._stop_child(child, 3)
+        assert checkpoint.read_text() == "confirmed"
+        assert code == (0 if orphaned_launcher else 2) and not forced and signalled
+        assert int(result_file.read_text()) == 2
+    finally:
+        gate.touch()
+        for pid, generation in generations.items():
+            signal_process(pid, generation, signal.SIGKILL)
+        child.wait(timeout=3)
 
 
 def test_low_memory_waits_without_starting_the_command(tmp_path):
