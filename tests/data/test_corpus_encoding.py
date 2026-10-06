@@ -162,3 +162,63 @@ def test_manifest_hash_identifies_the_population_actually_read(tmp_path, monkeyp
             context=2,
         )
     assert not (tmp_path / "encoded/manifest.json").exists()
+
+
+def test_reviewed_subset_keeps_its_scope_and_requested_sample_contract(tmp_path):
+    from mars_titan.data.samples import FUNDAMENTAL_CONCEPTS
+
+    manifest, clock, macro = prepared_edition(tmp_path)
+    content = json.loads(manifest.read_text())
+    content.update(scope="reviewed_asset_subset", parent_preparation={"candidate_count": 892})
+    manifest.write_text(json.dumps(content))
+    result = encode(
+        manifest,
+        tmp_path / "subset",
+        macros={"US": macro},
+        encoders=Encoders(),
+        clocks={"US": clock},
+        context=2,
+        fundamental_concepts=FUNDAMENTAL_CONCEPTS,
+        company_factors=False,
+        source_unit="USD",
+        admitted_decisions={"US": {clock.decision("2023-07-06")}},
+    )
+    assert result["scope"] == "development_snapshot"
+    assert result["cohort_complete"] is False
+    assert result["preparation_scope"] == "reviewed_asset_subset"
+    assert result["parent_preparation"]["candidate_count"] == 892
+    assert result["samples"] == 1
+    assert (tmp_path / "subset/manifest.json").is_file()
+    receipt = json.loads((tmp_path / "subset/samples/US/A/manifest.json").read_text())
+    assert receipt["fundamental_concepts"] == list(FUNDAMENTAL_CONCEPTS)
+    assert receipt["source_unit"] == "USD"
+    assert receipt["admitted_decisions_sha256"] is not None
+
+
+def test_unknown_preparation_scope_is_rejected(tmp_path):
+    manifest, clock, macro = prepared_edition(tmp_path)
+    content = json.loads(manifest.read_text())
+    content["scope"] = "unidentified_selection"
+    manifest.write_text(json.dumps(content))
+    with pytest.raises(ValueError, match="preparación|alcance"):
+        encode(
+            manifest,
+            tmp_path / "out",
+            macros={"US": macro},
+            encoders=Encoders(),
+            clocks={"US": clock},
+        )
+
+
+def test_reserved_admission_fails_before_loading_a_model(tmp_path, monkeypatch):
+    manifest, clock, macro = prepared_edition(tmp_path)
+    module = importlib.import_module("mars_titan.data.corpus_encoding")
+    monkeypatch.setattr(module, "FrozenEncoders", lambda: pytest.fail("Se cargó un modelo"))
+    with pytest.raises(ValueError, match="2024"):
+        encode(
+            manifest,
+            tmp_path / "out",
+            macros={"US": macro},
+            clocks={"US": clock},
+            admitted_decisions={"US": {clock.decision("2024-01-03")}},
+        )

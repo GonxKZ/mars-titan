@@ -74,8 +74,8 @@ opción CLI. La revisión focal pasa 187 casos y detecta seis mutaciones dirigid
 El recibo distingue el alcance de cada comprobación y su convención de cobertura.
 
 Las 169 fechas potenciales del caso contable de Ping An conservan macro completo.
-Aún faltan su representación CNY, codificación y unión supervisada. El [factor
-CSI 300](csi300-market-factor.md) ya permite calcular 168 etiquetas previas al corte anual.
+La [codificación CNY](chinese-multimodal-samples.md) y el [factor CSI 300](csi300-market-factor.md)
+permiten leer 168 muestras etiquetadas anteriores al corte anual.
 La admisión de contexto macro no acredita por sí sola muestras con las cuatro
 modalidades ni etiquetas utilizables. La campaña estadounidense conserva su
 edición y su runtime, y el test final permanece cerrado.
