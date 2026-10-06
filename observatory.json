@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-05T13:17:34.383119Z",
+  "generated_at": "2026-10-06T03:03:58.568153Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -579,6 +579,536 @@
         "not_started": 0
       },
       "registered_runs": 75
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-000",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-000",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-000"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-000",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-000",
+        "tabular-real-expanded-20261006-fold-000"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-000",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-000",
+        "tabular-real-expanded-20261006-fold-000",
+        "posttraining-real-expanded-20261006-fold-000"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-001",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-001",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-001"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-001",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-001",
+        "tabular-real-expanded-20261006-fold-001"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-001",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-001",
+        "tabular-real-expanded-20261006-fold-001",
+        "posttraining-real-expanded-20261006-fold-001"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-002",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-002",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-002"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-002",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-002",
+        "tabular-real-expanded-20261006-fold-002"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-002",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-002",
+        "tabular-real-expanded-20261006-fold-002",
+        "posttraining-real-expanded-20261006-fold-002"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-003",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-003",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-003"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-003",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-003",
+        "tabular-real-expanded-20261006-fold-003"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-003",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-003",
+        "tabular-real-expanded-20261006-fold-003",
+        "posttraining-real-expanded-20261006-fold-003"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-004",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-004",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-004"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-004",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-004",
+        "tabular-real-expanded-20261006-fold-004"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-004",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-004",
+        "tabular-real-expanded-20261006-fold-004",
+        "posttraining-real-expanded-20261006-fold-004"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-005",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-005",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-005"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-005",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-005",
+        "tabular-real-expanded-20261006-fold-005"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-005",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-005",
+        "tabular-real-expanded-20261006-fold-005",
+        "posttraining-real-expanded-20261006-fold-005"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-006",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-006",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-006"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-006",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-006",
+        "tabular-real-expanded-20261006-fold-006"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-006",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-006",
+        "tabular-real-expanded-20261006-fold-006",
+        "posttraining-real-expanded-20261006-fold-006"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-007",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-007",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-007"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-007",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-007",
+        "tabular-real-expanded-20261006-fold-007"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-007",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-007",
+        "tabular-real-expanded-20261006-fold-007",
+        "posttraining-real-expanded-20261006-fold-007"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-008",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-008",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-008"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-008",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-008",
+        "tabular-real-expanded-20261006-fold-008"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-008",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-008",
+        "tabular-real-expanded-20261006-fold-008",
+        "posttraining-real-expanded-20261006-fold-008"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "neural-real-expanded-20261006-fold-009",
+      "domain": "real",
+      "planned_runs": 40,
+      "status": "queued",
+      "dependencies": [],
+      "counts": {
+        "not_started": 40
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "tabular-real-expanded-20261006-fold-009",
+      "domain": "real",
+      "planned_runs": 17,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-009"
+      ],
+      "counts": {
+        "not_started": 17
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "posttraining-real-expanded-20261006-fold-009",
+      "domain": "real",
+      "planned_runs": 132,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-009",
+        "tabular-real-expanded-20261006-fold-009"
+      ],
+      "counts": {
+        "not_started": 132
+      },
+      "registered_runs": 0
+    },
+    {
+      "id": "evaluation-real-expanded-20261006-fold-009",
+      "domain": "real",
+      "planned_runs": 0,
+      "status": "blocked",
+      "dependencies": [
+        "neural-real-expanded-20261006-fold-009",
+        "tabular-real-expanded-20261006-fold-009",
+        "posttraining-real-expanded-20261006-fold-009"
+      ],
+      "counts": {
+        "not_started": 0
+      },
+      "registered_runs": 0
     }
   ],
   "models": [
@@ -4705,40 +5235,40 @@
       "pages/37154969031ea915aa37104a1c7201be8d1e6f8fcd37157c3dfd23eac718d40c.json",
       "pages/f31414694b5702274957b9463e7a74b01fa7a2b2f763e8ce4ec0b917dd609f12.json",
       "pages/d18830caaf74012555b31a752e13691b72b38c1ae9ff9ed89e352e0cff70b5c1.json",
-      "pages/31854b23d474163ebb02a45e52338ced60e3e6d590bef009e22035b954b55148.json",
-      "pages/abfe3299f2f85f52cdd5c016d3f5fb4238d811eeb214a3f83fe2f8de6335ec8a.json",
-      "pages/23761b2cdd48d532ee16f9a2f1794437bcf1578684a5f50c5c33d17195570092.json",
-      "pages/d1b261a0c9e380d19302aab931c5dde526db25e7c7f19d58ddcb82f908bdcb29.json",
-      "pages/1aef7930ae52fad1f8c39e55a5712f520b97596a9e4f09ddb691a2f782fa655e.json",
-      "pages/12da114195ba46508d887b7ece2279176c2d16f07d2dbf7a0a55a41643c664d5.json",
-      "pages/77b8d242bc78bea09c6f3ef2cac836748d9e4ed43949c7bce89e0cad7b3459b3.json",
-      "pages/a2349276bbaed09aa9e2577ecc3979011866462c33c2507dae3d13675918bc00.json",
-      "pages/c99895e3cb606eafd72791af0f75ee8d601f8b8eb50378568bcbdf481c593609.json",
-      "pages/565b2852ff553c9403f18dc58ef408c807d9b40b60ea4f9eb65abce8728a4870.json",
+      "pages/17576c27e04b9585ebdba35615bce9f22f8eb6c660f09796288c7776034c7180.json",
+      "pages/76172a8b697241087a96881245e929cab36e0c60f8072951b7c6b8569d0b2d3a.json",
+      "pages/3c031f9059abc0f44beb02a0f6f4fa2d5be5af9c0bafc81aec42ddb4116631d0.json",
+      "pages/db13b40b0b28aba110f0eef5e76a40c1920613092f0fa84b1dbf132d0514c389.json",
+      "pages/1d0346f1612742bf660d770eef57b6837d516c17e1ac3559446bbbcc1c220ef5.json",
+      "pages/001f61d8b258ed80bc1de0d6f8462cee5c7f7731163f2f248697266026c3784f.json",
+      "pages/ef9e3629c7058faf0e75e5cad15a86889ddfe78831b8f6cc08d92025f4b28bbb.json",
+      "pages/4900a839ba6fd22d48d67c5e7c9c4cebf966a63c2fe3eb2263ddefc2fc9f2798.json",
+      "pages/5c1464e28395ed7bc4ed7892b76a96fa1775312a279232b655adbd8029113820.json",
+      "pages/6a6d2884f933bad66b4d22bcbbd55ca1b1004de603ba4c441584a4148f24b402.json",
       "pages/ff3b4230a847fc7f97ff08e7bbe704772b2733a7ecfe79db15dbf8c328dae26c.json",
       "pages/f483c1bd4735bbe64a898462e0c0be4d694ef1b65fef0ed06e1156995cf377a6.json",
       "pages/bdafd2451ea064a4bdef55d1a3ad682dc428a57955a0bf3bd813d09ab18e9326.json",
       "pages/f3c18cf4c971a8a73d3c179a29e724dcf3cdc8d5adf64d9b36193fa85a7f601a.json",
       "pages/25b09b74705a428ff31e2ea0231c9d1d9983ef6a5bb246f127a667f25146b11f.json",
       "pages/917758b7af7cd365bdfc8b4949843193d77b6cb2f4098116655e6efaf24bf464.json",
-      "pages/02e1e0a168a02b0b51520ba6495edb5912134d01311c68a70937523819bfd900.json",
-      "pages/16635f184f7a288fb31400e6f19fbb60893e81115c1bffa36e69abc10bfd51c2.json",
-      "pages/01728f81db5d6a842b12012c3eac9c10b4f6eb65790915985bcb6a1bb5c7cf19.json",
-      "pages/45671eef594904afba10474e33ea2f190aaff9595a659a987932fe7b5b688d02.json",
-      "pages/54bbd2646f1d41fd0cc22391f698c1cc7ae255c31e410dab086a376566c2b1cc.json",
-      "pages/a2f44103214114c0be55dc57e8be01bbb7788863e68b6c9fdfd3a85325ccb2f9.json",
-      "pages/4dd55c4e1008f953e3b0ea08b4c6e22b14cf42635482b8df0a287cb9ee4dfa14.json",
-      "pages/4c125dacbf497f977102a5247009798d5d2733182f9ab423d721259f3ac54f00.json",
-      "pages/80e1282c83924631a40274f6ffe3cc6f94e3332ea9dae931b64b3448aaff9e2e.json",
-      "pages/6ec62454386effd88d3819288c7ac1a9933df0766ba914ad2de682fb8b31eb74.json",
-      "pages/f7a83edaa19cb42211dc87081749d1b74afbc6796f18bd8a9517b477a0f59577.json",
-      "pages/b2f45082e18fc67b26f9aa76da3dee039b4625c79197d7581406d4ced46bb447.json",
-      "pages/f2bd76b3f902228311728e730993c240c6cd241d66e3221b2bfb4e12b816d0bb.json",
+      "pages/773d17ba197d5c1553d34ef31e8efedbc4e32fcb16e94d0232994f76e73e09f1.json",
+      "pages/45844ab50984781f136558d5b9cc6a614e70ee624f3708ebac0f29c908f0f940.json",
+      "pages/beed2094ba248c5f8540a9789c68c703c9bde0e7ecaf74be3373c7a8c39030e2.json",
+      "pages/eb84d98ce5ce1ec5b4ab6b48e015e8a768807df9cf7432603c3bd59601c7c4d9.json",
+      "pages/11e1edc466f910aeb856b097e3e6371b3188cc43e1485a5eacf930a236842931.json",
+      "pages/49a5491429a709a4888723d07f285197394b2fafd860a3a42b8685a024578cc8.json",
+      "pages/98b9a7044a58c5fce1768a62d00898c74854577ed3120e71da44a29bdfeb3da7.json",
+      "pages/7cfa3991637f8e9869fcc660b39aa00aa60c71513f7f2d041c707f94679b7609.json",
+      "pages/373cde7705dc5f7245baad201efe48f903f4acdb0b173027dac34288c8041f10.json",
+      "pages/9b29af55d5d3b4f24fe2b62f1ced63fc663d74bc5e5264186edf24a3fcd264ea.json",
+      "pages/eeefe5c0c51d64d73ec342c3a3add9e94cecd71df5ed4187d1821fa526053bc0.json",
+      "pages/e78fdaf668ba5d617ddc71a657cb187b78ee55f5c3796771559ae8daaed68a9e.json",
+      "pages/78ec12237b9696537701d6244c2303df50d58c695f2b691fe25c07519d446fe2.json",
       "pages/a123904fa062c40234e303ab1c31db820ef7fad16970ca0faccd647b6eefb034.json",
       "pages/325c45529ee13bf68855d92c2b37b46067263df7bae8209f8f9cd1d03295306a.json",
-      "pages/3de61d39fd32c22c3d8210fd183f7452bb47340260c47b072fe3b793c4401787.json",
-      "pages/8657f22f58b06547afa40e8d23b4b42f6b046c2db468b28684888f6c9a957a15.json",
-      "pages/d1b68d07b372474f1616d780d6259956d3d3911ff5695154aa9fa0c4467e5d90.json"
+      "pages/c399236e369a4e5d8fea1a1437058f38b7899186ca75b2fad7c0ab924aad5ab7.json",
+      "pages/1cca34dfb308b9865be1e6f2ea600c4ff173749d6b6e774ffda8f671a46a02bd.json",
+      "pages/5d03789065d269ef96869a44bde62d11631301372db30161ee08b33fa48f0947.json"
     ]
   }
 }
