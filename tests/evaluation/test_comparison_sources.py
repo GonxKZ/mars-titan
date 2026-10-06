@@ -420,6 +420,13 @@ def test_includes_search_winner_and_preserves_distinct_continuations(campaign):
     assert old["method"] == "reference_mae"
     assert new["method"] == "neural_mae"
     assert old["metadata"]["case"]["loss"] == "mae"
+    assert old["checkpoint_sha256"] == campaign.originals[old["id"]]["checkpoint"]["sha256"]
+    assert (
+        old["source_report_sha256"]
+        == hashlib.sha256(
+            (campaign.folder("reference") / "runs/posttraining/rnn-mae-s43/run.json").read_bytes()
+        ).hexdigest()
+    )
     assert old["parent_id"] == "reference/finalist/rnn-s43"
     assert new["parent_id"] == "reference/search/winner"
     assert new["bounds"] == ["2023-12-01", "2024-01-01"]

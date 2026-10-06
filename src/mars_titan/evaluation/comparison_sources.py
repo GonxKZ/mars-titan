@@ -470,6 +470,8 @@ def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, sig
                     partition=partition,
                     path=reader.path(path.parent, prediction["path"], relative=True),
                     sha256=_digest(prediction["sha256"]),
+                    checkpoint_sha256=_digest(original["checkpoint"]["sha256"]),
+                    source_report_sha256=job["sha256"],
                     declared_metrics=metrics,
                     bounds=manifest["temporal_view"]["fold"][partition],
                     parent_id=parent_id,
