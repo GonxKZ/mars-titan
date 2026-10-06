@@ -343,6 +343,19 @@ class Collector:
             "CREATE TABLE IF NOT EXISTS sources (path TEXT PRIMARY KEY, signature TEXT, body TEXT)"
         )
         self.db.execute("CREATE TABLE IF NOT EXISTS runs (key TEXT PRIMARY KEY, body TEXT)")
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS run_origins "
+            "(campaign TEXT, path TEXT, task_id TEXT, run_id TEXT, attempt_id TEXT, "
+            "provisional INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(campaign, path))"
+        )
+        columns = {row[1] for row in self.db.execute("PRAGMA table_info(run_origins)")}
+        for name, declaration in (("attempt_id", "TEXT"), ("provisional", "INTEGER DEFAULT 0")):
+            if name not in columns:
+                self.db.execute(f"ALTER TABLE run_origins ADD COLUMN {name} {declaration}")
+        self.db.execute(
+            "CREATE INDEX IF NOT EXISTS run_origin_attempt "
+            "ON run_origins(campaign, run_id, attempt_id)"
+        )
 
     def __enter__(self):
         return self
@@ -410,7 +423,16 @@ class Collector:
                     raise ValueError("Campaña duplicada o dominio desconocido")
                 seen.add(name)
                 folder = safe_path(self.root, source["path"])
-                summary = self.read(safe_path(folder, source.get("summary", "summary.json"))) or {}
+                summary_path = safe_path(folder, source.get("summary", "summary.json"))
+                cached = self.db.execute(
+                    "SELECT body FROM sources WHERE path=?", (str(summary_path),)
+                ).fetchone()
+                if cached:
+                    # El resumen anterior acredita los nombres que pueden acabar de cambiar.
+                    self._run_identities(
+                        source, self._tasks(folder, json.loads(cached[0]), discover=False)
+                    )
+                summary = self.read(summary_path) or {}
                 planned = summary.get("planned_runs")
                 if planned is not None and (
                     type(planned) is not int or not 0 <= planned <= 2**53 - 1
@@ -456,7 +478,16 @@ class Collector:
             stored = self.db.execute(
                 "SELECT count(*), coalesce(sum(length(body)),0) FROM sources"
             ).fetchone()
-            if stored[0] > self.max_files or stored[1] > self.max_bytes:
+            origins = self.db.execute(
+                "SELECT count(*), coalesce(sum(length(campaign)+length(path)+"
+                "coalesce(length(task_id),0)+length(run_id)+coalesce(length(attempt_id),0)+1),0) "
+                "FROM run_origins"
+            ).fetchone()
+            if (
+                stored[0] > self.max_files
+                or origins[0] > self.max_files
+                or stored[1] + origins[1] > self.max_bytes
+            ):
                 raise ValueError("El registro de fuentes supera su presupuesto")
             runs = [json.loads(row[0]) for row in self.db.execute("SELECT body FROM runs")]
             if len(runs) > self.max_files:
@@ -510,7 +541,7 @@ class Collector:
             ],
         )
 
-    def _campaign(self, source, folder, summary, now, live):
+    def _tasks(self, folder, summary, *, discover):
         frozen = summary.get("kind") == "frozen_temporal_evaluation"
         tasks = frozen_evaluation_tasks(summary, self.max_files) if frozen else {}
         adaptive = summary.get("kind") == "adaptive_campaign"
@@ -531,6 +562,8 @@ class Collector:
                     if set(relative.parts[:-1]) & {"private", "checkpoints"}:
                         raise ValueError("El recibo no puede estar dentro de los estados privados")
                     safe_path(folder, relative)
+                    if str(relative) in tasks:
+                        raise ValueError("Dos entradas del resumen reclaman el mismo recibo")
                     tasks[str(relative)] = {
                         **item,
                         **attempt,
@@ -538,10 +571,11 @@ class Collector:
                         "attempt_id": identifier(attempt.get("attempt_id", f"attempt-{index:04d}"))
                         if item.get("attempts")
                         else item.get("attempt_id", "legacy"),
+                        "attempt_declared": bool(item.get("attempts")) or "attempt_id" in item,
                     }
                     if adaptive:
                         tasks[str(relative)].update(adaptive_task(item, relative))
-        if folder.exists() and not frozen:
+        if discover and folder.exists() and not frozen:
             for path in _report_paths(folder, self.max_files):
                 relative = str(path.relative_to(folder))
                 if adaptive and relative == "run.json":
@@ -549,6 +583,205 @@ class Collector:
                 if relative not in tasks and len(tasks) >= self.max_files:
                     raise ValueError("Demasiados recibos en la campaña")
                 tasks.setdefault(relative, {})
+        return tasks
+
+    def _run_identities(self, source, tasks):
+        """Vincular rutas y trabajos sin inferir identidad de sus métricas o fechas."""
+        campaign = source["id"]
+        origins = {
+            path: (task_id, run_id)
+            for path, task_id, run_id in self.db.execute(
+                "SELECT path, task_id, run_id FROM run_origins WHERE campaign=?", (campaign,)
+            )
+        }
+        existing = {
+            key.rsplit(":", 1)[0]
+            for (key,) in self.db.execute(
+                "SELECT key FROM runs WHERE key >= ? AND key < ?",
+                (campaign + "-", campaign + "."),
+            )
+        }
+        groups = {}
+        for path, task in tasks.items():
+            group = ("task", task["id"]) if "id" in task else ("path", path)
+            groups.setdefault(group, []).append(path)
+        by_task = {}
+        for old_task, run_id in origins.values():
+            if old_task is not None:
+                by_task.setdefault(old_task, set()).add(run_id)
+        prefix = str(safe_path(self.root, source["path"])) + "/"
+        receipt_paths = set(tasks) | set(origins)
+        receipt_paths.update(
+            path[len(prefix) :]
+            for (path,) in self.db.execute(
+                "SELECT path FROM sources WHERE path >= ? AND path < ?",
+                (prefix, prefix[:-1] + "0"),
+            )
+            if path.endswith("/run.json")
+        )
+        route_owners = {}
+        for path in receipt_paths:
+            alias = campaign + "-" + digest(str(Path(path).parent))[:20]
+            route_owners.setdefault(alias, set()).add(path)
+        identities = {}
+        claimed = {run_id: (run_id, True) for _, run_id in origins.values()}
+        for (kind, value), paths in groups.items():
+            task_id = value if kind == "task" else None
+            bound = {origins[path][1] for path in paths if path in origins}
+            bound.update(by_task.get(task_id, ()))
+            if len(bound) > 1:
+                raise ValueError("El trabajo contradice asociaciones de identidad existentes")
+            aliases = {campaign + "-" + digest(str(Path(path).parent))[:20] for path in paths}
+            declared = campaign + "-" + digest(task_id)[:20] if task_id is not None else None
+            if declared is not None:
+                aliases.add(declared)
+            known = aliases & existing
+            if bound:
+                target = next(iter(bound))
+            elif declared in existing:
+                target = declared
+            elif len(known) == 1:
+                target = next(iter(known))
+            elif len(known) > 1:
+                raise ValueError("Falta una identidad confirmada para conciliar estos orígenes")
+            else:
+                target = declared or next(iter(aliases))
+            for alias in known:
+                if any(
+                    path not in paths and origins.get(path, (None, None))[1] != target
+                    for path in route_owners.get(alias, ())
+                ):
+                    raise ValueError("El alias también identifica un recibo de otro origen")
+            for alias in known | {target}:
+                if alias in claimed and (
+                    claimed[alias][0] != target or not (bound and claimed[alias][1])
+                ):
+                    raise ValueError("Una identidad pertenece a dos orígenes distintos")
+                claimed[alias] = (target, bool(bound))
+            restored = {
+                path: self._cached_attempt(source, path, tasks[path], target)
+                for path in paths
+                if path not in origins
+            }
+            for alias in known - {target}:
+                self._reconcile_run(campaign, alias, target)
+            for path in paths:
+                self.db.execute(
+                    "INSERT INTO run_origins (campaign, path, task_id, run_id) VALUES (?, ?, ?, ?) "
+                    "ON CONFLICT(campaign, path) DO UPDATE SET "
+                    "task_id=coalesce(excluded.task_id,task_id), run_id=excluded.run_id",
+                    (campaign, path, task_id, target),
+                )
+                if path in restored:
+                    attempt, provisional = restored[path]
+                    self.db.execute(
+                        "UPDATE run_origins SET attempt_id=?, provisional=? "
+                        "WHERE campaign=? AND path=?",
+                        (attempt, int(provisional), campaign, path),
+                    )
+                identities[path] = target
+        return identities
+
+    def _cached_attempt(self, source, path, task, run_id):
+        """Recuperar el intento antiguo desde su recibo cacheado y la clave de esa ruta."""
+        cached = self.db.execute(
+            "SELECT body FROM sources WHERE path=?",
+            (str(self.root / source["path"] / path),),
+        ).fetchone()
+        if cached is None:
+            return None, False
+        report = json.loads(cached[0])
+        discovered = source["id"] + "-" + digest(str(Path(path).parent))[:20]
+        if (
+            "attempt_id" not in report
+            and self.db.execute(
+                "SELECT 1 FROM runs WHERE key=?", (discovered + ":legacy",)
+            ).fetchone()
+        ):
+            return "legacy", True
+        attempt = report.get("attempt_id", task.get("attempt_id", "legacy"))
+        identifier(attempt)
+        if self.db.execute("SELECT 1 FROM runs WHERE key=?", (run_id + ":" + attempt,)).fetchone():
+            return attempt, "attempt_id" not in report and not task.get("attempt_declared")
+        return None, False
+
+    def _reconcile_run(self, campaign, alias, target):
+        """Conservar intentos sin sustituto y preferir el registro de la identidad confirmada."""
+        keys = self.db.execute(
+            "SELECT key FROM runs WHERE key >= ? AND key < ?", (alias + ":", alias + ";")
+        ).fetchall()
+        for (key,) in keys:
+            self._move_record(campaign, key, target + ":" + key.rsplit(":", 1)[1])
+
+    def _move_record(self, campaign, key, target):
+        source = self.db.execute("SELECT body FROM runs WHERE key=?", (key,)).fetchone()
+        if source is None or key == target:
+            return
+        destination = self.db.execute("SELECT body FROM runs WHERE key=?", (target,)).fetchone()
+        for stored_key, stored in ((key, source), (target, destination)):
+            if stored is None:
+                continue
+            record = json.loads(stored[0])
+            if (
+                record["metadata"]["campaign"] != campaign
+                or stored_key != record["run_id"] + ":" + record["attempt_id"]
+            ):
+                raise ValueError("El alias no conserva su campaña e identidad originales")
+        if destination is None:
+            record = json.loads(source[0])
+            record["run_id"], record["attempt_id"] = target.rsplit(":", 1)
+            self.db.execute(
+                "INSERT INTO runs VALUES (?, ?)", (target, json.dumps(record, allow_nan=False))
+            )
+        self.db.execute("DELETE FROM runs WHERE key=?", (key,))
+
+    def _attempt_identity(self, source, path, task, report, run_id):
+        """Confirmar el nombre de un intento provisional solo con su ruta acreditada."""
+        campaign = source["id"]
+        previous, provisional = self.db.execute(
+            "SELECT attempt_id, provisional FROM run_origins WHERE campaign=? AND path=?",
+            (campaign, path),
+        ).fetchone()
+        if "attempt_id" in report:
+            attempt, inferred = report["attempt_id"], False
+        elif task.get("attempt_declared"):
+            attempt, inferred = task["attempt_id"], False
+        else:
+            attempt = previous or "legacy"
+            inferred = provisional if previous else True
+        identifier(attempt)
+        if self.db.execute(
+            "SELECT 1 FROM run_origins WHERE campaign=? AND run_id=? AND attempt_id=? AND path!=?",
+            (campaign, run_id, attempt, path),
+        ).fetchone():
+            raise ValueError("Dos rutas declaran la misma identidad de intento")
+        promotion = (
+            previous == "legacy"
+            and provisional
+            and attempt != previous
+            and task.get("attempt_declared")
+            and attempt == task["attempt_id"]
+        )
+        if (
+            previous != attempt
+            and not promotion
+            and self.db.execute(
+                "SELECT 1 FROM runs WHERE key=?", (run_id + ":" + attempt,)
+            ).fetchone()
+        ):
+            raise ValueError("El intento existente carece de una asociación con esta ruta")
+        if promotion:
+            self._move_record(campaign, run_id + ":legacy", run_id + ":" + attempt)
+        self.db.execute(
+            "UPDATE run_origins SET attempt_id=?, provisional=? WHERE campaign=? AND path=?",
+            (attempt, int(inferred), campaign, path),
+        )
+        return attempt
+
+    def _campaign(self, source, folder, summary, now, live):
+        frozen = summary.get("kind") == "frozen_temporal_evaluation"
+        tasks = self._tasks(folder, summary, discover=True)
+        identities = self._run_identities(source, tasks)
         records = []
         for relative, task in tasks.items():
             report_path = safe_path(folder, relative)
@@ -584,6 +817,10 @@ class Collector:
                 else self.read(report_path.parent / "checkpoints/latest.json") or {}
             )
             record = public_run(source, task, report, checkpoint, relative, report_path, now, live)
+            record["run_id"] = identities[relative]
+            record["attempt_id"] = self._attempt_identity(
+                source, relative, task, report, record["run_id"]
+            )
             validate_record(record, now)
             records.append(record)
         return records
