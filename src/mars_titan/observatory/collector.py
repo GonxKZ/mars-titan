@@ -85,6 +85,57 @@ def adaptive_task(item, relative):
     )
 
 
+def frozen_evaluation_tasks(summary, maximum):
+    """Recoger solo los informes confirmados por la selección congelada."""
+    identity, runs = summary["identity"], summary["runs"]
+    jobs = {job["id"]: job for job in identity["jobs"]}
+    if (
+        type(summary.get("schema_version")) is not int
+        or summary["schema_version"] != 1
+        or summary.get("final_test_opened") is not False
+        or identity.get("partitions") != ["calibration", "evaluation"]
+        or len(jobs) != len(identity["jobs"])
+        or len(jobs) > maximum
+        or not isinstance(runs, dict)
+        or summary.get("planned_runs") != len(jobs)
+        or summary.get("completed_runs") != len(runs)
+        or summary.get("status") == "completed"
+        and len(runs) != len(jobs)
+    ):
+        raise ValueError("El resumen de evaluación no conserva la selección congelada")
+    tasks = {}
+    for key, saved in runs.items():
+        if key not in jobs or saved.get("path") != f"runs/{key}/run.json":
+            raise ValueError("El registro de evaluación no corresponde a su trabajo previsto")
+        tasks[saved["path"]] = dict(saved, id=key, job=jobs[key])
+    return tasks
+
+
+def frozen_evaluation_task(task, report):
+    """Identificar la evaluación sin heredar el modo utilizado para entrenar."""
+    family = report.get("family")
+    family = {"xgboost_external_cuda": "xgboost"}.get(family, family)
+    if (
+        type(report.get("schema_version")) is not int
+        or report["schema_version"] != 1
+        or report.get("job") != task["job"]
+        or report.get("status") != "completed"
+        or report.get("final_test_opened") is not False
+        or family not in {"rnn", "lstm", "gru", "dlinear", "ridge", "xgboost"}
+        or set(report.get("predictions", {})) != {"calibration", "evaluation"}
+        or report.get("identity") not in (None, {})
+        or report.get("activity", "evaluation") != "evaluation"
+        or report.get("phase", "evaluation") != "evaluation"
+    ):
+        raise ValueError("El recibo no conserva el contrato de evaluación congelada")
+    return dict(
+        activity="evaluation",
+        phase="evaluation",
+        case={"kind": family, "seed": report["case"].get("seed")},
+        variant_id=identifier(task["id"].replace("/", ".")),
+    )
+
+
 KINDS = {
     name: label
     for name, label in (
@@ -460,11 +511,12 @@ class Collector:
         )
 
     def _campaign(self, source, folder, summary, now, live):
-        tasks = {}
+        frozen = summary.get("kind") == "frozen_temporal_evaluation"
+        tasks = frozen_evaluation_tasks(summary, self.max_files) if frozen else {}
         adaptive = summary.get("kind") == "adaptive_campaign"
         if adaptive and summary.get("schema_version") != 1:
             raise ValueError("La versión del registro adaptativo no está admitida")
-        runs = summary.get("runs", [])
+        runs = [] if frozen else summary.get("runs", [])
         if len(runs) > self.max_files:
             raise ValueError("Demasiados recibos en el resumen de campaña")
         if isinstance(runs, dict):
@@ -489,7 +541,7 @@ class Collector:
                     }
                     if adaptive:
                         tasks[str(relative)].update(adaptive_task(item, relative))
-        if folder.exists():
+        if folder.exists() and not frozen:
             for path in _report_paths(folder, self.max_files):
                 relative = str(path.relative_to(folder))
                 if adaptive and relative == "run.json":
@@ -500,7 +552,11 @@ class Collector:
         records = []
         for relative, task in tasks.items():
             report_path = safe_path(folder, relative)
-            report = self.read(report_path)
+            report = self.read(
+                report_path, expected_sha256=(task.get("sha256") or "") if frozen else None
+            )
+            if frozen:
+                task.update(frozen_evaluation_task(task, report or {}))
             if report is not None and report.get("status") not in STATUS:
                 raise ValueError("El recibo existente no declara un estado válido")
             if (
@@ -524,7 +580,7 @@ class Collector:
             recovery = report.get("checkpoint", {})
             checkpoint = (
                 {}
-                if any(key in recovery for key in ("step", "saved_at", "resumable"))
+                if frozen or any(key in recovery for key in ("step", "saved_at", "resumable"))
                 else self.read(report_path.parent / "checkpoints/latest.json") or {}
             )
             record = public_run(source, task, report, checkpoint, relative, report_path, now, live)
@@ -533,7 +589,7 @@ class Collector:
         return records
 
 
-def _resources(report):
+def _resources(report, phase):
     attempts = report.get("attempts") or []
     if not isinstance(attempts, list) or any(not isinstance(row, dict) for row in attempts):
         raise ValueError("Los intentos deben conservar una lista de medidas")
@@ -585,7 +641,7 @@ def _resources(report):
         ram_peak_mib=executable if executable is not None else lifetime,
         vram_peak_mib=peak("peak_vram_allocated_bytes"),
     )
-    if report.get("phase") in {"test", "evaluation"}:
+    if phase in {"test", "evaluation"}:
         metadata = dict.fromkeys(metadata)
         resources = dict.fromkeys(resources)
     return resources, metadata
@@ -599,6 +655,11 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     if report.get("domain", source["domain"]) != source["domain"]:
         raise ValueError("La procedencia del informe no coincide con su campaña")
     activity, method = classify(report, task, case)
+    phase = report.get(
+        "phase",
+        task.get("phase")
+        or {"synthetic_generation": "prepare", "rl": "train"}.get(activity, "validation"),
+    )
     kind = case.get("kind", task.get("kind", report.get("model", report.get("kind", "unknown"))))
     mode = case.get("mode")
     model = (
@@ -616,7 +677,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
     epochs = epochs if isinstance(epochs, list) else []
     if len(epochs) > 500:
         raise ValueError("Demasiadas épocas en un recibo")
-    predictive = activity in PREDICTIVE and report.get("phase") not in {"test", "evaluation"}
+    predictive = activity in PREDICTIVE and phase not in {"test", "evaluation"}
     measures = (
         report.get("predictions", {}).get("validation", {}).get("metrics", {}) if predictive else {}
     )
@@ -635,7 +696,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         for e in epochs
         if predictive
     ]
-    resources, memory = _resources(report)
+    resources, memory = _resources(report, phase)
     metrics = dict(measures, **resources)
     observed_time = (
         report.get("finished_at_utc") or report.get("updated_at_utc") or report.get("updated_at")
@@ -714,14 +775,7 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         activity=activity,
         variant_id=task.get("variant_id") or (digest(case)[:16] if case else None),
         status=status,
-        phase=report.get(
-            "phase",
-            task.get("phase")
-            or {
-                "synthetic_generation": "prepare",
-                "rl": "train",
-            }.get(activity, "validation"),
-        ),
+        phase=phase,
         started_at=utc(report.get("started_at_utc") or report.get("started_at")),
         updated_at=updated,
         heartbeat_at=now if live and status == "running" else None,
@@ -735,12 +789,14 @@ def public_run(source, task, report, checkpoint, relative, report_path, now, liv
         epoch=epochs[-1]["epoch"] if epochs and predictive else None,
         max_epochs=finite(case.get("epochs")),
         seed=case.get("seed", report.get("seed", task.get("seed"))),
-        fold=task.get("arm") if task.get("arm") in {"US", "CN", "US+CN"} else "unidentified",
+        fold=task.get("arm") if task.get("arm") in {"US", "CN", "US+CN"} else None,
         comparison_group=fingerprint if manifest else None,
         metrics=metrics,
         history=history,
         checkpoint=dict(step=saved_step, saved_at=saved_at, resumable=resumable),
-        financial_validation=financial_validation(report, activity),
+        financial_validation=None
+        if phase in {"test", "evaluation"}
+        else financial_validation(report, activity),
         test_released=False,
         metadata=dict(
             campaign=source["id"],

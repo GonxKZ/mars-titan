@@ -297,7 +297,7 @@ export function toCSV(runs, models, now = Date.now(), staleAfterSeconds = 180) {
 }
 
 function validatePagination(input) {
-  const result = {campaigns: list(input.campaigns ?? [], "campaigns", 64).map(c => {
+  const result = {campaigns: list(input.campaigns ?? [], "campaigns", 128).map(c => {
     record(c, "campaign");
     const counts = record(c.counts, "counts");
     return {id: text(c.id, "campaign.id", 96), domain: text(c.domain, "domain", 20),

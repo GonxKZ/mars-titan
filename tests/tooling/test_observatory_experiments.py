@@ -223,6 +223,7 @@ def test_paired_dictionary_receipts_keep_primary_metrics_and_parent(mode, tmp_pa
         runs = collector.collect([source("paired_posttraining", "real")])["runs"]
     assert len(runs) == 1
     run = runs[0]
+    assert run["fold"] is None
     assert run["activity"] == report["activity"]
     assert run["model_id"] == ("gru" if mode.startswith("neural_") else "adaptation")
     assert run["metrics"]["mae"] == run["history"][0]["mae"] == 0.2

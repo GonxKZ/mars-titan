@@ -63,3 +63,24 @@ def test_invalid_limits_fail_before_opening_sources(tmp_path, option, value):
     assert result.returncode == 2
     assert "Presupuesto del recolector fuera de los límites admitidos" in result.stderr
     assert not (tmp_path / "cache").exists()
+
+
+@pytest.mark.parametrize("source_count, accepted", [(84, True), (129, False)])
+def test_expanded_campaign_keeps_history_with_a_bounded_number_of_sources(
+    tmp_path, source_count, accepted
+):
+    (tmp_path / "root").mkdir()
+    sources = [
+        dict(id=f"campaign-{i:03}", path=f"campaign-{i:03}", kind="archive", domain="real")
+        for i in range(source_count)
+    ]
+    (tmp_path / "config.json").write_text(json.dumps(dict(schema_version=1, sources=sources)))
+    result = collect(tmp_path)
+    if accepted:
+        assert result.returncode == 0, result.stderr
+        output = json.loads((tmp_path / "public/observatory.json").read_text())
+        assert len(output["campaigns"]) == source_count
+        assert len({row["id"] for row in output["campaigns"]}) == source_count
+    else:
+        assert result.returncode == 2
+        assert not (tmp_path / "cache").exists()
