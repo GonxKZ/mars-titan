@@ -52,7 +52,13 @@ Los presets se encuentran en `native/CMakePresets.json`. Los comandos anteriores
 
 ## Exportación y comprobaciones
 
-`scripts/export_campaign_comparison.py` recibe los directorios `--predictive`, `--financial` y una salida nueva `--output`. Comprueba las huellas de los agregados y exporta solo los CSV previstos, figuras SVG y PNG y un índice de evidencia. Las curvas no inventan fechas por época y las figuras financieras distinguen puntos de semillas de intervalos estadísticos.
+`scripts/export_campaign_comparison.py` requiere `--predictive` y una salida nueva `--output`. `--financial` es opcional, por lo que una comparación predictiva real puede publicarse por separado. `--reliability` incorpora los diagnósticos de `campaign_reliability` cuando pertenecen a la misma campaña, modelos, checkpoints y predicciones. No calcula otra vez las métricas ni sus intervalos.
+
+Las ventanas, fechas, réplicas y poblaciones proceden de los recibos. El exportador contrasta todas las filas con sus agregados y comprueba la cobertura exacta de cada serie dibujada. Las cuatro ventanas anteriores y las diez nuevas utilizan la misma ruta. Los intervalos conservan sus límites asimétricos. Cuando alguno no está definido, el punto se representa sin barra y la figura lo indica. Las figuras financieras conservan las medias por semilla y obtienen sus cantidades de mundos de la procedencia.
+
+La comparación añade `checkpoint_sha256` y `source_report_sha256` a `cases.csv`. Para enlazar la fiabilidad de una comparación antigua que no conserve esas columnas hay que regenerar el análisis en una salida nueva. Esto no requiere entrenar ni volver a evaluar modelos. La [comprobación de exportación](../../reports/resources/comparison-export-20261006.json) conserva la paridad de los agregados históricos y documenta las pruebas de pertenencia, corrupción y publicación.
+
+Cada CSV admite hasta 32 MiB, 100.000 filas y 256 columnas. Se lee y comprueba una sola versión antes de exportar. Los CSV, las figuras SVG/PNG y el índice de evidencia se preparan en un directorio temporal y se publican juntos, sin sobrescribir una salida anterior. Un fallo de escritura o de representación no confirma una exportación parcial.
 
 `scripts/benchmark_campaign_comparison.py` repite el recorrido predictivo completo con y sin caché, alternando el orden. Comprueba igualdad exacta de las tablas científicas y del Parquet, y compara los casos después de excluir su tiempo de comprobación. Incluye un calentamiento por condición y al menos tres repeticiones medidas. La [evidencia de rendimiento y pruebas](../../reports/resources/campaign-comparison-20261005.md) indica los resultados, herramientas, cobertura y límites realmente comprobados.
 

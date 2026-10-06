@@ -1,0 +1,318 @@
+{
+  "date": "2026-10-06",
+  "scope": "Exportación de comparaciones congeladas, sin entrenar modelos ni abrir la reserva final.",
+  "exporter_sha256": "c63ef9affd05b8d8ecb7ee77d91109720a271ef17dc1143506592921e672be1f",
+  "tests": {
+    "passed": 72,
+    "seconds": 6.92,
+    "exporter_cases": 65,
+    "comparison_cases": 7,
+    "ruff": true,
+    "format": true
+  },
+  "comparison_regeneration": {
+    "cases": 1512,
+    "new_columns": [
+      "checkpoint_sha256",
+      "source_report_sha256"
+    ],
+    "all_prior_scientific_columns_identical": true,
+    "changed_resource_columns": [
+      "checked_seconds"
+    ],
+    "methods_folds_intervals_parquet_byte_identical": true
+  },
+  "export_parity": {
+    "csv_rows": {
+      "predictive-cases.csv": 1512,
+      "predictive-methods.csv": 116,
+      "predictive-folds.csv": 464,
+      "predictive-intervals.csv": 6336,
+      "financial-aggregates.csv": 891,
+      "financial-paired_summary.csv": 1458,
+      "reliability-cases.csv": 2268
+    },
+    "total_rows": 13045,
+    "all_cells_equal": true,
+    "artifact_hashes_valid": true,
+    "renderer_sha256": "c63ef9affd05b8d8ecb7ee77d91109720a271ef17dc1143506592921e672be1f",
+    "no_private_paths_in_evidence": true
+  },
+  "rendering": {
+    "real_predictive_windows": 4,
+    "technical_windows": 10,
+    "technical_output_labelled": true,
+    "source_values_preserved": true,
+    "asymmetric_intervals": true,
+    "undefined_intervals_explicit": true,
+    "financial_world_counts_from_receipt": true,
+    "visual_review": "PNG inspeccionados en cuatro ventanas reales, diez ventanas de prueba y escenarios financieros sintéticos. No se observaron etiquetas recortadas ni superpuestas en las figuras finales."
+  },
+  "resources": {
+    "workload": "Siete CSV con 13.045 filas, dos figuras PNG y dos SVG, más el índice de evidencia.",
+    "wall_seconds": 2.03,
+    "user_seconds": 1.82,
+    "system_seconds": 0.19,
+    "peak_rss_bytes": 218980352,
+    "measurement": "GNU time -v, proceso completo incluido el arranque.",
+    "openblas_threads": 1,
+    "omp_threads": 1,
+    "gpu_used": false,
+    "concurrent_workload": "Campaña neuronal activa en otro proceso y runtime."
+  },
+  "quality": {
+    "created_at_utc": "2026-10-06T05:05:05.810757+00:00",
+    "source_sha256": "c63ef9affd05b8d8ecb7ee77d91109720a271ef17dc1143506592921e672be1f",
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "convention": "Cobertura de ramas con coverage.py. Cobertura de sentencias por función: sentencias ejecutables dentro del rango de líneas de Radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Diagnóstico focal, no garantía de ausencia de defectos.",
+    "tests": "65 pruebas del exportador, CPU con OPENBLAS_NUM_THREADS=1 y OMP_NUM_THREADS=1",
+    "totals": {
+      "covered_lines": 376,
+      "num_statements": 398,
+      "percent_covered": 92.24422442244224,
+      "percent_covered_display": "92",
+      "missing_lines": 22,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.47236180904522,
+      "percent_statements_covered_display": "94",
+      "num_branches": 208,
+      "num_partial_branches": 25,
+      "covered_branches": 183,
+      "missing_branches": 25,
+      "percent_branches_covered": 87.98076923076923,
+      "percent_branches_covered_display": "88"
+    },
+    "functions": [
+      {
+        "name": "rows",
+        "line": 34,
+        "end_line": 55,
+        "ccn": 15,
+        "statements": 22,
+        "missing_lines": [
+          37
+        ],
+        "statement_coverage": 0.9545454545454546,
+        "crap": 15.021130728775356
+      },
+      {
+        "name": "write_csv",
+        "line": 58,
+        "end_line": 64,
+        "ccn": 1,
+        "statements": 7,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "name": "number",
+        "line": 67,
+        "end_line": 71,
+        "ccn": 2,
+        "statements": 5,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "name": "valid_hash",
+        "line": 74,
+        "end_line": 76,
+        "ccn": 4,
+        "statements": 2,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "name": "match_summary",
+        "line": 80,
+        "end_line": 96,
+        "ccn": 12,
+        "statements": 16,
+        "missing_lines": [
+          83,
+          88
+        ],
+        "statement_coverage": 0.875,
+        "crap": 12.28125
+      },
+      {
+        "name": "validate_predictive",
+        "line": 99,
+        "end_line": 189,
+        "ccn": 53,
+        "statements": 60,
+        "missing_lines": [
+          110,
+          134,
+          144,
+          147,
+          152,
+          168,
+          182
+        ],
+        "statement_coverage": 0.8833333333333333,
+        "crap": 57.46058796296297
+      },
+      {
+        "name": "validate_reliability",
+        "line": 192,
+        "end_line": 256,
+        "ccn": 34,
+        "statements": 30,
+        "missing_lines": [
+          213
+        ],
+        "statement_coverage": 0.9666666666666667,
+        "crap": 34.04281481481482
+      },
+      {
+        "name": "validate_financial",
+        "line": 259,
+        "end_line": 324,
+        "ccn": 42,
+        "statements": 36,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 42.0
+      },
+      {
+        "name": "windows",
+        "line": 327,
+        "end_line": 355,
+        "ccn": 17,
+        "statements": 17,
+        "missing_lines": [
+          342
+        ],
+        "statement_coverage": 0.9411764705882353,
+        "crap": 17.058823529411764
+      },
+      {
+        "name": "predictive_series",
+        "line": 358,
+        "end_line": 414,
+        "ccn": 27,
+        "statements": 38,
+        "missing_lines": [
+          375,
+          378,
+          386,
+          394,
+          413
+        ],
+        "statement_coverage": 0.868421052631579,
+        "crap": 28.660683044175535
+      },
+      {
+        "name": "predictions",
+        "line": 417,
+        "end_line": 484,
+        "ccn": 15,
+        "statements": 33,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 15.0
+      },
+      {
+        "name": "financial",
+        "line": 487,
+        "end_line": 563,
+        "ccn": 23,
+        "statements": 37,
+        "missing_lines": [
+          517,
+          528
+        ],
+        "statement_coverage": 0.9459459459459459,
+        "crap": 23.083548851992973
+      },
+      {
+        "name": "save",
+        "line": 566,
+        "end_line": 571,
+        "ccn": 2,
+        "statements": 6,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "name": "load_source",
+        "line": 574,
+        "end_line": 609,
+        "ccn": 9,
+        "statements": 22,
+        "missing_lines": [
+          581,
+          586
+        ],
+        "statement_coverage": 0.9090909090909091,
+        "crap": 9.060856498873028
+      },
+      {
+        "name": "main",
+        "line": 612,
+        "end_line": 674,
+        "ccn": 12,
+        "statements": 44,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 12.0
+      }
+    ]
+  },
+  "mutations": {
+    "convention": "Cinco mutaciones dirigidas, una por copia privada. Una mutación se considera detectada si la prueba conductual seleccionada falla. No se incluyen mutaciones equivalentes ni una puntuación exhaustiva.",
+    "results": [
+      {
+        "name": "artifact_hash",
+        "killed": true,
+        "returncode": 1,
+        "seconds": 1.5956967780075502,
+        "selector": "inconsistent_windows and hash"
+      },
+      {
+        "name": "checkpoint",
+        "killed": true,
+        "returncode": 1,
+        "seconds": 1.7062286469881656,
+        "selector": "damaged_cases and checkpoint"
+      },
+      {
+        "name": "summary",
+        "killed": true,
+        "returncode": 1,
+        "seconds": 1.5340037799905986,
+        "selector": "resampling_metadata and intervals"
+      },
+      {
+        "name": "sealed",
+        "killed": true,
+        "returncode": 1,
+        "seconds": 1.5844438650092343,
+        "selector": "inconsistent_windows and sealed"
+      },
+      {
+        "name": "atomic_output",
+        "killed": true,
+        "returncode": 1,
+        "seconds": 1.5435219700011658,
+        "selector": "publication_failure and receipt"
+      }
+    ]
+  },
+  "limits": [
+    "La medición de exportación corresponde a una ejecución de integración. No acredita una aceleración ni estima variabilidad.",
+    "La cobertura y CRAP corresponden al exportador y no sustituyen las comprobaciones de las fuentes. Los validadores concentran la complejidad.",
+    "La figura de diez ventanas utiliza datos de prueba. Los resultados de la nueva campaña siguen pendientes."
+  ],
+  "active_scientific_runtime_changed": false,
+  "final_test_opened": false
+}

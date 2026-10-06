@@ -116,6 +116,8 @@ def test_complete_pipeline_checks_archived_files_and_preserves_an_existing_outpu
     assert result["candidate_trained"] is False
     cases = list(csv.DictReader((output / "cases.csv").open()))
     assert len(cases) == 14
+    assert all(len(row["checkpoint_sha256"]) == 64 for row in cases)
+    assert all(len(row["source_report_sha256"]) == 64 for row in cases)
     assert all(float(row["session_mae"]) == pytest.approx(0.1) for row in cases)
     receipt = json.loads((output / "comparison.json").read_text())
     for name, digest in receipt["artifacts"].items():
