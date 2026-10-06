@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "grain": "Hechos contables preparados y combinaciones de activo y sesión. No son recuentos nuevos de entrenamiento.",
+  "source_manifest_sha256": "888d92c7c6303276a07cbd80ecb637f3f14110346e8f1e8d5cf548264142230d",
+  "audit_sha256": "1884f02b58484979faac1b69a5fc504ca0a4a7e79c0eb72d913a36a65f2c2c08",
+  "scope": "Universo preparado completo. Columnas concept, available_at, period_start, period_end, session y prediction_at. Comprobación de contenedores contables vacíos de hasta 317 bytes. Sin importes, textos, imágenes, etiquetas ni valores de 2024.",
+  "source_manifest_date": "2026-09-23",
+  "source_manifest_candidates": 5676,
+  "source_manifest_states": {
+    "US:missing_modalities": 2145,
+    "US:prepared": 2639,
+    "CN:failed": 808,
+    "CN:missing_modalities": 82,
+    "CN:prepared": 2
+  },
+  "prepared_assets": 2641,
+  "prepared_with_fundamentals": 2238,
+  "prepared_without_fundamentals": 403,
+  "fundamental_rows": 2982064,
+  "namespace_rows": {
+    "us-gaap": 2982064
+  },
+  "unit_rows": {
+    "USD": 2968359,
+    "shares": 5431,
+    "CAD": 3253,
+    "USD/shares": 4043,
+    "GBP": 7,
+    "shares/USD": 1,
+    "pure": 11,
+    "CNY": 836,
+    "EUR": 10,
+    "HKD/shares": 3,
+    "GBP/shares": 5,
+    "TND": 1,
+    "CHF": 11,
+    "ILS": 93
+  },
+  "empty_fundamentals_reasons": {
+    "US:no_source_facts": 390,
+    "US:all_facts_after_cutoff": 11,
+    "CN:no_verified_publication": 2
+  },
+  "decisions": {
+    "first": "2022-06-01T20:05:00+00:00",
+    "last": "2023-12-28T21:05:00+00:00",
+    "sessions": 397,
+    "price_context_sessions": 64,
+    "news_lookback_sessions": 5,
+    "method": "Contraste de nombres y fechas, continuidad de precios, disponibilidad textual y prediction_at de la edición actual. Un saldo USD con rango temporal único basta para acreditar la modalidad sin leer su importe.",
+    "assets_with_other_units": 12,
+    "asset_session_pairs": 4764,
+    "existing_encoded_decisions": 1388,
+    "excluded_due_to_news_window": 3376,
+    "excluded_due_to_price_window": 0,
+    "additional_decisions": 0,
+    "base_balance_other_currency_assets": [
+      "FORD",
+      "MYSZ",
+      "RCON"
+    ],
+    "base_balance_other_currency_existing_decisions": 89,
+    "assets_with_other_currencies": 11,
+    "assets_with_only_nonstandard_usd_unit": [
+      "BRC"
+    ],
+    "foreign_currency_unit_rows": 958,
+    "foreign_currency_per_share_rows": 8
+  },
+  "conclusion": "No hay decisiones adicionales por otras monedas o taxonomías en el universo preparado durante las 397 sesiones completas. Los hechos en otras monedas aportan información adicional a activos cuyas decisiones ya tienen un saldo USD disponible y están en la edición codificada.",
+  "limits": [
+    "El contraste corresponde al universo preparado y al periodo de las 397 sesiones macro admitidas.",
+    "Los estados de candidatos son los del manifiesto original de preparación, no estados de entrenamiento de la campaña activa.",
+    "La presencia de hechos adicionales no se interpreta como nuevas muestras ni como una mejora predictiva."
+  ],
+  "amounts_or_targets_consulted": false,
+  "active_campaign_modified": false,
+  "final_test_opened": false
+}
