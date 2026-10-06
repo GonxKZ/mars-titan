@@ -1,0 +1,218 @@
+{
+  "date": "2026-10-06",
+  "source": "src/mars_titan/observatory/collector.py",
+  "source_sha256": "21841c85f548f16c7707eb0e5cabbcd59b4e391d9039a5df8f92b5a02fd75a7b",
+  "migration": {
+    "before": 2629,
+    "after": 2051,
+    "with_historical_evaluations": 2807,
+    "removed_proven_aliases": 578,
+    "unchanged_retained_records": true,
+    "additional_evaluations": 756,
+    "duplicate_run_attempt_pairs": 0,
+    "private_paths_found": false
+  },
+  "checks": {
+    "tooling_tests_passed": 308,
+    "tooling_seconds": 6.01,
+    "identity_regressions": 20,
+    "independent_adversarial_tests": 8,
+    "mutations": [
+      {
+        "name": "conservar_aliases_duplicados",
+        "detected": true
+      },
+      {
+        "name": "olvidar_identidad_persistida",
+        "detected": true
+      },
+      {
+        "name": "ignorar_intento_cacheado",
+        "detected": true
+      },
+      {
+        "name": "promover_legacy_sin_resumen",
+        "detected": true
+      },
+      {
+        "name": "descartar_intentos_distintos",
+        "detected": true
+      },
+      {
+        "name": "omitir_rollback",
+        "detected": true
+      }
+    ],
+    "second_migration_idempotent": true
+  },
+  "coverage": {
+    "coverage_tool": "7.16.2",
+    "complexity_tool": "6.0.1",
+    "coverage_convention": "Sentencias y ramas de 73 pruebas dirigidas de identidad, recolección de campañas y evaluación congelada (70 conjuntas y tres regresiones posteriores). No es la suite completa.",
+    "crap_formula": "CCN^2 * (1-statement_coverage)^3 + CCN",
+    "functions": [
+      {
+        "name": "Collector._run_identities",
+        "cyclomatic_complexity": 38,
+        "statement_coverage": 0.9824561403508771,
+        "branch_coverage": 0.9722222222222222,
+        "missing_lines": [
+          646
+        ],
+        "crap": 38.007797270955166
+      },
+      {
+        "name": "Collector._cached_attempt",
+        "cyclomatic_complexity": 6,
+        "statement_coverage": 0.9166666666666666,
+        "branch_coverage": 0.8333333333333334,
+        "missing_lines": [
+          706
+        ],
+        "crap": 6.020833333333333
+      },
+      {
+        "name": "Collector._reconcile_run",
+        "cyclomatic_complexity": 2,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "missing_lines": [],
+        "crap": 2.0
+      },
+      {
+        "name": "Collector._move_record",
+        "cyclomatic_complexity": 8,
+        "statement_coverage": 0.9333333333333333,
+        "branch_coverage": 0.9,
+        "missing_lines": [
+          719
+        ],
+        "crap": 8.018962962962963
+      },
+      {
+        "name": "Collector._attempt_identity",
+        "cyclomatic_complexity": 14,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "missing_lines": [],
+        "crap": 14.0
+      }
+    ]
+  },
+  "collection": {
+    "workload": "Recolección y paginación completas de 84 fuentes reales sobre una copia SQLite previa. Un ciclo inicial y tres ciclos posteriores.",
+    "before": {
+      "name": "before",
+      "measurements": [
+        {
+          "iteration": 0,
+          "seconds": 4.259629085005145,
+          "read_bytes": 0,
+          "runs": 2629
+        },
+        {
+          "iteration": 1,
+          "seconds": 3.67979372300033,
+          "read_bytes": 0,
+          "runs": 2629
+        },
+        {
+          "iteration": 2,
+          "seconds": 3.4853727480076486,
+          "read_bytes": 0,
+          "runs": 2629
+        },
+        {
+          "iteration": 3,
+          "seconds": 3.5219474460027413,
+          "read_bytes": 0,
+          "runs": 2629
+        }
+      ],
+      "warm_median_seconds": 3.5219474460027413,
+      "peak_rss_bytes": 74199040
+    },
+    "after": {
+      "name": "after-final",
+      "measurements": [
+        {
+          "iteration": 0,
+          "seconds": 5.257271191003383,
+          "read_bytes": 0,
+          "runs": 2051
+        },
+        {
+          "iteration": 1,
+          "seconds": 3.9280776669911575,
+          "read_bytes": 0,
+          "runs": 2051
+        },
+        {
+          "iteration": 2,
+          "seconds": 3.6977666710008634,
+          "read_bytes": 0,
+          "runs": 2051
+        },
+        {
+          "iteration": 3,
+          "seconds": 3.7059915619902313,
+          "read_bytes": 0,
+          "runs": 2051
+        }
+      ],
+      "warm_median_seconds": 3.7059915619902313,
+      "peak_rss_bytes": 66301952
+    },
+    "after_total_process_seconds": 16.76,
+    "process_scope": "Incluye el arranque, la copia SQLite y los cuatro ciclos. Solo se midió el proceso completo de la versión corregida.",
+    "limits": [
+      "Las medidas no se tomaron con exclusividad de CPU.",
+      "La conciliación añade comprobaciones de identidad. Estas medidas no acreditan una aceleración.",
+      "Los picos de RAM usan ru_maxrss del proceso. No se abrieron pesos, modalidades ni predicciones Parquet."
+    ]
+  },
+  "expanded_history": {
+    "campaigns": 88,
+    "runs": 2807,
+    "imported_frozen_evaluations": 756,
+    "pages": 44,
+    "seconds": 5.459004791991902,
+    "read_source_bytes": 5382299,
+    "peak_rss_bytes": 49025024
+  },
+  "source_budget": {
+    "observed_files": 3540,
+    "observed_source_bytes": 123161805,
+    "completed_four_fold_sources": {
+      "neural": [
+        324,
+        4393403
+      ],
+      "tabular": [
+        72,
+        545022
+      ],
+      "posttraining": [
+        1060,
+        75266766
+      ]
+    },
+    "projected_additional_ten_fold_files": 3640.0,
+    "projected_additional_ten_fold_source_bytes": 200512977.5,
+    "projected_total_source_bytes": 323674782.5,
+    "scope": "Proyección de tamaño de recibos desde cuatro ventanas terminadas. No mide el tamaño final de la campaña nueva.",
+    "observed_source_bytes_with_evaluations": 128544104,
+    "observed_evaluation_source_bytes": 5382299,
+    "projected_total_source_bytes_with_evaluations": 342512829.0,
+    "configured_max_bytes": 536870912
+  },
+  "browser": {
+    "pages_checked": 44,
+    "sources": 88,
+    "javascript_errors": 0,
+    "lazy_loading": true,
+    "recoverable_http_failure": true,
+    "mobile_horizontal_overflow": false
+  },
+  "final_test_opened": false
+}
