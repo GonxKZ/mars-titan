@@ -138,10 +138,10 @@ No crea muestras codificadas ni declara completado el corpus chino.
 
 ## Alcance pendiente
 
-Falta recuperar la procedencia de las demás empresas y periodos. La representación actual del
-corpus de entrenamiento admite USD y CAD con conceptos estadounidenses. Los
-hechos CAS en CNY necesitan una representación explícita, sin atribuirles una
-equivalencia completa con US-GAAP.
+Falta recuperar la procedencia de las demás empresas y periodos. La campaña
+estadounidense conserva sus conceptos USD y CAD. La [edición china independiente](chinese-multimodal-samples.md)
+utiliza tres conceptos CAS en CNY y no les atribuye equivalencia con US-GAAP.
+La comparación conjunta necesita una representación común y un protocolo temporal.
 
 La verificación inicial del contrato pasó 961 pruebas sin omisiones, incluidas
 39 específicas. Detectó seis mutaciones dirigidas. El [recibo de calidad](../../reports/resources/china-reconciliation-quality.json)
@@ -159,6 +159,7 @@ El [panel macro chino](china-macro-edition.md) ya admite 387 sesiones con los
 140 indicadores y cubre las 169 fechas potenciales de este caso. El [factor
 CSI 300](csi300-market-factor.md) conserva las 484 sesiones de 2022 y 2023
 publicadas por SSE. Su contraste residual obtiene 168 etiquetas admisibles y
-una exclusión por el corte anual. Faltan la representación CNY, la codificación
-y la unión supervisada de muestras. El brazo conjunto no se considera
+una exclusión por el corte anual. La codificación CUDA y la unión supervisada de
+esas muestras están comprobadas. Faltan cobertura y particiones suficientes para
+entrenar el brazo chino. El brazo conjunto no se considera
 completo utilizando únicamente datos estadounidenses.

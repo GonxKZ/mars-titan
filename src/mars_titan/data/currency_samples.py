@@ -71,10 +71,11 @@ def _metadata(file, column="prediction_at"):
     return table[column]
 
 
-def _macro_inputs(macro_path, admission_path, catalog_path, expected_ids):
+def _macro_inputs(macro_path, admission_path, catalog_path, expected_ids, *, market="US"):
     report, receipt_hash = read_manifest(admission_path, 8 * 1024**2)
     if (
-        report.get("market") != "US"
+        market not in {"US", "CN"}
+        or report.get("market") != market
         or report.get("required_indicator_count") != 140
         or report.get("required_indicator_ids") != expected_ids
         or report.get("catalog_sha256") != _checked(catalog_path)

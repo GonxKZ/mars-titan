@@ -144,9 +144,22 @@ def test_reusing_labels_preserves_manifest_identity_and_confirmed_cursor(tmp_pat
     options = dict(partition="train", batch_size=1, epoch=0, seed=42)
     cursor = next(dataset.batches(**options))["confirmed_cursor"]
     digest = sha256(path)
+    timestamp = path.stat().st_mtime_ns
     function()(manifest, prepared, output)
     assert sha256(path) == digest
+    assert path.stat().st_mtime_ns == timestamp
     assert list(dataset.batches(**options, cursor=cursor)) == []
+
+
+def test_invalid_summary_can_be_rebuilt_from_confirmed_labels(tmp_path):
+    manifest, prepared = materialized(tmp_path)
+    output = tmp_path / "supervised"
+    function()(manifest, prepared, output)
+    path = output / "manifest.json"
+    original = path.read_bytes()
+    path.write_bytes(b'{"kind":')
+    assert function()(manifest, prepared, output)["reused_assets"] == 1
+    assert path.read_bytes() == original
 
 
 @pytest.mark.parametrize("package", ["numpy", "pandas", "exchange_calendars"])

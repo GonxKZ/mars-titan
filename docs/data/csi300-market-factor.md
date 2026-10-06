@@ -41,7 +41,8 @@ las implementaciones de referencia y NumPy sobre precios preparados de Ping An.
 Las 484 filas coinciden exactamente en coeficientes, etiquetas y exclusiones.
 De sus 169 fechas candidatas con noticias, precios, fundamentales y macro,
 168 tienen etiqueta admisible. La última se excluye porque cruza el corte anual.
-Esto aún no acredita muestras codificadas ni un corpus listo para entrenar.
+La [codificación posterior](chinese-multimodal-samples.md) ya permite recorrer esas
+muestras, pero todavía no constituye un corpus listo para la comparación china.
 
 La creación, reutilización y contraste completo tardaron 0,55 segundos en un
 proceso, con 146.596 KiB de RAM máxima. Es una ejecución funcional por método,
