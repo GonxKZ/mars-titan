@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-06T19:47:47.772057Z",
+  "generated_at": "2026-10-06T19:48:17.730779Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -1332,18 +1332,18 @@
       "status": "running",
       "phase": "validation",
       "started_at": "2026-10-06T19:47:40.598074Z",
-      "updated_at": "2026-10-06T19:47:40.598140Z",
-      "heartbeat_at": "2026-10-06T19:47:47.505990Z",
-      "completed_steps": 0,
+      "updated_at": "2026-10-06T19:48:09.345722Z",
+      "heartbeat_at": "2026-10-06T19:48:17.455082Z",
+      "completed_steps": 526,
       "total_steps": null,
-      "epoch": null,
+      "epoch": 1,
       "max_epochs": 5,
       "seed": 43,
       "fold": "US",
       "comparison_group": "2c1a4386bb5a43a86f2a3734d62deaa1e15559799172b30ad44c9db6039724a8",
       "metrics": {
-        "mae": null,
-        "mse": null,
+        "mae": 0.015615902499587261,
+        "mse": 0.000599171387667295,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -1354,11 +1354,18 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": null
+        "samples_per_second": 13046.327324803135
       },
-      "history": [],
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015615902499587261
+        }
+      ],
       "checkpoint": {
-        "step": 0,
+        "step": 526,
         "saved_at": null,
         "resumable": null
       },
@@ -1373,7 +1380,7 @@
         "condition": null,
         "parent_model": "rnn",
         "configuration_sha256": "3eb622d70877168e2ca53517d8881bd87f293d0458dda62acdbbf6e4f144a485",
-        "source_sha256": "96b169276f9c7ffdeda564692424f125dc6a393edccebc71499a2b7c5ac34002",
+        "source_sha256": "7619a3222418c460c6a04810efd3597fc49cd36c08e6292cab020ed740cd9f8f",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 268981,
