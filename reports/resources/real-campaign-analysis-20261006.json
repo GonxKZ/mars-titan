@@ -1,0 +1,378 @@
+{
+  "date": "2026-10-06",
+  "verified_at_utc": "2026-10-06T12:33:44.471723+00:00",
+  "scope": "Cierre y exportación de una campaña histórica real ya terminada. No acredita el cierre de la nueva campaña ampliada.",
+  "source_sha256": "5825e170af8d6012763bf7b70e7a64b0b991f3ffa337f8fe85575daae3efea65",
+  "tests_sha256": "4fec4a27deff6a23eb9690d1c24bdd6360a9a18ce0c3584f49512822882d7a10",
+  "tests": {
+    "closure_passed": 32,
+    "closure_seconds": 0.5,
+    "related_passed": 121,
+    "related_seconds": 6.84,
+    "ruff": true,
+    "format": true,
+    "final_guard_regressions_failed_before_fix": 2,
+    "repository_check": {
+      "files": 1015,
+      "references": 191,
+      "tasks": 64,
+      "macro_entries": 140
+    }
+  },
+  "integration": {
+    "models": 756,
+    "prediction_files": 1512,
+    "temporal_windows": 4,
+    "checks": [
+      {
+        "file": "cases.csv",
+        "rows": 1512,
+        "equal": true,
+        "excluded_field": "checked_seconds"
+      },
+      {
+        "file": "methods.csv",
+        "rows": 116,
+        "equal": true,
+        "excluded_field": null
+      },
+      {
+        "file": "folds.csv",
+        "rows": 464,
+        "equal": true,
+        "excluded_field": null
+      },
+      {
+        "file": "intervals.csv",
+        "rows": 6336,
+        "equal": true,
+        "excluded_field": null
+      },
+      {
+        "file": "session-errors.parquet",
+        "byte_equal": true
+      },
+      {
+        "file": "predictive-folds.csv",
+        "byte_equal": true
+      },
+      {
+        "file": "predictive-intervals.csv",
+        "byte_equal": true
+      },
+      {
+        "file": "predictive-methods.csv",
+        "byte_equal": true
+      },
+      {
+        "file": "predictive-periods.png",
+        "byte_equal": true
+      },
+      {
+        "file": "predictive-periods.svg",
+        "byte_equal": true
+      },
+      {
+        "file": "reliability-cases.csv",
+        "byte_equal": true
+      }
+    ],
+    "exported_cases_equal_except_checked_seconds": true,
+    "single_attempt_after_reuse": true,
+    "live_campaign_exit_code": 3,
+    "live_campaign_did_not_create_output": true,
+    "final_test_opened": false,
+    "output_bytes": 12889293
+  },
+  "resources": {
+    "hardware": "AMD Ryzen 9 8945HS, 8 núcleos y 16 hilos, 32 GiB de RAM",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "python": "3.12.14",
+    "versions": {
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "pyarrow": "25.0.1",
+      "matplotlib": "3.11.2"
+    },
+    "full_process": {
+      "wall_seconds": 41.83,
+      "peak_rss_kib": 354392,
+      "exit_code": 0
+    },
+    "reuse_process": {
+      "wall_seconds": 0.24,
+      "peak_rss_kib": 44740,
+      "exit_code": 0
+    },
+    "measurement": "GNU time -v, un recorrido completo y una reutilización de la versión final. Incluye arranque. No es una estimación estadística del tiempo de la campaña ampliada.",
+    "cpu_quota_percent": 100,
+    "process_memory_limit_gib": 8,
+    "openblas_threads": 1,
+    "omp_threads": 1,
+    "gpu_used": false,
+    "concurrent_workload": "Campaña neuronal en su runtime congelado. No se ha detenido para esta medición.",
+    "unmeasured": [
+      "energía",
+      "transferencias CPU/GPU",
+      "bytes lógicos leídos",
+      "p50/p95/p99 del análisis completo"
+    ],
+    "resource_limits_scope": "La cuota de CPU y el límite de memoria se aplicaron al recorrido completo. La reutilización se midió sin esos límites adicionales."
+  },
+  "identity_import_benchmark": {
+    "repetitions": 3,
+    "package_files": 157,
+    "package_hashes_equal": true,
+    "exporter_hash_equal": true,
+    "finish_script_hash_changed": true,
+    "baseline_seconds": [
+      1.9796464249957353,
+      1.928780069021741,
+      1.9717922979907598
+    ],
+    "candidate_seconds": [
+      0.03311631697579287,
+      0.03291787300258875,
+      0.03261200798442587
+    ],
+    "baseline_peak_rss_kib": [
+      696660,
+      696676,
+      697128
+    ],
+    "candidate_peak_rss_kib": [
+      21316,
+      21344,
+      21328
+    ],
+    "baseline_median_seconds": 1.9717922979907598,
+    "candidate_median_seconds": 0.03291787300258875,
+    "scope": "Tres procesos nuevos por versión, importación del comando y cálculo de identidad. No incluye lectura ni validación de los resultados de una campaña. No se vacían cachés ni se detiene la campaña.",
+    "gpu_used": false
+  },
+  "limits": [
+    "El cierre valida recibos y delega el análisis numérico en los productores existentes.",
+    "La ejecución completa usa cuatro ventanas históricas. Las diez ventanas nuevas siguen pendientes de terminar sus modelos.",
+    "No se han modificado ni ejercitado rutas CUDA en este cambio."
+  ],
+  "quality": {
+    "created_at_utc": "2026-10-06T12:36:38.403766+00:00",
+    "source_sha256": "5825e170af8d6012763bf7b70e7a64b0b991f3ffa337f8fe85575daae3efea65",
+    "suite_sha256": "4fec4a27deff6a23eb9690d1c24bdd6360a9a18ce0c3584f49512822882d7a10",
+    "tests": 32,
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "convention": "coverage.py con ramas. Por función, cobertura de sentencias ejecutables dentro del rango de líneas de Radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Diagnóstico focal, no garantía de ausencia de errores.",
+    "limits": [
+      "La prueba de identidad de código se ejecuta en un subproceso no instrumentado.",
+      "Las llamadas a comparación y exportación se sustituyen por dobles en esta suite. La integración real y su paridad se verificaron aparte y no se incluyen en esta cobertura."
+    ],
+    "totals": {
+      "covered_lines": 167,
+      "num_statements": 180,
+      "percent_covered": 91.74757281553399,
+      "percent_covered_display": "92",
+      "missing_lines": 13,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.77777777777777,
+      "percent_statements_covered_display": "93",
+      "num_branches": 26,
+      "num_partial_branches": 2,
+      "covered_branches": 22,
+      "missing_branches": 4,
+      "percent_branches_covered": 84.61538461538461,
+      "percent_branches_covered_display": "85"
+    },
+    "functions": [
+      {
+        "name": "_require",
+        "line": 37,
+        "end_line": 39,
+        "ccn": 2,
+        "statements": 3,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "name": "_state",
+        "line": 42,
+        "end_line": 93,
+        "ccn": 27,
+        "statements": 16,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 27.0
+      },
+      {
+        "name": "_artifact",
+        "line": 96,
+        "end_line": 107,
+        "ccn": 3,
+        "statements": 6,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "name": "_inputs",
+        "line": 110,
+        "end_line": 190,
+        "ccn": 23,
+        "statements": 30,
+        "missing_lines": [
+          127
+        ],
+        "statement_coverage": 0.9666666666666667,
+        "crap": 23.01959259259259
+      },
+      {
+        "name": "_code",
+        "line": 193,
+        "end_line": 203,
+        "ccn": 3,
+        "statements": 6,
+        "missing_lines": [
+          194,
+          196,
+          197,
+          198,
+          199
+        ],
+        "statement_coverage": 0.16666666666666666,
+        "crap": 8.208333333333336
+      },
+      {
+        "name": "_identity",
+        "line": 208,
+        "end_line": 218,
+        "ccn": 4,
+        "statements": 4,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "name": "_verified_report",
+        "line": 221,
+        "end_line": 232,
+        "ccn": 3,
+        "statements": 9,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "name": "_result",
+        "line": 235,
+        "end_line": 286,
+        "ccn": 22,
+        "statements": 11,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 22.0
+      },
+      {
+        "name": "_ledger",
+        "line": 289,
+        "end_line": 315,
+        "ccn": 15,
+        "statements": 7,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 15.0
+      },
+      {
+        "name": "_compare",
+        "line": 319,
+        "end_line": 322,
+        "ccn": 1,
+        "statements": 3,
+        "missing_lines": [
+          320,
+          322
+        ],
+        "statement_coverage": 0.3333333333333333,
+        "crap": 1.2962962962962963
+      },
+      {
+        "name": "_export",
+        "line": 325,
+        "end_line": 338,
+        "ccn": 2,
+        "statements": 5,
+        "missing_lines": [
+          326,
+          327,
+          329,
+          331
+        ],
+        "statement_coverage": 0.2,
+        "crap": 4.048
+      },
+      {
+        "name": "finish_campaign",
+        "line": 343,
+        "end_line": 435,
+        "ccn": 9,
+        "statements": 54,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 9.0
+      },
+      {
+        "name": "main",
+        "line": 438,
+        "end_line": 445,
+        "ccn": 2,
+        "statements": 8,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "crap": 2.0
+      }
+    ],
+    "mutations": {
+      "convention": "Cinco mutaciones dirigidas en copias privadas. Se considera detectada una mutación cuando fallan las pruebas conductuales seleccionadas sin errores de colección. No es una campaña exhaustiva de mutación.",
+      "records": [
+        {
+          "name": "waiting_gate",
+          "selection": "open_campaign_waits",
+          "returncode": 1,
+          "killed": true,
+          "seconds": 0.29402762599056587
+        },
+        {
+          "name": "attempt_limit",
+          "selection": "unexpected_termination_and_three_attempt_limit",
+          "returncode": 1,
+          "killed": true,
+          "seconds": 0.2961241960001644
+        },
+        {
+          "name": "artifact_hash",
+          "selection": "completed_result and artifact",
+          "returncode": 1,
+          "killed": true,
+          "seconds": 0.3712466580036562
+        },
+        {
+          "name": "producer_code_set",
+          "selection": "contradictory and (known_unrelated_code or missing_required_code)",
+          "returncode": 1,
+          "killed": true,
+          "seconds": 0.2911857319995761
+        },
+        {
+          "name": "last_identity_check",
+          "selection": "last_artifact",
+          "returncode": 1,
+          "killed": true,
+          "seconds": 0.3329333610017784
+        }
+      ]
+    }
+  }
+}
