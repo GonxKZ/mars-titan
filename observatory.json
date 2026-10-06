@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-06T17:05:47.650293Z",
+  "generated_at": "2026-10-06T17:11:02.681956Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -1331,18 +1331,18 @@
       "status": "running",
       "phase": "validation",
       "started_at": "2026-10-06T17:05:37.834786Z",
-      "updated_at": "2026-10-06T17:05:37.834857Z",
-      "heartbeat_at": "2026-10-06T17:05:47.395827Z",
-      "completed_steps": 0,
+      "updated_at": "2026-10-06T17:10:59.959555Z",
+      "heartbeat_at": "2026-10-06T17:11:02.423830Z",
+      "completed_steps": 12610,
       "total_steps": null,
-      "epoch": null,
+      "epoch": 26,
       "max_epochs": 100,
       "seed": 42,
       "fold": "US",
       "comparison_group": "d592a8b90bdcd82c9ae3f17282a73e31cd8dea9458ac5fa9d8bfa26ec1c95d32",
       "metrics": {
-        "mae": null,
-        "mse": null,
+        "mae": 0.01503856726551168,
+        "mse": 0.0005343438576276395,
         "rank_ic": null,
         "coverage_80": null,
         "coverage_95": null,
@@ -1353,11 +1353,168 @@
         "vram_peak_mib": null,
         "ram_peak_mib": null,
         "elapsed_seconds": null,
-        "samples_per_second": null
+        "samples_per_second": 11641.344302779054
       },
-      "history": [],
+      "history": [
+        {
+          "step": 1,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.017592470217425046
+        },
+        {
+          "step": 2,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015943772618625566
+        },
+        {
+          "step": 3,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015646956522052693
+        },
+        {
+          "step": 4,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015476289009665094
+        },
+        {
+          "step": 5,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015256302141967718
+        },
+        {
+          "step": 6,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015240472005007489
+        },
+        {
+          "step": 7,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01506904257223375
+        },
+        {
+          "step": 8,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015016677916729388
+        },
+        {
+          "step": 9,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01504362858831715
+        },
+        {
+          "step": 10,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015001001443019768
+        },
+        {
+          "step": 11,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015055983292056051
+        },
+        {
+          "step": 12,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015143160766444633
+        },
+        {
+          "step": 13,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015190768020630347
+        },
+        {
+          "step": 14,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014954973450670232
+        },
+        {
+          "step": 15,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015040859714147134
+        },
+        {
+          "step": 16,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015248666754028662
+        },
+        {
+          "step": 17,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015076636055380998
+        },
+        {
+          "step": 18,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014908857755730667
+        },
+        {
+          "step": 19,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014867414754873168
+        },
+        {
+          "step": 20,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.015115282547340734
+        },
+        {
+          "step": 21,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01504252837562379
+        },
+        {
+          "step": 22,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014923513543001204
+        },
+        {
+          "step": 23,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.014941678142347337
+        },
+        {
+          "step": 24,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01493413171878769
+        },
+        {
+          "step": 25,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01489054040612393
+        },
+        {
+          "step": 26,
+          "recorded_at": null,
+          "loss": null,
+          "mae": 0.01503856726551168
+        }
+      ],
       "checkpoint": {
-        "step": 0,
+        "step": 12610,
         "saved_at": null,
         "resumable": null
       },
@@ -1372,7 +1529,7 @@
         "condition": null,
         "parent_model": null,
         "configuration_sha256": "a46894e04bf458037eaa96a9e625a87a485d192fe18a2d5ea70312170f6cc5c3",
-        "source_sha256": "67e1ae10a662d75e81307fcaed84d4efb11a92961bb42d489eb95ec65eec5be9",
+        "source_sha256": "a64775d3f81c101dad8df86c132a66680680f405da8a0bc9afc478ec76e6f9f1",
         "history_axis": "epoch",
         "progress_time_source": "receipt_mtime",
         "train_rows": 247852,
