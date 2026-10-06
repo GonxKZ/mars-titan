@@ -176,3 +176,135 @@ def test_cli_prepares_the_real_pipeline_with_declared_month_precision(
     report = json.loads(capsys.readouterr().out)
     assert report["computed_values"] > 0
     assert report["publication_timestamp_verified"] is False
+
+
+@pytest.fixture
+def source_edition(tmp_path, monkeypatch):
+    monkeypatch.setattr(module(), "_download", lambda: content())
+    source = tmp_path / "original-edition"
+    module().prepare_gscpi(
+        source,
+        Path("data/catalogs/macro-indicators.csv"),
+        market="US",
+        start="2022-05-18",
+        end="2022-07-05",
+    )
+
+    def forbidden_download():
+        raise AssertionError("La fuente fijada no debe sustituirse por una descarga")
+
+    monkeypatch.setattr(module(), "_download", forbidden_download)
+    return source
+
+
+def reuse(source, output):
+    return module().prepare_gscpi(
+        output,
+        Path("data/catalogs/macro-indicators.csv"),
+        market="CN",
+        start="2022-05-18",
+        end="2022-07-05",
+        source_edition=source,
+    )
+
+
+def test_reused_source_preserves_receipt_and_recalculates_chinese_availability(
+    source_edition,
+    tmp_path,
+):
+    import pyarrow.parquet as pq
+
+    from mars_titan.data.storage import sha256
+
+    original = json.loads((source_edition / "report.json").read_text())
+    output = tmp_path / "chinese"
+    report = reuse(source_edition, output)
+    assert report["retrieved_at_utc"] == original["retrieved_at_utc"]
+    assert report["source_sha256"] == original["source_sha256"]
+    assert report["source_edition_sha256"] == sha256(source_edition / "report.json")
+    assert (source_edition / "source.csv").read_bytes() == (output / "source.csv").read_bytes()
+    rows = pq.read_table(output / "macro.parquet").to_pylist()
+    values = {(r["prediction_at"].date().isoformat(), r["indicator_id"]): r["value"] for r in rows}
+    assert values["2022-06-01", "global_supply_pressure"] is None
+    assert values["2022-06-02", "global_supply_pressure"] == 3.29
+    assert values["2022-07-01", "global_supply_pressure"] == 3.29
+    assert values["2022-07-04", "global_supply_pressure"] == 3.01
+    assert values["2022-07-04", "global_supply_pressure_change_1m"] == pytest.approx(-0.44)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("source_sha256", "a" * 64),
+        ("source_url", "https://example.test/otra.csv"),
+        ("retrieved_at_utc", "2022-01-01T00:00:00"),
+        ("schema_version", 99),
+        ("schema_version", True),
+    ],
+)
+def test_invalid_cached_receipt_is_rejected(source_edition, tmp_path, field, value):
+    path = source_edition / "report.json"
+    report = json.loads(path.read_text())
+    report[field] = value
+    path.write_text(json.dumps(report))
+    output = tmp_path / "rejected"
+    with pytest.raises(ValueError):
+        reuse(source_edition, output)
+    assert not output.exists()
+
+
+def test_changed_cached_bytes_do_not_inherit_the_original_identity(source_edition, tmp_path):
+    with (source_edition / "source.csv").open("ab") as stream:
+        stream.write(b"\n")
+    with pytest.raises(ValueError):
+        reuse(source_edition, tmp_path / "rejected")
+
+
+@pytest.mark.parametrize("filename", ["source.csv", "report.json"])
+def test_source_changes_during_materialization_prevent_publication(
+    source_edition,
+    tmp_path,
+    monkeypatch,
+    filename,
+):
+    original = module().atomic_parquet
+
+    def changed(path, table):
+        original(path, table)
+        with (source_edition / filename).open("ab") as stream:
+            stream.write(b"\n")
+
+    monkeypatch.setattr(module(), "atomic_parquet", changed)
+    output = tmp_path / "rejected"
+    with pytest.raises(ValueError):
+        reuse(source_edition, output)
+    assert not output.exists()
+
+
+def test_output_cannot_be_nested_in_cached_edition(source_edition):
+    with pytest.raises(ValueError):
+        reuse(source_edition, source_edition / "derived")
+
+
+def test_cli_reuses_an_explicit_source_edition(source_edition, tmp_path, capsys):
+    assert (
+        module().main(
+            [
+                "--catalog",
+                "data/catalogs/macro-indicators.csv",
+                "--output",
+                str(tmp_path / "cli-cn"),
+                "--source-edition",
+                str(source_edition),
+                "--market",
+                "CN",
+                "--start",
+                "2022-05-18",
+                "--end",
+                "2022-07-05",
+            ]
+        )
+        == 0
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert report["market"] == "CN" and "source_edition_sha256" in report

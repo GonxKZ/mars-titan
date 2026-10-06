@@ -118,8 +118,8 @@ declara permisos específicos, independientes de los puntos. No se presupone
 disponer de ese acceso ni se contratan servicios. La vía pública de CNINFO
 resuelve documentos contables concretos, no toda la modalidad textual.
 
-También siguen pendientes el factor de mercado chino con apertura y cierre y
-el cálculo y la admisión de los 140 macros sobre las decisiones del calendario
-chino. El panel preparado para los cierres estadounidenses no sirve directamente
-para ese calendario. El brazo conjunto no se considera completo utilizando
+El [panel macro chino](china-macro-edition.md) ya admite 387 sesiones con los
+140 indicadores y cubre las 169 fechas potenciales de este caso. Siguen pendientes
+el factor de mercado con apertura y cierre, la representación, la codificación y
+la supervisión multimodal. El brazo conjunto no se considera completo utilizando
 únicamente datos estadounidenses.

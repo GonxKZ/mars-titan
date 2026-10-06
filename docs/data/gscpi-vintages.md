@@ -19,6 +19,12 @@ uv run --no-sync python -m mars_titan.data.macro_gscpi \
 
 La salida contiene el CSV descargado, el panel Parquet y un informe con sus huellas, catálogo, periodo y regla de disponibilidad. Se publica en un directorio nuevo, sin sustituir una edición anterior.
 
+`--source-edition` permite usar `source.csv` y `report.json` de una preparación
+anterior sin descargar. Comprueba URL, versión del recibo, fecha UTC de adquisición
+y SHA del CSV. Conserva esa fecha y registra la huella del recibo de origen. Antes
+de publicar vuelve a comprobar los archivos. Cambiar el mercado recalcula las
+decisiones con su calendario, como en la [edición china](china-macro-edition.md).
+
 La ejecución de 2009 a 2023 produjo 7.548 filas para 3.774 sesiones. Hay 796 valores admitidos entre el índice y su cambio mensual. Las 7.548 comparaciones con una selección SQL independiente coinciden, con tolerancias absoluta y relativa de `1e-12`. Esa prueba comprueba la regla implementada, no demuestra una hora de publicación que el archivo no proporciona.
 
 La recuperación no acredita una población con todos los macros ni una mejora de los modelos. Los datos descargados permanecen fuera del repositorio. Se conservan las [condiciones del proveedor](https://www.newyorkfed.org/privacy/termsofuse) y la atribución a Federal Reserve Bank of New York, Global Supply Chain Pressure Index.

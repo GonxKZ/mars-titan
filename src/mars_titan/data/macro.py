@@ -24,7 +24,7 @@ from mars_titan.data.macro_model_vintages import (
     validate_monthly_bound,
 )
 from mars_titan.data.macro_release_contracts import release_exclusion, validate_release_observation
-from mars_titan.data.temporal import MarketClock
+from mars_titan.data.temporal import MarketClock, aware
 
 
 def _validate_daily_lag_policy(policy):
@@ -329,6 +329,7 @@ def calculate_macro(
     clock: MarketClock,
     *,
     daily_lag_policy: str = "source_records",
+    decision_start: datetime | None = None,
 ) -> list[dict]:
     """Emite todos los indicadores por decisión, incluidas ausencias explicadas.
 
@@ -340,8 +341,12 @@ def calculate_macro(
     valid_observations cuenta valores admitidos en retardos D positivos. No cambia
     el periodo actual ni los retardos de calendario. Su uso exige registrar
     macro_calculation_contract en una edición distinta de la predeterminada.
+    decision_start limita las filas emitidas sin recortar el calendario usado
+    para fechar publicaciones anteriores ni las observaciones de sus retardos.
     """
     _validate_daily_lag_policy(daily_lag_policy)
+    if decision_start is not None:
+        decision_start = aware(decision_start)
     entries, dependencies, formulas, order = _catalog(catalog)
     events = _events(rows, entries, clock)
     state = {identifier: {} for identifier in entries if identifier not in formulas}
@@ -349,6 +354,8 @@ def calculate_macro(
     versions, output, cached = {}, [], {}
     index = 0
     for decision in clock.decisions:
+        if decision_start is not None and decision < decision_start:
+            continue
         changed = not cached
         while index < len(events) and events[index][0] <= decision:
             _, vintage, active, identifier, period, value = events[index]
