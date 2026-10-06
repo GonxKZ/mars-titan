@@ -207,10 +207,34 @@ def _sample_state(parent, asset, temporal):
     return tuple(np.concatenate([part[index] for part in parts]) for index in range(3))
 
 
-def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_path, output):
+def _annual_candidates(labels, prediction, maturity, reasons, boundary):
+    """Comprobar el único corte anual recuperable del contrato supervisado original."""
+    candidates = reasons == "target_crosses_partition_boundary"
+    if candidates.any():
+        target = labels["target"].to_numpy()[candidates]
+        if (
+            not np.isfinite(target).all()
+            or np.any(prediction[candidates] != boundary[0])
+            or np.any(maturity[candidates] != boundary[1])
+        ):
+            raise ValueError("La exclusión anual no conserva un objetivo y una maduración válidos")
+    return candidates
+
+
+def prepare_temporal_corpus(
+    parent_path,
+    protocol_path,
+    macro_path,
+    admission_path,
+    output,
+    *,
+    recover_annual_boundaries=False,
+):
     """Publicar etiquetas por ventana y referencias a las modalidades originales."""
     from .corpus_inputs import CorpusDataset, _times
 
+    if type(recover_annual_boundaries) is not bool:
+        raise ValueError("La recuperación anual debe indicarse mediante un booleano")
     began = time.perf_counter()
     parent_path, protocol_path, macro_path, admission_path, output = map(
         Path, (parent_path, protocol_path, macro_path, admission_path, output)
@@ -230,6 +254,12 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
         outside_source(source, output)
     protocol, protocol_hash = read_manifest(protocol_path)
     folds = build_folds(protocol)
+    annual_boundary = None
+    if recover_annual_boundaries:
+        clock = MarketClock(protocol["market"], "2022-12-01", "2023-01-31")
+        last = max(moment for moment in clock.decisions if moment.year == 2022)
+        following = min(moment for moment in clock.decisions if moment.year == 2023)
+        annual_boundary = tuple(int(moment.timestamp() * 1_000_000) for moment in (last, following))
     contract = dict(
         schema_version=1,
         protocol=protocol,
@@ -251,6 +281,15 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
             final_test_opened=False,
         )
         view["roots"]["labels"] = str((output / fold["id"] / "labels").resolve())
+        if recover_annual_boundaries:
+            view["label_admission"] = dict(
+                schema_version=1,
+                recover_annual_boundaries=True,
+                source_boundary="2023-01-01",
+                target_horizon="next_market_session",
+            )
+            view["recovered_annual_labels"] = 0
+    annual_candidates = 0
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
         stage = Path(temporary) / "views"
@@ -278,6 +317,13 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
                 pa.scalar(0, type=labels["target_available_at"].type)
             )
             maturity = _times(maturity_column)
+            recovered = np.zeros(len(labels), dtype=bool)
+            if recover_annual_boundaries:
+                recovered = _annual_candidates(
+                    labels, label_prediction, maturity, source_reasons, annual_boundary
+                )
+                accepted |= recovered
+                annual_candidates += int(recovered.sum())
             for fold in folds:
                 temporal.fold = fold
                 temporal.partitioner = FoldPartitioner(fold, temporal.clock, protocol)
@@ -311,6 +357,8 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
                     )
                 else:
                     updated = updated.append_column("reason", pa.array(reasons))
+                if recover_annual_boundaries:
+                    updated = updated.append_column("source_reason", pa.array(source_reasons))
                 folder = stage / fold["id"] / "labels" / asset["market"] / asset["symbol"]
                 atomic_parquet(folder / "labels.parquet", updated)
                 counts = {name: int(np.sum(assigned["partition"] == name)) for name in PARTITIONS}
@@ -323,6 +371,8 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
                 )
                 for name in PARTITIONS:
                     view["counts"][name] += counts[name]
+                if recover_annual_boundaries:
+                    view["recovered_annual_labels"] += int(np.sum(used & recovered))
             parent._file(asset, "samples")
             parent._file(asset, "labels")
         temporal.verify()
@@ -340,6 +390,8 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
                     has_all_partitions=all(view["counts"].values()),
                 )
             )
+            if recover_annual_boundaries:
+                summaries[-1]["recovered_annual_labels"] = view["recovered_annual_labels"]
         report = dict(
             schema_version=1,
             folds=summaries,
@@ -353,6 +405,9 @@ def prepare_temporal_corpus(parent_path, protocol_path, macro_path, admission_pa
             elapsed_seconds=time.perf_counter() - began,
             peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         )
+        if recover_annual_boundaries:
+            report["label_admission"] = view["label_admission"]
+            report["recovered_annual_candidates"] = annual_candidates
         atomic_json(stage / "report.json", report)
         _publish_directory(stage, output)
         descriptor = os.open(output.parent, os.O_RDONLY | os.O_DIRECTORY)
@@ -367,9 +422,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("parent", "protocol", "macro", "admission", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--recover-annual-boundaries", action="store_true")
     args = parser.parse_args(argv)
     report = prepare_temporal_corpus(
-        args.parent, args.protocol, args.macro, args.admission, args.output
+        args.parent,
+        args.protocol,
+        args.macro,
+        args.admission,
+        args.output,
+        recover_annual_boundaries=args.recover_annual_boundaries,
     )
     print(json.dumps(report, ensure_ascii=False))
     return 0
