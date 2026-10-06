@@ -1,0 +1,336 @@
+{
+  "schema_version": 1,
+  "kind": "csi300_factor_verification",
+  "measured_at_utc": "2026-10-06T21:42:36.497863+00:00",
+  "code_sha256": "38836f8ec40785089ba021718eddd1878e4ab5af43269050b068b4dcd1168f70",
+  "source": {
+    "url": "https://www.sse.com.cn/aboutus/publication/monthly/index/",
+    "query_id": "COMMON_SSE_ZQZS_M_CSI300_INDEX_C",
+    "acquired_at_utc": "2026-10-06T21:22:26.915723+00:00",
+    "acquisition_sha256": "4e5364bc821f94b4ff6651517548a7683db1ded930ad5e1c076eb77d1d302203",
+    "months": [
+      {
+        "month": "202201",
+        "rows": 19,
+        "sha256": "dd711b4ebfc5312249b1c0fd3a073a4a203ad0def3d25cbd678617d289803064",
+        "receipt_sha256": "2c69cc42633e0709c61ce6cebfc45f96eeabe0a17eb140add50a4e6df3079970"
+      },
+      {
+        "month": "202202",
+        "rows": 16,
+        "sha256": "26e509167eb05689fd6ad45c9ebc36bb329566a949976a53b261efba7c9bc86a",
+        "receipt_sha256": "b5ad3a59de2ea41b3802b09ac131ff1389c7da98dbaebc1732d9dfe1ac207e13"
+      },
+      {
+        "month": "202203",
+        "rows": 23,
+        "sha256": "5dd3bc49179f3f7902b99ff73ba1e4d72a1ef4ca9609cd5fb17389e6998a6b35",
+        "receipt_sha256": "4859633e1266506952a52a1b8f626a06f496af737645a6f2ecb4aaa8e473459b"
+      },
+      {
+        "month": "202204",
+        "rows": 19,
+        "sha256": "55a98b21f7b9334d050ba4033e76f3662a417991811bd472b2750af57818731c",
+        "receipt_sha256": "b53ce15cc43b5c25da2afdcda87b3b79725b3c8abcc30e9386f723c0117ba7ad"
+      },
+      {
+        "month": "202205",
+        "rows": 19,
+        "sha256": "27213081945800c68618e813171ec5f1ec633239fcdbc04be6b33911bbba2276",
+        "receipt_sha256": "dc04d21b56c05f02e55e7d91373d9894a59d6a41e80249bef358609aa9974985"
+      },
+      {
+        "month": "202206",
+        "rows": 21,
+        "sha256": "8a090c2a59bac4031477b1b086e282748148eac3cb930d8864f3e387428d2a70",
+        "receipt_sha256": "5ceda2a94ec25514fb17475623d8e1cd63f79478d9e64d1995e7ecbd66d30955"
+      },
+      {
+        "month": "202207",
+        "rows": 21,
+        "sha256": "a8ebb2920e6e7e72e0a1f1f3b32d9b29acb321811ffb41fae556b586e9ba162d",
+        "receipt_sha256": "a17d7b49dbebca9325bcabfee12177ea45faabcb82fc9aaf19e69e6627a37c5f"
+      },
+      {
+        "month": "202208",
+        "rows": 23,
+        "sha256": "612a663494532b090718fddedd1655fc32ceb11b5837c546c221125aaa664822",
+        "receipt_sha256": "92b8a61c360a1e8ede7d1276c0a0904d9f50024cdf32f5587d6130d32682e872"
+      },
+      {
+        "month": "202209",
+        "rows": 21,
+        "sha256": "eb63c6abbd5ed596cdc76fff57d4ca3e5e2301bd8241530e213e0bb5d961476c",
+        "receipt_sha256": "fcd80fb33e10f885f27d3351de5dbbb5be43c601b66a9edf70c42085e147f337"
+      },
+      {
+        "month": "202210",
+        "rows": 16,
+        "sha256": "bf4ed9c848e083bc2d351dbff931220338859c6a7f5beba86d5579b44582abbf",
+        "receipt_sha256": "f8fb467234192720b51f9436ac359a216f7c34930275976ed3de24d769dea935"
+      },
+      {
+        "month": "202211",
+        "rows": 22,
+        "sha256": "83c4a8afa66fd047614f1ff5359e83a27975712c81a668d767be8a268568e8f8",
+        "receipt_sha256": "ed28b7e73f29f6a6e925f81822c5e1c9dbfea689ae2e662791c401a56d4a8ebc"
+      },
+      {
+        "month": "202212",
+        "rows": 22,
+        "sha256": "536c3dbe65c2ae0b9ce5b27b917d41437b5629f2db576d7bf2761c0e6cd25d25",
+        "receipt_sha256": "e20e12c47f39f18dec017cd647bd567d0b145f0f16c6ac930060e713f25b886a"
+      },
+      {
+        "month": "202301",
+        "rows": 16,
+        "sha256": "ae5ec17bdcf4a9ca7c2e496b41ad675842ff1e26b2f5f362e915f73837893d34",
+        "receipt_sha256": "f148992821a53f77536dbcd71cd14a5437e2e8910d8a4fae0b2284136c9201e4"
+      },
+      {
+        "month": "202302",
+        "rows": 20,
+        "sha256": "ca6793acd31d34f38dcca0167a52370527a124338b770a6c72d35b67c0601ad9",
+        "receipt_sha256": "b92dbc1ec6c627729ea6a3bb06fbfddaf5a9e1536a575c52123ed173d0ab74cb"
+      },
+      {
+        "month": "202303",
+        "rows": 23,
+        "sha256": "3b49bac192c1269a99d7e5c3200cd82071608cdbbe9533194186f476cb884f16",
+        "receipt_sha256": "3676379e3004cb6295ef35eed56941b160d5520e2e0094e6aa8bc18f831636c3"
+      },
+      {
+        "month": "202304",
+        "rows": 19,
+        "sha256": "a2213874127e9d6eed6d17a16e501abadeae1f32083411aad34150f36673f180",
+        "receipt_sha256": "3c23787250ed9d67768f3d7d28128df5412c7d908c1f3059b97a55091d394f22"
+      },
+      {
+        "month": "202305",
+        "rows": 20,
+        "sha256": "d6f7d42ddea6a97d50f56e19e6651c4bc9da018c5f656652ac0c35571d8f4441",
+        "receipt_sha256": "780c89f4a1eb97e1e3b7a3971b69a9813a20de5bd5e006d46936c7595173a92c"
+      },
+      {
+        "month": "202306",
+        "rows": 20,
+        "sha256": "5747c71ea3c31a7df75aa6838f5bc48a94e4dbe6883c68f9c6f7990b82c224ba",
+        "receipt_sha256": "ccb04504b05423a7adafcd4deffb23203b7e2cbe5f2ea67bb91a3d2d142d3cb0"
+      },
+      {
+        "month": "202307",
+        "rows": 21,
+        "sha256": "ff7c7a06e035de24c02899c43591559c66137a3f87428c049b9bdead771149e6",
+        "receipt_sha256": "053a4f3a306c93e6738ac6b3bc5b175340cf919579d5a92b46710fe41faf9d0d"
+      },
+      {
+        "month": "202308",
+        "rows": 23,
+        "sha256": "96c0687a01f2474e47cb2ffa1692e3cba0c8527de231d52eb54866e60fe519f1",
+        "receipt_sha256": "bca901bc9decc281e743a1afd3f8aeca507494884f370691ba93a42f89fa0ef0"
+      },
+      {
+        "month": "202309",
+        "rows": 20,
+        "sha256": "c77f698dc6d5ee36b43ad6a2f7eff38fb32803d546c4da0a55de162d2ced1041",
+        "receipt_sha256": "0115fba9d491993db34bf02f12a271449c4f3c64a4d0721ff7f6953fee8202f8"
+      },
+      {
+        "month": "202310",
+        "rows": 17,
+        "sha256": "026ce1b5a81eb6fdda56564aeea47c2d5593a7edf7c6c2c9c8af2ace25598507",
+        "receipt_sha256": "84c658b1097e802dc9cec6b4d4b3ef77f90cd5af6b3037830c2a2b67557400ee"
+      },
+      {
+        "month": "202311",
+        "rows": 22,
+        "sha256": "b2e23890b4aa1d553be909057a9c3f71967a4e709f655274b46f1a02a9ff9085",
+        "receipt_sha256": "59dc4033648bf16341db1dd1d9195c8f29c4b822e758489f895de07500ac5551"
+      },
+      {
+        "month": "202312",
+        "rows": 21,
+        "sha256": "3ac522758fb46d30ede3011668413dd103ba8de4988c4d54ef81e22233d719f6",
+        "receipt_sha256": "991ac790e92e34a8459cd88549de1615a7b7b7b009b77b5918105ee84aa23075"
+      }
+    ],
+    "rows": 484,
+    "first": "2022-01-04",
+    "last": "2023-12-29",
+    "missing_sessions": 0,
+    "duplicate_sessions": 0
+  },
+  "artifacts": {
+    "prices_sha256": "2c60449de1790019dc921c2779ad3f6ad2518af38272a8974342f259060d3489",
+    "prices_bytes": 17477,
+    "report_sha256": "82cafb4096dc3a9a10c99e527822f4282142631d911855ec78c5c375247f2f90",
+    "asset_sha256": "58bd1cd8f7a7fb64df68003ecdd74f02c1f038c6882e959b26dafc895f870fb6"
+  },
+  "residual_parity": {
+    "reference_numpy_exact": true,
+    "maximum_absolute_difference": 0.0,
+    "candidate_rows": 169,
+    "candidate_reasons": {
+      "accepted": 168,
+      "target_after_cutoff": 1
+    },
+    "all_session_reasons": {
+      "insufficient_history": 125,
+      "accepted": 358,
+      "target_after_cutoff": 1
+    }
+  },
+  "performance": {
+    "process_seconds": 0.55,
+    "process_peak_rss_kib": 146596,
+    "creation_seconds": 0.022882360994117334,
+    "reuse_seconds": 0.017682145989965647,
+    "residual_seconds": {
+      "reference": 0.07675496500451118,
+      "numpy": 0.015911460999632254
+    },
+    "repetitions": 1,
+    "active_training_concurrent": true,
+    "unmeasured": [
+      "Energía",
+      "Tráfico físico total de almacenamiento",
+      "Transferencias GPU"
+    ],
+    "interpretation": "Comprobación funcional, no benchmark de aceleración."
+  },
+  "verification": {
+    "related_tests": 77,
+    "related_seconds": 11.95,
+    "private_control_tests": 28,
+    "private_control_seconds": 0.55,
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "coverage": {
+      "covered_lines": 169,
+      "num_statements": 186,
+      "percent_covered": 86.71875,
+      "percent_covered_display": "87",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.86021505376344,
+      "percent_statements_covered_display": "91",
+      "num_branches": 70,
+      "num_partial_branches": 17,
+      "covered_branches": 53,
+      "missing_branches": 17,
+      "percent_branches_covered": 75.71428571428571,
+      "percent_branches_covered_display": "76"
+    },
+    "functions": [
+      {
+        "name": "_stamp",
+        "complexity": 2,
+        "statement_coverage_fraction": 0.75,
+        "crap": 2.0625
+      },
+      {
+        "name": "_read",
+        "complexity": 4,
+        "statement_coverage_fraction": 0.7777777777777778,
+        "crap": 4.175582990397805
+      },
+      {
+        "name": "_url",
+        "complexity": 8,
+        "statement_coverage_fraction": 0.875,
+        "crap": 8.125
+      },
+      {
+        "name": "_quote",
+        "complexity": 10,
+        "statement_coverage_fraction": 1.0,
+        "crap": 10.0
+      },
+      {
+        "name": "_month",
+        "complexity": 26,
+        "statement_coverage_fraction": 0.9230769230769231,
+        "crap": 26.307692307692307
+      },
+      {
+        "name": "_inputs",
+        "complexity": 23,
+        "statement_coverage_fraction": 0.8484848484848485,
+        "crap": 24.840025600356178
+      },
+      {
+        "name": "_verify",
+        "complexity": 5,
+        "statement_coverage_fraction": 0.8333333333333334,
+        "crap": 5.1157407407407405
+      },
+      {
+        "name": "materialize_csi300_factor",
+        "complexity": 20,
+        "statement_coverage_fraction": 0.9148936170212766,
+        "crap": 20.246573495275612
+      },
+      {
+        "name": "_specification",
+        "complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "name": "main",
+        "complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "crap": 1.0
+      }
+    ],
+    "mutations": [
+      {
+        "name": "ignore_query_identity",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "b816f8dbc3829c3d8d30080a58b635fc849d2883ec5d795aadb76b410976fab0"
+      },
+      {
+        "name": "ignore_ohlc_range",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "45b00e411f56b9bda65eeffcb19cd71edd4e450c133851a88573c023906463e8"
+      },
+      {
+        "name": "allow_final_test_month",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "ba898a58da8e34ee6a5369d9956bb9d8abeec7e72dcd867070cfb1729af2f92e"
+      },
+      {
+        "name": "hide_missing_sessions",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "e5b4dadb5b5888b3455e957a7508a157ed37df185f2a1f0de4264b36f369875a"
+      },
+      {
+        "name": "omit_source_revalidation",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "e4e367fc140ad02d4af7d6f19c12674b0751052ca5e3aaa084db85700c451610"
+      }
+    ],
+    "crap_convention": "Sentencias y ramas de coverage.py. CRAP usa la fracción de sentencias ejecutadas por función.",
+    "crap_formula": "C^2 * (1 - statement_coverage_fraction)^3 + C"
+  },
+  "availability_policy": "retrospective_session_close_plus_5_minutes",
+  "limits": [
+    "No acredita vintages diarios ni disponibilidad operativa exacta de la serie.",
+    "Los recibos de adquisición son entradas previamente contrastadas. El lector no vuelve a autenticar la web.",
+    "Faltan representación CNY, codificación y unión supervisada del corpus.",
+    "Las pruebas no cambian ni ejecutan rutas de modelos o CUDA.",
+    "Cobertura y mutaciones dirigidas no demuestran ausencia de errores."
+  ],
+  "point_in_time_verified": false,
+  "financial_simulation_ready": false,
+  "training_ready": false,
+  "final_test_opened": false
+}
