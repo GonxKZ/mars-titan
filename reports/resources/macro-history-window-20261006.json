@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "workload": {
+    "market": "CN",
+    "calendar_start": "2000-01-01",
+    "output_start": "2022-01-01",
+    "output_end": "2023-12-31",
+    "indicators": 140,
+    "reference_emitted_rows": 814240,
+    "selected_emitted_rows": 67760,
+    "identical_output_rows": 67760,
+    "parquet_sha256": "27a5643dfdf4a8728222741b2365e1ae684402a2d18a16992df164da4cf50d4c",
+    "output_bytes": 221113
+  },
+  "hardware": "AMD Ryzen 9 8945HS, 8 núcleos y 16 hilos",
+  "environment": {
+    "cpu_quota_percent": 100,
+    "ram_limit_bytes": 4294967296,
+    "blas_threads": 1,
+    "python": "3.12.14",
+    "pyarrow": "25.0.1",
+    "concurrent_scientific_campaign": true
+  },
+  "warmup_pair_excluded": true,
+  "pairs": [
+    {
+      "repetition": 2,
+      "order": [
+        "reference",
+        "selected"
+      ],
+      "reference": {
+        "wall_seconds": 86.19,
+        "max_rss_kib": 1097272,
+        "exit": 0
+      },
+      "selected": {
+        "wall_seconds": 26.26,
+        "max_rss_kib": 1097388,
+        "exit": 0
+      },
+      "identical_parquet": true
+    },
+    {
+      "repetition": 3,
+      "order": [
+        "selected",
+        "reference"
+      ],
+      "reference": {
+        "wall_seconds": 84.47,
+        "max_rss_kib": 1097272,
+        "exit": 0
+      },
+      "selected": {
+        "wall_seconds": 25.95,
+        "max_rss_kib": 1097272,
+        "exit": 0
+      },
+      "identical_parquet": true
+    },
+    {
+      "repetition": 4,
+      "order": [
+        "reference",
+        "selected"
+      ],
+      "reference": {
+        "wall_seconds": 85.38,
+        "max_rss_kib": 1097112,
+        "exit": 0
+      },
+      "selected": {
+        "wall_seconds": 26.17,
+        "max_rss_kib": 1097324,
+        "exit": 0
+      },
+      "identical_parquet": true
+    }
+  ],
+  "medians": {
+    "reference": {
+      "wall_seconds": 85.38,
+      "max_rss_kib": 1097272
+    },
+    "selected": {
+      "wall_seconds": 26.17,
+      "max_rss_kib": 1097324
+    }
+  },
+  "median_elapsed_reduction_percent": 69.34879362848442,
+  "quality": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "macro_tests_passed": 400,
+    "additional_cli_tests_passed": 1,
+    "focal_tests_passed": 187,
+    "private_control_passed": 187,
+    "source_sha256": {
+      "macro.py": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d",
+      "macro_recalculation.py": "0fa923173e3cf6d4ba169fff9c1586e62633e3d7c48a3ebcb24295709b91c7c6",
+      "macro_gscpi.py": "05ad93997bb24d0d6f637f56adaa9f32a6bf1f6dad61a90d4d6079b5bf7728c0"
+    },
+    "coverage_totals": {
+      "covered_lines": 479,
+      "num_statements": 534,
+      "percent_covered": 87.36702127659575,
+      "percent_covered_display": "87",
+      "missing_lines": 55,
+      "excluded_lines": 0,
+      "percent_statements_covered": 89.70037453183521,
+      "percent_statements_covered_display": "90",
+      "num_branches": 218,
+      "num_partial_branches": 34,
+      "covered_branches": 178,
+      "missing_branches": 40,
+      "percent_branches_covered": 81.65137614678899,
+      "percent_branches_covered_display": "82"
+    },
+    "function_diagnostics": [
+      {
+        "module": "macro.py",
+        "name": "calculate_macro",
+        "line": 326,
+        "end_line": 390,
+        "ccn": 18,
+        "statements": 31,
+        "covered_statements": 31,
+        "statement_coverage": 1.0,
+        "missing_lines": [],
+        "branches": 16,
+        "covered_branches": 16,
+        "branch_coverage": 1.0,
+        "missing_branch_arcs": {},
+        "crap": 18.0
+      },
+      {
+        "module": "macro_recalculation.py",
+        "name": "recalculate_macro",
+        "line": 49,
+        "end_line": 172,
+        "ccn": 38,
+        "statements": 49,
+        "covered_statements": 46,
+        "statement_coverage": 0.9387755102040817,
+        "missing_lines": [
+          97,
+          116,
+          170
+        ],
+        "branches": 16,
+        "covered_branches": 13,
+        "branch_coverage": 0.8125,
+        "missing_branch_arcs": {
+          "95": [
+            97
+          ],
+          "115": [
+            116
+          ],
+          "164": [
+            170
+          ]
+        },
+        "crap": 38.33139253202322
+      },
+      {
+        "module": "macro_gscpi.py",
+        "name": "_source_from_edition",
+        "line": 169,
+        "end_line": 194,
+        "ccn": 12,
+        "statements": 19,
+        "covered_statements": 17,
+        "statement_coverage": 0.8947368421052632,
+        "missing_lines": [
+          181,
+          187
+        ],
+        "branches": 10,
+        "covered_branches": 8,
+        "branch_coverage": 0.8,
+        "missing_branch_arcs": {
+          "180": [
+            181
+          ],
+          "186": [
+            187
+          ]
+        },
+        "crap": 12.16795451231958
+      },
+      {
+        "module": "macro_gscpi.py",
+        "name": "prepare_gscpi",
+        "line": 197,
+        "end_line": 303,
+        "ccn": 27,
+        "statements": 65,
+        "covered_statements": 58,
+        "statement_coverage": 0.8923076923076924,
+        "missing_lines": [
+          215,
+          217,
+          229,
+          232,
+          236,
+          239,
+          257
+        ],
+        "branches": 24,
+        "covered_branches": 17,
+        "branch_coverage": 0.7083333333333334,
+        "missing_branch_arcs": {
+          "214": [
+            215
+          ],
+          "216": [
+            217
+          ],
+          "225": [
+            229
+          ],
+          "231": [
+            232
+          ],
+          "235": [
+            236
+          ],
+          "238": [
+            239
+          ],
+          "256": [
+            257
+          ]
+        },
+        "crap": 27.910503413746017
+      }
+    ],
+    "convention": "coverage.py con ramas. Por función, sentencias ejecutables dentro del rango de líneas de Radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Las ramas se informan por separado mediante coverage._analyze. Métodos duplicados por Radon se cuentan una vez con nombre de clase.",
+    "directed_mutations_detected": 6,
+    "directed_mutations_total": 6
+  },
+  "limits": [
+    "Tres parejas medidas después de una pareja inicial de comprobación. No se estiman latencias de cola ni significación estadística.",
+    "La referencia calcula todo el calendario histórico y filtra la salida. La ruta nueva conserva ese calendario y omite las filas no solicitadas.",
+    "El pico de RAM medido no disminuye. Emitir menos filas no implica reducir el pico del proceso.",
+    "No se han medido energía, bytes físicos de I/O, contadores de CPU ni transferencias GPU. No es una aceleración del entrenamiento.",
+    "La cobertura focal y las mutaciones corresponden a 187 pruebas. La comprobación CLI añadida después no cambió producción."
+  ],
+  "active_campaign_modified": false,
+  "final_test_opened": false
+}
