@@ -98,10 +98,47 @@ PYTHONPATH=src uv run --no-sync python -m mars_titan.data.china_fundamentals \
 La revisión explícita del documento sigue siendo una entrada necesaria. Este
 lector no extrae ni certifica automáticamente las cifras de cualquier PDF.
 
+## Preparación derivada del activo
+
+`china_preparation` incorpora una edición contable revisada a un activo chino
+preparado cuya partición de fundamentales está vacía. Comprueba mercado, emisor,
+huellas de origen, CAS, CNY y perímetro consolidado. Las disponibilidades se contrastan con
+el calendario de la preparación original. El intervalo usado al revisar el
+documento puede ser distinto, pero no puede desplazar su siguiente cierre.
+La revisión previa y su recibo son entradas de confianza. Este puente no vuelve a
+abrir el original, el PDF o el anuncio y no autentica una revisión sustituida
+junto con su Parquet.
+
+La salida conserva los bytes de precios y noticias y copia el Parquet contable
+revisado. Tiene identidad propia y enlaza las huellas de ambos padres. No modifica
+la edición anterior ni atribuye sus seis nuevos hechos al lector original, que
+había aceptado cero. Comprueba el tamaño de archivos, filas y grupos Parquet antes
+de descomprimir. Sincroniza archivos y directorios antes de publicar y rechaza una
+salida existente con otra identidad o artefactos cambiados.
+
+El [caso ejecutado](../../reports/data/china-preparation-20261006.json) conserva
+4.366 precios y 1.487 noticias y añade seis hechos. El cursor no selecciona ninguno
+el 9 de marzo de 2023. El 10 de marzo selecciona los tres saldos de 2022. Los
+comparativos de 2021 conservan la misma fecha de publicación y no se convierten en
+información disponible durante 2021.
+
+La creación y su reutilización se comprobaron en un proceso de 0,57 segundos, con
+un pico de 137.392 KiB de RAM. Los cinco artefactos copiados suman 588.926 bytes.
+Es una comprobación funcional, no una medición de aceleración. Pasan 77 pruebas
+relacionadas y cinco mutaciones dirigidas detectan cambios en moneda, calendario,
+origen, reutilización y presupuesto de filas. La cobertura de sentencias del
+módulo es del 93,41 % y la de ramas del 85,94 %. El recibo declara herramientas,
+complejidad y convención de CRAP.
+
+La CLI recibe `--prepared-manifest`, `--facts-edition` y `--output`, junto con
+`--calendar-start` y `--calendar-end`. Se ejecuta mediante
+`PYTHONPATH=src uv run --no-sync python -m mars_titan.data.china_preparation`.
+El resultado sigue siendo un único activo preparado con `training_ready=false`.
+No crea muestras codificadas ni declara completado el corpus chino.
+
 ## Alcance pendiente
 
-Faltan la recuperación por todas las empresas y periodos y la integración de los
-hechos materializados en la preparación multimodal. La representación actual del
+Falta recuperar la procedencia de las demás empresas y periodos. La representación actual del
 corpus de entrenamiento admite USD y CAD con conceptos estadounidenses. Los
 hechos CAS en CNY necesitan una representación explícita, sin atribuirles una
 equivalencia completa con US-GAAP.
@@ -119,7 +156,9 @@ disponer de ese acceso ni se contratan servicios. La vía pública de CNINFO
 resuelve documentos contables concretos, no toda la modalidad textual.
 
 El [panel macro chino](china-macro-edition.md) ya admite 387 sesiones con los
-140 indicadores y cubre las 169 fechas potenciales de este caso. Siguen pendientes
-el factor de mercado con apertura y cierre, la representación, la codificación y
-la supervisión multimodal. El brazo conjunto no se considera completo utilizando
-únicamente datos estadounidenses.
+140 indicadores y cubre las 169 fechas potenciales de este caso. La [adquisición
+del factor CSI 300](https://github.com/GonxKZ/mars-titan/issues/14#issuecomment-6025729947)
+concilia las 484 sesiones de 2022 y 2023 con apertura y cierre publicados por SSE.
+Faltan su materialización en el contrato común, la representación CNY, la
+codificación y la supervisión multimodal. El brazo conjunto no se considera
+completo utilizando únicamente datos estadounidenses.

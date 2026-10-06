@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "kind": "reviewed_chinese_preparation_evidence",
+  "measured_at_utc": "2026-10-06T21:27:17.159721+00:00",
+  "module": "src/mars_titan/data/china_preparation.py",
+  "code_sha256": "9c3f3f868b0fcd4690ebb92144b28785003b7392c18bff3f1d47233388393d1c",
+  "source_materialization": "reports/data/china-facts-materialization-20261006.json",
+  "counts": {
+    "prices": 4366,
+    "news": 1487,
+    "fundamentals": 6
+  },
+  "artifacts": [
+    {
+      "path": "fundamentals.parquet",
+      "bytes": 7307,
+      "sha256": "9c7858590cdafe0d85a6ca39ea56d35d0b80d1a3c741d12cff0cc7d7449776e7"
+    },
+    {
+      "path": "news/excluded.parquet",
+      "bytes": 73525,
+      "sha256": "b986d259f15e77f6717b0afcdb1338ec8296f91a4a8f91488f5f5db98e1e86ed"
+    },
+    {
+      "path": "news/manifest.json",
+      "bytes": 673,
+      "sha256": "61ecfb851d6e1ec5dbcfdc7b7301b7b80f4bae7a247549fc02814b22f2bc412a"
+    },
+    {
+      "path": "news/news.parquet",
+      "bytes": 297684,
+      "sha256": "8ac804277935faa2aca6c73c4f84bd6a8aacbb90b57d3344e4623ee158cc722b"
+    },
+    {
+      "path": "prices.parquet",
+      "bytes": 209737,
+      "sha256": "58bd1cd8f7a7fb64df68003ecdd74f02c1f038c6882e959b26dafc895f870fb6"
+    }
+  ],
+  "output_manifest_sha256": "9490f9a6c8f6616a91b6c84b28c14f7cda9bdbdd0de08d1a5685e7e83ad1e3ae",
+  "calendar_sha256": "53376b15aece6c5568352bed69074d5bc3c3385b15064a23f4ef1a30d4a7c425",
+  "temporal_checks": {
+    "before_publication_selected_facts": 0,
+    "after_publication_selected_facts": 3,
+    "selected_period_end": "2022-12-31",
+    "first_available_at": "2023-03-10T07:05:00+00:00"
+  },
+  "performance": {
+    "process_seconds": 0.57,
+    "process_peak_rss_kib": 137392,
+    "creation_including_calendar_seconds": 0.1310505059955176,
+    "reuse_seconds": 0.0148400460020639,
+    "copied_artifact_bytes": 588926,
+    "repeats": 1,
+    "active_training_concurrent": true,
+    "description": "Una creación, comprobación independiente y reutilización. No estima aceleración.",
+    "unmeasured": [
+      "Energía",
+      "Tráfico físico total de almacenamiento",
+      "Transferencias GPU"
+    ]
+  },
+  "verification": {
+    "related_tests": 77,
+    "related_seconds": 2.36,
+    "private_control_tests": 32,
+    "private_control_seconds": 0.77,
+    "code_identity_preserved": true,
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "coverage": {
+      "covered_lines": 156,
+      "num_statements": 167,
+      "percent_covered": 91.34199134199135,
+      "percent_covered_display": "91",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.41317365269461,
+      "percent_statements_covered_display": "93",
+      "num_branches": 64,
+      "num_partial_branches": 9,
+      "covered_branches": 55,
+      "missing_branches": 9,
+      "percent_branches_covered": 85.9375,
+      "percent_branches_covered_display": "86"
+    },
+    "functions": [
+      {
+        "name": "_hash",
+        "complexity": 3,
+        "statement_coverage_fraction": 0.8,
+        "crap": 3.072
+      },
+      {
+        "name": "_table",
+        "complexity": 11,
+        "statement_coverage_fraction": 0.8461538461538461,
+        "crap": 11.440600819299044
+      },
+      {
+        "name": "_facts",
+        "complexity": 20,
+        "statement_coverage_fraction": 0.85,
+        "crap": 21.35
+      },
+      {
+        "name": "_validate_rows",
+        "complexity": 39,
+        "statement_coverage_fraction": 0.92,
+        "crap": 39.778752
+      },
+      {
+        "name": "_verify",
+        "complexity": 5,
+        "statement_coverage_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "name": "derive_chinese_preparation",
+        "complexity": 31,
+        "statement_coverage_fraction": 0.9682539682539683,
+        "crap": 31.030746219710693
+      },
+      {
+        "name": "main",
+        "complexity": 2,
+        "statement_coverage_fraction": 1.0,
+        "crap": 2.0
+      }
+    ],
+    "crap_convention": "Sentencias y ramas de coverage.py. CRAP usa la fracción de sentencias ejecutadas por función.",
+    "crap_formula": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+    "mutations": [
+      {
+        "name": "permit_wrong_currency",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "e6f27a1a633f81b7c69f5892538ae5ae0e77bfc211cf678bbd62c5d1b28fd530"
+      },
+      {
+        "name": "ignore_publication_calendar",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "04795ad7890b966419f3ef5d00a1a6c917f88e331bde27910d793a1775d3e5c2"
+      },
+      {
+        "name": "ignore_original_source",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "ceb07a0bc388be1e0e79ab1a9c7fdc3260e929c72e6302ff4930f3ddad013276"
+      },
+      {
+        "name": "ignore_reuse_receipt",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "3483f5cb7f03836d525d15a26f5c3d413009da0fdeaf22e5ea4cbd598f2f0dc8"
+      },
+      {
+        "name": "ignore_parquet_row_budget",
+        "exit_code": 1,
+        "killed": true,
+        "source_sha256": "1486d0fd66e65e6b4051655de71683b856e6058bc64184e48467ee5c5407c9fc"
+      }
+    ]
+  },
+  "limits": [
+    "La edición contable revisada y su recibo son entradas de confianza. El puente no vuelve a abrir original, PDF o anuncio ni autentica un recibo sustituido junto con su Parquet.",
+    "La salida corresponde a un activo preparado, no al corpus CN completo.",
+    "Faltan representación CNY, codificación y etiquetas antes de admitir entrenamiento.",
+    "Las pruebas no cambian ni ejecutan rutas de modelos o CUDA.",
+    "Cobertura y mutaciones dirigidas no demuestran ausencia de errores."
+  ],
+  "training_ready": false,
+  "final_test_opened": false
+}
