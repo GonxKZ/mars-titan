@@ -171,8 +171,16 @@ def planned_runs(kind, config, *, parents=1):
             )
         )
     if kind in {"paired_posttraining", "financial"}:
-        if config.get("schema_version") != 1 or config.get("final_test_opened") is not False:
+        version = config.get("schema_version")
+        versions = {1, 2} if kind == "paired_posttraining" else {1}
+        if (
+            type(version) is not int
+            or version not in versions
+            or config.get("final_test_opened") is not False
+        ):
             raise ValueError("El diseño debe declarar su versión y mantener cerrado el test")
+        if version == 2 and config.get("parent_seed_policy") != "matching":
+            raise ValueError("La versión 2 requiere padres emparejados por semilla")
         fields = (
             ("seeds", "conditions", "modes", "neural_controls")
             if kind == "paired_posttraining"
