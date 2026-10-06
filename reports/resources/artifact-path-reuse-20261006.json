@@ -1,0 +1,650 @@
+{
+  "date": "2026-10-06",
+  "verified_at_utc": "2026-10-06T16:35:05.978795+00:00",
+  "scope": "Reutilización de objetos de ruta en el lector. Diagnóstico técnico sobre datos reales, sin selección de modelos ni apertura del test final.",
+  "reference_commit": "fad06d18420b0f8fd3df3300271b040eb8a74053",
+  "reference_source_sha256": "684c0c417689682fa134a3dfed9baa5c0e8c5608d0af4649f9e8d36683aa1fc4",
+  "candidate_source_sha256": "eb383138f5684a0e667ba2bcff76a222671756de96cc00130a128b54deb54782",
+  "change": "Caché por instancia de las rutas calculadas, identificadas por raíz, mercado, símbolo y tipo. Máximo de tres entradas por activo. Cada acceso repite los controles existentes de archivo, enlace, contención, firma y verificación cuando cambia la firma.",
+  "workloads": {
+    "first": {
+      "train_rows": 123072,
+      "validation_rows": 33886,
+      "manifest_sha256": "fabdd610c46e07601afcd6855452c99cc82ea2f834ae53cb2918fbb23fe18952"
+    },
+    "largest": {
+      "train_rows": 317426,
+      "validation_rows": 42624,
+      "manifest_sha256": "0b5ca1e7886bdc1ef1428a7b4c74347ed024de0f560f883f734026bd8f18edcb"
+    },
+    "dimensions": {
+      "prices": [
+        64,
+        5
+      ],
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 69,
+      "macro": 420
+    },
+    "batch_size": 512,
+    "input_cache_mib": 4096,
+    "input_cache_entry_limit": 16384
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "driver": "595.91.07",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "cudnn": 92400,
+    "numerical_policy": {
+      "float32_matmul_precision": "highest",
+      "cuda_matmul_allow_tf32": false,
+      "cudnn_allow_tf32": true,
+      "cudnn_version": 92400,
+      "deterministic_algorithms": true
+    }
+  },
+  "cpu": {
+    "pairs": [
+      {
+        "repetition": 1,
+        "reference_cpu": 27.658849497999956,
+        "candidate_cpu": 26.452519273999975,
+        "reference_peak_rss": 3192537088,
+        "candidate_peak_rss": 3402002432
+      },
+      {
+        "repetition": 2,
+        "reference_cpu": 27.6841136000002,
+        "candidate_cpu": 26.553327468999967,
+        "reference_peak_rss": 3375865856,
+        "candidate_peak_rss": 3369947136
+      },
+      {
+        "repetition": 3,
+        "reference_cpu": 27.9792364590001,
+        "candidate_cpu": 26.628043165999948,
+        "reference_peak_rss": 3371778048,
+        "candidate_peak_rss": 3396308992
+      }
+    ],
+    "exact_batches_and_cursors": true,
+    "reference_median_cpu": 27.6841136000002,
+    "candidate_median_cpu": 26.553327468999967,
+    "median_cpu_reduction_percent": 4.0846029868921825,
+    "reference_median_peak_rss": 3371778048,
+    "candidate_median_peak_rss": 3396308992,
+    "scope": "Lector CPU en tres pasadas calientes por proceso. No mide el entrenamiento CUDA."
+  },
+  "cpu_protocol": {
+    "repetitions": 3,
+    "warmup_passes_per_process": 1,
+    "measured_hot_passes_per_partition": 3,
+    "order": [
+      "reference",
+      "candidate",
+      "candidate",
+      "reference",
+      "reference",
+      "candidate"
+    ],
+    "cpu_quota_percent": 50,
+    "memory_max_gib": 8,
+    "omp_threads": 1,
+    "openblas_threads": 1,
+    "concurrent_scientific_training": true,
+    "initial_small_pair_limit": "La primera pareja CPU de la ventana inicial coincidió parcialmente con pruebas en la referencia. Acredita paridad, pero no se usa para aceptar una mejora de rendimiento."
+  },
+  "cuda": {
+    "first": {
+      "pairs": [
+        {
+          "repetition": 1,
+          "state_fingerprints_equal": {
+            "model": "520fb775bf1bce671b1bb38c6162da8e0fdbee62b12ed527b6c10bb16db470e9",
+            "optimizer": "8129ccde6a561ff6032bf7597976c29f76d5cb44cb1016008bed75e37b59bf65",
+            "rng": "1803d95e120a0a03321d8934ee868b5613c7c4fa51eaf0d09791b1fb256e2e78",
+            "epoch": "031dc88d0ec0c52d518bbc28b322da9334c69a177be1cfa7fd4d819024452f23",
+            "global_step": "c01c75fafaed90045cba2708bd05966c6577b4a6deb173c24ba1ccfbe0f5ffe8",
+            "confirmed_cursor": "67ec4cfa5a08ee3f4811073d39c4d443d4c84b5452778eb3d0a613ee12f6e6ee"
+          },
+          "predictions": {
+            "train": {
+              "rows": 123072,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            },
+            "validation": {
+              "rows": 33886,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            }
+          }
+        }
+      ],
+      "timing": {
+        "process_seconds": {
+          "baseline": [
+            33.64
+          ],
+          "candidate": [
+            32.6
+          ],
+          "reference_median": 33.64,
+          "optimized_median": 32.6,
+          "reference_population_stddev": 0.0,
+          "optimized_population_stddev": 0.0,
+          "median_reduction_pct": 3.091557669441136
+        },
+        "run_reference_case_seconds": {
+          "baseline": [
+            29.981730152998352
+          ],
+          "candidate": [
+            29.02108826098265
+          ],
+          "reference_median": 29.981730152998352,
+          "optimized_median": 29.02108826098265,
+          "reference_population_stddev": 0.0,
+          "optimized_population_stddev": 0.0,
+          "median_reduction_pct": 3.2040909150789276
+        },
+        "train_seconds": {
+          "baseline": [
+            16.031566238001687
+          ],
+          "candidate": [
+            15.970608412986621
+          ],
+          "reference_median": 16.031566238001687,
+          "optimized_median": 15.970608412986621,
+          "reference_population_stddev": 0.0,
+          "optimized_population_stddev": 0.0,
+          "median_reduction_pct": 0.38023624211195317
+        },
+        "validation_seconds": {
+          "baseline": [
+            3.3054300799849443
+          ],
+          "candidate": [
+            3.1185858019744046
+          ],
+          "reference_median": 3.3054300799849443,
+          "optimized_median": 3.1185858019744046,
+          "reference_population_stddev": 0.0,
+          "optimized_population_stddev": 0.0,
+          "median_reduction_pct": 5.652646508601711
+        },
+        "final_predictions_seconds": {
+          "baseline": [
+            7.477611613023328
+          ],
+          "candidate": [
+            7.1001699299959
+          ],
+          "reference_median": 7.477611613023328,
+          "optimized_median": 7.1001699299959,
+          "reference_population_stddev": 0.0,
+          "optimized_population_stddev": 0.0,
+          "median_reduction_pct": 5.047623526876677
+        }
+      },
+      "memory": {
+        "baseline": [
+          {
+            "process_vmhwm_bytes": 3870408704,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          }
+        ],
+        "candidate": [
+          {
+            "process_vmhwm_bytes": 3862700032,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          }
+        ]
+      },
+      "scope": "Una época RNN, validación, predicciones finales de entrenamiento y validación, y checkpoints.",
+      "final_test_opened": false
+    },
+    "largest": {
+      "pairs": [
+        {
+          "repetition": 1,
+          "state_fingerprints_equal": {
+            "model": "9f52b96a8f0eda899b031744ba28045b6541ce9f7c0c2c58b55be9ce1fa545b5",
+            "optimizer": "294d14d4551c2e88df2725bf3037505fa83794b94af7fc679aa9a0cd3ef691b3",
+            "rng": "1803d95e120a0a03321d8934ee868b5613c7c4fa51eaf0d09791b1fb256e2e78",
+            "epoch": "031dc88d0ec0c52d518bbc28b322da9334c69a177be1cfa7fd4d819024452f23",
+            "global_step": "1c00d983e743bb87871488bc398b0c5012a0ed9d818147007c942832f3bd69bb",
+            "confirmed_cursor": "67ec4cfa5a08ee3f4811073d39c4d443d4c84b5452778eb3d0a613ee12f6e6ee"
+          },
+          "predictions": {
+            "train": {
+              "rows": 317426,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            },
+            "validation": {
+              "rows": 42624,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            }
+          }
+        },
+        {
+          "repetition": 2,
+          "state_fingerprints_equal": {
+            "model": "9f52b96a8f0eda899b031744ba28045b6541ce9f7c0c2c58b55be9ce1fa545b5",
+            "optimizer": "294d14d4551c2e88df2725bf3037505fa83794b94af7fc679aa9a0cd3ef691b3",
+            "rng": "1803d95e120a0a03321d8934ee868b5613c7c4fa51eaf0d09791b1fb256e2e78",
+            "epoch": "031dc88d0ec0c52d518bbc28b322da9334c69a177be1cfa7fd4d819024452f23",
+            "global_step": "1c00d983e743bb87871488bc398b0c5012a0ed9d818147007c942832f3bd69bb",
+            "confirmed_cursor": "67ec4cfa5a08ee3f4811073d39c4d443d4c84b5452778eb3d0a613ee12f6e6ee"
+          },
+          "predictions": {
+            "train": {
+              "rows": 317426,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            },
+            "validation": {
+              "rows": 42624,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            }
+          }
+        },
+        {
+          "repetition": 3,
+          "state_fingerprints_equal": {
+            "model": "9f52b96a8f0eda899b031744ba28045b6541ce9f7c0c2c58b55be9ce1fa545b5",
+            "optimizer": "294d14d4551c2e88df2725bf3037505fa83794b94af7fc679aa9a0cd3ef691b3",
+            "rng": "1803d95e120a0a03321d8934ee868b5613c7c4fa51eaf0d09791b1fb256e2e78",
+            "epoch": "031dc88d0ec0c52d518bbc28b322da9334c69a177be1cfa7fd4d819024452f23",
+            "global_step": "1c00d983e743bb87871488bc398b0c5012a0ed9d818147007c942832f3bd69bb",
+            "confirmed_cursor": "67ec4cfa5a08ee3f4811073d39c4d443d4c84b5452778eb3d0a613ee12f6e6ee"
+          },
+          "predictions": {
+            "train": {
+              "rows": 317426,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            },
+            "validation": {
+              "rows": 42624,
+              "exact_record_parity": true,
+              "same_parquet_sha256": true
+            }
+          }
+        }
+      ],
+      "timing": {
+        "process_seconds": {
+          "baseline": [
+            42.16,
+            42.77,
+            42.69
+          ],
+          "candidate": [
+            42.14,
+            42.57,
+            41.16
+          ],
+          "reference_median": 42.69,
+          "optimized_median": 42.14,
+          "reference_population_stddev": 0.2706781606754926,
+          "optimized_population_stddev": 0.5900470791009456,
+          "median_reduction_pct": 1.2883579292574332
+        },
+        "run_reference_case_seconds": {
+          "baseline": [
+            38.537801007012604,
+            39.13035307699465,
+            39.12802853999892
+          ],
+          "candidate": [
+            38.54819125798531,
+            38.837857420003274,
+            37.545945719990414
+          ],
+          "reference_median": 39.12802853999892,
+          "optimized_median": 38.54819125798531,
+          "reference_population_stddev": 0.27878544115649034,
+          "optimized_population_stddev": 0.5535178853357471,
+          "median_reduction_pct": 1.481897513494379
+        },
+        "train_seconds": {
+          "baseline": [
+            21.81716648102156,
+            22.30046183199738,
+            22.58974288200261
+          ],
+          "candidate": [
+            22.22811319399625,
+            22.573919054004364,
+            21.38393663999159
+          ],
+          "reference_median": 22.30046183199738,
+          "optimized_median": 22.22811319399625,
+          "reference_population_stddev": 0.31870087290606786,
+          "optimized_population_stddev": 0.49980817351446694,
+          "median_reduction_pct": 0.3244266354041292
+        },
+        "validation_seconds": {
+          "baseline": [
+            3.348775763006415,
+            3.4108142709883396,
+            3.3776829409762286
+          ],
+          "candidate": [
+            3.2570495840045623,
+            3.197170535015175,
+            3.207682909007417
+          ],
+          "reference_median": 3.3776829409762286,
+          "optimized_median": 3.207682909007417,
+          "reference_population_stddev": 0.025346677273303846,
+          "optimized_population_stddev": 0.026104659258666986,
+          "median_reduction_pct": 5.033036994279804
+        },
+        "final_predictions_seconds": {
+          "baseline": [
+            10.559953092975775,
+            10.612080454040552,
+            10.368085711001186
+          ],
+          "candidate": [
+            10.208407088008244,
+            10.266750812996179,
+            10.167387384019094
+          ],
+          "reference_median": 10.559953092975775,
+          "optimized_median": 10.208407088008244,
+          "reference_population_stddev": 0.10491466832526679,
+          "optimized_population_stddev": 0.040769947236372776,
+          "median_reduction_pct": 3.3290489254291344
+        }
+      },
+      "memory": {
+        "baseline": [
+          {
+            "process_vmhwm_bytes": 4838985728,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          },
+          {
+            "process_vmhwm_bytes": 4835037184,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          },
+          {
+            "process_vmhwm_bytes": 4829671424,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          }
+        ],
+        "candidate": [
+          {
+            "process_vmhwm_bytes": 4831432704,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          },
+          {
+            "process_vmhwm_bytes": 4833685504,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          },
+          {
+            "process_vmhwm_bytes": 4824920064,
+            "peak_vram_allocated_bytes": 151890432,
+            "peak_vram_reserved_bytes": 159383552
+          }
+        ]
+      },
+      "scope": "Una época RNN, validación, predicciones finales de entrenamiento y validación, y checkpoints.",
+      "final_test_opened": false
+    },
+    "paired_process_reduction_percent": [
+      0.04743833017076815,
+      0.46761748889408983,
+      3.5839775122979645
+    ],
+    "protocol": {
+      "case": {
+        "kind": "rnn",
+        "loss": "mae",
+        "learning_rate": 0.001,
+        "seed": 42,
+        "epochs": 1,
+        "huber_delta": 0.01,
+        "architecture": {
+          "hidden_size": 32,
+          "layers": 1,
+          "dropout": 0.0
+        }
+      },
+      "warmup_optimizer_steps": 3,
+      "synchronized_timing": true,
+      "scientific_gpu_workloads": 1,
+      "torch_threads": 4,
+      "torch_interop_threads": 8,
+      "sequence": [
+        "first-baseline-1",
+        "first-candidate-1",
+        "largest-candidate-1",
+        "largest-baseline-1",
+        "largest-baseline-2",
+        "largest-candidate-2",
+        "largest-candidate-3",
+        "largest-baseline-3"
+      ],
+      "external_graphical_processes_present": true,
+      "other_applications_stopped": false
+    },
+    "training_phase_slower_pairs": 2,
+    "process_slower_pairs": 0,
+    "median_process_reduction_percent": 1.2883579292574332
+  },
+  "correctness": {
+    "cpu_tests_passed": 94,
+    "cuda_window_tests_passed": 48,
+    "exact_pairs": 4,
+    "checked_state": [
+      "model",
+      "optimizer",
+      "rng",
+      "epoch",
+      "global_step",
+      "confirmed_cursor"
+    ],
+    "predictions_first": 156958,
+    "predictions_each_large_pair": 360050,
+    "train_validation_only": true,
+    "final_test_opened": false
+  },
+  "quality": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "convention": "coverage.py con ramas. Para CRAP se usa la cobertura de sentencias ejecutables de _file dentro del rango de líneas de Radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Las ramas se informan por separado. Se usa la API interna de coverage._analyze para asignar las ramas a la función.",
+    "function": {
+      "name": "CorpusDataset._file",
+      "line": 182,
+      "end_line": 223,
+      "ccn": 13,
+      "statements": 29,
+      "covered_statements": 29,
+      "statement_coverage": 1.0,
+      "missing_lines": [],
+      "branches": 14,
+      "covered_branches": 14,
+      "branch_coverage": 1.0,
+      "missing_branch_arcs": {},
+      "crap": 13.0
+    },
+    "module_coverage": {
+      "covered_lines": 354,
+      "num_statements": 395,
+      "percent_covered": 86.54173764906304,
+      "percent_covered_display": "87",
+      "missing_lines": 41,
+      "excluded_lines": 0,
+      "percent_statements_covered": 89.62025316455696,
+      "percent_statements_covered_display": "90",
+      "num_branches": 192,
+      "num_partial_branches": 36,
+      "covered_branches": 154,
+      "missing_branches": 38,
+      "percent_branches_covered": 80.20833333333333,
+      "percent_branches_covered_display": "80"
+    },
+    "mutations": [
+      {
+        "name": "omit_root",
+        "before": "        key = (root, asset[\"market\"], asset[\"symbol\"], kind)",
+        "after": "        key = (asset[\"market\"], asset[\"symbol\"], kind)",
+        "source_sha256": "5f6f69247665d3dd9579b783a9af50f84b14e8d1a9af10732e6d4ea5b2fe2c17",
+        "detected": true,
+        "pytest_summary": "1 failed, 93 passed in 14.27s",
+        "failures": [
+          "FAILED tests/training/test_corpus_inputs.py::test_new_root_remains_checked_when_artifact_path_cache_is_full"
+        ]
+      },
+      {
+        "name": "remove_limit",
+        "before": "            if len(self._artifact_paths) < self._artifact_path_limit:",
+        "after": "            if True:",
+        "source_sha256": "9f87c0f9b9cab46ab41df9360788bc1a5791f66380726e480cb4ed38c98b45ab",
+        "detected": true,
+        "pytest_summary": "1 failed, 93 passed in 14.42s",
+        "failures": [
+          "FAILED tests/training/test_corpus_inputs.py::test_new_root_remains_checked_when_artifact_path_cache_is_full"
+        ]
+      },
+      {
+        "name": "return_before_validation",
+        "before": "        path = self._artifact_paths.get(key)\n",
+        "after": "        path = self._artifact_paths.get(key)\n        if path is not None:\n            return path\n",
+        "source_sha256": "0f4c2fed0c3c472c6edd91f908bebe2965612fb36bf2f9c636a274f42ed9add7",
+        "detected": true,
+        "pytest_summary": "11 failed, 83 passed in 14.33s",
+        "failures": [
+          "FAILED tests/training/test_corpus_inputs.py::test_input_cache_does_not_hide_changed_labels_or_prices[labels-labels.parquet]",
+          "FAILED tests/training/test_corpus_inputs.py::test_input_cache_does_not_hide_changed_labels_or_prices[prepared-prices.parquet]",
+          "FAILED tests/training/test_corpus_inputs.py::test_cached_sample_table_cannot_hide_source_corruption",
+          "FAILED tests/training/test_corpus_inputs.py::test_sample_cache_revalidates_replaced_source_with_identical_content",
+          "FAILED tests/training/test_corpus_inputs.py::test_changed_artifact_is_detected_by_a_reused_dataset",
+          "FAILED tests/training/test_corpus_inputs.py::test_artifact_changed_during_footer_read_is_rejected_before_caching",
+          "FAILED tests/training/test_corpus_inputs.py::test_verified_artifact_rejects_leaf_symlinks[False]",
+          "FAILED tests/training/test_corpus_inputs.py::test_verified_artifact_rejects_leaf_symlinks[True]",
+          "FAILED tests/training/test_corpus_inputs.py::test_verified_artifact_rechecks_directory_containment_with_an_unchanged_signature[False]",
+          "FAILED tests/training/test_corpus_inputs.py::test_containment_on_different_volumes_is_rejected",
+          "FAILED tests/training/test_temporal_corpus.py::test_replaced_macro_still_belongs_to_the_verified_sample_artifact"
+        ]
+      }
+    ],
+    "private_control_tests_passed": 94,
+    "limits": [
+      "Diagnóstico focal, no garantía general de ausencia de errores.",
+      "Las primeras copias de mutación omitían dependencias de las pruebas. Se conservaron como incompletas. Los resultados publicados usan el control completo sin errores de preparación."
+    ],
+    "test_command": "uv run --offline --no-sync --with coverage==7.16.2 --with radon==6.0.1 python -m coverage run --branch --source=mars_titan.training.corpus_inputs -m pytest -q tests/training/test_corpus_inputs.py tests/training/test_corpus_targets.py tests/training/test_temporal_corpus.py"
+  },
+  "profile": {
+    "tool": "cProfile con reloj de CPU del proceso",
+    "workload": "Ventana inicial, entrenamiento y validación con caché caliente.",
+    "observations": {
+      "reference": [
+        {
+          "name": "batches",
+          "calls": 310,
+          "cumulative_cpu_seconds": 25.093664500000003
+        },
+        {
+          "name": "_file",
+          "calls": 26376,
+          "cumulative_cpu_seconds": 12.804985158000001
+        },
+        {
+          "name": "realpath",
+          "calls": 26376,
+          "cumulative_cpu_seconds": 7.000449939
+        },
+        {
+          "name": "_availability",
+          "calls": 4714,
+          "cumulative_cpu_seconds": 1.345352045
+        },
+        {
+          "name": "_fill_batch",
+          "calls": 5016,
+          "cumulative_cpu_seconds": 1.137545053
+        },
+        {
+          "name": "joinpath",
+          "calls": 26376,
+          "cumulative_cpu_seconds": 1.060094393
+        },
+        {
+          "name": "_price_contexts",
+          "calls": 4714,
+          "cumulative_cpu_seconds": 1.008036694
+        }
+      ],
+      "candidate": [
+        {
+          "name": "batches",
+          "calls": 310,
+          "cumulative_cpu_seconds": 20.656405504000002
+        },
+        {
+          "name": "_file",
+          "calls": 26376,
+          "cumulative_cpu_seconds": 9.4402082
+        },
+        {
+          "name": "realpath",
+          "calls": 26376,
+          "cumulative_cpu_seconds": 7.092326775
+        },
+        {
+          "name": "_availability",
+          "calls": 4714,
+          "cumulative_cpu_seconds": 1.274524958
+        },
+        {
+          "name": "_fill_batch",
+          "calls": 5016,
+          "cumulative_cpu_seconds": 1.0969544260000001
+        },
+        {
+          "name": "_price_contexts",
+          "calls": 4714,
+          "cumulative_cpu_seconds": 0.9766205570000001
+        }
+      ]
+    },
+    "note": "Las llamadas se instrumentan y sus tiempos no equivalen a aceleración del recorrido completo. La construcción joinpath desaparece de las pasadas calientes. realpath conserva 26.376 llamadas."
+  },
+  "decision": {
+    "retained": true,
+    "reason": "Cambio acotado con lotes exactos, controles conservados y menor tiempo total en las cuatro parejas medidas. La mejora completa es pequeña.",
+    "applied_to_active_campaign": false,
+    "scientific_runtime_unchanged": true,
+    "campaign_resumed": true
+  },
+  "limitations": [
+    "Tres parejas CUDA de la ventana mayor y una de la inicial. No se afirma significación estadística ni una mejora uniforme.",
+    "La fase de entrenamiento aislada fue más lenta en dos de las tres parejas grandes, aunque el proceso completo fue más corto.",
+    "La medición CUDA comprende una época RNN, validación, predicciones finales y checkpoints. No mide campañas de varias épocas ni otras arquitecturas completas.",
+    "No se atribuye la diferencia de RAM únicamente a los objetos de ruta.",
+    "No se midieron energía, contadores de hardware ni volumen real de transferencias. Los datos de entrada y la VRAM asignada conservan sus valores."
+  ]
+}

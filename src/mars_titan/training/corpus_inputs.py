@@ -154,6 +154,8 @@ class CorpusDataset:
         self.roots = {key: Path(value).resolve() for key, value in meta["roots"].items()}
         self.assets = meta["assets"]
         self.verified = {}
+        self._artifact_paths = {}
+        self._artifact_path_limit = 3 * len(self.assets)
         identities, counts = set(), dict.fromkeys(self.partitions, 0)
         for asset in self.assets:
             symbol, market = asset["symbol"], asset["market"]
@@ -179,7 +181,13 @@ class CorpusDataset:
 
     def _file(self, asset, kind):
         root = self.roots["prepared" if kind == "prices" else kind]
-        path = root.joinpath(asset["market"], asset["symbol"], f"{kind}.parquet")
+        key = (root, asset["market"], asset["symbol"], kind)
+        path = self._artifact_paths.get(key)
+        if path is None:
+            path = root.joinpath(asset["market"], asset["symbol"], f"{kind}.parquet")
+            if len(self._artifact_paths) < self._artifact_path_limit:
+                self._artifact_paths[key] = path
+        # Solo se reutiliza la ruta. El archivo se comprueba en cada acceso.
         try:
             valid = (
                 path.is_file()
