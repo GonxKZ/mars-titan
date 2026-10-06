@@ -7,6 +7,11 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
+from mars_titan.posttraining.parent_selection import (
+    MATCHING_FIELDS,
+    matching_seeds,
+    same_configuration,
+)
 
 _HELDOUT = ("calibration", "evaluation")
 _STAGES = ("reference", "tabular", "posttraining")
@@ -166,9 +171,11 @@ def _jobs(reader, summaries, folders):
 
 
 def _temporal(reader, proof, reference_proof, fold_id, base_hash):
+    excluded = {"parents", "tabular_summary_sha256"}
+    if matching_seeds(proof) is not None:
+        excluded |= MATCHING_FIELDS
     _require(
-        {k: v for k, v in proof.items() if k not in {"parents", "tabular_summary_sha256"}}
-        == reference_proof
+        {k: v for k, v in proof.items() if k not in excluded} == reference_proof
         and proof.get("final_test_opened") is False,
         "La prueba de población no corresponde a la referencia congelada",
     )
@@ -234,7 +241,37 @@ def _parents(reader, proof, summaries, jobs, originals):
         _require(_family(model) == family, "El padre pertenece a una familia incompatible")
         parents[family] = key
     _require(set(parents.values()) == selected, "Falta un padre de la selección congelada")
-    return selected, parents
+    matched = {}
+    seeds = matching_seeds(proof)
+    if seeds is not None:
+        for family, records in proof["parents_by_seed"].items():
+            initial = parents[family]
+            field = "case" if jobs[initial]["stage"] == "reference" else "options"
+            configuration = originals[initial].get("identity", {}).get(field)
+            for seed in seeds:
+                record = records[str(seed)]
+                path = reader.path(reader.roots["reference"], record["report"])
+                candidates = [key for key, job in jobs.items() if job["report"] == str(path)]
+                _require(len(candidates) == 1, "Falta el padre emparejado congelado")
+                key = candidates[0]
+                _require(
+                    key.split("/", 1)[1] == record["run_id"]
+                    and jobs[key]["sha256"] == record["sha256"]
+                    and jobs[key]["stage"] == jobs[initial]["stage"]
+                    and (key == initial or jobs[key]["phase"] == "finalist"),
+                    "La identidad del padre emparejado cambió",
+                )
+                _require(
+                    key == initial
+                    if family == "ridge"
+                    else same_configuration(
+                        configuration, originals[key].get("identity", {}).get(field), seed
+                    ),
+                    "El padre emparejado no conserva la configuración seleccionada",
+                )
+                _digest(originals[key]["checkpoint"]["sha256"])
+                matched[family, seed] = key
+    return selected, parents, matched
 
 
 def _cohort(original, stage, manifest, signature, ordered_hash, parent):
@@ -343,7 +380,7 @@ def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, sig
         isinstance(results, dict) and set(results) == set(jobs), "Faltan evaluaciones confirmadas"
     )
     _closed(evaluation, count=len(jobs))
-    selected, parents = _parents(reader, proof, summaries, jobs, originals)
+    selected, parents, matched = _parents(reader, proof, summaries, jobs, originals)
     rows = []
     for key, job in jobs.items():
         original = originals[key]
@@ -369,7 +406,7 @@ def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, sig
         _require(family in parents, "La familia no tiene un padre acreditado")
         parent_id = None
         if stage == "posttraining":
-            parent_id = parents[family]
+            parent_id = matched[family, case["seed"]] if matched else parents[family]
             method = case["mode"]
         elif job["comparator"] is not None:
             parent_id = f"reference/{records[key]['parent']}"
@@ -433,6 +470,8 @@ def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, sig
                     partition=partition,
                     path=reader.path(path.parent, prediction["path"], relative=True),
                     sha256=_digest(prediction["sha256"]),
+                    checkpoint_sha256=_digest(original["checkpoint"]["sha256"]),
+                    source_report_sha256=job["sha256"],
                     declared_metrics=metrics,
                     bounds=manifest["temporal_view"]["fold"][partition],
                     parent_id=parent_id,

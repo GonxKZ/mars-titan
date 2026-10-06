@@ -239,3 +239,102 @@ def test_view_cannot_replace_the_parent_macro_catalog_with_another_catalog(input
     inputs[0].write_text(json.dumps(parent))
     with pytest.raises(ValueError, match="conceptos macro"):
         prepare(inputs, tmp_path / "views")
+
+
+@pytest.mark.parametrize("separate_macro_availability", [False, True])
+@pytest.mark.parametrize("cache_sample_tables", [False, True])
+def test_temporal_projection_omits_replaced_vector_and_preserves_batches_and_cursor(
+    inputs, tmp_path, monkeypatch, separate_macro_availability, cache_sample_tables
+):
+    parent = json.loads(inputs[0].read_text())
+    samples = Path(parent["roots"]["samples"]) / "US/A0000/samples.parquet"
+    if separate_macro_availability:
+        rows = pq.read_table(samples).to_pylist()
+        for row in rows:
+            row["macro_available_at"] = row["input_availability"].pop("macro")
+        pq.write_table(pa.Table.from_pylist(rows), samples, row_group_size=3)
+        parent["assets"][0]["samples_sha256"] = sha256(samples)
+        inputs[0].write_text(json.dumps(parent))
+    source_hash = sha256(samples)
+    prepare(inputs, tmp_path / "views")
+    manifest = tmp_path / "views/fold-000/manifest.json"
+    original = pq.ParquetFile.read_row_group
+
+    def full_projection(file, group, columns=None, **kwargs):
+        if columns is not None and "price_end_index" in columns:
+            columns = list(dict.fromkeys([*columns, "macro"]))
+        return original(file, group, columns=columns, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(pq.ParquetFile, "read_row_group", full_projection)
+        expected = list(
+            CorpusDataset(manifest).batches(partition="train", batch_size=1, epoch=0, seed=42)
+        )
+    projected = []
+
+    def observed(file, group, columns=None, **kwargs):
+        if columns is not None and "price_end_index" in columns:
+            projected.append(tuple(columns))
+        return original(file, group, columns=columns, **kwargs)
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_group", observed)
+    reader = CorpusDataset(manifest, cache_sample_tables=cache_sample_tables)
+    actual = list(reader.batches(partition="train", batch_size=1, epoch=0, seed=42))
+    assert projected and all("macro" not in columns for columns in projected)
+    assert all("input_availability" in columns for columns in projected)
+    assert all(
+        ("macro_available_at" in columns) == separate_macro_availability for columns in projected
+    )
+    for left, right in zip(expected, actual, strict=True):
+        assert left.keys() == right.keys()
+        for name in left:
+            if name == "inputs":
+                assert left[name].keys() == right[name].keys()
+                for modality in left[name]:
+                    np.testing.assert_array_equal(left[name][modality], right[name][modality])
+            elif isinstance(left[name], np.ndarray):
+                np.testing.assert_array_equal(left[name], right[name])
+            else:
+                assert left[name] == right[name]
+    remaining = list(
+        reader.batches(
+            partition="train",
+            batch_size=1,
+            epoch=0,
+            seed=42,
+            cursor=actual[0]["confirmed_cursor"],
+        )
+    )
+    assert remaining[0]["sample_ids"] == actual[1]["sample_ids"]
+    assert remaining[0]["confirmed_cursor"] == actual[1]["confirmed_cursor"]
+    assert sha256(samples) == source_hash == reader.assets[0]["samples_sha256"]
+
+
+def test_replaced_macro_still_belongs_to_the_verified_sample_artifact(inputs, tmp_path):
+    prepare(inputs, tmp_path / "views")
+    reader = CorpusDataset(tmp_path / "views/fold-000/manifest.json")
+    list(reader.batches(partition="train", batch_size=1, epoch=0, seed=42))
+    samples = reader.roots["samples"] / "US/A0000/samples.parquet"
+    table = pq.read_table(samples)
+    column = pa.array([[123.0]] * len(table), type=table["macro"].type)
+    pq.write_table(
+        table.set_column(table.schema.get_field_index("macro"), "macro", column), samples
+    )
+    with pytest.raises(ValueError, match="artefacto supervisado"):
+        list(reader.batches(partition="train", batch_size=1, epoch=0, seed=42))
+
+
+def test_legacy_reader_keeps_macro_projection_and_values(tmp_path, monkeypatch):
+    path = corpus(tmp_path / "legacy", assets=1, rows=3)
+    original = pq.ParquetFile.read_row_group
+    projected = []
+
+    def observed(file, group, columns=None, **kwargs):
+        if columns is not None and "price_end_index" in columns:
+            projected.append(tuple(columns))
+        return original(file, group, columns=columns, **kwargs)
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_group", observed)
+    batches = list(CorpusDataset(path).batches(partition="train", batch_size=3, epoch=0, seed=42))
+    assert projected and all("macro" in columns for columns in projected)
+    np.testing.assert_array_equal(batches[0]["inputs"]["macro"], np.full((3, 1), 5.0))

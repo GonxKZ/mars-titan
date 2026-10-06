@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-06",
+  "full_suite": {
+    "passed": 3106,
+    "skipped": 19,
+    "warnings": 8,
+    "seconds": 361.39,
+    "optional_skips": {
+      "cuda_opt_in": 11,
+      "hmmlearn_missing": 8
+    },
+    "warnings_kind": "Avisos de obsolescencia de torch.jit.save en pruebas nativas existentes."
+  },
+  "cuda_checked_separately": {
+    "reference_cache_recovery_tests": 27,
+    "posttraining_and_heldout_tests": 3,
+    "supervisor_pause_resume_tests": 1,
+    "real_legacy_encoder_parity": true,
+    "old_corpus_pairs": 3,
+    "expanded_corpus_pairs": 1,
+    "exact_model_optimizer_rng_cursor_prediction_parity": true
+  },
+  "web": {
+    "node_tests_passed": 28,
+    "history_pages_checked": 33,
+    "sources": 84,
+    "console_errors": 0,
+    "lazy_loading": true,
+    "recoverable_download_failure": true,
+    "mobile_horizontal_overflow": false
+  },
+  "data": {
+    "supervised_manifest_sha256": "22b6b8f282f381e36b17857f1f4dfbb14fabe975d8d922d80e505ae89160dcf1",
+    "encoded_manifest_sha256": "ae27a0e9b1a99ae082049a673aee18bd9b5aad45b141ec41827973e551cecfe9",
+    "views_report_sha256": "66fa9fbcb288ab0d94e3cb0f2038debb6e114a6652b23b8fdf9d116cfd297646",
+    "largest_view_bytes": 7496132,
+    "new_cad_encoding_reused_in_final_edition": true,
+    "final_test_opened": false
+  },
+  "checks": {
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "repository_contracts": true
+  },
+  "limits": [
+    "Las pruebas opcionales omitidas no se presentan como ejecutadas por la suite conjunta.",
+    "La correcci\u00f3n del supervisor tiene regresiones CPU de se\u00f1ales duplicadas, procesos hu\u00e9rfanos, generaciones y cierre forzado, adem\u00e1s de su integraci\u00f3n CUDA.",
+    "La admisi\u00f3n y las medidas de rendimiento no son resultados predictivos de la campa\u00f1a nueva."
+  ]
+}

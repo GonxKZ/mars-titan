@@ -179,6 +179,21 @@ def _industry_rows(common, body, year, months):
     return records
 
 
+def _validate_pmi_adjustment(table, frame):
+    labels = {_key(value) for value in frame.iloc[:4].to_numpy().flat}
+    for node in table.find_all_previous(("p", "table"), limit=6):
+        if node.name == "table" or node.find_parent("table") is not None:
+            break
+        labels.add(_key(node.get_text(" ", strip=True)))
+    declarations = set()
+    for label in labels:
+        match = re.fullmatch(r"(?:chinas)?((?:non)?manufacturing)pmi(.*)", label)
+        if match:
+            declarations.add(match.groups())
+    if declarations != {("manufacturing", "seasonallyadjusted")}:
+        raise ValueError("No consta un ajuste inequívoco del PMI manufacturero publicado")
+
+
 def _pmi_rows(common, body, year, months):
     records = []
     if len(months) != 1:
@@ -194,11 +209,7 @@ def _pmi_rows(common, body, year, months):
             continue
         if len(columns) != 1:
             raise ValueError("La tabla mezcla varios índices PMI")
-        preceding = " ".join(
-            p.get_text(" ", strip=True) for p in table.find_all_previous("p", limit=6)
-        )
-        if "seasonallyadjusted" not in _key(preceding):
-            raise ValueError("No consta el ajuste del PMI publicado")
+        _validate_pmi_adjustment(table, frame)
         column, current_year, previous = next(iter(columns)), None, None
         for row in range(len(frame)):
             text = _text(frame.iat[row, 0])

@@ -29,7 +29,8 @@ def release_sources(tmp_path):
         ),
         "cn_manufacturing_pmi": (
             "Purchasing Managers Index for November 2023",
-            "<p>Seasonally Adjusted</p><table><tr><td></td><td>PMI</td></tr>"
+            "<p>Manufacturing PMI (Seasonally Adjusted)</p>"
+            "<table><tr><td></td><td>PMI</td></tr>"
             "<tr><td>2023-November</td><td>49.4</td></tr></table>",
         ),
     }

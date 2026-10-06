@@ -195,6 +195,23 @@ def test_missing_macro_produces_typed_empty_partition_and_explicit_exclusions(tm
         cache.close()
 
 
+def test_macro_admission_filters_before_encoding_and_is_part_of_recovery_identity(tmp_path):
+    source, clock, macro = fixture(tmp_path)
+    cache = EmbeddingCache(tmp_path / "cache.sqlite")
+    admitted = {clock.decision("2023-07-06"), clock.decision("2023-07-07")}
+    try:
+        output = tmp_path / "selected"
+        report = run(source, output, clock, macro, cache, admitted_decisions=admitted)
+        rows = pq.read_table(output / "samples.parquet").to_pylist()
+        assert {r["prediction_at"] for r in rows} == admitted
+        assert report["samples"] == 2
+        assert report["excluded_reasons"]["outside_macro_admission"] > 0
+        with pytest.raises(ValueError, match="configuración|edición"):
+            run(source, output, clock, macro, cache, admitted_decisions={min(admitted)})
+    finally:
+        cache.close()
+
+
 def test_changed_macro_file_cannot_reuse_receipt(tmp_path):
     source, clock, macro = fixture(tmp_path)
     cache = EmbeddingCache(tmp_path / "cache.sqlite")

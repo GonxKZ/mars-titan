@@ -28,6 +28,7 @@ from mars_titan.training.predictive_parents import _verified_file
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .evaluation import centers
+from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import load_parent
 from .run import _best_state, code_identity
 
@@ -123,7 +124,13 @@ def evaluate_partition(
 
 
 def _jobs(reference, tabular, adjustments):
-    proof = selected_parents(reference, tabular, "US")
+    adjustment_summary, _ = read_manifest(adjustments, 8 * 1024**2)
+    seeds = matching_seeds(adjustment_summary["identity"]["proof"])
+    proof = (
+        matching_parents(reference, tabular, "US", seeds=seeds)
+        if seeds is not None
+        else selected_parents(reference, tabular, "US")
+    )
     summaries, jobs = {}, []
     for stage, path in (
         ("reference", reference),
@@ -277,7 +284,11 @@ def run_evaluation(reference, tabular, adjustments, output, *, stop=None):
         ordered_sha256=ordered_hash,
         manifest_sha256=proof["manifest_sha256"],
         partitions=list(PARTITIONS),
-        code=code_identity() | {"posttraining/heldout.py": sha256(Path(__file__))},
+        code=code_identity()
+        | {
+            f"posttraining/{name}": sha256(Path(__file__).with_name(name))
+            for name in ("heldout.py", "parent_selection.py")
+        },
     )
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".evaluation.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -329,9 +340,14 @@ def run_evaluation(reference, tabular, adjustments, output, *, stop=None):
                     model, grid, neural, predictor = None, None, False, None
                     if job["stage"] == "posttraining":
                         family = job["id"].split("/")[1]
-                        parent = load_parent(
-                            ordered, Path(proof["parents"][family]["report"]), lease=lease
+                        selected_parent = parent_for_seed(
+                            proof, family, report["identity"]["case"]["seed"]
                         )
+                        if sha256(Path(selected_parent["report"])) != selected_parent["sha256"]:
+                            raise ValueError(
+                                "El padre emparejado cambió tras congelar la evaluación"
+                            )
+                        parent = load_parent(ordered, Path(selected_parent["report"]), lease=lease)
                         model, grid, neural = _adjustment(path, report, parent, "cuda:0")
                     else:
                         parent = load_parent(ordered, path, lease=lease)

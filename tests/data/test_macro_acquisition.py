@@ -34,12 +34,28 @@ def _alfred_zip(
 
 def _model_entry(identifier):
     with Path("data/catalogs/macro-indicators.csv").open() as stream:
-        return next(entry for entry in csv.DictReader(stream) if entry["id"] == identifier)
+        entry = next(
+            entry
+            for entry in csv.DictReader(stream)
+            if entry["id"]
+            == ("us_financial_stress" if identifier == "us_financial_stress_v3" else identifier)
+        )
+    if identifier == "us_financial_stress_v3":
+        entry.update(
+            id=identifier,
+            series_id="STLFSI3",
+            source_url="https://fred.stlouisfed.org/series/STLFSI3",
+        )
+    return entry
 
 
 @pytest.mark.parametrize(
     ("identifier", "first"),
-    [("us_financial_conditions", "2011-05-25"), ("us_financial_stress", "2022-11-10")],
+    [
+        ("us_financial_conditions", "2011-05-25"),
+        ("us_financial_stress", "2022-11-10"),
+        ("us_financial_stress_v3", "2022-01-13"),
+    ],
 )
 def test_official_model_acquisition_quarantines_backdating_and_preserves_real_history(
     tmp_path, monkeypatch, identifier, first
@@ -585,6 +601,71 @@ def test_metadata_intersections_keep_native_units_continuations_and_original_int
     assert all(r["original_realtime_start"] == "2024-01-05" for r in rows)
     assert all(r["original_realtime_end"] == "2024-01-12" for r in rows)
     assert all(r["value"] == 100 for r in rows)
+
+
+def test_vintage_cutoff_filters_source_rows_and_later_metadata_segments(tmp_path, monkeypatch):
+    acquisition = _store_metadata_fixture(
+        tmp_path,
+        "Units\nBillions of Chained 2012 Dollars  2000-01-01  2024-01-08\n"
+        "Billions of Chained 2017 Dollars  2024-01-09 Current\n"
+        "Seasonal Adjustment\nSeasonally Adjusted Annual Rate  2000-01-01 Current\n",
+    )
+    original = acquisition._metadata_segments
+    seen = []
+
+    def observe(row, metadata):
+        seen.append(row["realtime_start"])
+        yield from original(row, metadata)
+
+    monkeypatch.setattr(acquisition, "_metadata_segments", observe)
+    assert list(acquisition.iter_vintages(tmp_path, before="2024-01-05")) == []
+    assert seen == []
+    values = list(acquisition.iter_vintages(tmp_path, before="2024-01-09"))
+    assert len(values) == 1
+    assert values[0]["native_unit"] == "Billions of Chained 2012 Dollars"
+    assert values[0]["original_realtime_start"] == "2024-01-05"
+    assert len(list(acquisition.iter_vintages(tmp_path))) == 2
+
+
+@pytest.mark.parametrize("before", ["bad-date", "2024-02-30", True])
+def test_vintage_cutoff_rejects_invalid_dates(tmp_path, before):
+    from mars_titan.data.macro_acquisition import iter_vintages
+
+    with pytest.raises(ValueError):
+        list(iter_vintages(tmp_path, before=before))
+
+
+def test_vintage_projection_reads_only_requested_indicators(tmp_path, monkeypatch):
+    acquisition = _store_metadata_fixture(
+        tmp_path,
+        "Units\nIndex  2000-01-01 Current\n"
+        "Seasonal Adjustment\nNot Seasonally Adjusted  2000-01-01 Current\n",
+    )
+    selected = list(acquisition.iter_vintages(tmp_path, indicator_ids=["us_real_gdp"]))
+    assert len(selected) == 1
+    assert selected == list(acquisition.iter_vintages(tmp_path))
+    monkeypatch.setattr(acquisition, "_metadata_segments", lambda *_: pytest.fail("Fila no pedida"))
+    assert list(acquisition.iter_vintages(tmp_path, indicator_ids=["us_cpi"])) == []
+
+
+@pytest.mark.parametrize("ids", [[], ["x", "x"], ["bad'identifier"], "us_real_gdp", [True]])
+def test_vintage_projection_rejects_invalid_identities(tmp_path, ids):
+    from mars_titan.data.macro_acquisition import iter_vintages
+
+    with pytest.raises(ValueError):
+        list(iter_vintages(tmp_path, indicator_ids=ids))
+
+
+def test_acquisition_transaction_closes_the_connection_before_returning(tmp_path):
+    import sqlite3
+
+    from mars_titan.data import macro_acquisition as acquisition
+
+    acquisition._initialize(tmp_path, "fixture")
+    with acquisition._connect(tmp_path) as connection:
+        connection.execute("SELECT 1").fetchone()
+    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+        connection.execute("SELECT 1")
 
 
 @pytest.mark.parametrize(

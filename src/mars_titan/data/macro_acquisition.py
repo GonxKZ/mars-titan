@@ -15,6 +15,7 @@ import tempfile
 import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import closing, contextmanager
 from datetime import UTC, date, datetime
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
@@ -314,10 +315,20 @@ def _parse_zip(
     return result
 
 
-def _connect(destination: Path) -> sqlite3.Connection:
+@contextmanager
+def _connect(destination: Path):
     database = destination / _DATABASE
     outside_source(Path("dataset"), database)
     connection = sqlite3.connect(database, timeout=30)
+    try:
+        _schema(connection)
+        with connection:
+            yield connection
+    finally:
+        connection.close()
+
+
+def _schema(connection):
     connection.execute("PRAGMA journal_mode=WAL")
     connection.execute("PRAGMA busy_timeout=30000")
     connection.executescript(
@@ -367,7 +378,6 @@ def _connect(destination: Path) -> sqlite3.Connection:
         );
         """
     )
-    return connection
 
 
 def _configuration(
@@ -837,7 +847,7 @@ def execution_catalog(catalog, destination: Path) -> list[dict]:
     database = Path(destination) / _DATABASE
     if not database.is_file():
         raise FileNotFoundError(database)
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
         status = {
             identifier: (state, reason)
             for identifier, state, reason in connection.execute(
@@ -862,7 +872,10 @@ def rebuild_metadata(destination: Path, *, backup_path: Path) -> dict:
         raise FileNotFoundError(database)
     with backup_path.open("xb"):
         pass
-    with sqlite3.connect(database) as source, sqlite3.connect(backup_path) as backup:
+    with (
+        closing(sqlite3.connect(database)) as source,
+        closing(sqlite3.connect(backup_path)) as backup,
+    ):
         source.backup(backup)
     count = 0
     with _connect(destination) as connection:
@@ -927,12 +940,28 @@ def _metadata_segments(row: dict, metadata: list[dict]):
         }
 
 
-def iter_vintages(destination: Path):
-    """Emite series completas en sus unidades históricas e identifica los metadatos ausentes."""
+def iter_vintages(
+    destination: Path, *, before: str | None = None, indicator_ids: list[str] | None = None
+):
+    """Leer series completas, con límites opcionales de fecha e indicadores en la consulta."""
+    if before is not None:
+        if not isinstance(before, str):
+            raise ValueError("El límite temporal necesita una fecha ISO")
+        before = _iso_day(before, "before")
+    if indicator_ids is not None and (
+        not isinstance(indicator_ids, list)
+        or not 1 <= len(indicator_ids) <= 1024
+        or any(
+            not isinstance(v, str) or not re.fullmatch(r"[a-z0-9_]{1,128}", v)
+            for v in indicator_ids
+        )
+        or len(set(indicator_ids)) != len(indicator_ids)
+    ):
+        raise ValueError("La selección de indicadores no es válida")
     database = Path(destination) / _DATABASE
     if not database.is_file():
         raise FileNotFoundError(f"No se encuentra la base de adquisición macro: {database}")
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
         if not connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='archive_metadata'"
         ).fetchone():
@@ -945,11 +974,21 @@ def iter_vintages(destination: Path):
                 "SELECT source_hash,intervals_json FROM archive_metadata"
             )
         }
+        conditions, parameters = [], []
+        if before:
+            conditions.extend(("v.period_start < ?", "v.realtime_start < ?"))
+            parameters.extend((before, before))
+        if indicator_ids:
+            conditions.append("v.indicator_id IN (" + ",".join("?" for _ in indicator_ids) + ")")
+            parameters.extend(indicator_ids)
+        selected = "AND " + " AND ".join(conditions) + " " if conditions else ""
         cursor = connection.execute(
             "SELECT v.indicator_id,v.period_start,v.realtime_start,v.realtime_end,v.value,"
             "v.source_hash,v.source_timezone FROM vintages v "
             "JOIN series s ON s.indicator_id=v.indicator_id WHERE s.status='complete' "
-            "ORDER BY v.indicator_id,v.period_start,v.realtime_start"
+            + selected
+            + "ORDER BY v.indicator_id,v.period_start,v.realtime_start",
+            parameters,
         )
         while rows := cursor.fetchmany(1000):
             for row in rows:
@@ -966,4 +1005,6 @@ def iter_vintages(destination: Path):
                     "source_hash": row[5],
                     "source_timezone": row[6],
                 }
-                yield from _metadata_segments(vintage, metadata[row[5]])
+                for segment in _metadata_segments(vintage, metadata[row[5]]):
+                    if before is None or segment["realtime_start"] < before:
+                        yield segment
