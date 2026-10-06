@@ -22,3 +22,17 @@ La salida contiene el CSV descargado, el panel Parquet y un informe con sus huel
 La ejecución de 2009 a 2023 produjo 7.548 filas para 3.774 sesiones. Hay 796 valores admitidos entre el índice y su cambio mensual. Las 7.548 comparaciones con una selección SQL independiente coinciden, con tolerancias absoluta y relativa de `1e-12`. Esa prueba comprueba la regla implementada, no demuestra una hora de publicación que el archivo no proporciona.
 
 La recuperación no acredita una población con todos los macros ni una mejora de los modelos. Los datos descargados permanecen fuera del repositorio. Se conservan las [condiciones del proveedor](https://www.newyorkfed.org/privacy/termsofuse) y la atribución a Federal Reserve Bank of New York, Global Supply Chain Pressure Index.
+
+## Contraste de las publicaciones preliminares
+
+La [revisión del 6 de octubre](../../reports/data/gscpi-release-audit-20261006.json) compara los adjuntos actuales de tres publicaciones con las columnas mensuales del CSV. Los valores se redondean a los dos decimales del CSV antes del contraste. Una fecha de artículo no basta para fechar el contenido que devuelve hoy su enlace.
+
+| Publicación | Último periodo del adjunto actual | Diferencias frente a la columna mensual | Límite de disponibilidad |
+| --- | --- | --- | --- |
+| [4 de enero de 2022](https://libertystreeteconomics.newyorkfed.org/2022/01/a-new-barometer-of-global-supply-chain-pressures/) | Diciembre de 2021 | 0 de 292 frente a `Jan-22` | El comentario del proveedor del 7 de enero da valores de octubre y noviembre distintos de los del adjunto actual. Este declara un guardado posterior, del 10 de enero. |
+| [3 de marzo de 2022](https://libertystreeteconomics.newyorkfed.org/2022/03/global-supply-chain-pressure-index-march-2022-update/) | Febrero de 2022 | 44 de 294 frente a `Mar-22` | El contenido y la fecha interna son compatibles con el artículo, pero no acreditan cuándo se difundió esa serie concreta. |
+| [18 de mayo de 2022](https://libertystreeteconomics.newyorkfed.org/2022/05/global-supply-chain-pressure-index-may-2022-update/) | Mayo de 2022 | 275 de 292 frente a `May-22` | El texto solo presenta datos hasta abril. El adjunto actual contiene además mayo y no puede heredar la fecha del artículo. |
+
+Con los otros 138 indicadores de la edición ampliada, resolver GSCPI y su cambio mensual podría recuperar siete sesiones, del 20 al 31 de mayo de 2022. Es un diagnóstico de cobertura macro, no un recuento de muestras multimodales admitidas. Para usar el adjunto de marzo falta una copia histórica o confirmación del proveedor que vincule su serie global con una publicación anterior al 20 de mayo.
+
+La consulta al archivo histórico devolvió HTTP 429 en dos intentos y otra consulta agotó su tiempo de espera. Esto no demuestra que no exista una copia. No se han admitido sesiones adicionales ni cambiado los datos de la campaña activa.

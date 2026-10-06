@@ -1,0 +1,244 @@
+{
+  "inspected_at_utc": "2026-10-06T13:09:08.630035+00:00",
+  "scope": "Contraste de adjuntos oficiales con columnas mensuales preliminares. No admite datos ni modifica la edición de entrenamiento.",
+  "matrix_sha256": "723e8dc81728176dea10e7d685478bfe888516ec68d1d2cc1b77d6fea8177c55",
+  "observations": {
+    "january": {
+      "file_sha256": "fda021e4ef046a466389c1d95a9d2e93fc82e0058ae04666f49c91319aaf01b4",
+      "file_bytes": 67009,
+      "article_sha256": "93ae2c2c7df4cc2b0121057ef19ed23cf45ee9b8d2a071c3faffdda474c06ead",
+      "sheet": "GSCPI",
+      "rows": 292,
+      "first_period": "1997-09-30",
+      "last_period": "2021-12-31",
+      "last_values": [
+        [
+          "30-Sep-2021",
+          3.847167087445555
+        ],
+        [
+          "31-Oct-2021",
+          4.370316529015542
+        ],
+        [
+          "30-Nov-2021",
+          4.341509163529986
+        ],
+        [
+          "31-Dec-2021",
+          4.2457932591335
+        ]
+      ],
+      "declared_file_modified": "2022-01-10 17:19:30",
+      "compared_csv_column": "Jan-22",
+      "compared_rows": 292,
+      "equal_after_csv_rounding": 292,
+      "max_absolute_difference": 0.004979489496290235,
+      "last_comparisons": [
+        {
+          "period": "30-Sep-2021",
+          "attachment_value": 3.847167087445555,
+          "csv_value": 3.85,
+          "equal_after_rounding": true
+        },
+        {
+          "period": "31-Oct-2021",
+          "attachment_value": 4.370316529015542,
+          "csv_value": 4.37,
+          "equal_after_rounding": true
+        },
+        {
+          "period": "30-Nov-2021",
+          "attachment_value": 4.341509163529986,
+          "csv_value": 4.34,
+          "equal_after_rounding": true
+        },
+        {
+          "period": "31-Dec-2021",
+          "attachment_value": 4.2457932591335,
+          "csv_value": 4.25,
+          "equal_after_rounding": true
+        }
+      ]
+    },
+    "march": {
+      "file_sha256": "12603bf24d9245631d53142212e064dec9246d16d4c49130ddb791f49d7843a3",
+      "file_bytes": 148711,
+      "article_sha256": "a57938e6030981236b029c3ec08d4cbf3ad59f6fab767b7b74288eef3619d795",
+      "sheet": "SCPI",
+      "rows": 294,
+      "first_period": "1997-09-30",
+      "last_period": "2022-02-28",
+      "last_values": [
+        [
+          "30-Nov-2021",
+          4.451828877362466
+        ],
+        [
+          "31-Dec-2021",
+          4.500281869958174
+        ],
+        [
+          "31-Jan-2022",
+          3.818954355083458
+        ],
+        [
+          "28-Feb-2022",
+          3.3115875138922557
+        ]
+      ],
+      "declared_file_modified": "2022-03-02 22:46:19",
+      "compared_csv_column": "Mar-22",
+      "compared_rows": 294,
+      "equal_after_csv_rounding": 250,
+      "max_absolute_difference": 0.07158751389225548,
+      "last_comparisons": [
+        {
+          "period": "30-Nov-2021",
+          "attachment_value": 4.451828877362466,
+          "csv_value": 4.45,
+          "equal_after_rounding": true
+        },
+        {
+          "period": "31-Dec-2021",
+          "attachment_value": 4.500281869958174,
+          "csv_value": 4.5,
+          "equal_after_rounding": true
+        },
+        {
+          "period": "31-Jan-2022",
+          "attachment_value": 3.818954355083458,
+          "csv_value": 3.82,
+          "equal_after_rounding": true
+        },
+        {
+          "period": "28-Feb-2022",
+          "attachment_value": 3.3115875138922557,
+          "csv_value": 3.24,
+          "equal_after_rounding": false
+        }
+      ]
+    },
+    "may": {
+      "file_sha256": "67ceec476acd9b8a840531132a4f53c7ab092200fb79ff68b8786fca4fc322a7",
+      "file_bytes": 99840,
+      "article_sha256": "ecc277ed95dea05fd60422cae69a9c2ab5217b9c060049030e3eb8a1529072c3",
+      "sheet": "GSCPI Monthly Data",
+      "rows": 293,
+      "first_period": "1998-01-31",
+      "last_period": "2022-05-31",
+      "last_values": [
+        [
+          "28-Feb-2022",
+          2.741173917738203
+        ],
+        [
+          "31-Mar-2022",
+          2.7620497585185464
+        ],
+        [
+          "30-Apr-2022",
+          3.2917860236413925
+        ],
+        [
+          "31-May-2022",
+          2.647747842417277
+        ]
+      ],
+      "declared_file_modified": null,
+      "compared_csv_column": "May-22",
+      "compared_rows": 292,
+      "equal_after_csv_rounding": 17,
+      "max_absolute_difference": 0.5983498958750122,
+      "last_comparisons": [
+        {
+          "period": "31-Jan-2022",
+          "attachment_value": 3.587787389541903,
+          "csv_value": 3.74,
+          "equal_after_rounding": false
+        },
+        {
+          "period": "28-Feb-2022",
+          "attachment_value": 2.741173917738203,
+          "csv_value": 2.8,
+          "equal_after_rounding": false
+        },
+        {
+          "period": "31-Mar-2022",
+          "attachment_value": 2.7620497585185464,
+          "csv_value": 2.8,
+          "equal_after_rounding": false
+        },
+        {
+          "period": "30-Apr-2022",
+          "attachment_value": 3.2917860236413925,
+          "csv_value": 3.29,
+          "equal_after_rounding": true
+        }
+      ]
+    }
+  },
+  "tools": {
+    "openpyxl": "3.1.5",
+    "xlrd": "2.0.2"
+  },
+  "sources": {
+    "january": "https://libertystreeteconomics.newyorkfed.org/2022/01/a-new-barometer-of-global-supply-chain-pressures/",
+    "march": "https://libertystreeteconomics.newyorkfed.org/2022/03/global-supply-chain-pressure-index-march-2022-update/",
+    "may": "https://libertystreeteconomics.newyorkfed.org/2022/05/global-supply-chain-pressure-index-may-2022-update/",
+    "january_attachment": "https://newyorkfed.org/medialibrary/media/research/blog/2022/2022_Barometer-Global-Supply-Chain-Pressures_data",
+    "march_attachment": "https://newyorkfed.org/medialibrary/media/research/blog/2022/LSE_2022_supply-chain-update__benigno_data",
+    "may_attachment": "https://www.newyorkfed.org/medialibrary/media/research/blog/2022/2022_Benigno_gscpi-May_data",
+    "monthly_matrix": "https://www.newyorkfed.org/medialibrary/research/interactives/data/gscpi/gscpi_interactive_data.csv"
+  },
+  "method": "Valores de la columna global de cada adjunto, con periodos únicos, ordenados y finitos. Se comparan con su columna mensual después de redondear a dos decimales, la precisión del CSV.",
+  "availability_findings": {
+    "january": "El artículo es del 4 de enero. El 7 de enero, New York Fed Research indicó 4,43 para octubre y 4,37 para noviembre. El adjunto actual difiere de esos valores y declara un guardado del 10 de enero. No acredita la primera edición con la fecha del artículo.",
+    "march": "El artículo del 3 de marzo describe datos hasta febrero. El adjunto conserva ese límite y declara un guardado anterior, pero la fecha interna no acredita su difusión. La serie difiere de Mar-22 y necesita una evidencia histórica propia.",
+    "may": "El artículo del 18 de mayo describe datos hasta abril. El adjunto actual contiene mayo y difiere en 275 de los 292 periodos comparables. No puede heredar automáticamente la fecha del artículo."
+  },
+  "potential_coverage": {
+    "observed_at_utc": "2026-10-06T13:05:42.382597+00:00",
+    "scope": "Diagnóstico de sesiones, sin admitir filas ni generar una edición. Se supone resuelto solo GSCPI y su cambio mensual.",
+    "source_sha256": "37c85410f02081c70079e6c7b654949512fd7563375d7669b74c9ef7d5abd14f",
+    "catalog_sha256": "981553c26afc2ed9a45a18ba9934eb1ad8319d7e14e810404c16525c04f3738e",
+    "other_required_indicators": 138,
+    "potential_sessions": [
+      "2022-05-20T20:05:00+00:00",
+      "2022-05-23T20:05:00+00:00",
+      "2022-05-24T20:05:00+00:00",
+      "2022-05-25T20:05:00+00:00",
+      "2022-05-26T20:05:00+00:00",
+      "2022-05-27T20:05:00+00:00",
+      "2022-05-31T20:05:00+00:00"
+    ],
+    "count": 7,
+    "missing_patterns": {
+      "cn_cpi_yoy_published,cn_industrial_yoy_published,cn_m2_stock,cn_manufacturing_pmi,cn_tsf_flow,cn_tsf_stock,global_supply_pressure,global_supply_pressure_change_1m": 45,
+      "cn_cpi_yoy_published,cn_industrial_yoy_published,cn_m2_stock,cn_tsf_flow,cn_tsf_stock,global_supply_pressure,global_supply_pressure_change_1m": 3,
+      "cn_industrial_yoy_published,cn_m2_stock,cn_tsf_flow,cn_tsf_stock,global_supply_pressure,global_supply_pressure_change_1m": 2,
+      "cn_industrial_yoy_published,global_supply_pressure,global_supply_pressure_change_1m": 4,
+      "global_supply_pressure,global_supply_pressure_change_1m": 7
+    },
+    "final_test_opened": false
+  },
+  "archive_checks": {
+    "availability_api_attempts": 2,
+    "availability_api_statuses": [
+      429,
+      429
+    ],
+    "cdx_status": "timeout_after_30_seconds",
+    "historical_snapshot_verified": false,
+    "interpretation": "No se pudo consultar una copia histórica. Estos errores no demuestran que no exista."
+  },
+  "decision": {
+    "admitted_new_sessions": 0,
+    "active_edition_modified": false,
+    "required_evidence": "Una copia histórica o confirmación del proveedor que vincule la serie Global del adjunto de marzo con una publicación anterior al 20 de mayo de 2022. No se requiere igualdad de metadatos internos del archivo si los datos coinciden.",
+    "final_test_opened": false
+  },
+  "matrix_retrieved_at_utc": "2026-09-27T21:15:34.806643+00:00",
+  "matrix_version_note": "Copia ya conservada de la recuperación GSCPI. El enlace actual puede devolver otras columnas o versiones.",
+  "updated_at_utc": "2026-10-06T13:22:04.761381+00:00"
+}
