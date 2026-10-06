@@ -256,12 +256,19 @@ def test_sample_cache_revalidates_replaced_source_with_identical_content(tmp_pat
         np.testing.assert_array_equal(left["target"], right["target"])
 
 
-def test_sample_cache_entry_limit_bounds_empty_tables(tmp_path):
-    reader = module().CorpusDataset(corpus(tmp_path, assets=1), cache_sample_tables=True)
-    for number in range(8200):
+@pytest.mark.parametrize("cache_sample_tables, entry_limit", [(False, 8192), (True, 16384)])
+def test_sample_cache_entry_limit_bounds_empty_tables(tmp_path, cache_sample_tables, entry_limit):
+    reader = module().CorpusDataset(
+        corpus(tmp_path, assets=1), cache_sample_tables=cache_sample_tables
+    )
+    assert reader.cache_entry_limit == entry_limit
+    for number in range(entry_limit):
         reader._remember(("samples", number), "signature", pa.table({"value": []}))
-    assert len(reader._cache) == 8192
-    assert ("samples", 0) not in reader._cache
+    assert reader._cached(("samples", 0), "signature") is not None
+    reader._remember(("samples", entry_limit), "signature", pa.table({"value": []}))
+    assert len(reader._cache) == entry_limit
+    assert ("samples", 0) in reader._cache
+    assert ("samples", 1) not in reader._cache
     assert reader.cached_bytes == 0
 
 

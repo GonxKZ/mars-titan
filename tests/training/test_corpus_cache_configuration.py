@@ -19,6 +19,7 @@ def test_reference_cache_default_preserves_arrays_only_and_one_gib(tmp_path, mon
     reader = configured(corpus(tmp_path))
     assert reader.cache_limit == 1024**3
     assert reader.cache_sample_tables is False
+    assert reader.cache_entry_limit == 8192
 
 
 @pytest.mark.parametrize("mib", [1, 1024, 2048, 4096])
@@ -27,6 +28,7 @@ def test_reference_explicit_cache_budget_enables_sample_tables(tmp_path, monkeyp
     reader = configured(corpus(tmp_path))
     assert reader.cache_limit == mib * 1024**2
     assert reader.cache_sample_tables is True
+    assert reader.cache_entry_limit == 16384
 
 
 @pytest.mark.parametrize(
@@ -43,3 +45,4 @@ def test_direct_reader_ignores_reference_runner_environment(tmp_path, monkeypatc
     reader = CorpusDataset(corpus(tmp_path))
     assert reader.cache_limit == 1024**3
     assert reader.cache_sample_tables is False
+    assert reader.cache_entry_limit == 8192

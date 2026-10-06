@@ -341,7 +341,9 @@ def run_reference_case(
         precision="float32",
         device="cuda:0",
         input_cache=dict(
-            budget_bytes=dataset.cache_limit, sample_tables=dataset.cache_sample_tables
+            budget_bytes=dataset.cache_limit,
+            sample_tables=dataset.cache_sample_tables,
+            entry_limit=dataset.cache_entry_limit,
         ),
     )
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])

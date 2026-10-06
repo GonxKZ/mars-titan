@@ -204,7 +204,9 @@ def test_explicit_sample_cache_records_resources_and_preserves_cuda_recovery(tmp
     reference = engine.run_reference_case(
         manifest, tmp_path / "reference", configuration, batch_size=5
     )
-    assert reference["identity"]["input_cache"] == dict(budget_bytes=1024**3, sample_tables=False)
+    assert reference["identity"]["input_cache"] == dict(
+        budget_bytes=1024**3, sample_tables=False, entry_limit=8192
+    )
     monkeypatch.setenv("MARS_TITAN_INPUT_CACHE_MIB", "1")
     stop = StopRequest()
     real_save = engine.save_training_state
@@ -225,7 +227,9 @@ def test_explicit_sample_cache_records_resources_and_preserves_cuda_recovery(tmp
         stop=stop,
     )
     assert paused["status"] == "paused"
-    assert paused["identity"]["input_cache"] == dict(budget_bytes=1024**2, sample_tables=True)
+    assert paused["identity"]["input_cache"] == dict(
+        budget_bytes=1024**2, sample_tables=True, entry_limit=16384
+    )
     assert 0 < paused["attempts"][-1]["input_cache_bytes"] <= 1024**2
     monkeypatch.setenv("MARS_TITAN_INPUT_CACHE_MIB", "2")
     with pytest.raises(ValueError, match="identidad|configuración"):

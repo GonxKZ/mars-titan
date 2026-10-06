@@ -117,6 +117,7 @@ class CorpusDataset:
             raise ValueError("La caché de tablas necesita una opción booleana explícita")
         self.cache_limit = cache_bytes
         self.cache_sample_tables = cache_sample_tables
+        self.cache_entry_limit = 16384 if cache_sample_tables else 8192
         self.cached_bytes = 0
         self._cache = OrderedDict()
         self.path = Path(manifest)
@@ -225,7 +226,8 @@ class CorpusDataset:
             _, _, previous_size = self._cache.pop(key)
             self.cached_bytes -= previous_size
         while self._cache and (
-            self.cached_bytes + size > self.cache_limit or len(self._cache) >= 8192
+            self.cached_bytes + size > self.cache_limit
+            or len(self._cache) >= self.cache_entry_limit
         ):
             _, (_, _, previous_size) = self._cache.popitem(last=False)
             self.cached_bytes -= previous_size
