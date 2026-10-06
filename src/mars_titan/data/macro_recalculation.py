@@ -5,7 +5,7 @@ import resource
 import tempfile
 import time
 from collections import Counter
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pyarrow as pa
@@ -56,6 +56,7 @@ def recalculate_macro(
     end,
     daily_lag_policy="source_records",
     indicators=None,
+    history_start=None,
 ):
     """Seleccionar las dependencias reales y publicar panel y recibo en un destino nuevo."""
     began = time.perf_counter()
@@ -68,7 +69,13 @@ def recalculate_macro(
     if output.exists():
         raise FileExistsError("La edición macro debe tener un destino nuevo")
     first, last = date.fromisoformat(start), date.fromisoformat(end)
-    if first > last or last >= date(2024, 1, 1) or (last - first).days > 366 * 50:
+    calendar_first = first if history_start is None else date.fromisoformat(history_start)
+    if (
+        calendar_first > first
+        or first > last
+        or last >= date(2024, 1, 1)
+        or (last - calendar_first).days > 366 * 50
+    ):
         raise ValueError("El periodo no está acotado o invade la reserva final")
     contract = macro_calculation_contract(daily_lag_policy=daily_lag_policy)
     entries = _read_catalog(catalog_path)
@@ -103,8 +110,9 @@ def recalculate_macro(
     )
     code = {name: sha256(Path(__file__).with_name(name)) for name in names}
     effective = execution_catalog(design, source)
-    clock = MarketClock(market, start, end)
-    if not clock.decisions or len(clock.decisions) * len(needed) > 1_000_000:
+    clock = MarketClock(market, calendar_first.isoformat(), end)
+    decisions = sum(first <= day <= last for day in clock.days)
+    if not decisions or decisions * len(needed) > 1_000_000:
         raise ValueError("La edición no tiene sesiones o supera un millón de celdas de cálculo")
     observations = iter_vintages(
         source, before=(last + timedelta(days=1)).isoformat(), indicator_ids=raw
@@ -112,7 +120,11 @@ def recalculate_macro(
     rows = [
         row
         for row in calculate_macro(
-            observations, effective, clock, daily_lag_policy=daily_lag_policy
+            observations,
+            effective,
+            clock,
+            daily_lag_policy=daily_lag_policy,
+            decision_start=datetime.combine(first, datetime.min.time(), UTC),
         )
         if row["indicator_id"] in requested
     ]
@@ -128,8 +140,10 @@ def recalculate_macro(
             market=market,
             start=start,
             end=end,
+            calendar_start=calendar_first.isoformat(),
+            calendar_decisions=len(clock.decisions),
             rows=len(rows),
-            decisions=len(clock.decisions),
+            decisions=decisions,
             indicator_ids=sorted(requested),
             raw_dependencies=sorted(raw),
             calculation=contract,
@@ -165,6 +179,9 @@ def main(argv=None):
     parser.add_argument("--market", choices=("US", "CN"), required=True)
     parser.add_argument("--start", required=True)
     parser.add_argument("--end", required=True)
+    parser.add_argument(
+        "--history-start", help="Inicio del calendario de disponibilidad, anterior a la salida"
+    )
     parser.add_argument("--indicators", nargs="+")
     parser.add_argument(
         "--daily-lag-policy",
@@ -180,6 +197,7 @@ def main(argv=None):
         start=args.start,
         end=args.end,
         indicators=args.indicators,
+        history_start=args.history_start,
         daily_lag_policy=args.daily_lag_policy,
     )
     print(f"Calculadas {result['rows']} filas en una edición nueva. Admisión todavía necesaria.")

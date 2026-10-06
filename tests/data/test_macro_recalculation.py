@@ -3,6 +3,7 @@
 import csv
 import sqlite3
 from contextlib import closing
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -197,3 +198,63 @@ def test_unconsolidated_wal_cannot_publish_an_unidentified_source(
     )
     assert confirmed["source_database_sha256"] == sha256(database) != before
     assert pq.read_table(tmp_path / "confirmed/macro.parquet")["value"][-1].as_py() == 999
+
+
+def test_output_window_preserves_availability_from_an_earlier_calendar(source, tmp_path):
+    from mars_titan.data.macro_recalculation import recalculate_macro
+
+    acquisition, catalog = source
+    output = tmp_path / "window"
+    report = recalculate_macro(
+        acquisition,
+        catalog,
+        output,
+        market="CN",
+        start="2023-01-10",
+        end="2023-01-11",
+        history_start="2023-01-01",
+    )
+    rows = pq.read_table(output / "macro.parquet").to_pylist()
+    assert len(rows) == report["decisions"] == 2
+    assert report["calendar_start"] == "2023-01-01"
+    assert rows[0]["prediction_at"] == datetime(2023, 1, 10, 7, 5, tzinfo=UTC)
+    assert all(row["available_at"] == datetime(2023, 1, 9, 7, 5, tzinfo=UTC) for row in rows)
+    assert all(row["value"] == 3 for row in rows)
+
+
+def test_selected_window_matches_full_calculation_with_both_lag_policies(source):
+    from mars_titan.data.macro import calculate_macro
+    from mars_titan.data.macro_acquisition import execution_catalog, iter_vintages
+    from mars_titan.data.temporal import MarketClock
+
+    acquisition, path = source
+    with path.open() as stream:
+        design = execution_catalog(list(csv.DictReader(stream)), acquisition)
+    clock = MarketClock("CN", "2023-01-01", "2023-01-11")
+    start = datetime(2023, 1, 10, tzinfo=UTC)
+    records = list(iter_vintages(acquisition, before="2024-01-01"))
+    for policy in ("source_records", "valid_observations"):
+        reference = calculate_macro(records, design, clock, daily_lag_policy=policy)
+        actual = calculate_macro(
+            records, design, clock, daily_lag_policy=policy, decision_start=start
+        )
+        assert actual == [r for r in reference if r["prediction_at"] >= start]
+
+
+@pytest.mark.parametrize("history_start", ["2023-01-11", "1900-01-01"])
+def test_history_must_precede_the_output_and_stay_bounded(source, tmp_path, history_start):
+    from mars_titan.data.macro_recalculation import recalculate_macro
+
+    acquisition, catalog = source
+    output = tmp_path / "rejected"
+    with pytest.raises(ValueError):
+        recalculate_macro(
+            acquisition,
+            catalog,
+            output,
+            market="CN",
+            start="2023-01-10",
+            end="2023-01-11",
+            history_start=history_start,
+        )
+    assert not output.exists()

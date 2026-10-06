@@ -2,7 +2,7 @@
 
 import csv
 import importlib
-from datetime import UTC, date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -19,6 +19,42 @@ def calculate(rows, catalog, clock, **options):
     return importlib.import_module("mars_titan.data.macro").calculate_macro(
         rows, catalog, clock, **options
     )
+
+
+@pytest.mark.parametrize(
+    "policy,initial,revised",
+    [
+        ("source_records", 21, 23),
+        ("valid_observations", 22, 24),
+    ],
+)
+def test_output_window_preserves_lags_missing_observations_and_revisions(policy, initial, revised):
+    records = [
+        row(
+            "us_treasury_10y",
+            f"2022-12-{day:02d}",
+            day if day != 15 else None,
+            "2023-01-04",
+            **({"missing_reason": "missing_source_value"} if day == 15 else {}),
+        )
+        for day in range(1, 32)
+    ]
+    records[-1]["realtime_end"] = "2023-01-10"
+    records.append(row("us_treasury_10y", "2022-12-31", 33, "2023-01-11", source_hash=HASH_B))
+    clock = MarketClock("CN", "2023-01-01", "2023-01-16")
+    design = catalog_for("us_treasury_10y_change_21obs")
+    first = datetime(2023, 1, 10, tzinfo=UTC)
+    reference = calculate(records, design, clock, daily_lag_policy=policy)
+    selected = calculate(records, design, clock, daily_lag_policy=policy, decision_start=first)
+    assert selected == [r for r in reference if r["prediction_at"] >= first]
+    delta = {
+        r["prediction_at"]: r["value"]
+        for r in selected
+        if r["indicator_id"] == "us_treasury_10y_change_21obs"
+    }
+    assert delta[clock.decision("2023-01-10")] == initial
+    assert delta[clock.decision("2023-01-12")] == initial
+    assert delta[clock.decision("2023-01-13")] == revised
 
 
 def catalog_for(*ids):
