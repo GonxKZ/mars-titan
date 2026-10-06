@@ -4,8 +4,12 @@
 #include <ATen/CPUGeneratorImpl.h>
 #include <ATen/Context.h>
 #include <ATen/core/grad_mode.h>
+#include <ATen/ops/_cudnn_rnn_flatten_weight.h>
+#include <ATen/ops/_use_cudnn_rnn_flatten_weight.h>
+#include <ATen/ops/cudnn_is_acceptable.h>
 #include <ATen/ops/gru.h>
 #include <ATen/ops/smooth_l1_loss.h>
+#include <c10/core/DeviceGuard.h>
 #include <torch/nn/module.h>
 #include <torch/nn/utils/clip_grad.h>
 #include <torch/optim/adam.h>
@@ -251,6 +255,22 @@ public:
         return result;
     }
 
+    void pack_recurrent_weights() {
+#if defined(MARS_TITAN_LIBTORCH_CUDA)
+        if (architecture_.kind != PpoNetworkKind::gru || !recurrent_.front().is_cuda() ||
+            !at::cudnn_is_acceptable(recurrent_.front()) || !at::_use_cudnn_rnn_flatten_weight()) {
+            return;
+        }
+        const c10::DeviceGuard device_guard(recurrent_.front().device());
+        const at::NoGradGuard no_grad;
+        constexpr int64_t weights_per_layer = 4;
+        constexpr int64_t cudnn_gru_mode = 3;
+        // cuDNN conserva vistas del bloque en los mismos parámetros registrados y usados por Adam.
+        static_cast<void>(at::_cudnn_rnn_flatten_weight(recurrent_, weights_per_layer,
+            recurrent_.front().size(1), cudnn_gru_mode, architecture_.hidden_width, 0, 1, false, false));
+#endif
+    }
+
     [[nodiscard]] std::vector<at::Tensor> auxiliary_parameters() const {
         return {first_weight_, first_bias_, second_weight_, second_bias_, auxiliary_weight_, auxiliary_bias_};
     }
@@ -466,6 +486,7 @@ struct PpoPolicy::Impl {
           sampler(make_sampler(tensor_device, seed)),
           shuffler(at::detail::createCPUGenerator(seed ^ shuffle_seed_offset)) {
         network.to(tensor_device, at::kFloat);
+        network.pack_recurrent_weights();
         optimizer = std::make_unique<torch::optim::Adam>(
             network.policy_parameters(), torch::optim::AdamOptions(parameters.learning_rate));
         if (architecture.auxiliary) {
@@ -943,6 +964,7 @@ PpoPolicy PpoPolicy::load(std::istream& source, std::string_view device_name) {
     result.impl_->network.load(network);
     result.impl_->network.to(result.impl_->tensor_device, at::kFloat);
     result.impl_->network.validate(width, result.impl_->tensor_device);
+    result.impl_->network.pack_recurrent_weights();
     torch::serialize::InputArchive optimizer;
     archive.read("optimizer", optimizer);
     result.impl_->optimizer->load(optimizer);
