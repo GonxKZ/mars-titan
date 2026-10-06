@@ -156,9 +156,9 @@ disponer de ese acceso ni se contratan servicios. La vía pública de CNINFO
 resuelve documentos contables concretos, no toda la modalidad textual.
 
 El [panel macro chino](china-macro-edition.md) ya admite 387 sesiones con los
-140 indicadores y cubre las 169 fechas potenciales de este caso. La [adquisición
-del factor CSI 300](https://github.com/GonxKZ/mars-titan/issues/14#issuecomment-6025729947)
-concilia las 484 sesiones de 2022 y 2023 con apertura y cierre publicados por SSE.
-Faltan su materialización en el contrato común, la representación CNY, la
-codificación y la supervisión multimodal. El brazo conjunto no se considera
+140 indicadores y cubre las 169 fechas potenciales de este caso. El [factor
+CSI 300](csi300-market-factor.md) conserva las 484 sesiones de 2022 y 2023
+publicadas por SSE. Su contraste residual obtiene 168 etiquetas admisibles y
+una exclusión por el corte anual. Faltan la representación CNY, la codificación
+y la unión supervisada de muestras. El brazo conjunto no se considera
 completo utilizando únicamente datos estadounidenses.
