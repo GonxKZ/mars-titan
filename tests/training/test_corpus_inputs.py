@@ -689,6 +689,21 @@ def test_declared_roots_are_resolved_before_artifact_containment_checks(tmp_path
     assert reader._file(reader.assets[0], "prices") == tmp_path / "prepared/US/A0000/prices.parquet"
 
 
+def test_new_root_remains_checked_when_artifact_path_cache_is_full(tmp_path):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1))
+    source = tmp_path / "prepared/US/A0000/prices.parquet"
+    replacement = tmp_path / "other/US/A0000/prices.parquet"
+    replacement.parent.mkdir(parents=True)
+    replacement.write_bytes(source.read_bytes())
+    reader.roots["prepared"] = tmp_path / "other"
+
+    assert reader._file(reader.assets[0], "prices") == replacement
+    assert len(getattr(reader, "_artifact_paths", {})) <= 3 * len(reader.assets)
+    replacement.write_bytes(b"contenido alterado")
+    with pytest.raises(ValueError, match="ha cambiado"):
+        reader._file(reader.assets[0], "prices")
+
+
 def test_containment_on_different_volumes_is_rejected(tmp_path, monkeypatch):
     reader = module().CorpusDataset(corpus(tmp_path, assets=1))
 
