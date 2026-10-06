@@ -192,6 +192,8 @@ def _case(source, result, seconds, parent_difference):
             "included",
             "primary",
             "parent_id",
+            "checkpoint_sha256",
+            "source_report_sha256",
         )
     }
     best, last = selection.get("best_epoch"), selection.get("last_epoch")
