@@ -67,6 +67,20 @@ Los intentos explícitos del coordinador tabular tienen registros separados. Los
 informes antiguos sin identidad de intento utilizan `legacy`. No se separan sus
 curvas en intentos cuya frontera se desconoce.
 
+La identidad pública se conserva desde la primera observación. Una asociación
+privada entre campaña, ruta del recibo y trabajo evita crear otra ejecución cuando
+el coordinador incorpora ese recibo a su resumen. Al recuperar una caché anterior,
+se consultan los vínculos explícitos del resumen guardado antes de reemplazarlo.
+Solo se concilian alias con esa procedencia, conservando los intentos distintos.
+Las asociaciones contradictorias revierten la transacción. La tabla de asociaciones
+comparte los límites de fuentes y bytes del recolector y no se publica.
+
+La conciliación del 6 de octubre eliminó 578 alias de una copia del historial, de
+los que 539 todavía indicaban actividad antigua. Quedaron 2.051 registros, con los
+mismos campos e identidades de los recibos confirmados. La
+[comprobación de la migración](../../reports/resources/observatory-identity-20261006.json)
+documenta los recuentos y las pruebas.
+
 El contrato público de versión 2 utiliza páginas de 64 registros, con máximo de
 128 por página. El índice se confirma después de las páginas inmutables cuyos
 nombres contienen sus huellas. La web descarga la primera página y solicita las
