@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "kind": "reviewed_chinese_fundamentals",
+  "domain": "real",
+  "symbol": "000001.SZ",
+  "source_review": "china-pingan-reconciliation-20260922.json",
+  "source_url": "https://static.cninfo.com.cn/finalpage/2023-03-09/1216072952.PDF",
+  "identity": {
+    "source_sha256": "20f80d5b96a7d04918e09927ca2e775279041caac6a04e6052ed8de244376310",
+    "review_sha256": "36362b37bb342f2f2c09d90d9cb82ad9a73a862ce2c1cd9a6b587fb05324c77e",
+    "document_sha256": "45c2e825775e48d930855c8d028bf397586ff63075a24c45104f171f670eb59d",
+    "publication_sha256": "8ed09a01620cd1dc07576c62ae174d8aaea04894d305673a80a538f7935b3010",
+    "cutoff": "2023-12-31",
+    "market": "CN",
+    "symbol": "000001.SZ",
+    "calendar_sha256": "e529c8bda553f402acc1316f8a2afa167cf3a3aef045e5774388458e12144aca",
+    "code": {
+      "china_fundamentals.py": "22f9c4030ccba5a3506bc9e6af3ff47d4fef9710f91aaa0dcac92140acdd397e",
+      "china_sources.py": "d86428c4b83e114221102846c764b0dca092ef029843eb0534abb7b7a5431728",
+      "cohort_preparation.py": "8aa4d9f667d9934e6e8731247edea94b4839754b1c58ca9f6e01d98866327e3a",
+      "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+      "corpus_catalog.py": "0d1aa77f1a85b49ebed95c2e617b10c06d3a6c0ce2cd96764cd91eda6a73352b",
+      "macro_coverage.py": "f881c55afaf298056faea69562d7e8fa4618b6b20564ec7a1f5812e699c064d6",
+      "preparation.py": "9cd0a46b6d2165a384464f068d4c86bd7206c7d3ffba3026781f7f682299d58f",
+      "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+      "temporal.py": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41"
+    },
+    "pyarrow": "25.0.1",
+    "ijson": "3.5.1",
+    "numeric_storage": "float64_with_exact_decimal_provenance"
+  },
+  "verification": {
+    "observed_at_utc": "2026-10-06T18:19:36.199738+00:00",
+    "facts": 6,
+    "field_matches": 12,
+    "unique_source_records": 4,
+    "accounting_identities_checked": 2,
+    "exact_float64_values_checked": 6,
+    "earliest_available_at": "2023-03-10T07:05:00+00:00",
+    "source_rows": [
+      11,
+      12,
+      17,
+      18
+    ],
+    "parquet_sha256": "9c7858590cdafe0d85a6ca39ea56d35d0b80d1a3c741d12cff0cc7d7449776e7",
+    "parquet_bytes": 7307,
+    "report_sha256": "d37982937c4a1884bc1d525ac0a5b9efd8d05d11a301131444cd905c98bf3a78",
+    "module_sha256": "22f9c4030ccba5a3506bc9e6af3ff47d4fef9710f91aaa0dcac92140acdd397e",
+    "reuse_internal_seconds_including_calendar": 0.12887848797254264,
+    "file_identity_preserved": true,
+    "training_ready": false,
+    "script_sha256": "b9c31e5cbe683f72b7ede8e6f169e797f2476162afe4a6579b91913c2d6e88af"
+  },
+  "measurements": {
+    "hardware": "AMD Ryzen 9 8945HS, 8 núcleos y 16 hilos",
+    "cpu_quota_percent": 100,
+    "memory_limit_bytes": 2147483648,
+    "blas_threads": 1,
+    "software": {
+      "python": "3.12.14",
+      "pyarrow": "25.0.1",
+      "ijson": "3.5.1"
+    },
+    "preparation": {
+      "wall_seconds": 0.52,
+      "max_rss_kib": 131676,
+      "exit": 0
+    },
+    "reuse_and_independent_checks": {
+      "wall_seconds": 0.53,
+      "max_rss_kib": 137128,
+      "exit": 0
+    },
+    "measurement_scope": "Un proceso de preparación y un proceso de reutilización con comprobaciones independientes. Incluyen inicio del intérprete. No es una comparación de aceleración.",
+    "concurrent_scientific_campaign": true,
+    "gpu_used_by_materialization": false,
+    "physical_io_bytes_measured": false,
+    "energy_measured": false
+  },
+  "limits": [
+    "La revisión del PDF y del anuncio es una entrada explícita. El módulo no extrae ni certifica cualquier documento.",
+    "Los hechos admitidos conservan el contexto de la fuente primaria. No recuperan todos los metadatos perdidos del original.",
+    "Faltan representación CNY, macros sobre cierres CN, factor de mercado, codificación y admisión multimodal.",
+    "Los seis hechos contables no son seis muestras de entrenamiento y no habilitan por sí solos una campaña china."
+  ],
+  "active_campaign_modified": false,
+  "final_test_opened": false,
+  "training_ready": false,
+  "quality": {
+    "production_sha256": "22f9c4030ccba5a3506bc9e6af3ff47d4fef9710f91aaa0dcac92140acdd397e",
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "pytest": "9.1.1"
+    },
+    "related_tests_passed": 85,
+    "related_test_files": [
+      "tests/data/test_china_fundamentals.py",
+      "tests/data/test_china_sources.py",
+      "tests/data/test_cohort_preparation.py",
+      "tests/data/test_cohort_contexts.py"
+    ],
+    "focal_tests_passed": 71,
+    "private_control_tests_passed": 71,
+    "module_coverage": {
+      "covered_lines": 154,
+      "num_statements": 160,
+      "percent_covered": 94.69026548672566,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.25,
+      "percent_statements_covered_display": "96",
+      "num_branches": 66,
+      "num_partial_branches": 6,
+      "covered_branches": 60,
+      "missing_branches": 6,
+      "percent_branches_covered": 90.9090909090909,
+      "percent_branches_covered_display": "91"
+    },
+    "complexity": [
+      {
+        "name": "_Record.__setitem__",
+        "ccn": 2,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "name": "_file_hash",
+        "ccn": 4,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "name": "_verify_identity",
+        "ccn": 5,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "crap": 5.0
+      },
+      {
+        "name": "_check_announcement",
+        "ccn": 13,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "crap": 13.0
+      },
+      {
+        "name": "_requests",
+        "ccn": 15,
+        "statement_coverage": 0.9,
+        "branch_coverage": 0.8333333333333334,
+        "crap": 15.225
+      },
+      {
+        "name": "_read_facts",
+        "ccn": 14,
+        "statement_coverage": 0.9393939393939394,
+        "branch_coverage": 0.9,
+        "crap": 14.043631911400507
+      },
+      {
+        "name": "materialize_chinese_facts",
+        "ccn": 21,
+        "statement_coverage": 0.9782608695652174,
+        "branch_coverage": 0.9375,
+        "crap": 21.0045306977891
+      },
+      {
+        "name": "main",
+        "ccn": 2,
+        "statement_coverage": 1.0,
+        "branch_coverage": 1.0,
+        "crap": 2.0
+      }
+    ],
+    "convention": "coverage.py con ramas. Por función, sentencias ejecutables dentro del rango de líneas de Radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Las ramas se informan por separado. La asignación por función utiliza coverage._analyze. Los métodos que Radon también devuelve como funciones se cuentan una sola vez, con su nombre de clase.",
+    "directed_mutations": {
+      "detected": 6,
+      "total": 6,
+      "tests_in_mutation_campaign": 68,
+      "same_production_sha256": true,
+      "note": "Las tres pruebas añadidas después amplían las guardas de contenido y tamaño. No cambian producción ni se repite la campaña de mutación."
+    },
+    "limits": [
+      "Los fixtures son técnicos. No certifican la lectura humana del PDF ni la autenticidad de un anuncio remoto.",
+      "El módulo enlaza los documentos por hash y consume una revisión explícita. No hace admisión de cohorte.",
+      "Sin CUDA, entrenamiento ni acceso a valores de la reserva final.",
+      "Cobertura y mutaciones dirigidas no prueban ausencia general de errores.",
+      "La mutación de metadatos confirma el rechazo de una población incompatible antes de leer filas. No se ha ejecutado una prueba de descompresión extrema."
+    ]
+  }
+}
