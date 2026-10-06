@@ -62,6 +62,16 @@ Cada CSV admite hasta 32 MiB, 100.000 filas y 256 columnas. Se lee y comprueba u
 
 `scripts/benchmark_campaign_comparison.py` repite el recorrido predictivo completo con y sin caché, alternando el orden. Comprueba igualdad exacta de las tablas científicas y del Parquet, y compara los casos después de excluir su tiempo de comprobación. Incluye un calentamiento por condición y al menos tres repeticiones medidas. La [evidencia de rendimiento y pruebas](../../reports/resources/campaign-comparison-20261005.md) indica los resultados, herramientas, cobertura y límites realmente comprobados.
 
+## Cierre automático de la campaña real
+
+`scripts/finish_real_campaign.py` recibe `--state`, el resumen de `training.real_campaign`, y `--output`, una salida independiente. Espera a que terminen las etapas neuronal, de continuación y de fiabilidad. Comprueba sus recuentos, dominio, reserva cerrada y huellas antes de ejecutar la comparación y exportarla con la fiabilidad correspondiente. Mientras la campaña siga abierta devuelve el estado `waiting` y código 3, sin crear la salida ni leer predicciones. El cierre completado devuelve código 0.
+
+La salida fija las fuentes, los parámetros y el código del analizador. Un bloqueo impide dos cierres simultáneos. Cada invocación admite como máximo un intento nuevo y conserva hasta tres intentos en carpetas separadas. Una interrupción deja el intento anterior registrado y permite repetir el análisis en otra carpeta. No se reanuda a mitad de una agregación ni se sobrescriben resultados anteriores. El resultado completo se reutiliza solo si sus artefactos e identidad siguen coincidiendo. Cambiar únicamente la fecha de observación del coordinador no obliga a repetirlo.
+
+El comando utiliza CPU y los analizadores existentes. No inicia entrenamientos, no necesita cargar pesos y no publica resultados en GitHub. Puede programarse como comprobación periódica local. El código 3 debe tratarse como espera, no como fallo. La interpretación de resultados y su promoción siguen requiriendo la revisión de los artefactos producidos.
+
+La [verificación del cierre](../../reports/resources/real-campaign-analysis-20261006.json) reproduce una campaña anterior de 756 modelos sin cambiar sus resultados científicos. Esta comprobación técnica no acredita la finalización de la campaña real ampliada.
+
 La suite general necesita CUDA visible y las rutas del perfil nativo que se haya compilado. Con el perfil conjunto, desde la raíz:
 
 ```bash
