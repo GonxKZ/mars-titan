@@ -21,10 +21,10 @@ _TAGS = {tag for _, terms, denominator in FACTOR_DEFINITIONS for tag, _ in terms
 }
 
 
-def _component(rows):
+def _component(rows, source_unit):
     if not rows:
         return None, "missing_component"
-    compatible = [r for r in rows if r["unit"] == "USD" and r["period_start"] is None]
+    compatible = [r for r in rows if r["unit"] == source_unit and r["period_start"] is None]
     if not compatible:
         return None, "incompatible_component"
     if len({r["value"] for r in compatible}) != 1:
@@ -32,12 +32,12 @@ def _component(rows):
     return min(compatible, key=lambda r: (r["available_at"], r.get("source_file", ""))), None
 
 
-def _factor(group, definition, identity, observed_at):
+def _factor(group, definition, identity, observed_at, source_unit):
     name, terms, denominator_tag = definition
     tags = sorted({tag for tag, _ in terms} | {denominator_tag})
     selected, problems = {}, []
     for tag in tags:
-        row, problem = _component(group.get(tag, []))
+        row, problem = _component(group.get(tag, []), source_unit)
         if problem:
             problems.append((tag, problem))
         else:
@@ -72,13 +72,14 @@ def _factor(group, definition, identity, observed_at):
         "available_at": max(r["available_at"] for r in selected.values())
         if status == "accepted"
         else observed_at,
-        "availability_rule": "same_filing_stock_usd_latest_component",
+        "availability_rule": f"same_filing_stock_{source_unit.lower()}_latest_component",
         "status": status,
         "numerator": numerator,
         "denominator": denominator,
-        "unavailable_components": [f"us-gaap:{tag}:USD" for tag, _ in problems],
+        "unavailable_components": [f"us-gaap:{tag}:{source_unit}" for tag, _ in problems],
         "component_problems": [
-            {"concept": f"us-gaap:{tag}:USD", "reason": problem} for tag, problem in problems
+            {"concept": f"us-gaap:{tag}:{source_unit}", "reason": problem}
+            for tag, problem in problems
         ],
         "components": [
             {field: row.get(field) for field in ("concept", "value", "available_at", "source_file")}
@@ -87,7 +88,7 @@ def _factor(group, definition, identity, observed_at):
     }
 
 
-def derive_company_factors(rows, *, max_facts: int = 100_000):
+def derive_company_factors(rows, *, max_facts: int = 100_000, source_unit: str = "USD"):
     """Emite siete resultados por grupo de una empresa, incluidas ausencias explícitas.
 
     La entrada contiene hechos normalizados de un único activo. Se acota antes
@@ -96,13 +97,15 @@ def derive_company_factors(rows, *, max_facts: int = 100_000):
     """
     if type(max_facts) is not int or max_facts < 1:
         raise ValueError("El presupuesto de hechos debe ser positivo")
+    if not isinstance(source_unit, str) or source_unit not in {"USD", "CAD"}:
+        raise ValueError("La unidad contable debe ser USD o CAD")
     groups = defaultdict(list)
     for count, row in enumerate(rows, 1):
         if count > max_facts:
             raise ValueError("Los hechos contables superan el presupuesto")
         namespace, tag, unit = row["concept"].split(":", 2)
         if namespace != "us-gaap" or (
-            tag not in _TAGS and (row["period_start"] is not None or unit != "USD")
+            tag not in _TAGS and (row["period_start"] is not None or unit != source_unit)
         ):
             continue
         if not math.isfinite(row["value"]):
@@ -119,13 +122,15 @@ def derive_company_factors(rows, *, max_facts: int = 100_000):
             for row in arrivals:
                 known[row["concept"].split(":", 2)[1]].append(row)
             for definition in FACTOR_DEFINITIONS:
-                factor = _factor(known, definition, identity, observed_at)
+                factor = _factor(known, definition, identity, observed_at, source_unit)
                 if previous.get(factor["concept"]) != factor:
                     previous[factor["concept"]] = factor
                     yield factor
 
 
-def write_company_factors(path, rows, *, batch_rows: int = 256, max_facts: int = 100_000):
+def write_company_factors(
+    path, rows, *, batch_rows: int = 256, max_facts: int = 100_000, source_unit: str = "USD"
+):
     """Escribe la trazabilidad por bloques y conserva solo el estado de la instantánea."""
     import pyarrow as pa
 
@@ -182,7 +187,7 @@ def write_company_factors(path, rows, *, batch_rows: int = 256, max_facts: int =
 
     def batches():
         pending = []
-        for row in derive_company_factors(rows, max_facts=max_facts):
+        for row in derive_company_factors(rows, max_facts=max_facts, source_unit=source_unit):
             if len(compact) >= max_facts:
                 raise ValueError("Los factores derivados superan el presupuesto")
             compact.append(

@@ -72,6 +72,37 @@ def test_ratios_match_independent_arithmetic_and_preserve_inputs():
     assert derive(list(reversed(facts))) == list(factors.values())
 
 
+def test_cad_ratios_use_native_components_without_currency_conversion():
+    facts = [dict(r, concept=r["concept"].replace(":USD", ":CAD"), unit="CAD") for r in balance()]
+    original = deepcopy(facts)
+    factors = by_name(derive(facts, source_unit="CAD"))
+    assert factors["current_ratio"]["value"] == 2.0
+    assert factors["liabilities_to_assets"]["value"] == 0.8
+    assert factors["current_ratio"]["numerator"] == 60.0
+    assert factors["current_ratio"]["denominator"] == 30.0
+    assert all(r["unit"] == "ratio" for r in factors.values())
+    assert all(c["concept"].endswith(":CAD") for r in factors.values() for c in r["components"])
+    assert factors["current_ratio"]["availability_rule"] == "same_filing_stock_cad_latest_component"
+    assert facts == original
+
+
+def test_ratios_never_mix_usd_and_cad_from_the_same_filing():
+    usd = balance()
+    cad = [dict(r, concept=r["concept"].replace(":USD", ":CAD"), unit="CAD") for r in usd]
+    cad = [r for r in cad if "LiabilitiesCurrent" not in r["concept"]]
+    factors = by_name(derive(usd + cad, source_unit="CAD"))
+    assert factors["current_ratio"]["value"] is None
+    assert factors["current_ratio"]["status"] == "incompatible_component"
+    assert factors["liabilities_to_assets"]["value"] == 0.8
+    assert by_name(derive(usd + cad))["current_ratio"]["value"] == 2.0
+
+
+@pytest.mark.parametrize("source_unit", ["EUR", "usd", "", None, []])
+def test_company_factor_currency_is_explicit_and_validated(source_unit):
+    with pytest.raises(ValueError, match="moneda|unidad"):
+        derive(balance(), source_unit=source_unit)
+
+
 @pytest.mark.parametrize("denominator", [0.0, -20.0])
 def test_nonpositive_equity_is_not_used_as_denominator(denominator):
     facts = balance()
