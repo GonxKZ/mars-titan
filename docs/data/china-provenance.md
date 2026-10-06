@@ -58,23 +58,68 @@ una muestra multimodal. Los valores comparativos de 2021 extraídos de este
 informe mantienen su publicación de 2023. No se les atribuye una divulgación
 anterior que no se haya comprobado.
 
+## Materialización de hechos revisados
+
+`china_fundamentals` comprueba la revisión, el original, el PDF y la respuesta de
+CNINFO antes de escribir `fundamentals.parquet`. Vuelve a leer los registros
+señalados y contrasta sus valores mediante `reconcile_chinese_fact`. El anuncio
+debe corresponder al emisor, la bolsa, el documento y el día revisados. La fecha
+del anuncio no se convierte en una hora exacta de publicación.
+
+El Parquet conserva el concepto `cn-reported`, la moneda CNY, la norma CAS, el
+perímetro contable, la página y las huellas de procedencia. `value` usa float64 y
+`value_exact` conserva el decimal contrastado antes de esa conversión. Los
+duplicados equivalentes se agrupan y mantienen sus localizadores. Dos importes
+distintos para el mismo hecho bloquean la salida.
+
+El [caso materializado](../../reports/data/china-facts-materialization-20261006.json)
+contiene seis hechos, tres conceptos para dos periodos. Las doce coincidencias
+de campo proceden de cuatro registros originales. Todos quedan disponibles el
+10 de marzo de 2023 a las 07:05 UTC. El comparativo de 2021 conserva esa misma
+disponibilidad. Las seis conversiones a float64 son exactas en este caso.
+
+La publicación es atómica y no sustituye una edición distinta. Al repetir la
+orden se vuelven a comprobar fuentes, código y contenido, con límites de tamaño
+antes de descomprimir el Parquet. La reutilización comprobada conserva el archivo
+sin reescribirlo. `training_ready=false` indica que estos hechos todavía necesitan
+la unión con las demás modalidades, los macros y las etiquetas.
+
+Orden desde la raíz del repositorio, con un destino independiente:
+
+```bash
+PYTHONPATH=src uv run --no-sync python -m mars_titan.data.china_fundamentals \
+  --source dataset \
+  --review reports/data/china-pingan-reconciliation-20260922.json \
+  --document data/external/china-evidence/000001-2022-annual-cninfo.pdf \
+  --publication data/external/china-evidence/cninfo-000001-20230309.json \
+  --output data/processed/china-pingan-reviewed-20261006
+```
+
+La revisión explícita del documento sigue siendo una entrada necesaria. Este
+lector no extrae ni certifica automáticamente las cifras de cualquier PDF.
+
 ## Alcance pendiente
 
-Esta entrega contiene un contrato de contraste y un caso real, no un descargador
-contable universal. Faltan la recuperación por todas las empresas y periodos,
-el lector de hechos admitidos y la materialización general en Parquet.
+Faltan la recuperación por todas las empresas y periodos y la integración de los
+hechos materializados en la preparación multimodal. La representación actual del
+corpus de entrenamiento admite USD y CAD con conceptos estadounidenses. Los
+hechos CAS en CNY necesitan una representación explícita, sin atribuirles una
+equivalencia completa con US-GAAP.
 
-La batería completa pasa 961 pruebas sin omisiones, incluidas 39 específicas del
-contrato. Se detectan seis mutaciones dirigidas. El [recibo de calidad](../../reports/resources/china-reconciliation-quality.json)
+La verificación inicial del contrato pasó 961 pruebas sin omisiones, incluidas
+39 específicas. Detectó seis mutaciones dirigidas. El [recibo de calidad](../../reports/resources/china-reconciliation-quality.json)
 registra la cobertura, complejidad, convención de CRAP y límites de estas comprobaciones.
 
-Las noticias chinas conservan resúmenes sin la procedencia necesaria para admitir
-cuerpos completos. La [interfaz de noticias de Tushare](https://tushare.pro/document/2?doc_id=143)
+La cohorte `original_audited` permite los resúmenes distribuidos con el dataset
+bajo sus controles estructurales y de fecha declarada. Esos resúmenes no cuentan
+como cuerpos completos verificados en `externally_verified`.
+La [interfaz de noticias de Tushare](https://tushare.pro/document/2?doc_id=143)
 declara permisos específicos, independientes de los puntos. No se presupone
 disponer de ese acceso ni se contratan servicios. La vía pública de CNINFO
 resuelve documentos contables concretos, no toda la modalidad textual.
 
-También siguen pendientes el factor de mercado chino con apertura y cierre,
-la armonización de conceptos y las series nacionales del contexto macro cuya
-publicación histórica no esté acreditada. El brazo conjunto no se considera
-completo utilizando únicamente datos estadounidenses.
+También siguen pendientes el factor de mercado chino con apertura y cierre y
+el cálculo y la admisión de los 140 macros sobre las decisiones del calendario
+chino. El panel preparado para los cierres estadounidenses no sirve directamente
+para ese calendario. El brazo conjunto no se considera completo utilizando
+únicamente datos estadounidenses.
