@@ -1,12 +1,14 @@
 # Comparación sobre la edición real ampliada
 
-La edición en preparación el 6 de octubre de 2026 amplía los datos disponibles para los comparadores RNN, LSTM, GRU, DLinear, Ridge y XGBoost. Exige precios, noticias, gráficos y fundamentales en cada muestra, junto con los 140 conceptos macro. Cada modelo y sus ajustes utilizan la misma representación y las mismas particiones. El candidato MARS-TITAN sigue fuera de esta ejecución.
+La edición materializada el 6 de octubre de 2026 amplía los datos disponibles para los comparadores RNN, LSTM, GRU, DLinear, Ridge y XGBoost. Exige precios, noticias, gráficos y fundamentales en cada muestra, junto con los 140 conceptos macro. Cada modelo y sus ajustes utilizan la misma representación y las mismas particiones. El candidato MARS-TITAN sigue fuera de esta ejecución.
 
 ## Fuentes y población
 
 La cohorte de origen contiene 1.816.369 muestras codificadas de 2.226 activos estadounidenses. El reparto anterior por años admitía 1.809.376 etiquetas. Al exigir los 140 indicadores de aquella edición quedaban 264.131 muestras, de las que 261.879 aparecían en la unión de las cuatro ventanas. Sumar las filas de distintos folds contaría repetidamente las mismas observaciones.
 
-La nueva admisión macro contiene 397 sesiones completas, desde el 1 de junio de 2022 hasta el 28 de diciembre de 2023, frente a las 257 sesiones anteriores. Este recuento corresponde al panel macro, no a muestras multimodales ni a etiquetas. El cruce con las otras modalidades y la purga temporal determinan qué se puede entrenar.
+La nueva admisión macro contiene 397 sesiones completas, desde el 1 de junio de 2022 hasta el 28 de diciembre de 2023, frente a las 257 sesiones anteriores. Este recuento corresponde al panel macro. La [conciliación multimodal](../../reports/data/real-expanded-cohort-20261006.json) identifica 402.826 muestras materializadas. De ellas, 182 no tienen historia suficiente para su objetivo residual y 21 carecen de la sesión siguiente. Las 402.623 restantes incluyen 813 etiquetas recuperables del corte anual antiguo.
+
+La unión de las diez ventanas admite 400.367 filas únicas de 2.197 activos y 392 sesiones. La purga deja fuera otras 2.256 filas, correspondientes al 31 de octubre y al 30 de noviembre de 2023. La unión de entrenamiento contiene 317.426 muestras. Las evaluaciones reúnen 212.337 muestras de 198 sesiones, entre marzo y diciembre de 2023, sin repetir identidades entre meses. Las muestras pueden tener distinto papel en ventanas posteriores. Estos recuentos no deben sumarse como si fueran poblaciones independientes.
 
 Se han aplicado estos cambios a una edición independiente:
 
@@ -18,7 +20,9 @@ El catálogo previo y sus resultados no se modifican. La disponibilidad acredita
 
 La cohorte conserva la categoría `original_audited`: usa los contenidos distribuidos con FinMultiTime y sus controles documentados. Esa categoría no acredita la verificación editorial externa de todos los artículos. China mantiene un bloqueo adicional por falta de fechas de publicación acreditadas para sus hechos contables. Recuperar macro chino no habilita por sí solo ese mercado bursátil.
 
-La representación contable ampliada separa los conceptos monetarios USD y CAD. No realiza conversiones de moneda. Permite revisar activos que tenían hechos contables reales pero no encajaban en los canales USD del formato anterior. La edición final debe conciliar cada activo admitido y cada exclusión antes del lanzamiento.
+La representación contable ampliada separa los conceptos monetarios USD y CAD, con 23 conceptos y 69 números entre valores, máscaras y antigüedades. No realiza conversiones de moneda. La proyección conserva exactamente los 45 números originales y las representaciones de noticias y gráficos de las muestras USD. Añade 319 muestras de CP y 394 de ENB. CGC sigue sin emitir muestras por falta de noticias en sus ventanas. ABUS y URG tienen hechos CAD antiguos, pero ya disponen de balances USD durante el periodo nuevo.
+
+La edición definitiva conserva los mismos Parquet que el primer intento y corrige su contrato de publicación. `encoder_contract` comprueba el vínculo con la supervisión. La recuperación recalcula los recuentos desde las etiquetas y rechaza recibos alterados. La continuación reutilizó todas las representaciones CAD desde las cachés, sin volver a ejecutar los codificadores.
 
 ## Particiones y selección
 
@@ -53,3 +57,13 @@ La preparación, el entrenamiento y la evaluación conservan recibos recuperable
 El lector reutiliza Arrow C++ mediante su proyección por columnas. Deja de decodificar el vector macro antiguo cuando la ventana proporciona su sustituto. La [prueba sobre 187.246 muestras](../../reports/resources/real-corpus-preparation-20261006.json) redujo los bytes decodificados por época un 30,4 %. Dos parejas completas de una época CUDA pasaron de 62,35 a 61,18 segundos de mediana, con igualdad exacta de pesos, AdamW, RNG, cursores y predicciones. El ajuste aislado no mejoró de forma consistente. No se atribuye a ese resultado una mejora predictiva ni una reducción del consumo energético.
 
 La campaña utiliza una sola carga científica CUDA. Los presupuestos de RAM, VRAM y caché son límites de admisión, no objetivos que deban llenarse. El tamaño de lote y la concurrencia se cambian únicamente después de medir el recorrido completo y comprobar paridad o tolerancias numéricas declaradas.
+
+La [caché optativa de tablas](../../reports/resources/input-cache-20261006.json) comparte un presupuesto con precios y etiquetas. `MARS_TITAN_INPUT_CACHE_MIB=4096` permite hasta 4 GiB de buffers de entrada y 16.384 entradas. El comportamiento predeterminado conserva 1 GiB y 8.192 entradas sin tablas. Ambos límites quedan registrados en la identidad de cada ejecución.
+
+En tres parejas sobre la cohorte anterior, la caché redujo la mediana completa de 57,48 a 50,86 segundos, a cambio de aumentar el pico de RAM de unos 2,18 a 4,83 GB. La cohorte ampliada necesitó 9.278 entradas y 2.097.582.026 bytes para ajuste y validación de su ventana mayor. Con 8.192 entradas expulsaba tablas aunque quedaran bytes libres. Ampliar ese límite redujo una pareja completa de 72,01 a 51,34 segundos, con RAM de 4,39 a 4,62 GB y VRAM idéntica. Los estados y las 360.050 predicciones coinciden exactamente. Esta última pareja no estima variabilidad entre repeticiones y sus porcentajes no se suman a los de las comparaciones anteriores.
+
+`mars_titan.training.real_campaign` encadena búsqueda neuronal, referencias tabulares, postentrenamiento, evaluación e informe de fiabilidad. Antes de lanzar un hijo comprueba las vistas, el contrato del codificador, las admisiones macro y las semillas. La recuperación conserva las etapas confirmadas y rechaza cambios de configuración, código, recursos o recibos. El directorio de estado del coordinador debe ser independiente del archivo de estado del supervisor.
+
+La [verificación conjunta](../../reports/resources/real-corpus-verification-20261006.json) registra 3.106 pruebas correctas y 19 omisiones explícitas. Las rutas CUDA de caché, postentrenamiento y supervisión se comprobaron también por separado. El supervisor señaliza las raíces propias vivas y deja que los lanzadores propaguen la parada. Después recoge los descendientes que sigan vivos. Esta regla evita interrumpir con una segunda señal el cierre de un trabajador que ya confirmó su checkpoint, incluido el caso de un lanzador intermedio huérfano.
+
+El observatorio admite hasta 128 fuentes y conserva las 84 de esta configuración. Verifica los recibos de evaluación congelada y los presenta como evaluación, sin contarlos como otro entrenamiento ni publicar métricas reservadas. La prueba de navegador recorrió 33 páginas con carga bajo demanda, comprobó un fallo de descarga recuperable y la ausencia de desbordamiento horizontal en móvil.
