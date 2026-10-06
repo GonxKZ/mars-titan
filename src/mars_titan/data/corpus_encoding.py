@@ -13,8 +13,9 @@ from .cohort_news import COHORT_POLICIES
 from .cohort_samples import materialize_cohort_asset
 from .corpus_preparation import STARTS
 from .embeddings import EmbeddingCache, FrozenEncoders
+from .samples import FUNDAMENTAL_CONCEPTS
 from .storage import atomic_json, outside_source, sha256
-from .temporal import MarketClock
+from .temporal import MarketClock, aware
 
 
 def encode_corpus(
@@ -27,6 +28,10 @@ def encode_corpus(
     encoders=None,
     clocks=None,
     context=64,
+    fundamental_concepts=FUNDAMENTAL_CONCEPTS,
+    source_unit="USD",
+    company_factors=True,
+    admitted_decisions=None,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores."""
     preparation, output = Path(preparation), Path(output)
@@ -35,6 +40,8 @@ def encode_corpus(
     if (
         meta.get("schema_version") != 1
         or meta.get("kind") != "prepared_cohort"
+        or meta.get("scope")
+        not in {None, "full_corpus", "market_projection", "reviewed_asset_subset"}
         or meta.get("status") != "completed"
         or meta.get("failed_assets") != 0
         or cohort not in COHORT_POLICIES
@@ -63,6 +70,24 @@ def encode_corpus(
         raise ValueError("Falta el contexto macro de un mercado solicitado")
     if type(context) is not int or not 2 <= context <= 512:
         raise ValueError("El contexto debe contener entre 2 y 512 sesiones")
+    concepts = tuple(fundamental_concepts)
+    if (
+        not concepts
+        or len(concepts) > 1024
+        or len(set(concepts)) != len(concepts)
+        or any(not isinstance(name, str) or not name for name in concepts)
+        or source_unit not in {"USD", "CAD", "CNY"}
+        or type(company_factors) is not bool
+    ):
+        raise ValueError("La representación contable solicitada no es válida")
+    admitted = None
+    if admitted_decisions is not None:
+        if set(admitted_decisions) != set(markets):
+            raise ValueError("La admisión debe identificar todos los mercados seleccionados")
+        admitted = {
+            market: frozenset(aware(t) for t in moments)
+            for market, moments in admitted_decisions.items()
+        }
     if sha256(preparation) != preparation_hash:
         raise ValueError("La preparación cambió después de su lectura")
     prepared = Path(meta["prepared_root"]).resolve()
@@ -74,8 +99,13 @@ def encode_corpus(
     clocks = clocks or {m: MarketClock(m, STARTS[m], "2026-01-01") for m in markets}
     if not set(markets) <= set(clocks) or any(clocks[m].market != m for m in markets):
         raise ValueError("Falta el calendario correspondiente a cada mercado")
+    if admitted is not None and any(
+        moment.year >= 2024 or moment not in clocks[market].decisions
+        for market, moments in admitted.items()
+        for moment in moments
+    ):
+        raise ValueError("La admisión debe pertenecer al calendario anterior a 2024")
     contexts = {m: MacroVectors(macros[m]) for m in markets}
-    encoders = encoders if encoders is not None else FrozenEncoders()
     factors = market_factors or {}
     for market, item in factors.items():
         if market not in markets or item.get("market") != market:
@@ -83,6 +113,7 @@ def encode_corpus(
         path = Path(item["prices_path"])
         if path.is_symlink() or not path.is_file() or sha256(path) != item["prices_sha256"]:
             raise ValueError("Ha cambiado la fuente del factor de mercado")
+    encoders = encoders if encoders is not None else FrozenEncoders()
     identity = dict(
         preparation_sha256=preparation_hash,
         prepared_root=str(prepared),
@@ -91,6 +122,12 @@ def encode_corpus(
         encoders=encoders.spec,
         macro_sha256={m: contexts[m].sha256 for m in markets},
         market_factors=factors,
+        fundamental_concepts=list(concepts),
+        source_unit=source_unit,
+        company_factors=company_factors,
+        admitted_decisions={m: sorted(t.isoformat() for t in admitted[m]) for m in markets}
+        if admitted is not None
+        else None,
         code={
             name: sha256(Path(__file__).with_name(name))
             for name in (
@@ -173,6 +210,10 @@ def encode_corpus(
                             cache,
                             cohort=cohort,
                             context=context,
+                            fundamental_concepts=concepts,
+                            source_unit=source_unit,
+                            company_factors=company_factors,
+                            admitted_decisions=admitted[market] if admitted is not None else None,
                         )
                         if receipt["symbol"] != symbol:
                             raise ValueError("El recibo pertenece a otro activo")
@@ -202,7 +243,8 @@ def encode_corpus(
         if sha256(preparation) != identity["preparation_sha256"]:
             raise ValueError("La preparación cambió durante el recorrido")
         if not result["failed_assets"]:
-            result.update(scope="full_corpus", cohort_complete=True)
+            if meta.get("scope") != "reviewed_asset_subset":
+                result.update(scope="full_corpus", cohort_complete=True)
             existing = output / "manifest.json"
             if existing.exists() and _read(existing)[0] != result:
                 raise ValueError("El manifiesto confirmado no coincide con el recorrido")
