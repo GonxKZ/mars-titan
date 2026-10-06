@@ -1,6 +1,8 @@
 """Ediciones de cálculo nuevas, con fuentes y reserva temporal inmutables."""
 
 import csv
+import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -142,3 +144,56 @@ def test_source_hash_stays_stable_when_finished_connections_are_collected(
         end="2023-01-10",
     )
     assert report["source_database_sha256"] == sha256(acquisition / "macro.sqlite3")
+
+
+@pytest.mark.parametrize("during_read", [False, True])
+def test_unconsolidated_wal_cannot_publish_an_unidentified_source(
+    source, tmp_path, monkeypatch, during_read
+):
+    from mars_titan.data import macro_recalculation as module
+
+    acquisition, catalog = source
+    database = acquisition / "macro.sqlite3"
+    before = sha256(database)
+    with closing(sqlite3.connect(database)) as writer:
+        writer.execute("PRAGMA wal_autocheckpoint=0")
+
+        def update():
+            writer.execute("UPDATE vintages SET value=999")
+            writer.commit()
+            assert sha256(database) == before
+            assert (acquisition / "macro.sqlite3-wal").stat().st_size > 0
+
+        if during_read:
+            original = module.iter_vintages
+
+            def write_then_read(*args, **kwargs):
+                update()
+                yield from original(*args, **kwargs)
+
+            monkeypatch.setattr(module, "iter_vintages", write_then_read)
+        else:
+            update()
+        output = tmp_path / "unconfirmed"
+        with pytest.raises(ValueError, match="consolidada"):
+            module.recalculate_macro(
+                acquisition,
+                catalog,
+                output,
+                market="US",
+                start="2023-01-05",
+                end="2023-01-10",
+            )
+        assert not output.exists()
+    if during_read:
+        monkeypatch.setattr(module, "iter_vintages", original)
+    confirmed = module.recalculate_macro(
+        acquisition,
+        catalog,
+        tmp_path / "confirmed",
+        market="US",
+        start="2023-01-05",
+        end="2023-01-10",
+    )
+    assert confirmed["source_database_sha256"] == sha256(database) != before
+    assert pq.read_table(tmp_path / "confirmed/macro.parquet")["value"][-1].as_py() == 999

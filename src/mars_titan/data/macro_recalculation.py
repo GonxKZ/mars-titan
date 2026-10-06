@@ -33,6 +33,19 @@ _SCHEMA = pa.schema(
 )
 
 
+def _consolidated_database(database):
+    """El recibo identifica una base cerrada, sin transacciones en archivos auxiliares."""
+    for suffix in ("-wal", "-journal"):
+        journal = database.with_name(database.name + suffix)
+        try:
+            pending = journal.stat().st_size
+        except FileNotFoundError:
+            pending = 0
+        if pending:
+            raise ValueError("La fuente SQLite debe estar consolidada antes de publicar el cálculo")
+    return sha256(database)
+
+
 def recalculate_macro(
     source,
     catalog_path,
@@ -78,7 +91,7 @@ def recalculate_macro(
     design = [entry for name, entry in entries.items() if name in needed]
     raw = [entry["id"] for entry in design if entry["kind"] == "raw"]
     database = source / "macro.sqlite3"
-    sources = {database: sha256(database), catalog_path: sha256(catalog_path)}
+    sources = {database: _consolidated_database(database), catalog_path: sha256(catalog_path)}
     names = (
         "macro_recalculation.py",
         "macro.py",
@@ -134,7 +147,10 @@ def recalculate_macro(
             admission_required=True,
         )
         atomic_json(stage / "report.json", report)
-        if any(sha256(path) != signature for path, signature in sources.items()) or any(
+        if (
+            _consolidated_database(database) != sources[database]
+            or sha256(catalog_path) != sources[catalog_path]
+        ) or any(
             sha256(Path(__file__).with_name(name)) != signature for name, signature in code.items()
         ):
             raise ValueError("Una fuente o el código cambió durante el cálculo")
