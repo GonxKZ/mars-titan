@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "market": "CN",
+  "domain": "real",
+  "start": "2022-01-01",
+  "end": "2023-12-31",
+  "macro_sha256": "aa3e57c841862b04a3353959b93995c9839574bfa16120df353dd7bd89398645",
+  "catalog_sha256": "f693649a888bcdeb5038f886a391085f0570cc627d2d6b32142633b84ca04b20",
+  "catalog_difference_from_us": {
+    "indicator": "us_financial_stress",
+    "field": "verified_on",
+    "us": "2026-10-05",
+    "cn": "2026-10-06",
+    "other_fields_equal": true
+  },
+  "rows": 67760,
+  "sessions": 484,
+  "indicators": 140,
+  "complete_sessions": 387,
+  "excluded_sessions": 97,
+  "duplicate_indicator_decisions": 0,
+  "first_complete": "2022-06-02T07:05:00+00:00",
+  "last_complete": "2023-12-29T07:05:00+00:00",
+  "components": [
+    {
+      "name": "base",
+      "rows": 67760,
+      "decisions": 484,
+      "calendar_start": "2000-01-01",
+      "calculation": {
+        "daily_lag_policy": "source_records",
+        "daily_lag_policy_version": 1,
+        "code_sha256": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d"
+      },
+      "source_database_sha256": "3d15948f3ef8425afb82a8ec8dfc6c094c5263a85ea0e8b018bab71057dbd74a",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "27a5643dfdf4a8728222741b2365e1ae684402a2d18a16992df164da4cf50d4c",
+      "report_sha256": "ff9c1d6b4ebd6777f7cdcba78557ccec44c16714399118d6df0fc956075ea605"
+    },
+    {
+      "name": "oil",
+      "rows": 1936,
+      "decisions": 484,
+      "calendar_start": "2000-01-01",
+      "calculation": {
+        "daily_lag_policy": "source_records",
+        "daily_lag_policy_version": 1,
+        "code_sha256": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d"
+      },
+      "source_database_sha256": "9c3f1463ced361d0420102f05ae755af588ebccc0495e86e021c64d31e971fbb",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "ce03bcd2f9bff1aa4b8fc15a0675c5df83c54611c460e73475fa4cd004be10ae",
+      "report_sha256": "f24fc41ae0548090ca3360874e0b9247e0a12530ea1c9feac72dac43939c6d66"
+    },
+    {
+      "name": "models",
+      "rows": 1452,
+      "decisions": 484,
+      "calendar_start": "2000-01-01",
+      "calculation": {
+        "daily_lag_policy": "source_records",
+        "daily_lag_policy_version": 1,
+        "code_sha256": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d"
+      },
+      "source_database_sha256": "1dec7983e35210b91fd12ff74535cef9f80ca1d36e4fe2fe96132276325e4989",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "ffe1eea30b776b1d917491a05c5058a4f66c0d44f1ce7dc7867e8bc91934e348",
+      "report_sha256": "42b2fae0640a83cc6648890c0b6815d9033ba4c01aaa00cf70e52b2b5bd00004"
+    },
+    {
+      "name": "stlfsi3",
+      "rows": 484,
+      "decisions": 484,
+      "calendar_start": "2000-01-01",
+      "calculation": {
+        "daily_lag_policy": "source_records",
+        "daily_lag_policy_version": 1,
+        "code_sha256": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d"
+      },
+      "source_database_sha256": "a072474e8629990bd10f9061dded51fdd797163a2c195ae2d7960b2b368d73ca",
+      "catalog_sha256": "cb244320651fc7045e4b9b3837a8e0efbfd354bd095a83419ae1a12b0dc20e6c",
+      "sha256": "d9e313420ee925db6716e33a2a16303b55d7ac08a732aa8cb65ba3de0e205b12",
+      "report_sha256": "e73d912df2e6f4af27350ad0583ade33501354f6b386460c90d30529bbb6d41b"
+    },
+    {
+      "name": "daily-rates",
+      "rows": 1452,
+      "decisions": 484,
+      "calendar_start": "2000-01-01",
+      "calculation": {
+        "daily_lag_policy": "valid_observations",
+        "daily_lag_policy_version": 1,
+        "code_sha256": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d"
+      },
+      "source_database_sha256": "3d15948f3ef8425afb82a8ec8dfc6c094c5263a85ea0e8b018bab71057dbd74a",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "6ace23af08357dcfc61efa942caac17a2e845233b416623a0f9c294e35d12025",
+      "report_sha256": "1b20f76990b4957b42082d1b36cc8a99ca57303bf0f581dee07390d34decadae"
+    },
+    {
+      "name": "daily-oil",
+      "rows": 484,
+      "decisions": 484,
+      "calendar_start": "2000-01-01",
+      "calculation": {
+        "daily_lag_policy": "valid_observations",
+        "daily_lag_policy_version": 1,
+        "code_sha256": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d"
+      },
+      "source_database_sha256": "9c3f1463ced361d0420102f05ae755af588ebccc0495e86e021c64d31e971fbb",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "1b15f4704490e85803720934169fffe7e902cb458877ab740b2d7498d5f04d27",
+      "report_sha256": "991c8c493ddedfaf07fba1ec1383832903e78df4dd740b15fed79de3634a7d59"
+    },
+    {
+      "name": "gscpi",
+      "rows": 968,
+      "decisions": 484,
+      "source_sha256": "723e8dc81728176dea10e7d685478bfe888516ec68d1d2cc1b77d6fea8177c55",
+      "source_edition_sha256": "b04181c350e1fc62604062cf0da5b11c37ade55d2cccdba86874165676d59439",
+      "retrieved_at_utc": "2026-09-27T21:15:34.806643+00:00",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "22c2f3590993b7afe8fdf0b39aed864d53a2728315c4fe44b8c45dde36cfa625",
+      "report_sha256": "8986c6ed1b34bbbd02d6f96544f3815aee6eb95d1eac1bf15d9fe5abb965fdc1"
+    },
+    {
+      "name": "releases",
+      "rows": 2904,
+      "decisions": 484,
+      "source_manifest_sha256": "eea138fb48d71f3aebcfb3871b27ca23f3752ed92ce29ea23a4d9908d5a0ecb0",
+      "catalog_sha256": "c1faacd23d93d12af654cc2292aac32e49cbda49d33224afb1811a6b525778a4",
+      "sha256": "b08632a431ae54a07179f5468daeda7476c4328944e301f39cf8b272409f306b",
+      "report_sha256": "b43c5d6bca1e75fa0a38382a54ca2e10a68fb72fae0e13dd2895757695488e04"
+    }
+  ],
+  "independent_verification": {
+    "observed_at_utc": "2026-10-06T20:14:07.369555+00:00",
+    "duckdb": "1.5.5",
+    "composition_difference_rows": 0,
+    "compared_columns": 9,
+    "rows": 67760,
+    "sessions": 484,
+    "indicators": 140,
+    "sql_complete_sessions": 387,
+    "first_complete": "2022-06-02T07:05:00+00:00",
+    "last_complete": "2023-12-29T07:05:00+00:00",
+    "ping_an_candidate_dates": 169,
+    "ping_an_candidates_with_complete_macro": 169,
+    "copper_available_at_on_20220602": "2021-12-08T07:05:00+00:00",
+    "macro_sha256": "aa3e57c841862b04a3353959b93995c9839574bfa16120df353dd7bd89398645",
+    "admission_sha256": "7f5600f465a9f46a45d531899911d003541adb62755bbef3b2c244fb01922f39",
+    "script_sha256": "e61c25cccd3a4260644ecc1db906de1f57e28c1bb3a973ccca2049cf97f413bb",
+    "elapsed_seconds": 0.5003098209854215,
+    "limits": [
+      "El contraste SQL reconstruye la composición desde sus componentes, no recalcula sus fórmulas.",
+      "Las fechas potenciales no acreditan todavía muestras codificadas ni etiquetas residuales.",
+      "No se han abierto pesos, predicciones ni el test final."
+    ]
+  },
+  "measurements": {
+    "components": {
+      "wall_seconds": 39.5,
+      "max_rss_kib": 1102728,
+      "exit": 0
+    },
+    "composition": {
+      "wall_seconds": 1.09,
+      "max_rss_kib": 181672,
+      "exit": 0
+    },
+    "verification": {
+      "wall_seconds": 0.71,
+      "max_rss_kib": 272548,
+      "exit": 0
+    }
+  },
+  "limits": [
+    "La admisión corresponde al contexto macro. Todavía no acredita muestras multimodales codificadas ni etiquetas residuales.",
+    "Las 169 fechas potenciales de Ping An conservan macro completo. Faltan representación CNY, factor de mercado, codificación y supervisión.",
+    "La política aplica el siguiente cierre estricto del calendario de destino después del límite de fecha de la fuente.",
+    "Las fórmulas y la selección de versiones siguen las reglas existentes. No se inventan observaciones ausentes."
+  ],
+  "source_code_sha256": {
+    "macro.py": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d",
+    "macro_recalculation.py": "0fa923173e3cf6d4ba169fff9c1586e62633e3d7c48a3ebcb24295709b91c7c6",
+    "macro_gscpi.py": "05ad93997bb24d0d6f637f56adaa9f32a6bf1f6dad61a90d4d6079b5bf7728c0"
+  },
+  "network_used": false,
+  "active_campaign_modified": false,
+  "final_test_opened": false,
+  "training_ready": false,
+  "initial_calendar_diagnostic": {
+    "changed_availability_rows": 1097,
+    "indicators": 85,
+    "changed_non_age_rows": 0
+  }
+}

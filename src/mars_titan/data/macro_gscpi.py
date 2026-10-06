@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pyarrow as pa
 
+from .cohort_files import read_manifest, safe_destination
 from .macro import calculate_macro
 from .macro_coverage import _publish_directory
 from .macro_model_vintages import MONTH_ABBREVIATIONS, model_vintage_contract
@@ -165,7 +166,43 @@ def _download():
         return destination.read_bytes()
 
 
-def prepare_gscpi(output: Path, catalog_path: Path, *, market: str, start: str, end: str) -> dict:
+def _source_from_edition(directory):
+    safe_destination(directory)
+    report, signature = read_manifest(directory / "report.json", maximum=2 * 1024**2)
+    if (
+        not isinstance(report, dict)
+        or type(report.get("schema_version")) is not int
+        or report.get("schema_version") != 1
+        or report.get("source_url") != SOURCE_URL
+    ):
+        raise ValueError("El recibo no identifica una edición GSCPI admitida")
+    retrieved_at = report.get("retrieved_at_utc")
+    if not isinstance(retrieved_at, str):
+        raise ValueError("Falta la fecha de adquisición de la fuente guardada")
+    stamp = datetime.fromisoformat(retrieved_at)
+    if stamp.utcoffset() != timedelta(0) or retrieved_at.endswith("-00:00"):
+        raise ValueError("La adquisición guardada necesita una fecha UTC explícita")
+    source = directory / "source.csv"
+    if source.is_symlink() or not source.is_file():
+        raise ValueError("El CSV guardado no es un archivo regular")
+    with source.open("rb") as stream:
+        content = stream.read(2 * 1024**2 + 1)
+    if len(content) > 2 * 1024**2 or hashlib.sha256(content).hexdigest() != report.get(
+        "source_sha256"
+    ):
+        raise ValueError("La fuente guardada excede el presupuesto o no coincide con su huella")
+    return content, retrieved_at, signature
+
+
+def prepare_gscpi(
+    output: Path,
+    catalog_path: Path,
+    *,
+    market: str,
+    start: str,
+    end: str,
+    source_edition: Path | None = None,
+) -> dict:
     """Guardar fuente, política temporal y panel sin sustituir una edición existente."""
     began = time.perf_counter()
     output, catalog_path = Path(output), Path(catalog_path).resolve(strict=True)
@@ -200,8 +237,15 @@ def prepare_gscpi(output: Path, catalog_path: Path, *, market: str, start: str, 
     clock = MarketClock(market, start, end)
     if not clock.decisions:
         raise ValueError("El periodo GSCPI no contiene sesiones de mercado")
-    content = _download()
-    retrieved_at = datetime.now(UTC).isoformat()
+    source_signature = None
+    if source_edition is None:
+        content = _download()
+        retrieved_at = datetime.now(UTC).isoformat()
+    else:
+        source_edition = Path(source_edition)
+        outside_source(source_edition, output)
+        outside_source(output, source_edition)
+        content, retrieved_at, source_signature = _source_from_edition(source_edition)
     # Una versión de este mes no se admite dentro del mismo mes, ni siquiera en su último cierre.
     last_month = last.replace(day=1) - timedelta(days=1)
     vintage_end = f"{last_month.year:04d}-{last_month.month:02d}"
@@ -231,6 +275,8 @@ def prepare_gscpi(output: Path, catalog_path: Path, *, market: str, start: str, 
         source_precision="as_published_in_monthly_csv",
         peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
     )
+    if source_signature is not None:
+        report["source_edition_sha256"] = source_signature
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
         stage = Path(temporary) / "edition"
@@ -244,6 +290,10 @@ def prepare_gscpi(output: Path, catalog_path: Path, *, market: str, start: str, 
             sha256=sha256(stage / "macro.parquet"), elapsed_seconds=time.perf_counter() - began
         )
         atomic_json(stage / "report.json", report)
+        if source_edition is not None:
+            current_content, _, current_signature = _source_from_edition(source_edition)
+            if current_content != content or current_signature != source_signature:
+                raise ValueError("La edición de origen cambió antes de publicar")
         _publish_directory(stage, output)
         directory = os.open(output.parent, os.O_RDONLY | os.O_DIRECTORY)
         try:
@@ -260,9 +310,19 @@ def main(argv=None):
     parser.add_argument("--market", choices=("US", "CN"), required=True)
     parser.add_argument("--start", required=True)
     parser.add_argument("--end", required=True)
+    parser.add_argument(
+        "--source-edition",
+        type=Path,
+        help="Reutilizar source.csv y su recibo de una edición anterior, sin descargar",
+    )
     args = parser.parse_args(argv)
     result = prepare_gscpi(
-        args.output, args.catalog, market=args.market, start=args.start, end=args.end
+        args.output,
+        args.catalog,
+        market=args.market,
+        start=args.start,
+        end=args.end,
+        source_edition=args.source_edition,
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0
