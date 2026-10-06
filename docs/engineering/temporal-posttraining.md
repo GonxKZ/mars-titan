@@ -12,7 +12,7 @@ La serie histórica y las ventanas con 140 indicadores son ediciones distintas. 
 
 ## Ejecución y recuperación
 
-`mars_titan.posttraining.completion` verifica las cuatro ventanas neuronales, la admisión de 140 indicadores y el contrato de codificadores. Con las configuraciones actuales programa 68 referencias tabulares y 528 ajustes reales. Cada ventana tiene 17 referencias tabulares y 132 ajustes. Los seis padres comparten los seis objetivos residuales y tres semillas. Las cuatro familias neuronales añaden los controles de continuación MAE y MSE.
+`mars_titan.posttraining.completion` verifica todas las ventanas neuronales declaradas, la admisión de 140 indicadores y el contrato de codificadores. La edición de cuatro ventanas programa 68 referencias tabulares y 528 ajustes reales. Cada ventana tiene 17 referencias tabulares y 132 ajustes. Los seis padres comparten los seis objetivos residuales y tres semillas. Las cuatro familias neuronales añaden los controles de continuación MAE y MSE. La [edición real ampliada](real-expanded-comparison.md) define diez ventanas y exige padres emparejados por semilla.
 
 La cola usa procesos separados para liberar los recursos de cada etapa. Cada proceso científico necesita una concesión CUDA exclusiva. La opción `--after` espera un recibo completo de la campaña anterior. Una campaña pausada o fallida requiere revisión y no se interpreta como terminada.
 
@@ -32,13 +32,13 @@ La parada envía SIGTERM al hijo propio y concede hasta 620 segundos para guarda
 
 ## Evaluación y análisis
 
-La evaluación comienza después de terminar todas las etapas de ajuste de las cuatro ventanas. Congela los recibos de los 756 modelos resultantes, incluidos los 160 ya entrenados, y evalúa cada uno sobre calibración y evaluación. Esas métricas no cambian la selección de modelos, la rejilla ni la normalización. Las ejecuciones de evaluación se cuentan por separado de los entrenamientos.
+La evaluación comienza después de terminar todas las etapas de ajuste de las ventanas declaradas. En la edición de cuatro ventanas congela los recibos de los 756 modelos resultantes, incluidos los 160 neuronales, y evalúa cada uno sobre calibración y evaluación. Esas métricas no cambian la selección de modelos, la rejilla ni la normalización. Las ejecuciones de evaluación se cuentan por separado de los entrenamientos.
 
 Las continuaciones recuperan el mejor estado declarado. Los adaptadores conservan el orden de características y la escala de la rejilla original. Las referencias publican predicciones continuas. Los ajustes mantienen como salida principal la mediana de la política discreta, con centro continuo y padre en columnas separadas. Las continuaciones neuronales originales se comparan con el checkpoint del que proceden.
 
 Cada evaluación escribe Parquet y un recibo independiente con sus huellas. Una interrupción no confirma métricas parciales. Repetir una evaluación terminada verifica sus artefactos sin reservar GPU ni reescribirla. Al terminar, `analysis.json` y `analysis.md` conservan resultados por caso, ventana, semilla y método. Las medias por ventana son descriptivas, sin intervalos de confianza ni supuestos de independencia entre periodos compartidos.
 
-Las pruebas locales comprueban paridad con la fórmula de validación, reconstrucción del estado seleccionado, pausa y recuperación, corrupción de predicciones, conservación de semillas y detención de un hijo que ignora SIGTERM. La admisión de las cuatro ventanas reales se ha comprobado sin cargar pesos ni iniciar otra carga CUDA. La ejecución científica de esta nueva cola sigue pendiente de que termine la serie histórica.
+Las pruebas locales comprueban paridad con la fórmula de validación, reconstrucción del estado seleccionado, pausa y recuperación, corrupción de predicciones, conservación de semillas y detención de un hijo que ignora SIGTERM. La edición de convergencia de cuatro ventanas terminó y sus resultados constan en la [comparación del 5 de octubre](../../reports/baselines/campaign-comparison-20261005.md). La nueva edición mantiene configuraciones y salidas independientes.
 
 La comprobación del 30 de septiembre terminó con 163 pruebas correctas. Se omitió la prueba de paridad CUDA, que requiere activación y GPU exclusiva, y se excluyó una integración CUDA de la cola histórica. Esa integración había pasado antes de reanudar la carga científica. La nueva prueba CUDA queda como comprobación previa al lanzamiento de las ventanas pendientes.
 

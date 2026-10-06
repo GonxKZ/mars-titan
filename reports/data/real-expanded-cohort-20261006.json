@@ -1,0 +1,498 @@
+{
+  "grain": [
+    "market",
+    "symbol",
+    "sample_row"
+  ],
+  "parent_sha256": "22b6b8f282f381e36b17857f1f4dfbb14fabe975d8d922d80e505ae89160dcf1",
+  "protocol_sha256": "5c4c2706336e1c873e8460a1fa74a8de8a8abf5b48ac9239f217b6de92ed3a73",
+  "counts": {
+    "base_samples": 402826,
+    "eligible_samples": 402623,
+    "annual_candidates": 813,
+    "unique_any": 400367,
+    "unique_train": 317426,
+    "unique_evaluation": 212337,
+    "annual_recovered_unique": 813,
+    "eligible_unused_unique": 2256
+  },
+  "unique_asset_counts": {
+    "any": 2197,
+    "train": 2041,
+    "evaluation": 2149
+  },
+  "base_reason_counts": {
+    "accepted": 401810,
+    "target_crosses_partition_boundary": 813,
+    "missing_next_session": 21,
+    "insufficient_history": 182
+  },
+  "union_dates": {
+    "any": {
+      "first": "2022-06-01",
+      "last": "2023-12-22",
+      "sessions": 392
+    },
+    "train": {
+      "first": "2022-06-01",
+      "last": "2023-08-30",
+      "sessions": 314
+    },
+    "evaluation": {
+      "first": "2023-03-01",
+      "last": "2023-12-22",
+      "sessions": 198
+    }
+  },
+  "eligible_unused_by_date": {
+    "2023-10-31": 1210,
+    "2023-11-30": 1046
+  },
+  "eligible_unused_latest_fold_reasons": {
+    "session_gap": 2256
+  },
+  "folds": [
+    {
+      "id": "fold-000",
+      "counts": {
+        "train": 123072,
+        "validation": 33886,
+        "calibration": 20886,
+        "evaluation": 22236
+      },
+      "assets": {
+        "train": 1911,
+        "validation": 1608,
+        "calibration": 1676,
+        "evaluation": 1609
+      },
+      "eligible_exclusions": {
+        "session_gap": 2820,
+        "label_crosses_boundary": 919,
+        "outside_window": 198804
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2022-11-29",
+          "sessions": 126
+        },
+        "validation": {
+          "first": "2022-12-01",
+          "last": "2023-01-30",
+          "sessions": 40
+        },
+        "calibration": {
+          "first": "2023-02-01",
+          "last": "2023-02-27",
+          "sessions": 18
+        },
+        "evaluation": {
+          "first": "2023-03-01",
+          "last": "2023-03-30",
+          "sessions": 22
+        }
+      }
+    },
+    {
+      "id": "fold-001",
+      "counts": {
+        "train": 140294,
+        "validation": 38534,
+        "calibration": 22236,
+        "evaluation": 18276
+      },
+      "assets": {
+        "train": 1924,
+        "validation": 1758,
+        "calibration": 1609,
+        "evaluation": 1582
+      },
+      "eligible_exclusions": {
+        "session_gap": 2755,
+        "label_crosses_boundary": 1248,
+        "outside_window": 179280
+      },
+      "recovered_annual": 0,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2022-12-29",
+          "sessions": 147
+        },
+        "validation": {
+          "first": "2023-01-03",
+          "last": "2023-02-27",
+          "sessions": 38
+        },
+        "calibration": {
+          "first": "2023-03-01",
+          "last": "2023-03-30",
+          "sessions": 22
+        },
+        "evaluation": {
+          "first": "2023-04-03",
+          "last": "2023-04-27",
+          "sessions": 18
+        }
+      }
+    },
+    {
+      "id": "fold-002",
+      "counts": {
+        "train": 157762,
+        "validation": 44145,
+        "calibration": 18276,
+        "evaluation": 24509
+      },
+      "assets": {
+        "train": 1938,
+        "validation": 1813,
+        "calibration": 1582,
+        "evaluation": 1741
+      },
+      "eligible_exclusions": {
+        "session_gap": 3160,
+        "label_crosses_boundary": 1023,
+        "outside_window": 153748
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-01-30",
+          "sessions": 167
+        },
+        "validation": {
+          "first": "2023-02-01",
+          "last": "2023-03-30",
+          "sessions": 41
+        },
+        "calibration": {
+          "first": "2023-04-03",
+          "last": "2023-04-27",
+          "sessions": 18
+        },
+        "evaluation": {
+          "first": "2023-05-01",
+          "last": "2023-05-30",
+          "sessions": 21
+        }
+      }
+    },
+    {
+      "id": "fold-003",
+      "counts": {
+        "train": 179641,
+        "validation": 41431,
+        "calibration": 24509,
+        "evaluation": 20106
+      },
+      "assets": {
+        "train": 1955,
+        "validation": 1765,
+        "calibration": 1741,
+        "evaluation": 1544
+      },
+      "eligible_exclusions": {
+        "session_gap": 3294,
+        "label_crosses_boundary": 1017,
+        "outside_window": 132625
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-02-27",
+          "sessions": 186
+        },
+        "validation": {
+          "first": "2023-03-01",
+          "last": "2023-04-27",
+          "sessions": 41
+        },
+        "calibration": {
+          "first": "2023-05-01",
+          "last": "2023-05-30",
+          "sessions": 21
+        },
+        "evaluation": {
+          "first": "2023-06-01",
+          "last": "2023-06-29",
+          "sessions": 20
+        }
+      }
+    },
+    {
+      "id": "fold-004",
+      "counts": {
+        "train": 202900,
+        "validation": 44033,
+        "calibration": 20106,
+        "evaluation": 20472
+      },
+      "assets": {
+        "train": 1977,
+        "validation": 1818,
+        "calibration": 1544,
+        "evaluation": 1609
+      },
+      "eligible_exclusions": {
+        "session_gap": 2959,
+        "label_crosses_boundary": 1184,
+        "outside_window": 110969
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-03-30",
+          "sessions": 209
+        },
+        "validation": {
+          "first": "2023-04-03",
+          "last": "2023-05-30",
+          "sessions": 40
+        },
+        "calibration": {
+          "first": "2023-06-01",
+          "last": "2023-06-29",
+          "sessions": 20
+        },
+        "evaluation": {
+          "first": "2023-07-03",
+          "last": "2023-07-28",
+          "sessions": 19
+        }
+      }
+    },
+    {
+      "id": "fold-005",
+      "counts": {
+        "train": 222095,
+        "validation": 45638,
+        "calibration": 20472,
+        "evaluation": 25772
+      },
+      "assets": {
+        "train": 1986,
+        "validation": 1812,
+        "calibration": 1609,
+        "evaluation": 1758
+      },
+      "eligible_exclusions": {
+        "session_gap": 3449,
+        "label_crosses_boundary": 984,
+        "outside_window": 84213
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-04-27",
+          "sessions": 228
+        },
+        "validation": {
+          "first": "2023-05-01",
+          "last": "2023-06-29",
+          "sessions": 42
+        },
+        "calibration": {
+          "first": "2023-07-03",
+          "last": "2023-07-28",
+          "sessions": 19
+        },
+        "evaluation": {
+          "first": "2023-08-01",
+          "last": "2023-08-30",
+          "sessions": 22
+        }
+      }
+    },
+    {
+      "id": "fold-006",
+      "counts": {
+        "train": 247852,
+        "validation": 41595,
+        "calibration": 25772,
+        "evaluation": 19751
+      },
+      "assets": {
+        "train": 2005,
+        "validation": 1744,
+        "calibration": 1758,
+        "evaluation": 1574
+      },
+      "eligible_exclusions": {
+        "session_gap": 3191,
+        "label_crosses_boundary": 991,
+        "outside_window": 63471
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-05-30",
+          "sessions": 250
+        },
+        "validation": {
+          "first": "2023-06-01",
+          "last": "2023-07-28",
+          "sessions": 40
+        },
+        "calibration": {
+          "first": "2023-08-01",
+          "last": "2023-08-30",
+          "sessions": 22
+        },
+        "evaluation": {
+          "first": "2023-09-01",
+          "last": "2023-09-28",
+          "sessions": 19
+        }
+      }
+    },
+    {
+      "id": "fold-007",
+      "counts": {
+        "train": 268981,
+        "validation": 47428,
+        "calibration": 19751,
+        "evaluation": 21882
+      },
+      "assets": {
+        "train": 2011,
+        "validation": 1819,
+        "calibration": 1574,
+        "evaluation": 1648
+      },
+      "eligible_exclusions": {
+        "session_gap": 2992,
+        "label_crosses_boundary": 1210,
+        "outside_window": 40379
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-06-29",
+          "sessions": 271
+        },
+        "validation": {
+          "first": "2023-07-03",
+          "last": "2023-08-30",
+          "sessions": 42
+        },
+        "calibration": {
+          "first": "2023-09-01",
+          "last": "2023-09-28",
+          "sessions": 19
+        },
+        "evaluation": {
+          "first": "2023-10-02",
+          "last": "2023-10-30",
+          "sessions": 21
+        }
+      }
+    },
+    {
+      "id": "fold-008",
+      "counts": {
+        "train": 290470,
+        "validation": 46507,
+        "calibration": 21882,
+        "evaluation": 21600
+      },
+      "assets": {
+        "train": 2018,
+        "validation": 1842,
+        "calibration": 1648,
+        "evaluation": 1703
+      },
+      "eligible_exclusions": {
+        "session_gap": 3385,
+        "label_crosses_boundary": 1046,
+        "outside_window": 17733
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-07-28",
+          "sessions": 291
+        },
+        "validation": {
+          "first": "2023-08-01",
+          "last": "2023-09-28",
+          "sessions": 42
+        },
+        "calibration": {
+          "first": "2023-10-02",
+          "last": "2023-10-30",
+          "sessions": 21
+        },
+        "evaluation": {
+          "first": "2023-11-01",
+          "last": "2023-11-29",
+          "sessions": 20
+        }
+      }
+    },
+    {
+      "id": "fold-009",
+      "counts": {
+        "train": 317426,
+        "validation": 42624,
+        "calibration": 21600,
+        "evaluation": 17733
+      },
+      "assets": {
+        "train": 2041,
+        "validation": 1791,
+        "calibration": 1703,
+        "evaluation": 1646
+      },
+      "eligible_exclusions": {
+        "session_gap": 3240
+      },
+      "recovered_annual": 813,
+      "dates": {
+        "train": {
+          "first": "2022-06-01",
+          "last": "2023-08-30",
+          "sessions": 314
+        },
+        "validation": {
+          "first": "2023-09-01",
+          "last": "2023-10-30",
+          "sessions": 41
+        },
+        "calibration": {
+          "first": "2023-11-01",
+          "last": "2023-11-29",
+          "sessions": 20
+        },
+        "evaluation": {
+          "first": "2023-12-01",
+          "last": "2023-12-22",
+          "sessions": 16
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "domain": "real",
+  "cohort_id": "original_audited",
+  "final_test_opened": false,
+  "encoded_manifest_sha256": "ae27a0e9b1a99ae082049a673aee18bd9b5aad45b141ec41827973e551cecfe9",
+  "macro_sha256": "37c85410f02081c70079e6c7b654949512fd7563375d7669b74c9ef7d5abd14f",
+  "admission_sha256": "e3b9bfabf3175a3ec978240bfd54630de9dffc6801983c05fac31271f247a6d3",
+  "cad_samples": {
+    "CP": 319,
+    "ENB": 394,
+    "CGC": 0
+  },
+  "comparison_training_completed": false
+}

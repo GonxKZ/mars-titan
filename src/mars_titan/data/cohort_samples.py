@@ -178,6 +178,7 @@ def _rows(
     excluded,
     hits,
     misses,
+    admitted_decisions=None,
 ):
     positions = {day.isoformat(): i for i, day in enumerate(clock.days)}
     sessions = prices["session"].tolist()
@@ -194,10 +195,13 @@ def _rows(
     ohlc = prices[["open", "high", "low", "close"]].to_numpy()
     cursor = FactCursor(facts)
     for index, position in enumerate(indices):
+        cutoff = clock.decisions[position]
+        if admitted_decisions is not None and cutoff not in admitted_decisions:
+            excluded["outside_macro_admission"] += 1
+            continue
         if index < context - 1 or position - indices[index - context + 1] != context - 1:
             excluded["incomplete_price_window"] += 1
             continue
-        cutoff = clock.decisions[position]
         known = cursor.at(cutoff)
         selected = [known.get(concept) for concept in concepts]
         if not any(r is not None and r["value"] is not None for r in selected):
@@ -276,6 +280,8 @@ def materialize_cohort_asset(
     max_partition_rows=200_000,
     max_news_group_bytes=16 * 1024**2,
     fundamental_concepts=FUNDAMENTAL_CONCEPTS,
+    source_unit="USD",
+    admitted_decisions=None,
 ):
     """Confirmar un activo completo. La caché persiste aunque se interrumpa su escritura."""
     for value, low, high in (
@@ -287,6 +293,12 @@ def materialize_cohort_asset(
             raise ValueError("El tamaño de contexto, ventana o lote no es válido")
     if type(company_factors) is not bool:
         raise ValueError("La selección de factores debe ser booleana")
+    if not isinstance(source_unit, str) or source_unit not in {"USD", "CAD"}:
+        raise ValueError("La unidad contable debe ser USD o CAD")
+    if admitted_decisions is not None:
+        admitted_decisions = frozenset(aware(value) for value in admitted_decisions)
+        if any(value.year >= 2024 or value not in clock.decisions for value in admitted_decisions):
+            raise ValueError("La admisión debe pertenecer al calendario anterior a 2024")
     source, destination = Path(source), Path(destination)
     for root in (source, Path("dataset")):
         outside_source(root, destination)
@@ -294,7 +306,9 @@ def materialize_cohort_asset(
     safe_destination(destination)
     macros.verify()
     origin, calendar, origin_hash = _prepared(source, clock, cohort)
-    concepts = tuple(fundamental_concepts) + (FACTOR_CONCEPTS if company_factors else ())
+    concepts = tuple(fundamental_concepts)
+    if company_factors:
+        concepts += tuple(name for name in FACTOR_CONCEPTS if name not in concepts)
     if not concepts or len(set(concepts)) != len(concepts):
         raise ValueError("El catálogo contable está vacío o duplicado")
     encoder_hash = _digest(encoders.spec)
@@ -315,6 +329,10 @@ def materialize_cohort_asset(
         context_sessions=context,
         news_lookback_sessions=news_lookback_sessions,
         fundamental_concepts=list(concepts),
+        source_unit=source_unit,
+        admitted_decisions_sha256=_digest(sorted(value.isoformat() for value in admitted_decisions))
+        if admitted_decisions is not None
+        else None,
         limits=limits,
         code={
             name: sha256(Path(__file__).with_name(name))
@@ -370,6 +388,8 @@ def materialize_cohort_asset(
             encoders=encoders.spec,
             news_lookback_sessions=news_lookback_sessions,
             text_aggregation="float64_sum_float32_mean_all_admitted_events",
+            source_unit=source_unit,
+            admitted_decisions_sha256=identity["admitted_decisions_sha256"],
         )
         if receipt.exists():
             old = json.loads(receipt.read_text())
@@ -403,6 +423,7 @@ def materialize_cohort_asset(
                 facts,
                 batch_rows=batch_rows,
                 max_facts=max_partition_rows,
+                source_unit=source_unit,
             )
             facts.extend(derived)
         excluded, hits, misses = Counter(), Counter(), Counter()
@@ -426,6 +447,7 @@ def materialize_cohort_asset(
                 excluded=excluded,
                 hits=hits,
                 misses=misses,
+                admitted_decisions=admitted_decisions,
             )
 
             def batches():

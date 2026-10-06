@@ -196,6 +196,76 @@ def test_resume_rejects_changed_corpus_and_loss(tmp_path):
         module().run_reference_case(manifest, output, case(), batch_size=5, resume=True)
 
 
+def test_explicit_sample_cache_records_resources_and_preserves_cuda_recovery(tmp_path, monkeypatch):
+    manifest = training_corpus(tmp_path / "data")
+    engine = module()
+    configuration = {**case("rnn"), "architecture": dict(hidden_size=32, layers=1, dropout=0.0)}
+    monkeypatch.delenv("MARS_TITAN_INPUT_CACHE_MIB", raising=False)
+    reference = engine.run_reference_case(
+        manifest, tmp_path / "reference", configuration, batch_size=5
+    )
+    assert reference["identity"]["input_cache"] == dict(
+        budget_bytes=1024**3, sample_tables=False, entry_limit=8192
+    )
+    monkeypatch.setenv("MARS_TITAN_INPUT_CACHE_MIB", "1")
+    stop = StopRequest()
+    real_save = engine.save_training_state
+
+    def pause(directory, state, **kwargs):
+        saved = real_save(directory, state, **kwargs)
+        if state["global_step"] == 2:
+            stop.request_stop()
+        return saved
+
+    monkeypatch.setattr(engine, "save_training_state", pause)
+    paused = engine.run_reference_case(
+        manifest,
+        tmp_path / "cached",
+        configuration,
+        batch_size=5,
+        checkpoint_steps=1,
+        stop=stop,
+    )
+    assert paused["status"] == "paused"
+    assert paused["identity"]["input_cache"] == dict(
+        budget_bytes=1024**2, sample_tables=True, entry_limit=16384
+    )
+    assert 0 < paused["attempts"][-1]["input_cache_bytes"] <= 1024**2
+    monkeypatch.setenv("MARS_TITAN_INPUT_CACHE_MIB", "2")
+    with pytest.raises(ValueError, match="identidad|configuración"):
+        engine.run_reference_case(
+            manifest, tmp_path / "cached", configuration, batch_size=5, resume=True
+        )
+    monkeypatch.setenv("MARS_TITAN_INPUT_CACHE_MIB", "1")
+    monkeypatch.setattr(engine, "save_training_state", real_save)
+    completed = engine.run_reference_case(
+        manifest, tmp_path / "cached", configuration, batch_size=5, resume=True
+    )
+    first = load_training_state(
+        tmp_path / "reference/checkpoints", expected_identity=reference["identity"]
+    )
+    second = load_training_state(
+        tmp_path / "cached/checkpoints", expected_identity=completed["identity"]
+    )
+    assert first["global_step"] == second["global_step"] == 6
+    assert first["confirmed_cursor"] == second["confirmed_cursor"] is None
+    assert all(torch.equal(value, second["model"][key]) for key, value in first["model"].items())
+    assert first["optimizer"]["param_groups"] == second["optimizer"]["param_groups"]
+    for key, values in first["optimizer"]["state"].items():
+        for name, value in values.items():
+            assert torch.equal(value, second["optimizer"]["state"][key][name])
+    for name in ("torch", "cuda"):
+        assert torch.equal(first["rng"][name], second["rng"][name])
+    assert first["rng"]["python"] == second["rng"]["python"]
+    assert torch.equal(first["rng"]["numpy"][1], second["rng"]["numpy"][1])
+    assert first["rng"]["numpy"][0] == second["rng"]["numpy"][0]
+    assert first["rng"]["numpy"][2:] == second["rng"]["numpy"][2:]
+    for partition in ("train", "validation"):
+        assert pq.read_table(tmp_path / f"reference/{partition}-predictions.parquet").equals(
+            pq.read_table(tmp_path / f"cached/{partition}-predictions.parquet")
+        )
+
+
 def test_posttraining_requires_same_parent_population_and_architecture(tmp_path):
     manifest = training_corpus(tmp_path / "data")
     parent = tmp_path / "parent"

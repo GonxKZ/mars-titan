@@ -14,9 +14,11 @@ HASH_A = "a" * 64
 HASH_B = "b" * 64
 
 
-def calculate(rows, catalog, clock):
+def calculate(rows, catalog, clock, **options):
     assert importlib.util.find_spec("mars_titan.data.macro"), "Falta el motor macro"
-    return importlib.import_module("mars_titan.data.macro").calculate_macro(rows, catalog, clock)
+    return importlib.import_module("mars_titan.data.macro").calculate_macro(
+        rows, catalog, clock, **options
+    )
 
 
 def catalog_for(*ids):
@@ -48,9 +50,9 @@ def row(indicator, period, value, vintage="2024-01-05", **kwargs):
     }
 
 
-def latest(rows, indicator, catalog=None):
+def latest(rows, indicator, catalog=None, **options):
     clock = MarketClock("US", "2024-01-02", "2024-01-12")
-    output = calculate(rows, catalog or catalog_for(indicator), clock)
+    output = calculate(rows, catalog or catalog_for(indicator), clock, **options)
     return next(item for item in reversed(output) if item["indicator_id"] == indicator)
 
 
@@ -242,8 +244,15 @@ def test_latest_common_period_is_used_through_derived_dependencies():
         ),
     ],
 )
-def test_calendar_lags_and_numeric_contract(indicator, source, periods, values, expected):
-    result = latest([row(source, p, v) for p, v in zip(periods, values, strict=True)], indicator)
+@pytest.mark.parametrize("daily_lag_policy", ["source_records", "valid_observations"])
+def test_calendar_lags_and_numeric_contract(
+    indicator, source, periods, values, expected, daily_lag_policy
+):
+    result = latest(
+        [row(source, p, v) for p, v in zip(periods, values, strict=True)],
+        indicator,
+        daily_lag_policy=daily_lag_policy,
+    )
     if expected is None:
         assert result["value"] is None
         assert result["missing_reason"]
@@ -261,6 +270,148 @@ def test_daily_observation_lag_does_not_compress_explicit_missing_values():
     result = latest(rows, "us_treasury_10y_change_21obs")
     assert result["value"] is None
     assert result["missing_reason"] == "missing_source_value"
+
+
+def daily_rows(count=25):
+    return [
+        row("us_treasury_10y", (date(2023, 12, 1) + timedelta(days=i)).isoformat(), i)
+        for i in range(count)
+    ]
+
+
+def test_valid_observations_skip_absent_days_and_count_observed_zero():
+    rows = daily_rows(23)
+    rows[1].update(value=None, source_hash=HASH_B)
+    selected = latest(rows, "us_treasury_10y_change_21obs", daily_lag_policy="valid_observations")
+    assert selected["value"] == 22
+    assert selected["period_start"] == "2023-12-23"
+    assert selected["missing_reason"] is None
+    assert selected["source_hashes"] == [HASH_A, HASH_B]
+    assert latest(rows, "us_treasury_10y_change_21obs")["value"] is None
+
+
+def test_daily_policy_default_and_explicit_legacy_have_identical_rows():
+    rows = daily_rows()
+    rows[3]["value"] = None
+    clock = MarketClock("US", "2024-01-02", "2024-01-12")
+    catalog = catalog_for("us_treasury_10y_change_21obs")
+    assert calculate(rows, catalog, clock) == calculate(
+        rows, catalog, clock, daily_lag_policy="source_records"
+    )
+
+
+def test_valid_observations_require_enough_observed_history():
+    rows = daily_rows(22)
+    rows[1].update(value=None, source_hash=HASH_B)
+    selected = latest(rows, "us_treasury_10y_change_21obs", daily_lag_policy="valid_observations")
+    assert selected["value"] is None
+    assert selected["missing_reason"] == "insufficient_valid_observations"
+    assert selected["source_hashes"] == [HASH_A, HASH_B]
+
+
+@pytest.mark.parametrize("change", ["withdrawal", "expiration", "new_absence", "revision"])
+def test_daily_range_selection_inherits_late_evidence_without_looking_ahead(change):
+    rows = daily_rows()
+    if change in {"withdrawal", "expiration"}:
+        rows[10].update(realtime_end="2024-01-09", source_hash=HASH_B)
+    if change == "new_absence":
+        rows.pop(10)
+    if change == "revision":
+        rows[10]["value"] = None
+    if change != "expiration":
+        rows.append(
+            row(
+                "us_treasury_10y",
+                "2023-12-11",
+                10 if change == "revision" else None,
+                "2024-01-10",
+                source_hash=HASH_B,
+            )
+        )
+    clock = MarketClock("US", "2024-01-02", "2024-01-12")
+    catalog = catalog_for("us_treasury_10y_change_21obs")
+    output = calculate(rows, catalog, clock, daily_lag_policy="valid_observations")
+    selected = {
+        item["prediction_at"]: item
+        for item in output
+        if item["indicator_id"] == "us_treasury_10y_change_21obs"
+    }
+    before = selected[clock.decision("2024-01-10")]
+    after = selected[clock.decision("2024-01-11")]
+    assert before["value"] == (22 if change in {"revision", "new_absence"} else 21)
+    assert after["value"] == (21 if change == "revision" else 22)
+    assert before["available_at"] == clock.decision("2024-01-08")
+    assert after["available_at"] == clock.decision("2024-01-11")
+    assert after["source_hashes"] == [HASH_A, HASH_B]
+    assert output == calculate(
+        reversed(rows), catalog, clock, daily_lag_policy="valid_observations"
+    )
+
+
+def test_daily_range_does_not_inherit_evidence_older_than_selected_lag():
+    rows = daily_rows()
+    rows.append(row("us_treasury_10y", "2023-12-01", None, "2024-01-10", source_hash=HASH_B))
+    selected = latest(rows, "us_treasury_10y_change_21obs", daily_lag_policy="valid_observations")
+    assert selected["value"] == 21
+    assert selected["available_at"].date() == date(2024, 1, 8)
+    assert selected["source_hashes"] == [HASH_A]
+
+
+@pytest.mark.parametrize("change", ["absence", "withdrawal", "expiration"])
+def test_valid_observations_never_revive_latest_daily_period(change):
+    rows = daily_rows()
+    if change == "absence":
+        rows[-1]["value"] = None
+    else:
+        rows[-1]["realtime_end"] = "2024-01-09"
+        if change == "withdrawal":
+            rows.append(row("us_treasury_10y", "2023-12-25", None, "2024-01-10"))
+    for indicator in ("us_treasury_10y", "us_treasury_10y_change_21obs"):
+        selected = latest(rows, indicator, daily_lag_policy="valid_observations")
+        assert selected["value"] is None
+        assert selected["period_start"] == "2023-12-25"
+        assert selected["missing_reason"] == (
+            "expired_vintage" if change == "expiration" else "missing_source_value"
+        )
+
+
+def test_valid_observations_do_not_change_daily_zero_lag_spread():
+    rows = [
+        row("wti_spot", "2023-12-20", 70),
+        row("brent_spot", "2023-12-20", 75),
+        row("wti_spot", "2023-12-21", None),
+        row("brent_spot", "2023-12-21", 78),
+    ]
+    legacy = latest(rows, "brent_wti_spread")
+    assert legacy["value"] is None
+    assert latest(rows, "brent_wti_spread", daily_lag_policy="valid_observations") == legacy
+
+
+@pytest.mark.parametrize("policy", ["unknown", "", None, [], 42])
+def test_invalid_daily_policy_is_rejected_before_consuming_observations(policy):
+    def unreadable_rows():
+        raise AssertionError("La política debe validarse antes de leer observaciones")
+        yield
+
+    with pytest.raises(ValueError, match="política"):
+        latest(unreadable_rows(), "us_treasury_10y", daily_lag_policy=policy)
+
+
+def test_daily_policy_contract_identifies_rule_version_and_calculation_source():
+    import hashlib
+
+    from mars_titan.data import macro
+
+    legacy = macro.macro_calculation_contract()
+    selected = macro.macro_calculation_contract(daily_lag_policy="valid_observations")
+    assert legacy["daily_lag_policy"] == "source_records"
+    assert selected == {
+        "daily_lag_policy": "valid_observations",
+        "daily_lag_policy_version": 1,
+        "code_sha256": hashlib.sha256(Path(macro.__file__).read_bytes()).hexdigest(),
+    }
+    with pytest.raises(ValueError, match="política"):
+        macro.macro_calculation_contract(daily_lag_policy="unversioned")
 
 
 def test_zero_ratio_is_missing_and_negative_type_differences_remain_valid():

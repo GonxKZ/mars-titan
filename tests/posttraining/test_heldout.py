@@ -377,3 +377,48 @@ def test_freeze_links_reference_continuations_and_rejects_unrelated_parent(tmp_p
     atomic_json(reference_summary, reference)
     with pytest.raises(ValueError, match="pesos de su padre"):
         heldout._jobs(*args)
+
+
+def test_freeze_preserves_matching_parents_and_rejects_a_rebound_seed(tmp_path, monkeypatch):
+    from mars_titan.data.storage import atomic_json, sha256
+    from mars_titan.posttraining import heldout
+    from mars_titan.posttraining.parent_selection import matching_parents
+    from tests.posttraining.test_parent_selection import matched_campaign
+
+    reference, tabular, _ = matched_campaign(tmp_path)
+    proof = matching_parents(reference, tabular, seeds=[42, 43, 44])
+    root = tmp_path / "adjustments"
+    run = root / "gru-seed43/run.json"
+    run.parent.mkdir(parents=True)
+    checkpoint = run.parent / "model.bin"
+    checkpoint.write_bytes(b"adjusted-gru-43")
+    atomic_json(
+        run,
+        dict(
+            status="completed",
+            final_test_opened=False,
+            checkpoint=dict(path="model.bin", sha256=sha256(checkpoint)),
+        ),
+    )
+    summary = dict(
+        status="completed",
+        final_test_opened=False,
+        planned_runs=1,
+        completed_runs=1,
+        identity=dict(proof=proof),
+        runs={"gru/seed-43/real/mae": dict(path="gru-seed43/run.json", sha256=sha256(run))},
+    )
+    path = root / "summary.json"
+    atomic_json(path, summary)
+
+    def forbidden(*_args):
+        pytest.fail("La evaluación emparejada no debe resolver la prueba antigua")
+
+    monkeypatch.setattr(heldout, "selected_parents", forbidden)
+    actual, _, jobs = heldout._jobs(reference, tabular, path)
+    assert actual == proof
+    assert jobs[-1]["id"] == "posttraining/gru/seed-43/real/mae"
+    summary["identity"]["proof"]["parents_by_seed"]["gru"]["43"]["sha256"] = "f" * 64
+    atomic_json(path, summary)
+    with pytest.raises(ValueError, match="referencias congeladas"):
+        heldout._jobs(reference, tabular, path)

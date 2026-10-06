@@ -135,9 +135,17 @@ def corpus_view(dataset, *, macro_catalog):
             ),
         ]
     )
+    currencies = sorted(
+        {name.rsplit(":", 1)[-1] for name in concepts if name.startswith("us-gaap:")}
+    ) or ["USD"]
+    if not set(currencies) <= {"USD", "CAD"}:
+        raise ValueError("La representación contable contiene una moneda no admitida")
     factors = {
-        f"company:{name}:ratio": {f"us-gaap:{tag}:USD" for tag, _ in terms}
-        | {f"us-gaap:{denominator}:USD"}
+        f"company:{name}:ratio": {
+            f"us-gaap:{tag}:{currency}"
+            for currency in currencies
+            for tag in {*(tag for tag, _ in terms), denominator}
+        }
         for name, terms, denominator in company_factors.FACTOR_DEFINITIONS
     }
     if any(name.startswith("company:") and name not in factors for name in concepts):
@@ -147,7 +155,11 @@ def corpus_view(dataset, *, macro_catalog):
             "fundamentals",
             concepts,
             factors,
-            {key: "Componentes de la misma presentación, periodo y unidad USD" for key in factors},
+            {
+                key: "Componentes de la misma presentación y periodo, en una misma moneda: "
+                + " o ".join(currencies)
+                for key in factors
+            },
         )
     )
     variables.extend(
