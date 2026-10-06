@@ -1,6 +1,7 @@
 import importlib
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -569,6 +570,134 @@ def test_changed_artifact_is_detected_by_a_reused_dataset(tmp_path):
     pq.write_table(pa.Table.from_pylist(data), sample)
     with pytest.raises(ValueError, match="cambiado"):
         list(dataset.batches(partition="train", batch_size=4, epoch=1, seed=42))
+
+
+def test_verified_artifact_does_not_reopen_an_unchanged_footer(tmp_path, monkeypatch):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1))
+    sample = tmp_path / "samples/US/A0000/samples.parquet"
+    original = Path.open
+    opened = []
+
+    def observed(path, *args, **kwargs):
+        if path == sample:
+            opened.append(path)
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", observed)
+    for _ in range(2):
+        assert reader._file(reader.assets[0], "samples") == sample
+    assert not opened
+
+
+@pytest.mark.parametrize(
+    "footer", [b"\0\0\0\0BAD!", (8 * 1024**2 + 1).to_bytes(4, "little") + b"PAR1"]
+)
+def test_invalid_footer_never_marks_an_artifact_verified(tmp_path, footer):
+    manifest = corpus(tmp_path, assets=1)
+    sample = tmp_path / "samples/US/A0000/samples.parquet"
+    sample.write_bytes(sample.read_bytes()[:-8] + footer)
+    metadata = json.loads(manifest.read_text())
+    metadata["assets"][0]["samples_sha256"] = sha256(sample)
+    manifest.write_text(json.dumps(metadata))
+    reader = module().CorpusDataset.__new__(module().CorpusDataset)
+    with pytest.raises(ValueError, match="cabecera|Parquet"):
+        reader.__init__(manifest)
+    assert sample not in reader.verified
+
+
+def test_artifact_changed_during_footer_read_is_rejected_before_caching(tmp_path, monkeypatch):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1))
+    sample = tmp_path / "samples/US/A0000/samples.parquet"
+    initial = sample.read_bytes()
+    reader.verified.pop(sample)
+    original = Path.open
+
+    class ChangingFooter:
+        def __init__(self, stream):
+            self.stream, self.footer = stream, False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return self.stream.__exit__(*args)
+
+        def seek(self, offset, whence=0):
+            self.footer = offset == -8 and whence == 2
+            return self.stream.seek(offset, whence)
+
+        def read(self, size=-1):
+            value = self.stream.read(size)
+            if self.footer:
+                sample.write_bytes(b"FAIL" + initial[4:])
+            return value
+
+    def changed(path, *args, **kwargs):
+        stream = original(path, *args, **kwargs)
+        return ChangingFooter(stream) if path == sample and args == ("rb",) else stream
+
+    monkeypatch.setattr(Path, "open", changed)
+    with pytest.raises(ValueError, match="durante la comprobación"):
+        reader._file(reader.assets[0], "samples")
+    assert sample not in reader.verified
+
+
+@pytest.mark.parametrize("inside", [False, True])
+def test_verified_artifact_rejects_leaf_symlinks(tmp_path, inside):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1))
+    sample = tmp_path / "samples/US/A0000/samples.parquet"
+    target = sample.with_name("original.parquet") if inside else tmp_path / "outside.parquet"
+    sample.rename(target)
+    sample.symlink_to(target)
+    with pytest.raises(ValueError, match="artefacto regular"):
+        reader._file(reader.assets[0], "samples")
+
+
+@pytest.mark.parametrize("inside", [False, True])
+def test_verified_artifact_rechecks_directory_containment_with_an_unchanged_signature(
+    tmp_path, inside
+):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1))
+    sample = tmp_path / "samples/US/A0000/samples.parquet"
+    target = tmp_path / ("samples/relocated" if inside else "samples-neighbour")
+    sample.parent.rename(target)
+    sample.parent.symlink_to(target, target_is_directory=True)
+    current = sample.stat()
+    assert reader.verified[sample] == (
+        current.st_dev,
+        current.st_ino,
+        current.st_size,
+        current.st_mtime_ns,
+        current.st_ctime_ns,
+    )
+    if inside:
+        assert reader._file(reader.assets[0], "samples") == sample
+    else:
+        with pytest.raises(ValueError, match="artefacto regular"):
+            reader._file(reader.assets[0], "samples")
+
+
+def test_declared_roots_are_resolved_before_artifact_containment_checks(tmp_path):
+    manifest = corpus(tmp_path, assets=1)
+    alias = tmp_path / "prepared-alias"
+    alias.symlink_to(tmp_path / "prepared", target_is_directory=True)
+    metadata = json.loads(manifest.read_text())
+    metadata["roots"]["prepared"] = str(alias)
+    manifest.write_text(json.dumps(metadata))
+    reader = module().CorpusDataset(manifest)
+    assert reader.roots["prepared"] == (tmp_path / "prepared").resolve()
+    assert reader._file(reader.assets[0], "prices") == tmp_path / "prepared/US/A0000/prices.parquet"
+
+
+def test_containment_on_different_volumes_is_rejected(tmp_path, monkeypatch):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1))
+
+    def different_volumes(_paths):
+        raise ValueError("Paths do not have the same drive")
+
+    monkeypatch.setattr(module().os.path, "commonpath", different_volumes)
+    with pytest.raises(ValueError, match="artefacto regular"):
+        reader._file(reader.assets[0], "samples")
 
 
 def test_total_corpus_has_no_hundred_thousand_row_limit(tmp_path):

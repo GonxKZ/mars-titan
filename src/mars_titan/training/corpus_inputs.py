@@ -1,6 +1,7 @@
 """Lotes supervisados por activo y grupo Parquet, sin acumular el corpus en RAM."""
 
 import hashlib
+import os
 import re
 from collections import OrderedDict
 from pathlib import Path
@@ -178,14 +179,29 @@ class CorpusDataset:
 
     def _file(self, asset, kind):
         root = self.roots["prepared" if kind == "prices" else kind]
-        path = root / asset["market"] / asset["symbol"] / f"{kind}.parquet"
-        if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(root):
+        path = root.joinpath(asset["market"], asset["symbol"], f"{kind}.parquet")
+        try:
+            valid = (
+                path.is_file()
+                and not path.is_symlink()
+                and os.path.commonpath((root, os.path.realpath(path))) == str(root)
+            )
+        except ValueError:
+            valid = False
+        if not valid:
             raise ValueError("Falta un artefacto regular dentro del origen declarado")
         stat = path.stat()
         signature = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
         if self.verified.get(path) != signature:
             if sha256(path) != asset[kind + "_sha256"]:
                 raise ValueError("Un artefacto supervisado ha cambiado desde su confirmación")
+            with path.open("rb") as stream:
+                stream.seek(-8, 2)
+                footer = stream.read(8)
+            if footer[4:] != b"PAR1" or int.from_bytes(footer[:4], "little") > 8 * 1024**2:
+                raise ValueError(
+                    "La cabecera final de Parquet no es válida o excede su presupuesto"
+                )
             after = path.stat()
             if signature != (
                 after.st_dev,
@@ -196,11 +212,6 @@ class CorpusDataset:
             ):
                 raise ValueError("Un artefacto ha cambiado durante la comprobación")
             self.verified[path] = signature
-        with path.open("rb") as stream:
-            stream.seek(-8, 2)
-            footer = stream.read(8)
-        if footer[4:] != b"PAR1" or int.from_bytes(footer[:4], "little") > 8 * 1024**2:
-            raise ValueError("La cabecera final de Parquet no es válida o excede su presupuesto")
         return path
 
     def _cached(self, key, signature):
