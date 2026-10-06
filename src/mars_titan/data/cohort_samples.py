@@ -3,9 +3,12 @@
 import fcntl
 import hashlib
 import json
+import math
 import resource
 import time
 from collections import Counter
+from datetime import datetime
+from decimal import InvalidOperation
 from itertools import chain
 from pathlib import Path
 
@@ -15,6 +18,8 @@ import pyarrow.parquet as pq
 
 from .batches import atomic_parquet_batches, read_bounded_table
 from .charts import chart_png
+from .china_sources import CONCEPTS as CHINESE_CONCEPTS
+from .china_sources import _day, _number
 from .cohort_contexts import FactCursor, NewsWindows
 from .cohort_files import read_manifest, safe_destination
 from .cohort_news import COHORT_POLICIES
@@ -24,6 +29,7 @@ from .storage import atomic_json, outside_source, sha256
 from .temporal import admission_errors, aware
 
 _KINDS = ("article_candidate", "summary", "verified_full_article")
+_CNY_CONCEPTS = {f"cn-reported:{concept}:CNY": kind for concept, kind in CHINESE_CONCEPTS.values()}
 
 
 def _digest(value):
@@ -105,6 +111,47 @@ def _prepared(source, clock, cohort):
     if sha256(path) != manifest_hash:
         raise ValueError("El manifiesto preparado cambió durante su lectura")
     return manifest, calendar, manifest_hash
+
+
+def _chinese_facts(facts, clock, cutoff):
+    """Conservar el contexto CAS y la fecha revisada sin convertir monedas ni conceptos."""
+    end = _day(cutoff)
+    for row in facts:
+        kind = _CNY_CONCEPTS.get(row.get("concept"))
+        if (
+            kind is None
+            or row.get("unit") != "CNY"
+            or row.get("accounting_standard") != "CAS"
+            or row.get("statement_scope") != "consolidated"
+            or row.get("published_at") is not None
+            or row.get("availability_rule") != "reviewed_cninfo_date_next_session_close"
+        ):
+            raise ValueError("El hecho CNY no conserva su concepto y contexto contable revisados")
+        value = row.get("value")
+        try:
+            valid = (
+                type(value) in {int, float}
+                and math.isfinite(value)
+                and isinstance(row.get("value_exact"), str)
+                and float(_number(row["value_exact"])) == value
+            )
+        except (InvalidOperation, ValueError, OverflowError):
+            valid = False
+        if not valid:
+            raise ValueError("El valor CNY debe ser finito y conservar su decimal revisado")
+        period, filed = _day(row.get("period_end")), _day(row.get("filed"))
+        start, available = row.get("period_start"), row.get("available_at")
+        if (
+            not period <= filed <= end
+            or not isinstance(available, datetime)
+            or aware(available) != clock.date_available(row["filed"])
+            or available.date() > end
+            or kind == "stock"
+            and start is not None
+            or kind == "flow"
+            and (start is None or _day(start) > period)
+        ):
+            raise ValueError("El hecho CNY no conserva su periodo y siguiente cierre CN")
 
 
 def _vector(identity, width, encode, cache, hits, misses):
@@ -293,8 +340,8 @@ def materialize_cohort_asset(
             raise ValueError("El tamaño de contexto, ventana o lote no es válido")
     if type(company_factors) is not bool:
         raise ValueError("La selección de factores debe ser booleana")
-    if not isinstance(source_unit, str) or source_unit not in {"USD", "CAD"}:
-        raise ValueError("La unidad contable debe ser USD o CAD")
+    if not isinstance(source_unit, str) or source_unit not in {"USD", "CAD", "CNY"}:
+        raise ValueError("La unidad contable debe ser USD, CAD o CNY")
     if admitted_decisions is not None:
         admitted_decisions = frozenset(aware(value) for value in admitted_decisions)
         if any(value.year >= 2024 or value not in clock.decisions for value in admitted_decisions):
@@ -311,6 +358,18 @@ def materialize_cohort_asset(
         concepts += tuple(name for name in FACTOR_CONCEPTS if name not in concepts)
     if not concepts or len(set(concepts)) != len(concepts):
         raise ValueError("El catálogo contable está vacío o duplicado")
+    if source_unit == "CNY" or any(
+        isinstance(name, str) and name.startswith("cn-reported:") for name in concepts
+    ):
+        if (
+            source_unit != "CNY"
+            or clock.market != "CN"
+            or company_factors
+            or not set(concepts) <= _CNY_CONCEPTS.keys()
+        ):
+            raise ValueError(
+                "CNY requiere calendario CN, conceptos revisados y factores desactivados"
+            )
     encoder_hash = _digest(encoders.spec)
     limits = dict(
         sample_batch_rows=batch_rows,
@@ -349,6 +408,8 @@ def materialize_cohort_asset(
             )
         },
     )
+    if source_unit == "CNY":
+        identity["code"]["china_sources.py"] = sha256(Path(__file__).with_name("china_sources.py"))
     fingerprint = _digest(identity)
     for name in (
         ".asset.lock",
@@ -416,6 +477,8 @@ def materialize_cohort_asset(
             max_rows=max_partition_rows,
             max_bytes=max_partition_bytes,
         ).to_pylist()
+        if source_unit == "CNY":
+            _chinese_facts(facts, clock, origin["policy"]["cutoff"])
         factor_audit = {}
         if company_factors:
             derived, factor_audit = write_company_factors(

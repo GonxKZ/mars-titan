@@ -319,5 +319,11 @@ def prepare_corpus_targets(
             if key in meta:
                 result[key] = meta[key]
         cohort_identity(result)
-    atomic_json(output / "manifest.json", result)
+    manifest_path = output / "manifest.json"
+    try:
+        previous = _json(manifest_path, 8 * 1024**2) if manifest_path.exists() else None
+    except json.JSONDecodeError:
+        previous = None
+    if previous != result:
+        atomic_json(manifest_path, result)
     return {**result, "reused_assets": reused}

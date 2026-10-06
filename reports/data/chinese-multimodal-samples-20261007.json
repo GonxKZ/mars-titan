@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "kind": "chinese_multimodal_encoding_verification",
+  "observed_at_utc": "2026-10-06T22:33:39.211912+00:00",
+  "source_sha256": {
+    "src/mars_titan/data/chinese_samples.py": "00eae6eab556ff5ff09a12cac296bbe186749f16bd771c6819aabed1b6257314",
+    "src/mars_titan/data/cohort_samples.py": "85d8b93e4f38adf974fe06359ab04e282ac745fefb080d6289e015445c7abe7a",
+    "src/mars_titan/data/corpus_encoding.py": "2a09dda22607db0e73b78a302b05cd1894794e0cbb005b42da81a96f96b8e840",
+    "src/mars_titan/data/currency_samples.py": "d5d06f69c1f6b73b87475b7400252b029547e243579fe15269ba45f39b1b6306",
+    "src/mars_titan/training/corpus_targets.py": "cdb243600ff9a20665f8f5869d7724c5de1386958a1955810b3d521d900b0741"
+  },
+  "scope": "development_snapshot",
+  "cohort_complete": false,
+  "parent_candidates": 892,
+  "selected_assets": 1,
+  "samples": 169,
+  "labelled_samples": 168,
+  "preliminary_annual_counts": {
+    "train": 0,
+    "validation": 168
+  },
+  "encoder": {
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+    },
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizers_version": "0.23.2",
+    "tokenizer_class": "TokenizersBackend",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "device": "cuda:0",
+    "precision": "float32",
+    "historical_simulation": false
+  },
+  "encoder_identity_matches_us": true,
+  "source_inputs": {
+    "preparation_sha256": "ca5562933fd5172bf44ce1f43c7a7d9dd24ab7e3dd351bb4dd019aebaa30ad0e"
+  },
+  "shapes": {
+    "prices": [
+      64,
+      5
+    ],
+    "news": 384,
+    "charts": 512,
+    "fundamentals": 9,
+    "macro": 420
+  },
+  "checks": {
+    "cny_values_masks_ages_exact": true,
+    "charts_reconstructed_at_both_ends": true,
+    "chinese_text_repeat_exact": true,
+    "reuse_without_inference": true
+  },
+  "two_cuda_passes_same_parquet": {
+    "encoded/samples/CN/000001.SZ/samples.parquet": "fde9cf3dcbe37376b3f1eee8a6bb4a58c946c5181544c7808f6388449bed5783",
+    "supervised/labels/CN/000001.SZ/labels.parquet": "e19a7c02ec20de8e8f8d3384eaa044e2a6c1ac5cdff961804b669d4418ce436b"
+  },
+  "sample_parquet_bytes": 786444,
+  "performance": {
+    "encoding_seconds": 5.444942442991305,
+    "reuse_seconds": 1.8749090380151756,
+    "total_internal_seconds": 12.601100486994255,
+    "process_peak_rss_kib": 1990584,
+    "cuda_peak_allocated_bytes": 570390528,
+    "cuda_peak_reserved_bytes": 612368384,
+    "news_calls": 255,
+    "chart_calls": 169,
+    "process_seconds": 15.46,
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7370 MiB",
+    "cuda_memory_source": "PyTorch allocator counters",
+    "repetitions": 1,
+    "unmeasured": [
+      "Energía",
+      "Transferencias CPU/GPU",
+      "Tráfico físico total de almacenamiento"
+    ]
+  },
+  "cuda_windows": [
+    {
+      "status": "failed",
+      "returncode": 1,
+      "restart_returncode": 0,
+      "elapsed_seconds": 20.746156381006585
+    },
+    {
+      "status": "completed",
+      "returncode": 0,
+      "restart_returncode": 0,
+      "elapsed_seconds": 18.537531345995376
+    }
+  ],
+  "first_cuda_failure": "La reutilización reescribía el manifiesto supervisado con contenido idéntico. Corregido y comprobado de nuevo.",
+  "tests": {
+    "related_passed": 138,
+    "control_seconds": 27.309192404994974,
+    "peak_rss_bytes": 725733376,
+    "limits": {
+      "cpu_max": "100000 100000",
+      "memory_max": "1073741824",
+      "cuda_visible_devices": "",
+      "omp_num_threads": "1"
+    }
+  },
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "CRAP por función = CCN² × (1 - cobertura de sentencias)³ + CCN. Sentencias ejecutables de coverage.py dentro del intervalo AST de la función, incluidas sus funciones anidadas. No se usan ramas en CRAP.",
+    "changed_function_detection": "Comparación AST de funciones de nivel superior frente a origin/develop, sin posiciones de línea.",
+    "modified_functions": [
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "_parent",
+        "first_line": 39,
+        "last_line": 74,
+        "statements": 17,
+        "missing_lines": [
+          57,
+          64
+        ],
+        "statement_coverage": 0.8823529411764706,
+        "ccn": 17,
+        "crap": 17.47058823529412
+      },
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "_verify",
+        "first_line": 77,
+        "last_line": 83,
+        "statements": 7,
+        "missing_lines": [
+          83
+        ],
+        "statement_coverage": 0.8571428571428572,
+        "ccn": 6,
+        "crap": 6.104956268221574
+      },
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "_confirmed",
+        "first_line": 86,
+        "last_line": 91,
+        "statements": 6,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 4,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "prepare_chinese_samples",
+        "first_line": 94,
+        "last_line": 288,
+        "statements": 57,
+        "missing_lines": [
+          148,
+          154,
+          157,
+          199,
+          247,
+          285
+        ],
+        "statement_coverage": 0.8947368421052632,
+        "ccn": 20,
+        "crap": 20.466540311998834
+      },
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "main",
+        "first_line": 291,
+        "last_line": 313,
+        "statements": 9,
+        "missing_lines": [
+          292,
+          293,
+          302,
+          303,
+          304,
+          306,
+          307,
+          308
+        ],
+        "statement_coverage": 0.11111111111111116,
+        "ccn": 3,
+        "crap": 9.320987654320987
+      },
+      {
+        "file": "src/mars_titan/data/cohort_samples.py",
+        "function": "_chinese_facts",
+        "first_line": 116,
+        "last_line": 154,
+        "statements": 17,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 22,
+        "crap": 22.0
+      },
+      {
+        "file": "src/mars_titan/data/cohort_samples.py",
+        "function": "materialize_cohort_asset",
+        "first_line": 313,
+        "last_line": 552,
+        "statements": 90,
+        "missing_lines": [
+          340,
+          342,
+          360,
+          422,
+          432,
+          463,
+          470,
+          529,
+          532
+        ],
+        "statement_coverage": 0.9,
+        "ccn": 51,
+        "crap": 53.601
+      },
+      {
+        "file": "src/mars_titan/data/corpus_encoding.py",
+        "function": "encode_corpus",
+        "first_line": 21,
+        "last_line": 254,
+        "statements": 106,
+        "missing_lines": [
+          66,
+          72,
+          82,
+          86,
+          98,
+          101,
+          112,
+          115,
+          149,
+          158,
+          165,
+          201,
+          203,
+          219,
+          244,
+          250
+        ],
+        "statement_coverage": 0.8490566037735849,
+        "ccn": 84,
+        "crap": 108.26615259576695
+      },
+      {
+        "file": "src/mars_titan/data/currency_samples.py",
+        "function": "_macro_inputs",
+        "first_line": 74,
+        "last_line": 111,
+        "statements": 23,
+        "missing_lines": [
+          91,
+          93,
+          99
+        ],
+        "statement_coverage": 0.8695652173913043,
+        "ccn": 17,
+        "crap": 17.64132489520835
+      },
+      {
+        "file": "src/mars_titan/training/corpus_targets.py",
+        "function": "prepare_corpus_targets",
+        "first_line": 156,
+        "last_line": 329,
+        "statements": 92,
+        "missing_lines": [
+          164,
+          178,
+          185,
+          198,
+          254,
+          276,
+          294
+        ],
+        "statement_coverage": 0.9239130434782609,
+        "ccn": 62,
+        "crap": 63.69322244596039
+      }
+    ],
+    "max_ccn_modified_functions": 84
+  },
+  "mutations": {
+    "partial_scope": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_corpus_encoding.py::test_reviewed_subset_keeps_its_scope_and_requested_sample_contract"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/corpus_encoding.py",
+        "before": "if meta.get(\"scope\") != \"reviewed_asset_subset\":",
+        "after": "if True:",
+        "modified_source_sha256": "e1a49c224e177637b5c2e78baa36ae527f88edee32b303b21edcbe5bd25971aa"
+      }
+    },
+    "macro_market": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_samples.py::test_admission_from_another_market_is_rejected"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/currency_samples.py",
+        "before": "or report.get(\"market\") != market",
+        "after": "or False",
+        "modified_source_sha256": "1f7a3c39c96cd5106400286fa64bd6a96c2f07a0ed1b6bf27452ff6b6c849e93"
+      }
+    },
+    "parent_population": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_samples.py::test_parent_population_must_reconcile_before_selecting_an_asset"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "before": "or parent.get(\"candidate_count\") != len(parent[\"assets\"])",
+        "after": "or False",
+        "modified_source_sha256": "8e4fbc2a47d68a56350d53ef6fb83e8dd64e84c1b73199613a3046f00cf26c70"
+      }
+    },
+    "confirmed_hash": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_samples.py::test_recovery_uses_the_hash_of_the_bytes_actually_validated[configuration.json]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "before": "    return signature\n",
+        "after": "    return sha256(path)\n",
+        "modified_source_sha256": "b1089588a599d9e0b0942da2830b321e1a106dec246ed13a2cedd2a3c76cdaa3"
+      }
+    },
+    "rewrite_labels_manifest": {
+      "detected": true,
+      "failed_tests": [
+        "tests/training/test_corpus_targets.py::test_reusing_labels_preserves_manifest_identity_and_confirmed_cursor"
+      ],
+      "source": {
+        "file": "src/mars_titan/training/corpus_targets.py",
+        "before": "    if previous != result:\n",
+        "after": "    if True:\n",
+        "modified_source_sha256": "af214e979e78113c7c97a147e14a144c07e20bb2e01a33c49c3941de832de6ca"
+      }
+    }
+  },
+  "cny_mutations": {
+    "currency": {
+      "detected": true,
+      "test": "test_cny_requires_explicit_native_taxonomy_and_disables_us_gaap_factors"
+    },
+    "market": {
+      "detected": true,
+      "test": "test_even_a_consistent_us_preparation_cannot_use_cny_mode"
+    },
+    "concepts": {
+      "detected": true,
+      "test": "test_cny_requires_explicit_native_taxonomy_and_disables_us_gaap_factors"
+    },
+    "scope": {
+      "detected": true,
+      "test": "test_invalid_chinese_facts_fail_before_encoding"
+    },
+    "availability": {
+      "detected": true,
+      "test": "test_invalid_chinese_facts_fail_before_encoding"
+    }
+  },
+  "limits": [
+    "Un activo revisado. No acredita cobertura completa de China.",
+    "Particiones anuales preliminares: cero train,168 validation. Requiere un protocolo temporal antes de entrenar.",
+    "Compatibilidad del texto chino, no utilidad predictiva demostrada.",
+    "No se midieron energía ni transferencias CPU/GPU.",
+    "Cobertura y mutaciones son comprobaciones dirigidas, no una prueba de ausencia de errores."
+  ],
+  "training_ready": false,
+  "final_test_opened": false
+}
