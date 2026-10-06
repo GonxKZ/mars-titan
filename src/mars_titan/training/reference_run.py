@@ -42,6 +42,21 @@ def read_json(path):
     return json.loads(path.read_text())
 
 
+def configured_corpus(manifest):
+    """Activar las tablas solo con un presupuesto explícito para esta ejecución."""
+    budget = os.environ.get("MARS_TITAN_INPUT_CACHE_MIB")
+    if budget is None:
+        return CorpusDataset(manifest)
+    if (
+        not 1 <= len(budget) <= 4
+        or not budget.isascii()
+        or not budget.isdecimal()
+        or not 1 <= int(budget) <= 4096
+    ):
+        raise ValueError("MARS_TITAN_INPUT_CACHE_MIB debe ser un entero entre 1 y 4096")
+    return CorpusDataset(manifest, cache_bytes=int(budget) * 1024**2, cache_sample_tables=True)
+
+
 def scientific_identity():
     """Compartir versiones, política numérica y transformaciones entre todos los casos."""
     root = Path(__file__).parents[1]
@@ -287,7 +302,7 @@ def run_reference_case(
     _options(case, batch_size, checkpoint_seconds, checkpoint_steps)
     start = time.perf_counter()
     device = require_cuda()
-    dataset = CorpusDataset(manifest)
+    dataset = configured_corpus(manifest)
     if min(dataset.manifest["counts"].values()) < 1:
         raise ValueError("Se necesitan datos de ajuste y validación en este brazo")
     for protected in (*dataset.roots.values(), Path("dataset")):
@@ -325,6 +340,9 @@ def run_reference_case(
         optimizer="AdamW",
         precision="float32",
         device="cuda:0",
+        input_cache=dict(
+            budget_bytes=dataset.cache_limit, sample_tables=dataset.cache_sample_tables
+        ),
     )
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])
     report_path = output / "run.json"
@@ -525,6 +543,7 @@ def run_reference_case(
                 seconds=time.perf_counter() - start,
                 peak_vram_allocated_bytes=torch.cuda.max_memory_allocated(0),
                 peak_vram_reserved_bytes=torch.cuda.max_memory_reserved(0),
+                input_cache_bytes=dataset.cached_bytes,
             )
         )
         atomic_json(report_path, report)

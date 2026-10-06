@@ -242,8 +242,9 @@ def test_view_cannot_replace_the_parent_macro_catalog_with_another_catalog(input
 
 
 @pytest.mark.parametrize("separate_macro_availability", [False, True])
+@pytest.mark.parametrize("cache_sample_tables", [False, True])
 def test_temporal_projection_omits_replaced_vector_and_preserves_batches_and_cursor(
-    inputs, tmp_path, monkeypatch, separate_macro_availability
+    inputs, tmp_path, monkeypatch, separate_macro_availability, cache_sample_tables
 ):
     parent = json.loads(inputs[0].read_text())
     samples = Path(parent["roots"]["samples"]) / "US/A0000/samples.parquet"
@@ -277,7 +278,7 @@ def test_temporal_projection_omits_replaced_vector_and_preserves_batches_and_cur
         return original(file, group, columns=columns, **kwargs)
 
     monkeypatch.setattr(pq.ParquetFile, "read_row_group", observed)
-    reader = CorpusDataset(manifest)
+    reader = CorpusDataset(manifest, cache_sample_tables=cache_sample_tables)
     actual = list(reader.batches(partition="train", batch_size=1, epoch=0, seed=42))
     assert projected and all("macro" not in columns for columns in projected)
     assert all("input_availability" in columns for columns in projected)

@@ -154,6 +154,123 @@ def test_input_cache_evicts_buffers_without_changing_epoch_population(tmp_path):
         assert 0 < reader.cached_bytes <= 240
 
 
+def test_sample_table_cache_avoids_decoding_and_preserves_epoch_batches(tmp_path, monkeypatch):
+    path = corpus(tmp_path, assets=3, rows=7)
+    original = pq.ParquetFile.read_row_group
+    decoded = []
+
+    def observe(file, group, columns=None, **kwargs):
+        if columns is not None and "price_end_index" in columns:
+            decoded.append(tuple(columns))
+        return original(file, group, columns=columns, **kwargs)
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_group", observe)
+    cached = module().CorpusDataset(path, cache_bytes=1024**2, cache_sample_tables=True)
+    list(cached.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    first_reads = len(decoded)
+    actual = list(cached.batches(partition="train", batch_size=4, epoch=1, seed=42))
+    assert first_reads > 0 and len(decoded) == first_reads
+    reference = module().CorpusDataset(path, cache_bytes=0)
+    expected = list(reference.batches(partition="train", batch_size=4, epoch=1, seed=42))
+    for left, right in zip(actual, expected, strict=True):
+        assert left["sample_ids"] == right["sample_ids"]
+        assert left["confirmed_cursor"] == right["confirmed_cursor"]
+        np.testing.assert_array_equal(left["target"], right["target"])
+        for name in left["inputs"]:
+            np.testing.assert_array_equal(left["inputs"][name], right["inputs"][name])
+    resumed = list(
+        cached.batches(
+            partition="train",
+            batch_size=4,
+            epoch=1,
+            seed=42,
+            cursor=actual[0]["confirmed_cursor"],
+        )
+    )
+    assert [key for batch in resumed for key in batch["sample_ids"]] == [
+        key for batch in actual[1:] for key in batch["sample_ids"]
+    ]
+
+
+@pytest.mark.parametrize("budget", [0, 1, 240, 1024])
+def test_sample_tables_share_the_array_cache_budget_without_losing_rows(tmp_path, budget):
+    path = corpus(tmp_path, assets=3, rows=7)
+    reader = module().CorpusDataset(path, cache_bytes=budget, cache_sample_tables=True)
+    for epoch in [0, 1]:
+        observed = list(reader.batches(partition="train", batch_size=4, epoch=epoch, seed=42))
+        assert sum(len(batch["target"]) for batch in observed) == 21
+        assert reader.cached_bytes == sum(entry[2] for entry in reader._cache.values())
+        assert reader.cached_bytes <= budget
+        for _, value, size in reader._cache.values():
+            expected = (
+                value.get_total_buffer_size()
+                if isinstance(value, pa.Table)
+                else sum(array.nbytes for array in value)
+            )
+            assert size == expected
+
+
+def test_table_cache_counts_backing_buffers_instead_of_only_visible_slices(tmp_path):
+    reader = module().CorpusDataset(
+        corpus(tmp_path, assets=1), cache_bytes=256, cache_sample_tables=True
+    )
+    table = pa.table({"value": np.arange(1024)}).slice(100, 1)
+    assert table.nbytes < 256 < table.get_total_buffer_size()
+    reader._remember(("samples", "fixture"), "signature", table)
+    assert reader.cached_bytes == 0
+    assert not reader._cache
+
+
+def test_cached_sample_table_cannot_hide_source_corruption(tmp_path):
+    path = corpus(tmp_path, assets=1)
+    reader = module().CorpusDataset(path, cache_sample_tables=True)
+    list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    samples = tmp_path / "samples/US/A0000/samples.parquet"
+    samples.write_bytes(b"corrupt")
+    with pytest.raises(ValueError, match="cambiado"):
+        list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+
+
+def test_sample_cache_revalidates_replaced_source_with_identical_content(tmp_path, monkeypatch):
+    path = corpus(tmp_path, assets=1)
+    reader = module().CorpusDataset(path, cache_sample_tables=True)
+    original = pq.ParquetFile.read_row_group
+    decoded = []
+
+    def observe(file, group, columns=None, **kwargs):
+        if columns is not None and "price_end_index" in columns:
+            decoded.append(group)
+        return original(file, group, columns=columns, **kwargs)
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_group", observe)
+    expected = list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    first_reads = len(decoded)
+    samples = tmp_path / "samples/US/A0000/samples.parquet"
+    replacement = samples.with_suffix(".replacement")
+    replacement.write_bytes(samples.read_bytes())
+    replacement.replace(samples)
+    actual = list(reader.batches(partition="train", batch_size=4, epoch=0, seed=42))
+    assert len(decoded) == 2 * first_reads
+    for left, right in zip(actual, expected, strict=True):
+        assert left["sample_ids"] == right["sample_ids"]
+        np.testing.assert_array_equal(left["target"], right["target"])
+
+
+def test_sample_cache_entry_limit_bounds_empty_tables(tmp_path):
+    reader = module().CorpusDataset(corpus(tmp_path, assets=1), cache_sample_tables=True)
+    for number in range(8200):
+        reader._remember(("samples", number), "signature", pa.table({"value": []}))
+    assert len(reader._cache) == 8192
+    assert ("samples", 0) not in reader._cache
+    assert reader.cached_bytes == 0
+
+
+@pytest.mark.parametrize("setting", [None, 0, 1, "true"])
+def test_sample_table_cache_requires_an_explicit_boolean_before_reading_source(tmp_path, setting):
+    with pytest.raises(ValueError, match="caché"):
+        module().CorpusDataset(tmp_path / "missing.json", cache_sample_tables=setting)
+
+
 def test_all_assets_and_last_partial_batch_are_visited_once(tmp_path):
     manifest = corpus(tmp_path, assets=130)
     observed = list(batches(manifest))
