@@ -1,0 +1,777 @@
+{
+  "schema_version": 1,
+  "measured_on": "2026-10-06",
+  "kind": "native_gru_weight_storage_benchmark",
+  "language": "C++20",
+  "mechanism": "Compactar mediante la primitiva existente de LibTorch al crear y recuperar la GRU CUDA, conservando los parámetros registrados y sus referencias de Adam.",
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "cpu_model": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB",
+    "libtorch": "2.14.0+cu130",
+    "cuda_runtime": "13.0",
+    "cudnn": "9.24.0.43",
+    "compiler": "Clang 21.1.8",
+    "compute_sanitizer": "13.4",
+    "language_standard": "C++20",
+    "cxx_abi": "libstdc++ C++11 ABI"
+  },
+  "protocol": {
+    "variant": "ppo_gru",
+    "environments": 16,
+    "workers": 1,
+    "rollout_transitions": 1024,
+    "minibatch_size": 64,
+    "scope": "Una carga científica CUDA. La campaña real se pausó de forma recuperable y se reanudó tras cada ventana. Permanecieron activos el escritorio y otros procesos CPU.",
+    "case_order": "Una pareja de calentamiento y parejas medidas con orden alterno.",
+    "precision": "Misma política numérica del comparador nativo. No se cambian precisión, semillas, acciones ni presupuesto.",
+    "final_test_opened": false,
+    "mars_titan_candidate_trained": false
+  },
+  "workloads": [
+    {
+      "transitions": 1024,
+      "repetitions": 3,
+      "warmup_pairs": 1,
+      "process_seconds": {
+        "reference": [
+          5.175884658994619,
+          5.425178852005047,
+          5.275981045997469
+        ],
+        "candidate": [
+          4.622538962008548,
+          4.675189233996207,
+          5.0275454340007855
+        ]
+      },
+      "summaries": [
+        {
+          "method": "reference",
+          "variant": "ppo_gru",
+          "workers": 1,
+          "count": 3,
+          "median": 5.275981045997469,
+          "minimum": 5.175884658994619,
+          "maximum": 5.425178852005047,
+          "stdev_sample": 0.1254504328923179
+        },
+        {
+          "method": "candidate",
+          "variant": "ppo_gru",
+          "workers": 1,
+          "count": 3,
+          "median": 4.675189233996207,
+          "minimum": 4.622538962008548,
+          "maximum": 5.0275454340007855,
+          "stdev_sample": 0.220210953851695
+        }
+      ],
+      "median_reduction_pct": 11.387300423625335,
+      "paired_results": [
+        {
+          "repetition": 1,
+          "reference_seconds": 5.175884658994619,
+          "candidate_seconds": 4.622538962008548,
+          "reduction_pct": 10.690842888557617
+        },
+        {
+          "repetition": 2,
+          "reference_seconds": 5.425178852005047,
+          "candidate_seconds": 4.675189233996207,
+          "reduction_pct": 13.824237660508787
+        },
+        {
+          "repetition": 3,
+          "reference_seconds": 5.275981045997469,
+          "candidate_seconds": 5.0275454340007855,
+          "reduction_pct": 4.708804103554442
+        }
+      ],
+      "ram_peak_bytes": {
+        "reference": [
+          1478021120,
+          1477967872,
+          1478139904
+        ],
+        "candidate": [
+          1477443584,
+          1478561792,
+          1478389760
+        ]
+      },
+      "vram_peak_bytes": null,
+      "vram_peak_note": "El ejecutor no mide el pico real de VRAM en estas pasadas sin instrumentación.",
+      "retained_checkpoint_bytes": {
+        "reference": [
+          {
+            "metadata": 178549,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178549,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178549,
+            "policy": 1540537,
+            "rollout": 20524749
+          }
+        ],
+        "candidate": [
+          {
+            "metadata": 178549,
+            "policy": 1539223,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178549,
+            "policy": 1538839,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178549,
+            "policy": 1539095,
+            "rollout": 20524749
+          }
+        ]
+      },
+      "input_bytes": 75873867,
+      "index_sha256": "81048649d2660b64f90f06b025ec20d6b6a5e0791ba6844b3db34811ba6f0b65",
+      "binaries": {
+        "reference": {
+          "binary": {
+            "sha256": "fc5d9274fa3fa51cf184b8e0ae4e4f623b37db426bbff3a27e7488a75dd9fc1d",
+            "bytes": 1694096
+          },
+          "launcher": {
+            "sha256": "13603b4ea7afc98b3480de5ab2c68ead2e302bc8f89f27f9444c696d827653f6",
+            "bytes": 20696
+          },
+          "backend": {
+            "sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+            "bytes": 33032
+          }
+        },
+        "candidate": {
+          "binary": {
+            "sha256": "29fe2062a68c9fc91d378b4a4d0fd73d0a9193fa62a542d26a9431e5fc07b874",
+            "bytes": 1701768
+          },
+          "launcher": {
+            "sha256": "13603b4ea7afc98b3480de5ab2c68ead2e302bc8f89f27f9444c696d827653f6",
+            "bytes": 20696
+          },
+          "backend": {
+            "sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+            "bytes": 33032
+          }
+        }
+      },
+      "base_configuration_sha256": "f8cecc72a32f858628cbdcefcb682cc7d068c25d6fc1b9c19e64657ff76b78d7",
+      "benchmark_harness_sha256": "1619da9ff080424ed12fd6184f87bcb07b7fd2fcb16edb11cbfa6ca0fe1ee4c8",
+      "scope": "Proceso completo con preparación, entrenamiento, validación, checkpoints y lanzador. Escenarios sintéticos con contabilidad conocida."
+    },
+    {
+      "transitions": 8192,
+      "repetitions": 3,
+      "warmup_pairs": 1,
+      "process_seconds": {
+        "reference": [
+          11.039294082002016,
+          11.14225196800544,
+          8.736333516004379
+        ],
+        "candidate": [
+          7.03196121599467,
+          9.890555584002868,
+          9.890184788004262
+        ]
+      },
+      "summaries": [
+        {
+          "method": "reference",
+          "variant": "ppo_gru",
+          "workers": 1,
+          "count": 3,
+          "median": 11.039294082002016,
+          "minimum": 8.736333516004379,
+          "maximum": 11.14225196800544,
+          "stdev_sample": 1.3603107054707286
+        },
+        {
+          "method": "candidate",
+          "variant": "ppo_gru",
+          "workers": 1,
+          "count": 3,
+          "median": 9.890184788004262,
+          "minimum": 7.03196121599467,
+          "maximum": 9.890555584002868,
+          "stdev_sample": 1.6503031987026473
+        }
+      ],
+      "median_reduction_pct": 10.4092642651056,
+      "paired_results": [
+        {
+          "repetition": 1,
+          "reference_seconds": 11.039294082002016,
+          "candidate_seconds": 7.03196121599467,
+          "reduction_pct": 36.30062607482055
+        },
+        {
+          "repetition": 2,
+          "reference_seconds": 11.14225196800544,
+          "candidate_seconds": 9.890555584002868,
+          "reduction_pct": 11.233782790020996
+        },
+        {
+          "repetition": 3,
+          "reference_seconds": 8.736333516004379,
+          "candidate_seconds": 9.890184788004262,
+          "reduction_pct": -13.207500261821558
+        }
+      ],
+      "ram_peak_bytes": {
+        "reference": [
+          1484607488,
+          1485373440,
+          1487835136
+        ],
+        "candidate": [
+          1484861440,
+          1485131776,
+          1485209600
+        ]
+      },
+      "vram_peak_bytes": null,
+      "vram_peak_note": "El ejecutor no mide el pico real de VRAM en estas pasadas sin instrumentación.",
+      "retained_checkpoint_bytes": {
+        "reference": [
+          {
+            "metadata": 178469,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178469,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178469,
+            "policy": 1540793,
+            "rollout": 20524749
+          }
+        ],
+        "candidate": [
+          {
+            "metadata": 178469,
+            "policy": 1538839,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178469,
+            "policy": 1539095,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 178469,
+            "policy": 1538839,
+            "rollout": 20524749
+          }
+        ]
+      },
+      "input_bytes": 75873867,
+      "index_sha256": "81048649d2660b64f90f06b025ec20d6b6a5e0791ba6844b3db34811ba6f0b65",
+      "binaries": {
+        "reference": {
+          "binary": {
+            "sha256": "fc5d9274fa3fa51cf184b8e0ae4e4f623b37db426bbff3a27e7488a75dd9fc1d",
+            "bytes": 1694096
+          },
+          "launcher": {
+            "sha256": "13603b4ea7afc98b3480de5ab2c68ead2e302bc8f89f27f9444c696d827653f6",
+            "bytes": 20696
+          },
+          "backend": {
+            "sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+            "bytes": 33032
+          }
+        },
+        "candidate": {
+          "binary": {
+            "sha256": "29fe2062a68c9fc91d378b4a4d0fd73d0a9193fa62a542d26a9431e5fc07b874",
+            "bytes": 1701768
+          },
+          "launcher": {
+            "sha256": "13603b4ea7afc98b3480de5ab2c68ead2e302bc8f89f27f9444c696d827653f6",
+            "bytes": 20696
+          },
+          "backend": {
+            "sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+            "bytes": 33032
+          }
+        }
+      },
+      "base_configuration_sha256": "f8cecc72a32f858628cbdcefcb682cc7d068c25d6fc1b9c19e64657ff76b78d7",
+      "benchmark_harness_sha256": "1619da9ff080424ed12fd6184f87bcb07b7fd2fcb16edb11cbfa6ca0fe1ee4c8",
+      "scope": "Proceso completo con preparación, entrenamiento, validación, checkpoints y lanzador. Escenarios sintéticos con contabilidad conocida."
+    },
+    {
+      "transitions": 32768,
+      "repetitions": 5,
+      "warmup_pairs": 1,
+      "process_seconds": {
+        "reference": [
+          22.97265799700108,
+          23.320147880993318,
+          25.431079653004417,
+          26.030373895002413,
+          23.27062037300493
+        ],
+        "candidate": [
+          22.570617915000184,
+          24.176907574001234,
+          22.12148483499186,
+          18.811363903005258,
+          23.725070744010736
+        ]
+      },
+      "summaries": [
+        {
+          "method": "reference",
+          "variant": "ppo_gru",
+          "workers": 1,
+          "count": 5,
+          "median": 23.320147880993318,
+          "minimum": 22.97265799700108,
+          "maximum": 26.030373895002413,
+          "stdev_sample": 1.4150933309668579
+        },
+        {
+          "method": "candidate",
+          "variant": "ppo_gru",
+          "workers": 1,
+          "count": 5,
+          "median": 22.570617915000184,
+          "minimum": 18.811363903005258,
+          "maximum": 24.176907574001234,
+          "stdev_sample": 2.1111314545397604
+        }
+      ],
+      "median_reduction_pct": 3.2140875341705066,
+      "paired_results": [
+        {
+          "repetition": 1,
+          "reference_seconds": 22.97265799700108,
+          "candidate_seconds": 22.570617915000184,
+          "reduction_pct": 1.7500808223993025
+        },
+        {
+          "repetition": 2,
+          "reference_seconds": 23.320147880993318,
+          "candidate_seconds": 24.176907574001234,
+          "reduction_pct": -3.6739033447819702
+        },
+        {
+          "repetition": 3,
+          "reference_seconds": 25.431079653004417,
+          "candidate_seconds": 22.12148483499186,
+          "reduction_pct": 13.013976847111808
+        },
+        {
+          "repetition": 4,
+          "reference_seconds": 26.030373895002413,
+          "candidate_seconds": 18.811363903005258,
+          "reduction_pct": 27.73302458549447
+        },
+        {
+          "repetition": 5,
+          "reference_seconds": 23.27062037300493,
+          "candidate_seconds": 23.725070744010736,
+          "reduction_pct": -1.9528932349951011
+        }
+      ],
+      "ram_peak_bytes": {
+        "reference": [
+          1491644416,
+          1492074496,
+          1489285120,
+          1488797696,
+          1495728128
+        ],
+        "candidate": [
+          1486295040,
+          1486147584,
+          1488166912,
+          1487986688,
+          1492209664
+        ]
+      },
+      "vram_peak_bytes": null,
+      "vram_peak_note": "El ejecutor no mide el pico real de VRAM en estas pasadas sin instrumentación.",
+      "retained_checkpoint_bytes": {
+        "reference": [
+          {
+            "metadata": 179286,
+            "policy": 1540665,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1540537,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1540793,
+            "rollout": 20524749
+          }
+        ],
+        "candidate": [
+          {
+            "metadata": 179286,
+            "policy": 1538839,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1538839,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1538839,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1538839,
+            "rollout": 20524749
+          },
+          {
+            "metadata": 179286,
+            "policy": 1538839,
+            "rollout": 20524749
+          }
+        ]
+      },
+      "input_bytes": 75873867,
+      "index_sha256": "81048649d2660b64f90f06b025ec20d6b6a5e0791ba6844b3db34811ba6f0b65",
+      "binaries": {
+        "reference": {
+          "binary": {
+            "sha256": "fc5d9274fa3fa51cf184b8e0ae4e4f623b37db426bbff3a27e7488a75dd9fc1d",
+            "bytes": 1694096
+          },
+          "launcher": {
+            "sha256": "13603b4ea7afc98b3480de5ab2c68ead2e302bc8f89f27f9444c696d827653f6",
+            "bytes": 20696
+          },
+          "backend": {
+            "sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+            "bytes": 33032
+          }
+        },
+        "candidate": {
+          "binary": {
+            "sha256": "29fe2062a68c9fc91d378b4a4d0fd73d0a9193fa62a542d26a9431e5fc07b874",
+            "bytes": 1701768
+          },
+          "launcher": {
+            "sha256": "13603b4ea7afc98b3480de5ab2c68ead2e302bc8f89f27f9444c696d827653f6",
+            "bytes": 20696
+          },
+          "backend": {
+            "sha256": "333a9d47f75c4f5c0a80c7ab8b8aa82366dfe03d8a3c760af7f7a774cf98e0a9",
+            "bytes": 33032
+          }
+        }
+      },
+      "base_configuration_sha256": "f8cecc72a32f858628cbdcefcb682cc7d068c25d6fc1b9c19e64657ff76b78d7",
+      "benchmark_harness_sha256": "1619da9ff080424ed12fd6184f87bcb07b7fd2fcb16edb11cbfa6ca0fe1ee4c8",
+      "scope": "Proceso completo con preparación, entrenamiento, validación, checkpoints y lanzador. Escenarios sintéticos con contabilidad conocida."
+    }
+  ],
+  "profile": {
+    "tool": "Nsight Systems 2026.3.2",
+    "instrumented_transitions": 1024,
+    "measurements": {
+      "reference": {
+        "copies": {
+          "Host-to-Device": {
+            "calls": 4752,
+            "payload_bytes": 69625756
+          },
+          "Device-to-Host": {
+            "calls": 13671,
+            "payload_bytes": 3658576
+          },
+          "Device-to-Device": {
+            "calls": 20228,
+            "payload_bytes": 936700160
+          }
+        },
+        "allocation_events": [
+          {
+            "memory_kind": "Pinned",
+            "operation": "Allocation",
+            "count": 4,
+            "bytes": 13
+          },
+          {
+            "memory_kind": "Device",
+            "operation": "Allocation",
+            "count": 14,
+            "bytes": 188759560
+          },
+          {
+            "memory_kind": "Device Static",
+            "operation": "Allocation",
+            "count": 5378,
+            "bytes": 978331
+          }
+        ],
+        "trace_sha256": "fb1d0bbec87afb8d6c30e2b77eb8121cc814932778a8d9beec1ed089709d39b5"
+      },
+      "candidate": {
+        "copies": {
+          "Host-to-Device": {
+            "calls": 4752,
+            "payload_bytes": 69625756
+          },
+          "Device-to-Host": {
+            "calls": 13659,
+            "payload_bytes": 3658576
+          },
+          "Device-to-Device": {
+            "calls": 2372,
+            "payload_bytes": 760064
+          }
+        },
+        "allocation_events": [
+          {
+            "memory_kind": "Pinned",
+            "operation": "Allocation",
+            "count": 4,
+            "bytes": 13
+          },
+          {
+            "memory_kind": "Device",
+            "operation": "Allocation",
+            "count": 15,
+            "bytes": 190856712
+          },
+          {
+            "memory_kind": "Device Static",
+            "operation": "Allocation",
+            "count": 5378,
+            "bytes": 978331
+          }
+        ],
+        "trace_sha256": "d90a522e029e7f321db55e65c9738751bac65298b941ba984f501bd6c25faa0c"
+      }
+    },
+    "interpretation": "Los bytes corresponden a cargas útiles de memcpy registradas, no al tráfico físico total de DRAM. Los eventos de asignación no incluyen toda la memoria del contexto o controlador y no sustituyen un pico de VRAM del proceso. La instrumentación se ejecutó fuera de los benchmarks de tiempo."
+  },
+  "lifecycle": {
+    "seconds": {
+      "reference": {
+        "construction": {
+          "first": [
+            0.009356283
+          ],
+          "warmup": [
+            0.00029226
+          ],
+          "measured": [
+            0.000309623,
+            0.000282973,
+            0.000296208,
+            0.00028129,
+            0.000280999
+          ]
+        },
+        "load_from_memory": {
+          "first": [
+            0.002535406
+          ],
+          "warmup": [
+            0.002100657
+          ],
+          "measured": [
+            0.002153757,
+            0.002162223,
+            0.002209652,
+            0.002108181,
+            0.002142165
+          ]
+        }
+      },
+      "candidate": {
+        "construction": {
+          "first": [
+            0.023744666
+          ],
+          "warmup": [
+            0.000419751
+          ],
+          "measured": [
+            0.000410753,
+            0.000422205,
+            0.000425812,
+            0.00041451,
+            0.000677667
+          ]
+        },
+        "load_from_memory": {
+          "first": [
+            0.002760379
+          ],
+          "warmup": [
+            0.002427042
+          ],
+          "measured": [
+            0.002361238,
+            0.002349065,
+            0.002390453,
+            0.002413095,
+            0.002529625
+          ]
+        }
+      }
+    },
+    "scope": "Sincronización CUDA antes y después de cada operación. First excluye crear el contexto inicial. Carga desde los mismos bytes del checkpoint anterior, sin E/S de disco ni destrucción del objeto. Un calentamiento y cinco repeticiones."
+  },
+  "verification": {
+    "cpu_ctest_targets": 5,
+    "asan_ubsan_ctest_targets": 3,
+    "clang_tidy": "21.1.6",
+    "clang_static_analyzer": "21.1.8",
+    "cuda_exact_tensors": 71,
+    "adam_steps_first": 4,
+    "adam_steps_after_resume": 8,
+    "old_cuda_checkpoint_recovery": true,
+    "weight_interval_pairs": 6,
+    "rejected_overlap_cases": 12,
+    "write_failure_regression": "RLIMIT_FSIZE=0, limitado al proceso de prueba. La escritura vacía antes devolvía éxito y ahora devuelve error.",
+    "full_case_parity": {
+      "status": "exact",
+      "compared_pairs": 14,
+      "retained_bundle_pairs": 42,
+      "trace_rows_per_side": 317440,
+      "artifact_count": 5442,
+      "verified_file_bytes": 736900406,
+      "repetition_consistency": {
+        "benchmark-1024": {
+          "repetitions": 4,
+          "same_scientific_state_across_repetitions": true
+        },
+        "benchmark-8192": {
+          "repetitions": 4,
+          "same_scientific_state_across_repetitions": true
+        },
+        "benchmark-32768": {
+          "repetitions": 6,
+          "same_scientific_state_across_repetitions": true
+        }
+      },
+      "receipt_sha256": "7baff97fcc732135466c1d97ddeee7b578bca24d47de2bfaa61b70b45c065e11"
+    },
+    "cuda_probe_source_sha256": "036f77fbe9d8033544e0973a33d4a371e9045c42f5b9d0c7c0d537b0aea55e7c",
+    "probe_output_close_fix": "El probe final añade cierre explícito de dos archivos de diagnóstico. Se comprobó en CPU, incluida la reproducción con límite de tamaño cero. No cambian la producción, las operaciones CUDA ni los binarios medidos."
+  },
+  "memcheck": {
+    "clean": false,
+    "exit_code": 99,
+    "reported_allocations": 17,
+    "reported_total_bytes": 159399445,
+    "pinned_host_bytes_in_total": 13,
+    "same_size_api_owner_distribution_in_reference_and_candidate": true,
+    "additional_lifecycle_constructions_and_loads": 6,
+    "observed_increase_in_reported_bytes": 0,
+    "other_memcheck_errors": 0,
+    "followup_issue": 202,
+    "limit": "No se demuestra ausencia general de fugas. Se conservan los informes sin supresiones ni reinicios de contexto.",
+    "primary_sources": [
+      {
+        "id": "cublas_workspaces",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cuda/CublasHandlePool.cpp#L113",
+        "observation": "Los mapas de espacios de trabajo se crean con new estático. clearCublasWorkspaces vacía sus entradas. Con :4096:8 se solicitan 33554432 bytes por espacio de trabajo."
+      },
+      {
+        "id": "cublas_handles",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cuda/CublasHandlePool.cpp#L392",
+        "observation": "El pool de handles usa un shared_ptr cuyo deleter no destruye el pool. Los handles se reservan por hilo y dispositivo."
+      },
+      {
+        "id": "cudnn_handles",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cudnn/Handle.cpp#L12",
+        "observation": "destroyCuDNNHandle no llama a cudnnDestroy. El código documenta problemas de orden de destrucción del contexto CUDA. getCudnnHandle usa un pool y una ventana por hilo."
+      },
+      {
+        "id": "handle_reuse",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cuda/detail/DeviceThreadHandles.h#L1",
+        "observation": "El pool devuelve handles al conjunto disponible al terminar los hilos y reutiliza recursos según el máximo de hilos simultáneos."
+      },
+      {
+        "id": "tensor_cache",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/c10/cuda/CUDACachingAllocator.cpp#L3274",
+        "observation": "free_block devuelve bloques al pool de caché. emptyCache y release_cached_blocks son caminos separados para devolver bloques elegibles al allocator del sistema."
+      },
+      {
+        "id": "allocation_sizes",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/c10/core/AllocatorConfig.h",
+        "observation": "El SDK instalado declara kSmallBuffer=2097152 y large_segment_size=20971520 por defecto. Son tamaños de segmentos, no tamaños demostrados de los tensores que seguían vivos al cierre."
+      },
+      {
+        "id": "host_cache",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/core/CachingHostAllocator.h#L289",
+        "observation": "El destructor inspeccionado espera las tareas de fondo. empty_cache es una operación separada que procesa eventos y libera bloques disponibles."
+      },
+      {
+        "id": "host_backend",
+        "url": "https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/cuda/CachingHostAllocator.cpp#L253",
+        "observation": "El allocator host CUDA se registra como instancia estática. Las trazas de uno y cuatro bytes pasan por ese allocator al extraer escalares o índices."
+      }
+    ],
+    "limitations": [
+      "Los logs no distinguen subbloques vivos de bloques reservados por la caché. La igualdad de segmentos no demuestra por sí sola que todos los tensores hayan sido liberados.",
+      "La estabilidad se ha observado en este recorrido acotado. No establece ausencia general de fugas ni comportamiento con duraciones o números de hilos distintos.",
+      "Los recursos internos de cuBLAS y cuDNN se atribuyen a sus API de creación por las trazas. No se ha inspeccionado su implementación propietaria.",
+      "Las fuentes enlazadas corresponden a la revisión declarada por version.py. Esta revisión no recompila ni verifica bit a bit las bibliotecas precompiladas.",
+      "No se han aplicado supresiones, reinicios de contexto, vaciado de cachés ni destrucción de handles para alterar el diagnóstico.",
+      "La existencia de API de vaciado no acredita que sea seguro invocarlas mientras otros hilos, streams o usuarios conserven recursos."
+    ],
+    "attribution_sha256": "dab449581a8c260a09ed50c06c81190990eced9524f28ae0061f9a347c9c18fb"
+  },
+  "limits": [
+    "Las tres medianas son inferiores, con dispersión considerable en las cargas de 8.192 y 32.768 transiciones. Tres de las once parejas medidas son más lentas. No se afirma una aceleración uniforme ni significación estadística.",
+    "Construir y cargar la GRU cuesta más por la compactación inicial. La pasada instrumentada registra 2 MiB adicionales de asignaciones de dispositivo.",
+    "No se han medido energía ni coste monetario. Los resultados técnicos no acreditan generalización financiera.",
+    "La campaña real y las simulaciones anteriores mantienen sus ejecutables y fuentes congelados."
+  ],
+  "build": {
+    "type": "Release",
+    "optimization": "-O3",
+    "lto": false,
+    "pgo": false,
+    "sanitizers": false,
+    "source_changed": "native/src/ppo_policy.cpp",
+    "baseline_source_sha256": "b0d54ed761c0fc6cdabdfc3330e7164364e92555f35edad5484b663f4dab3217",
+    "candidate_source_sha256": "b954f7256edd1fb51a105e31bedcc1eadf35dd2b4907f92c0f04af76d92e17c6"
+  }
+}
