@@ -82,8 +82,9 @@ cobertura o mutación. El [recibo](../../reports/data/chinese-balance-expansion-
 enlaza las once reconciliaciones y conserva hashes, recuentos por activo y por
 ventana, tiempos y límites.
 
-Quedan 797 de los 810 instrumentos con cuatro fuentes potenciales sin una
-edición contable admitida en este recorrido. Los anuales de este lote no
+Esta edición dejaba 797 de los 810 instrumentos con cuatro fuentes potenciales
+sin una edición contable admitida. El [segundo lote](chinese-balance-batch02.md)
+amplía la unión a 25 empresas y 5.374 muestras, con otra identidad. Los anuales de este lote no
 aportan por sí solos actualizaciones contables de 2023. Hay que ampliar
 publicaciones y comprobar sus versiones antes de considerar completa la
 cohorte. Los textos mantienen la categoría `original_audited`, sin atribuirles

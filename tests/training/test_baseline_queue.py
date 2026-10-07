@@ -12,10 +12,10 @@ def module():
     return importlib.import_module("mars_titan.training.baseline_queue")
 
 
-def study(tmp_path):
+def study(tmp_path, arm="US"):
     root = tmp_path / "neural"
     (root / "views").mkdir(parents=True)
-    view = root / "views/US.json"
+    view = root / "views" / f"{arm}.json"
     view.write_text(
         json.dumps(
             dict(
@@ -53,12 +53,12 @@ def study(tmp_path):
         scope="full_corpus",
         cohort_complete=True,
         final_test_opened=False,
-        identity=dict(manifest_sha256="a" * 64),
+        identity=dict(manifest_sha256="a" * 64, configuration=dict(arms=[arm])),
         runs=[
             dict(
                 path="runs/case",
                 status="completed",
-                arm="US",
+                arm=arm,
                 weighting="natural",
                 report_sha256=sha256(run / "run.json"),
             )
@@ -75,6 +75,24 @@ def test_gate_returns_the_exact_view_of_completed_neural_runs(tmp_path):
     assert result["manifest"] == str(view.resolve())
     assert result["manifest_sha256"] == sha256(view)
     assert result["reference_summary_sha256"] == sha256(summary)
+
+
+@pytest.mark.parametrize("arm", ["US", "CN"])
+def test_single_market_is_read_from_the_declared_reference_configuration(tmp_path, arm):
+    summary, view, _ = study(tmp_path, arm)
+    market = module().reference_market(summary)
+    assert market == arm
+    assert module().reference_view(summary, market)["manifest"] == str(view.resolve())
+
+
+@pytest.mark.parametrize("arms", [None, [], ["US", "CN"], ["US+CN"], ["XX"], "CN", [["CN"]]])
+def test_temporal_market_cannot_be_guessed_from_a_missing_or_mixed_design(tmp_path, arms):
+    summary, _, _ = study(tmp_path)
+    content = json.loads(summary.read_text())
+    content["identity"]["configuration"]["arms"] = arms
+    summary.write_text(json.dumps(content))
+    with pytest.raises(ValueError, match="mercado"):
+        module().reference_market(summary)
 
 
 @pytest.mark.parametrize(

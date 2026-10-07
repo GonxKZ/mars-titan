@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "kind": "single_market_temporal_campaign_verification",
+  "observed_at_utc": "2026-10-07T07:03:37.478578+00:00",
+  "issues": [
+    234,
+    66
+  ],
+  "base_commit": "2a7045f5680877bf6ab303939f614f7b0875b74e",
+  "source_sha256": {
+    "src/mars_titan/training/temporal_search.py": "b1d890112cfc68abea0517833899e4b33ca6fd8eabe7bb1cb8fd8688704c7a2d",
+    "src/mars_titan/training/baseline_queue.py": "c117fd77389716d8119e91a829b89503035b4eca4dfad20559b44411dc607343",
+    "src/mars_titan/posttraining/completion.py": "46182334a2daba7b7193cddbca7d728f01381ee44d3e97f49ad7c722711668bc",
+    "src/mars_titan/posttraining/heldout.py": "b47bc18c2440ac795d18784e14cae29d9b38b0727443edffdaf1621bbcdc5f59",
+    "configs/baselines/convergence-temporal-search-cn.json": "2cf0c40ff1d4e014bf5f321b36bf66bf16fc0c7c33d886e6ed68aaa150bb9054"
+  },
+  "us_configuration_sha256": "f55d80ee65f47fcc1f82853f37eeb2b329afe4092ca5f8e189fe835e00c17bf7",
+  "scientific_runtime_unchanged": "301a41e9497d2d0f37cbeff07c6ebef95550835d",
+  "supported_arms": [
+    "US",
+    "CN"
+  ],
+  "weighting": "natural",
+  "pooled_arm_enabled": false,
+  "planned_counts": {
+    "neural": 400,
+    "tabular": 170,
+    "posttraining": 1320,
+    "evaluation": 1890,
+    "reliability_models": 1890
+  },
+  "cpu_tests": {
+    "passed": 136,
+    "seconds": 9.84,
+    "cuda_test_deselected": 1,
+    "cuda_visible_devices": "-1",
+    "test_command": "uv run --no-sync pytest -q tests/training/test_baseline_queue.py tests/training/test_cn_temporal_search.py tests/training/test_real_campaign.py tests/training/test_temporal_search.py tests/posttraining/test_completion.py tests/posttraining/test_completion_markets.py tests/posttraining/test_parent_selection.py tests/posttraining/test_heldout.py -k 'not strict_search_runs_prespecified'"
+  },
+  "cuda": {
+    "cn_and_inference_tests": 2,
+    "cn_and_inference_seconds": 15.08,
+    "cn_and_inference_peak_rss_kib": 1796388,
+    "us_regression_tests": 1,
+    "us_regression_seconds": 4.97,
+    "us_regression_peak_rss_kib": 1616264,
+    "technical_cn_runs": 30,
+    "technical_assets": 1,
+    "technical_monthly_decisions": 19,
+    "technical_macro_indicators": 140,
+    "technical_data_generated": true,
+    "real_market_quality_measured": false,
+    "paused_after_confirmed_runs": 3,
+    "recovered_to_confirmed_runs": 30,
+    "confirmed_checkpoints_unchanged": true,
+    "heldout_cpu_cuda_tolerances": {
+      "rtol": 1e-05,
+      "atol": 1e-07
+    }
+  },
+  "mutations": {
+    "temporal_preflight_killed": 5,
+    "temporal_preflight_total": 5,
+    "market_propagation_killed": 4,
+    "market_propagation_total": 4
+  },
+  "quality_convention": "Cobertura de sentencias y ramas de coverage.py. CRAP = CCN² × (1 − fracción de sentencias cubiertas)³ + CCN. CCN de radon por función superior. No es una garantía de corrección.",
+  "temporal_quality": {
+    "name": "_inputs",
+    "line": 20,
+    "endline": 101,
+    "ccn": 46,
+    "statements": 36,
+    "covered_statements": 32,
+    "statement_coverage": 0.8888888888888888,
+    "crap": 48.902606310013724,
+    "branch_counts": {
+      "num_branches": 24,
+      "covered_branches": 20,
+      "missing_branches": 4
+    }
+  },
+  "propagation_quality_receipt_sha256": "24b2f9a8f56ddf90f79cf84886b643112a0643cc708bd9c6bedf232342370187",
+  "campaign_resumed": true,
+  "candidate_mars_titan_implemented": false,
+  "final_test_opened": false,
+  "limits": [
+    "La configuración completa continúa rechazando una edición real CN con cobertura parcial.",
+    "La prueba técnica comprueba GRU y controles neuronales, no una campaña real completa de seis familias.",
+    "US+CN necesita representación contable y particiones con dos calendarios.",
+    "Las medidas son funcionales de una ejecución. No se mide una aceleración, energía ni bytes de transferencias.",
+    "Una contradicción entre configuration.arms y runs fue reproducida antes de exigir que todas las ejecuciones conserven el mismo brazo y peso natural."
+  ],
+  "propagation_coverage": [
+    {
+      "path": "src/mars_titan/posttraining/completion.py",
+      "coverage": {
+        "covered_lines": 209,
+        "num_statements": 253,
+        "percent_covered": 79.71830985915493,
+        "percent_covered_display": "80",
+        "missing_lines": 44,
+        "excluded_lines": 0,
+        "percent_statements_covered": 82.6086956521739,
+        "percent_statements_covered_display": "83",
+        "num_branches": 102,
+        "num_partial_branches": 24,
+        "covered_branches": 74,
+        "missing_branches": 28,
+        "percent_branches_covered": 72.54901960784314,
+        "percent_branches_covered_display": "73"
+      },
+      "changed_executable_lines": 13,
+      "changed_executable_lines_covered": 13,
+      "changed_executable_lines_missing": [],
+      "branches_from_added_lines": {
+        "observed_arcs": [
+          [
+            177,
+            178
+          ],
+          [
+            177,
+            179
+          ],
+          [
+            182,
+            183
+          ],
+          [
+            182,
+            184
+          ]
+        ],
+        "missing_arcs": []
+      }
+    },
+    {
+      "path": "src/mars_titan/posttraining/heldout.py",
+      "coverage": {
+        "covered_lines": 202,
+        "num_statements": 231,
+        "percent_covered": 84.32601880877743,
+        "percent_covered_display": "84",
+        "missing_lines": 29,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.44588744588745,
+        "percent_statements_covered_display": "87",
+        "num_branches": 88,
+        "num_partial_branches": 17,
+        "covered_branches": 67,
+        "missing_branches": 21,
+        "percent_branches_covered": 76.13636363636364,
+        "percent_branches_covered_display": "76"
+      },
+      "changed_executable_lines": 6,
+      "changed_executable_lines_covered": 6,
+      "changed_executable_lines_missing": [],
+      "branches_from_added_lines": {
+        "observed_arcs": [
+          [
+            127,
+            128
+          ],
+          [
+            127,
+            129
+          ]
+        ],
+        "missing_arcs": []
+      }
+    },
+    {
+      "path": "src/mars_titan/training/baseline_queue.py",
+      "coverage": {
+        "covered_lines": 51,
+        "num_statements": 72,
+        "percent_covered": 73.0,
+        "percent_covered_display": "73",
+        "missing_lines": 21,
+        "excluded_lines": 0,
+        "percent_statements_covered": 70.83333333333333,
+        "percent_statements_covered_display": "71",
+        "num_branches": 28,
+        "num_partial_branches": 2,
+        "covered_branches": 22,
+        "missing_branches": 6,
+        "percent_branches_covered": 78.57142857142857,
+        "percent_branches_covered_display": "79"
+      },
+      "changed_executable_lines": 11,
+      "changed_executable_lines_covered": 11,
+      "changed_executable_lines_missing": [],
+      "branches_from_added_lines": {
+        "observed_arcs": [
+          [
+            19,
+            20
+          ],
+          [
+            19,
+            21
+          ],
+          [
+            22,
+            32
+          ],
+          [
+            22,
+            33
+          ]
+        ],
+        "missing_arcs": []
+      }
+    }
+  ],
+  "verification_receipts_sha256": {
+    "final-cpu-isolated.log": "d8c3499e3121d216f3c55e48cec44df234bd7bc1cf71d3dac4ce4de534adfdcf",
+    "root-foreign-red.log": "5ed42739097055280960e2586c15b510b36765df6a4b169602fdfe51a24d35b0",
+    "cuda-attempt2/window.json": "2b4ab0472d1d407a26299f02d56894d4ff830c541794c6ac75af56dfedc2103d",
+    "cuda-attempt2/cn-and-heldout.log": "d8cfc91ced6ddb1163a0020b9d7b095deed946b46fd8bee64a203cef934d31e9",
+    "cuda-attempt2/us-regression.log": "e8eeed5ff3f8fc86b4d27320efbde6451cb039dfaffe148188528a6028a0a471",
+    "completion-fixture-review.json": "75abee327683c01151afc0fd50bbc07be29859d5ad9f4a8cc7b107a569cd40af"
+  },
+  "changed_lines_coverage": {
+    "executable_observed": 30,
+    "executable_total": 30,
+    "arcs_observed": 10,
+    "arcs_total": 10
+  }
+}

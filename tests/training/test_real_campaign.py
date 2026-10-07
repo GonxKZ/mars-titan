@@ -11,7 +11,7 @@ from mars_titan.evaluation.splits import build_folds
 from mars_titan.training.checkpoints import StopRequest
 
 
-def inputs(tmp_path):
+def inputs(tmp_path, market="US"):
     root = tmp_path / "inputs"
     root.mkdir()
     encoded = root / "encoded/manifest.json"
@@ -28,6 +28,7 @@ def inputs(tmp_path):
         admission, dict(required_indicator_ids=[f"indicator-{index}" for index in range(140)])
     )
     protocol = json.loads(Path("configs/evaluation/real-expanded-walk-forward.json").read_text())
+    protocol["market"] = market
     views = root / "views"
     constants = dict(
         parent_sha256="a" * 64, macro_sha256="b" * 64, admission_sha256=sha256(admission)
@@ -47,6 +48,10 @@ def inputs(tmp_path):
             manifest,
             dict(
                 final_test_opened=False,
+                scope="full_corpus",
+                cohort_complete=True,
+                markets=[protocol["market"]],
+                assets=[dict(market=protocol["market"], symbol="fixture", counts=counts)],
                 context_sessions=64,
                 configuration=dict(source_manifest_sha256=sha256(encoded)),
                 counts=counts,
@@ -66,7 +71,7 @@ def inputs(tmp_path):
     atomic_json(views / "report.json", report)
     files = {}
     for name, filename in (
-        ("neural_config", "convergence-temporal-search-us.json"),
+        ("neural_config", f"convergence-temporal-search-{market.lower()}.json"),
         ("tabular_config", "tabular-convergence-us.json"),
         ("post_config", "real-matched-posttraining.json"),
     ):
@@ -133,10 +138,11 @@ def write_child(stage, path, expected, args, identity, *, status="completed", wr
     return report
 
 
-def test_plan_derives_all_counts_and_rejects_mismatched_seeds(tmp_path):
+@pytest.mark.parametrize("market", ["US", "CN"])
+def test_plan_derives_all_counts_and_rejects_mismatched_seeds(tmp_path, market):
     from mars_titan.training.real_campaign import prepare_campaign
 
-    args = inputs(tmp_path)
+    args = inputs(tmp_path, market)
     identity, stages = prepare_campaign(args)
     assert len(identity["neural"]["manifests"]) == 10
     assert [(s["name"], s["planned"], s["unit"]) for s in stages] == [

@@ -213,7 +213,10 @@ def test_cli_routes_each_phase_and_preserves_paused_exit_status(monkeypatch, sta
 
 
 @pytest.mark.parametrize("stage", ["tabular", "posttraining", "evaluation"])
-def test_stage_worker_calls_one_backend_and_takes_no_nested_gpu_lease(tmp_path, monkeypatch, stage):
+@pytest.mark.parametrize("arm", ["US", "CN"])
+def test_stage_worker_calls_one_backend_and_takes_no_nested_gpu_lease(
+    tmp_path, monkeypatch, stage, arm
+):
     from types import SimpleNamespace
 
     from mars_titan.posttraining import completion, heldout, queue
@@ -223,7 +226,7 @@ def test_stage_worker_calls_one_backend_and_takes_no_nested_gpu_lease(tmp_path, 
     result = dict(status="completed", completed_runs=1, planned_runs=1)
 
     def execute(*args, **kwargs):
-        calls.append("backend")
+        calls.append(kwargs.get("arm", "US"))
         assert kwargs["stop"].requested is False
         return result
 
@@ -251,10 +254,18 @@ def test_stage_worker_calls_one_backend_and_takes_no_nested_gpu_lease(tmp_path, 
         tabular_config=tmp_path / "tabular.json",
         post_config=tmp_path / "post.json",
     )
-    assert completion._stage(args) == 0
-    assert calls == (
-        ["lease", "backend", "check", "release"] if stage == "tabular" else ["backend"]
+    reference = args.reference / args.fold / "summary.json"
+    reference.parent.mkdir(parents=True)
+    reference.write_text(
+        json.dumps(
+            dict(
+                identity=dict(configuration=dict(arms=[arm])),
+                runs=[dict(arm=arm, weighting="natural")],
+            )
+        )
     )
+    assert completion._stage(args) == 0
+    assert calls == (["lease", arm, "check", "release"] if stage == "tabular" else [arm])
 
 
 @pytest.mark.parametrize("status", [None, "unknown", []])

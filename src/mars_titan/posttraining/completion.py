@@ -153,7 +153,7 @@ def run_child(
 def _inputs(args):
     from mars_titan.posttraining.preparation import encoder_contract
     from mars_titan.posttraining.queue import _queue_code, read_design
-    from mars_titan.training.baseline_queue import reference_view
+    from mars_titan.training.baseline_queue import reference_market, reference_view
     from mars_titan.training.partition_contract import supervision_bounds
     from mars_titan.training.tabular_search import _code, _configuration
 
@@ -168,12 +168,19 @@ def _inputs(args):
         raise ValueError("Las ventanas no forman una secuencia completa")
     if sum(row["completed_runs"] for row in folds) != root["completed_runs"]:
         raise ValueError("El total neuronal no concilia las ventanas")
-    references = {}
+    references, market = {}, None
     for row in folds:
         if row["status"] != "completed" or row["completed_runs"] != row["planned_runs"]:
             raise ValueError("Hay una ventana neuronal pendiente")
-        proof = reference_view(args.reference / row["id"] / "summary.json")
+        reference = args.reference / row["id"] / "summary.json"
+        arm = reference_market(reference)
+        if market is not None and arm != market:
+            raise ValueError("Las ventanas deben conservar el mismo mercado")
+        market = arm
+        proof = reference_view(reference, arm)
         source, _ = read_manifest(Path(proof["manifest"]), 8 * 1024**2)
+        if source.get("temporal_view", {}).get("protocol", {}).get("market") != arm:
+            raise ValueError("El mercado de la referencia no coincide con su protocolo")
         if set(supervision_bounds(source)) != {"train", "validation", "calibration", "evaluation"}:
             raise ValueError("Faltan las cuatro particiones temporales")
         admission, _ = read_manifest(Path(source["temporal_view"]["admission_path"]), 8 * 1024**2)
@@ -196,6 +203,7 @@ def _inputs(args):
         reference_runs=folds[0]["planned_runs"],
     )
     identity = dict(
+        market=market,
         reference_sha256=digest,
         references=references,
         tabular_config_sha256=tabular_hash,
@@ -204,6 +212,9 @@ def _inputs(args):
         code=_queue_code()
         | _code()
         | {
+            "training/baseline_queue.py": sha256(
+                Path(__file__).parents[1] / "training/baseline_queue.py"
+            ),
             "posttraining/completion.py": sha256(Path(__file__)),
             "posttraining/heldout.py": sha256(Path(__file__).with_name("heldout.py")),
             "posttraining/analysis.py": sha256(Path(__file__).with_name("analysis.py")),
@@ -213,8 +224,11 @@ def _inputs(args):
 
 
 def _stage(args):
+    from mars_titan.training.baseline_queue import reference_market
+
     folder = args.output / args.fold
     reference = args.reference / args.fold / "summary.json"
+    arm = reference_market(reference)
     with StopRequest() as stop:
         if args.stage == "tabular":
             import torch
@@ -224,7 +238,9 @@ def _stage(args):
 
             with GpuLease() as lease:
                 torch.set_num_threads(4)
-                result = run_queue(args.tabular_config, reference, folder / "tabular", stop=stop)
+                result = run_queue(
+                    args.tabular_config, reference, folder / "tabular", arm=arm, stop=stop
+                )
                 lease.check()
         elif args.stage == "posttraining":
             from mars_titan.posttraining.queue import run_queue
@@ -235,6 +251,7 @@ def _stage(args):
                 folder / "tabular/summary.json",
                 args.encoded,
                 folder / "posttraining",
+                arm=arm,
                 stop=stop,
             )
         else:
@@ -245,6 +262,7 @@ def _stage(args):
                 folder / "tabular/summary.json",
                 folder / "posttraining/summary.json",
                 folder / "evaluation",
+                arm=arm,
                 stop=stop,
             )
     print(

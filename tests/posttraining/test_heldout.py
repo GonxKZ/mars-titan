@@ -198,7 +198,7 @@ def test_evaluation_resume_skips_confirmed_models_and_detects_corruption(
             )
         )
     proof = dict(manifest=str(manifest), manifest_sha256=sha256(manifest))
-    monkeypatch.setattr(heldout, "_jobs", lambda *args: (proof, {}, jobs))
+    monkeypatch.setattr(heldout, "_jobs", lambda *args, **kwargs: (proof, {}, jobs))
 
     class Lease:
         record = {}
@@ -243,6 +243,7 @@ def test_evaluation_resume_skips_confirmed_models_and_detects_corruption(
     assert paused["status"] == "paused" and paused["completed_runs"] == 1
     resumed = heldout.run_evaluation(*args, stop=StopRequest())
     assert resumed["status"] == "completed" and resumed["completed_runs"] == 2
+    assert resumed["identity"]["arm"] == "US"
     assert len(evaluated) == 4
     assert resumed["frozen_at_utc"] == paused["frozen_at_utc"]
     summary_hash = sha256(folder / "summary.json")
@@ -379,14 +380,15 @@ def test_freeze_links_reference_continuations_and_rejects_unrelated_parent(tmp_p
         heldout._jobs(*args)
 
 
-def test_freeze_preserves_matching_parents_and_rejects_a_rebound_seed(tmp_path, monkeypatch):
+@pytest.mark.parametrize("arm", ["US", "CN"])
+def test_freeze_preserves_matching_parents_and_rejects_a_rebound_seed(tmp_path, monkeypatch, arm):
     from mars_titan.data.storage import atomic_json, sha256
     from mars_titan.posttraining import heldout
     from mars_titan.posttraining.parent_selection import matching_parents
     from tests.posttraining.test_parent_selection import matched_campaign
 
-    reference, tabular, _ = matched_campaign(tmp_path)
-    proof = matching_parents(reference, tabular, seeds=[42, 43, 44])
+    reference, tabular, _ = matched_campaign(tmp_path, arm)
+    proof = matching_parents(reference, tabular, arm, seeds=[42, 43, 44])
     root = tmp_path / "adjustments"
     run = root / "gru-seed43/run.json"
     run.parent.mkdir(parents=True)
@@ -415,10 +417,40 @@ def test_freeze_preserves_matching_parents_and_rejects_a_rebound_seed(tmp_path, 
         pytest.fail("La evaluación emparejada no debe resolver la prueba antigua")
 
     monkeypatch.setattr(heldout, "selected_parents", forbidden)
-    actual, _, jobs = heldout._jobs(reference, tabular, path)
+    actual, _, jobs = heldout._jobs(reference, tabular, path, arm=arm)
     assert actual == proof
     assert jobs[-1]["id"] == "posttraining/gru/seed-43/real/mae"
     summary["identity"]["proof"]["parents_by_seed"]["gru"]["43"]["sha256"] = "f" * 64
     atomic_json(path, summary)
     with pytest.raises(ValueError, match="referencias congeladas"):
-        heldout._jobs(reference, tabular, path)
+        heldout._jobs(reference, tabular, path, arm=arm)
+
+
+@pytest.mark.parametrize("arm", ["US+CN", "XX", None, ["CN"]])
+def test_frozen_evaluation_rejects_unsupported_markets_before_opening_sources(tmp_path, arm):
+    from mars_titan.posttraining.heldout import _jobs
+
+    with pytest.raises(ValueError, match="mercado"):
+        _jobs(tmp_path / "neural", tmp_path / "tabular", tmp_path / "adjustments", arm=arm)
+
+
+def test_cli_evaluation_passes_the_explicit_chinese_arm_to_the_runner(tmp_path, monkeypatch):
+    import sys
+
+    from mars_titan.posttraining import heldout
+
+    received = []
+
+    def evaluate(**kwargs):
+        received.append(kwargs)
+        return dict(status="completed", planned_runs=1, completed_runs=1)
+
+    argv = ["heldout", "--arm", "CN"]
+    for name in ("reference", "tabular", "adjustments", "output"):
+        argv.extend(("--" + name, str(tmp_path / name)))
+    monkeypatch.setattr(sys, "argv", argv)
+    monkeypatch.setattr(heldout, "run_evaluation", evaluate)
+    assert heldout.main() == 0
+    assert len(received) == 1 and received[0]["arm"] == "CN"
+    assert received[0]["reference"] == tmp_path / "reference"
+    assert received[0]["stop"].requested is False
