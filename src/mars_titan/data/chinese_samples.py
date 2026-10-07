@@ -8,7 +8,7 @@ from pathlib import Path
 
 from mars_titan.training.corpus_targets import prepare_corpus_targets
 
-from .china_preparation import derive_chinese_preparation
+from .china_preparation import _fact_editions, _fact_history, derive_chinese_preparation
 from .cohort_files import read_manifest, safe_destination
 from .corpus_encoding import encode_corpus
 from .currency_samples import _macro_inputs
@@ -25,12 +25,15 @@ CNY_CONCEPTS = (
 _CODE = (
     "chinese_samples.py",
     "china_preparation.py",
+    "china_fundamentals.py",
+    "china_sources.py",
     "cohort_samples.py",
     "corpus_encoding.py",
     "currency_samples.py",
     "cohort_contexts.py",
     "cohort_files.py",
     "macro_coverage.py",
+    "preparation.py",
     "storage.py",
     "temporal.py",
 )
@@ -102,6 +105,7 @@ def prepare_chinese_samples(
     market_factors,
     encoders=None,
     clock=None,
+    additional_facts=(),
 ):
     """Derivar, codificar y etiquetar un activo con las 140 posiciones macro completas.
 
@@ -128,13 +132,14 @@ def prepare_chinese_samples(
             market_factors,
         ),
     )
+    editions = _fact_editions(facts_edition, additional_facts)
     safe_destination(output)
     code = {name: sha256(Path(__file__).with_name(name)) for name in _CODE}
     parent, symbol, original, sources = _parent(parent_preparation, facts_edition)
     for protected in (
         parent_preparation,
         Path(parent["prepared_root"]),
-        facts_edition,
+        *editions,
         macro_path,
         admission_path.parent,
         catalog_path,
@@ -146,6 +151,15 @@ def prepare_chinese_samples(
     clock = clock or MarketClock("CN", "1990-12-19", "2026-01-01")
     if clock.market != "CN":
         raise ValueError("La muestra china necesita su calendario CN")
+    origin, original_hash = read_manifest(original, maximum=4 * 1024**2)
+    if original_hash != sources[original]:
+        raise ValueError("La preparación original cambió durante su lectura")
+    _, reviewed_sources, _, _ = _fact_history(editions, origin, clock, "2023-12-31")
+    if any(
+        path in sources and sources[path] != digest for path, digest in reviewed_sources.items()
+    ):
+        raise ValueError("Una fuente contable cambió durante su lectura")
+    sources.update(reviewed_sources)
     identifiers = sorted(_read_catalog(catalog_path))
     macros, admitted, admission_hash, decisions_hash = _macro_inputs(
         macro_path, admission_path, catalog_path, identifiers, market="CN"
@@ -180,6 +194,8 @@ def prepare_chinese_samples(
         source_unit="CNY",
         context_sessions=64,
     )
+    if len(editions) > 1:
+        identity["facts_editions"] = [str(path.resolve()) for path in editions]
     output.mkdir(parents=True, exist_ok=True)
     for name in (
         ".edition.lock",
@@ -200,7 +216,9 @@ def prepare_chinese_samples(
             atomic_json(configuration, identity)
         configuration_hash = _confirmed(configuration, identity)
         destination = output / "prepared/CN" / symbol
-        derive_chinese_preparation(original, facts_edition, destination, clock=clock)
+        derive_chinese_preparation(
+            original, facts_edition, destination, clock=clock, additional_facts=editions[1:]
+        )
         selection = dict(
             schema_version=1,
             kind="prepared_cohort",
@@ -300,6 +318,7 @@ def main(argv=None):
         "market-factors",
     ):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--additional-facts", type=Path, action="append", default=[])
     args = parser.parse_args(argv)
     import torch
 

@@ -143,6 +143,11 @@ estadounidense conserva sus conceptos USD y CAD. La [edición china independient
 utiliza tres conceptos CAS en CNY y no les atribuye equivalencia con US-GAAP.
 La comparación conjunta necesita una representación común y un protocolo temporal.
 
+La [unión de publicaciones de 2022 y 2023](chinese-fact-history.md) amplía la
+preparación a Ping An y Vanke. Conserva cada fecha, identifica la equivalencia
+numérica aplicada a los originales de Vanke y obtiene 671 etiquetas en las dos
+ediciones por activo, pendientes de una comparación temporal común.
+
 La verificación inicial del contrato pasó 961 pruebas sin omisiones, incluidas
 39 específicas. Detectó seis mutaciones dirigidas. El [recibo de calidad](../../reports/resources/china-reconciliation-quality.json)
 registra la cobertura, complejidad, convención de CRAP y límites de estas comprobaciones.

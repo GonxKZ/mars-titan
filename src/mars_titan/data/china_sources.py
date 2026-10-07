@@ -1,8 +1,10 @@
 """Contraste contable con evidencia primaria, sin fechar los cierres como anuncios."""
 
+import math
 import re
+import sys
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation, localcontext
+from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation, localcontext
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
@@ -38,6 +40,33 @@ def _number(value):
     if not result.is_finite() or result.adjusted() > 24 or result.adjusted() < -12:
         raise ValueError("La cifra es no finita o queda fuera del rango contable admitido")
     return result
+
+
+def _numeric_match(original, value, reported, multiplier, policy):
+    if policy not in {"exact_decimal", "binary64_roundtrip"}:
+        raise ValueError("La política de contraste numérico no está admitida")
+    if original == value:
+        return {"policy": "exact_decimal"}
+    if policy == "exact_decimal":
+        return None
+    if (sys.float_info.radix, sys.float_info.mant_dig, sys.float_info.max_exp) != (2, 53, 1024):
+        raise ValueError("El contraste necesita una implementación binary64")
+    binary = float(value)
+    if not math.isfinite(binary) or float(original) != binary:
+        return None
+    with localcontext() as context:
+        context.prec = max(len(original.as_tuple().digits), len(value.as_tuple().digits)) + 8
+        quantum = (Decimal(1).scaleb(reported.as_tuple().exponent) * multiplier).normalize()
+        ulp = Decimal.from_float(math.ulp(binary))
+        if quantum < 2 * ulp or original.quantize(quantum, rounding=ROUND_HALF_EVEN) != value:
+            return None
+        return dict(
+            policy=policy,
+            original_value_cny=format(original, "f"),
+            published_quantum_cny=format(quantum, "f"),
+            binary64_ulp_cny=format(ulp, "f"),
+            absolute_difference_cny=format(abs(original - value), "f"),
+        )
 
 
 def _publication(evidence):
@@ -139,8 +168,15 @@ def reconcile_chinese_fact(raw: dict, evidence: dict) -> dict:
         with localcontext() as context:
             context.prec = len(reported.as_tuple().digits) + len(multiplier.as_tuple().digits)
             value = reported * multiplier
-            if _number(raw[field]) != value:
-                return {"status": "value_mismatch"}
+        match = _numeric_match(
+            _number(raw[field]),
+            value,
+            reported,
+            multiplier,
+            evidence.get("numeric_match_policy", "exact_decimal"),
+        )
+        if match is None:
+            return {"status": "value_mismatch"}
         fact = {
             key: evidence[key]
             for key in (
@@ -165,6 +201,9 @@ def reconcile_chinese_fact(raw: dict, evidence: dict) -> dict:
             published_at=timestamp,
             value_cny=format(value, "f"),
         )
-        return {"status": "reconciled", "fact": fact, "original_context_recovered": False}
+        result = {"status": "reconciled", "fact": fact, "original_context_recovered": False}
+        if match["policy"] != "exact_decimal":
+            result["numeric_match"] = match
+        return result
     except (KeyError, TypeError, ValueError, InvalidOperation, OverflowError) as error:
         return {"status": "invalid_evidence", "detail": str(error)}

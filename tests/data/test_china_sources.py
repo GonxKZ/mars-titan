@@ -1,4 +1,5 @@
 import importlib
+from decimal import Decimal
 
 import pytest
 
@@ -151,6 +152,60 @@ def test_document_location_must_match_presentation_and_publication(changes):
 def test_sub_decimal_difference_is_not_rounded_into_agreement():
     value = "100." + "0" * 55 + "1"
     assert reconcile(evidence=proof(value=value))["status"] == "value_mismatch"
+
+
+def test_binary64_serialization_requires_an_explicit_review_policy():
+    raw = source(total_assets=Decimal("1757124444202.9499511719"))
+    evidence = proof(value="1757124444202.95", unit_multiplier="1")
+    assert reconcile(raw, evidence)["status"] == "value_mismatch"
+    result = reconcile(raw, {**evidence, "numeric_match_policy": "binary64_roundtrip"})
+    assert result["status"] == "reconciled"
+    assert result["fact"]["value_cny"] == "1757124444202.95"
+    detail = result["numeric_match"]
+    assert detail["policy"] == "binary64_roundtrip"
+    assert detail["original_value_cny"] == "1757124444202.9499511719"
+    assert detail["published_quantum_cny"] == "0.01"
+    assert Decimal(detail["absolute_difference_cny"]) == Decimal("0.0000488281")
+
+
+@pytest.mark.parametrize(
+    "raw,value",
+    [
+        ("1757124444202.9599609375", "1757124444202.95"),
+        ("1757124444202.9501953125", "1757124444202.95"),
+        ("1757124444202.94", "1757124444202.95"),
+        ("70368744177664.015625", "70368744177664.02"),
+        ("10000000000000000.00", "10000000000000000.01"),
+        ("0.1", "0.100000000000000001"),
+    ],
+)
+def test_binary64_policy_cannot_hide_published_changes_or_excess_precision(raw, value):
+    result = reconcile(
+        source(total_assets=Decimal(raw)),
+        proof(value=value, unit_multiplier="1", numeric_match_policy="binary64_roundtrip"),
+    )
+    assert result["status"] == "value_mismatch"
+
+
+def test_unknown_numeric_match_policy_is_rejected_even_for_equal_values():
+    assert (
+        reconcile(evidence=proof(numeric_match_policy="approximate"))["status"]
+        == "invalid_evidence"
+    )
+
+
+def test_binary64_policy_retains_scale_and_negative_sign():
+    value = Decimal("-1757124.44420295")
+    raw = Decimal("-1757124444202.9499511719")
+    result = reconcile(
+        source(total_assets=raw),
+        proof(
+            value=str(value), unit_multiplier="1000000", numeric_match_policy="binary64_roundtrip"
+        ),
+    )
+    assert result["status"] == "reconciled"
+    assert result["fact"]["value_cny"] == "-1757124444202.95000000"
+    assert result["numeric_match"]["published_quantum_cny"] == "0.01"
 
 
 def test_equal_long_decimal_is_preserved_exactly():
