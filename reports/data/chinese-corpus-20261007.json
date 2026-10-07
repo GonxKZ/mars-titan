@@ -1,0 +1,656 @@
+{
+  "observed_at_utc": "2026-10-07T01:09:21.781640+00:00",
+  "sources": [
+    {
+      "symbol": "000001.SZ",
+      "report_sha256": "32340df8ca819e717cf7410db393c70975d36b7f65b52ff33341342910f8ffea"
+    },
+    {
+      "symbol": "000002.SZ",
+      "report_sha256": "eb6cd39dea235eed410d63d20377718da3e65748bb0e412d98f694a25108ed56"
+    }
+  ],
+  "union_report_sha256": "c32b245cd3242cc8f0197cb0e370f658bfdce9a9ed5b8b16494c09678e16ba1b",
+  "union_configuration_sha256": "a89a55c457a1e75e45bba7ace886caac5dfac57bb8d9a6979e6b0f73bfa7d614",
+  "samples": 721,
+  "annual_counts": {
+    "train": 266,
+    "validation": 451
+  },
+  "parent_candidates": 892,
+  "selected_assets": 2,
+  "source_bytes_preserved": true,
+  "reuse_without_rewrite": true,
+  "encoder_contract_verified": true,
+  "temporal_report_sha256": "de4897dc415bf81f7158465f5bd63b74e68ea6d84bbe2cc3632455ee055952b2",
+  "protocol_sha256": "420655d9cc5d65ae54d97d2eadca878763b95da4f9755442e4d7cb69589ce820",
+  "protocol_equals_us_except_market": true,
+  "folds": [
+    {
+      "id": "fold-000",
+      "counts": {
+        "train": 225,
+        "validation": 71,
+        "calibration": 38,
+        "evaluation": 42
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-001",
+      "counts": {
+        "train": 266,
+        "validation": 70,
+        "calibration": 42,
+        "evaluation": 34
+      },
+      "recovered_annual_labels": 0
+    },
+    {
+      "id": "fold-002",
+      "counts": {
+        "train": 298,
+        "validation": 82,
+        "calibration": 34,
+        "evaluation": 38
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-003",
+      "counts": {
+        "train": 338,
+        "validation": 78,
+        "calibration": 38,
+        "evaluation": 33
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-004",
+      "counts": {
+        "train": 382,
+        "validation": 74,
+        "calibration": 33,
+        "evaluation": 38
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-005",
+      "counts": {
+        "train": 418,
+        "validation": 73,
+        "calibration": 38,
+        "evaluation": 44
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-006",
+      "counts": {
+        "train": 458,
+        "validation": 72,
+        "calibration": 44,
+        "evaluation": 38
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-007",
+      "counts": {
+        "train": 493,
+        "validation": 84,
+        "calibration": 38,
+        "evaluation": 21
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-008",
+      "counts": {
+        "train": 532,
+        "validation": 84,
+        "calibration": 21,
+        "evaluation": 38
+      },
+      "recovered_annual_labels": 2
+    },
+    {
+      "id": "fold-009",
+      "counts": {
+        "train": 578,
+        "validation": 61,
+        "calibration": 38,
+        "evaluation": 36
+      },
+      "recovered_annual_labels": 2
+    }
+  ],
+  "unique_rows_by_role": {
+    "train": 578,
+    "validation": 414,
+    "calibration": 364,
+    "evaluation": 362
+  },
+  "unique_rows_across_windows": 715,
+  "repeated_evaluation_rows": 0,
+  "reuse_seconds": 0.14118099701590836,
+  "total_seconds": 5.455657865997637,
+  "peak_rss_kib": 718660,
+  "training_ready": false,
+  "scientific_training_started": false,
+  "final_test_opened": false,
+  "valid_labels_not_used_in_any_window": [
+    {
+      "symbol": "000001.SZ",
+      "prediction_at": "2023-10-31T07:05:00.000000",
+      "reasons": [
+        "label_crosses_boundary",
+        "outside_window",
+        "session_gap"
+      ]
+    },
+    {
+      "symbol": "000001.SZ",
+      "prediction_at": "2023-11-30T07:05:00.000000",
+      "reasons": [
+        "label_crosses_boundary",
+        "outside_window",
+        "session_gap"
+      ]
+    },
+    {
+      "symbol": "000002.SZ",
+      "prediction_at": "2023-10-31T07:05:00.000000",
+      "reasons": [
+        "label_crosses_boundary",
+        "outside_window",
+        "session_gap"
+      ]
+    },
+    {
+      "symbol": "000002.SZ",
+      "prediction_at": "2023-11-30T07:05:00.000000",
+      "reasons": [
+        "label_crosses_boundary",
+        "outside_window",
+        "session_gap"
+      ]
+    }
+  ],
+  "first_call_reused_existing_edition": true,
+  "first_call_seconds": 0.2234481479972601,
+  "schema_version": 1,
+  "kind": "chinese_corpus_verification",
+  "source_sha256": {
+    "src/mars_titan/data/chinese_corpus.py": "e65967fcff82b6d6cf24c2f66a10975b0b03eb74c158f004ce978ab0a23601c8",
+    "src/mars_titan/training/temporal_corpus.py": "0271f9e56df89b67f724b5e155db550c7eecf5f8d43d8e9b07faab7a497b89bc"
+  },
+  "cuda": {
+    "technical_check": true,
+    "scientific_training_started": false,
+    "optimizer_updates": 0,
+    "manifest_sha256": "567f99a085bf5e465f9ac9f789af755bdab7dbb53124288228788fff9f0a92d0",
+    "shapes": {
+      "news": [
+        64,
+        384
+      ],
+      "charts": [
+        64,
+        512
+      ],
+      "fundamentals": [
+        64,
+        9
+      ],
+      "macro": [
+        64,
+        420
+      ],
+      "prices": [
+        64,
+        64,
+        5
+      ]
+    },
+    "input_transfer_exact": true,
+    "results": [
+      {
+        "family": "rnn",
+        "rows": 64,
+        "max_absolute_difference": 5.960464477539062e-07,
+        "finite_gradients": true,
+        "rtol": 0.0001,
+        "atol": 1e-05
+      },
+      {
+        "family": "lstm",
+        "rows": 64,
+        "max_absolute_difference": 5.960464477539062e-07,
+        "finite_gradients": true,
+        "rtol": 0.0001,
+        "atol": 1e-05
+      },
+      {
+        "family": "gru",
+        "rows": 64,
+        "max_absolute_difference": 7.152557373046875e-07,
+        "finite_gradients": true,
+        "rtol": 0.0001,
+        "atol": 1e-05
+      },
+      {
+        "family": "dlinear",
+        "rows": 64,
+        "max_absolute_difference": 7.152557373046875e-07,
+        "finite_gradients": true,
+        "rtol": 0.0001,
+        "atol": 1e-05
+      }
+    ],
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "seconds": 1.8367989730031695,
+    "peak_rss_kib": 1237612,
+    "cuda_peak_allocated_bytes": 109006848,
+    "cuda_peak_reserved_bytes": 148897792,
+    "energy_measured": false,
+    "final_test_opened": false,
+    "gpu_runtime": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB",
+    "cuda": "13.0",
+    "cudnn": 92400,
+    "deterministic_algorithms": true,
+    "tf32": false
+  },
+  "review": {
+    "reproductions_passed": 7,
+    "findings_closed": 5,
+    "receipt_sha256": "4f6fe425f61af5335c1ba9549df2f30ad1bb69bc0eb8a1ee21e721ca5016635f"
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "logical_cpus": 16,
+    "architecture": "x86_64"
+  },
+  "measurements": {
+    "repetitions": 1,
+    "warmup": 0,
+    "cpu_concurrent_workload": "Campaña comparativa estadounidense activa.",
+    "energy_measured": false,
+    "transfer_volume_measured": false,
+    "creation_timing_reported": false,
+    "cpu_path": "Reutilización y comprobación de las cuarenta particiones temporales.",
+    "cpu_process_seconds": 7.86,
+    "cpu_process_peak_rss_kib": 732668,
+    "cuda_process_seconds": 4.0,
+    "cuda_process_peak_rss_kib": 1268452
+  },
+  "verification_retries": [
+    {
+      "check": "Conciliación adicional de filas purgadas",
+      "cause": "La comprobación construía identificadores con fechas ISO y el lector utilizaba microsegundos desde epoch.",
+      "resolution": "Se corrigió el identificador y se verificaron las salidas existentes sin regenerar el corpus."
+    },
+    {
+      "check": "Gradientes CUDA",
+      "cause": "La comprobación solicitaba backward de cuDNN RNN en modo evaluación.",
+      "resolution": "Se repitió con modo entrenamiento, dropout cero y cero actualizaciones del optimizador."
+    }
+  ],
+  "cuda_window": {
+    "status": "completed",
+    "returncode": 0,
+    "restart_returncode": 0,
+    "elapsed_seconds": 9.614962934982032
+  },
+  "limitations": [
+    "Dos activos revisados. No representa la cohorte china completa ni una comparación US+CN ejecutada.",
+    "Comprobación técnica de 64 filas por familia y cero actualizaciones de pesos. No mide calidad predictiva.",
+    "Mediciones funcionales de una repetición, sin afirmar aceleración.",
+    "El test final de 2024 continúa cerrado."
+  ],
+  "tests": {
+    "tests": 253,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 34.174,
+    "junit_sha256": "a332e5a4bf9fb07095d7ec261e264e24c3ecf5cdd7d59037839b45f7d7c9527d"
+  },
+  "test_sha256": "6b99f50b2a3f5ef4d0e3b51ca0016ccb79434452d1d3204407ca139a4ec66a58",
+  "repository_checks": {
+    "ruff": true,
+    "format_files": 600,
+    "files": 1049,
+    "references": 191,
+    "tasks": 64,
+    "macro_indicators": 140
+  },
+  "quality_receipt_sha256": "3c94d1f9bdde9905ffed050dfa4b5cda78b9765d7004f5d7a44b349781a61b35",
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "branch_enabled": true,
+    "summary": {
+      "covered_lines": 293,
+      "num_statements": 326,
+      "percent_covered": 86.30705394190872,
+      "percent_covered_display": "86",
+      "missing_lines": 33,
+      "excluded_lines": 0,
+      "percent_statements_covered": 89.87730061349693,
+      "percent_statements_covered_display": "90",
+      "num_branches": 156,
+      "num_partial_branches": 33,
+      "covered_branches": 123,
+      "missing_branches": 33,
+      "percent_branches_covered": 78.84615384615384,
+      "percent_branches_covered_display": "79"
+    }
+  },
+  "complexity": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "CRAP por función = CCN² × (1 - cobertura de sentencias)³ + CCN. Sentencias ejecutables de coverage.py dentro del intervalo AST de la función, incluidas sus funciones anidadas. No se usan ramas en CRAP.",
+    "changed_function_detection": "Comparación AST de funciones de nivel superior frente a origin/develop, sin posiciones de línea.",
+    "modified_functions": [
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_same",
+        "first_line": 68,
+        "last_line": 72,
+        "statements": 2,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 1,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_has",
+        "first_line": 75,
+        "last_line": 76,
+        "statements": 2,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 2,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_read",
+        "first_line": 79,
+        "last_line": 91,
+        "statements": 11,
+        "missing_lines": [
+          89
+        ],
+        "statement_coverage": 0.9090909090909091,
+        "ccn": 9,
+        "crap": 9.060856498873028
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_file",
+        "first_line": 94,
+        "last_line": 103,
+        "statements": 10,
+        "missing_lines": [
+          97,
+          99
+        ],
+        "statement_coverage": 0.8,
+        "ccn": 7,
+        "crap": 7.3919999999999995
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_bounded",
+        "first_line": 106,
+        "last_line": 136,
+        "statements": 18,
+        "missing_lines": [
+          111,
+          124,
+          132,
+          135
+        ],
+        "statement_coverage": 0.7777777777777778,
+        "ccn": 17,
+        "crap": 20.171467764060356
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_factor",
+        "first_line": 139,
+        "last_line": 148,
+        "statements": 10,
+        "missing_lines": [
+          144
+        ],
+        "statement_coverage": 0.9,
+        "ccn": 5,
+        "crap": 5.025
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_catalog",
+        "first_line": 151,
+        "last_line": 183,
+        "statements": 22,
+        "missing_lines": [
+          154,
+          159,
+          166,
+          182
+        ],
+        "statement_coverage": 0.8181818181818181,
+        "ccn": 17,
+        "crap": 18.73703981968445
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_validate_samples",
+        "first_line": 186,
+        "last_line": 212,
+        "statements": 21,
+        "missing_lines": [
+          207,
+          210
+        ],
+        "statement_coverage": 0.9047619047619048,
+        "ccn": 12,
+        "crap": 12.124392614188533
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_source",
+        "first_line": 215,
+        "last_line": 445,
+        "statements": 83,
+        "missing_lines": [
+          232,
+          260,
+          297,
+          345,
+          361,
+          391,
+          393,
+          400,
+          410,
+          419
+        ],
+        "statement_coverage": 0.8795180722891567,
+        "ccn": 87,
+        "crap": 100.23744681148747
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_verify",
+        "first_line": 448,
+        "last_line": 452,
+        "statements": 5,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 4,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_write",
+        "first_line": 455,
+        "last_line": 459,
+        "statements": 5,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 2,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_confirmed",
+        "first_line": 462,
+        "last_line": 468,
+        "statements": 7,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 4,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "_copy",
+        "first_line": 471,
+        "last_line": 497,
+        "statements": 25,
+        "missing_lines": [
+          475,
+          485,
+          497
+        ],
+        "statement_coverage": 0.88,
+        "ccn": 6,
+        "crap": 6.062208
+      },
+      {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "function": "combine_chinese_samples",
+        "first_line": 500,
+        "last_line": 655,
+        "statements": 76,
+        "missing_lines": [
+          508,
+          523,
+          527,
+          564,
+          570,
+          573
+        ],
+        "statement_coverage": 0.9210526315789473,
+        "ccn": 38,
+        "crap": 38.71052631578947
+      }
+    ],
+    "max_ccn_modified_functions": 87
+  },
+  "mutations": {
+    "required_hash": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_required_hash_cannot_be_disabled_with_null[configuration_sha256]",
+        "tests/data/test_chinese_corpus.py::test_required_hash_cannot_be_disabled_with_null[preparation.json]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "def _read(path, sources, expected=_UNSPECIFIED):\n    safe_destination(path)",
+        "after": "def _read(path, sources, expected=_UNSPECIFIED):\n    safe_destination(path)\n    if expected is None:\n        expected = _UNSPECIFIED",
+        "modified_source_sha256": "f6d464fba9c221b7a0e8717e7c00c20aa2e831131de3e18188e6b91aaa14db70"
+      }
+    },
+    "future_availability": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_rehashed_invalid_samples_never_publish_a_union[future_availability]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "            if (\n                available is None\n                or not valid.all()\n                or (available > prediction).any()\n                or (price_available[ends] > prediction).any()\n            ):",
+        "after": "            if False:",
+        "modified_source_sha256": "a2a273f0c3bc60f8ec16930b3b2770d9535e70f9a334620b9442d097242048bf"
+      }
+    },
+    "price_window": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_rehashed_invalid_samples_never_publish_a_union[invalid_context]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "            _price_contexts(prices, ends, 64)",
+        "after": "            pass",
+        "modified_source_sha256": "f43def080a8ca25c2769f7765fc3a7f4636b6ba8332dfd0c3b948acc8d8ddc0b"
+      }
+    },
+    "macro_presence": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_rehashed_invalid_samples_never_publish_a_union[missing_macro]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "if name == \"macro\" and not",
+        "after": "if False and not",
+        "modified_source_sha256": "a9f1125d069cdd2b606a3de7876f619d200897214aa1466271c1ca500cb2cdfd"
+      }
+    },
+    "completed_labels": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_completed_labels_corruption_is_rejected_before_recomputation"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "            CorpusDataset(output / \"supervised/manifest.json\", cache_bytes=0)",
+        "after": "            pass",
+        "modified_source_sha256": "bc29c8548f88bf674363d0147abe16500eb3851e04dceb2b571e59e729b8bb5f"
+      }
+    },
+    "parent_membership": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_selected_assets_must_actually_belong_to_the_parent_census"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "if len(selected) != 1 or selected[0].get(\"state\") != \"prepared\":",
+        "after": "if False:",
+        "modified_source_sha256": "1f13b7220e1e9ab4cc0bab5296d26cea5d2ac132743206852490b1938136bc02"
+      }
+    },
+    "scalar_types": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_corpus.py::test_partial_recovery_preserves_configuration_scalar_types"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/chinese_corpus.py",
+        "before": "    return json.dumps(actual, sort_keys=True, allow_nan=False) == json.dumps(\n        expected, sort_keys=True, allow_nan=False\n    )",
+        "after": "    return actual == expected",
+        "modified_source_sha256": "a82ca932f761e7afae57c92c05fc34c638a38a1967a66ed90621d256f874818e"
+      }
+    }
+  },
+  "quality_control": {
+    "passed": 73,
+    "exit_code": 0,
+    "peak_rss_bytes": 720908288,
+    "limits": {
+      "cpu_max": "100000 100000",
+      "memory_max": "1073741824",
+      "cuda_visible_devices": "",
+      "omp_num_threads": "1"
+    }
+  }
+}

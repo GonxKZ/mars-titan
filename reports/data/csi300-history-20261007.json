@@ -1,0 +1,394 @@
+{
+  "schema_version": 1,
+  "kind": "csi300_history_verification",
+  "observed_at_utc": "2026-10-07T00:46:39.953516+00:00",
+  "source_sha256": {
+    "src/mars_titan/data/csi300_history.py": "ab28667d945c44d35acaff5bd8f9274d5affac5746a2fb5e79de7706b8680bf4",
+    "src/mars_titan/data/csi300_factor.py": "38836f8ec40785089ba021718eddd1878e4ab5af43269050b068b4dcd1168f70"
+  },
+  "reviewed_manifest_sha256": "277d5a9f49dce9cf4e44d9a4e7dad9b5718f7eaf112f577a179027abd59571df",
+  "sources": [
+    {
+      "month": "202101",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061129/files/2d35673d99d847c0a12ed0432505f2bb.pdf",
+      "pdf_sha256": "6bce38244b65714cea8c3cfd9c3721a59d625052cd9037905f2a5ab09218fb56",
+      "csv_sha256": "847a18b0b4f7d04dde94b1de51c729652ed6e1368f8d7fe114b6cd1ede52c2de",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202102",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061128/files/da61d7f306674a03902e0b847ce34fae.pdf",
+      "pdf_sha256": "52981628eb4dbc3a0d9e74b7e0ec1fc22843de46b55d61c0fef874c73a637fb5",
+      "csv_sha256": "adce6aca911fd52dc197f8292e9cc39cbd40644f2b67f91c93aab314cc041853",
+      "pdf_page_1_based": 19,
+      "printed_page": 16,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202103",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061127/files/193ba74b7d6d4b3ebacc8a5a8ce947f8.pdf",
+      "pdf_sha256": "02d69f10737ecbd9bf609906e6a7a2fd7798b39a2969ab0b1dbff21753d6fb20",
+      "csv_sha256": "c4421d2d47068e5a988d9e08feea2ef1f424bc05bc438ec52035ec2d007501c8",
+      "pdf_page_1_based": 19,
+      "printed_page": 16,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202104",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061126/files/b7af8896606a4e069b543eb176dcef15.pdf",
+      "pdf_sha256": "328faa3d4a3ac00d48d7fc56fc4a1c4700b294c0dfdf97dd2f0acb2851d356b2",
+      "csv_sha256": "7727aa247a727bc1afd7ef3414febc91daedcf99f1ba8a586dcab4ee2dd1af32",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202105",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061125/files/9187f99978eb4d7ca519e0ba611629d3.pdf",
+      "pdf_sha256": "f5fbd0ac71c4616c9b0088f735cd9d9562e32248087b47ac31cd63bddf4d96fa",
+      "csv_sha256": "80ccc8699ac4cdc6e577d257e421d229cded49ead5845160863cf9feae28aa17",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202106",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061124/files/27f19d1cd8d44e7c8b62ee04b94dff9a.pdf",
+      "pdf_sha256": "23ce90c2f5f4ae75e195b3fa0533eccf13368ea94f610c3a37b7735a2e764279",
+      "csv_sha256": "5271d6d4a504888f742cbe50bf9042a23d06ada3d8dbe33a8341cde0d9e3bbf8",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202107",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061123/files/35048b0e713949ecace9873446c85314.pdf",
+      "pdf_sha256": "e8fa5ddecfadab1dbb165d4020f640ccc384f79ba35e33bcf2458a7f350b69f6",
+      "csv_sha256": "95dc2645709aaee5a9ac39944469e1d0a0d780557e648d8b7d943866911082d2",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202108",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061122/files/621643e74397487596f4f5b2f51c513e.pdf",
+      "pdf_sha256": "fb9c96a3066dcf3ee6875acb0a686154caa2f60fe273b373a4a2ff00f7a11728",
+      "csv_sha256": "ea2af60ba0b69b881ef3a203030b7f8b9b638f2ad92d3af096f0906b18bcb4a2",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202109",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061121/files/286d47959a4e4f45b406a108a9e4777b.pdf",
+      "pdf_sha256": "1a32c9d70984f68f530f636e3116fc5f2f861c3f2265462bd2e4bfccc5ec685a",
+      "csv_sha256": "65645f7cb738a0860cb53ea5423ead5f3f419ff348337ad80373f33e936b7fba",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202110",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061120/files/f5f300168dae48ee9fcf8daf54675a00.pdf",
+      "pdf_sha256": "7459daa779ac5be44dbe663b9b37cf8549c364fc2f5ae3ee81834ee5ad8eb9c3",
+      "csv_sha256": "86d3226ff9ff6655a14f41facf17599d4216072a89d63ec755fc90e1d947a75d",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202111",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061119/files/4883fb49a0ed4769a0f0778a69a04e0a.pdf",
+      "pdf_sha256": "69933684a8c715c59c6ce0515a015e3de1c2924da7b0b3e3b53ec225c1bd454b",
+      "csv_sha256": "e0279aab5ac3353f0825cf2d48bd83b035e2412774826861354dc5a292c20fab",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    },
+    {
+      "month": "202112",
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061118/files/2e31b357ff4641f1956279cd7decc195.pdf",
+      "pdf_sha256": "2519894133664ff2ed88b75221c5713bca72d6a15a6fb459f6589f7ab7845e35",
+      "csv_sha256": "fb369abde36f1c5466552e02c1826c04a45435c340bb7f0364f0cb5a22b0ed17",
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "title": "沪深 300 指数 SHSE-SZSE 300 Index"
+    }
+  ],
+  "independent_extraction": {
+    "rows": 243,
+    "ohlc_cells": 972,
+    "pymupdf_version": "1.28.2",
+    "method": "Extracción independiente por coordenadas de palabras y líneas de MuPDF frente al CSV obtenido con Poppler",
+    "verifier_sha256": "78d8bdcdf1423ea96b69306ef473e2768266afa36ca0837047a37b89ef866105",
+    "exact_text_match": true
+  },
+  "factor": {
+    "schema_version": 1,
+    "kind": "retrospective_market_factor",
+    "market": "CN",
+    "symbol": "000300",
+    "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/index/",
+    "unit": "index_points",
+    "availability_policy": "retrospective_session_close_plus_5_minutes",
+    "adjustments": "as_published_price_index_no_additional_adjustment",
+    "return_convention": "close_over_open_minus_one",
+    "point_in_time_verified": false,
+    "financial_simulation_ready": false,
+    "training_ready": false,
+    "final_test_opened": false,
+    "rows": 727,
+    "base_rows": 484,
+    "reviewed_rows": 243,
+    "identical_overlap_rows": 0,
+    "added_rows": 243,
+    "first_session": "2021-01-04",
+    "last_session": "2023-12-29",
+    "missing_sessions": [],
+    "artifacts": {
+      "prices.parquet": "6e3c720146fc6b3825543f5b2ff844525a13edf84082efbb6e1f7d8b27349567",
+      "market-factors.json": "84618d92213dafaaada751d843d8a6142df054dfa99c58edb4c2e7c4fbe5d34e"
+    },
+    "reused": false
+  },
+  "factor_report_sha256": "cb070335fcde07112d44678a94ee612c17dd06e881395ecb20d5a00a80727ccf",
+  "factor_sha256": "6e3c720146fc6b3825543f5b2ff844525a13edf84082efbb6e1f7d8b27349567",
+  "base_bytes_unchanged": true,
+  "reuse_without_rewrite": true,
+  "assets": [
+    {
+      "symbol": "000001.SZ",
+      "samples": 335,
+      "reference_rows": 727,
+      "reference_numpy_exact": true,
+      "counts": {
+        "train": 122,
+        "target_crosses_partition_boundary": 1,
+        "validation": 211,
+        "target_after_cutoff": 1
+      },
+      "recovered_warmup_rows": 18,
+      "previous_accepted_targets_changed": 114
+    },
+    {
+      "symbol": "000002.SZ",
+      "samples": 386,
+      "reference_rows": 727,
+      "reference_numpy_exact": true,
+      "counts": {
+        "train": 144,
+        "target_crosses_partition_boundary": 1,
+        "validation": 240,
+        "target_after_cutoff": 1
+      },
+      "recovered_warmup_rows": 28,
+      "previous_accepted_targets_changed": 126
+    }
+  ],
+  "measurements": {
+    "create_seconds": 0.12029253400396556,
+    "reuse_seconds": 0.10876844901940785,
+    "total_seconds": 0.5744056219991762,
+    "peak_rss_kib": 138600,
+    "repetitions": 1,
+    "warmup": 0,
+    "gpu_used": false,
+    "energy_measured": false,
+    "process_seconds": 1.0,
+    "process_peak_rss_kib": 139752
+  },
+  "limitations": [
+    "La disponibilidad al cierre más cinco minutos es retrospectiva, sin versiones diarias originales acreditadas.",
+    "Dos activos comprobados, sin habilitar toda la cohorte china.",
+    "Una repetición funcional, sin estimación de aceleración ni energía."
+  ],
+  "training_ready": false,
+  "final_test_opened": false,
+  "factor_identity": {
+    "reviewed_manifest_sha256": "277d5a9f49dce9cf4e44d9a4e7dad9b5718f7eaf112f577a179027abd59571df",
+    "base_report_sha256": "82cafb4096dc3a9a10c99e527822f4282142631d911855ec78c5c375247f2f90",
+    "months": [
+      "202101",
+      "202102",
+      "202103",
+      "202104",
+      "202105",
+      "202106",
+      "202107",
+      "202108",
+      "202109",
+      "202110",
+      "202111",
+      "202112",
+      "202201",
+      "202202",
+      "202203",
+      "202204",
+      "202205",
+      "202206",
+      "202207",
+      "202208",
+      "202209",
+      "202210",
+      "202211",
+      "202212",
+      "202301",
+      "202302",
+      "202303",
+      "202304",
+      "202305",
+      "202306",
+      "202307",
+      "202308",
+      "202309",
+      "202310",
+      "202311",
+      "202312"
+    ],
+    "code": {
+      "csi300_factor.py": "38836f8ec40785089ba021718eddd1878e4ab5af43269050b068b4dcd1168f70",
+      "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+      "macro_coverage.py": "f881c55afaf298056faea69562d7e8fa4618b6b20564ec7a1f5812e699c064d6",
+      "preparation.py": "9cd0a46b6d2165a384464f068d4c86bd7206c7d3ffba3026781f7f682299d58f",
+      "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+      "temporal.py": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41",
+      "csi300_history.py": "ab28667d945c44d35acaff5bd8f9274d5affac5746a2fb5e79de7706b8680bf4"
+    },
+    "pyarrow": "25.0.1",
+    "exchange_calendars": "4.13.2",
+    "calendar_sha256": "be5ca04d37b5b4b9da9b3765121fa52784ce15ae869b11e407b954e9e2b46178"
+  },
+  "quality_receipt_sha256": "3c6a90bd38854decb45106f1d7183b737c6949467bef794dde73f26b252dca72",
+  "tests": {
+    "related_passed": 129,
+    "history_and_factor_passed": 79,
+    "history_passed": 51,
+    "command": "uv run --offline --no-sync --with coverage --with radon python -m coverage run --branch --source=mars_titan.data.csi300_history -m pytest tests/data/test_csi300_history.py tests/data/test_csi300_factor.py tests/data/test_budget_targets.py tests/data/test_residual_arrays.py tests/training/test_corpus_targets.py -q"
+  },
+  "test_sha256": "3f4a570c21711d2f412f74310645fb21f79fc6476d6e6ee4cdc95c1a9b97496b",
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "branch_enabled": true,
+    "summary": {
+      "covered_lines": 202,
+      "num_statements": 220,
+      "percent_covered": 88.67924528301887,
+      "percent_covered_display": "89",
+      "missing_lines": 18,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.81818181818181,
+      "percent_statements_covered_display": "92",
+      "num_branches": 98,
+      "num_partial_branches": 18,
+      "covered_branches": 80,
+      "missing_branches": 18,
+      "percent_branches_covered": 81.63265306122449,
+      "percent_branches_covered_display": "82"
+    },
+    "missing_lines": [
+      67,
+      100,
+      106,
+      113,
+      129,
+      133,
+      136,
+      169,
+      174,
+      179,
+      197,
+      212,
+      234,
+      237,
+      258,
+      262,
+      265,
+      271
+    ],
+    "path": "coverage.json"
+  },
+  "complexity": {
+    "tool": "radon 6.0.1",
+    "crap_convention": "CC^2 * (1 - statement_coverage_fraction)^3 + CC, calculado por función con sentencias ejecutables de coverage.py.",
+    "functions": [
+      {
+        "name": "_reviewed",
+        "cyclomatic_complexity": 43,
+        "statement_coverage_fraction": 0.8541666666666666,
+        "CRAP": 48.73465530960649
+      },
+      {
+        "name": "_base",
+        "cyclomatic_complexity": 35,
+        "statement_coverage_fraction": 0.8235294117647058,
+        "CRAP": 41.732139222471
+      },
+      {
+        "name": "extend_csi300_history",
+        "cyclomatic_complexity": 23,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 23.0
+      },
+      {
+        "name": "_source",
+        "cyclomatic_complexity": 8,
+        "statement_coverage_fraction": 0.8888888888888888,
+        "CRAP": 8.087791495198903
+      },
+      {
+        "name": "_relative",
+        "cyclomatic_complexity": 8,
+        "statement_coverage_fraction": 0.8,
+        "CRAP": 8.512
+      },
+      {
+        "name": "_table",
+        "cyclomatic_complexity": 6,
+        "statement_coverage_fraction": 0.75,
+        "CRAP": 6.5625
+      },
+      {
+        "name": "_month",
+        "cyclomatic_complexity": 4,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 4.0
+      },
+      {
+        "name": "_coverage",
+        "cyclomatic_complexity": 3,
+        "statement_coverage_fraction": 0.8571428571428571,
+        "CRAP": 3.0262390670553936
+      },
+      {
+        "name": "_verify",
+        "cyclomatic_complexity": 3,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 3.0
+      },
+      {
+        "name": "_json",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_same_document",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      }
+    ]
+  },
+  "mutation": {
+    "control_passed": true,
+    "killed": 7,
+    "total": 7
+  },
+  "ruff": {
+    "check_passed": true,
+    "format_check_passed": true
+  },
+  "type_preserving_recovery": true
+}
