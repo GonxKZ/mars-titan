@@ -9,6 +9,7 @@ from pathlib import Path
 
 from mars_titan.budget_training import seed_run
 from mars_titan.data.embeddings import require_cuda
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.campaign import _cases, _load_config
 
@@ -19,14 +20,14 @@ from .reference_run import read_json, run_reference_case, scientific_identity
 from .temporal_contract import temporal_contracts
 
 
-def campaign_views(manifest: Path, arms: list[str]) -> dict:
+def campaign_views(manifest: Path, arms: list[str], *, input_policy=STRICT_INPUTS) -> dict:
     """Mantener la unión exacta de activos y sus particiones, sin sustituir mercados."""
-    source = CorpusDataset(manifest)
+    source = CorpusDataset(manifest, input_policy=input_policy)
     views = {}
     for arm in arms:
         markets = {"US", "CN"} if arm == "US+CN" else {arm}
         assets = [a for a in source.assets if a["market"] in markets]
-        if any(
+        if not masked_inputs(input_policy) and any(
             sum(a["counts"][p] for a in assets if a["market"] == market) == 0
             for market in markets
             for p in source.partitions
@@ -42,7 +43,7 @@ def campaign_views(manifest: Path, arms: list[str]) -> dict:
         if "markets" in views[arm]:
             views[arm]["markets"] = sorted(markets)
         if "temporal_views" in source.manifest:
-            contracts = temporal_contracts(source.manifest)
+            contracts = temporal_contracts(source.manifest, input_policy=input_policy)
             if len(markets) == 1:
                 views[arm].pop("temporal_views")
                 views[arm]["temporal_view"] = contracts[next(iter(markets))]
@@ -55,7 +56,7 @@ def campaign_views(manifest: Path, arms: list[str]) -> dict:
                 samples=sum(row["samples"] for row in coverage if row["state"] == "encoded"),
                 failed_assets=sum(row["state"] == "failed" for row in coverage),
             )
-            cohort_identity(views[arm])
+            cohort_identity(views[arm], input_policy=input_policy)
     return views
 
 

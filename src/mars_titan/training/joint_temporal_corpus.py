@@ -8,6 +8,12 @@ import tempfile
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import (
+    INPUT_POLICIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    policy_identity,
+)
 from mars_titan.data.macro_coverage import _publish_directory
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
@@ -18,9 +24,14 @@ from .temporal_contract import temporal_contracts
 from .temporal_corpus import prepare_temporal_corpus
 
 
-def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_boundaries=False):
+def prepare_joint_temporal_corpus(
+    parent, sources, output, *, recover_annual_boundaries=False, input_policy=STRICT_INPUTS
+):
     """Preparar cada calendario y publicar su unión sin intersectar decisiones."""
     parent, output = Path(parent), Path(output)
+    masked = masked_inputs(input_policy)
+    if masked and recover_annual_boundaries is not True:
+        raise ValueError("La edición histórica requiere recuperación anual explícita")
     safe_destination(output)
     if output.exists():
         raise FileExistsError("Las ventanas conjuntas ya existen")
@@ -28,7 +39,8 @@ def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_bou
         raise ValueError("Se requieren protocolo, macro y admisión de US y CN")
     protocols, paths, signatures = {}, {}, {}
     for market, record in sources.items():
-        if not isinstance(record, dict) or set(record) != {"protocol", "macro", "admission"}:
+        expected = {"protocol"} if masked else {"protocol", "macro", "admission"}
+        if not isinstance(record, dict) or set(record) != expected:
             raise ValueError("Cada mercado necesita sus tres fuentes temporales")
         paths[market] = {name: Path(path) for name, path in record.items()}
         protocol, signature = read_manifest(paths[market]["protocol"], 64 * 1024)
@@ -41,7 +53,7 @@ def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_bou
         k: v for k, v in protocols["CN"].items() if k != "market"
     }:
         raise ValueError("Los protocolos conjuntos deben compartir cortes, semillas y margen")
-    dataset = CorpusDataset(parent, cache_bytes=0)
+    dataset = CorpusDataset(parent, cache_bytes=0, input_policy=input_policy)
     signatures[parent] = dataset.identity
     if dataset.temporal is not None or {a["market"] for a in dataset.assets} != {"US", "CN"}:
         raise ValueError("Se necesita el padre anual común de los dos mercados")
@@ -67,7 +79,7 @@ def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_bou
             "reference_campaign.py",
         )
     }
-    projections = campaign_views(parent, ["US", "CN"])
+    projections = campaign_views(parent, ["US", "CN"], input_policy=input_policy)
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
         stage = Path(temporary) / "views"
@@ -79,10 +91,11 @@ def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_bou
             local_reports[market] = prepare_temporal_corpus(
                 projection,
                 paths[market]["protocol"],
-                paths[market]["macro"],
-                paths[market]["admission"],
+                paths[market].get("macro"),
+                paths[market].get("admission"),
                 stage / "markets" / market,
                 recover_annual_boundaries=recover_annual_boundaries,
+                input_policy=input_policy,
             )
         summaries = []
         for index, fold in enumerate(build_folds(protocols["US"])):
@@ -123,7 +136,7 @@ def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_bou
                 joined["recovered_annual_labels"] = sum(
                     view["recovered_annual_labels"] for view in views.values()
                 )
-            temporal_contracts(joined)
+            temporal_contracts(joined, input_policy=input_policy)
             destination = stage / fold["id"] / "manifest.json"
             atomic_json(destination, joined)
             if destination.stat().st_size > 8 * 1024**2:
@@ -150,7 +163,8 @@ def prepare_joint_temporal_corpus(parent, sources, output, *, recover_annual_bou
         ):
             raise ValueError("Las fuentes o el código cambiaron durante la unión temporal")
         report = dict(
-            schema_version=2,
+            schema_version=3 if masked else 2,
+            **policy_identity(input_policy),
             kind="joint_temporal_views",
             status="temporal_views_prepared",
             parent_sha256=dataset.identity,
@@ -183,18 +197,35 @@ def main(argv=None):
             for field in ("protocol", "macro", "admission")
         ),
     ):
-        parser.add_argument("--" + name, type=Path, required=True)
+        parser.add_argument(
+            "--" + name,
+            type=Path,
+            required=name in {"parent", "output", "us-protocol", "cn-protocol"},
+        )
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     parser.add_argument("--recover-annual-boundaries", action="store_true")
     args = parser.parse_args(argv)
+    fields = (
+        ("protocol",) if args.input_policy != STRICT_INPUTS else ("protocol", "macro", "admission")
+    )
     sources = {
-        market.upper(): {
-            field: getattr(args, f"{market}_{field}")
-            for field in ("protocol", "macro", "admission")
-        }
+        market.upper(): {field: getattr(args, f"{market}_{field}") for field in fields}
         for market in ("us", "cn")
     }
+    if any(value is None for record in sources.values() for value in record.values()):
+        parser.error("Faltan fuentes requeridas por la política temporal")
+    if args.input_policy != STRICT_INPUTS and any(
+        getattr(args, f"{market}_{field}") is not None
+        for market in ("us", "cn")
+        for field in ("macro", "admission")
+    ):
+        parser.error("La política histórica conserva el macro del padre")
     result = prepare_joint_temporal_corpus(
-        args.parent, sources, args.output, recover_annual_boundaries=args.recover_annual_boundaries
+        args.parent,
+        sources,
+        args.output,
+        recover_annual_boundaries=args.recover_annual_boundaries,
+        input_policy=args.input_policy,
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0
