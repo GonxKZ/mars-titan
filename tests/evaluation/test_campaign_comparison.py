@@ -175,6 +175,51 @@ def test_joint_frozen_predictions_keep_population_counts_and_separate_intervals(
     assert all(row["sessions"] == 1 and row["lower"] is None for row in result["intervals"])
 
 
+@pytest.mark.parametrize(
+    "markets",
+    [("US", "US", "US", "US"), ("US", "US", "US", "CN"), ("CN", "CN", "US", "US")],
+    ids=["missing_cn", "unbalanced", "swapped_assets"],
+)
+def test_joint_comparison_rejects_relabelled_markets_with_consistent_receipts(tmp_path, markets):
+    import json
+
+    import pyarrow.parquet as pq
+
+    from mars_titan.data.storage import sha256
+    from mars_titan.evaluation.campaign_comparison import compare_campaigns
+    from tests.evaluation.test_comparison_sources import Campaign, save
+
+    campaign = Campaign(tmp_path / "sources", materialize=True, matching=True, markets=("US", "CN"))
+    compare_campaigns(campaign.reference, campaign.completion, tmp_path / "control", repetitions=10)
+    evaluation_path = campaign.completion / campaign.fold / "evaluation/summary.json"
+    evaluation = json.loads(evaluation_path.read_text())
+    for run in evaluation["runs"].values():
+        path = evaluation_path.parent / run["path"]
+        report = json.loads(path.read_text())
+        for entry in report["predictions"].values():
+            parquet = path.parent / entry["path"]
+            table = pq.read_table(parquet)
+            changed = table.set_column(
+                table.schema.get_field_index("market"), "market", pa.array(markets)
+            )
+            pq.write_table(changed, parquet)
+            entry["sha256"] = sha256(parquet)
+            for metric in entry["metrics"].values():
+                metric["session_count"] = len(set(markets))
+        run["sha256"] = save(path, report)
+    evaluation_hash = save(evaluation_path, evaluation)
+    completion_path = campaign.completion / "summary.json"
+    completion = json.loads(completion_path.read_text())
+    for stage in completion["stages"]:
+        if stage["stage"] == "evaluation":
+            stage["sha256"] = evaluation_hash
+    save(completion_path, completion)
+    output = tmp_path / "changed"
+    with pytest.raises(ValueError):
+        compare_campaigns(campaign.reference, campaign.completion, output, repetitions=10)
+    assert not output.exists()
+
+
 def test_output_ancestor_of_science_is_rejected_before_reading_sources(tmp_path):
     from mars_titan.evaluation.campaign_comparison import compare_campaigns
 

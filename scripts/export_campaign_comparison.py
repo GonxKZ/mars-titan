@@ -110,6 +110,15 @@ def comparison_markets(method):
 def validate_predictive(report, tables, folds):
     markets = comparison_markets(report["method"])
     extra = ("market",) if markets != (None,) else ()
+    for fold in folds:
+        if extra or "markets" in fold or "market_counts" in fold:
+            if (
+                not extra
+                or fold.get("markets") != list(markets)
+                or not isinstance(fold.get("market_counts"), dict)
+                or set(fold["market_counts"]) != set(markets)
+            ):
+                raise ValueError("La separación por mercado no corresponde a la procedencia")
     aggregate_key = ("partition", "family", "method", *extra)
     for field, filename, identity in (
         ("overall", "methods.csv", aggregate_key),

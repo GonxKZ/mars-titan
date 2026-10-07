@@ -208,6 +208,32 @@ def test_joint_export_rejects_lost_or_changed_market_counts_before_publication(t
     assert not output.exists()
 
 
+@pytest.mark.parametrize(
+    "fault", ["missing_marker", "missing_market_list", "incomplete_market_list"]
+)
+def test_joint_export_requires_market_stratification_matching_provenance(tmp_path, fault):
+    if fault == "missing_marker":
+        directory, report = campaign(tmp_path)
+        for fold in report["provenance"]["folds"]:
+            fold["markets"] = ["CN", "US"]
+            fold["market_counts"] = {
+                market: {part: count // 2 for part, count in fold["counts"].items()}
+                for market in ("US", "CN")
+            }
+    else:
+        directory, report = joint_campaign(tmp_path)
+        fold = report["provenance"]["folds"][0]
+        if fault == "missing_market_list":
+            fold.pop("markets")
+        else:
+            fold["markets"] = ["US"]
+    receipt(directory, report)
+    output = tmp_path / "export"
+    with pytest.raises(ValueError):
+        exporter.main(["--predictive", str(directory), "--output", str(output)])
+    assert not output.exists()
+
+
 def test_joint_reliability_links_each_market_to_the_same_frozen_states(tmp_path):
     from mars_titan.evaluation.campaign_comparison import compare_campaigns
     from mars_titan.evaluation.campaign_reliability import evaluate_campaign_reliability

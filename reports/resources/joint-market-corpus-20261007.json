@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "kind": "joint_market_preparation_verification",
-  "observed_at_utc": "2026-10-07T11:01:39.854197+00:00",
+  "observed_at_utc": "2026-10-07T11:20:00.507677+00:00",
   "implemented": true,
   "scientific_joint_campaign_executed": false,
   "final_test_opened": false,
@@ -124,8 +124,8 @@
       "seconds": 13.51
     },
     "evaluation_cpu": {
-      "passed": 158,
-      "seconds": 8.93
+      "passed": 164,
+      "seconds": 9.35
     },
     "producer": {
       "passed": 21,
@@ -156,6 +156,264 @@
       "coverage_tool": "coverage.py 7.16.2",
       "complexity_tool": "radon 6.0.1",
       "crap_convention": "CC^2*(1-cobertura_de_sentencias)^3+CC, con la cobertura por funci\u00f3n de coverage.py."
+    },
+    "temporal_contracts": {
+      "cpu_passed": 349,
+      "targeted_mutants_detected": 5,
+      "coverage": {
+        "src/mars_titan/training/joint_temporal_corpus.py": {
+          "covered_lines": 97,
+          "num_statements": 120,
+          "percent_covered": 77.38095238095238,
+          "percent_covered_display": "77",
+          "missing_lines": 23,
+          "excluded_lines": 0,
+          "percent_statements_covered": 80.83333333333333,
+          "percent_statements_covered_display": "81",
+          "num_branches": 48,
+          "num_partial_branches": 13,
+          "covered_branches": 33,
+          "missing_branches": 15,
+          "percent_branches_covered": 68.75,
+          "percent_branches_covered_display": "69"
+        },
+        "src/mars_titan/training/temporal_contract.py": {
+          "covered_lines": 32,
+          "num_statements": 35,
+          "percent_covered": 89.47368421052632,
+          "percent_covered_display": "89",
+          "missing_lines": 3,
+          "excluded_lines": 0,
+          "percent_statements_covered": 91.42857142857143,
+          "percent_statements_covered_display": "91",
+          "num_branches": 22,
+          "num_partial_branches": 3,
+          "covered_branches": 19,
+          "missing_branches": 3,
+          "percent_branches_covered": 86.36363636363636,
+          "percent_branches_covered_display": "86"
+        }
+      },
+      "complexity": {
+        "tool": "radon 6.0.1",
+        "convention": "CRAP = CCN\u00b2 \u00d7 (1 \u2212 cobertura de sentencias de la funci\u00f3n)\u00b3 + CCN. Cobertura con ramas activadas. La cobertura CUDA no se suma a esta medici\u00f3n CPU."
+      },
+      "functions": [
+        {
+          "path": "src/mars_titan/training/joint_temporal_corpus.py",
+          "name": "prepare_joint_temporal_corpus",
+          "line": 21,
+          "ccn": 49,
+          "statement_fraction": 0.8602150537634409,
+          "summary": {
+            "covered_lines": 80,
+            "num_statements": 93,
+            "percent_covered": 81.75182481751825,
+            "percent_covered_display": "82",
+            "missing_lines": 13,
+            "excluded_lines": 0,
+            "percent_statements_covered": 86.02150537634408,
+            "percent_statements_covered_display": "86",
+            "num_branches": 44,
+            "num_partial_branches": 12,
+            "covered_branches": 32,
+            "missing_branches": 12,
+            "percent_branches_covered": 72.72727272727273,
+            "percent_branches_covered_display": "73"
+          },
+          "crap": 55.55802958139234,
+          "missing_lines": [
+            28,
+            32,
+            38,
+            43,
+            47,
+            49,
+            53,
+            56,
+            97,
+            122,
+            123,
+            130,
+            151
+          ]
+        },
+        {
+          "path": "src/mars_titan/training/temporal_contract.py",
+          "name": "temporal_contracts",
+          "line": 6,
+          "ccn": 32,
+          "statement_fraction": 0.9285714285714286,
+          "summary": {
+            "covered_lines": 26,
+            "num_statements": 28,
+            "percent_covered": 91.66666666666667,
+            "percent_covered_display": "92",
+            "missing_lines": 2,
+            "excluded_lines": 0,
+            "percent_statements_covered": 92.85714285714286,
+            "percent_statements_covered_display": "93",
+            "num_branches": 20,
+            "num_partial_branches": 2,
+            "covered_branches": 18,
+            "missing_branches": 2,
+            "percent_branches_covered": 90.0,
+            "percent_branches_covered_display": "90"
+          },
+          "crap": 32.373177842565596,
+          "missing_lines": [
+            19,
+            51
+          ]
+        }
+      ]
+    },
+    "market_membership": {
+      "coverage": {
+        "tool": "coverage.py 7.16.2",
+        "branch": true,
+        "cases_passed": 164,
+        "seconds": 14.45,
+        "source": "coverage.json",
+        "modules": [
+          {
+            "path": "scripts/export_campaign_comparison.py",
+            "summary": {
+              "covered_lines": 409,
+              "num_statements": 435,
+              "percent_covered": 91.92825112107623,
+              "percent_covered_display": "92",
+              "missing_lines": 26,
+              "excluded_lines": 0,
+              "percent_statements_covered": 94.02298850574712,
+              "percent_statements_covered_display": "94",
+              "num_branches": 234,
+              "num_partial_branches": 28,
+              "covered_branches": 206,
+              "missing_branches": 28,
+              "percent_branches_covered": 88.03418803418803,
+              "percent_branches_covered_display": "88"
+            }
+          },
+          {
+            "path": "src/mars_titan/evaluation/campaign_comparison.py",
+            "summary": {
+              "covered_lines": 199,
+              "num_statements": 215,
+              "percent_covered": 91.28919860627178,
+              "percent_covered_display": "91",
+              "missing_lines": 16,
+              "excluded_lines": 0,
+              "percent_statements_covered": 92.55813953488372,
+              "percent_statements_covered_display": "93",
+              "num_branches": 72,
+              "num_partial_branches": 3,
+              "covered_branches": 63,
+              "missing_branches": 9,
+              "percent_branches_covered": 87.5,
+              "percent_branches_covered_display": "88"
+            }
+          }
+        ]
+      },
+      "complexity": {
+        "tool": "radon 6.0.1",
+        "convention": "CRAP = CCN\u00b2 \u00d7 (1 \u2212 cobertura de sentencias de la funci\u00f3n)\u00b3 + CCN. Cobertura CPU de las 164 pruebas focales.",
+        "source": "complexity.json",
+        "functions": [
+          {
+            "path": "scripts/export_campaign_comparison.py",
+            "name": "validate_predictive",
+            "line": 110,
+            "ccn": 73,
+            "statement_fraction": 0.8947368421052632,
+            "crap": 79.21548330660445,
+            "summary": {
+              "covered_lines": 68,
+              "num_statements": 76,
+              "percent_covered": 88.23529411764706,
+              "percent_covered_display": "88",
+              "missing_lines": 8,
+              "excluded_lines": 0,
+              "percent_statements_covered": 89.47368421052632,
+              "percent_statements_covered_display": "89",
+              "num_branches": 60,
+              "num_partial_branches": 8,
+              "covered_branches": 52,
+              "missing_branches": 8,
+              "percent_branches_covered": 86.66666666666667,
+              "percent_branches_covered_display": "87"
+            },
+            "missing_lines": [
+              132,
+              156,
+              174,
+              183,
+              186,
+              191,
+              207,
+              221
+            ]
+          },
+          {
+            "path": "src/mars_titan/evaluation/campaign_comparison.py",
+            "name": "_market_population",
+            "line": 45,
+            "ccn": 4,
+            "statement_fraction": 1.0,
+            "crap": 4.0,
+            "summary": {
+              "covered_lines": 9,
+              "num_statements": 9,
+              "percent_covered": 100.0,
+              "percent_covered_display": "100",
+              "missing_lines": 0,
+              "excluded_lines": 0,
+              "percent_statements_covered": 100.0,
+              "percent_statements_covered_display": "100",
+              "num_branches": 2,
+              "num_partial_branches": 0,
+              "covered_branches": 2,
+              "missing_branches": 0,
+              "percent_branches_covered": 100.0,
+              "percent_branches_covered_display": "100"
+            },
+            "missing_lines": []
+          },
+          {
+            "path": "src/mars_titan/evaluation/campaign_comparison.py",
+            "name": "compare_campaigns",
+            "line": 326,
+            "ccn": 20,
+            "statement_fraction": 1.0,
+            "crap": 20.0,
+            "summary": {
+              "covered_lines": 51,
+              "num_statements": 51,
+              "percent_covered": 100.0,
+              "percent_covered_display": "100",
+              "missing_lines": 0,
+              "excluded_lines": 0,
+              "percent_statements_covered": 100.0,
+              "percent_statements_covered_display": "100",
+              "num_branches": 16,
+              "num_partial_branches": 0,
+              "covered_branches": 16,
+              "missing_branches": 0,
+              "percent_branches_covered": 100.0,
+              "percent_branches_covered_display": "100"
+            },
+            "missing_lines": []
+          }
+        ]
+      },
+      "targeted_mutants_detected": 3,
+      "source_sha256": {
+        "src/mars_titan/evaluation/campaign_comparison.py": "9c5fa22168666c9001696e3fb87721a8e5ded0851e785cdda17b93dda01ebf2d",
+        "scripts/export_campaign_comparison.py": "82044b895ada9117e0fafb53fbd25c121543708c4c195c2c0fe3c96f95ba73b6"
+      },
+      "invalid_population_rejected_before_publication": true,
+      "joint_and_legacy_figures_visually_reviewed": true
     },
     "cuda": {
       "software": {
@@ -188,8 +446,11 @@
     "contracts-review/review.json": "29aebec85bdceb46a2558f23e1dfa49d86913268aa5ae06a6ad630dba748f02a",
     "reliability-review/implementation-quality.json": "3684c7be70b198f1b2a06037b31ce427030b0e1eeb52884ced6d7f779ed5b742",
     "pipeline-commit-tests.log": "3ceb10eaf72873b32026d76efff6cfe7c68217b0af10e806c1eba865ba32b5c0",
-    "evaluation-commit-tests.log": "abb1b7cbf214d9c2b0536615deb6a2ee20640688b4629251b190121c15a9f408",
+    "evaluation-final-tests.log": "42c66841f154cdf3ca890584e31ddd37e5ff8f513fa4db2df49fb9b0b423f71e",
     "cuda-checks-v1/window.json": "db6e3ec73172ecba125f9a35b8993731300eff987623874f2ccf9c5d1f64a6bd",
+    "temporal-integration/quality/quality.json": "3d69a6c0527d6479a4e0ef9c6c024bc716c031d22145708570eb94c7aa52a34a",
+    "temporal-integration/quality-market-membership/quality.json": "70074823e16940539b0b1dc0a708e7f7e2d4d9751f3215a41316f286e089187c",
+    "analysis-review/review.json": "d9fa4f09e6b9ce80fb88c25fbb5679976fe7eeee17499ee43263ed7679048233",
     "cuda-checks-v1/joint-and-legacy.log": "dc645fe65a2df0bf7aa250c1b06e21de18c12c752316437376c33825de935e07",
     "cuda-checks-v1/predictive-readers.log": "b5aeccb86fbfcbeb7ce1d15ac2f809f28f8dcabd9a8c6ffe92c2d8c1fcf6eb4f",
     "materialization-v2.log": "6ff25798a28f3ab9084c817d40d0bec872a72b5afe242007de2423a8e342c19c",

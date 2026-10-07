@@ -42,6 +42,26 @@ def _mean(values):
     return math.fsum(present) / len(present) if present else None
 
 
+def _market_population(source, result, fold):
+    declared = fold.get("market_counts")
+    if declared is None:
+        return
+    totals = (
+        result["sessions"].group_by("market", use_threads=False).aggregate([("samples", "sum")])
+    )
+    actual = {row["market"]: row["samples_sum"] for row in totals.to_pylist()}
+    _require(
+        actual == {market: counts[source["partition"]] for market, counts in declared.items()},
+        "Las muestras por mercado no corresponden a su cohorte temporal",
+    )
+    cohort = result["cohort"]
+    prefixes = pc.utf8_slice_codeunits(cohort["asset_id"], start=0, stop=3)
+    _require(
+        pc.all(pc.equal(prefixes, pc.binary_join_element_wise(cohort["market"], "/", ""))).as_py(),
+        "Un activo no pertenece al mercado de su predicción",
+    )
+
+
 def _market_aggregates(admitted, daily, sessions, markets, **options):
     result = {name: [] for name in ("overall", "by_fold", "intervals")}
     for market in markets:
@@ -316,6 +336,7 @@ def compare_campaigns(
         _require(not path.resolve().is_relative_to(output.resolve()), "La salida contiene fuentes")
     sources, provenance = predictive_sources(reference, completion)
     _require(len(sources) <= 8192, "La comparación supera el presupuesto de archivos")
+    folds = {fold["id"]: fold for fold in provenance["folds"]}
     initial_cache = InitialPolicyCache(initial_cache_bytes)
     cohorts, parents, cases, tables = {}, {}, [], []
     needed = {
@@ -333,6 +354,7 @@ def compare_campaigns(
         result = review_predictions(
             source, cohort=cohorts.get(cohort_key), initial_cache=initial_cache
         )
+        _market_population(source, result, folds[source["fold"]])
         if (source["metadata"].get("selection") or {}).get("best_epoch") == 0:
             _require(
                 result["diagnostics"]["primary_equals_initial_policy"] is not False,
