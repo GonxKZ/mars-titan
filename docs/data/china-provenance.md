@@ -145,8 +145,10 @@ La comparación conjunta necesita una representación común y un protocolo temp
 
 La [unión de publicaciones de 2022 y 2023](chinese-fact-history.md) amplía la
 preparación a Ping An y Vanke. Conserva cada fecha, identifica la equivalencia
-numérica aplicada a los originales de Vanke y obtiene 671 etiquetas en las dos
-ediciones por activo, pendientes de una comparación temporal común.
+numérica aplicada a los originales de Vanke y obtuvo 671 etiquetas en las dos
+ediciones por activo. La [unión posterior](chinese-corpus.md) amplía el historial
+factorial y prepara diez ventanas temporales. El [inventario del censo completo](chinese-balance-inventory.md)
+organiza los cierres pendientes de las demás empresas.
 
 La verificación inicial del contrato pasó 961 pruebas sin omisiones, incluidas
 39 específicas. Detectó seis mutaciones dirigidas. El [recibo de calidad](../../reports/resources/china-reconciliation-quality.json)
@@ -165,6 +167,6 @@ El [panel macro chino](china-macro-edition.md) ya admite 387 sesiones con los
 CSI 300](csi300-market-factor.md) conserva las 484 sesiones de 2022 y 2023
 publicadas por SSE. Su contraste residual obtiene 168 etiquetas admisibles y
 una exclusión por el corte anual. La codificación CUDA y la unión supervisada de
-esas muestras están comprobadas. Faltan cobertura y particiones suficientes para
-entrenar el brazo chino. El brazo conjunto no se considera
-completo utilizando únicamente datos estadounidenses.
+esas muestras están comprobadas. La edición posterior dispone de particiones
+temporales para los dos activos revisados. Falta ampliar la cobertura antes de
+entrenar la comparación china completa y el brazo conjunto US+CN.

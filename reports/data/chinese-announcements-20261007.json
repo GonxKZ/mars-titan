@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "kind": "chinese_announcement_catalogue_verification",
+  "observed_at_utc": "2026-10-07T04:17:30.650091+00:00",
+  "pilot": {
+    "schema_version": 1,
+    "kind": "cn_annual_announcement_catalogue",
+    "status": "completed",
+    "configuration_sha256": "e351b584ec1235de8d731e070b490b93a725574c9ce573adbe96d8ff0071f883",
+    "cursor_sha256": "9d60bde257b8a072184f095a4b8922254fac27adfe6fc09e9bc295d453e42b72",
+    "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+    "category": "category_ndbg_szsh",
+    "searchkey": "",
+    "publication_start": "2022-09-22",
+    "publication_end": "2022-12-31",
+    "confirmed_requests": 2,
+    "announcements": 51,
+    "in_census": 3,
+    "queue_rows": 6480,
+    "queue_symbols": 810,
+    "queue_periods": [
+      "2021-12-31",
+      "2022-03-31",
+      "2022-06-30",
+      "2022-09-30",
+      "2022-12-31",
+      "2023-03-31",
+      "2023-06-30",
+      "2023-09-30"
+    ],
+    "period_coverage_verified": false,
+    "financial_values_admitted": false,
+    "training_ready": false,
+    "final_test_opened": false,
+    "failure": null,
+    "scope": "annual_category_only",
+    "artifacts": {
+      "announcements.parquet": "7a9a750461c175e6a2dc26b8e0a9fdb8dc9fa0b7ca93592785416fe7183d398b"
+    },
+    "requests_this_invocation": 2
+  },
+  "reused_without_network": true,
+  "reused_without_rewrite": true,
+  "full_window": {
+    "status": "partial",
+    "confirmed_requests": 48,
+    "announcements": 1350,
+    "previous_confirmed_requests": 24,
+    "previous_announcements": 630,
+    "previous_responses_unchanged": true,
+    "pending_intervals": 4,
+    "next": {
+      "start": "2022-01-01",
+      "end": "2022-04-02",
+      "page": 46,
+      "total": 2601,
+      "collected": 1350
+    }
+  },
+  "final_test_opened": false,
+  "source_sha256": "64d854af7d3d853d89864e8a121d273fba720fe9e88bb6da50f1a2d37184739e",
+  "test_sha256": "3846260bd12ed5a96c356dceb79ac298dd2bd86b13c24661efe9bff12cd480da",
+  "tests": {
+    "repository_passed": 45,
+    "additional_private_passed": 4,
+    "total_passed": 49
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "branch_enabled": true,
+    "summary": {
+      "covered_lines": 347,
+      "num_statements": 386,
+      "percent_covered": 85.84905660377359,
+      "percent_covered_display": "86",
+      "missing_lines": 39,
+      "excluded_lines": 0,
+      "percent_statements_covered": 89.89637305699482,
+      "percent_statements_covered_display": "90",
+      "num_branches": 144,
+      "num_partial_branches": 36,
+      "covered_branches": 108,
+      "missing_branches": 36,
+      "percent_branches_covered": 75.0,
+      "percent_branches_covered_display": "75"
+    },
+    "missing_lines": [
+      79,
+      85,
+      95,
+      105,
+      110,
+      113,
+      117,
+      150,
+      167,
+      168,
+      190,
+      195,
+      207,
+      211,
+      226,
+      262,
+      278,
+      285,
+      289,
+      297,
+      307,
+      313,
+      316,
+      413,
+      431,
+      450,
+      498,
+      509,
+      515,
+      523,
+      534,
+      575,
+      577,
+      603,
+      605,
+      649,
+      653,
+      678,
+      722
+    ],
+    "artifact": "coverage.json"
+  },
+  "complexity": {
+    "tool": "radon 6.0.1",
+    "crap_convention": "CC^2*(1-statement_coverage)^3+CC, por función, usando las sentencias ejecutables de coverage.py.",
+    "functions": [
+      {
+        "name": "_Catalogue._page",
+        "cyclomatic_complexity": 33,
+        "statement_coverage_fraction": 0.918918918918919,
+        "CRAP": 33.58047894497858
+      },
+      {
+        "name": "collect_chinese_announcements",
+        "cyclomatic_complexity": 29,
+        "statement_coverage_fraction": 0.921875,
+        "CRAP": 29.401020050048828
+      },
+      {
+        "name": "_truncated",
+        "cyclomatic_complexity": 20,
+        "statement_coverage_fraction": 0.7142857142857143,
+        "CRAP": 29.32944606413994
+      },
+      {
+        "name": "_response",
+        "cyclomatic_complexity": 23,
+        "statement_coverage_fraction": 0.7894736842105263,
+        "CRAP": 27.93599650094766
+      },
+      {
+        "name": "_notice",
+        "cyclomatic_complexity": 25,
+        "statement_coverage_fraction": 0.8518518518518519,
+        "CRAP": 27.032210537011633
+      },
+      {
+        "name": "_queue",
+        "cyclomatic_complexity": 15,
+        "statement_coverage_fraction": 0.7619047619047619,
+        "CRAP": 18.036929057337222
+      },
+      {
+        "name": "_replay",
+        "cyclomatic_complexity": 13,
+        "statement_coverage_fraction": 0.8181818181818182,
+        "CRAP": 14.015777610818933
+      },
+      {
+        "name": "_save_response",
+        "cyclomatic_complexity": 13,
+        "statement_coverage_fraction": 0.875,
+        "CRAP": 13.330078125
+      },
+      {
+        "name": "_report",
+        "cyclomatic_complexity": 11,
+        "statement_coverage_fraction": 0.9166666666666666,
+        "CRAP": 11.070023148148149
+      },
+      {
+        "name": "_Catalogue._finish",
+        "cyclomatic_complexity": 8,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 8.0
+      },
+      {
+        "name": "_day",
+        "cyclomatic_complexity": 4,
+        "statement_coverage_fraction": 0.8333333333333334,
+        "CRAP": 4.074074074074074
+      },
+      {
+        "name": "_Catalogue.consume",
+        "cyclomatic_complexity": 4,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 4.0
+      },
+      {
+        "name": "_verify",
+        "cyclomatic_complexity": 4,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 4.0
+      },
+      {
+        "name": "_hash",
+        "cyclomatic_complexity": 3,
+        "statement_coverage_fraction": 0.6666666666666666,
+        "CRAP": 3.3333333333333335
+      },
+      {
+        "name": "_Catalogue.status",
+        "cyclomatic_complexity": 3,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 3.0
+      },
+      {
+        "name": "_request",
+        "cyclomatic_complexity": 2,
+        "statement_coverage_fraction": 0.75,
+        "CRAP": 2.0625
+      },
+      {
+        "name": "_write_cursor",
+        "cyclomatic_complexity": 2,
+        "statement_coverage_fraction": 0.8571428571428571,
+        "CRAP": 2.011661807580175
+      },
+      {
+        "name": "_NoRedirect.redirect_request",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 0.0,
+        "CRAP": 2.0
+      },
+      {
+        "name": "main",
+        "cyclomatic_complexity": 2,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 2.0
+      },
+      {
+        "name": "_Catalogue.__init__",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_Catalogue.cursor",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_canonical",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_json",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_key",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_parameters",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_sync",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      },
+      {
+        "name": "_task",
+        "cyclomatic_complexity": 1,
+        "statement_coverage_fraction": 1.0,
+        "CRAP": 1.0
+      }
+    ],
+    "artifact": "complexity.json"
+  },
+  "mutations": {
+    "total": 12,
+    "killed": 12,
+    "identical_control_passed": true,
+    "artifact": "mutations.json",
+    "isolation": "Cada mutante se carga desde una copia privada y conserva su SHA. Se comprueba el SHA de producción después de cada prueba.",
+    "harness_correction": "El primer intento se detuvo antes de ejecutar mutantes porque una sustitución no modificaba el texto. Se corrigió únicamente el escape del tabulador en el generador privado y se volvió a ejecutar el control y las 12 mutaciones."
+  },
+  "quality_receipt_sha256": "dfca4a8adf0202e934f8f7a2585feaf0ebe8ce007fdabb1c126200a562169465",
+  "review_receipt_sha256": "d9eca0779856ee86750d5836007fd824900e38bf903d82c960e35afae446f70a",
+  "pagination_probe": [
+    {
+      "page": 1,
+      "status": 200,
+      "requested_at_utc": "2026-10-07T03:14:36.323840+00:00",
+      "parameters": {
+        "pageNum": "1",
+        "pageSize": "30",
+        "column": "szse",
+        "tabName": "fulltext",
+        "plate": "",
+        "stock": "",
+        "searchkey": "2021年年度报告",
+        "secid": "",
+        "category": "category_ndbg_szsh",
+        "trade": "",
+        "seDate": "2022-09-22~2022-12-31",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true"
+      },
+      "bytes": 21005,
+      "sha256": "03ea270db1f7528ac66610c6365d1bc5f1bac54f44d3bede4976479c68c51727",
+      "total": 31,
+      "totalpages": 1,
+      "has_more": true,
+      "rows": 30
+    },
+    {
+      "page": 2,
+      "status": 200,
+      "requested_at_utc": "2026-10-07T03:14:40.333640+00:00",
+      "parameters": {
+        "pageNum": "2",
+        "pageSize": "30",
+        "column": "szse",
+        "tabName": "fulltext",
+        "plate": "",
+        "stock": "",
+        "searchkey": "2021年年度报告",
+        "secid": "",
+        "category": "category_ndbg_szsh",
+        "trade": "",
+        "seDate": "2022-09-22~2022-12-31",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true"
+      },
+      "bytes": 845,
+      "sha256": "46998da021ef6b5bea30cf992cfea139b4b3ad83b979ec025c55d8bdac072e57",
+      "total": 31,
+      "totalpages": 1,
+      "has_more": false,
+      "rows": 1
+    }
+  ],
+  "scope": "annual_category_only",
+  "financial_values_admitted": false,
+  "period_coverage_verified": false,
+  "limits": [
+    "El catálogo completo de2022–2023 seguía parcial en este corte.",
+    "Los anuncios incluyen resúmenes y correcciones. La categoría no determina por sí sola qué balance es admisible.",
+    "No se han descargado PDF ni se han incorporado cifras al corpus.",
+    "La cobertura de trimestres requiere sus categorías y publicaciones específicas.",
+    "La prueba de reanudación verifica48 respuestas conservadas, sin repetir ni reescribir las24 anteriores."
+  ],
+  "operational_followup": {
+    "observed_at_utc": "2026-10-07T05:00:32.380396+00:00",
+    "attempts": [
+      {
+        "status": "blocked",
+        "confirmed_requests": 61,
+        "announcements": 1710,
+        "http_status": 504,
+        "report_sha256": "bc2a8465df18ca462acd402092e8453181014a1d5c390578e2d177787b869f74"
+      },
+      {
+        "status": "blocked",
+        "confirmed_requests": 66,
+        "announcements": 1860,
+        "http_status": 504,
+        "report_sha256": "d4a77b507f17bdc2149358c8ae6329a6b0b1fe82f49f7514296e5239370feb50",
+        "minimum_spacing_seconds": 5
+      }
+    ],
+    "reused_successful_responses": 60,
+    "recovery_without_network": true,
+    "first_attempt_preserved": true,
+    "recovery_receipt_sha256": "3639108feb916ffba64b97afd5de267a28126a2e147e71a9e344f1d8f15f470f",
+    "status": "blocked_by_source_http_504",
+    "automatic_retries": false,
+    "interpretation": "La cola parcial se conserva. No se ha completado la recogida de 2022–2023 ni se ha atribuido una causa interna al error del proveedor."
+  }
+}
