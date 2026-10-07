@@ -549,6 +549,10 @@ class CorpusDataset:
                             or pa.types.is_fixed_size_list(column.type)
                         ):
                             raise ValueError("Cada modalidad necesita un vector explícito")
+                        if self.masked and column.type.value_type != pa.float32():
+                            raise ValueError(
+                                "Los vectores históricos deben conservar el tipo float32"
+                            )
                         lengths = pa.compute.list_value_length(column).to_numpy()
                         if (
                             column.null_count

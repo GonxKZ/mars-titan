@@ -52,6 +52,12 @@ def historical_edition(tmp_path):
         )
     stamp = pa.timestamp("us", tz="UTC")
     table = pa.Table.from_pylist(rows)
+    for name in ("news", "charts", "fundamentals", "macro"):
+        table = table.set_column(
+            table.schema.get_field_index(name),
+            name,
+            pa.array([row[name] for row in rows], type=pa.list_(pa.float32())),
+        )
     table = table.set_column(
         table.schema.get_field_index("input_availability"),
         "input_availability",
@@ -587,3 +593,68 @@ def test_reserved_sample_is_rejected_before_decoding_its_vectors(tmp_path, monke
     monkeypatch.setattr(pq.ParquetFile, "read_row_group", guarded)
     with pytest.raises(ValueError, match="corte"):
         read_all(path)
+
+
+@pytest.mark.parametrize(
+    "vector,observed",
+    [
+        ([0.0, 1.00000001, 0.0], True),
+        ([1e-50, 0.0, 0.0], False),
+        ([0.0, 1.0, -1e-50], True),
+    ],
+)
+def test_masks_are_checked_before_any_loss_of_precision(tmp_path, vector, observed):
+    path = supervised(tmp_path)
+
+    def alter(table):
+        def change(row):
+            row["presence"][3] = observed
+            row["input_availability"]["fundamentals"] = row["prediction_at"] if observed else None
+
+        table = change_rows(table, change)
+        return table.set_column(
+            table.schema.get_field_index("fundamentals"),
+            "fundamentals",
+            pa.array([vector] * len(table), type=pa.list_(pa.float64())),
+        )
+
+    change_samples(tmp_path, path, alter)
+    with pytest.raises(ValueError, match="float32"):
+        read_all(path)
+
+
+@pytest.mark.parametrize("name", ["news", "charts", "fundamentals", "macro"])
+@pytest.mark.parametrize("value_type", [pa.float64(), pa.int64(), pa.bool_(), pa.string()])
+def test_historical_vectors_require_the_declared_float32_type(tmp_path, name, value_type):
+    path = supervised(tmp_path)
+
+    def alter(table):
+        original = table[name]
+        width = len(original[0].as_py())
+        zero = (
+            "0"
+            if pa.types.is_string(value_type)
+            else False
+            if pa.types.is_boolean(value_type)
+            else 0
+        )
+        return table.set_column(
+            table.schema.get_field_index(name),
+            name,
+            pa.array([[zero] * width] * len(table), type=pa.list_(value_type)),
+        )
+
+    change_samples(tmp_path, path, alter)
+    with pytest.raises(ValueError, match="float32"):
+        read_all(path)
+
+
+def test_strict_reader_keeps_float64_vector_conversion(tmp_path):
+    from tests.training.test_corpus_inputs import corpus
+
+    path = corpus(tmp_path, assets=1, rows=3)
+    samples = tmp_path / "samples/US/A0000/samples.parquet"
+    assert pq.read_schema(samples).field("news").type.value_type == pa.float64()
+    batch = next(CorpusDataset(path).batches(partition="train", batch_size=3, epoch=0, seed=42))
+    assert batch["inputs"]["news"].dtype == np.float32
+    assert sorted(batch["inputs"]["news"][:, 0].tolist()) == [0.0, 1.0, 2.0]
