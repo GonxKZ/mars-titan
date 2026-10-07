@@ -47,7 +47,8 @@ def audit_catalog(path):
     return records, identity
 
 
-def read_audited_prices(record, source_hash, clock, cutoff):
+def confirm_audited_prices(record, source_hash):
+    """Confirmar la fuente ya validada sin volver a descomprimir sus valores."""
     if (
         not isinstance(record, dict)
         or set(record) != {"path", "sha256", "rows", "source_sha256"}
@@ -63,6 +64,11 @@ def read_audited_prices(record, source_hash, clock, cutoff):
         raise ValueError("Los precios auditados superan el presupuesto de archivo de 64 MiB")
     if sha256(path) != record["sha256"]:
         raise ValueError("La huella de los precios auditados ha cambiado")
+    return path
+
+
+def read_audited_prices(record, source_hash, clock, cutoff):
+    path = confirm_audited_prices(record, source_hash)
     with pq.ParquetFile(path, read_dictionary=["session"]) as file:
         if file.metadata.num_rows != record["rows"] or not set(COLUMNS) <= set(
             file.schema_arrow.names
