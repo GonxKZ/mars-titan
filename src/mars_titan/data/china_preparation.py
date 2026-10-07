@@ -20,12 +20,15 @@ from .china_sources import CONCEPTS, _day, _provenance
 from .cohort_files import read_manifest, safe_destination
 from .cohort_samples import _prepared
 from .macro_coverage import _publish_directory
+from .preparation import atomic_parquet
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock
 
 _MAX_BYTES = 64 * 1024**2
 _MAX_FACTS = 100_000
+_MAX_EDITIONS = 16
 _POLICY = "reviewed_chinese_facts_into_empty_preparation_v1"
+_HISTORY_POLICY = "reviewed_chinese_fact_history_into_empty_preparation_v1"
 _CODE = (
     "china_preparation.py",
     "china_fundamentals.py",
@@ -35,6 +38,7 @@ _CODE = (
     "cohort_files.py",
     "cohort_news.py",
     "macro_coverage.py",
+    "preparation.py",
     "storage.py",
     "temporal.py",
 )
@@ -111,7 +115,76 @@ def _facts(edition, origin, clock, cutoff):
     )
     if any(type(report.get(k)) is not int or report[k] != v for k, v in expected.items()):
         raise ValueError("Los recuentos contables no concilian con los hechos revisados")
-    return report, {path: signature, artifact: report["sha256"]}
+    return report, {path: signature, artifact: report["sha256"]}, rows
+
+
+def _fact_editions(facts_edition, additional_facts):
+    if not isinstance(additional_facts, (tuple, list)) or len(additional_facts) >= _MAX_EDITIONS:
+        raise ValueError("Las ediciones contables superan el presupuesto o no forman una lista")
+    editions = tuple(Path(path) for path in (facts_edition, *additional_facts))
+    if len({path.resolve() for path in editions}) != len(editions):
+        raise ValueError("Las ediciones contables contienen orígenes duplicados")
+    for path in editions:
+        safe_destination(path)
+    return editions
+
+
+def _fact_history(editions, origin, clock, cutoff):
+    if len(editions) > 1:
+        total_rows, total_bytes = 0, 0
+        for edition in editions:
+            path = edition / "fundamentals.parquet"
+            _hash(path)
+            with pq.ParquetFile(path) as file:
+                total_rows += file.metadata.num_rows
+                total_bytes += sum(
+                    file.metadata.row_group(i).total_byte_size for i in range(file.num_row_groups)
+                )
+            if total_rows > _MAX_FACTS or total_bytes > _MAX_BYTES:
+                raise ValueError("La historia contable supera el presupuesto de filas o memoria")
+    parents, sources, rows, keys = [], {}, [], set()
+    for edition in editions:
+        report, guarded, facts = _facts(edition, origin, clock, cutoff)
+        sources.update(guarded)
+        parents.append(
+            dict(
+                path=str((edition / "report.json").resolve()),
+                sha256=guarded[edition / "report.json"],
+                identity=report["identity"],
+                artifact_sha256=report["sha256"],
+            )
+        )
+        if len(rows) + len(facts) > _MAX_FACTS:
+            raise ValueError("La historia contable supera el presupuesto de filas")
+        for row in facts:
+            key = tuple(
+                row[name]
+                for name in ("concept", "period_start", "period_end", "filed", "accession")
+            )
+            if key in keys:
+                raise ValueError("Las publicaciones contienen hechos duplicados o contradictorios")
+            keys.add(key)
+        rows.extend(facts)
+    rows.sort(
+        key=lambda row: (
+            row["available_at"],
+            row["period_end"],
+            row["period_start"] or "",
+            row["filed"],
+            row["accession"],
+            row["concept"],
+        )
+    )
+    matched = sum(len(row["source_records"]) for row in rows)
+    audit = dict(
+        facts=len(rows),
+        matched_records=matched,
+        unique_source_records=len(
+            {(row["source_file"], index) for row in rows for index in row["source_records"]}
+        ),
+        duplicate_matches=matched - len(rows),
+    )
+    return parents, sources, rows, audit
 
 
 def _validate_rows(rows, identity, origin, clock, cutoff):
@@ -188,20 +261,73 @@ def _verify(sources, code):
         raise ValueError("El código cambió durante la preparación")
 
 
-def derive_chinese_preparation(
-    prepared_manifest, facts_edition, output, *, clock, cutoff="2023-12-31"
-):
-    """Añadir hechos revisados a un activo CN sin sustituir ninguna edición anterior.
+def _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutoff):
+    rule = _HISTORY_POLICY if parents.get("additional_facts") else _POLICY
+    policy = dict(
+        derivation=rule,
+        cutoff=cutoff,
+        calendar=calendar,
+        code=code,
+        pyarrow=pa.__version__,
+        max_file_bytes=_MAX_BYTES,
+        max_facts=_MAX_FACTS,
+    )
+    if parents.get("additional_facts"):
+        policy["max_fact_editions"] = _MAX_EDITIONS
+    artifacts = {**origin["artifacts"], "fundamentals.parquet": facts_hash}
+    report = dict(
+        schema_version=3,
+        kind="derived_prepared_asset",
+        market="CN",
+        symbol=origin["symbol"],
+        cohort_id="original_audited",
+        news_content_policy=origin["news_content_policy"],
+        policy=policy,
+        parents=parents,
+        sources=origin["sources"],
+        artifacts=artifacts,
+        counts={**origin["counts"], "fundamentals": reviewed["facts"]},
+        fundamentals_audit=dict(
+            policy=rule,
+            accepted=reviewed["facts"],
+            matched_records=reviewed["matched_records"],
+            unique_source_records=reviewed["unique_source_records"],
+            duplicate_matches=reviewed["duplicate_matches"],
+        ),
+        **{
+            name: origin[name]
+            for name in (
+                "reserved_counts",
+                "price_audit",
+                "news_counts",
+                "news_reasons",
+                "chart_policy",
+            )
+        },
+        training_ready=False,
+        final_test_opened=False,
+    )
+    report["fingerprint"] = hashlib.sha256(
+        json.dumps(report, sort_keys=True, allow_nan=False).encode()
+    ).hexdigest()
+    return report
 
-    El origen debe tener su partición contable vacía. Los hechos conservan CAS,
-    CNY y el perímetro consolidado. La salida es un activo, no un corpus admitido.
+
+def derive_chinese_preparation(
+    prepared_manifest, facts_edition, output, *, clock, cutoff="2023-12-31", additional_facts=()
+):
+    """Añadir publicaciones revisadas sin alterar sus fechas ni ediciones anteriores.
+
+    El origen debe tener contabilidad vacía. Cada documento conserva CAS, CNY y
+    su perímetro consolidado. La salida es un activo, no un corpus admitido.
     """
     prepared_manifest, facts_edition, output = map(Path, (prepared_manifest, facts_edition, output))
+    editions = _fact_editions(facts_edition, additional_facts)
     if clock.market != "CN" or _day(cutoff) >= date(2024, 1, 1):
         raise ValueError("La preparación necesita calendario CN y reserva final cerrada")
-    for path in (prepared_manifest, facts_edition, output):
+    for path in (prepared_manifest, output):
         safe_destination(path)
-    for source in (prepared_manifest.parent, facts_edition, Path("dataset")):
+    for source in (prepared_manifest.parent, *editions, Path("dataset")):
         outside_source(source, output)
         outside_source(output, source)
     code = {name: sha256(Path(__file__).with_name(name)) for name in _CODE}
@@ -242,7 +368,7 @@ def derive_chinese_preparation(
         ("news/excluded.parquet", None),
     ):
         _table(prepared_manifest.parent / name, count=count)
-    reviewed, reviewed_sources = _facts(facts_edition, origin, clock, cutoff)
+    fact_parents, reviewed_sources, rows, reviewed = _fact_history(editions, origin, clock, cutoff)
     sources.update(reviewed_sources)
     parents = dict(
         prepared=dict(
@@ -250,76 +376,39 @@ def derive_chinese_preparation(
             sha256=parent_hash,
             fingerprint=origin["fingerprint"],
         ),
-        facts=dict(
-            path=str((facts_edition / "report.json").resolve()),
-            sha256=reviewed_sources[facts_edition / "report.json"],
-            identity=reviewed["identity"],
-            artifact_sha256=reviewed["sha256"],
-        ),
+        facts=fact_parents[0],
     )
-    policy = dict(
-        derivation=_POLICY,
-        cutoff=cutoff,
-        calendar=calendar,
-        code=code,
-        pyarrow=pa.__version__,
-        max_file_bytes=_MAX_BYTES,
-        max_facts=_MAX_FACTS,
-    )
-    artifacts = {**origin["artifacts"], "fundamentals.parquet": reviewed["sha256"]}
-    report = dict(
-        schema_version=3,
-        kind="derived_prepared_asset",
-        market="CN",
-        symbol=origin["symbol"],
-        cohort_id="original_audited",
-        news_content_policy=origin["news_content_policy"],
-        policy=policy,
-        parents=parents,
-        sources=origin["sources"],
-        artifacts=artifacts,
-        counts={**counts, "fundamentals": reviewed["facts"]},
-        fundamentals_audit=dict(
-            policy=_POLICY,
-            accepted=reviewed["facts"],
-            matched_records=reviewed["matched_records"],
-            unique_source_records=reviewed["unique_source_records"],
-            duplicate_matches=reviewed["duplicate_matches"],
-        ),
-        **{
-            name: origin[name]
-            for name in (
-                "reserved_counts",
-                "price_audit",
-                "news_counts",
-                "news_reasons",
-                "chart_policy",
-            )
-        },
-        training_ready=False,
-        final_test_opened=False,
-    )
-    report["fingerprint"] = hashlib.sha256(
-        json.dumps(report, sort_keys=True, allow_nan=False).encode()
-    ).hexdigest()
-    if output.exists():
-        previous, signature = read_manifest(output / "manifest.json", maximum=4 * 1024**2)
-        if previous != report:
-            raise ValueError("La edición existente no conserva la identidad derivada")
-        _verify(
-            {
-                **sources,
-                output / "manifest.json": signature,
-                **{output / name: digest for name, digest in artifacts.items()},
-            },
-            code,
-        )
-        return {**report, "reused": True}
+    if len(editions) > 1:
+        parents["additional_facts"] = fact_parents[1:]
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
         stage = Path(temporary) / "asset"
         (stage / "news").mkdir(parents=True)
+        facts_hash = fact_parents[0]["artifact_sha256"]
+        if len(editions) > 1:
+            table = pa.Table.from_pylist(rows, schema=_SCHEMA)
+            if table.nbytes > _MAX_BYTES:
+                raise ValueError("La historia contable supera el presupuesto de memoria")
+            atomic_parquet(stage / "fundamentals.parquet", table)
+            facts_hash = _hash(stage / "fundamentals.parquet")
+        report = _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutoff)
+        artifacts = report["artifacts"]
+        if output.exists():
+            previous, signature = read_manifest(output / "manifest.json", maximum=4 * 1024**2)
+            if previous != report:
+                raise ValueError("La edición existente no conserva la identidad derivada")
+            _verify(
+                {
+                    **sources,
+                    output / "manifest.json": signature,
+                    **{output / name: digest for name, digest in artifacts.items()},
+                },
+                code,
+            )
+            return {**report, "reused": True}
         for name in artifacts:
+            if name == "fundamentals.parquet" and len(editions) > 1:
+                continue
             source = facts_edition if name == "fundamentals.parquet" else prepared_manifest.parent
             shutil.copyfile(source / name, stage / name)
             with (stage / name).open("rb") as stream:
@@ -358,6 +447,7 @@ def main(argv=None):
     parser.add_argument("--calendar-start", required=True)
     parser.add_argument("--calendar-end", required=True)
     parser.add_argument("--cutoff", default="2023-12-31")
+    parser.add_argument("--additional-facts", type=Path, action="append", default=[])
     args = parser.parse_args(argv)
     report = derive_chinese_preparation(
         args.prepared_manifest,
@@ -365,6 +455,7 @@ def main(argv=None):
         args.output,
         clock=MarketClock("CN", args.calendar_start, args.calendar_end),
         cutoff=args.cutoff,
+        additional_facts=args.additional_facts,
     )
     print(
         f"Activo {report['symbol']}: {report['counts']['fundamentals']} hechos revisados. "
