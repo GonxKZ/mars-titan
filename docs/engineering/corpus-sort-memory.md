@@ -11,3 +11,5 @@ El [informe de ejecución](../../reports/resources/corpus-sort-memory.json) cons
 El [límite de memoria de DuckDB](https://duckdb.org/docs/current/configuration/pragmas#memory-limit) corresponde al gestor de buffers, no a toda la memoria del proceso. Por eso se comprueban también RSS y memoria del servicio. El resultado de 8 GiB es evidencia para esta carga, no una cota universal para otros universos o dimensiones.
 
 Las ediciones fallidas se conservan. La preparación corregida y sus ajustes utilizan una edición nueva, que admite los mismos padres confirmados por su población y sus artefactos. No se modifican las fuentes ni los resultados neuronales y tabulares terminados.
+
+La [medición posterior de ocupación temporal](corpus-temporary-storage.md) separa el pico de spill del motor, los máximos observados de archivos intermedios y el tráfico de E/S. Se realizó sobre la ventana conjunta mayor de US y CN, con la memoria del motor sin reducir para forzar spill.
