@@ -8,7 +8,6 @@ import re
 import resource
 import tempfile
 import time
-from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -419,8 +418,10 @@ def prepare_h15_archive(manifest_path, output, *, markets=("US", "CN"), cutoff="
     code = _code_identity()
     sources = _Sources(manifest_path)
     documents = _manifest(sources.meta, last)
-    first = min(_day(d["publication_date"]) for d in documents) - timedelta(days=2)
-    clocks = {market: MarketClock(market, first.isoformat(), cutoff) for market in markets}
+    first = min(_day(d["publication_date"]) for d in documents)
+    # El año anterior evita un calendario vacío durante cierres. El corte no se amplía.
+    calendar_start = first.replace(year=first.year - 1, month=1, day=1).isoformat()
+    clocks = {market: MarketClock(market, calendar_start, cutoff) for market in markets}
     configuration = dict(
         schema_version=1,
         policy=POLICY,
@@ -430,6 +431,7 @@ def prepare_h15_archive(manifest_path, output, *, markets=("US", "CN"), cutoff="
         source_manifest_sha256=sources.hashes[manifest_path],
         markets=list(markets),
         cutoff=cutoff,
+        calendar_start=calendar_start,
         code_sha256=code,
         pyarrow=pa.__version__,
         beautifulsoup=bs4.__version__,

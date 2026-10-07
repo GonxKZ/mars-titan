@@ -28,6 +28,8 @@ La fecha de observación y la fecha de edición se guardan por separado. Se perm
 
 Se reutiliza la regla conservadora de `macro._available`: fin del día declarado en `America/New_York`, conversión a la fecha del mercado receptor y siguiente sesión de su `MarketClock`. La regla no toma simplemente el primer cierre posterior. Para la edición del 10 de enero de 2000 produce el 11 a las 21:05 UTC en US y el 12 a las 07:05 UTC en CN. Si no hay una sesión dentro del corte, la edición conserva `available_at=None` y contabiliza esa falta de disponibilidad.
 
+El calendario de apoyo empieza el 1 de enero del año anterior a la primera publicación y termina en el corte autorizado. Su inicio y su huella quedan en la configuración. Esto permite conservar una publicación durante un cierre prolongado sin exigir que esos días contengan sesiones. El boletín del 7 de febrero de 2000 queda sin disponibilidad CN con corte ese día. Con corte el 14 de febrero, la regla lo sitúa en esa sesión a las 07:05 UTC. En US su primera disponibilidad es el 8 de febrero a las 21:05 UTC. No se amplía el corte para encontrar una sesión posterior.
+
 La precisión documental es de día. `CreationDate`, `ModDate`, la fecha de captura y el horario actual de H.15 no se emplean como hora histórica de publicación. Los PDF contrastados no acreditan por sí solos una captura contemporánea de 2000 ni la ausencia de otras revisiones.
 
 ## Publicación y recuperación

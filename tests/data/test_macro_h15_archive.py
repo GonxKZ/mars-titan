@@ -709,3 +709,51 @@ def test_recovery_accepts_equivalent_parquet_encodings(source, dictionary):
     before = path.read_bytes(), path.stat().st_mtime_ns
     assert prepare(source)["reused"] is True
     assert (path.read_bytes(), path.stat().st_mtime_ns) == before
+
+
+def change_publication(source, iso_day, printed_day):
+    manifest = json.loads(source["manifest"].read_text())
+    item = manifest["documents"][0]
+    item["publication_date"] = iso_day
+    source["html"].write_bytes(
+        source["html"].read_bytes().replace(b"January 10, 2000", printed_day.encode())
+    )
+    for kind in ("html", "pdf"):
+        ref = item[kind]
+        ref["url"] = ref["url"].replace("20000110", iso_day.replace("-", ""))
+        path = source["manifest"].parent / ref["path"]
+        ref["sha256"] = digest(path)
+        receipt_path = source["manifest"].parent / ref["receipt"]["path"]
+        receipt = json.loads(receipt_path.read_text())
+        receipt.update(url=ref["url"], final_url=ref["url"])
+        receipt["body_sha256" if kind == "html" else "sha256"] = ref["sha256"]
+        receipt["body_bytes" if kind == "html" else "bytes"] = path.stat().st_size
+        dump(receipt_path, receipt)
+        ref["receipt"]["sha256"] = digest(receipt_path)
+    dump(source["manifest"], manifest)
+    update_review(
+        source,
+        lambda review: review.update(publication_date=iso_day, html_sha256=item["html"]["sha256"]),
+    )
+
+
+@pytest.mark.parametrize("markets", [("US",), ("CN",), ("US", "CN")])
+@pytest.mark.parametrize("cutoff", ["2000-02-07", "2000-02-08", "2000-02-13", "2000-02-14"])
+def test_holiday_cutoff_keeps_document_without_backdating(source, markets, cutoff):
+    change_publication(source, "2000-02-07", "February 7, 2000")
+    expected = {
+        "US": datetime(2000, 2, 8, 21, 5, tzinfo=UTC) if cutoff >= "2000-02-08" else None,
+        "CN": datetime(2000, 2, 14, 7, 5, tzinfo=UTC) if cutoff >= "2000-02-14" else None,
+    }
+    result = prepare(source, markets=markets, cutoff=cutoff)
+    table = pq.read_table(source["output"] / "observations.parquet")
+    assert result["rows"] == 30 * len(markets)
+    assert result["unavailable_before_cutoff_rows"] == 30 * sum(
+        expected[market] is None for market in markets
+    )
+    for row in table.to_pylist():
+        assert row["available_at"] == expected[row["market"]]
+        assert row["publication_date"] == "2000-02-07"
+    before = {p.name: (digest(p), p.stat().st_mtime_ns) for p in source["output"].iterdir()}
+    assert prepare(source, markets=markets, cutoff=cutoff)["reused"] is True
+    assert before == {p.name: (digest(p), p.stat().st_mtime_ns) for p in source["output"].iterdir()}
