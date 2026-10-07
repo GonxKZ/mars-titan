@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "kind": "corpus_temporary_storage_measurement",
+  "measured_on": "2026-10-07",
+  "source_commit": "834cfb382f41d5bbaa5b93f380a90f66cfe3a912",
+  "code_sha256": {
+    "environments/corpus_source.py": "5638e08f3144f66b4cffab36c42e926ad5544ce168cb0fd8029f8e7ea7b87869",
+    "environments/cohorts.py": "45095f4cca23cc5ea6ab4c25190ae413d62fbfd37d9026981892bae8c0d0fda7",
+    "environments/actions.py": "78d01ec28ce7378ff5b066aabf324984686014209a1dac7e5d12efcbff844f6a",
+    "training/corpus_inputs.py": "5374a00d049c3739b58b3c30687b9c02802230305c62d53a16e71488fe5d2f4e",
+    "training/partition_contract.py": "5e1006a40f33d68b154fd2b1107d12ffd45988d8dedf6243b3f356850594dc34",
+    "training/temporal_contract.py": "c8026e5781ca66f891874e2b225d64908c709866198af463c6bc3ee9400d48b7",
+    "training/temporal_corpus.py": "65dca3e928252d5f33b128216ce44f0264835eb7c3d9059eab0c8e91e90fe9d7",
+    "evaluation/splits.py": "baf98c407fa0cee75077f8873f602f663e124ddd87816081c8d8e68cbaf92669",
+    "evaluation/split_readiness.py": "53decc9e0ecb68669af568eb9faafa543ebd472b821a5a7d00c245439696105d",
+    "training/cohort_contract.py": "2bda4ddd8936d80aac5d7ea444dda8cd647b3c9ee4cc9352c05ed9ec787485a9",
+    "training/run_receipts.py": "fb527a0c578f624220a732890c452d05537ed44546ca36d3d322becc088d5fab",
+    "data/streaming.py": "c763ec4c422bc298b816412343f576fa71e93e6a215f104aa405fe1232b89357",
+    "data/batches.py": "2fabe5c9212b99d434c137c0f7099e7a41100b1d0f8e9ea154737dbe815de99f",
+    "data/cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "data/cohort_news.py": "335302918bf8380915d559396c8de5aa3f35746e3982ce6b89ca9e3e84b0f70b",
+    "data/storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd"
+  },
+  "source_manifest_sha256": "15557065995869d870ce4c32ed7886108b8331bd328f0cbf40c5226ff510d695",
+  "dataset": {
+    "fold": "fold-009",
+    "markets": [
+      "US",
+      "CN"
+    ],
+    "scope": "development_snapshot",
+    "materialized_partitions": [
+      "train",
+      "validation"
+    ],
+    "materialized_rows": 364795,
+    "assets_in_source_manifest": 2223,
+    "context_sessions": 64,
+    "modalities": {
+      "prices": [
+        64,
+        5
+      ],
+      "news": [
+        384
+      ],
+      "charts": [
+        512
+      ],
+      "fundamentals": [
+        78
+      ],
+      "macro": [
+        420
+      ]
+    }
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux x86_64",
+    "duckdb": "1.5.5",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "pandas": "3.0.6"
+  },
+  "settings": {
+    "duckdb_memory_limit": "8GiB",
+    "max_temp_directory_size": "32GiB",
+    "threads": 2,
+    "source_default_threads": 4,
+    "reader_cache_bytes": 67108864,
+    "process_memory_max_bytes": 11811160064,
+    "batch_size": 256,
+    "cpu_quota_percent": 200,
+    "memory_swap_max_bytes": 0,
+    "start_mem_available_min_bytes": 13958643712,
+    "runtime_mem_available_stop_bytes": 2147483648,
+    "cuda_visible_devices": "-1"
+  },
+  "partitions": [
+    {
+      "partition": "train",
+      "rows": 321610,
+      "copy_seconds": 19.655505554983392,
+      "native_peak_temp_dir_bytes": 0,
+      "native_peak_buffer_bytes": 5224854560,
+      "native_bytes_read": 8582441,
+      "native_bytes_written": 0,
+      "intermediate_files": {
+        "input.parquet": {
+          "size_bytes": 2060963783,
+          "allocated_bytes": 2060967936
+        },
+        "ordered.parquet": {
+          "size_bytes": 1392366107,
+          "allocated_bytes": 1392373760
+        }
+      },
+      "ordered_parquet_sha256": "200ff1841f8eac759875849a2856fdb6c0af9802bfce1e0cdd764836fbe28dbf",
+      "profile_sha256": "a39bed6ad371797711e91fe48385d36647980abc92ca5fdc68d5264632ca5a70"
+    },
+    {
+      "partition": "validation",
+      "rows": 43185,
+      "copy_seconds": 2.210112553992076,
+      "native_peak_temp_dir_bytes": 0,
+      "native_peak_buffer_bytes": 764269236,
+      "native_bytes_read": 1160798,
+      "native_bytes_written": 0,
+      "intermediate_files": {
+        "input.parquet": {
+          "size_bytes": 262141675,
+          "allocated_bytes": 262144000
+        },
+        "ordered.parquet": {
+          "size_bytes": 187659929,
+          "allocated_bytes": 187662336
+        }
+      },
+      "ordered_parquet_sha256": "7a04a3c8217fe602225d637cfddcac597ad4c2c4c628467907d6d9055f1a29d4",
+      "profile_sha256": "f89fc42935b3a76119636d593b0967775fac71b689e214431c8f98da41b0fa5f"
+    }
+  ],
+  "working_directory_observations": {
+    "interval_seconds": 0.25,
+    "count": 446,
+    "max_observed_logical_bytes": 3453329890,
+    "max_observed_allocated_bytes": 3453341696,
+    "max_observed_spill_logical_bytes": 0,
+    "max_observed_spill_allocated_bytes": 0,
+    "observations_at_copy_boundaries": true,
+    "counts_unique_device_inode": true,
+    "continuous_peak_claimed": false
+  },
+  "preparation": {
+    "elapsed_seconds": 110.8330125240027,
+    "service_wall_seconds": 112.911454,
+    "service_cpu_seconds": 122.505641,
+    "peak_rss_bytes": 8308379648,
+    "cgroup_peak_bytes": 8123224064,
+    "cgroup_swap_peak_bytes": 0,
+    "io_delta": {
+      "rchar": 12528456569,
+      "wchar": 3903331069,
+      "syscr": 130087,
+      "syscw": 70883,
+      "read_bytes": 1442848768,
+      "write_bytes": 3903385600,
+      "cancelled_write_bytes": 0
+    },
+    "mem_available_at_process_start_bytes": 14252466176,
+    "minimum_sampled_mem_available_bytes": 8646541312,
+    "dataset_admission": {
+      "peak_rss_after_initialization_bytes": 673411072,
+      "reader_cache_limit_bytes": 67108864,
+      "maximum_declared_asset_samples": 394,
+      "non_duckdb_envelope_bytes": 3221225472
+    },
+    "paused_for_memory": false
+  },
+  "recovery": {
+    "status": "completed",
+    "elapsed_seconds": 4.550718370010145,
+    "peak_rss_bytes": 672481280,
+    "io_delta": {
+      "rchar": 3893864711,
+      "wchar": 0,
+      "syscr": 27324,
+      "syscw": 0,
+      "read_bytes": 16183296,
+      "write_bytes": 0,
+      "cancelled_write_bytes": 0
+    },
+    "unchanged_size_mtime_inode": true,
+    "artifact_hashes_revalidated": true
+  },
+  "parity": {
+    "method": "SHA-256 por clave sobre los bytes float32/float64, las fechas, el activo y la cohorte. Unión exacta de claves sin duplicados.",
+    "partitions": {
+      "train": {
+        "rows": 321610,
+        "all_row_sha256_equal": true,
+        "ordered_rows_sha256": "843a580f96e018e3cd0a7a3c647c22a21a6cabc3a05f65793dc6aa33450bc1f5",
+        "parquet_sha256": "200ff1841f8eac759875849a2856fdb6c0af9802bfce1e0cdd764836fbe28dbf"
+      },
+      "validation": {
+        "rows": 43185,
+        "all_row_sha256_equal": true,
+        "ordered_rows_sha256": "aba6cc0f5e37570b84f0b64dbfa4f6147c123a1bf7ac2ffe0b953eb484c43c92",
+        "parquet_sha256": "7a04a3c8217fe602225d637cfddcac597ad4c2c4c628467907d6d9055f1a29d4"
+      }
+    },
+    "elapsed_seconds": 57.90798975600046,
+    "peak_rss_bytes": 2339987456,
+    "included_in_preparation_measurement": false
+  },
+  "verification": {
+    "production_source_unchanged": true,
+    "source_manifest_unchanged": true,
+    "instrument_tests_passed": 3,
+    "observer_errors": null
+  },
+  "measurement_artifacts": {
+    "instrumentation_sha256": "aa410ef35c210dcce5f24546789897fa31129652f11c9b241fb7c99cad4abe41",
+    "numerical_checker_sha256": "4803e6dfe2955f0d8ef446d96df463cc3dc6f234e8b5a50797dd38a1d15d24ed",
+    "measurement_sha256": "a15d0b632ba44df39e5e4ad6d13d7ee98964220b561299c0779e505e11c3c746",
+    "recovery_sha256": "3c2a40c1b07fdfe56d91017e14e45deb00973174ca2d6b830d9039ee854953b2",
+    "parity_sha256": "1519c01c3e5ad937baeecdb6605b37fad1fa890df8d12f57880b366822eb9e23",
+    "journal_sha256": "4d51b96ec34ba81180692e0a134af8c5dc0539e7474f91895a3e438b42bb35ff"
+  },
+  "sources": [
+    {
+      "title": "DuckDB 1.5: Profiling",
+      "url": "https://duckdb.org/docs/current/dev/profiling"
+    },
+    {
+      "title": "DuckDB 1.5: Metrics",
+      "url": "https://duckdb.org/docs/current/dev/metrics"
+    }
+  ],
+  "limits": [
+    "Una preparación real, sin réplicas para estimar variabilidad o aceleración.",
+    "El contador nativo mide temporales del motor. Los Parquet intermedios se miden por separado.",
+    "Los máximos observados de archivos no garantizan un pico continuo exacto.",
+    "TOTAL_BYTES_WRITTEN nativo devolvió cero en los COPY aunque escribieron Parquet. No representa aquí todas las escrituras.",
+    "La caché del sistema no se vació y las otras aplicaciones no se detuvieron.",
+    "Se limitó la caché del lector a 64 MiB y DuckDB a dos hilos. El gestor mantuvo 8 GiB y el límite de temporales 32 GiB.",
+    "No se midió energía ni se ejecutaron entrenamiento o inferencia."
+  ],
+  "final_test_opened": false,
+  "mars_titan_candidate_trained": false
+}
