@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "kind": "chinese_announcement_catalogue_progress",
+  "observed_at_utc": "2026-10-07T12:07:15.554874+00:00",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/105",
+  "status": "partial",
+  "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+  "category": "category_ndbg_szsh",
+  "searchkey": "",
+  "runtime_commit": "13c99488751d0d8e51362d5519558d3795e86b82",
+  "code_sha256": {
+    "china_announcements.py": "64d854af7d3d853d89864e8a121d273fba720fe9e88bb6da50f1a2d37184739e",
+    "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+    "batches.py": "2fabe5c9212b99d434c137c0f7099e7a41100b1d0f8e9ea154737dbe815de99f",
+    "macro_coverage.py": "f881c55afaf298056faea69562d7e8fa4618b6b20564ec7a1f5812e699c064d6",
+    "preparation.py": "9cd0a46b6d2165a384464f068d4c86bd7206c7d3ffba3026781f7f682299d58f"
+  },
+  "configuration_sha256": "7e722dfc9e89a30477998b98c92023919dd65f1d8ae371ea58154cd620a96c4c",
+  "requested_publication_window": {
+    "start": "2022-04-03",
+    "end": "2023-12-31"
+  },
+  "queue": {
+    "rows": 6480,
+    "symbols": 810,
+    "periods": [
+      "2021-12-31",
+      "2022-03-31",
+      "2022-06-30",
+      "2022-09-30",
+      "2022-12-31",
+      "2023-03-31",
+      "2023-06-30",
+      "2023-09-30"
+    ],
+    "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce"
+  },
+  "limits": {
+    "max_requests_per_invocation": 64,
+    "effective_minimum_request_spacing_seconds": 5,
+    "timeout_seconds": 30,
+    "response_bytes": 1048576,
+    "page_size": 30,
+    "pages_per_interval": 100,
+    "automatic_retries": 0
+  },
+  "measurement_scope": {
+    "elapsed_seconds": "Llamada al colector y verificación final de fuentes, incluidas las pausas. Excluye preparación e inventario posterior.",
+    "peak_rss_bytes": "Pico RSS del proceso de captura, incluida la preparación."
+  },
+  "invocations": [
+    {
+      "invocation": 1,
+      "first_request_at_utc": "2026-10-07T08:09:14.228543+00:00",
+      "finished_at_utc": "2026-10-07T08:15:57.475242+00:00",
+      "status": "partial",
+      "stop_reason": "request_budget_exhausted",
+      "max_requests": 64,
+      "new_requests": 64,
+      "cumulative_requests": 64,
+      "new_http_status_counts": {
+        "200": 64
+      },
+      "new_response_bytes": 1222139,
+      "elapsed_seconds": 408.286576582992,
+      "peak_rss_bytes": 177188864,
+      "minimum_request_start_gap_seconds": 5.668895,
+      "new_announcements": 1770,
+      "cumulative_announcements": 1770,
+      "cumulative_in_census_announcements": 226,
+      "cumulative_in_census_symbols": 116,
+      "new_census_symbols": 116,
+      "cumulative_full_report_title_candidates": 109,
+      "cumulative_candidate_symbols_outside_baseline": 109,
+      "new_candidate_symbols_outside_baseline": 109,
+      "observed_leaf_publication_range": {
+        "first": "2022-04-15",
+        "last": "2022-04-22"
+      },
+      "previous_confirmed_responses_unchanged": 0,
+      "previous_confirmed_responses_repeated": 0,
+      "previous_announcements_unchanged": 0,
+      "cursor_sha256": "978dfe33317ca82eeea33d40daccf2ae36bed2ca1fe5898887d8b2fd52b56871",
+      "next_task": {
+        "start": "2022-04-03",
+        "end": "2022-04-22",
+        "page": 60,
+        "total": 2615,
+        "collected": 1770
+      },
+      "pending_tasks": 6,
+      "evidence_sha256": {
+        "invocation": "21c16d05f2f06b78e6b94111fb375f8a49d33a0a71446f05ab1e56d7bd775cce",
+        "verification": "64c48dcbbce871ed7fb21f2e7b33e79d0836936a56496a56a46b89e85020ca51",
+        "inventory": "4a9433ec985aedfe7daf059a0edb8e21f6d67eae49ad46e1a78e1508b3d5e823",
+        "metadata": "8fab1870614cf100eafbebbfd749e478ed1b2d7c75c39b2656b294c3d4171af2"
+      }
+    },
+    {
+      "invocation": 2,
+      "first_request_at_utc": "2026-10-07T11:31:02.490894+00:00",
+      "finished_at_utc": "2026-10-07T11:37:49.682263+00:00",
+      "status": "partial",
+      "stop_reason": "request_budget_exhausted",
+      "max_requests": 64,
+      "new_requests": 64,
+      "cumulative_requests": 128,
+      "new_http_status_counts": {
+        "200": 64
+      },
+      "new_response_bytes": 1204316,
+      "elapsed_seconds": 412.3228996680118,
+      "peak_rss_bytes": 182505472,
+      "minimum_request_start_gap_seconds": 5.693602,
+      "new_announcements": 1835,
+      "cumulative_announcements": 3605,
+      "cumulative_in_census_announcements": 442,
+      "cumulative_in_census_symbols": 221,
+      "new_census_symbols": 105,
+      "cumulative_full_report_title_candidates": 215,
+      "cumulative_candidate_symbols_outside_baseline": 212,
+      "new_candidate_symbols_outside_baseline": 103,
+      "observed_leaf_publication_range": {
+        "first": "2022-04-06",
+        "last": "2022-04-27"
+      },
+      "previous_confirmed_responses_unchanged": 64,
+      "previous_confirmed_responses_repeated": 0,
+      "previous_announcements_unchanged": 1770,
+      "cursor_sha256": "961021f39b5516f33c57ca7e08fbd099549c26b082d7780478eb0dadd9316678",
+      "next_task": {
+        "start": "2022-04-23",
+        "end": "2022-04-27",
+        "page": 34,
+        "total": 2083,
+        "collected": 990
+      },
+      "pending_tasks": 7,
+      "evidence_sha256": {
+        "invocation": "ead5a93d0184b91600811f5b8ebb560b9236837d38aef0ac53a4d0fdb56ef2d9",
+        "verification": "f5e41fa52e61fcd3d1fca09e142ae43c01646ca58e2322816bb73da163b27eb0",
+        "inventory": "a645cf79ca358859fe2aebbd52edb15bfe23ab6af3bfce5b510554428ae42274",
+        "metadata": "d0396760f5354be2748baa2f6087f99ee3f07f025e962aea6891b3f89e3f4b3a"
+      }
+    },
+    {
+      "invocation": 3,
+      "first_request_at_utc": "2026-10-07T11:45:59.638441+00:00",
+      "finished_at_utc": "2026-10-07T11:52:45.398645+00:00",
+      "status": "partial",
+      "stop_reason": "request_budget_exhausted",
+      "max_requests": 64,
+      "new_requests": 64,
+      "cumulative_requests": 192,
+      "new_http_status_counts": {
+        "200": 64
+      },
+      "new_response_bytes": 1205747,
+      "elapsed_seconds": 411.0073877199902,
+      "peak_rss_bytes": 188104704,
+      "minimum_request_start_gap_seconds": 5.492834,
+      "new_announcements": 1903,
+      "cumulative_announcements": 5508,
+      "cumulative_in_census_announcements": 740,
+      "cumulative_in_census_symbols": 366,
+      "new_census_symbols": 145,
+      "cumulative_full_report_title_candidates": 359,
+      "cumulative_candidate_symbols_outside_baseline": 351,
+      "new_candidate_symbols_outside_baseline": 139,
+      "observed_leaf_publication_range": {
+        "first": "2022-04-06",
+        "last": "2022-04-30"
+      },
+      "previous_confirmed_responses_unchanged": 128,
+      "previous_confirmed_responses_repeated": 0,
+      "previous_announcements_unchanged": 3605,
+      "cursor_sha256": "627f27eba8f0d257d7ed19c03b50b0bee5eab34a113df5939f4ee25dbf3469e7",
+      "next_task": {
+        "start": "2022-04-28",
+        "end": "2022-05-02",
+        "page": 28,
+        "total": 2630,
+        "collected": 810
+      },
+      "pending_tasks": 6,
+      "evidence_sha256": {
+        "invocation": "49d946769aab60184e0256672fc1b3c1a750235baccb97bba27518a4d0c20ea6",
+        "verification": "64747acb4acdba0f5054ed15a75ef71046a7e365b138e0989b1bb1122d7a3abd",
+        "inventory": "5e50d44287daf70c39e815fcf3ad16c540665b66724443d6cbbf918968a288d1",
+        "metadata": "d05c5604057c0ff359b088308f0452a964dd34e14da6803c49e59c607daf2867"
+      }
+    }
+  ],
+  "aggregate": {
+    "requests": 192,
+    "http_status_counts": {
+      "200": 192
+    },
+    "response_bytes": 3632202,
+    "elapsed_seconds": 1231.616863970994,
+    "leaf_announcements": 5508,
+    "in_census_announcements": 740,
+    "in_census_symbols": 366,
+    "baseline_companies_with_admitted_accounting": 25,
+    "full_report_title_candidates": 359,
+    "candidate_symbols_outside_baseline": 351,
+    "title_classification_counts": {
+      "annual_summary_title": 359,
+      "full_report_title_candidate": 359,
+      "english_report_title_requires_review": 8,
+      "h_share_report_title_requires_review": 6,
+      "unclassified_annual_category_title": 6,
+      "filename_document_type_requires_review": 1,
+      "english_abridged_title": 1
+    }
+  },
+  "observed_leaf_publication_range": {
+    "first": "2022-04-06",
+    "last": "2022-04-30"
+  },
+  "completed_publication_intervals": [
+    {
+      "start": "2022-04-03",
+      "end": "2022-04-22",
+      "announcements": 2615,
+      "pages": 88
+    },
+    {
+      "start": "2022-04-23",
+      "end": "2022-04-27",
+      "announcements": 2083,
+      "pages": 70
+    }
+  ],
+  "pending_tasks": [
+    {
+      "start": "2022-04-28",
+      "end": "2022-05-02",
+      "page": 28,
+      "total": 2630,
+      "collected": 810
+    },
+    {
+      "start": "2022-05-03",
+      "end": "2022-05-12",
+      "page": 1,
+      "total": null,
+      "collected": 0
+    },
+    {
+      "start": "2022-05-13",
+      "end": "2022-06-21",
+      "page": 1,
+      "total": null,
+      "collected": 0
+    },
+    {
+      "start": "2022-06-22",
+      "end": "2022-09-09",
+      "page": 1,
+      "total": null,
+      "collected": 0
+    },
+    {
+      "start": "2022-09-10",
+      "end": "2023-02-15",
+      "page": 1,
+      "total": null,
+      "collected": 0
+    },
+    {
+      "start": "2023-02-16",
+      "end": "2023-12-31",
+      "page": 1,
+      "total": null,
+      "collected": 0
+    }
+  ],
+  "cursor_sha256": "627f27eba8f0d257d7ed19c03b50b0bee5eab34a113df5939f4ee25dbf3469e7",
+  "split_probes": {
+    "responses": 7,
+    "included_in_leaf_counts": false,
+    "additional_full_report_candidate_symbols": 2
+  },
+  "earlier_blocked_collection": {
+    "receipt": "reports/data/chinese-announcements-20261007.json",
+    "sha256": "f273e8ba3c276a80bee4924591fb93254acf808f1b746563455933234e01b725",
+    "included_in_these_counts": false,
+    "modified": false
+  },
+  "scope": "annual_category_only",
+  "period_coverage_verified": false,
+  "financial_values_admitted": false,
+  "new_accounting_admissions": 0,
+  "pdf_downloads": 0,
+  "gpu_used": false,
+  "final_test_opened": false,
+  "interpretation": [
+    "Los anuncios pertenecen a páginas confirmadas. La ventana solicitada completa todavía no está conciliada.",
+    "Las fechas observadas corresponden a las filas de esas páginas. Las sondas de división se conservan por separado y no acreditan cobertura de los intervalos pendientes.",
+    "Los candidatos a informe completo se identifican por el título de 2021 o 2022. No equivalen a documentos revisados ni a cifras contables admitidas.",
+    "Se conservan resúmenes, versiones y correcciones sin elegir una revisión por defecto. La categoría anual no cubre todos los cierres trimestrales de la cola.",
+    "Los intentos anteriores con HTTP 504 mantienen su recibo y no se suman a este catálogo."
+  ]
+}
