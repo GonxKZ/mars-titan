@@ -11,7 +11,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .audited_prices import read_audited_prices
+from .audited_prices import confirm_audited_prices, read_audited_prices
 from .cohort_news import COHORT_POLICIES, write_cohort_news
 from .corpus_catalog import _source_path
 from .fundamentals import read_fundamentals
@@ -193,6 +193,8 @@ def prepare_cohort_asset(
                     with pq.ParquetFile(folder / relative) as table:
                         if table.metadata.num_rows != previous["counts"][kind]:
                             raise ValueError("El recuento del recibo difiere de los Parquet")
+                if audited_prices is not None:
+                    confirm_audited_prices(audited_prices, hashes[asset["paths"]["prices"][0]])
                 return {**previous, "reused": True}
         news = write_cohort_news(
             source,
@@ -214,10 +216,17 @@ def prepare_cohort_asset(
                 audited_prices, hashes[asset["paths"]["prices"][0]], clock, cutoff
             )
         facts, fact_audit = read_fundamentals(
-            [paths[p] for p in asset["paths"]["fundamentals"]], clock.market, clock
+            [paths[p] for p in asset["paths"]["fundamentals"]],
+            clock.market,
+            clock,
+            input_policy=input_policy,
         )
-        reserved_facts = sum(row["available_at"].date() > end for row in facts)
-        facts = [row for row in facts if row["available_at"].date() <= end]
+        reserved_facts = sum(
+            row["available_at"] is not None and row["available_at"].date() > end for row in facts
+        )
+        facts = [
+            row for row in facts if row["available_at"] is None or row["available_at"].date() <= end
+        ]
         atomic_parquet(
             folder / "prices.parquet", pa.Table.from_pandas(prices, preserve_index=False)
         )
