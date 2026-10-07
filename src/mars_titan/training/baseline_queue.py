@@ -10,6 +10,29 @@ from .checkpoints import StopRequest
 from .tabular_search import _artifact, run_tabular_search
 
 
+def reference_market(path):
+    """Leer el único mercado declarado sin suponerlo por defecto ni por el directorio."""
+    summary, _ = read_manifest(Path(path), 8 * 1024**2)
+    identity = summary.get("identity") if isinstance(summary, dict) else None
+    configuration = identity.get("configuration") if isinstance(identity, dict) else None
+    arms = configuration.get("arms") if isinstance(configuration, dict) else None
+    if arms not in (["US"], ["CN"]):
+        raise ValueError("La continuación temporal requiere un único mercado declarado")
+    runs = summary.get("runs")
+    if (
+        not isinstance(runs, list)
+        or not 1 <= len(runs) <= 512
+        or any(
+            not isinstance(row, dict)
+            or row.get("arm") != arms[0]
+            or row.get("weighting") != "natural"
+            for row in runs
+        )
+    ):
+        raise ValueError("Las ejecuciones no conservan el mercado y peso declarados")
+    return arms[0]
+
+
 def reference_view(path, arm="US"):
     """Verificar recibos y artefactos antes de compartir la población de un brazo."""
     path = Path(path)

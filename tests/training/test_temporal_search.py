@@ -226,10 +226,12 @@ def test_controller_does_not_adopt_unknown_files_without_a_summary(tmp_path, mon
     assert not (output / "summary.json").exists()
 
 
-def metadata_views(tmp_path):
+def metadata_views(tmp_path, protocol=None):
     from mars_titan.evaluation.splits import build_folds
 
-    protocol = json.loads(Path("configs/evaluation/strict-macro-walk-forward.json").read_text())
+    protocol = protocol or json.loads(
+        Path("configs/evaluation/strict-macro-walk-forward.json").read_text()
+    )
     values = dict(parent_sha256="a" * 64, macro_sha256="b" * 64, admission_sha256="c" * 64)
     root = tmp_path / "views"
     report = dict(
@@ -249,6 +251,10 @@ def metadata_views(tmp_path):
                 dict(
                     temporal_view=dict(protocol=protocol, fold=fold, **values),
                     final_test_opened=False,
+                    scope="full_corpus",
+                    cohort_complete=True,
+                    markets=[protocol["market"]],
+                    assets=[dict(market=protocol["market"], symbol="fixture", counts=counts)],
                     counts=counts,
                 )
             )
