@@ -2,6 +2,7 @@ include(CheckCXXSourceCompiles)
 include(CMakePushCheckState)
 
 option(MARS_TITAN_LIBTORCH_ENABLE_CUDA "Enlazar el backend CUDA del SDK LibTorch existente" ON)
+set(MARS_TITAN_TORCH_ENVIRONMENT "" CACHE PATH "Entorno uv existente del SDK LibTorch, vacío para usar .venv")
 
 function(mars_titan_find_torch)
     if(TARGET mars_titan::torch)
@@ -12,10 +13,15 @@ function(mars_titan_find_torch)
     endif()
     find_program(MARS_TITAN_UV NAMES uv REQUIRED)
     get_filename_component(project_root "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../.." ABSOLUTE)
-    if(NOT EXISTS "${project_root}/.venv/pyvenv.cfg")
+    set(sdk_environment "${MARS_TITAN_TORCH_ENVIRONMENT}")
+    if(NOT sdk_environment)
+        set(sdk_environment "${project_root}/.venv")
+    endif()
+    if(NOT EXISTS "${sdk_environment}/pyvenv.cfg")
         message(FATAL_ERROR "Falta el entorno local de uv con PyTorch. Prepare sus dependencias antes de configurar LibTorch")
     endif()
-    execute_process(COMMAND "${MARS_TITAN_UV}" run --no-sync --project "${project_root}" python -c
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env "UV_PROJECT_ENVIRONMENT=${sdk_environment}"
+        "${MARS_TITAN_UV}" run --no-sync --project "${project_root}" python -c
         "import json,pathlib,torch; root=pathlib.Path(torch.__file__).parent; cuda=torch.version.cuda or ''; candidates=[root.parent/'nvidia'/('cu'+cuda.split('.')[0])/'include',root.parent/'nvidia'/'cuda_runtime'/'include']; runtime=next((str(p) for p in candidates if (p/'cuda_runtime_api.h').is_file()),''); print(json.dumps(dict(root=str(root),version=torch.__version__,cuda_version=cuda,cxx11_abi=int(torch.compiled_with_cxx11_abi()),cpu_capability=torch.backends.cpu.get_cpu_capability(),config=torch.__config__.show(),cuda_include=runtime)))"
         WORKING_DIRECTORY "${project_root}"
         RESULT_VARIABLE probe_result OUTPUT_VARIABLE sdk ERROR_VARIABLE probe_error

@@ -1,0 +1,35 @@
+# Núcleo de cálculo del candidato
+
+`mars_titan::candidate::Candidate` implementa el cálculo puro de B. Recibe entradas ya normalizadas y una instantánea de episodios maduros. No admite, madura ni expulsa episodios. Tampoco entrena, selecciona checkpoints o recorre un corpus. La integración cronológica y la comparación científica siguen pendientes en #23.
+
+Las entradas son precios `[N,64,Dp]`, noticias `[N,Dn]`, gráficos `[N,Dc]`, fundamentales `[N,Df]` y macro `[N,Dm]`. Las dimensiones y la identidad de normalización deben corresponder al manifiesto. `presence[N,5]` es booleana y debe ser verdadera en todas las posiciones. Una modalidad ausente se rechaza. La memoria vacía tiene otra máscara y sí está admitida.
+
+Una GRU de una capa reinicia su estado en cada ventana. Sus 128 salidas se concatenan con cuatro proyecciones lineales con SiLU de 128 dimensiones. La fusión lineal con SiLU produce 256 valores. El estado de trabajo inicial es una proyección lineal a 128. No hay dropout ni estado recurrente arrastrado entre llamadas.
+
+Los rasgos persistentes proceden de una proyección fija de las entradas aplanadas a 256 y otra proyección fija produce claves de 128. Ambas usan generadores CPU independientes y se guardan como buffers. Su identidad incluye versión matemática, normalización, dimensiones, precisión y SHA-256 de las matrices reales. Las semillas se conservan en la configuración. Las claves y consultas se normalizan mediante `v / max(||v||₂, 1e-12)`. Un vector cero permanece cero. El constructor y el cálculo no consumen el RNG global.
+
+La norma se calcula tras escalar por la magnitud máxima para evitar desbordamientos intermedios con valores finitos grandes. La huella se calcula al construir, recuperar o cambiar de precisión. La lectura comprueba versión interna, dirección y tipo de los buffers, sin copiarlos a CPU ni recalcular SHA-256. Una mutación posterior mediante operaciones de Tensor invalida el objeto. Las escrituras mediante punteros de memoria no forman parte de la API. La conversión de dispositivo conserva la identidad. La conversión de precisión la recalcula e invalida las instantáneas anteriores.
+
+`snapshot` valida forma, precisión, dispositivo, finitud, revisión e IDs no negativos estrictamente crecientes en CPU. Copia claves, rasgos y retornos maduros y los separa del grafo. La responsabilidad de acreditar madurez temporal sigue siendo del ejecutor. Las claves tienen norma uno o son nulas. Los IDs se trasladan al dispositivo del modelo una sola vez.
+
+La consulta selecciona hasta ocho vecinos. Una ordenación estable conserva el menor ID ante similitudes iguales. El top-k queda fuera de autograd. Los pesos `softmax(q·k/τ)` conservan el gradiente de la consulta normalizada. Los valores concatenan rasgos y retorno maduro y se proyectan a 128 al leer. Con un vecino, el peso es uno y el gradiente de selección es cero. La memoria vacía devuelve lectura cero y máscara falsa.
+
+El refinamiento es `z' = z + sigmoid(a) tanh(W[z,h,lectura,presencia] + b)`, con paso inicial 0,1. `read` y `refine` exponen la transición para estudiar su Jacobiano completo. K admite 1, 2 o 4 y siempre reutiliza la misma instantánea. K=1 es la configuración principal. Las funciones de componentes reciben tensores finitos ya validados. `forward` comprueba la frontera y la salida.
+
+La cabeza produce cuantiles 0,025, 0,1, 0,5, 0,9 y 0,975. La mediana es libre y los cuatro incrementos usan softplus. El orden es no decreciente en coma flotante. No se deduce una densidad o NLL de estos cuantiles.
+
+Los límites son 256 filas por llamada, 8.192 episodios y 16.384 entradas aplanadas. La búsqueda materializa a lo sumo `[N,E]` similitudes, no distancias entre todos los episodios. El coste y las transferencias del recorrido real aún no están medidos. La validación finita se hace al codificar y crear la instantánea, no se repite en cada paso de lectura.
+
+`save_state` y `load_state` guardan y validan versión, configuración, parámetros, buffers, precisión, modo train/eval y versión LibTorch. La recuperación compara también la huella almacenada con las matrices leídas. Admiten archivos locales de confianza de hasta 128 MiB. No son un checkpoint de entrenamiento, pues no incluyen optimizador, cursor ni banco episódico. La escritura recibe un stream y su publicación atómica corresponde al consumidor. No se debe cambiar la precisión después de crear una instantánea.
+
+## Compilación y comprobación
+
+El objetivo es opcional mediante `MARS_TITAN_BUILD_CANDIDATE`. Los presets `native-candidate-debug`, `native-candidate-release`, `native-candidate-asan-ubsan`, `native-candidate-static-analysis`, `native-candidate-coverage` y `native-candidate-fuzz` usan CPU y conservan C++20. `MARS_TITAN_TORCH_ENVIRONMENT` permite indicar otro entorno uv existente. La opción vacía mantiene `.venv` como origen del SDK. Los perfiles PPO no cambian.
+
+El ejecutable `mars-titan-candidate cpu` hace un cálculo sintético y comprueba su recuperación exacta. Un segundo argumento permite guardar el archivo en una ruta nueva. `cuda:0` requiere compilar explícitamente con el backend CUDA y comprobar esa ruta en una ventana autorizada. No hay fallback a CPU. La comprobación sintética no ejecuta aprendizaje ni acredita utilidad predictiva.
+
+Las pruebas contrastan la GRU con sus ecuaciones explícitas, un caso analítico de atención, diferencias finitas de la consulta, orden y forma de cuantiles, entradas incompletas, empates, separación de memoria, independencia de semillas y recuperación de predicciones y gradientes.
+
+## Referencias de implementación
+
+La [GRU de PyTorch 2.14](https://docs.pytorch.org/docs/2.14/generated/torch.nn.GRU.html) aplica la puerta de reset al término recurrente de la candidata, incluido su bias. La referencia independiente reproduce ese orden. La [normalización](https://docs.pytorch.org/docs/2.14/generated/torch.nn.functional.normalize.html) usa un suelo en el denominador y la [ordenación estable](https://docs.pytorch.org/docs/2.14/generated/torch.sort.html) conserva el orden previo de valores iguales. Las firmas ATen y el formato `torch::serialize::Archive` se contrastaron también con las cabeceras instaladas de LibTorch 2.14.
