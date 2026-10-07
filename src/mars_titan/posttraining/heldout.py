@@ -124,8 +124,8 @@ def evaluate_partition(
 
 
 def _jobs(reference, tabular, adjustments, *, arm="US"):
-    if arm not in ("US", "CN"):
-        raise ValueError("La evaluación temporal requiere un único mercado")
+    if arm not in ("US", "CN", "US+CN"):
+        raise ValueError("La evaluación temporal requiere un único brazo declarado")
     adjustment_summary, _ = read_manifest(adjustments, 8 * 1024**2)
     seeds = matching_seeds(adjustment_summary["identity"]["proof"])
     proof = (
@@ -439,7 +439,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("reference", "tabular", "adjustments", "output"):
         parser.add_argument(f"--{name}", type=Path, required=True)
-    parser.add_argument("--arm", choices=("US", "CN"), default="US")
+    parser.add_argument("--arm", choices=("US", "CN", "US+CN"), default="US")
     args = vars(parser.parse_args())
     with StopRequest() as stop:
         result = run_evaluation(**args, stop=stop)

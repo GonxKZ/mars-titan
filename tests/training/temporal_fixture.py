@@ -2,6 +2,7 @@
 
 import csv
 import json
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,8 +18,8 @@ from tests.data.test_macro_coverage import SCHEMA
 from tests.training.test_corpus_inputs import corpus
 
 
-def temporal_fixture(root, market="CN"):
-    """Crear 19 decisiones mensuales y diez ventanas. No escribir recibos de modelos."""
+def temporal_fixture(root, market="CN", *, extra_days=()):
+    """Crear decisiones mensuales y fechas de control, sin recibos de modelos."""
     root = Path(root)
     parent = corpus(root / "parent", assets=1, rows=19, markets=(market,))
     meta = json.loads(parent.read_text())
@@ -32,6 +33,15 @@ def temporal_fixture(root, market="CN"):
         )
         for month in months
     ]
+    positions = sorted(
+        set(positions)
+        | {
+            clock.days.index(date.fromisoformat(day))
+            for day in extra_days
+            if date.fromisoformat(day) in clock.days
+        }
+    )
+    samples = len(positions)
     times = [clock.decisions[i] for i in positions]
     maturity = [clock.decisions[i + 1] for i in positions]
     asset = meta["assets"][0]
@@ -58,10 +68,10 @@ def temporal_fixture(root, market="CN"):
             dict(
                 prediction_at=times,
                 price_end_index=positions,
-                news=[[i / 100] * 384 for i in range(19)],
-                charts=[[i / 200] * 512 for i in range(19)],
-                fundamentals=[[1.0, 2.0, 3.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]] * 19,
-                macro=[[0.0] * 420] * 19,
+                news=[[i / 100] * 384 for i in range(samples)],
+                charts=[[i / 200] * 512 for i in range(samples)],
+                fundamentals=[[1.0, 2.0, 3.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]] * samples,
+                macro=[[0.0] * 420] * samples,
                 input_availability=[
                     dict.fromkeys(("prices", "news", "charts", "fundamentals", "macro"), moment)
                     for moment in times
@@ -75,12 +85,12 @@ def temporal_fixture(root, market="CN"):
     pq.write_table(
         pa.table(
             dict(
-                sample_row=np.arange(19),
+                sample_row=np.arange(samples),
                 prediction_at=times,
                 target_available_at=maturity,
-                target=[(i % 3 - 1) / 100 for i in range(19)],
-                partition=["train"] * 7 + ["validation"] * 12,
-                reason=["accepted"] * 19,
+                target=[(i % 3 - 1) / 100 for i in range(samples)],
+                partition=["train" if moment.year == 2022 else "validation" for moment in times],
+                reason=["accepted"] * samples,
             )
         ),
         label_path,
@@ -96,7 +106,10 @@ def temporal_fixture(root, market="CN"):
             final_test_opened=False,
         ),
     )
-    counts = dict(train=7, validation=12)
+    counts = {
+        "train": sum(moment.year == 2022 for moment in times),
+        "validation": sum(moment.year == 2023 for moment in times),
+    }
     asset.update(
         prices_sha256=sha256(price_path),
         samples_sha256=sha256(sample_path),

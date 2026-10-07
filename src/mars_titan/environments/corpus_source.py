@@ -41,6 +41,7 @@ def _code():
             "environments/actions.py",
             "training/corpus_inputs.py",
             "training/partition_contract.py",
+            "training/temporal_contract.py",
             "training/temporal_corpus.py",
             "evaluation/splits.py",
             "evaluation/split_readiness.py",
@@ -158,10 +159,29 @@ def _partition(dataset, output, partition, report, stop):
                     [str(ordered)],
                 ).fetchall()
             )
-        lower, upper, cutoff = ordered_bounds(report)[partition]
+            market_index = connection.execute(
+                "SELECT split_part(asset_id, '/', 1), prediction_at, count(*), "
+                "count(DISTINCT asset_id), min(available_at), max(available_at), "
+                "min(target_available_at), max(target_available_at) "
+                "FROM read_parquet(?) GROUP BY 1, 2",
+                [str(ordered)],
+            ).fetchmany(200_001)
+        bounds = {market: ordered_bounds(report, market=market)[partition] for market in markets}
         if not 1 <= len(index) <= 100_000 or sum(row[1] for row in index) != count:
             raise ValueError("El índice temporal no concilia o supera el presupuesto de cohortes")
-        for at, rows, distinct, available_min, available_max, mature_min, mature_max in index:
+        if len(market_index) > 200_000 or sum(row[2] for row in market_index) != count:
+            raise ValueError("El índice por mercado no concilia o supera su presupuesto")
+        for (
+            market,
+            at,
+            rows,
+            distinct,
+            available_min,
+            available_max,
+            mature_min,
+            mature_max,
+        ) in market_index:
+            lower, upper, cutoff = bounds[market]
             if not (
                 1 <= rows == distinct <= 4096
                 and 0 <= available_min <= available_max <= at < mature_min <= mature_max < upper
@@ -391,8 +411,25 @@ class ParquetCohortSource:
         self.max_assets, self.max_cache_bytes = record["max_assets"], max_cache_bytes
         self.source_sha256, self.partition = meta["source_sha256"], partition
         self.index = record["cohorts"]
-        self.bounds = ordered_bounds(meta)[partition]
-        low, high, cutoff = self.bounds
+        markets = record.get("market_rows")
+        if (
+            not isinstance(markets, dict)
+            or not markets
+            or not set(markets) <= {"US", "CN"}
+            or any(type(count) is not int or count < 1 for count in markets.values())
+            or sum(markets.values()) != record["rows"]
+        ):
+            raise ValueError("La población ordenada necesita sus mercados explícitos")
+        self.market_bounds = {
+            market: ordered_bounds(meta, market=market)[partition] for market in markets
+        }
+        self.bounds = (
+            next(iter(self.market_bounds.values())) if len(self.market_bounds) == 1 else None
+        )
+        low = min(value[0] for value in self.market_bounds.values())
+        high = max(value[1] for value in self.market_bounds.values())
+        # El índice no identifica mercados. Cada fila conserva además su corte propio.
+        cutoff = self.bounds[2] if self.bounds is not None else high
         if (
             not isinstance(self.index, list)
             or not 1 <= len(self.index) <= 100_000
@@ -493,9 +530,16 @@ class ParquetCohortSource:
             target=table["target"].to_numpy(),
         )
         checked = read_cohort(raw, self.shapes, self.max_assets, MAX_BLOCK_BYTES)
-        upper = self.bounds[1]
-        if np.any(checked["target_available_at"] >= upper):
-            raise ValueError("La etiqueta cruza la partición declarada")
+        markets = np.array([asset.split("/", 1)[0] for asset in checked["asset_ids"]])
+        if not set(markets) <= self.market_bounds.keys():
+            raise ValueError("Una fila pertenece a un mercado sin contrato temporal")
+        for market in set(markets):
+            lower, upper, cutoff = self.market_bounds[market]
+            selected = markets == market
+            if not lower <= at < cutoff or np.any(
+                checked["target_available_at"][selected] >= upper
+            ):
+                raise ValueError("La etiqueta cruza la partición de su mercado")
         if self._signature() != self.signature:
             raise ValueError("El archivo ha cambiado durante la lectura de una cohorte")
         return {key: value for key, value in checked.items() if key != "sha256"}

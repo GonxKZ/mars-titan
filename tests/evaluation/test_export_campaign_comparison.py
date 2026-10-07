@@ -150,6 +150,110 @@ def campaign(tmp_path, count=4, *, legacy=False):
     return directory, report
 
 
+def joint_campaign(tmp_path, count=4):
+    directory, report = campaign(tmp_path, count)
+    report["method"].update(market_stratification="separate_markets", markets=["CN", "US"])
+    for fold in report["provenance"]["folds"]:
+        fold["market_counts"] = {market: dict(fold["counts"]) for market in ("US", "CN")}
+        fold["markets"] = ["CN", "US"]
+        fold["counts"] = {part: 40 for part in fold["counts"]}
+    for filename in ("cases.csv", "methods.csv", "folds.csv", "intervals.csv"):
+        records = list(csv.DictReader((directory / filename).open()))
+        updated = []
+        for row in records:
+            if filename == "cases.csv":
+                updated.append(
+                    dict(
+                        row,
+                        samples=40,
+                        sessions=18,
+                        samples_US=20,
+                        samples_CN=20,
+                        sessions_US=10,
+                        sessions_CN=8,
+                    )
+                )
+            else:
+                for market in ("CN", "US"):
+                    copy = dict(row, market=market)
+                    if "sessions" in copy:
+                        copy["sessions"] = 8 if market == "CN" else 10
+                    updated.append(copy)
+        table(directory / filename, updated)
+    receipt(directory, report)
+    return directory, report
+
+
+def test_joint_export_preserves_states_and_renders_each_market(tmp_path):
+    directory, _ = joint_campaign(tmp_path)
+    output = tmp_path / "export"
+    exporter.main(["--predictive", str(directory), "--output", str(output)])
+    source = list(csv.DictReader((directory / "cases.csv").open()))
+    actual = list(csv.DictReader((output / "predictive-cases.csv").open()))
+    assert actual == source
+    svg = (output / "predictive-periods.svg").read_text()
+    assert "CN · RNN" in svg and "US · RNN" in svg
+    assert "8 sesiones" in svg and "10 sesiones" in svg
+
+
+def test_joint_export_rejects_lost_or_changed_market_counts_before_publication(tmp_path):
+    directory, report = joint_campaign(tmp_path)
+    records = list(csv.DictReader((directory / "cases.csv").open()))
+    records[0]["samples_CN"] = "19"
+    table(directory / "cases.csv", records)
+    receipt(directory, report)
+    output = tmp_path / "export"
+    with pytest.raises(ValueError):
+        exporter.main(["--predictive", str(directory), "--output", str(output)])
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "fault", ["missing_marker", "missing_market_list", "incomplete_market_list"]
+)
+def test_joint_export_requires_market_stratification_matching_provenance(tmp_path, fault):
+    if fault == "missing_marker":
+        directory, report = campaign(tmp_path)
+        for fold in report["provenance"]["folds"]:
+            fold["markets"] = ["CN", "US"]
+            fold["market_counts"] = {
+                market: {part: count // 2 for part, count in fold["counts"].items()}
+                for market in ("US", "CN")
+            }
+    else:
+        directory, report = joint_campaign(tmp_path)
+        fold = report["provenance"]["folds"][0]
+        if fault == "missing_market_list":
+            fold.pop("markets")
+        else:
+            fold["markets"] = ["US"]
+    receipt(directory, report)
+    output = tmp_path / "export"
+    with pytest.raises(ValueError):
+        exporter.main(["--predictive", str(directory), "--output", str(output)])
+    assert not output.exists()
+
+
+def test_joint_reliability_links_each_market_to_the_same_frozen_states(tmp_path):
+    from mars_titan.evaluation.campaign_comparison import compare_campaigns
+    from mars_titan.evaluation.campaign_reliability import evaluate_campaign_reliability
+    from tests.evaluation.test_comparison_sources import Campaign
+
+    source = Campaign(tmp_path / "sources", materialize=True, matching=True, markets=("US", "CN"))
+    comparison = tmp_path / "comparison"
+    reliability = tmp_path / "reliability"
+    compare_campaigns(source.reference, source.completion, comparison, repetitions=100)
+    evaluate_campaign_reliability(source.reference, source.completion, reliability)
+    predictive, _, tables = exporter.load_source("predictive", comparison, tmp_path / "export")
+    diagnostic, _, diagnoses = exporter.load_source("reliability", reliability, tmp_path / "export")
+    cases = exporter.validate_predictive(
+        predictive, tables, exporter.windows(predictive["provenance"])
+    )
+    exporter.validate_reliability(diagnostic, diagnoses["cases.csv"], predictive, cases)
+    assert len(cases) == 16 and len(diagnoses["cases.csv"]) == 48
+    assert {row["market"] for row in diagnoses["cases.csv"]} == {"US", "CN"}
+
+
 def reliability(tmp_path, predictive, report):
     directory = tmp_path / "reliability"
     directory.mkdir()
