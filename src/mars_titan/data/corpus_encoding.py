@@ -13,6 +13,7 @@ from .cohort_news import COHORT_POLICIES
 from .cohort_samples import materialize_cohort_asset
 from .corpus_preparation import STARTS
 from .embeddings import EmbeddingCache, FrozenEncoders
+from .input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs, policy_identity
 from .samples import FUNDAMENTAL_CONCEPTS
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, aware
@@ -32,13 +33,21 @@ def encode_corpus(
     source_unit="USD",
     company_factors=True,
     admitted_decisions=None,
+    input_policy=STRICT_INPUTS,
+    macro_indicators=None,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores."""
+    masked = masked_inputs(input_policy)
+    if masked and (context != 64 or admitted_decisions is not None):
+        raise ValueError(
+            "La política histórica requiere 64 sesiones y no filtra por completitud macro"
+        )
     preparation, output = Path(preparation), Path(output)
     meta, preparation_hash = _read(preparation)
     cohort = meta.get("cohort_id")
     if (
-        meta.get("schema_version") != 1
+        meta.get("schema_version") != (2 if masked else 1)
+        or any(meta.get(k) != v for k, v in policy_identity(input_policy).items())
         or meta.get("kind") != "prepared_cohort"
         or meta.get("scope")
         not in {None, "full_corpus", "market_projection", "reviewed_asset_subset"}
@@ -61,12 +70,19 @@ def encode_corpus(
             or symbol in {".", ".."}
             or not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol)
             or (market, symbol) in identities
-            or asset.get("state") not in {"prepared", "missing_modalities"}
+            or asset.get("state")
+            not in (
+                {"prepared", "missing_required_prices"}
+                if masked
+                else {"prepared", "missing_modalities"}
+            )
         ):
             raise ValueError("La identidad o el estado de un candidato no es válido")
         identities.add((market, symbol))
     markets = sorted({market for market, _ in identities})
-    if not set(markets) <= set(macros):
+    if not isinstance(macros, dict):
+        raise ValueError("Los contextos macro deben identificar sus mercados")
+    if not masked and not set(markets) <= set(macros):
         raise ValueError("Falta el contexto macro de un mercado solicitado")
     if type(context) is not int or not 2 <= context <= 512:
         raise ValueError("El contexto debe contener entre 2 y 512 sesiones")
@@ -105,7 +121,10 @@ def encode_corpus(
         for moment in moments
     ):
         raise ValueError("La admisión debe pertenecer al calendario anterior a 2024")
-    contexts = {m: MacroVectors(macros[m]) for m in markets}
+    contexts = {
+        m: MacroVectors(macros.get(m), input_policy=input_policy, indicators=macro_indicators)
+        for m in markets
+    }
     factors = market_factors or {}
     for market, item in factors.items():
         if market not in markets or item.get("market") != market:
@@ -115,12 +134,14 @@ def encode_corpus(
             raise ValueError("Ha cambiado la fuente del factor de mercado")
     encoders = encoders if encoders is not None else FrozenEncoders()
     identity = dict(
+        **policy_identity(input_policy),
         preparation_sha256=preparation_hash,
         prepared_root=str(prepared),
         cohort_id=cohort,
         context_sessions=context,
         encoders=encoders.spec,
         macro_sha256={m: contexts[m].sha256 for m in markets},
+        macro_indicators={m: contexts[m].indicators for m in markets},
         market_factors=factors,
         fundamental_concepts=list(concepts),
         source_unit=source_unit,
@@ -135,6 +156,7 @@ def encode_corpus(
                 "cohort_samples.py",
                 "cohort_contexts.py",
                 "cohort_files.py",
+                "input_policy.py",
             )
         },
     )
@@ -165,7 +187,8 @@ def encode_corpus(
             raise ValueError("La caché no puede ser un enlace")
         cache = EmbeddingCache(cache_path)
         result = dict(
-            schema_version=2,
+            **policy_identity(input_policy),
+            schema_version=3 if masked else 2,
             markets=markets,
             preparation_scope=meta.get("scope", "full_corpus"),
             parent_preparation=meta.get("parent_preparation"),
@@ -191,7 +214,7 @@ def encode_corpus(
         try:
             for asset in meta["assets"]:
                 market, symbol = asset["market"], asset["symbol"]
-                if asset["state"] == "missing_modalities":
+                if asset["state"] in {"missing_modalities", "missing_required_prices"}:
                     result["coverage"].append(dict(asset))
                 else:
                     source = prepared / market / symbol
@@ -214,6 +237,7 @@ def encode_corpus(
                             source_unit=source_unit,
                             company_factors=company_factors,
                             admitted_decisions=admitted[market] if admitted is not None else None,
+                            input_policy=input_policy,
                         )
                         if receipt["symbol"] != symbol:
                             raise ValueError("El recibo pertenece a otro activo")
@@ -267,8 +291,14 @@ def main():
     )
     parser.add_argument("--cache", type=Path, help="Caché persistente de vectores")
     parser.add_argument("--context", type=int, default=64, help="Sesiones de contexto")
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
+    parser.add_argument(
+        "--macro-catalog", type=Path, help="Catálogo explícito para conservar indicadores ausentes"
+    )
     args = parser.parse_args()
     import torch
+
+    from .macro_coverage import _read_catalog
 
     torch.set_num_threads(4)
     result = encode_corpus(
@@ -278,6 +308,8 @@ def main():
         market_factors=_read(args.market_factors)[0] if args.market_factors else None,
         cache_path=args.cache,
         context=args.context,
+        input_policy=args.input_policy,
+        macro_indicators=sorted(_read_catalog(args.macro_catalog)) if args.macro_catalog else None,
     )
     print(
         json.dumps(

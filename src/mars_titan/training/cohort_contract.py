@@ -4,25 +4,47 @@ import hashlib
 import json
 
 from mars_titan.data.cohort_news import COHORT_POLICIES
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 
 
-def cohort_identity(meta):
+def input_identity(meta, *, input_policy=STRICT_INPUTS):
+    """Exigir adhesión y el contrato completo sin interpretar ceros como ausencias."""
+    expected = policy_identity(input_policy)
+    supplied = {key: meta[key] for key in ("input_policy", "mask_contract") if key in meta}
+    if json.dumps(supplied, sort_keys=True, allow_nan=False) != json.dumps(
+        expected, sort_keys=True, allow_nan=False
+    ):
+        raise ValueError(
+            "La política de entradas de la cohorte necesita adhesión y contrato exactos"
+        )
+    return expected
+
+
+def cohort_identity(meta, *, input_policy=STRICT_INPUTS):
     """Conservar la edición histórica y exigir procedencia explícita en la nueva."""
+    input_identity(meta, input_policy=input_policy)
+    masked = masked_inputs(input_policy)
+    if masked and (
+        meta.get("training_ready") is not False or meta.get("final_test_opened") is not False
+    ):
+        raise ValueError("La cohorte histórica no acredita admisión ni apertura de la reserva")
+    if type(meta.get("schema_version")) is not int:
+        raise ValueError("La versión de la cohorte debe ser un entero")
     if meta.get("schema_version") == 1:
-        if "cohort_id" in meta or "news_content_policy" in meta:
+        if masked or "cohort_id" in meta or "news_content_policy" in meta:
             raise ValueError("La cohorte explícita requiere la versión 2")
         return None
     cohort = meta.get("cohort_id")
     if (
-        meta.get("schema_version") != 2
+        meta.get("schema_version") != (3 if masked else 2)
         or cohort not in COHORT_POLICIES
         or meta.get("news_content_policy") != COHORT_POLICIES[cohort]
         or any(a.get("cohort_id") != cohort for a in meta.get("assets", []))
     ):
         raise ValueError("La cohorte del manifiesto y sus activos no coincide")
-    validate_population(meta)
+    validate_population(meta, input_policy=input_policy)
     if meta.get("kind") == "corpus_supervision":
-        signature = representation_hash(meta.get("representation", {}))
+        signature = representation_hash(meta.get("representation", {}), input_policy=input_policy)
         if any(a.get("representation_sha256") != signature for a in meta["assets"]):
             raise ValueError("Las representaciones no conservan una identidad semántica común")
     return cohort
@@ -36,7 +58,8 @@ def validate_cohort_rows(table, cohort):
         raise ValueError("Hay filas ausentes o de otra cohorte")
 
 
-def validate_population(meta):
+def validate_population(meta, *, input_policy=STRICT_INPUTS):
+    missing = "missing_required_prices" if masked_inputs(input_policy) else "missing_modalities"
     coverage, expected = meta.get("coverage"), {}
     if (
         not isinstance(coverage, list)
@@ -60,7 +83,7 @@ def validate_population(meta):
                 expected[key] = count
         elif state == "failed":
             failures += 1
-        elif state != "missing_modalities":
+        elif state != missing:
             raise ValueError("La cobertura tiene un estado desconocido")
     observed = [(a["market"], a["symbol"]) for a in meta.get("assets", [])]
     if "markets" in meta and (
@@ -83,7 +106,8 @@ def validate_population(meta):
         raise ValueError("La población, las muestras y la cobertura no concilian")
 
 
-def representation_identity(receipt):
+def representation_identity(receipt, *, input_policy=STRICT_INPUTS):
+    identity = input_identity(receipt, input_policy=input_policy)
     fields = (
         "fundamental_concepts",
         "macro_indicators",
@@ -103,10 +127,12 @@ def representation_identity(receipt):
             or len(set(items)) != len(items)
         ):
             raise ValueError("Los conceptos e indicadores deben ser únicos y explícitos")
-    return {field: receipt[field] for field in fields}
+    return {field: receipt[field] for field in fields} | identity
 
 
-def representation_hash(receipt):
+def representation_hash(receipt, *, input_policy=STRICT_INPUTS):
     return hashlib.sha256(
-        json.dumps(representation_identity(receipt), sort_keys=True).encode()
+        json.dumps(
+            representation_identity(receipt, input_policy=input_policy), sort_keys=True
+        ).encode()
     ).hexdigest()

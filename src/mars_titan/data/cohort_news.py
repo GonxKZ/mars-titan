@@ -17,6 +17,7 @@ import pyarrow as pa
 
 from .batches import atomic_parquet_batches
 from .corpus_catalog import _read_source, _source_path, _unique_object
+from .input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from .news import _publication, _text
 from .news_audit import EXCLUSION_SCHEMA, NEWS_SCHEMA
 from .news_reviews import reviewed_body
@@ -135,8 +136,10 @@ def write_cohort_news(
     max_record_bytes: int = 1024**2,
     max_batch_bytes: int = 8 * 1024**2,
     spool_bytes: int = 2 * 1024**3,
+    input_policy: str = STRICT_INPUTS,
 ) -> dict:
     """Confirmar ambos Parquet y su recibo después de contrastar las fuentes."""
+    masked = masked_inputs(input_policy)
     if cohort not in COHORT_POLICIES:
         raise ValueError("La cohorte editorial no está admitida")
     if cohort == "externally_verified" and reviews is None:
@@ -145,7 +148,7 @@ def write_cohort_news(
         not isinstance(symbol, str)
         or not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol)
         or symbol in {".", ".."}
-        or not paths
+        or (not paths and not masked)
         or len(set(paths)) != len(paths)
         or any(
             type(n) is not int or n < 1
@@ -157,6 +160,8 @@ def write_cohort_news(
     ):
         raise ValueError("La identidad o los presupuestos editoriales no son válidos")
     end = date.fromisoformat(cutoff)
+    if masked and end >= date(2024, 1, 1):
+        raise ValueError("La reserva final permanece cerrada desde 2024")
     outside_source(source, output)
     if output.is_symlink() or any(
         (output / name).is_symlink()
@@ -172,6 +177,7 @@ def write_cohort_news(
     inputs = {relative: _source_path(source, relative) for relative in sorted(paths)}
     hashes = {name: sha256(path) for name, path in inputs.items()}
     configuration = dict(
+        **policy_identity(input_policy),
         cohort_id=cohort,
         symbol=symbol,
         market=clock.market,
@@ -198,6 +204,7 @@ def write_cohort_news(
                 "news_reviews.py",
                 "temporal.py",
                 "batches.py",
+                "input_policy.py",
             )
         },
     )
@@ -218,6 +225,7 @@ def write_cohort_news(
             if (
                 set(receipt.get("artifacts", {})) != {"news.parquet", "excluded.parquet"}
                 or receipt.get("schema_version") != 2
+                or any(receipt.get(k) != v for k, v in policy_identity(input_policy).items())
                 or receipt.get("source_file_encoding") != SOURCE_FILE_ENCODING
                 or receipt.get("cohort_id") != cohort
                 or receipt.get("news_content_policy") != COHORT_POLICIES[cohort]
@@ -345,6 +353,7 @@ def write_cohort_news(
         if any(sha256(path) != hashes[name] for name, path in inputs.items()):
             raise ValueError("Una fuente cambió durante la preparación editorial")
         receipt = dict(
+            **policy_identity(input_policy),
             schema_version=2,
             fingerprint=identity,
             cohort_id=cohort,

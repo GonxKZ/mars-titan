@@ -1,0 +1,42 @@
+{
+  "checked_at_utc": "2026-10-07T21:43:30.241205+00:00",
+  "status": "stopped_recoverable_before_contract_correction",
+  "runtime_commit": "987231338011879b83eae921a4257b2d43f59a8b",
+  "candidate_count": 5676,
+  "visited": 349,
+  "state_counts": {
+    "prepared": 303,
+    "missing_required_prices": 36,
+    "failed": 10
+  },
+  "confirmed_assets_verified": 303,
+  "confirmed_rows": {
+    "prices": 1134825,
+    "news": 224986,
+    "fundamentals": 275327
+  },
+  "artifact_bytes_verified": 377225448,
+  "progress_sha256": "163e4f469c253c1fe1aa14c3c4a1f519acaf295764ce07fecb7bff9802df25b4",
+  "stop_signal": "SIGINT",
+  "exit_status": 130,
+  "process_wall_seconds": 300.72,
+  "process_peak_rss_bytes": 379707392,
+  "service_memory_limit_bytes": 3221225472,
+  "service_peak_memory_reported": "3G",
+  "cpu_quota_percent": 200,
+  "models_executed": false,
+  "gpu_used": false,
+  "training_allowed": false,
+  "reason": "Se revisa la exclusión de hechos con periodo posterior a presentación sin perder el resto válido del activo.",
+  "limits": [
+    "El estado running del último progress.json corresponde a la instantánea anterior a SIGINT. El proceso está inactivo.",
+    "El manifiesto global del primer piloto no acredita la finalización de esta pasada.",
+    "La comprobación confirma los artefactos individuales completos, no toda la población ni sus objetivos."
+  ],
+  "source_receipt_sha256": "6e12abe1ee455b99f1e9f8ea4bc52569fea8ed3d0c8a8195111431ed92120f9a",
+  "scope": "partial_preparation_before_temporal_fact_exclusion_fix",
+  "target_rows_prepared": false,
+  "embeddings_materialized": false,
+  "runtime_immutable": true,
+  "failed_assets_have_no_confirmed_receipt": true
+}

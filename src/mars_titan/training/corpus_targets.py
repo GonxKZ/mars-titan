@@ -16,12 +16,14 @@ from mars_titan.data.batches import atomic_parquet_batches, read_bounded_table
 from mars_titan.data.budget_targets import residual_targets
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.cohort_news import COHORT_POLICIES
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.data.residual_arrays import residual_targets_array
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.temporal import MarketClock
 
 from .cohort_contract import (
     cohort_identity,
+    input_identity,
     representation_hash,
     representation_identity,
     validate_cohort_rows,
@@ -53,7 +55,7 @@ def _path(root, market, symbol, name):
     return path
 
 
-def _asset_sources(asset, prepared, samples, context, cohort=None):
+def _asset_sources(asset, prepared, samples, context, cohort=None, *, input_policy=STRICT_INPUTS):
     market, symbol = asset["market"], asset["symbol"]
     if (
         market not in {"US", "CN"}
@@ -66,6 +68,12 @@ def _asset_sources(asset, prepared, samples, context, cohort=None):
     encoded = _path(samples, market, symbol, "manifest.json")
     origin = _json(original, 64 * 1024**2)
     representation = _json(encoded)
+    for item in (origin, representation):
+        input_identity(item, input_policy=input_policy)
+        if masked_inputs(input_policy) and (
+            type(item.get("schema_version")) is not int or item["schema_version"] != 4
+        ):
+            raise ValueError("El activo histórico necesita la versión 4 y sus máscaras")
     if any(
         item.get("news_content_policy")
         != (COHORT_POLICIES[cohort] if cohort else "verified_full_articles")
@@ -98,7 +106,12 @@ def _asset_sources(asset, prepared, samples, context, cohort=None):
         or hashes["samples"] != representation["samples_sha256"]
     ):
         raise ValueError("Han cambiado las muestras o los precios preparados")
-    return prices, vectors, hashes, representation_identity(representation) if cohort else None
+    return (
+        prices,
+        vectors,
+        hashes,
+        representation_identity(representation, input_policy=input_policy) if cohort else None,
+    )
 
 
 def _label_batches(path, calculated, audit, cohort=None):
@@ -154,7 +167,12 @@ def _label_batches(path, calculated, audit, cohort=None):
 
 
 def prepare_corpus_targets(
-    manifest: Path, prepared: Path, output: Path, *, backend: str = "numpy"
+    manifest: Path,
+    prepared: Path,
+    output: Path,
+    *,
+    backend: str = "numpy",
+    input_policy: str = STRICT_INPUTS,
 ) -> dict:
     """Confirmar etiquetas por activo. Una interrupción no publica un corpus parcial."""
     implementations = {"reference": residual_targets, "numpy": residual_targets_array}
@@ -163,15 +181,17 @@ def prepare_corpus_targets(
     if output.is_symlink():
         raise ValueError("El directorio de salida no puede ser un enlace")
     meta, manifest_hash = read_manifest(manifest, 8 * 1024**2)
-    cohort = cohort_identity(meta)
+    masked = masked_inputs(input_policy)
+    cohort = cohort_identity(meta, input_policy=input_policy)
     if (
-        meta.get("schema_version") not in {1, 2}
+        meta.get("schema_version") not in ({3} if masked else {1, 2})
         or meta.get("kind") != "materialized_corpus"
         or meta.get("scope") not in {"development_snapshot", "full_corpus"}
         or type(meta.get("cohort_complete")) is not bool
         or (meta["scope"] == "full_corpus" and not meta["cohort_complete"])
         or type(meta.get("context_sessions")) is not int
         or not 2 <= meta["context_sessions"] <= 512
+        or (masked and meta["context_sessions"] != 64)
         or not isinstance(meta.get("assets"), list)
         or not meta["assets"]
     ):
@@ -198,6 +218,7 @@ def prepare_corpus_targets(
             raise ValueError("El factor de mercado ha cambiado o no tiene una fuente regular")
         factors[market] = read_bounded_table(path, max_rows=200_000).to_pandas()
     configuration = {
+        **policy_identity(input_policy),
         "backend": backend,
         "source_manifest_sha256": manifest_hash,
         "prepared_root": str(prepared),
@@ -228,7 +249,7 @@ def prepare_corpus_targets(
     for asset in meta["assets"]:
         market, symbol = asset["market"], asset["symbol"]
         prices, vectors, hashes, representation = _asset_sources(
-            asset, prepared, samples, meta["context_sessions"], cohort
+            asset, prepared, samples, meta["context_sessions"], cohort, input_policy=input_policy
         )
         if cohort:
             if common_representation is not None and common_representation != representation:
@@ -242,7 +263,10 @@ def prepare_corpus_targets(
         )
         if cohort:
             expected_receipt.update(
-                cohort_id=cohort, representation_sha256=representation_hash(representation)
+                cohort_id=cohort,
+                representation_sha256=representation_hash(
+                    representation, input_policy=input_policy
+                ),
             )
         fingerprint = hashlib.sha256(
             json.dumps([configuration, hashes], sort_keys=True).encode()
@@ -293,6 +317,8 @@ def prepare_corpus_targets(
     if sha256(manifest) != manifest_hash:
         raise ValueError("La edición materializada cambió durante la supervisión")
     result = {
+        **policy_identity(input_policy),
+        **({"training_ready": False} if masked else {}),
         "schema_version": meta["schema_version"],
         **({"cohort_id": cohort, "news_content_policy": COHORT_POLICIES[cohort]} if cohort else {}),
         "kind": "corpus_supervision",
@@ -318,7 +344,7 @@ def prepare_corpus_targets(
         for key in ("markets", "preparation_scope", "parent_preparation"):
             if key in meta:
                 result[key] = meta[key]
-        cohort_identity(result)
+        cohort_identity(result, input_policy=input_policy)
     manifest_path = output / "manifest.json"
     try:
         previous = _json(manifest_path, 8 * 1024**2) if manifest_path.exists() else None
