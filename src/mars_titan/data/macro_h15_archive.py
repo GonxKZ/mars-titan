@@ -38,6 +38,7 @@ _MAX_JSON_BYTES = 2 * 1024**2
 _MAX_TOTAL_BYTES = 512 * 1024**2
 _MAX_DOCUMENTS = 2048
 _MAX_PARQUET_BYTES = 64 * 1024**2
+_MAX_LOGICAL_BYTES = 64 * 1024**2
 _SCHEMA = pa.schema(
     [
         pa.field(name, pa.string())
@@ -308,6 +309,30 @@ def _confirm(sources, code):
         raise ValueError("Cambió el código de la edición durante la preparación")
 
 
+def _logical_overhead(rows):
+    """Contar buffers con un bitmap por columna, sin depender de sus nulos o lotes."""
+    return sum(
+        (rows + 7) // 8
+        + (4 * (rows + 1) if pa.types.is_string(field.type) else rows * field.type.byte_width)
+        for field in _SCHEMA
+    )
+
+
+def _text_bytes(column):
+    lengths = (
+        pc.take(pc.binary_length(column.dictionary), column.indices)
+        if pa.types.is_dictionary(column.type)
+        else pc.binary_length(column)
+    )
+    return pc.sum(pc.cast(lengths, pa.int64())).as_py() or 0
+
+
+def _logical_bytes(table):
+    return _logical_overhead(table.num_rows) + sum(
+        _text_bytes(table[field.name]) for field in _SCHEMA if pa.types.is_string(field.type)
+    )
+
+
 def _check_parquet(path, table):
     """Comparar por columnas sin expandir diccionarios fuera del presupuesto."""
     with pq.ParquetFile(path) as file:
@@ -324,23 +349,16 @@ def _check_parquet(path, table):
         ):
             raise ValueError("El Parquet confirmado supera su esquema o presupuesto")
     strings = [field.name for field in _SCHEMA if pa.types.is_string(field.type)]
-    expanded = 0
+    expanded = _logical_overhead(table.num_rows)
     with pq.ParquetFile(path, metadata=metadata, read_dictionary=strings) as file:
         for field in _SCHEMA:
             offset = 0
             for batch in file.iter_batches(batch_size=512, columns=[field.name], use_threads=False):
                 column = batch.column(0)
-                if pa.types.is_dictionary(column.type):
+                if pa.types.is_string(field.type):
                     # Se suman longitudes por índice, sin repetir los textos del diccionario.
-                    lengths = pc.take(pc.binary_length(column.dictionary), column.indices)
-                    expanded += (
-                        (pc.sum(pc.cast(lengths, pa.int64())).as_py() or 0)
-                        + 4 * (len(column) + 1)
-                        + (len(column) + 7) // 8
-                    )
-                else:
-                    expanded += column.nbytes
-                if expanded > _MAX_PARQUET_BYTES:
+                    expanded += _text_bytes(column)
+                if expanded > _MAX_LOGICAL_BYTES:
                     raise ValueError("La expansión del Parquet supera el presupuesto")
                 expected = table[field.name].slice(offset, batch.num_rows).combine_chunks()
                 if not column.cast(field.type).equals(expected):
@@ -466,7 +484,7 @@ def prepare_h15_archive(manifest_path, output, *, markets=("US", "CN"), cutoff="
                     )
                 )
     table = pa.Table.from_pylist(rows, schema=_SCHEMA)
-    if table.nbytes > _MAX_PARQUET_BYTES:
+    if _logical_bytes(table) > _MAX_LOGICAL_BYTES:
         raise ValueError("Las observaciones superan el presupuesto de salida")
     stable = dict(
         schema_version=1,
@@ -489,6 +507,9 @@ def prepare_h15_archive(manifest_path, output, *, markets=("US", "CN"), cutoff="
         stage = Path(temporary) / "edition"
         stage.mkdir()
         atomic_parquet(stage / "observations.parquet", table)
+        if (stage / "observations.parquet").stat().st_size > _MAX_PARQUET_BYTES:
+            raise ValueError("El Parquet escrito supera el presupuesto de archivo")
+        _check_parquet(stage / "observations.parquet", table)
         _, manifest_hash = read_manifest(manifest_path, _MAX_JSON_BYTES)
         if manifest_hash != sources.hashes[manifest_path]:
             raise ValueError("El manifiesto cambió antes de publicar")

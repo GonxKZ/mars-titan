@@ -757,3 +757,48 @@ def test_holiday_cutoff_keeps_document_without_backdating(source, markets, cutof
     before = {p.name: (digest(p), p.stat().st_mtime_ns) for p in source["output"].iterdir()}
     assert prepare(source, markets=markets, cutoff=cutoff)["reused"] is True
     assert before == {p.name: (digest(p), p.stat().st_mtime_ns) for p in source["output"].iterdir()}
+
+
+@pytest.mark.parametrize("dictionary", [False, True])
+@pytest.mark.parametrize("row_group_size", [13, 1000])
+def test_creation_and_recovery_share_the_logical_budget(
+    source, monkeypatch, dictionary, row_group_size
+):
+    prepare(source)
+    table = pq.read_table(source["output"] / "observations.parquet")
+    for path in source["output"].iterdir():
+        path.unlink()
+    source["output"].rmdir()
+    # Un bitmap por columna y un offset final por texto, independientemente del codificador.
+    rows = table.to_pylist()
+    expected_budget = sum(
+        (len(rows) + 7) // 8
+        + (
+            4 * (len(rows) + 1)
+            + sum(
+                len(row[field.name].encode("utf-8")) for row in rows if row[field.name] is not None
+            )
+            if pa.types.is_string(field.type)
+            else len(rows) * field.type.byte_width
+        )
+        for field in table.schema
+    )
+    monkeypatch.setattr(module(), "_MAX_LOGICAL_BYTES", expected_budget)
+    assert prepare(source)["reused"] is False
+    path = source["output"] / "observations.parquet"
+    pq.write_table(table, path, use_dictionary=dictionary, row_group_size=row_group_size)
+    rehash_parquet(source)
+    assert prepare(source)["reused"] is True
+
+
+def test_creation_rejects_logical_budget_before_publishing(source, monkeypatch):
+    prepare(source)
+    table = pq.read_table(source["output"] / "observations.parquet")
+    for path in source["output"].iterdir():
+        path.unlink()
+    source["output"].rmdir()
+    # El presupuesto no depende de que Arrow omita los bitmaps de columnas sin nulos.
+    monkeypatch.setattr(module(), "_MAX_LOGICAL_BYTES", table.nbytes)
+    with pytest.raises(ValueError, match="presupuesto"):
+        prepare(source)
+    assert not source["output"].exists()
