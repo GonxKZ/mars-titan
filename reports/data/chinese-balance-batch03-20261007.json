@@ -1,0 +1,1295 @@
+{
+  "schema_version": 1,
+  "kind": "reviewed_chinese_balance_batch03",
+  "observed_at_utc": "2026-10-07T15:13:23.909568+00:00",
+  "issue": 105,
+  "implementation_commit": "bac61cddd885f6803b640574198fe22562a102ca",
+  "source_scope": "original_audited",
+  "selection_rule": "Orden por símbolo y primera publicación observada del informe completo de 2021 entre los dos catálogos conservados. No acredita la primera versión histórica.",
+  "selection_sha256": "bada8b36b1069943e0993c41965de71b76b2101cc78f02c501d9c2170d3032ef",
+  "candidate_title_rule": "2021年?年度报告(?:全文)?",
+  "eligible_unadmitted_symbols": 252,
+  "selected_documents": 12,
+  "completed_documents": 12,
+  "downloaded_pdf_bytes": 90441733,
+  "downloaded_pdf_pages": 2927,
+  "inspected_physical_pages": 76,
+  "facts": 69,
+  "original_matches": 108,
+  "excluded_comparative_facts": 3,
+  "accounting_basis": "CAS",
+  "currency": "CNY",
+  "concepts": [
+    "Assets",
+    "Liabilities",
+    "EquityIncludingNoncontrollingInterest"
+  ],
+  "added_assets": 12,
+  "added_samples": 2546,
+  "assets": [
+    {
+      "symbol": "000009.SZ",
+      "samples": 145,
+      "counts": {
+        "train": 89,
+        "validation": 54
+      },
+      "encoding_seconds": 3.80021810499602,
+      "reuse_seconds": 1.7079164150054567,
+      "news_calls": 109,
+      "chart_calls": 145,
+      "decimal50_to_float32_exact_rows": 145,
+      "samples_sha256": "5a1a4d7bf7d1aa141d53e7023fdf4fec9fb65ef576afea3f59422596c1623799",
+      "samples_bytes": 599408,
+      "report_sha256": "914879672a378555bfe846346c00371a337c43feacc1068116c549809d80c797",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000009-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "b5e7bfeff17d39612e5498a468eaa22e337485169f26dbd82c731026d674649a",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-03-31/1212752790.PDF",
+      "document_sha256": "573f91ae574009c277dcff117b736fec46778d8ec98e07d15389185ea9ea4524",
+      "document_pages": 263,
+      "document_bytes": 8753260,
+      "publication_date": "2022-03-31",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        78,
+        79,
+        91
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "ad77f993d3b17b229aec04f36334bf74428144c256dd9bb4f7205f17acaa9b6b",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000021.SZ",
+      "samples": 170,
+      "counts": {
+        "train": 21,
+        "validation": 149
+      },
+      "encoding_seconds": 4.5095262700051535,
+      "reuse_seconds": 1.7220754169975407,
+      "news_calls": 153,
+      "chart_calls": 170,
+      "decimal50_to_float32_exact_rows": 170,
+      "samples_sha256": "82be381ee3028f6158aa7bd6f6a68f81d6f9a0e3c86fdea7dde5a27c3ebed2e5",
+      "samples_bytes": 764629,
+      "report_sha256": "7750eb4307d5502cc59b5ba5a8163ca300f1402cd12c33bb7799dd4f39e903f9",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000021-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "4577333caaef875436834e91018b5816e55afa2473ab36fcf52f0093f140735b",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-21/1213001411.PDF",
+      "document_sha256": "14790d4559229e25ca32939801a9262c2817476839d413d10525bd68f395da0f",
+      "document_pages": 235,
+      "document_bytes": 5675437,
+      "publication_date": "2022-04-21",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        8,
+        109,
+        110,
+        123
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "195265af71af1186b997a9e5655c6d82c9ff7ec3c63f4eb289520612a4615d89",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000027.SZ",
+      "samples": 211,
+      "counts": {
+        "train": 81,
+        "validation": 130
+      },
+      "encoding_seconds": 4.792012755991891,
+      "reuse_seconds": 1.7196332539897412,
+      "news_calls": 171,
+      "chart_calls": 211,
+      "decimal50_to_float32_exact_rows": 211,
+      "samples_sha256": "7a12ccd287d987b1bfdbdbd9614baf96e3f5200d5261d255b32fe13f5a354015",
+      "samples_bytes": 903813,
+      "report_sha256": "625fe4a8108255b9251f8ef07214043de4a5ba26f6ccfbeb94ea2fbf236dabe3",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000027-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "4fa938d40162ed48876a94f43ed221dc71315b65e9f0a0b82c8dc6c72dfabf7d",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-22/1213028283.PDF",
+      "document_sha256": "20c41d7c61dd5271849f87bb89e5fe3a5749ef737ba839959a8f6fae89a7b7de",
+      "document_pages": 343,
+      "document_bytes": 9080015,
+      "publication_date": "2022-04-22",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        9,
+        150,
+        151,
+        152,
+        153,
+        176
+      ],
+      "facts": 6,
+      "original_matches": 12,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 12
+      },
+      "fundamentals_sha256": "ec4c37e65284b76331a0511768b2e6317ae38c0348ef572dc89a2480387ba0b8",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000031.SZ",
+      "samples": 188,
+      "counts": {
+        "train": 61,
+        "validation": 126
+      },
+      "encoding_seconds": 3.6907763080089353,
+      "reuse_seconds": 1.7945852669945452,
+      "news_calls": 103,
+      "chart_calls": 188,
+      "decimal50_to_float32_exact_rows": 188,
+      "samples_sha256": "c5f41a8d7a1790d1f9023a804b4e9c53bd056df56aa7b043d3665bb45c034fa9",
+      "samples_bytes": 760064,
+      "report_sha256": "ae4629eb2a01fc07e3a7320f23c138c8cb538d24f0a5ce44002a973a90a1724f",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000031-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "d58416d42a54bc18b4562f47612ccc37634666b605812b269497b35db1463207",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-12/1212886659.PDF",
+      "document_sha256": "21e2ee6f6d2ecaee7c7699621862f705fa7bd9e271b171644dc5a105b703dbbf",
+      "document_pages": 296,
+      "document_bytes": 6099669,
+      "publication_date": "2022-04-12",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        120,
+        121,
+        136
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "3d43baa34c57d66765b9eb0bb27b385cdbb457617ae9e2907d02304c135f99f3",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000059.SZ",
+      "samples": 62,
+      "counts": {
+        "train": 30,
+        "validation": 32
+      },
+      "encoding_seconds": 2.43869181201444,
+      "reuse_seconds": 1.8263655469927471,
+      "news_calls": 38,
+      "chart_calls": 62,
+      "decimal50_to_float32_exact_rows": 62,
+      "samples_sha256": "d07180551b2e0e3e91f00882b426ae87ef76b5856dfc2b61e24c4929baac14e5",
+      "samples_bytes": 247980,
+      "report_sha256": "3bf3bb907fc511f1873f711b649ffcc5d903fcf3a8fc449a6130f0806abeae36",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000059-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "3e56fe276951d030b3c0d825e5cfd2a769305a2917f333182f59acbdcd4643e3",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-13/1212897106.PDF",
+      "document_sha256": "f972ac8a79f96810c9f91d2e04ae02963c2c7f594e46e3054d91111c58ede703",
+      "document_pages": 135,
+      "document_bytes": 1028585,
+      "publication_date": "2022-04-13",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        47,
+        48,
+        49,
+        50,
+        66
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "813c92064cfd1de652983dc92de65e034aacf50c91b77a98451764205ae5bd29",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000061.SZ",
+      "samples": 387,
+      "counts": {
+        "train": 144,
+        "validation": 241
+      },
+      "encoding_seconds": 34.5892182860116,
+      "reuse_seconds": 1.7283486670057755,
+      "news_calls": 4510,
+      "chart_calls": 387,
+      "decimal50_to_float32_exact_rows": 387,
+      "samples_sha256": "f7d94fa7b647c25388c8f9071b98c03a94b3a7f0c53edcfe75c374c610adcd35",
+      "samples_bytes": 2116840,
+      "report_sha256": "3cd0df42ef2b8198ceff3d1c68480418dd153d6e494cc6dc997450bcf3647a6b",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000061-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "8643e541c73c2c521a54acbc4312c8514ec5114534190775b533fc9dd2d77246",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-26/1213118045.PDF",
+      "document_sha256": "ec14171438f83fef38bafd7092c013bb88f6a01f63694e854da2cb08bcbd32c5",
+      "document_pages": 309,
+      "document_bytes": 6382280,
+      "publication_date": "2022-04-26",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        10,
+        100,
+        101,
+        116
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "abbef58498c7de2f95319cde41e1e74761181872cfa7d11f22eaaae08b4de8fb",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000066.SZ",
+      "samples": 286,
+      "counts": {
+        "train": 75,
+        "validation": 209
+      },
+      "encoding_seconds": 6.6608398990065325,
+      "reuse_seconds": 1.7354791710095014,
+      "news_calls": 262,
+      "chart_calls": 286,
+      "decimal50_to_float32_exact_rows": 286,
+      "samples_sha256": "30d6747bbdee4de1f89da3a5412598bedc40b7e54aa9269cf2e4a1650326e626",
+      "samples_bytes": 1229541,
+      "report_sha256": "cc66985641e52c77c4f1d880bc42f4647a6c5d985b201966b2fac2c1180bcfa9",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000066-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "567f0924d4ec44c4853a3264cef23aa1ee4875bcbc6346e995146580ffe01e63",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213249559.PDF",
+      "document_sha256": "780b76ffdf18d661ecc3919fd8dcfebba61fdbc4060fe02af39145e4edd2c2a7",
+      "document_pages": 273,
+      "document_bytes": 10155254,
+      "publication_date": "2022-04-30",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        8,
+        86,
+        87,
+        100,
+        101,
+        134,
+        135,
+        136
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "6830cf713aacda2eb3d0c6b8f77b2a3fb3cedf2b4d71e5c8ee5a9dd7cce55b08",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000088.SZ",
+      "samples": 170,
+      "counts": {
+        "train": 61,
+        "validation": 107
+      },
+      "encoding_seconds": 3.651650520012481,
+      "reuse_seconds": 1.7149246059998404,
+      "news_calls": 122,
+      "chart_calls": 170,
+      "decimal50_to_float32_exact_rows": 170,
+      "samples_sha256": "4de56a9836394d5d419f3acddc35249135d318eced0bb1d892bc39c364853f5c",
+      "samples_bytes": 712199,
+      "report_sha256": "d3a6895455816f9eacedc8a9255152d7d96356d97cdac4daa3ae7ed5949a5c20",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000088-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "61de1af87d415e18fcaf0af2a90412c1cd17d153aa7eb73f65c474df7b4e4b72",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-09/1212854858.PDF",
+      "document_sha256": "24d6ea8da5df93dd47406c92c619bbb5a3d9610598065a224802d0a73f7c0e78",
+      "document_pages": 189,
+      "document_bytes": 3383802,
+      "publication_date": "2022-04-09",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        74,
+        75,
+        76,
+        77,
+        100,
+        101,
+        121
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "60ef7f558ce38d2aff921f0e8f12e7246e0c52cb7d9839d636d463ae54fa348e",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000089.SZ",
+      "samples": 316,
+      "counts": {
+        "train": 109,
+        "validation": 206
+      },
+      "encoding_seconds": 6.856818741973257,
+      "reuse_seconds": 1.7985963939863723,
+      "news_calls": 301,
+      "chart_calls": 316,
+      "decimal50_to_float32_exact_rows": 316,
+      "samples_sha256": "2edc051b00ccdc5ac47774d61e103e6def71228c99abc9b82d7f855ce09d3b1d",
+      "samples_bytes": 1363401,
+      "report_sha256": "5d8dfa7360452f2e7f2274189c3e813ec622c9396699d89195619124ba06b80a",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000089-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "3ac9a1a212b70cec9abb059d6b71440487ea028c1ce01c038519ee48dfbe1d96",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-09/1212857408.PDF",
+      "document_sha256": "c6680e3cceccddb59ea5491d099aa3c392a78aed701958246c207caa6ae88a58",
+      "document_pages": 222,
+      "document_bytes": 2070200,
+      "publication_date": "2022-04-09",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        100,
+        102,
+        103,
+        123,
+        143
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "bd296978acc917595eeb89791506ba5fe7a6043b7a33d394261a32e0d3608d4f",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000096.SZ",
+      "samples": 26,
+      "counts": {
+        "train": 6,
+        "validation": 20
+      },
+      "encoding_seconds": 2.0896400560159236,
+      "reuse_seconds": 1.7222427329979837,
+      "news_calls": 9,
+      "chart_calls": 26,
+      "decimal50_to_float32_exact_rows": 26,
+      "samples_sha256": "fa190548841eed7e308d4154585351a064a8bedc01184c3cea017231455d8d17",
+      "samples_bytes": 106491,
+      "report_sha256": "e9bdadbfb7646eb7965137ca207c048effbe737722f0af87f230d7eb28c1bdca",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000096-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "d2656e1929b1df81ac25f951b4b0694cd65a22ec10376e55b685b3fa40c6be0d",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-12/1212882308.PDF",
+      "document_sha256": "9ee05d883a2c04caed371d7b3b41ab9e4db8d07fe4552b4b792d97844ba8180d",
+      "document_pages": 156,
+      "document_bytes": 1006294,
+      "publication_date": "2022-04-12",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        7,
+        8,
+        55,
+        56,
+        57,
+        75,
+        107,
+        108
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "binary64_roundtrip": 9
+      },
+      "fundamentals_sha256": "543a39412724e6677c99b66ed609c6d430d8736a7e9c6ebb1ffe93b93bce1df1",
+      "excluded_facts": 0
+    },
+    {
+      "symbol": "000301.SZ",
+      "samples": 211,
+      "counts": {
+        "train": 93,
+        "validation": 117
+      },
+      "encoding_seconds": 4.279763369006105,
+      "reuse_seconds": 1.735103162995074,
+      "news_calls": 207,
+      "chart_calls": 211,
+      "decimal50_to_float32_exact_rows": 211,
+      "samples_sha256": "ca2359def160e4b56162d407a900ea2a22f46ed74f32079569c05c6686a0987f",
+      "samples_bytes": 923457,
+      "report_sha256": "392de2484ac47d33672d3de20004add4f0e8bae9207a4dc82542e6c5b714b612",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000301-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "0ee1c95ed25a0c08fb87c22bce7ac2e1a611e52b01237618db5816f234ce63be",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-19/1212962265.PDF",
+      "document_sha256": "1e9c7f9affbe07382b72afc09dba4b02932d062a2df49fdc4c74a8ba161d06c2",
+      "document_pages": 236,
+      "document_bytes": 32356879,
+      "publication_date": "2022-04-19",
+      "unit_multiplier": 1,
+      "inspected_physical_pages": [
+        9,
+        96,
+        97,
+        98,
+        99,
+        100,
+        124,
+        148
+      ],
+      "facts": 3,
+      "original_matches": 6,
+      "numeric_match_counts": {
+        "exact_decimal": 2,
+        "binary64_roundtrip": 4
+      },
+      "fundamentals_sha256": "45e457357f4f61291a34afdd58ce49862bf4aa36001742711335934d9e9a2269",
+      "excluded_facts": 3
+    },
+    {
+      "symbol": "000333.SZ",
+      "samples": 374,
+      "counts": {
+        "train": 141,
+        "validation": 232
+      },
+      "encoding_seconds": 9.98488045099657,
+      "reuse_seconds": 1.7378612350148614,
+      "news_calls": 668,
+      "chart_calls": 374,
+      "decimal50_to_float32_exact_rows": 374,
+      "samples_sha256": "e7da56ff58280da3686a0dfd13bff652a6ab9feb45aef7834aa31b011ac8ceb6",
+      "samples_bytes": 1848561,
+      "report_sha256": "5316cb4da5ea5d161f525030d680c1ec47d393b1fb91e4376a579b082721b140",
+      "reuse_without_inference": true,
+      "reconciliation": "reports/data/china-000333-2021-reconciliation-20261007.json",
+      "reconciliation_sha256": "2b20222640b663f2350c712b356c92c40bd6289a91342573f12c5c65a367d75a",
+      "document_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213264815.PDF",
+      "document_sha256": "f1210d6e006e00963492edbf4cc79884b0febdffa50a82ed2d291fa694369def",
+      "document_pages": 270,
+      "document_bytes": 4450058,
+      "publication_date": "2022-04-30",
+      "unit_multiplier": 1000,
+      "inspected_physical_pages": [
+        9,
+        10,
+        119,
+        146,
+        147,
+        148,
+        158,
+        189,
+        190
+      ],
+      "facts": 6,
+      "original_matches": 9,
+      "numeric_match_counts": {
+        "exact_decimal": 9
+      },
+      "fundamentals_sha256": "2576419cd3f90e8799e632bc2c0a3cc863bac19f0c9822f703ad75ccdcbe3b42",
+      "excluded_facts": 0
+    }
+  ],
+  "encoder": {
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+    },
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizers_version": "0.23.2",
+    "tokenizer_class": "TokenizersBackend",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "device": "cuda:0",
+    "precision": "float32",
+    "historical_simulation": false
+  },
+  "encoder_identity_matches_us": true,
+  "cuda": {
+    "encoding_process_seconds": 118.84103268900071,
+    "window_seconds": 134.3770370039856,
+    "peak_rss_bytes": 2045116416,
+    "peak_allocated_bytes": 570390528,
+    "peak_reserved_bytes": 612368384,
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7374 MiB",
+    "campaign_resumed": true,
+    "decimal50_to_float32_exact_rows": 2546
+  },
+  "corpus": {
+    "observed_at_utc": "2026-10-07T15:04:30.784604+00:00",
+    "sources": [
+      {
+        "symbol": "000001.SZ",
+        "report_sha256": "32340df8ca819e717cf7410db393c70975d36b7f65b52ff33341342910f8ffea"
+      },
+      {
+        "symbol": "000002.SZ",
+        "report_sha256": "eb6cd39dea235eed410d63d20377718da3e65748bb0e412d98f694a25108ed56"
+      },
+      {
+        "symbol": "000016.SZ",
+        "report_sha256": "f83409fc58d8b944b45db1891b89a9f05c650556aeeba609f1bdd2a6f477a1ea"
+      },
+      {
+        "symbol": "000039.SZ",
+        "report_sha256": "6852a8952c96ee1f09fe382f61635591096c155a70e6f649458af03304d32ef4"
+      },
+      {
+        "symbol": "000060.SZ",
+        "report_sha256": "173378f6b334858a91a2382b682bdff7e5eea640354be3da81628371d90e2945"
+      },
+      {
+        "symbol": "000069.SZ",
+        "report_sha256": "290bb51e5fbb75f40d3208955e5008ebb023ba33682cbf3fa1e27fd3248d2fdc"
+      },
+      {
+        "symbol": "000099.SZ",
+        "report_sha256": "45ff451029ef8616bee8d391c0538176a8ef5b38ffd7a7096394f3db5ba1da88"
+      },
+      {
+        "symbol": "000157.SZ",
+        "report_sha256": "9717dbaaea3a6fed7cf30c2bf3bb15a214b4764f0a151951cafecf601cefd1e9"
+      },
+      {
+        "symbol": "000166.SZ",
+        "report_sha256": "32d321ddf9f864b7b0b78daaae1f3f37d0062f38cfb7d618ce60ac169026ec3d"
+      },
+      {
+        "symbol": "000338.SZ",
+        "report_sha256": "00cc2cd15c0b539a51965a7544cfa090b01ecdba412404a47fffe3c9a0c29e19"
+      },
+      {
+        "symbol": "000402.SZ",
+        "report_sha256": "5375d66bf3b67a86bf7cb4ce34c5514bc890f5adda2137ff5c666098f54acfd5"
+      },
+      {
+        "symbol": "000423.SZ",
+        "report_sha256": "23fee03cf523968a572645c0dcc08231e2045293bb25fb33347a4b445a1afe92"
+      },
+      {
+        "symbol": "000488.SZ",
+        "report_sha256": "ce5edd2d6d4fd5ce6e540afde445cd9ab1c5aa07ed4ef004aec5f5c8f47ba54f"
+      },
+      {
+        "symbol": "000528.SZ",
+        "report_sha256": "245bd62aa674b790b067bc724bfb64a24153d5fbca05b7c262713a8684f9da7c"
+      },
+      {
+        "symbol": "000538.SZ",
+        "report_sha256": "8bf047822086e8539acf344bcb110b469798828fe48b301839b6fdb47fcdc0d4"
+      },
+      {
+        "symbol": "000541.SZ",
+        "report_sha256": "253a68357b62343a3c2ed715904d1bfce7a526403425b911919c3990b88cd6a4"
+      },
+      {
+        "symbol": "000550.SZ",
+        "report_sha256": "59dab972022e674605f9b5a216ace2333dfea56f57b6a099f5fae348fb84f2ee"
+      },
+      {
+        "symbol": "000553.SZ",
+        "report_sha256": "0512b636635cd25c0e8bb7df403f89bbcb252eb916c6498c4d148aead18a8cf5"
+      },
+      {
+        "symbol": "000555.SZ",
+        "report_sha256": "4ecf59cd8142385d1429d009f2305a57b4ad2dcf6532f3210cc94061d5e61b9e"
+      },
+      {
+        "symbol": "000617.SZ",
+        "report_sha256": "b70ddcf96be3883b6df87ebfbe4aa0ba6a519f825e9d3acbf1a47a652566ad37"
+      },
+      {
+        "symbol": "000629.SZ",
+        "report_sha256": "3051f506809a2461a18dfb5228b2104233f8733700de1ed6d017507a1032dc5b"
+      },
+      {
+        "symbol": "000680.SZ",
+        "report_sha256": "76448c12db5006e882b32fce64616f58a7183372da0b9ed9de2b0b0cb7578ea8"
+      },
+      {
+        "symbol": "000698.SZ",
+        "report_sha256": "cacea078cf892122f725b38be8733c966d7269536a4e8fd2dc95535aef799032"
+      },
+      {
+        "symbol": "000725.SZ",
+        "report_sha256": "f7667d18ef572c4ce2c681d9bedf5f86fbbdb145d5433809bae6712d9b60f9a6"
+      },
+      {
+        "symbol": "000728.SZ",
+        "report_sha256": "bc1983e8380d4778779595ff630a5591e4d31feb3c50d250d2995efe5ad60e34"
+      },
+      {
+        "symbol": "000009.SZ",
+        "report_sha256": "914879672a378555bfe846346c00371a337c43feacc1068116c549809d80c797"
+      },
+      {
+        "symbol": "000021.SZ",
+        "report_sha256": "7750eb4307d5502cc59b5ba5a8163ca300f1402cd12c33bb7799dd4f39e903f9"
+      },
+      {
+        "symbol": "000027.SZ",
+        "report_sha256": "625fe4a8108255b9251f8ef07214043de4a5ba26f6ccfbeb94ea2fbf236dabe3"
+      },
+      {
+        "symbol": "000031.SZ",
+        "report_sha256": "ae4629eb2a01fc07e3a7320f23c138c8cb538d24f0a5ce44002a973a90a1724f"
+      },
+      {
+        "symbol": "000059.SZ",
+        "report_sha256": "3bf3bb907fc511f1873f711b649ffcc5d903fcf3a8fc449a6130f0806abeae36"
+      },
+      {
+        "symbol": "000061.SZ",
+        "report_sha256": "3cd0df42ef2b8198ceff3d1c68480418dd153d6e494cc6dc997450bcf3647a6b"
+      },
+      {
+        "symbol": "000066.SZ",
+        "report_sha256": "cc66985641e52c77c4f1d880bc42f4647a6c5d985b201966b2fac2c1180bcfa9"
+      },
+      {
+        "symbol": "000088.SZ",
+        "report_sha256": "d3a6895455816f9eacedc8a9255152d7d96356d97cdac4daa3ae7ed5949a5c20"
+      },
+      {
+        "symbol": "000089.SZ",
+        "report_sha256": "5d8dfa7360452f2e7f2274189c3e813ec622c9396699d89195619124ba06b80a"
+      },
+      {
+        "symbol": "000096.SZ",
+        "report_sha256": "e9bdadbfb7646eb7965137ca207c048effbe737722f0af87f230d7eb28c1bdca"
+      },
+      {
+        "symbol": "000301.SZ",
+        "report_sha256": "392de2484ac47d33672d3de20004add4f0e8bae9207a4dc82542e6c5b714b612"
+      },
+      {
+        "symbol": "000333.SZ",
+        "report_sha256": "5316cb4da5ea5d161f525030d680c1ec47d393b1fb91e4376a579b082721b140"
+      }
+    ],
+    "union_report_sha256": "6e1e51e6a866a708744ce30309078386448280c7de8252cc20e79ed13480af73",
+    "union_configuration_sha256": "302aa7771519e52110bc45de1c65fedd950d239a06095efe2e1179845898577c",
+    "samples": 7920,
+    "annual_counts": {
+      "train": 2737,
+      "validation": 5146
+    },
+    "parent_candidates": 892,
+    "selected_assets": 37,
+    "source_bytes_preserved": true,
+    "reuse_without_rewrite": true,
+    "encoder_contract_verified": true,
+    "temporal_report_sha256": "781f99ef183e5d90cd768c60ea17c3df51dfd6aa0913c4fa40d1bca4752547c6",
+    "protocol_sha256": "420655d9cc5d65ae54d97d2eadca878763b95da4f9755442e4d7cb69589ce820",
+    "protocol_equals_us_except_market": true,
+    "folds": [
+      {
+        "id": "fold-000",
+        "counts": {
+          "train": 2342,
+          "validation": 692,
+          "calibration": 413,
+          "evaluation": 464
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-001",
+        "counts": {
+          "train": 2737,
+          "validation": 737,
+          "calibration": 464,
+          "evaluation": 429
+        },
+        "recovered_annual_labels": 0
+      },
+      {
+        "id": "fold-002",
+        "counts": {
+          "train": 3054,
+          "validation": 896,
+          "calibration": 429,
+          "evaluation": 409
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-003",
+        "counts": {
+          "train": 3492,
+          "validation": 922,
+          "calibration": 409,
+          "evaluation": 383
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-004",
+        "counts": {
+          "train": 3975,
+          "validation": 861,
+          "calibration": 383,
+          "evaluation": 438
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-005",
+        "counts": {
+          "train": 4433,
+          "validation": 814,
+          "calibration": 438,
+          "evaluation": 431
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-006",
+        "counts": {
+          "train": 4865,
+          "validation": 840,
+          "calibration": 431,
+          "evaluation": 447
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-007",
+        "counts": {
+          "train": 5270,
+          "validation": 891,
+          "calibration": 447,
+          "evaluation": 344
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-008",
+        "counts": {
+          "train": 5727,
+          "validation": 903,
+          "calibration": 344,
+          "evaluation": 494
+        },
+        "recovered_annual_labels": 18
+      },
+      {
+        "id": "fold-009",
+        "counts": {
+          "train": 6180,
+          "validation": 813,
+          "calibration": 494,
+          "evaluation": 343
+        },
+        "recovered_annual_labels": 18
+      }
+    ],
+    "unique_rows_by_role": {
+      "train": 6180,
+      "validation": 4656,
+      "calibration": 4252,
+      "evaluation": 4182
+    },
+    "unique_rows_across_windows": 7855,
+    "repeated_evaluation_rows": 0,
+    "reuse_seconds": 1.676917521021096,
+    "total_seconds": 22.22276167999371,
+    "peak_rss_kib": 758112,
+    "training_ready": false,
+    "scientific_training_started": false,
+    "final_test_opened": false,
+    "valid_labels_not_used_in_any_window": [
+      {
+        "symbol": "000001.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000001.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000002.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000002.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000016.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000016.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000039.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000069.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000069.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000099.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000157.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000157.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000166.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000166.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000338.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000338.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000402.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000402.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000423.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000488.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000488.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000528.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000528.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000538.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000538.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000541.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000550.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000555.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000555.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000680.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000725.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000725.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000728.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000728.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000009.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000021.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000031.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000061.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000061.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000066.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000066.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000088.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000089.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000301.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000333.SZ",
+        "prediction_at": "2023-10-31T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      },
+      {
+        "symbol": "000333.SZ",
+        "prediction_at": "2023-11-30T07:05:00.000000",
+        "reasons": [
+          "label_crosses_boundary",
+          "outside_window",
+          "session_gap"
+        ]
+      }
+    ],
+    "first_call_reused_existing_edition": false,
+    "first_call_seconds": 7.15749870298896
+  },
+  "verification": {
+    "cpu_tests": 206,
+    "cpu_seconds": 12.35,
+    "independent_document_review_sha256": "543e715542ba55b701184819d296ab0bcb891cfe79296c54af5a1faa0922aaf6",
+    "independent_materialized_facts": 69,
+    "independent_source_files_checked": 196,
+    "original_matches_exact_decimal": 11,
+    "original_matches_binary64": 97,
+    "all_macro_masks_active": 140,
+    "source_bytes_preserved": true,
+    "reuse_without_inference": true,
+    "repeated_evaluation_rows": 0,
+    "new_mutation_tests": false,
+    "new_coverage_measurement": false
+  },
+  "preserved_download_failures": [
+    {
+      "symbol": "000301.SZ",
+      "timeout_seconds": 45,
+      "partial_bytes": 11534336,
+      "complete_retry_timeout_seconds": 180,
+      "automatic_retry": false,
+      "acquisition_failed_sha256": "42371e87c1c4fe7cbf53c3a5c142b69e4f0b605d6e7018db160dae5d2e8b0951",
+      "acquisition_complete_sha256": "182cae7735d62e1e7839115325ed5f55a7e0eb63717cc7ba355564a48f0fa609"
+    }
+  ],
+  "final_test_opened": false,
+  "candidate_mars_titan_trained": false,
+  "new_scientific_training_started": false,
+  "energy_measured": false,
+  "cpu_gpu_transfer_bytes_measured": false,
+  "limits": [
+    "La edición china reúne 37 empresas de 810 con cuatro fuentes potenciales. La cobertura sigue pendiente.",
+    "Se admiten tres conceptos CAS/CNY, sin equipararlos automáticamente a US-GAAP ni afirmar que el balance completo esté disponible.",
+    "Los anuales de este lote se publicaron en 2022. Por sí solos no aportan nuevas cuentas publicadas en 2023.",
+    "Los tres comparativos reexpresados de 2020 de 000301 no coinciden con los originales y quedan excluidos.",
+    "La selección procede de catálogos parciales y no acredita primera versión histórica ni representatividad.",
+    "La edición conjunta US+CN anterior conserva sus 25 empresas chinas. Esta ampliación verifica la edición CN de 37 empresas.",
+    "Las medidas corresponden a una ejecución funcional, sin comparación de rendimiento ni resultados predictivos."
+  ]
+}
