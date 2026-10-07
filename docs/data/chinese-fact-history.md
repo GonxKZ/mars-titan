@@ -81,6 +81,7 @@ No se midieron energía ni transferencias CPU/GPU.
 
 Pasan 175 pruebas y seis mutaciones dirigidas. La cobertura y la convención
 de CRAP constan en el recibo. La campaña activa se pausó de forma recuperable y
-se reanudó al terminar la comprobación. Las dos ediciones por activo todavía
-necesitan un corpus común y ventanas de validación, calibración y evaluación
-antes de iniciar la comparación china. El test final de 2024 permanece cerrado.
+se reanudó al terminar la comprobación. La [unión posterior](chinese-corpus.md)
+prepara el corpus común y diez ventanas de validación, calibración y evaluación
+para esos dos activos. Falta ampliar la cobertura para la comparación china
+completa. El test final de 2024 permanece cerrado.
