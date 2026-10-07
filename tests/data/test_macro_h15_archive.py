@@ -5,6 +5,7 @@ import importlib
 import json
 from datetime import UTC, datetime
 
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
@@ -618,3 +619,93 @@ def test_one_pdf_cannot_accredit_different_publication_dates(source):
     combined = combined_source(source, same_pdf=True)
     with pytest.raises(ValueError, match="PDF|publicación|edición"):
         module().prepare_h15_archive(combined, source["output"])
+
+
+def rehash_parquet(source):
+    path = source["output"] / "observations.parquet"
+    report_path = source["output"] / "report.json"
+    report = json.loads(report_path.read_text())
+    report["artifacts"]["observations.parquet"] = digest(path)
+    report["output_bytes"] = path.stat().st_size
+    dump(report_path, report)
+
+
+def test_recovery_bounds_dictionary_expansion_before_dense_read(source, monkeypatch):
+    prepare(source)
+    path = source["output"] / "observations.parquet"
+    table = pq.read_table(path)
+    column = pa.DictionaryArray.from_arrays(
+        pa.array([0] * table.num_rows, type=pa.int32()), pa.array(["x" * (2 * 1024**2)])
+    )
+    changed = table.set_column(table.schema.get_field_index("source_label"), "source_label", column)
+    pq.write_table(changed, path, compression="zstd", store_schema=False, write_statistics=False)
+    rehash_parquet(source)
+    original = module().pq.ParquetFile
+    with original(path) as file:
+        assert file.schema_arrow == table.schema
+        encoded = sum(
+            file.metadata.row_group(i).column(j).total_uncompressed_size
+            for i in range(file.num_row_groups)
+            for j in range(file.metadata.num_columns)
+        )
+        assert encoded < module()._MAX_PARQUET_BYTES
+    assert table.num_rows * len(column.dictionary[0].as_py()) > module()._MAX_PARQUET_BYTES
+    old = {p.name: (digest(p), p.stat().st_mtime_ns) for p in source["output"].iterdir()}
+
+    class BoundedRead:
+        def __init__(self, *args, **kwargs):
+            self.file = original(*args, **kwargs)
+
+        def __enter__(self):
+            self.file.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.file.__exit__(*args)
+
+        def __getattr__(self, name):
+            return getattr(self.file, name)
+
+        def read(self, *args, **kwargs):
+            raise AssertionError("No debe expandirse el archivo entero antes de acotarlo")
+
+        def iter_batches(self, *args, **kwargs):
+            for batch in self.file.iter_batches(*args, **kwargs):
+                assert batch.nbytes < module()._MAX_PARQUET_BYTES
+                if "source_label" in batch.schema.names:
+                    assert pa.types.is_dictionary(batch["source_label"].type)
+                yield batch
+
+    monkeypatch.setattr(module().pq, "ParquetFile", BoundedRead)
+    with pytest.raises(ValueError, match="presupuesto"):
+        prepare(source)
+    assert old == {p.name: (digest(p), p.stat().st_mtime_ns) for p in source["output"].iterdir()}
+
+
+@pytest.mark.parametrize("dictionary", [False, True])
+@pytest.mark.parametrize("value", ["otra etiqueta", None])
+def test_recovery_compares_text_and_nulls_exactly(source, dictionary, value):
+    prepare(source)
+    path = source["output"] / "observations.parquet"
+    table = pq.read_table(path)
+    labels = table["source_label"].to_pylist()
+    labels[-1] = value
+    changed = table.set_column(
+        table.schema.get_field_index("source_label"), "source_label", pa.array(labels)
+    )
+    pq.write_table(changed, path, use_dictionary=dictionary, row_group_size=13)
+    rehash_parquet(source)
+    with pytest.raises(ValueError, match="observaciones"):
+        prepare(source)
+
+
+@pytest.mark.parametrize("dictionary", [False, True])
+def test_recovery_accepts_equivalent_parquet_encodings(source, dictionary):
+    prepare(source)
+    path = source["output"] / "observations.parquet"
+    table = pq.read_table(path)
+    pq.write_table(table, path, use_dictionary=dictionary, row_group_size=13)
+    rehash_parquet(source)
+    before = path.read_bytes(), path.stat().st_mtime_ns
+    assert prepare(source)["reused"] is True
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == before

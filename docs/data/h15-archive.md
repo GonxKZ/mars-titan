@@ -53,6 +53,8 @@ La identidad enlaza fuentes, revisión, reglas, código y calendarios. La public
 
 El presupuesto permite hasta 2.048 ediciones, ocho MiB por HTML o PDF, dos MiB por manifiesto o revisión y 512 MiB acumulados de entradas. La lectura DOM limita elementos y celdas. La salida lógica y el Parquet que se recupera tienen un límite de 64 MiB. Se procesan las representaciones de cada documento por separado, sin mantener todos los originales en memoria.
 
+La recuperación comprueba primero el esquema, los recuentos y los tamaños declarados en el pie de Parquet. Después lee una columna cada vez, en lotes de hasta 512 filas, conservando los textos como diccionarios. Suma sus longitudes por índice antes de expandir cada lote y acumula el presupuesto lógico entre columnas. El tamaño almacenado del diccionario no se toma como tamaño de sus repeticiones. La comparación con la tabla esperada sigue siendo exacta, incluidos los nulos.
+
 ## Comprobación realizada
 
 La integración offline de las ediciones oficiales del [10 de enero](https://www.federalreserve.gov/releases/h15/20000110/h15.pdf) y [18 de enero](https://www.federalreserve.gov/releases/h15/20000118/h15.pdf) reproduce los sesenta decimales revisados y las ciento veinte disponibilidades de US y CN. La recuperación conserva hashes y fechas de modificación. El [recibo](../../reports/data/h15-document-edition-20261007.json) recoge medidas y calidad, con sus límites.

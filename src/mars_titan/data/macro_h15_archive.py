@@ -14,6 +14,7 @@ from pathlib import Path
 
 import bs4
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from .cohort_files import read_manifest, safe_destination
@@ -308,6 +309,48 @@ def _confirm(sources, code):
         raise ValueError("Cambió el código de la edición durante la preparación")
 
 
+def _check_parquet(path, table):
+    """Comparar por columnas sin expandir diccionarios fuera del presupuesto."""
+    with pq.ParquetFile(path) as file:
+        metadata = file.metadata
+        encoded = sum(
+            metadata.row_group(i).column(j).total_uncompressed_size
+            for i in range(metadata.num_row_groups)
+            for j in range(metadata.num_columns)
+        )
+        if (
+            file.schema_arrow != _SCHEMA
+            or metadata.num_rows != table.num_rows
+            or encoded > _MAX_PARQUET_BYTES
+        ):
+            raise ValueError("El Parquet confirmado supera su esquema o presupuesto")
+    strings = [field.name for field in _SCHEMA if pa.types.is_string(field.type)]
+    expanded = 0
+    with pq.ParquetFile(path, metadata=metadata, read_dictionary=strings) as file:
+        for field in _SCHEMA:
+            offset = 0
+            for batch in file.iter_batches(batch_size=512, columns=[field.name], use_threads=False):
+                column = batch.column(0)
+                if pa.types.is_dictionary(column.type):
+                    # Se suman longitudes por índice, sin repetir los textos del diccionario.
+                    lengths = pc.take(pc.binary_length(column.dictionary), column.indices)
+                    expanded += (
+                        (pc.sum(pc.cast(lengths, pa.int64())).as_py() or 0)
+                        + 4 * (len(column) + 1)
+                        + (len(column) + 7) // 8
+                    )
+                else:
+                    expanded += column.nbytes
+                if expanded > _MAX_PARQUET_BYTES:
+                    raise ValueError("La expansión del Parquet supera el presupuesto")
+                expected = table[field.name].slice(offset, batch.num_rows).combine_chunks()
+                if not column.cast(field.type).equals(expected):
+                    raise ValueError("El Parquet no coincide con las observaciones revisadas")
+                offset += batch.num_rows
+            if offset != table.num_rows:
+                raise ValueError("El Parquet no contiene todas las observaciones revisadas")
+
+
 def _recover(output, configuration, table, stable, sources, code):
     saved, config_hash = read_manifest(output / "configuration.json", _MAX_JSON_BYTES)
     report, report_hash = read_manifest(output / "report.json", _MAX_JSON_BYTES)
@@ -351,20 +394,7 @@ def _recover(output, configuration, table, stable, sources, code):
         raise ValueError("La copia del manifiesto no corresponde a la fuente")
     if not _same(report["output_bytes"], (output / "observations.parquet").stat().st_size):
         raise ValueError("El recibo no conserva el tamaño del Parquet")
-    with pq.ParquetFile(output / "observations.parquet") as file:
-        decoded = sum(
-            file.metadata.row_group(i).column(j).total_uncompressed_size
-            for i in range(file.num_row_groups)
-            for j in range(file.metadata.num_columns)
-        )
-        if (
-            file.schema_arrow != _SCHEMA
-            or file.metadata.num_rows != table.num_rows
-            or decoded > _MAX_PARQUET_BYTES
-        ):
-            raise ValueError("El Parquet confirmado supera su esquema o presupuesto")
-        if not file.read(use_threads=False).equals(table):
-            raise ValueError("El Parquet no coincide con las observaciones revisadas")
+    _check_parquet(output / "observations.parquet", table)
     sources.hashes[output / "configuration.json"] = config_hash
     sources.hashes[output / "report.json"] = report_hash
     _confirm(sources, code)
