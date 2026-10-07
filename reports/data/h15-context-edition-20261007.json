@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "scope": "retrospective_dated_document_archive_not_contemporaneous_capture",
+  "checked_at_utc": "2026-10-07T21:39:24.288614+00:00",
+  "period": {
+    "start": "2000-01-03",
+    "end": "2000-01-21"
+  },
+  "document_publications": [
+    "2000-01-10",
+    "2000-01-18"
+  ],
+  "official_documents": [
+    "https://www.federalreserve.gov/releases/h15/20000110/h15.pdf",
+    "https://www.federalreserve.gov/releases/h15/20000118/h15.pdf"
+  ],
+  "document_observations": 60,
+  "unique_events": 60,
+  "indicator_count": 140,
+  "markets": {
+    "US": {
+      "rows": 1960,
+      "decisions": 14,
+      "observed": 0,
+      "missing_reasons": {
+        "source_unavailable:not_in_h15_document_bundle": 1792,
+        "not_yet_available": 36,
+        "no_common_period": 36,
+        "missing_historical_metadata": 96
+      }
+    },
+    "CN": {
+      "rows": 1960,
+      "decisions": 14,
+      "observed": 0,
+      "missing_reasons": {
+        "source_unavailable:not_in_h15_document_bundle": 1792,
+        "not_yet_available": 36,
+        "no_common_period": 36,
+        "missing_historical_metadata": 96
+      }
+    }
+  },
+  "document_decimals_checked": 60,
+  "documentary_comparisons": {
+    "count": 40,
+    "admitted": false,
+    "independent_reference": "decimal.Decimal",
+    "absolute_tolerance": "1e-14",
+    "max_absolute_error": "6.4E-16"
+  },
+  "historical_metadata": {
+    "first_supported_date": "2005-06-28",
+    "usable_in_january_2000": false,
+    "sources": [
+      {
+        "indicator_id": "us_fed_funds",
+        "source_hash": "ecf1ebee29ae172caff04ec270101c628387076a804fec98be70ae9fcefa7cc3",
+        "intervals": [
+          {
+            "field": "native_unit",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Percent"
+          },
+          {
+            "field": "seasonal_adjustment",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Not Seasonally Adjusted"
+          }
+        ]
+      },
+      {
+        "indicator_id": "us_treasury_3m",
+        "source_hash": "5ed3a61fbe55f71782c95f38012dd667d2b00f52d91cb4eab7aa434488fe5e9f",
+        "intervals": [
+          {
+            "field": "native_unit",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Percent"
+          },
+          {
+            "field": "seasonal_adjustment",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Not Seasonally Adjusted"
+          }
+        ]
+      },
+      {
+        "indicator_id": "us_treasury_2y",
+        "source_hash": "195c58aba25f509d39593b792c8c44e10a17a8c62961b550b59e622ace800ca1",
+        "intervals": [
+          {
+            "field": "native_unit",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Percent"
+          },
+          {
+            "field": "seasonal_adjustment",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Not Seasonally Adjusted"
+          }
+        ]
+      },
+      {
+        "indicator_id": "us_treasury_5y",
+        "source_hash": "1607a87699f6d409a08a1b9a72a92da43045e7de235f9a89378f30d215a7bfc0",
+        "intervals": [
+          {
+            "field": "native_unit",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Percent"
+          },
+          {
+            "field": "seasonal_adjustment",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Not Seasonally Adjusted"
+          }
+        ]
+      },
+      {
+        "indicator_id": "us_treasury_10y",
+        "source_hash": "ecd5be73d194b77278c392090e7266d73d97cd675a957d360f9e0d9ba3216662",
+        "intervals": [
+          {
+            "field": "native_unit",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Percent"
+          },
+          {
+            "field": "seasonal_adjustment",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Not Seasonally Adjusted"
+          }
+        ]
+      },
+      {
+        "indicator_id": "us_treasury_30y",
+        "source_hash": "7202f06f9c9522b0f7472b686bf574ce08f8bb92b50f5490ebdc1b5eefe51572",
+        "intervals": [
+          {
+            "field": "native_unit",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Percent"
+          },
+          {
+            "field": "seasonal_adjustment",
+            "start": "2005-06-28",
+            "end": "9999-12-31",
+            "description": "Not Seasonally Adjusted"
+          }
+        ]
+      }
+    ]
+  },
+  "preserved": {
+    "document_inputs": true,
+    "prior_panels": true,
+    "recovery_without_rewrite": true
+  },
+  "validation": {
+    "targeted_tests": 19,
+    "mutations_detected": 6,
+    "mutations_attempted": 6,
+    "coverage_tool": "coverage.py 7.16.2",
+    "complexity_tool": "radon 6.0.1",
+    "convention": "Sentencias ejecutables de coverage.py por rango AST. Ramas registradas aparte.",
+    "statement_coverage": 0.8363636363636364,
+    "branch_coverage": 0.7282608695652173,
+    "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
+    "max_ccn": 31,
+    "max_crap": 33.656860680479284,
+    "related_macro_tests": 506,
+    "related_macro_tests_seconds": 41.07
+  },
+  "measurement": {
+    "initial_internal_seconds": 0.4751654129995586,
+    "recovery_internal_seconds": 0.43626704499911284,
+    "complete_verification_process_seconds": 1.86,
+    "peak_process_rss_bytes": 160358400,
+    "repetitions": 1,
+    "warmup": false,
+    "cpu_quota_percent": 200,
+    "memory_limit_bytes": 1073741824,
+    "observations": "Pasada funcional acotada, con creación, recuperación y contraste decimal. No es un benchmark de aceleración.",
+    "energy_measured": false,
+    "monetary_cost_measured": false
+  },
+  "artifacts": {
+    "events.json": "39c3078866de623ae966d59203a00ba82af43839c9d644ed4df8b5f23845469f",
+    "macro-US.parquet": "09e7b135661fa4c21b6ec193013aaaf97a2c9939f58e1ea6afc92753dede94f0",
+    "macro-CN.parquet": "eee73405924d71e4cd328289657318a719f667e07fcd2156a860baf6f9aae64a"
+  },
+  "code_sha256": "8d358894016ef3d1ee62372bc160cad0b1bbbdc1cbcd6f31a38c8ef60f1c2025",
+  "training_ready": false,
+  "admission_required": true,
+  "final_test_opened": false,
+  "limits": [
+    "Los metadatos de NSA para enero de 2000 no están acreditados por estas fuentes.",
+    "Los diferenciales documentales no son indicadores admitidos para aprendizaje.",
+    "No se han unido observaciones ALFRED ni materializado el corpus histórico completo.",
+    "Las pruebas no ejecutan modelos ni utilizan GPU. No se ha ejecutado la suite general de aprendizaje.",
+    "Cobertura y mutación describen las comprobaciones realizadas y no garantizan ausencia de errores."
+  ]
+}
