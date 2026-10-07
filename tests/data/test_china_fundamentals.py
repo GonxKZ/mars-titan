@@ -19,6 +19,25 @@ def materialize(*args, **kwargs):
     return module.materialize_chinese_facts(*args, **kwargs)
 
 
+def test_decimal_lexeme_needs_opt_in_and_keeps_primary_value_exact(inputs):
+    raw = inputs["source"] / "balance.jsonl"
+    raw.write_text(raw.read_text().replace("100000000", "1757124444202.9499511719"))
+    review = json.loads(inputs["review"].read_text())
+    review["source_file_sha256"] = sha256(raw)
+    review["results"][0]["evidence"].update(value="1757124444202.95", unit_multiplier="1")
+    inputs["review"].write_text(json.dumps(review))
+    with pytest.raises(ValueError, match="value_mismatch"):
+        materialize(**inputs)
+    review["results"][0]["evidence"]["numeric_match_policy"] = "binary64_roundtrip"
+    inputs["review"].write_text(json.dumps(review))
+    report = materialize(**inputs)
+    assert report["numeric_match_counts"] == {"binary64_roundtrip": 2, "exact_decimal": 1}
+    rows = pq.read_table(inputs["output"] / "fundamentals.parquet").to_pylist()
+    current = next(row for row in rows if row["period_end"] == "2022-12-31")
+    assert current["value_exact"] == "1757124444202.95"
+    assert materialize(**inputs)["reused"] is True
+
+
 @pytest.fixture
 def inputs(tmp_path):
     source = tmp_path / "original"

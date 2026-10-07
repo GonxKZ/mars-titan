@@ -5,7 +5,7 @@ import hashlib
 import math
 import tempfile
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -125,6 +125,7 @@ def _requests(review, notices, document_hash, publication_hash):
 
 def _read_facts(original, requests, clock, cutoff, relative):
     unique, found, count = {}, set(), 0
+    numeric_matches = Counter()
     with original.open("rb") as stream:
         for index, raw in enumerate(ijson.items(stream, "item", map_type=_Record), 1):
             if index > _MAX_RECORDS:
@@ -135,6 +136,7 @@ def _read_facts(original, requests, clock, cutoff, relative):
                 result = reconcile_chinese_fact(raw, evidence)
                 if result["status"] != "reconciled":
                     raise ValueError(f"Registro {index}: {result['status']}")
+                numeric_matches[result.get("numeric_match", {}).get("policy", "exact_decimal")] += 1
                 fact = result["fact"]
                 available = clock.date_available(fact["publication_date"])
                 if available.date() > cutoff:
@@ -195,7 +197,7 @@ def _read_facts(original, requests, clock, cutoff, relative):
         unique.values(),
         key=lambda r: (r["available_at"], r["period_end"], r["accession"], r["concept"]),
     )
-    return rows, count
+    return rows, count, dict(numeric_matches)
 
 
 def materialize_chinese_facts(
@@ -260,7 +262,7 @@ def materialize_chinese_facts(
         ijson=ijson.__version__,
         numeric_storage="float64_with_exact_decimal_provenance",
     )
-    rows, matched = _read_facts(
+    rows, matched, numeric_matches = _read_facts(
         original, requests, clock, date.fromisoformat(cutoff), content["source_file"]
     )
     expected = dict(
@@ -271,6 +273,7 @@ def materialize_chinese_facts(
         matched_records=matched,
         unique_source_records=len(requests),
         duplicate_matches=matched - len(rows),
+        numeric_match_counts=numeric_matches,
         final_test_opened=False,
         training_ready=False,
     )

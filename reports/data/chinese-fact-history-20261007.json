@@ -1,0 +1,411 @@
+{
+  "schema_version": 1,
+  "kind": "chinese_fact_history_verification",
+  "observed_at_utc": "2026-10-06T23:55:36.792861+00:00",
+  "source_sha256": {
+    "src/mars_titan/data/china_sources.py": "b73f7115e763ccf0523e6d26d17982e86f02feb098d7f700b2c4136d7f361eb8",
+    "src/mars_titan/data/china_fundamentals.py": "1e00544ee913a3a95445e71c5d3dc64d87f9c657ecc7216f1bc6f9f53f1d4933",
+    "src/mars_titan/data/china_preparation.py": "ab45e6ede5bcc4118b6f9523ed60a5641e5698d6ecc16a682e7cf3792dfe75c8",
+    "src/mars_titan/data/chinese_samples.py": "48a0cc3a8390a4457a7b17c2d8cbd4b3485e9c592f74657178111136a5e97568"
+  },
+  "encoder": {
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+    },
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizers_version": "0.23.2",
+    "tokenizer_class": "TokenizersBackend",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "code_sha256": "e45398cb8aa06997915fcd36e1ab11eb521599bf0f36a0128d11300b227fde5e",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "device": "cuda:0",
+    "precision": "float32",
+    "historical_simulation": false
+  },
+  "encoder_identity_matches_us": true,
+  "histories": [
+    {
+      "symbol": "000001.SZ",
+      "rows": 12,
+      "fundamentals_audit": {
+        "policy": "reviewed_chinese_fact_history_into_empty_preparation_v1",
+        "accepted": 12,
+        "matched_records": 24,
+        "unique_source_records": 6,
+        "duplicate_matches": 12
+      },
+      "candidate_count": 335,
+      "counts": {
+        "insufficient_history": 18,
+        "train": 104,
+        "target_crosses_partition_boundary": 1,
+        "validation": 211,
+        "target_after_cutoff": 1
+      },
+      "past_decisions_compared": 7871,
+      "prefix_unchanged_before": "2023-03-10T07:05:00+00:00",
+      "accounting_identities": 4,
+      "parquet_sha256": "a8d8b98f0b366765919783d93ae3708afeb7697fc8c94ea88b4c37b700d1bc1b",
+      "prepared_manifest_sha256": "14958faea8681fa45c06ad664431704b59af160e9f6c9cacb49391acb818c8ac",
+      "training_ready": false
+    },
+    {
+      "symbol": "000002.SZ",
+      "rows": 12,
+      "fundamentals_audit": {
+        "policy": "reviewed_chinese_fact_history_into_empty_preparation_v1",
+        "accepted": 12,
+        "matched_records": 15,
+        "unique_source_records": 4,
+        "duplicate_matches": 3
+      },
+      "candidate_count": 386,
+      "counts": {
+        "insufficient_history": 28,
+        "train": 116,
+        "target_crosses_partition_boundary": 1,
+        "validation": 240,
+        "target_after_cutoff": 1
+      },
+      "past_decisions_compared": 7887,
+      "prefix_unchanged_before": "2023-04-03T07:05:00+00:00",
+      "accounting_identities": 4,
+      "parquet_sha256": "6323cc2d4e74eb8a4ba6383efaaf67b701fbbea1389f526f693a2e8e71443d69",
+      "prepared_manifest_sha256": "4f4a23bbd753cd98507d9ac2b005d1b447b448c2a554360e80b303773ba69db3",
+      "training_ready": false
+    }
+  ],
+  "cuda_assets": [
+    {
+      "symbol": "000001.SZ",
+      "samples": 335,
+      "counts": {
+        "train": 104,
+        "validation": 211
+      },
+      "encoding_seconds": 6.587475398002425,
+      "reuse_seconds": 1.7220394739997573,
+      "news_calls": 528,
+      "chart_calls": 335,
+      "decimal50_to_float32_exact_rows": 335,
+      "previous_samples_unchanged": 169,
+      "samples_sha256": "141476b1e8d6fe484ca614ad9339fde171f6467ac88ffdbb131b18579ab4dd84",
+      "samples_bytes": 1584325,
+      "supervised_manifest_sha256": "2e08b2784d2f9066d0a6ce218cf0b6830bd41fedc86a17cb0aa8ea80dcfbd4b7",
+      "reuse_without_inference": true,
+      "training_ready": false
+    },
+    {
+      "symbol": "000002.SZ",
+      "samples": 386,
+      "counts": {
+        "train": 116,
+        "validation": 240
+      },
+      "encoding_seconds": 15.128152374003548,
+      "reuse_seconds": 1.7326727860199753,
+      "news_calls": 1569,
+      "chart_calls": 386,
+      "decimal50_to_float32_exact_rows": 386,
+      "previous_samples_unchanged": null,
+      "samples_sha256": "15bf03fab31c18207df1ede58803b459008dd953032f7ab625007fada21ca4e2",
+      "samples_bytes": 2058568,
+      "supervised_manifest_sha256": "75ccd5d0b80d6d26cf2edb721f441e429a5a580045003e336535fcaaedb7bb5d",
+      "reuse_without_inference": true,
+      "training_ready": false
+    }
+  ],
+  "samples": 721,
+  "labelled_samples": 671,
+  "resources": {
+    "process_seconds": 33.62,
+    "process_peak_rss_kib": 2035732,
+    "cuda_peak_allocated_bytes": 570390528,
+    "cuda_peak_reserved_bytes": 612368384,
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 595.91.07, 8188 MiB, 7369 MiB",
+    "cuda_memory_source": "PyTorch allocator counters",
+    "unmeasured": [
+      "Energía",
+      "Transferencias CPU/GPU",
+      "Tráfico físico total de almacenamiento"
+    ]
+  },
+  "cuda_window": {
+    "returncode": 0,
+    "restart_returncode": 0,
+    "elapsed_seconds": 41.29190108500188
+  },
+  "tests": {
+    "passed": 175,
+    "elapsed_seconds": 8.417812433996005,
+    "peak_rss_bytes": 178176000
+  },
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "CRAP por función = CCN² × (1 - cobertura de sentencias)³ + CCN. Sentencias ejecutables de coverage.py dentro del intervalo AST de la función, incluidas sus funciones anidadas. No se usan ramas en CRAP.",
+    "changed_function_detection": "Comparación AST de funciones de nivel superior frente a origin/develop, sin posiciones de línea.",
+    "modified_functions": [
+      {
+        "file": "src/mars_titan/data/china_sources.py",
+        "function": "_numeric_match",
+        "first_line": 45,
+        "last_line": 69,
+        "statements": 19,
+        "missing_lines": [
+          53
+        ],
+        "statement_coverage": 0.9473684210526316,
+        "ccn": 9,
+        "crap": 9.011809301647471
+      },
+      {
+        "file": "src/mars_titan/data/china_sources.py",
+        "function": "reconcile_chinese_fact",
+        "first_line": 118,
+        "last_line": 209,
+        "statements": 49,
+        "missing_lines": [
+          166
+        ],
+        "statement_coverage": 0.9795918367346939,
+        "ccn": 23,
+        "crap": 23.004496425808973
+      },
+      {
+        "file": "src/mars_titan/data/china_fundamentals.py",
+        "function": "_read_facts",
+        "first_line": 126,
+        "last_line": 200,
+        "statements": 35,
+        "missing_lines": [
+          132,
+          146
+        ],
+        "statement_coverage": 0.9428571428571428,
+        "ccn": 14,
+        "crap": 14.03657142857143
+      },
+      {
+        "file": "src/mars_titan/data/china_fundamentals.py",
+        "function": "materialize_chinese_facts",
+        "first_line": 203,
+        "last_line": 321,
+        "statements": 46,
+        "missing_lines": [
+          225
+        ],
+        "statement_coverage": 0.9782608695652174,
+        "ccn": 21,
+        "crap": 21.0045306977891
+      },
+      {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "function": "_facts",
+        "first_line": 76,
+        "last_line": 118,
+        "statements": 20,
+        "missing_lines": [
+          104,
+          107,
+          117
+        ],
+        "statement_coverage": 0.85,
+        "ccn": 20,
+        "crap": 21.35
+      },
+      {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "function": "_fact_editions",
+        "first_line": 121,
+        "last_line": 129,
+        "statements": 9,
+        "missing_lines": [
+          126
+        ],
+        "statement_coverage": 0.8888888888888888,
+        "ccn": 7,
+        "crap": 7.06721536351166
+      },
+      {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "function": "_fact_history",
+        "first_line": 132,
+        "last_line": 187,
+        "statements": 28,
+        "missing_lines": [
+          158
+        ],
+        "statement_coverage": 0.9642857142857143,
+        "ccn": 15,
+        "crap": 15.010249635568513
+      },
+      {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "function": "_derived_report",
+        "first_line": 264,
+        "last_line": 313,
+        "statements": 9,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 4,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "function": "derive_chinese_preparation",
+        "first_line": 316,
+        "last_line": 440,
+        "statements": 73,
+        "missing_lines": [
+          344,
+          363,
+          391
+        ],
+        "statement_coverage": 0.9589041095890412,
+        "ccn": 35,
+        "crap": 35.085021991326855
+      },
+      {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "function": "main",
+        "first_line": 443,
+        "last_line": 463,
+        "statements": 11,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 2,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "prepare_chinese_samples",
+        "first_line": 97,
+        "last_line": 306,
+        "statements": 67,
+        "missing_lines": [
+          153,
+          156,
+          161,
+          168,
+          171,
+          215,
+          265,
+          303
+        ],
+        "statement_coverage": 0.8805970149253731,
+        "ccn": 26,
+        "crap": 27.15077984991505
+      },
+      {
+        "file": "src/mars_titan/data/chinese_samples.py",
+        "function": "main",
+        "first_line": 309,
+        "last_line": 332,
+        "statements": 10,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 3,
+        "crap": 3.0
+      }
+    ],
+    "max_ccn_modified_functions": 35
+  },
+  "mutations": {
+    "chronology": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_fact_history.py::test_joint_history_preserves_publication_dates_and_shared_original_ordinals"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "before": "    matched = sum(len(row[\"source_records\"]) for row in rows)",
+        "after": "    for row in rows:\n        row[\"available_at\"] = rows[-1][\"available_at\"]\n    matched = sum(len(row[\"source_records\"]) for row in rows)",
+        "modified_source_sha256": "f2c87bbf09f6416e245c49d983f05a6b6dedeaca4552e0eda99bb0504febb4d8"
+      }
+    },
+    "conflict": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_fact_history.py::test_duplicate_or_conflicting_publication_is_rejected[False]",
+        "tests/data/test_chinese_fact_history.py::test_duplicate_or_conflicting_publication_is_rejected[True]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "before": "            if key in keys:\n",
+        "after": "            if False:\n",
+        "modified_source_sha256": "7b882d2b164a0c319418db6146455ab5fdc2b87d5a67ea9d02778fc6bc3aeca6"
+      }
+    },
+    "row_budget": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_chinese_fact_history.py::test_edition_and_total_row_budgets_are_checked_before_decoding"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_preparation.py",
+        "before": "if total_rows > _MAX_FACTS or total_bytes > _MAX_BYTES:",
+        "after": "if total_bytes > _MAX_BYTES:",
+        "modified_source_sha256": "7484e75c48aba86bd7ff5e3487b1ff9e03095bf1a7ff35806b7c2d19a4c9ec9f"
+      }
+    },
+    "same_float": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_sources.py::test_binary64_policy_cannot_hide_published_changes_or_excess_precision[1757124444202.9501953125-1757124444202.95]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_sources.py",
+        "before": "if not math.isfinite(binary) or float(original) != binary:",
+        "after": "if not math.isfinite(binary):",
+        "modified_source_sha256": "ab404e751ee2f3a635b40faa0ddb23e846287e0906d8dbd89d3b35f6936163f0"
+      }
+    },
+    "two_ulp_quantum": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_sources.py::test_binary64_policy_cannot_hide_published_changes_or_excess_precision[70368744177664.015625-70368744177664.02]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_sources.py",
+        "before": "if quantum < 2 * ulp or original.quantize(quantum, rounding=ROUND_HALF_EVEN) != value:",
+        "after": "if original.quantize(quantum, rounding=ROUND_HALF_EVEN) != value:",
+        "modified_source_sha256": "7c7a2dc1c57a1857db444cccb29712c2a78f13b40bba306f716be5e062998124"
+      }
+    },
+    "exact_default": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_sources.py::test_binary64_serialization_requires_an_explicit_review_policy"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_sources.py",
+        "before": "evidence.get(\"numeric_match_policy\", \"exact_decimal\")",
+        "after": "evidence.get(\"numeric_match_policy\", \"binary64_roundtrip\")",
+        "modified_source_sha256": "b5c1000c45184a9e022d879dfd90a4e80e5c37c657b5c0c82295c543d02154cc"
+      }
+    }
+  },
+  "exact_decimal_default": true,
+  "binary64_equivalence_requires_explicit_review": true,
+  "limitations": [
+    "Dos ediciones por activo, todavía sin corpus común ni ventanas de comparación.",
+    "Referencia decimal50 contrastada tras la transformación a float32. No equivale a almacenar los céntimos exactamente en float64.",
+    "No se midieron energía ni transferencias CPU/GPU.",
+    "Cobertura y mutación no demuestran ausencia de errores."
+  ],
+  "training_ready": false,
+  "final_test_opened": false
+}
