@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "kind": "issuer_announcement_catalogue_validation",
-  "observed_at_utc": "2026-10-07T16:24:44.097518+00:00",
+  "observed_at_utc": "2026-10-07T16:31:02.719106+00:00",
   "issue": "https://github.com/GonxKZ/mars-titan/issues/105",
   "base_commit": "bac61cddd885f6803b640574198fe22562a102ca",
   "source_sha256": "bdd163dde72a70e82d7ff336710840761f2aa2c48e09915dc29ba60bcdee3981",
@@ -253,7 +253,7 @@
     "Una respuesta completed concilia las páginas devueltas para un emisor, una categoría y una ventana. No acredita ausencia histórica absoluta ni la primera versión documental.",
     "La categoría anual no cubre todos los cierres trimestrales de la cola.",
     "Las capturas generales existentes y los intentos bloqueados permanecen en sus directorios y runtimes. No se reemplazan ni se reinterpretan.",
-    "La integración utiliza transporte inyectado con los cuerpos del piloto ya conservados. No añade consultas reales ni descargas de PDF.",
+    "La integración offline de 000066.SZ utiliza transporte inyectado con los cuerpos del piloto inicial. La comprobación real posterior de 000333.SZ y 600000.SS queda separada y comprende seis POST, sin descargar PDF.",
     "Cobertura, complejidad y mutaciones dirigidas son diagnósticos focales, no una demostración de ausencia general de errores."
   ],
   "gpu_used": false,
@@ -270,5 +270,199 @@
   "anchor_fix": {
     "previous_failure": "Se aceptaba el mismo ID con fecha, enlace PDF o título cambiados. La presencia del ID no acreditaba el anuncio conservado.",
     "behavior": "Los metadatos normalizados deben coincidir cada vez que aparece el ID, tanto al consumir como al recuperar. El texto equivalente tras retirar marcado HTML permanece válido."
+  },
+  "live_validation_two_issuers": {
+    "observed_at_utc": "2026-10-07T16:31:02.719106+00:00",
+    "runtime_commit": "2b12f0b74a3b6cb2a0e1210c8d0c85d2146393ae",
+    "source_sha256": "bdd163dde72a70e82d7ff336710840761f2aa2c48e09915dc29ba60bcdee3981",
+    "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+    "method": "POST",
+    "category": "category_ndbg_szsh",
+    "scope": "issuer_annual_category_only",
+    "publication_window": [
+      "2022-01-01",
+      "2023-12-31"
+    ],
+    "requests": 6,
+    "response_body_bytes": 14100,
+    "minimum_request_start_gap_seconds": 5.51529,
+    "request_start_gaps_seconds": [
+      112.51871,
+      6.727966,
+      5.51529,
+      6.222378,
+      5.824055
+    ],
+    "unique_announcements": 10,
+    "response_rows_including_repeated_windows": 20,
+    "issuers": [
+      {
+        "symbol": "000333.SZ",
+        "unique_announcements": 6,
+        "full_window_equals_disjoint_year_union": true,
+        "previous_unique_announcements_preserved": 3
+      },
+      {
+        "symbol": "600000.SS",
+        "unique_announcements": 4,
+        "full_window_equals_disjoint_year_union": true,
+        "previous_unique_announcements_preserved": 2
+      }
+    ],
+    "normalized_metadata_equal_between_windows": true,
+    "previous_normalized_metadata_unchanged": true,
+    "recovery": {
+      "outputs_checked": 6,
+      "network_requests": 0,
+      "bytes_unchanged": true,
+      "mtime_unchanged": true
+    },
+    "resumed_verification_process": {
+      "elapsed_seconds": 31.09375313197961,
+      "peak_rss_bytes": 221110272,
+      "new_post_requests": 5,
+      "previous_response_reused": 1,
+      "scope": "Proceso reanudado con cinco POST nuevos y una respuesta reutilizada. No mide el proceso inicial ni el tiempo total de las seis peticiones.",
+      "full_six_request_process_elapsed_seconds": null,
+      "speedup_measured": false
+    },
+    "initial_verifier_failure": {
+      "after_post_requests": 1,
+      "reason": "La igualdad del informe incluía requests_this_invocation, que cambia de uno a cero durante la recuperación.",
+      "correction": "Se ajustó el verificador para excluir ese contador de la igualdad y reanudar con la respuesta ya confirmada.",
+      "collector_changed": false,
+      "confirmed_response_requested_again": false,
+      "initial_script_and_failure_log_preserved": true
+    },
+    "responses": [
+      {
+        "symbol": "000333.SZ",
+        "publication_window": [
+          "2022-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:28:44.244553+00:00",
+        "status": 200,
+        "body_bytes": 3898,
+        "announcements": 6,
+        "totalAnnouncement": 6,
+        "totalRecordNum": 6,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "1b4b7e14b7f22744db50c00feb355df97226293a4f7de751ae2135a638425895",
+        "receipt_sha256": "267f3e9dc1e90f25f824a6280c978273f4bf9dbee529581ed2b3657132a4cda1",
+        "report_sha256": "b0f510a6230006e80fb5976dca0f168b104db27be1428349ec0e3be6d7b3ee09"
+      },
+      {
+        "symbol": "000333.SZ",
+        "publication_window": [
+          "2022-01-01",
+          "2022-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:36.763263+00:00",
+        "status": 200,
+        "body_bytes": 2033,
+        "announcements": 3,
+        "totalAnnouncement": 3,
+        "totalRecordNum": 3,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "8c563022de0b931eca56df6e46e1583356d35e18d8b8e71fd236381f8e6e2535",
+        "receipt_sha256": "500121e4ed38ef5f814c07d5b5ee573456b45c9b48bc7e8d337c1eb1d0a22c71",
+        "report_sha256": "c972ea57305c2ee10c588acc13526b0d16e7b9e7b8d646630163c7beb2d964f1"
+      },
+      {
+        "symbol": "000333.SZ",
+        "publication_window": [
+          "2023-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:43.491229+00:00",
+        "status": 200,
+        "body_bytes": 2027,
+        "announcements": 3,
+        "totalAnnouncement": 3,
+        "totalRecordNum": 3,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "607bcc309793a449a5169afe14ef6956523000ce063a80fe33606ac6201c95a6",
+        "receipt_sha256": "eab20d8446f588ed0e4903c588a290ea35d521f12c021827e447a61916703a0f",
+        "report_sha256": "cf2c883713ad1c9e464a50b66e944357f93dbc4a4633794933754f660ff83783"
+      },
+      {
+        "symbol": "600000.SS",
+        "publication_window": [
+          "2022-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:49.006519+00:00",
+        "status": 200,
+        "body_bytes": 2990,
+        "announcements": 4,
+        "totalAnnouncement": 4,
+        "totalRecordNum": 4,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "cb49a3ca7e3f8ebd59fe2919c15163b04405150ecbc846b061fce0db0996554c",
+        "receipt_sha256": "c69042365f7ed3c9a84b9e96c8c4934038a0a3926678efdcebd5fbba9fa06609",
+        "report_sha256": "3ba74f6e263fcdc01843b4b0018a944a560a657750de4d233c6cda9c19f6045c"
+      },
+      {
+        "symbol": "600000.SS",
+        "publication_window": [
+          "2022-01-01",
+          "2022-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:55.228897+00:00",
+        "status": 200,
+        "body_bytes": 1576,
+        "announcements": 2,
+        "totalAnnouncement": 2,
+        "totalRecordNum": 2,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "328225feb7c45c565ad42b3129fd534e867ca2ae4e6a602c7350d7111a24770b",
+        "receipt_sha256": "4313a703fe65e87af76f3125b28ebdff98a33a9a48148849c6ed86a4caff5659",
+        "report_sha256": "f9a9d0864d927e10d6e52c04f560bdd6155aed50080bf85e45f44f454a57aac7"
+      },
+      {
+        "symbol": "600000.SS",
+        "publication_window": [
+          "2023-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:31:01.052952+00:00",
+        "status": 200,
+        "body_bytes": 1576,
+        "announcements": 2,
+        "totalAnnouncement": 2,
+        "totalRecordNum": 2,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "f7cd24635f438867f2c3db4e75643cce78ca83dc9c2ab4ec41cd8acdcb673997",
+        "receipt_sha256": "7b8d569af142624fc554aeeb431f9f9f60f0509211368a5e7c192ff6f3ab7ed0",
+        "report_sha256": "624f2bd2f15310e49847681540fe04cd84ba9c28020cbc36690bbfa8c48e13b6"
+      }
+    ],
+    "evidence_sha256": {
+      "verification": "39d739fffdad8577c1a50abe7db33011e5c7396a11be4f8c90328539203b24dd",
+      "selection": "bfed2f128ce6143a40a31111225b2cd4f975e0e4af4f4b145a9837b3ab250124",
+      "initial_verifier": "29225843c588ffe35cc2ecd4d0607301ef3d277554f75d8e6e2a6ddcf2daa3cb",
+      "initial_failure_log": "097ae99f90dbc13f6241f91e2c544151746b424e42a51b5b5a2d3fcb0873f590",
+      "resumed_verifier": "89f75395e8367526828cf1f0528e37b687c320a60e5bb7c417f50a770fa4b0e6",
+      "resumed_log": "ad46f4276439ab97a95943470b42a5215fe1813671840ec867163b6bb7fbc7c3"
+    },
+    "issuer_history_complete": false,
+    "period_coverage_verified": false,
+    "financial_values_admitted": false,
+    "pdf_downloads": 0,
+    "gpu_used": false,
+    "final_test_opened": false
   }
 }

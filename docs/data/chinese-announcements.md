@@ -102,6 +102,36 @@ Esta prueba justifica la opción, sin demostrar estabilidad general ni una
 aceleración del catálogo completo. La integración de la opción reproduce esos
 cuerpos guardados sin red y recupera sus salidas sin repetir peticiones.
 
+### Comprobación real con dos emisores
+
+Una segunda comprobación ejecutó el colector congelado en `2b12f0b7` sobre un
+emisor de Shenzhen y otro de Shanghái. Las ventanas corresponden a fechas de
+publicación, dentro de la categoría anual de CNINFO.
+
+| Emisor | Publicaciones 2022–2023 | Solo 2022 | Solo 2023 | Anuncios anteriores con metadatos idénticos |
+| --- | ---: | ---: | ---: | ---: |
+| `000333.SZ` | 6 | 3 | 3 | 3 |
+| `600000.SS` | 4 | 2 | 2 | 2 |
+
+En ambos emisores, la unión de los años disjuntos coincidió con la consulta
+conjunta, incluidos sus metadatos normalizados. Las seis peticiones POST
+devolvieron HTTP 200 y 14.100 bytes de cuerpos JSON en total, sin emisores ajenos
+y con `hasMore=false`. La separación mínima entre inicios fue de 5,515290
+segundos. Las seis salidas se recuperaron sin red ni cambios de bytes o fechas
+de modificación. El recibo conserva las huellas de cada respuesta y de su
+comprobación.
+
+El verificador inicial falló después de la primera petición porque comparaba
+también `requests_this_invocation`, que pasa de uno a cero al recuperar. Se
+corrigió solo esa comprobación y su reanudación. La respuesta confirmada se
+reutilizó sin otra petición. Los 31,09 segundos registrados corresponden al
+proceso reanudado, con cinco POST nuevos, y no al tiempo total de las seis
+peticiones. No se midió una aceleración.
+
+Este segundo piloto queda separado del de `000066.SZ`. Sus diez anuncios únicos
+no acreditan una historia completa ni cobertura de todos los cierres. No se
+descargaron PDF ni se admitieron cifras financieras.
+
 ## Comprobaciones ejecutadas
 
 El [recibo real](../../reports/data/chinese-announcements-20261007.json)
