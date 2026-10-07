@@ -8,6 +8,7 @@ from pathlib import Path
 import ijson
 from ijson.common import ObjectBuilder
 
+from .input_policy import STRICT_INPUTS, masked_inputs
 from .temporal import MarketClock, aware
 
 
@@ -37,8 +38,14 @@ def _us_facts(path: Path):
 
 
 def read_fundamentals(
-    paths: list[Path], market: str, clock: MarketClock, *, max_unique_facts: int = 100_000
+    paths: list[Path],
+    market: str,
+    clock: MarketClock,
+    *,
+    max_unique_facts: int = 100_000,
+    input_policy: str = STRICT_INPUTS,
 ) -> tuple[list[dict], dict]:
+    masked = masked_inputs(input_policy)
     if type(max_unique_facts) is not int or max_unique_facts < 1:
         raise ValueError("El presupuesto de hechos contables debe ser positivo")
     unique, ambiguous = {}, set()
@@ -59,7 +66,8 @@ def read_fundamentals(
             filed = fact.get("filed")
             if not filed:
                 counts["missing_publication"] += 1
-                continue
+                if not masked:
+                    continue
             try:
                 if not isinstance(fact.get("accn"), str) or (
                     fact.get("start") is not None and not isinstance(fact["start"], str)
@@ -67,6 +75,11 @@ def read_fundamentals(
                     raise ValueError(
                         "El identificador o el inicio del periodo no son escalares válidos"
                     )
+                if masked and (
+                    isinstance(fact.get("val"), bool)
+                    or (filed is not None and not isinstance(filed, str))
+                ):
+                    raise ValueError("El valor o la publicación tienen un tipo no válido")
                 value = float(fact["val"])
                 if not math.isfinite(value) or not fact.get("accn"):
                     raise ValueError(
@@ -75,10 +88,14 @@ def read_fundamentals(
                 end = datetime.fromisoformat(fact["end"]).date()
                 if fact.get("start") and datetime.fromisoformat(fact["start"]).date() > end:
                     raise ValueError("El inicio del periodo es posterior a su cierre")
-                if end > datetime.fromisoformat(filed).date():
+                if filed and end > datetime.fromisoformat(filed).date():
                     raise ValueError("El periodo termina después de la fecha de presentación")
-                available = clock.date_available(filed)
-            except (ValueError, KeyError, TypeError):
+                available = clock.date_available(filed) if filed else None
+            except (ValueError, KeyError, TypeError) as error:
+                if masked:
+                    raise ValueError(
+                        "El hecho contable contiene un valor o una fecha no válidos"
+                    ) from error
                 counts["invalid"] += 1
                 continue
             key = (namespace, concept, unit, fact.get("start"), fact["end"], filed, fact["accn"])
@@ -105,7 +122,15 @@ def read_fundamentals(
                 unique[key] = row
     counts["ambiguous_facts"] = len(ambiguous)
     rows = [row for key, row in unique.items() if key not in ambiguous]
-    rows.sort(key=lambda r: (r["available_at"], r["period_end"], r["accession"], r["concept"]))
+    rows.sort(
+        key=lambda r: (
+            r["available_at"] is None,
+            r["available_at"],
+            r["period_end"],
+            r["accession"],
+            r["concept"],
+        )
+    )
     counts["accepted"] = len(rows)
     return rows, dict(counts)
 
