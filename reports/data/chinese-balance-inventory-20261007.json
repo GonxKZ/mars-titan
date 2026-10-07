@@ -1,0 +1,1042 @@
+{
+  "schema_version": 1,
+  "kind": "chinese_balance_inventory_verification",
+  "observed_at_utc": "2026-10-07T03:25:59.535987+00:00",
+  "source_sha256": {
+    "src/mars_titan/data/china_inventory.py": "7ad7922c0f84cf577beced4e4ddd7f694ce7adbb0609466c6d668a90cebf407c"
+  },
+  "test_sha256": "4c8bd88c28bc319a69147117123c820d04627de1b3aa1c658e12402aba58e29d",
+  "parent_manifest_sha256": "ca5562933fd5172bf44ce1f43c7a7d9dd24ab7e3dd351bb4dd019aebaa30ad0e",
+  "candidates": 892,
+  "counts": {
+    "inventoried": 810,
+    "not_prepared": 82
+  },
+  "period_jobs": 6480,
+  "periods": {
+    "2021-12-31": {
+      "assets_with_records": 810,
+      "records": 915,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 103
+    },
+    "2022-03-31": {
+      "assets_with_records": 810,
+      "records": 976,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 5
+    },
+    "2022-06-30": {
+      "assets_with_records": 810,
+      "records": 840,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 12
+    },
+    "2022-09-30": {
+      "assets_with_records": 810,
+      "records": 900,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 0
+    },
+    "2022-12-31": {
+      "assets_with_records": 810,
+      "records": 892,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 74
+    },
+    "2023-03-31": {
+      "assets_with_records": 810,
+      "records": 1129,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 316
+    },
+    "2023-06-30": {
+      "assets_with_records": 810,
+      "records": 850,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 3
+    },
+    "2023-09-30": {
+      "assets_with_records": 810,
+      "records": 895,
+      "exact_duplicate_records": 0,
+      "duplicates_without_update_flag": 6
+    }
+  },
+  "records": 7397,
+  "source_bytes": 279036609,
+  "artifacts": {
+    "inventory.json": {
+      "sha256": "4880849b6f718b3d84531cd1686f14d61834d6e62deb1265498c9cca08eeef20",
+      "bytes": 793536
+    },
+    "reconciliation-queue.parquet": {
+      "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+      "bytes": 634416
+    }
+  },
+  "period_field": "end_date",
+  "cutoff": "2023-12-31",
+  "numeric_metadata_policy": "Igualdad Decimal exacta, sin inferir unidad, moneda, publicación o norma contable.",
+  "benchmark": {
+    "repetitions": 3,
+    "warmup_runs": 0,
+    "order": "reference,candidate / candidate,reference / reference,candidate",
+    "warmup_note": "El perfil y las verificaciones previas ya habían leído las fuentes. No se vació la caché del sistema.",
+    "concurrent_workload": "Campaña comparativa activa y servicios ordinarios. Sin detener aplicaciones ajenas.",
+    "variants": {
+      "reference": "d53f4de2d0ad1712fed84422213b87e13c78789a0861fcbcd8ee7a35ccd343de",
+      "candidate": "7ad7922c0f84cf577beced4e4ddd7f694ce7adbb0609466c6d668a90cebf407c"
+    },
+    "records": [
+      {
+        "pair": 0,
+        "variant": "reference",
+        "process_seconds": 14.959707602014532,
+        "internal_seconds": 14.163772708008764,
+        "peak_rss_kib": 233784,
+        "artifacts": {
+          "inventory.json": {
+            "sha256": "aa9d16bc9a35de9371934f87a31580d6dd3d1e8e5d5931245022d3265484034a",
+            "bytes": 19790766
+          },
+          "reconciliation-queue.parquet": {
+            "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+            "bytes": 634416
+          }
+        }
+      },
+      {
+        "pair": 0,
+        "variant": "candidate",
+        "process_seconds": 13.435736679995898,
+        "internal_seconds": 12.66347116799443,
+        "peak_rss_kib": 219944,
+        "artifacts": {
+          "inventory.json": {
+            "sha256": "4880849b6f718b3d84531cd1686f14d61834d6e62deb1265498c9cca08eeef20",
+            "bytes": 793536
+          },
+          "reconciliation-queue.parquet": {
+            "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+            "bytes": 634416
+          }
+        }
+      },
+      {
+        "pair": 1,
+        "variant": "candidate",
+        "process_seconds": 13.460604877996957,
+        "internal_seconds": 12.688706815009937,
+        "peak_rss_kib": 219556,
+        "artifacts": {
+          "inventory.json": {
+            "sha256": "4880849b6f718b3d84531cd1686f14d61834d6e62deb1265498c9cca08eeef20",
+            "bytes": 793536
+          },
+          "reconciliation-queue.parquet": {
+            "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+            "bytes": 634416
+          }
+        }
+      },
+      {
+        "pair": 1,
+        "variant": "reference",
+        "process_seconds": 15.155906703002984,
+        "internal_seconds": 14.364680027996656,
+        "peak_rss_kib": 233520,
+        "artifacts": {
+          "inventory.json": {
+            "sha256": "aa9d16bc9a35de9371934f87a31580d6dd3d1e8e5d5931245022d3265484034a",
+            "bytes": 19790766
+          },
+          "reconciliation-queue.parquet": {
+            "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+            "bytes": 634416
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "variant": "reference",
+        "process_seconds": 15.510342654015403,
+        "internal_seconds": 14.718237862980459,
+        "peak_rss_kib": 233644,
+        "artifacts": {
+          "inventory.json": {
+            "sha256": "aa9d16bc9a35de9371934f87a31580d6dd3d1e8e5d5931245022d3265484034a",
+            "bytes": 19790766
+          },
+          "reconciliation-queue.parquet": {
+            "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+            "bytes": 634416
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "variant": "candidate",
+        "process_seconds": 13.386915985000087,
+        "internal_seconds": 12.623031834984431,
+        "peak_rss_kib": 219624,
+        "artifacts": {
+          "inventory.json": {
+            "sha256": "4880849b6f718b3d84531cd1686f14d61834d6e62deb1265498c9cca08eeef20",
+            "bytes": 793536
+          },
+          "reconciliation-queue.parquet": {
+            "sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+            "bytes": 634416
+          }
+        }
+      }
+    ],
+    "summary": {
+      "reference": {
+        "process_seconds": [
+          14.959707602014532,
+          15.155906703002984,
+          15.510342654015403
+        ],
+        "median_process_seconds": 15.155906703002984,
+        "peak_rss_kib": [
+          233784,
+          233520,
+          233644
+        ],
+        "json_bytes": [
+          19790766,
+          19790766,
+          19790766
+        ]
+      },
+      "candidate": {
+        "process_seconds": [
+          13.435736679995898,
+          13.460604877996957,
+          13.386915985000087
+        ],
+        "median_process_seconds": 13.435736679995898,
+        "peak_rss_kib": [
+          219944,
+          219556,
+          219624
+        ],
+        "json_bytes": [
+          793536,
+          793536,
+          793536
+        ]
+      }
+    },
+    "parquet_byte_identical": true,
+    "parquet_sha256": "62c5d6d9bf35e8c82141043916c07ba5deacc627fb532d1e7d28fdc972e392ce",
+    "energy_measured": false
+  },
+  "measured_time_reduction_percent": 11.349832489178969,
+  "measured_speedup": 1.128029453388157,
+  "json_reduction_percent": 95.99037247977162,
+  "profile_before": {
+    "profile_total_seconds": 34.96108112800004,
+    "functions": [
+      {
+        "function": "<module>",
+        "line": 1,
+        "calls": 1,
+        "self_seconds": 0.00012051700000000001,
+        "cumulative_seconds": 35.160251089
+      },
+      {
+        "function": "main",
+        "line": 596,
+        "calls": 1,
+        "self_seconds": 0.023637427000000003,
+        "cumulative_seconds": 34.704164879000004
+      },
+      {
+        "function": "inventory_chinese_balances",
+        "line": 436,
+        "calls": 1,
+        "self_seconds": 0.109370033,
+        "cumulative_seconds": 34.6793952
+      },
+      {
+        "function": "_asset",
+        "line": 386,
+        "calls": 810,
+        "self_seconds": 0.047528246,
+        "cumulative_seconds": 32.156012303000004
+      },
+      {
+        "function": "_metadata",
+        "line": 222,
+        "calls": 810,
+        "self_seconds": 12.841105752,
+        "cumulative_seconds": 19.263587541
+      },
+      {
+        "function": "_period_summary",
+        "line": 310,
+        "calls": 6480,
+        "self_seconds": 0.7909612800000001,
+        "cumulative_seconds": 10.087116373
+      },
+      {
+        "function": "_fingerprint",
+        "line": 283,
+        "calls": 410799,
+        "self_seconds": 3.235789971,
+        "cumulative_seconds": 8.906535114
+      },
+      {
+        "function": "dumps",
+        "line": 183,
+        "calls": 417282,
+        "self_seconds": 0.335477984,
+        "cumulative_seconds": 1.936952019
+      },
+      {
+        "function": "_selected_records",
+        "line": 263,
+        "calls": 8207,
+        "self_seconds": 1.2070714740000001,
+        "cumulative_seconds": 1.8374770440000001
+      },
+      {
+        "function": "dump",
+        "line": 120,
+        "calls": 2,
+        "self_seconds": 0.22653488200000002,
+        "cumulative_seconds": 1.751142763
+      },
+      {
+        "function": "iterencode",
+        "line": 205,
+        "calls": 417284,
+        "self_seconds": 1.1150488870000002,
+        "cumulative_seconds": 1.115053887
+      },
+      {
+        "function": "_signature",
+        "line": 113,
+        "calls": 5684,
+        "self_seconds": 0.0064653,
+        "cumulative_seconds": 0.62046402
+      },
+      {
+        "function": "_verify",
+        "line": 132,
+        "calls": 1,
+        "self_seconds": 0.003153276,
+        "cumulative_seconds": 0.545298441
+      },
+      {
+        "function": "_read",
+        "line": 121,
+        "calls": 812,
+        "self_seconds": 0.009136299,
+        "cumulative_seconds": 0.34862195900000004
+      },
+      {
+        "function": "_symbol",
+        "line": 140,
+        "calls": 15686,
+        "self_seconds": 0.013662780000000001,
+        "cumulative_seconds": 0.049207351
+      },
+      {
+        "function": "<genexpr>",
+        "line": 375,
+        "calls": 7037,
+        "self_seconds": 0.029367854000000002,
+        "cumulative_seconds": 0.047690722000000005
+      },
+      {
+        "function": "_census",
+        "line": 160,
+        "calls": 1,
+        "self_seconds": 0.00105864,
+        "cumulative_seconds": 0.0036139680000000004
+      },
+      {
+        "function": "<genexpr>",
+        "line": 561,
+        "calls": 6488,
+        "self_seconds": 0.0029446060000000002,
+        "cumulative_seconds": 0.0029446060000000002
+      },
+      {
+        "function": "<genexpr>",
+        "line": 564,
+        "calls": 6488,
+        "self_seconds": 0.002287584,
+        "cumulative_seconds": 0.002287584
+      },
+      {
+        "function": "<genexpr>",
+        "line": 568,
+        "calls": 6488,
+        "self_seconds": 0.002178321,
+        "cumulative_seconds": 0.002178321
+      },
+      {
+        "function": "<genexpr>",
+        "line": 565,
+        "calls": 6488,
+        "self_seconds": 0.002142474,
+        "cumulative_seconds": 0.002142474
+      },
+      {
+        "function": "_sync_directory",
+        "line": 428,
+        "calls": 2,
+        "self_seconds": 7.5040000000000005e-06,
+        "cumulative_seconds": 0.0013523370000000001
+      },
+      {
+        "function": "<genexpr>",
+        "line": 499,
+        "calls": 7372,
+        "self_seconds": 0.001214629,
+        "cumulative_seconds": 0.001214629
+      },
+      {
+        "function": "<genexpr>",
+        "line": 558,
+        "calls": 893,
+        "self_seconds": 0.000225865,
+        "cumulative_seconds": 0.00048026000000000004
+      },
+      {
+        "function": "<genexpr>",
+        "line": 513,
+        "calls": 893,
+        "self_seconds": 0.00028727,
+        "cumulative_seconds": 0.00028727
+      },
+      {
+        "function": "<genexpr>",
+        "line": 136,
+        "calls": 7,
+        "self_seconds": 1.3358000000000002e-05,
+        "cumulative_seconds": 0.000254783
+      },
+      {
+        "function": "_periods",
+        "line": 147,
+        "calls": 1,
+        "self_seconds": 1.7122e-05,
+        "cumulative_seconds": 0.00016124500000000002
+      },
+      {
+        "function": "<genexpr>",
+        "line": 516,
+        "calls": 893,
+        "self_seconds": 9.588100000000001e-05,
+        "cumulative_seconds": 9.588100000000001e-05
+      },
+      {
+        "function": "<genexpr>",
+        "line": 199,
+        "calls": 328,
+        "self_seconds": 5.0010000000000004e-05,
+        "cumulative_seconds": 6.4139e-05
+      },
+      {
+        "function": "<genexpr>",
+        "line": 583,
+        "calls": 3,
+        "self_seconds": 1.8140000000000001e-06,
+        "cumulative_seconds": 1.8140000000000001e-06
+      }
+    ]
+  },
+  "profile_after": {
+    "profile_total_seconds": 30.03178382599996,
+    "functions": [
+      {
+        "function": "<module>",
+        "line": 1,
+        "calls": 1,
+        "self_seconds": 0.000125777,
+        "cumulative_seconds": 30.159405947000003
+      },
+      {
+        "function": "main",
+        "line": 624,
+        "calls": 1,
+        "self_seconds": 0.019061815000000003,
+        "cumulative_seconds": 29.728266198000004
+      },
+      {
+        "function": "inventory_chinese_balances",
+        "line": 454,
+        "calls": 1,
+        "self_seconds": 0.11127102000000001,
+        "cumulative_seconds": 29.708072442000002
+      },
+      {
+        "function": "_asset",
+        "line": 404,
+        "calls": 810,
+        "self_seconds": 0.043664832,
+        "cumulative_seconds": 28.916125719
+      },
+      {
+        "function": "_metadata",
+        "line": 231,
+        "calls": 810,
+        "self_seconds": 13.145402472,
+        "cumulative_seconds": 19.83375139
+      },
+      {
+        "function": "_period_summary",
+        "line": 327,
+        "calls": 6480,
+        "self_seconds": 0.638031823,
+        "cumulative_seconds": 6.2160143990000005
+      },
+      {
+        "function": "_fingerprint",
+        "line": 300,
+        "calls": 14794,
+        "self_seconds": 1.9787823450000002,
+        "cumulative_seconds": 5.0646651600000006
+      },
+      {
+        "function": "_selected_records",
+        "line": 280,
+        "calls": 8207,
+        "self_seconds": 1.283782446,
+        "cumulative_seconds": 1.9123857960000001
+      },
+      {
+        "function": "_signature",
+        "line": 113,
+        "calls": 5684,
+        "self_seconds": 0.006455822000000001,
+        "cumulative_seconds": 0.620218449
+      },
+      {
+        "function": "_verify",
+        "line": 132,
+        "calls": 1,
+        "self_seconds": 0.0030919380000000002,
+        "cumulative_seconds": 0.5305336070000001
+      },
+      {
+        "function": "_read",
+        "line": 121,
+        "calls": 812,
+        "self_seconds": 0.009300954,
+        "cumulative_seconds": 0.34429236500000004
+      },
+      {
+        "function": "_source_day",
+        "line": 222,
+        "calls": 73088,
+        "self_seconds": 0.07646747400000001,
+        "cumulative_seconds": 0.214926362
+      },
+      {
+        "function": "<genexpr>",
+        "line": 393,
+        "calls": 7037,
+        "self_seconds": 0.028957605,
+        "cumulative_seconds": 0.047161939
+      },
+      {
+        "function": "_symbol",
+        "line": 140,
+        "calls": 15686,
+        "self_seconds": 0.012476323000000001,
+        "cumulative_seconds": 0.043343238000000006
+      },
+      {
+        "function": "_census",
+        "line": 160,
+        "calls": 1,
+        "self_seconds": 0.0008712980000000001,
+        "cumulative_seconds": 0.003250541
+      },
+      {
+        "function": "<genexpr>",
+        "line": 589,
+        "calls": 6488,
+        "self_seconds": 0.003157932,
+        "cumulative_seconds": 0.003157932
+      },
+      {
+        "function": "<genexpr>",
+        "line": 596,
+        "calls": 6488,
+        "self_seconds": 0.002267561,
+        "cumulative_seconds": 0.002267561
+      },
+      {
+        "function": "<genexpr>",
+        "line": 592,
+        "calls": 6488,
+        "self_seconds": 0.002254012,
+        "cumulative_seconds": 0.002254012
+      },
+      {
+        "function": "<genexpr>",
+        "line": 593,
+        "calls": 6488,
+        "self_seconds": 0.0022292090000000002,
+        "cumulative_seconds": 0.0022292090000000002
+      },
+      {
+        "function": "_sync_directory",
+        "line": 446,
+        "calls": 2,
+        "self_seconds": 7.904000000000001e-06,
+        "cumulative_seconds": 0.001762749
+      },
+      {
+        "function": "<genexpr>",
+        "line": 518,
+        "calls": 7372,
+        "self_seconds": 0.0011341720000000001,
+        "cumulative_seconds": 0.0011341720000000001
+      },
+      {
+        "function": "<genexpr>",
+        "line": 586,
+        "calls": 893,
+        "self_seconds": 0.000247955,
+        "cumulative_seconds": 0.000503016
+      },
+      {
+        "function": "<genexpr>",
+        "line": 538,
+        "calls": 893,
+        "self_seconds": 0.000276401,
+        "cumulative_seconds": 0.000276401
+      },
+      {
+        "function": "<genexpr>",
+        "line": 136,
+        "calls": 7,
+        "self_seconds": 1.4169000000000001e-05,
+        "cumulative_seconds": 0.000260292
+      },
+      {
+        "function": "_periods",
+        "line": 147,
+        "calls": 1,
+        "self_seconds": 1.5723000000000002e-05,
+        "cumulative_seconds": 0.00013084700000000002
+      },
+      {
+        "function": "<genexpr>",
+        "line": 541,
+        "calls": 893,
+        "self_seconds": 7.318e-05,
+        "cumulative_seconds": 7.318e-05
+      },
+      {
+        "function": "<genexpr>",
+        "line": 199,
+        "calls": 328,
+        "self_seconds": 4.9609000000000006e-05,
+        "cumulative_seconds": 6.4056e-05
+      },
+      {
+        "function": "<genexpr>",
+        "line": 611,
+        "calls": 3,
+        "self_seconds": 1.371e-06,
+        "cumulative_seconds": 1.371e-06
+      }
+    ]
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "logical_cpus": 16,
+    "cpu_quota": "100%",
+    "memory_max_bytes": 1073741824,
+    "gpu_used": false
+  },
+  "versions": {
+    "python": "3.12.14",
+    "mpdecimal": "4.0.0",
+    "ijson": "3.5.1",
+    "pyarrow": "25.0.1"
+  },
+  "tests": {
+    "passed": 73,
+    "errors": [],
+    "failed": [],
+    "skipped": []
+  },
+  "coverage": {
+    "tool": "coverage.py 7.16.2",
+    "branch_enabled": true,
+    "summary": {
+      "covered_lines": 309,
+      "num_statements": 324,
+      "percent_covered": 93.62139917695474,
+      "percent_covered_display": "94",
+      "missing_lines": 15,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.37037037037037,
+      "percent_statements_covered_display": "95",
+      "num_branches": 162,
+      "num_partial_branches": 16,
+      "covered_branches": 146,
+      "missing_branches": 16,
+      "percent_branches_covered": 90.12345679012346,
+      "percent_branches_covered_display": "90"
+    }
+  },
+  "complexity": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "CRAP por función = CCN² × (1 - cobertura de sentencias)³ + CCN. Sentencias ejecutables de coverage.py dentro del intervalo AST de la función, incluidas sus funciones anidadas. No se usan ramas en CRAP.",
+    "changed_function_detection": "Comparación AST de funciones de nivel superior frente a origin/develop, sin posiciones de línea.",
+    "modified_functions": [
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_signature",
+        "first_line": 113,
+        "last_line": 118,
+        "statements": 6,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 3,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_read",
+        "first_line": 121,
+        "last_line": 129,
+        "statements": 9,
+        "missing_lines": [
+          126,
+          128
+        ],
+        "statement_coverage": 0.7777777777777778,
+        "ccn": 3,
+        "crap": 3.0987654320987654
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_verify",
+        "first_line": 132,
+        "last_line": 137,
+        "statements": 6,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 7,
+        "crap": 7.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_symbol",
+        "first_line": 140,
+        "last_line": 144,
+        "statements": 4,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 4,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_periods",
+        "first_line": 147,
+        "last_line": 157,
+        "statements": 11,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 8,
+        "crap": 8.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_census",
+        "first_line": 160,
+        "last_line": 219,
+        "statements": 32,
+        "missing_lines": [
+          203,
+          213,
+          217
+        ],
+        "statement_coverage": 0.90625,
+        "ccn": 34,
+        "crap": 34.9525146484375
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_source_day",
+        "first_line": 222,
+        "last_line": 228,
+        "statements": 7,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 5,
+        "crap": 5.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_metadata",
+        "first_line": 231,
+        "last_line": 277,
+        "statements": 43,
+        "missing_lines": [
+          250,
+          255,
+          260
+        ],
+        "statement_coverage": 0.9302325581395349,
+        "ccn": 29,
+        "crap": 29.28559749456023
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_selected_records",
+        "first_line": 280,
+        "last_line": 297,
+        "statements": 17,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 12,
+        "crap": 12.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_fingerprint",
+        "first_line": 300,
+        "last_line": 324,
+        "statements": 16,
+        "missing_lines": [
+          306
+        ],
+        "statement_coverage": 0.9375,
+        "ccn": 9,
+        "crap": 9.019775390625
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_period_summary",
+        "first_line": 327,
+        "last_line": 401,
+        "statements": 35,
+        "missing_lines": [
+          369
+        ],
+        "statement_coverage": 0.9714285714285714,
+        "ccn": 36,
+        "crap": 36.030227405247814
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_asset",
+        "first_line": 404,
+        "last_line": 443,
+        "statements": 20,
+        "missing_lines": [
+          420,
+          423
+        ],
+        "statement_coverage": 0.9,
+        "ccn": 16,
+        "crap": 16.256
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "_sync_directory",
+        "first_line": 446,
+        "last_line": 451,
+        "statements": 5,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 1,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "inventory_chinese_balances",
+        "first_line": 454,
+        "last_line": 621,
+        "statements": 70,
+        "missing_lines": [
+          568,
+          612
+        ],
+        "statement_coverage": 0.9714285714285714,
+        "ccn": 35,
+        "crap": 35.02857142857143
+      },
+      {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "function": "main",
+        "first_line": 624,
+        "last_line": 633,
+        "statements": 8,
+        "missing_lines": [],
+        "statement_coverage": 1.0,
+        "ccn": 2,
+        "crap": 2.0
+      }
+    ],
+    "max_ccn_modified_functions": 36
+  },
+  "mutations": {
+    "decimal_precision": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_inventory_keeps_all_candidates_original_locators_and_decimal_duplicates"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "number = Decimal(value)",
+        "after": "number = Decimal(str(float(value)))",
+        "modified_source_sha256": "c17b22c1390dda28590b2c9cf40e45b22c6f4de306234f66ee82465395b0999c"
+      }
+    },
+    "future_publication": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_only_requested_closes_before_declared_2024_publication_are_materialized"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "allowed = {i for i, (_, reserved) in selected.items() if not reserved}",
+        "after": "allowed = set(selected)",
+        "modified_source_sha256": "3aa48e4cd54cb63d7265e0a0751e58e34033c09faa4ae2a951e2feaf0c76f648"
+      }
+    },
+    "manifest_hash": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_wrong_source_hash_is_not_treated_as_an_inventoried_asset[child]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "if digest != item.get(\"manifest_sha256\"):",
+        "after": "if False:",
+        "modified_source_sha256": "f81212524213235583198c88aa9343db415e5e98e3155d71518172db38a4dbf0"
+      }
+    },
+    "source_recheck": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_source_changed_during_staging_prevents_publication[census]",
+        "tests/data/test_china_inventory.py::test_source_changed_during_staging_prevents_publication[child]",
+        "tests/data/test_china_inventory.py::test_source_changed_during_staging_prevents_publication[balance]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "_verify({**sources, **staged}, code)",
+        "after": "_verify(staged, code)",
+        "modified_source_sha256": "ff9c542735e8e235d7a361f63eda0a45161c19a8859eecd137cc12ec51b19e04"
+      }
+    },
+    "record_budget": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_record_limit_reports_asset_failure_even_when_requested_closes_are_absent"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "if count > _MAX_RECORDS:",
+        "after": "if False:",
+        "modified_source_sha256": "e5dbc76ac06cca539f4925a4b963b7c5112ed4ee9ffa0bec3fb6962577352c19"
+      }
+    },
+    "receipt_scalar_types": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_altered_staged_artifacts_are_not_published[report.json]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "if json.dumps(published, sort_keys=True) != json.dumps(report, sort_keys=True):",
+        "after": "if published != report:",
+        "modified_source_sha256": "1b068c74932fc52685c950269a2bc4dd524ed282322a257d2a8a32a9050adcac"
+      }
+    },
+    "malformed_close": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_malformed_close_cannot_be_normalized_into_a_requested_period"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "text = str(value).strip()",
+        "after": "text = str(value).strip().replace(\"--\", \"-\")",
+        "modified_source_sha256": "3ccabfcba351380739dded726dc673dbec2862430dfd48706878f3e0228aefbc"
+      }
+    },
+    "uninterpretable_publication": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_future_or_uninterpretable_publication_is_never_materialized[unknown-declared_publication_uninterpretable_not_materialized]",
+        "tests/data/test_china_inventory.py::test_future_or_uninterpretable_publication_is_never_materialized[1704067200000-declared_publication_uninterpretable_not_materialized]",
+        "tests/data/test_china_inventory.py::test_future_or_uninterpretable_publication_is_never_materialized[False-declared_publication_uninterpretable_not_materialized]",
+        "tests/data/test_china_inventory.py::test_future_or_uninterpretable_publication_is_never_materialized[2023-02-30-declared_publication_uninterpretable_not_materialized]",
+        "tests/data/test_china_inventory.py::test_future_or_uninterpretable_publication_is_never_materialized[2023/03/31-declared_publication_uninterpretable_not_materialized]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "reserved.add(\"declared_publication_uninterpretable_not_materialized\")",
+        "after": "pass",
+        "modified_source_sha256": "041508b469cb520519a1cefe9f24c3712e77f562cf9344b142e01bd5f9b7706e"
+      }
+    },
+    "decimal_distinct_values": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_distinct_values_use_exact_decimal_equality_and_only_hash_complete_records"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "fields.setdefault(field, set()).add(Decimal(value))",
+        "after": "fields.setdefault(field, set()).add(float(value))",
+        "modified_source_sha256": "ff79046e7d6c93d087b4c914ba83b93b786411157a4407bf312b6763ada3c7c6"
+      }
+    },
+    "queue_ranges": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_inventory_links_contiguous_exhaustive_queue_ranges_without_period_details[False]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "dict(start=start, stop=len(jobs))",
+        "after": "dict(start=0, stop=len(jobs))",
+        "modified_source_sha256": "dc594a43f74b0941584012078e039ccc566d720cf62380e2279d2e85115a6715"
+      }
+    },
+    "duplicate_json_details": {
+      "detected": true,
+      "failed_tests": [
+        "tests/data/test_china_inventory.py::test_inventory_links_contiguous_exhaustive_queue_ranges_without_period_details[False]",
+        "tests/data/test_china_inventory.py::test_inventory_links_contiguous_exhaustive_queue_ranges_without_period_details[True]"
+      ],
+      "source": {
+        "file": "src/mars_titan/data/china_inventory.py",
+        "before": "summaries = row.pop(\"periods\")",
+        "after": "summaries = row[\"periods\"]",
+        "modified_source_sha256": "4c8360d9c49ad241111831118d9aa201311e5410c8a4ed0b123040a73077d164"
+      }
+    }
+  },
+  "quality_receipt_sha256": "050033108d6c7249cce52fc0b9a6dbaba47eb4831c74196e1fc2d604719a19f8",
+  "review_receipt_sha256": "9392da9f1c1f51312ce47786f7b9342ff0c014f93f451f3b9d8021923c68f6ec",
+  "temporal_admission_granted": false,
+  "training_ready": false,
+  "final_test_opened": false,
+  "limits": [
+    "El inventario no verifica la procedencia temporal ni el contexto contable de los importes.",
+    "La mejora medida corresponde al inventario de810 activos y ocho cierres, no al entrenamiento.",
+    "Tres parejas con fuentes previamente leídas y campaña concurrente. No se midieron energía ni bytes físicos de almacenamiento.",
+    "Las variantes se comparan sobre fuentes reales con fechas válidas. La referencia previa conserva defectos de selección detectados en pruebas adversas."
+  ]
+}
