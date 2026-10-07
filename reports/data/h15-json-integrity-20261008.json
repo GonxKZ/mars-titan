@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-07T22:14:10.324990+00:00",
+  "previous_code_commit": "5487b40ad29d759c9b7e492952a12933a6a371f0",
+  "code_sha256": "bc9f5ea97f41217ea302ab89fe9746bedf8fad15319465e8a6329982f056b937",
+  "canonical_comparison": "macro_h15_archive._same",
+  "rejected_substitutions": {
+    "receipt_fields": [
+      "schema_version",
+      "training_ready",
+      "admission_required",
+      "final_test_opened",
+      "reused",
+      "observations"
+    ],
+    "configuration": [
+      "schema_version",
+      "calculation.daily_lag_policy_version",
+      "decisions",
+      "limits"
+    ],
+    "coverage": [
+      "observed",
+      "rows",
+      "decisions",
+      "missing_reasons"
+    ],
+    "events": [
+      "document_value"
+    ]
+  },
+  "tests": {
+    "red_rejected_cases_that_previously_passed": 18,
+    "valid_control_passed": 1,
+    "focal_passed": 52
+  },
+  "unchanged_artifact_bytes": {
+    "events.json": true,
+    "macro-US.parquet": true,
+    "macro-CN.parquet": true
+  },
+  "recovery_without_rewrite": true,
+  "real_edition": {
+    "document_observations": 60,
+    "unique_events": 60,
+    "markets": {
+      "US": {
+        "rows": 1960,
+        "decisions": 14,
+        "observed": 0,
+        "missing_reasons": {
+          "source_unavailable:not_in_h15_document_bundle": 1792,
+          "not_yet_available": 36,
+          "no_common_period": 36,
+          "missing_historical_metadata": 96
+        }
+      },
+      "CN": {
+        "rows": 1960,
+        "decisions": 14,
+        "observed": 0,
+        "missing_reasons": {
+          "source_unavailable:not_in_h15_document_bundle": 1792,
+          "not_yet_available": 36,
+          "no_common_period": 36,
+          "missing_historical_metadata": 96
+        }
+      }
+    },
+    "artifacts": {
+      "events.json": "39c3078866de623ae966d59203a00ba82af43839c9d644ed4df8b5f23845469f",
+      "macro-US.parquet": "09e7b135661fa4c21b6ec193013aaaf97a2c9939f58e1ea6afc92753dede94f0",
+      "macro-CN.parquet": "eee73405924d71e4cd328289657318a719f667e07fcd2156a860baf6f9aae64a"
+    }
+  },
+  "measurement": {
+    "initial_internal_seconds": 0.49062264599888294,
+    "recovery_internal_seconds": 0.4677271999989898,
+    "verification_process_seconds": 1.84,
+    "peak_process_rss_bytes": 162373632,
+    "repetitions": 1,
+    "warmup": false,
+    "cpu_quota_percent": 200,
+    "memory_limit_bytes": 1073741824
+  },
+  "training_ready": false,
+  "admission_required": true,
+  "final_test_opened": false,
+  "limits": [
+    "NSA continúa sin acreditarse para enero de 2000.",
+    "La comprobación real se limita a los dos boletines conservados.",
+    "No se han ejecutado modelos, aprendizaje, GPU ni red.",
+    "Las medidas son una pasada funcional, sin afirmaciones de aceleración."
+  ],
+  "quality": {
+    "mutations_detected": 4,
+    "mutations_attempted": 4,
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Sentencias ejecutables de coverage.py por rango AST. Ramas registradas aparte.",
+    "statement_coverage": 0.8489795918367347,
+    "branch_coverage": 0.74,
+    "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
+    "maximum_crap": 33.57305416477014
+  }
+}
