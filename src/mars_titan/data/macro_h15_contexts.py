@@ -20,7 +20,7 @@ from .cohort_files import read_manifest, safe_destination
 from .macro import _available, calculate_macro, macro_calculation_contract
 from .macro_acquisition import _archive_text, _readme_metadata
 from .macro_coverage import _TEXT_LIMITS, _bounded_decode, _publish_directory, _read_catalog
-from .macro_h15_archive import _Sources, prepare_h15_archive
+from .macro_h15_archive import _same, _Sources, prepare_h15_archive
 from .macro_h15_documents import _SERIES, _day
 from .macro_recalculation import _SCHEMA
 from .preparation import atomic_parquet
@@ -136,7 +136,7 @@ def load_h15_events(manifest_path, document_edition, catalog_path, *, metadata_m
         cutoff=configuration["cutoff"],
     )
     if (
-        verified != dict(document_report, reused=True)
+        not _same(verified, dict(document_report, reused=True))
         or verified["configuration_sha256"] != config_hash
     ):
         raise ValueError("El recibo documental cambió durante su verificación")
@@ -197,7 +197,7 @@ def load_h15_events(manifest_path, document_edition, catalog_path, *, metadata_m
             raise ValueError("La disponibilidad documental no coincide con el calendario")
         key = row["indicator_id"], row["period_start"], row["publication_date"]
         prior, markets = unique.setdefault(key, (row, {}))
-        if prior != row or market in markets:
+        if not _same(prior, row) or market in markets:
             raise ValueError("La publicación contiene una versión en conflicto o duplicada")
         markets[market] = available.isoformat() if available is not None else None
     if len(unique) != verified["observations"] or any(
@@ -333,10 +333,10 @@ def _recover(output, configuration, events, catalog, clocks):
     saved, digest = read_manifest(output / "configuration.json", 2 * 1024**2)
     report, report_hash = read_manifest(output / "report.json", 2 * 1024**2)
     if (
-        saved != configuration
+        not _same(saved, configuration)
         or report.get("configuration_sha256") != digest
         or any(
-            report.get(k) != v
+            not _same(report.get(k), v)
             for k, v in {
                 "schema_version": 1,
                 "kind": "h15_macro_contexts",
@@ -364,14 +364,14 @@ def _recover(output, configuration, events, catalog, clocks):
         **{str(output / name): signature for name, signature in report["artifacts"].items()},
     }
     _confirm(hashes)
-    if read_manifest(output / "events.json", _MAX_BYTES)[0] != events:
+    if not _same(read_manifest(output / "events.json", _MAX_BYTES)[0], events):
         raise ValueError("El recibo no conserva los eventos documentales")
     coverage = {}
     for market in configuration["markets"]:
         reference = _panel(events, catalog, clocks[market], configuration)
         _compare_panel(output / f"macro-{market}.parquet", reference)
         coverage[market] = _coverage(reference, configuration["decisions"][market])
-    if report.get("markets") != coverage:
+    if not _same(report.get("markets"), coverage):
         raise ValueError("El recibo no conserva los recuentos del panel")
     _confirm(hashes)
     return dict(report, reused=True)
