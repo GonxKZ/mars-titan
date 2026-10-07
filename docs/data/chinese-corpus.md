@@ -89,9 +89,11 @@ macro y rechazo de una supervisión completada que se haya corrompido.
 El [recibo de verificación](../../reports/data/chinese-corpus-20261007.json)
 distingue preparación y pruebas técnicas de entrenamiento científico. El
 resultado sigue marcado `development_snapshot`, `cohort_complete=false` y
-`training_ready=false`. Hay dos empresas revisadas, frente a 892 candidatos
-originales y 810 instrumentos con cuatro fuentes potenciales. Queda ampliar
-esa cobertura antes de ejecutar la comparación china completa. Los textos
+`training_ready=false`. Esta edición conserva dos empresas, frente a 892 candidatos
+originales y 810 instrumentos con cuatro fuentes potenciales. La
+[ampliación posterior](chinese-balance-expansion.md) reúne trece empresas y
+3.224 muestras, con otra identidad. Queda ampliar la cobertura antes de
+ejecutar la comparación china completa. Los textos
 mantienen la cohorte `original_audited`, sin atribuirles verificación editorial
 externa. El factor sigue siendo retrospectivo y la simulación financiera con
 posiciones reales requiere resolver la procedencia de los ajustes OHLC.
