@@ -18,11 +18,17 @@
 namespace {
 using namespace mars_titan::candidate;
 void require(bool value, std::string_view reason) {
-    if (!value) { throw std::runtime_error(std::string(reason)); }
+    if (!value) {
+        throw std::runtime_error(std::string(reason));
+    }
 }
-template<class F> void rejected(F&& action) {
+template <class F> void rejected(F&& action) {
     bool failed = false;
-    try { std::forward<F>(action)(); } catch (const std::exception&) { failed = true; }
+    try {
+        std::forward<F>(action)();
+    } catch (const std::exception&) {
+        failed = true;
+    }
     require(failed, "Se aceptó una entrada incompatible");
 }
 void same(const at::Tensor& a, const at::Tensor& b, std::string_view reason) {
@@ -38,8 +44,10 @@ Config config() {
 }
 Inputs inputs(int64_t batch = 2) {
     return {at::linspace(-1., 1., batch * 64 * 2, at::kDouble).reshape({batch, 64, 2}),
-            at::ones({batch, 3}, at::kDouble), at::ones({batch, 4}, at::kDouble) * 2,
-            at::ones({batch, 2}, at::kDouble) * 3, at::ones({batch, 3}, at::kDouble) * 4,
+            at::ones({batch, 3}, at::kDouble),
+            at::ones({batch, 4}, at::kDouble) * 2,
+            at::ones({batch, 2}, at::kDouble) * 3,
+            at::ones({batch, 3}, at::kDouble) * 4,
             at::ones({batch, 5}, at::kBool)};
 }
 MemorySnapshot memory(const Candidate& model, int64_t count = 2) {
@@ -47,7 +55,7 @@ MemorySnapshot memory(const Candidate& model, int64_t count = 2) {
     keys.select(1, 0).fill_(1);
     const auto features = at::zeros({count, 256}, at::kDouble);
     return model.snapshot(keys, features, at::arange(count, at::kDouble),
-                           at::arange(count, at::kLong), model.representation_id());
+                          at::arange(count, at::kLong), model.representation_id());
 }
 void stable_ties_and_snapshot_ownership() {
     const Candidate model(config(), at::kDouble);
@@ -64,29 +72,42 @@ void stable_ties_and_snapshot_ownership() {
     same(before.weights, at::full({2, 8}, 0.125, at::kDouble), "Pesos de empate incorrectos");
     {
         const at::NoGradGuard guard;
-        keys.zero_(); features.zero_(); outcomes.zero_(); ids.fill_(99);
+        keys.zero_();
+        features.zero_();
+        outcomes.zero_();
+        ids.fill_(99);
     }
-    same(before.values, model.read(state, snapshot).values, "La instantánea conserva alias del llamador");
+    same(before.values, model.read(state, snapshot).values,
+         "La instantánea conserva alias del llamador");
     before.values.sum().backward();
-    require(!features.grad().defined() && !outcomes.grad().defined(), "Se retuvo el grafo de episodios");
-    rejected([&] { (void)model.snapshot(keys, features, outcomes, ids, model.representation_id()); });
-    rejected([&] { (void)model.snapshot(keys, features, outcomes, at::arange(12, at::kLong), "other"); });
+    require(!features.grad().defined() && !outcomes.grad().defined(),
+            "Se retuvo el grafo de episodios");
+    rejected(
+        [&] { (void)model.snapshot(keys, features, outcomes, ids, model.representation_id()); });
+    rejected([&] {
+        (void)model.snapshot(keys, features, outcomes, at::arange(12, at::kLong), "other");
+    });
 }
 void attention_gradient_matches_finite_differences() {
     Candidate model(config(), at::kDouble);
     {
         const at::NoGradGuard guard;
-        for (auto& parameter : model.parameters()) { parameter.zero_(); }
+        for (auto& parameter : model.parameters()) {
+            parameter.zero_();
+        }
         model.named_parameters()["query_weight"].copy_(at::eye(128, at::kDouble));
         model.named_parameters()["value_weight"].select(0, 0).select(0, 256).fill_(1);
     }
     const auto keys = at::zeros({2, 128}, at::kDouble);
     keys.select(0, 0).select(0, 0).fill_(1);
     keys.select(0, 1).select(0, 0).fill_(-1);
-    const auto snapshot = model.snapshot(keys, at::zeros({2, 256}, at::kDouble),
-        at::tensor({-1., 2.}, at::kDouble), at::tensor({10, 20}, at::kLong), model.representation_id());
+    const auto snapshot =
+        model.snapshot(keys, at::zeros({2, 256}, at::kDouble), at::tensor({-1., 2.}, at::kDouble),
+                       at::tensor({10, 20}, at::kLong), model.representation_id());
     const auto state = at::zeros({1, 128}, at::kDouble);
-    state.select(1, 0).fill_(1); state.select(1, 1).fill_(1); state.set_requires_grad(true);
+    state.select(1, 0).fill_(1);
+    state.select(1, 1).fill_(1);
+    state.set_requires_grad(true);
     const auto read = model.read(state, snapshot);
     const double weight = 1 / (1 + std::exp(-std::sqrt(2.)));
     require(std::abs(read.values.select(1, 0).item<double>() - (2 - 3 * weight)) < 1e-12,
@@ -103,7 +124,8 @@ void attention_gradient_matches_finite_differences() {
         plus.select(1, coordinate).add_(epsilon);
         minus.select(1, coordinate).sub_(epsilon);
         const double numerical = (model.read(plus, snapshot).values.sum().item<double>() -
-                                  model.read(minus, snapshot).values.sum().item<double>()) / (2 * epsilon);
+                                  model.read(minus, snapshot).values.sum().item<double>()) /
+                                 (2 * epsilon);
         require(std::abs(numerical - state.grad().select(1, coordinate).item<double>()) < 1e-7,
                 "El gradiente de consulta no coincide con diferencias finitas");
     }
@@ -120,13 +142,16 @@ void seeds_are_independent_and_do_not_change_global_rng() {
     auto alternate = config();
     alternate.feature_seed += 1;
     const Candidate second(alternate, at::kDouble);
-    require(at::equal(before, at::detail::getDefaultCPUGenerator().get_state()), "Cambió el RNG global");
+    require(at::equal(before, at::detail::getDefaultCPUGenerator().get_state()),
+            "Cambió el RNG global");
     const auto left = first.named_parameters();
     const auto right = second.named_parameters();
     for (const auto& parameter : left) {
-        require(at::equal(parameter.value(), right[parameter.key()]), "Los buffers alteran la inicialización aprendida");
+        require(at::equal(parameter.value(), right[parameter.key()]),
+                "Los buffers alteran la inicialización aprendida");
     }
-    require(!at::equal(first.encode(inputs()).episode_features, second.encode(inputs()).episode_features),
+    require(!at::equal(first.encode(inputs()).episode_features,
+                       second.encode(inputs()).episode_features),
             "La semilla fija no altera la representación");
 }
 void fused_gru_matches_independent_recurrence() {
@@ -135,21 +160,32 @@ void fused_gru_matches_independent_recurrence() {
     const auto parameters = model.named_parameters();
     auto hidden = at::zeros({2, 128}, at::kDouble);
     for (int64_t step = 0; step < 64; ++step) {
-        const auto input_gates = at::linear(data.prices.select(1, step), parameters["price_weight_ih"], parameters["price_bias_ih"]).chunk(3, -1);
-        const auto hidden_gates = at::linear(hidden, parameters["price_weight_hh"], parameters["price_bias_hh"]).chunk(3, -1);
+        const auto input_gates =
+            at::linear(data.prices.select(1, step), parameters["price_weight_ih"],
+                       parameters["price_bias_ih"])
+                .chunk(3, -1);
+        const auto hidden_gates =
+            at::linear(hidden, parameters["price_weight_hh"], parameters["price_bias_hh"])
+                .chunk(3, -1);
         const auto reset = (input_gates.at(0) + hidden_gates.at(0)).sigmoid();
         const auto update = (input_gates.at(1) + hidden_gates.at(1)).sigmoid();
         const auto candidate = (input_gates.at(2) + reset * hidden_gates.at(2)).tanh();
         hidden = (1 - update) * candidate + update * hidden;
     }
-    const std::array<std::pair<std::string, at::Tensor>, 4> blocks{{
-        {"news", data.news}, {"charts", data.charts}, {"fundamentals", data.fundamentals}, {"macro", data.macro}}};
+    const std::array<std::pair<std::string, at::Tensor>, 4> blocks{
+        {{"news", data.news},
+         {"charts", data.charts},
+         {"fundamentals", data.fundamentals},
+         {"macro", data.macro}}};
     std::vector<at::Tensor> projected{hidden};
     for (const auto& [name, block] : blocks) {
-        projected.push_back(at::silu(at::linear(block, parameters[name + "_weight"], parameters[name + "_bias"])));
+        projected.push_back(
+            at::silu(at::linear(block, parameters[name + "_weight"], parameters[name + "_bias"])));
     }
-    const auto expected = at::silu(at::linear(at::cat(projected, -1), parameters["fusion_weight"], parameters["fusion_bias"]));
-    same(model.encode(data).fused, expected, "La GRU o la fusión difieren de la recurrencia explícita");
+    const auto expected = at::silu(
+        at::linear(at::cat(projected, -1), parameters["fusion_weight"], parameters["fusion_bias"]));
+    same(model.encode(data).fused, expected,
+         "La GRU o la fusión difieren de la recurrencia explícita");
 }
 void refinement_includes_state_fusion_memory_and_presence() {
     Candidate model(config(), at::kDouble);
@@ -171,17 +207,22 @@ void refinement_includes_state_fusion_memory_and_presence() {
         for (int64_t step = 0; step < steps; ++step) {
             current = model.refine(current, encoded.fused, model.read(current, snapshot));
         }
-        same(model.forward(inputs(), snapshot, steps).state, current, "K cambia la instantánea o la transición");
+        same(model.forward(inputs(), snapshot, steps).state, current,
+             "K cambia la instantánea o la transición");
     }
 }
 void configuration_and_boundaries_fail_fast() {
-    auto invalid = config(); invalid.dimensions.at(0) = 0;
+    auto invalid = config();
+    invalid.dimensions.at(0) = 0;
     rejected([&] { (void)Candidate(invalid); });
-    invalid = config(); invalid.temperature = 0;
+    invalid = config();
+    invalid.temperature = 0;
     rejected([&] { (void)Candidate(invalid); });
-    invalid = config(); invalid.max_episodes = 1000000;
+    invalid = config();
+    invalid.max_episodes = 1000000;
     rejected([&] { (void)Candidate(invalid); });
-    invalid = config(); invalid.normalization_id.clear();
+    invalid = config();
+    invalid.normalization_id.clear();
     rejected([&] { (void)Candidate(invalid); });
     const Candidate model(config(), at::kDouble);
     for (const int64_t rows : {0, 9}) {
@@ -193,16 +234,23 @@ void configuration_and_boundaries_fail_fast() {
         rejected([&] { (void)model.quantiles(state); });
     }
     rejected([&] { (void)model.forward(inputs(), model.empty_memory(), 3); });
-    auto data = inputs(); data.news = at::zeros({2, 0}, at::kDouble);
+    auto data = inputs();
+    data.news = at::zeros({2, 0}, at::kDouble);
     rejected([&] { (void)model.encode(data); });
-    data = inputs(); data.macro.fill_(std::numeric_limits<double>::infinity());
+    data = inputs();
+    data.macro.fill_(std::numeric_limits<double>::infinity());
     rejected([&] { (void)model.encode(data); });
     rejected([&] { (void)model.forward(inputs(9), model.empty_memory()); });
     const auto keys = at::ones({1, 128}, at::kDouble);
-    rejected([&] { (void)model.snapshot(keys, at::zeros({1, 256}, at::kDouble),
-        at::zeros({1}, at::kDouble), at::zeros({1}, at::kLong), model.representation_id()); });
-    rejected([&] { (void)model.snapshot(at::zeros({1, 128}, at::kDouble), at::zeros({1, 256}, at::kDouble),
-        at::zeros({1}, at::kLong), at::zeros({1}, at::kDouble), model.representation_id()); });
+    rejected([&] {
+        (void)model.snapshot(keys, at::zeros({1, 256}, at::kDouble), at::zeros({1}, at::kDouble),
+                             at::zeros({1}, at::kLong), model.representation_id());
+    });
+    rejected([&] {
+        (void)model.snapshot(at::zeros({1, 128}, at::kDouble), at::zeros({1, 256}, at::kDouble),
+                             at::zeros({1}, at::kLong), at::zeros({1}, at::kDouble),
+                             model.representation_id());
+    });
 }
 void rows_are_independent_and_fp32_matches_fp64() {
     const Candidate precise(config(), at::kDouble);
@@ -210,17 +258,19 @@ void rows_are_independent_and_fp32_matches_fp64() {
     compact.to(at::kFloat);
     const auto data = inputs();
     const auto order = at::tensor({1, 0}, at::kLong);
-    const Inputs permuted{data.prices.index_select(0, order), data.news.index_select(0, order),
+    const Inputs permuted{
+        data.prices.index_select(0, order), data.news.index_select(0, order),
         data.charts.index_select(0, order), data.fundamentals.index_select(0, order),
-        data.macro.index_select(0, order), data.presence.index_select(0, order)};
+        data.macro.index_select(0, order),  data.presence.index_select(0, order)};
     const auto snapshot = memory(precise);
     const auto before = precise.forward(data, snapshot);
     same(precise.forward(permuted, snapshot).quantiles, before.quantiles.index_select(0, order),
          "El orden de filas modifica la predicción");
-    const Inputs fp32{data.prices.to(at::kFloat), data.news.to(at::kFloat), data.charts.to(at::kFloat),
-        data.fundamentals.to(at::kFloat), data.macro.to(at::kFloat), data.presence};
+    const Inputs fp32{data.prices.to(at::kFloat), data.news.to(at::kFloat),
+                      data.charts.to(at::kFloat), data.fundamentals.to(at::kFloat),
+                      data.macro.to(at::kFloat),  data.presence};
     require(at::allclose(compact.forward(fp32, compact.empty_memory()).quantiles.to(at::kDouble),
-                        precise.forward(data, precise.empty_memory()).quantiles, 1e-5, 1e-6),
+                         precise.forward(data, precise.empty_memory()).quantiles, 1e-5, 1e-6),
             "FP32 difiere de la referencia FP64");
 }
 void serialization_restores_changed_parameters_and_configuration() {
@@ -237,10 +287,13 @@ void serialization_restores_changed_parameters_and_configuration() {
     require(restored->config() == model.config(), "La recuperación cambió la configuración");
     const auto after = restored->forward(inputs(), snapshot, 2);
     require(at::equal(before.quantiles, after.quantiles), "La recuperación cambia la predicción");
-    require(at::equal(before.encoded.episode_keys, after.encoded.episode_keys), "No se conservaron los buffers");
-    before.quantiles.sum().backward(); after.quantiles.sum().backward();
+    require(at::equal(before.encoded.episode_keys, after.encoded.episode_keys),
+            "No se conservaron los buffers");
+    before.quantiles.sum().backward();
+    after.quantiles.sum().backward();
     for (const auto& parameter : model.named_parameters()) {
-        require(at::equal(parameter.value().grad(), restored->named_parameters()[parameter.key()].grad()),
+        require(at::equal(parameter.value().grad(),
+                          restored->named_parameters()[parameter.key()].grad()),
                 "La recuperación cambia el gradiente");
     }
     std::stringstream corrupted("not an archive");
@@ -250,16 +303,20 @@ void public_aliases_cannot_change_fixed_projections() {
     Candidate model(config(), at::kDouble);
     const auto before = model.encode(inputs());
     const auto identity = model.representation_id();
-    const auto snapshot = model.snapshot(before.episode_keys, before.episode_features,
-        at::ones({2}, at::kDouble), at::arange(2, at::kLong), identity);
+    const auto snapshot =
+        model.snapshot(before.episode_keys, before.episode_features, at::ones({2}, at::kDouble),
+                       at::arange(2, at::kLong), identity);
     const auto prediction = model.forward(inputs(), snapshot).quantiles;
     {
         const at::NoGradGuard guard;
-        for (const auto& buffer : model.named_buffers()) { buffer.value().data().zero_(); }
+        for (const auto& buffer : model.named_buffers()) {
+            buffer.value().data().zero_();
+        }
     }
     require(at::equal(before.episode_features, model.encode(inputs()).episode_features),
             "Un alias público modificó las proyecciones fijas");
-    require(identity == model.representation_id(), "La identidad fija cambió mediante un alias público");
+    require(identity == model.representation_id(),
+            "La identidad fija cambió mediante un alias público");
     require(at::equal(prediction, model.forward(inputs(), snapshot).quantiles),
             "Un alias público invalidó una instantánea de la misma representación");
 }
@@ -267,41 +324,52 @@ void large_finite_query_keeps_its_direction() {
     Candidate model(config(), at::kFloat);
     {
         const at::NoGradGuard guard;
-        for (auto& parameter : model.parameters()) { parameter.zero_(); }
+        for (auto& parameter : model.parameters()) {
+            parameter.zero_();
+        }
         model.named_parameters()["query_weight"].copy_(at::eye(128));
         model.named_parameters()["value_weight"].select(0, 0).select(0, 256).fill_(1);
     }
     const auto keys = at::zeros({2, 128});
     keys.select(0, 0).select(0, 0).fill_(1);
     keys.select(0, 1).select(0, 0).fill_(-1);
-    const auto snapshot = model.snapshot(keys, at::zeros({2, 256}), at::tensor({-1.F, 2.F}),
-        at::tensor({10, 20}, at::kLong), model.representation_id());
+    const auto snapshot =
+        model.snapshot(keys, at::zeros({2, 256}), at::tensor({-1.F, 2.F}),
+                       at::tensor({10, 20}, at::kLong), model.representation_id());
     const auto state = at::zeros({1, 128});
-    state.select(1, 0).fill_(1e20); state.select(1, 1).fill_(1e20);
+    state.select(1, 0).fill_(1e20);
+    state.select(1, 1).fill_(1e20);
     const double expected = 2 - 3 / (1 + std::exp(-std::sqrt(2.)));
-    require(std::abs(model.read(state, snapshot).values.select(1, 0).item<double>() - expected) < 1e-6,
+    require(std::abs(model.read(state, snapshot).values.select(1, 0).item<double>() - expected) <
+                1e-6,
             "Una norma desbordada ocultó la dirección de la consulta");
     same(model.read(at::zeros_like(state), snapshot).weights.to(at::kDouble),
          at::full({1, 2}, 0.5, at::kDouble), "La consulta nula no conserva pesos uniformes");
 }
-}
+} // namespace
 int main() {
-    at::set_num_threads(1); at::set_num_interop_threads(1);
-    const std::array<std::pair<std::string_view, void(*)()>, 10> tests{{
-        {"empates y copia", stable_ties_and_snapshot_ownership},
-        {"gradientes de lectura", attention_gradient_matches_finite_differences},
-        {"RNG independiente", seeds_are_independent_and_do_not_change_global_rng},
-        {"referencia GRU", fused_gru_matches_independent_recurrence},
-        {"refinamiento completo", refinement_includes_state_fusion_memory_and_presence},
-        {"límites", configuration_and_boundaries_fail_fast},
-        {"serialización", serialization_restores_changed_parameters_and_configuration},
-        {"permutación y precisión", rows_are_independent_and_fp32_matches_fp64},
-        {"propiedad de proyecciones", public_aliases_cannot_change_fixed_projections},
-        {"consulta finita grande", large_finite_query_keeps_its_direction}}};
+    at::set_num_threads(1);
+    at::set_num_interop_threads(1);
+    const std::array<std::pair<std::string_view, void (*)()>, 10> tests{
+        {{"empates y copia", stable_ties_and_snapshot_ownership},
+         {"gradientes de lectura", attention_gradient_matches_finite_differences},
+         {"RNG independiente", seeds_are_independent_and_do_not_change_global_rng},
+         {"referencia GRU", fused_gru_matches_independent_recurrence},
+         {"refinamiento completo", refinement_includes_state_fusion_memory_and_presence},
+         {"límites", configuration_and_boundaries_fail_fast},
+         {"serialización", serialization_restores_changed_parameters_and_configuration},
+         {"permutación y precisión", rows_are_independent_and_fp32_matches_fp64},
+         {"propiedad de proyecciones", public_aliases_cannot_change_fixed_projections},
+         {"consulta finita grande", large_finite_query_keeps_its_direction}}};
     int failures = 0;
     for (const auto& [name, test] : tests) {
-        try { test(); std::cout << "OK " << name << '\n'; }
-        catch (const std::exception& error) { ++failures; std::cerr << name << ": " << error.what() << '\n'; }
+        try {
+            test();
+            std::cout << "OK " << name << '\n';
+        } catch (const std::exception& error) {
+            ++failures;
+            std::cerr << name << ": " << error.what() << '\n';
+        }
     }
     return failures == 0 ? 0 : 1;
 }

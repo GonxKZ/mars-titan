@@ -17,11 +17,17 @@
 namespace {
 using namespace mars_titan::candidate;
 void require(bool value, std::string_view reason) {
-    if (!value) { throw std::runtime_error(std::string(reason)); }
+    if (!value) {
+        throw std::runtime_error(std::string(reason));
+    }
 }
-template<class F> void rejected(F&& action) {
+template <class F> void rejected(F&& action) {
     bool failed = false;
-    try { std::forward<F>(action)(); } catch (const std::exception&) { failed = true; }
+    try {
+        std::forward<F>(action)();
+    } catch (const std::exception&) {
+        failed = true;
+    }
     require(failed, "Se aceptó una entrada incompatible");
 }
 Config small_config() {
@@ -35,8 +41,10 @@ Config small_config() {
 Inputs inputs(int64_t batch = 2) {
     const auto options = at::TensorOptions().dtype(at::kDouble);
     return {at::linspace(-1., 1., batch * 64 * 2, options).reshape({batch, 64, 2}),
-            at::ones({batch, 3}, options), at::ones({batch, 4}, options) * 2,
-            at::ones({batch, 2}, options) * 3, at::ones({batch, 3}, options) * 4,
+            at::ones({batch, 3}, options),
+            at::ones({batch, 4}, options) * 2,
+            at::ones({batch, 2}, options) * 3,
+            at::ones({batch, 3}, options) * 4,
             at::ones({batch, 5}, at::kBool)};
 }
 void empty_memory_and_ordered_quantiles() {
@@ -67,14 +75,17 @@ void zero_head_has_hand_computed_intervals() {
     Candidate model(small_config(), at::kDouble);
     {
         const at::NoGradGuard guard;
-        for (auto& parameter : model.parameters()) { parameter.zero_(); }
+        for (auto& parameter : model.parameters()) {
+            parameter.zero_();
+        }
     }
     const auto output = model.forward(inputs(1), model.empty_memory());
     const double gap = std::log(2.);
     const auto expected = at::tensor({-2 * gap, -gap, 0., gap, 2 * gap}, at::kDouble).unsqueeze(0);
-    require(at::allclose(output.quantiles, expected, 1e-12, 1e-12), "Cabeza distinta de la fórmula");
+    require(at::allclose(output.quantiles, expected, 1e-12, 1e-12),
+            "Cabeza distinta de la fórmula");
 }
-}
+} // namespace
 int main() {
     at::set_num_threads(1);
     at::set_num_interop_threads(1);

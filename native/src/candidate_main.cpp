@@ -25,13 +25,12 @@ void smoke(const std::string& device_name, const std::filesystem::path& destinat
     model.eval();
     const at::NoGradGuard guard;
     const auto options = at::TensorOptions().dtype(at::kDouble).device(device);
-    const Inputs inputs{
-        at::zeros({sample_rows, price_window, config.dimensions.at(0)}, options),
-        at::ones({sample_rows, config.dimensions.at(1)}, options),
-        at::ones({sample_rows, config.dimensions.at(2)}, options),
-        at::ones({sample_rows, config.dimensions.at(3)}, options),
-        at::ones({sample_rows, config.dimensions.at(4)}, options),
-        at::ones({sample_rows, modality_count}, options.dtype(at::kBool))};
+    const Inputs inputs{at::zeros({sample_rows, price_window, config.dimensions.at(0)}, options),
+                        at::ones({sample_rows, config.dimensions.at(1)}, options),
+                        at::ones({sample_rows, config.dimensions.at(2)}, options),
+                        at::ones({sample_rows, config.dimensions.at(3)}, options),
+                        at::ones({sample_rows, config.dimensions.at(4)}, options),
+                        at::ones({sample_rows, modality_count}, options.dtype(at::kBool))};
     const auto before = model.forward(inputs, model.empty_memory());
     std::stringstream buffer;
     model.save_state(buffer);
@@ -41,20 +40,23 @@ void smoke(const std::string& device_name, const std::filesystem::path& destinat
         throw std::runtime_error("La recuperación altera los cuantiles");
     }
     if (!destination.empty()) {
-        if (std::filesystem::symlink_status(destination).type() != std::filesystem::file_type::not_found) {
+        if (std::filesystem::symlink_status(destination).type() !=
+            std::filesystem::file_type::not_found) {
             throw std::invalid_argument("El destino del archivo ya existe");
         }
         std::ofstream file(destination, std::ios::binary);
         model.save_state(file);
         file.close();
-        if (!file) { throw std::runtime_error("No se pudo cerrar el archivo candidato"); }
+        if (!file) {
+            throw std::runtime_error("No se pudo cerrar el archivo candidato");
+        }
     }
     std::cout << "{\"schema\":\"candidate-core-smoke-v1\",\"device\":\"" << device_name
               << "\",\"trained\":false,\"rows\":" << sample_rows
               << ",\"quantiles\":" << quantile_count
               << ",\"archive_roundtrip\":true,\"archive_bytes\":" << buffer.str().size() << "}\n";
 }
-}
+} // namespace
 int main(int argc, char* argv[]) {
     at::set_num_threads(1);
     at::set_num_interop_threads(1);

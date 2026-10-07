@@ -49,9 +49,10 @@ struct Inputs {
 };
 
 class MemorySnapshot {
-public:
+  public:
     [[nodiscard]] int64_t size() const;
-private:
+
+  private:
     friend class Candidate;
     MemorySnapshot() = default;
     at::Tensor keys_;
@@ -81,7 +82,7 @@ struct Prediction {
 
 // Cálculo puro. La admisión temporal y la publicación de memoria pertenecen al ejecutor.
 class Candidate final : public torch::nn::Module {
-public:
+  public:
     explicit Candidate(Config config, at::ScalarType dtype = at::kFloat,
                        const at::Device& device = at::Device(at::kCPU));
     [[nodiscard]] const Config& config() const noexcept;
@@ -98,14 +99,15 @@ public:
                                     const Read& memory_read) const;
     [[nodiscard]] at::Tensor quantiles(const at::Tensor& state) const;
     [[nodiscard]] Prediction forward(const Inputs& inputs, const MemorySnapshot& memory,
-                                      int64_t refinements = 1) const;
+                                     int64_t refinements = 1) const;
     void to(torch::Device device, torch::Dtype dtype, bool non_blocking = false) override;
     void to(torch::Dtype dtype, bool non_blocking = false) override;
     void to(torch::Device device, bool non_blocking = false) override;
     void save_state(std::ostream& destination) const;
-    [[nodiscard]] static std::shared_ptr<Candidate> load_state(
-        std::istream& source, const at::Device& device = at::Device(at::kCPU));
-private:
+    [[nodiscard]] static std::shared_ptr<Candidate>
+    load_state(std::istream& source, const at::Device& device = at::Device(at::kCPU));
+
+  private:
     void refresh_representation();
     struct Linear {
         at::Tensor weight;
@@ -113,7 +115,7 @@ private:
         [[nodiscard]] at::Tensor operator()(const at::Tensor& value) const;
     };
     [[nodiscard]] Linear linear(const std::string& name, int64_t in, int64_t out,
-                                 at::Generator& generator, at::ScalarType dtype);
+                                at::Generator& generator, at::ScalarType dtype);
     Config config_;
     std::vector<at::Tensor> gru_;
     std::array<Linear, modality_count - 1> modalities_;
@@ -128,5 +130,5 @@ private:
     at::Tensor key_projection_;
     std::string representation_id_;
 };
-}
+} // namespace mars_titan::candidate
 #endif
