@@ -80,7 +80,7 @@ def _process_info(pid):
     """Leer padre, grupo, generación y estado sin confiar solo en el PID."""
     try:
         fields = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
         return None
     if len(fields) < 20:
         raise ValueError("El estado del proceso está incompleto")
