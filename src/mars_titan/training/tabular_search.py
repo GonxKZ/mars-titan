@@ -23,6 +23,7 @@ from .checkpoints import StopRequest
 from .external_corpus import run_external_reference
 from .partition_contract import supervision_bounds
 from .tabular_corpus import run_tabular_reference
+from .temporal_contract import temporal_contracts
 
 
 def _code():
@@ -33,6 +34,7 @@ def _code():
         "training/external_corpus.py",
         "training/corpus_inputs.py",
         "training/partition_contract.py",
+        "training/temporal_contract.py",
         "training/temporal_corpus.py",
         "evaluation/splits.py",
         "evaluation/split_readiness.py",
@@ -390,7 +392,8 @@ def run_tabular_search(
         raise ValueError(
             "La campaña necesita dos particiones admitidas y una población identificada"
         )
-    supervision_bounds(source)
+    for market in temporal_contracts(source) or [None]:
+        supervision_bounds(source, market=market)
     safe_destination(output)
     for root in (*source["roots"].values(), manifest.parent, config_path):
         outside_source(Path(root), output)

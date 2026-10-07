@@ -70,20 +70,20 @@ def corpus_view(dataset, *, macro_catalog):
         or not 1 <= len(indicators) <= 1024
     ):
         raise ValueError("La representación no conserva sus dimensiones semánticas")
-    if dataset.temporal is not None and indicators != dataset.temporal.macro.indicators:
+    if any(indicators != temporal.macro.indicators for temporal in dataset.temporals.values()):
         raise ValueError("El catálogo no identifica los valores macro efectivos de TemporalInputs")
     catalog = Path(macro_catalog)
     if catalog.is_symlink() or not catalog.is_file() or catalog.stat().st_size > 2 * 1024**2:
         raise ValueError("El catálogo macro excede su presupuesto o no es regular")
     catalog_hash = sha256(catalog)
     expected_catalog = dataset.manifest.get("macro_catalog_sha256")
-    if dataset.temporal is not None:
-        temporal = dataset.temporal
+    for temporal in dataset.temporals.values():
         temporal.verify()
         admission, admission_hash = read_manifest(temporal.admission_path, 8 * 1024**2)
         if (
             admission_hash != temporal.contract["admission_sha256"]
             or admission.get("source_sha256") != temporal.contract["macro_sha256"]
+            or admission.get("catalog_sha256") != catalog_hash
         ):
             raise ValueError("La procedencia del panel macro no conserva su admisión")
         expected_catalog = admission.get("catalog_sha256")
@@ -183,6 +183,11 @@ def corpus_view(dataset, *, macro_catalog):
                 dict(
                     representation=representation,
                     temporal_view=dataset.manifest.get("temporal_view"),
+                    **(
+                        {"temporal_views": dataset.manifest["temporal_views"]}
+                        if "temporal_views" in dataset.manifest
+                        else {}
+                    ),
                     macro_catalog_sha256=catalog_hash,
                 )
             ),

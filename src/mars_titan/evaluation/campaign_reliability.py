@@ -63,6 +63,20 @@ def _require(condition, message):
         raise ValueError(message)
 
 
+def _market_bounds(source):
+    if "bounds_by_market" not in source:
+        return {}
+    ranges = source["bounds_by_market"]
+    _require(
+        isinstance(ranges, dict) and set(ranges) == {"US", "CN"},
+        "Los límites conjuntos deben identificar los dos mercados",
+    )
+    return {
+        market: _bounds(dict(partition=source["partition"], bounds=bounds))
+        for market, bounds in ranges.items()
+    }
+
+
 def _pairs(sources):
     _require(0 < len(sources) <= 8192, "La fiabilidad supera el presupuesto de predicciones")
     grouped = defaultdict(dict)
@@ -89,11 +103,24 @@ def _pairs(sources):
             and calibration["metadata"] == evaluation["metadata"],
             "Las particiones no pertenecen al mismo modelo y checkpoint congelados",
         )
+        calibration_bounds, evaluation_bounds = (
+            _market_bounds(calibration),
+            _market_bounds(evaluation),
+        )
         _require(
-            _bounds(calibration)[1] <= _bounds(evaluation)[0]
+            calibration_bounds.keys() == evaluation_bounds.keys(),
+            "Calibración y evaluación deben conservar los mismos mercados",
+        )
+        calibration_bounds = calibration_bounds or {None: _bounds(calibration)}
+        evaluation_bounds = evaluation_bounds or {None: _bounds(evaluation)}
+        _require(
+            all(
+                calibration_bounds[market][1] <= evaluation_bounds[market][0]
+                for market in calibration_bounds
+            )
             and calibration["path"].resolve() != evaluation["path"].resolve()
             and calibration["sha256"] != evaluation["sha256"],
-            "La calibración debe ser anterior y distinta de la evaluación",
+            "La calibración debe ser anterior y distinta de la evaluación en cada mercado",
         )
         result.append((calibration, evaluation))
     return result
@@ -120,6 +147,8 @@ def _sessions(cohort):
     markets = cohort["market"].to_numpy()
     moments = cohort["prediction_at"].to_numpy().astype(np.int64)
     order = np.lexsort((moments, markets))
+    if not len(order):
+        return order, np.array([0], dtype=np.int64)
     changes = (markets[order][1:] != markets[order][:-1]) | (
         moments[order][1:] != moments[order][:-1]
     )
@@ -143,7 +172,52 @@ def _session_means(target, prediction, calibration, groups):
     }
 
 
+def _market_review(source, reviewed, market):
+    mask = pc.equal(reviewed["cohort"]["market"], market)
+    cohort = reviewed["cohort"].filter(mask)
+    return (
+        source | dict(bounds=source["bounds_by_market"][market]),
+        dict(
+            cohort=cohort,
+            prediction=reviewed["prediction"][mask.to_numpy()],
+            metrics=dict(
+                prediction=dict(
+                    samples=len(cohort), session_count=len(pc.unique(cohort["prediction_at"]))
+                )
+            ),
+        ),
+    )
+
+
 def _case_rows(calibration_source, evaluation_source, calibration, evaluation):
+    markets = {
+        market
+        for reviewed in (calibration, evaluation)
+        for market in reviewed["cohort"]["market"].unique().to_pylist()
+    }
+    _require(markets and markets <= {"US", "CN"}, "La cohorte contiene mercados no admitidos")
+    declared = _market_bounds(calibration_source)
+    _require(
+        declared.keys() == _market_bounds(evaluation_source).keys(),
+        "Calibración y evaluación deben conservar los mismos mercados",
+    )
+    _require(declared or len(markets) == 1, "La cohorte conjunta necesita límites por mercado")
+    if not declared:
+        yield from _case_market_rows(calibration_source, evaluation_source, calibration, evaluation)
+        return
+    for market in ("US", "CN"):
+        source_calibration, reviewed_calibration = _market_review(
+            calibration_source, calibration, market
+        )
+        source_evaluation, reviewed_evaluation = _market_review(
+            evaluation_source, evaluation, market
+        )
+        yield from _case_market_rows(
+            source_calibration, source_evaluation, reviewed_calibration, reviewed_evaluation, market
+        )
+
+
+def _case_market_rows(calibration_source, evaluation_source, calibration, evaluation, market=None):
     target = evaluation["cohort"]["target"].to_numpy()
     prediction = evaluation["prediction"]
     groups = _sessions(evaluation["cohort"])
@@ -157,6 +231,8 @@ def _case_rows(calibration_source, evaluation_source, calibration, evaluation):
         for confidence in LEVELS
     ]
     base = {name: evaluation_source[name] for name in _IDENTITY}
+    if market is not None:
+        base["market"] = market
     for partition, source, reviewed in (
         ("calibration", calibration_source, calibration),
         ("evaluation", evaluation_source, evaluation),
@@ -190,7 +266,8 @@ def evaluate_campaign_reliability(reference, completion, output):
 
     Los cocientes por fila conservan sus conteos. Las medias por sesión dan el
     mismo peso a cada par de mercado e instante con denominador definido y
-    declaran cuántas sesiones entran en cada media. No se mezclan folds.
+    declaran cuántas sesiones entran en cada media. En el brazo conjunto se
+    calibran y evalúan los mercados por separado. No se mezclan folds.
     """
     started = time.perf_counter()
     reference, completion, output = map(Path, (reference, completion, output))
@@ -275,6 +352,8 @@ def evaluate_campaign_reliability(reference, completion, output):
             )
         },
     )
+    if any("market" in row for row in rows):
+        report["method"].update(calibration_grouping="model_fold_seed_market", market_pooling=False)
     output.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(prefix=f".{output.name}-", dir=output.parent) as temporary:
         stage = Path(temporary) / "result"

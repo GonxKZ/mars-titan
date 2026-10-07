@@ -240,14 +240,19 @@ def _result(directory, identity):
     sources = identity["sources"]
     provenance = comparison.get("provenance", {})
     code = comparison.get("analysis_source_sha256")
+    version = comparison.get("schema_version", 1)
+    expected_code = {
+        "evaluation/comparison_sources.py",
+        "evaluation/prediction_statistics.py",
+        "evaluation/campaign_comparison.py",
+    }
+    if version == 2:
+        expected_code.add("training/temporal_contract.py")
     _require(
-        isinstance(code, dict)
-        and set(code)
-        == {
-            "evaluation/comparison_sources.py",
-            "evaluation/prediction_statistics.py",
-            "evaluation/campaign_comparison.py",
-        }
+        type(version) is int
+        and version in {1, 2}
+        and isinstance(code, dict)
+        and set(code) == expected_code
         and all(
             name in identity["code"]["package"] and identity["code"]["package"][name] == digest
             for name, digest in code.items()

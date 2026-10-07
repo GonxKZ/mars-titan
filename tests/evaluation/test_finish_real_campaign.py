@@ -130,6 +130,7 @@ def analyzers(finish, monkeypatch):
                 "evaluation/prediction_statistics.py": "b" * 64,
                 "evaluation/campaign_comparison.py": "c" * 64,
                 "training/real_campaign.py": "d" * 64,
+                "training/temporal_contract.py": "e" * 64,
             },
             scripts={"export_campaign_comparison.py": "b" * 64},
         ),
@@ -201,6 +202,31 @@ def analyzers(finish, monkeypatch):
     monkeypatch.setattr(finish, "_compare", compare)
     monkeypatch.setattr(finish, "_export", export)
     return calls, compare, export
+
+
+@pytest.mark.parametrize("problem", [None, "missing", "changed"])
+def test_version_two_binds_the_shared_temporal_validator(tmp_path, monkeypatch, problem):
+    finish = module()
+    state, _ = coordinator(tmp_path)
+    _, compare, _ = analyzers(finish, monkeypatch)
+
+    def version_two(reference, completion, output):
+        compare(reference, completion, output)
+        path = output / "comparison.json"
+        report = json.loads(path.read_text())
+        report["schema_version"] = 2
+        if problem != "missing":
+            report["analysis_source_sha256"]["training/temporal_contract.py"] = (
+                "f" * 64 if problem == "changed" else "e" * 64
+            )
+        atomic_json(path, report)
+
+    monkeypatch.setattr(finish, "_compare", version_two)
+    if problem is None:
+        assert finish.finish_campaign(state, tmp_path / "out")["status"] == "completed"
+    else:
+        with pytest.raises(ValueError):
+            finish.finish_campaign(state, tmp_path / "out")
 
 
 def test_completed_campaign_is_analyzed_once_and_reused_after_timestamp_change(

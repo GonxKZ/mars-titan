@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "source_sha256": "13f2f3a0e699719b629ea32ce530cae8001cd5f2149fe71a4e0aa4f6192d22b1",
+  "tests_sha256": "21312978996023e2323bce23f5f42141067926bc77c0e08ebc2ce5137d59fe91",
+  "api": "project_numeric_context(array, source_concepts, target_concepts)",
+  "input": "FixedSizeListArray<float32> o ChunkedArray del mismo tipo",
+  "output": "FixedSizeListArray<float32> independiente del buffer de origen",
+  "channels": [
+    "values",
+    "masks",
+    "ages"
+  ],
+  "limits": {
+    "input_and_output_bytes": 67108864,
+    "retained_input_buffers_counted": true,
+    "block_input_and_output_bytes": 1048576,
+    "concepts": 512,
+    "identifier_characters": 256,
+    "chunks": 1024
+  },
+  "cpu_tests": 44,
+  "ruff_check": true,
+  "ruff_format": true,
+  "coverage": {
+    "covered_lines": 56,
+    "num_statements": 56,
+    "percent_covered": 100.0,
+    "percent_covered_display": "100",
+    "missing_lines": 0,
+    "excluded_lines": 0,
+    "percent_statements_covered": 100.0,
+    "percent_statements_covered_display": "100",
+    "num_branches": 30,
+    "num_partial_branches": 0,
+    "covered_branches": 30,
+    "missing_branches": 0,
+    "percent_branches_covered": 100.0,
+    "percent_branches_covered_display": "100"
+  },
+  "max_modified_ccn": 16,
+  "max_modified_crap": 16.0,
+  "crap_convention": "CRAP por función = CCN² × (1 - cobertura de sentencias)³ + CCN. Sentencias ejecutables de coverage.py dentro del intervalo AST de la función, incluidas sus funciones anidadas. No se usan ramas en CRAP.",
+  "mutations_detected": 8,
+  "mutation_collection_errors": 0,
+  "benchmark_cases": [
+    {
+      "rows": 32,
+      "source_concepts": 23,
+      "target_concepts": 26,
+      "bitwise_parity": true,
+      "reference_median_seconds": 6.2368e-05,
+      "candidate_median_seconds": 4.1709e-05,
+      "speedup": 1.4953127622335705,
+      "candidate_tracemalloc_peak_bytes": 19148,
+      "candidate_process_peak_rss_bytes": 112504832
+    },
+    {
+      "rows": 8192,
+      "source_concepts": 23,
+      "target_concepts": 26,
+      "bitwise_parity": true,
+      "reference_median_seconds": 0.001476818,
+      "candidate_median_seconds": 0.001439036,
+      "speedup": 1.0262550763149774,
+      "candidate_tracemalloc_peak_bytes": 2722908,
+      "candidate_process_peak_rss_bytes": 117059584
+    },
+    {
+      "rows": 100000,
+      "source_concepts": 23,
+      "target_concepts": 26,
+      "bitwise_parity": true,
+      "reference_median_seconds": 0.068711111,
+      "candidate_median_seconds": 0.018478342,
+      "speedup": 3.7184673278587446,
+      "candidate_tracemalloc_peak_bytes": 31367004,
+      "candidate_process_peak_rss_bytes": 173469696
+    },
+    {
+      "rows": 32,
+      "source_concepts": 3,
+      "target_concepts": 26,
+      "bitwise_parity": true,
+      "reference_median_seconds": 3.4295e-05,
+      "candidate_median_seconds": 3.7651e-05,
+      "speedup": 0.9108655812594619,
+      "candidate_tracemalloc_peak_bytes": 15240,
+      "candidate_process_peak_rss_bytes": 112484352
+    },
+    {
+      "rows": 8192,
+      "source_concepts": 3,
+      "target_concepts": 26,
+      "bitwise_parity": true,
+      "reference_median_seconds": 0.000416363,
+      "candidate_median_seconds": 0.000455777,
+      "speedup": 0.9135234994306426,
+      "candidate_tracemalloc_peak_bytes": 2619473,
+      "candidate_process_peak_rss_bytes": 114966528
+    },
+    {
+      "rows": 100000,
+      "source_concepts": 3,
+      "target_concepts": 26,
+      "bitwise_parity": true,
+      "reference_median_seconds": 0.010026216,
+      "candidate_median_seconds": 0.006680293,
+      "speedup": 1.5008647075809398,
+      "candidate_tracemalloc_peak_bytes": 31263569,
+      "candidate_process_peak_rss_bytes": 147279872
+    }
+  ],
+  "reference": "NumPy por columnas y canal, con validación equivalente en los tipos medidos.",
+  "profile_limit": "cProfile incluye operaciones nativas de NumPy en el tiempo de los marcos Python. No demuestra que ese tiempo sea un bucle Python ni justifica una extensión C++.",
+  "performance_limits": "Dos casos pequeños de 3→26 fueron más lentos que la referencia. Se midió esta función con datos sintéticos, no la materialización completa ni entrenamiento.",
+  "hardware": "model name\t: AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "execution_limits": {
+    "cpu_max": "100000 100000",
+    "memory_max": "1073741824",
+    "cuda_visible_devices": "-1"
+  },
+  "artifacts": {
+    "benchmark.py": {
+      "path": "benchmark.py",
+      "sha256": "e124b483b12e0a81c035b6e5d6e2c404f0f46bae46c8d538d877c23c6f768ad4"
+    },
+    "benchmark.json": {
+      "path": "benchmark.json",
+      "sha256": "c091b6b0e8dbbc693c15fd2e887c38160ccd4c939c2296d60238f56a176c067c"
+    },
+    "joint_projection-initial.py": {
+      "path": "joint_projection-initial.py",
+      "sha256": "f078687237802b8e35255ba8151e9318252f1ba696c9e809fe4689882e173339"
+    },
+    "tile-probe.json": {
+      "path": "tile-probe.json",
+      "sha256": "2d147b4e095d25919a0cd4d2326ed08d058a5bdc4a0d76643730ffac6748e6de"
+    },
+    "final/benchmark.py": {
+      "path": "final/benchmark.py",
+      "sha256": "e124b483b12e0a81c035b6e5d6e2c404f0f46bae46c8d538d877c23c6f768ad4"
+    },
+    "final/benchmark.json": {
+      "path": "final/benchmark.json",
+      "sha256": "c4b3e9012fec042dd311ace26e09cac9069b8f28898abaf64ef698afc5c59461"
+    },
+    "final/candidate-profile.json": {
+      "path": "final/candidate-profile.json",
+      "sha256": "780f6e5beebdcd7da567282fe2e1b30e5140e0cd32c3dbc473976741da44cbb1"
+    },
+    "final/candidate-profile.pstats": {
+      "path": "final/candidate-profile.pstats",
+      "sha256": "db952c6a2dae25e1862f436fd995d0c9e4312862b488f7b5bb7d70b591852fc0"
+    },
+    "final/quality/run_quality.py": {
+      "path": "final/quality/run_quality.py",
+      "sha256": "334430258069ef77e382f3b08fd2fbb51e8dc20aeda3644b1ca400080dddce92"
+    },
+    "final/quality/quality.json": {
+      "path": "final/quality/quality.json",
+      "sha256": "e2b8eb7d812c37ffd3d65256d6ecceae44e938dac47a891b5e1d77a3c3f418db"
+    },
+    "final/quality/coverage.json": {
+      "path": "final/quality/coverage.json",
+      "sha256": "d6ac29e9e8ba9af5f9621f60a94ba82efd7b0bc6d047944ba4ed1ce631bfd000"
+    }
+  },
+  "gpu_used": false,
+  "observed_at_utc": "2026-10-07T10:11:48.710615+00:00",
+  "issue": 66,
+  "private_receipt_sha256": "8abf8d4be24461e8a40f16626cea3f0549bf54c0ee5020dda9249ce1776cbce6",
+  "scientific_training_started": false,
+  "final_test_opened": false
+}

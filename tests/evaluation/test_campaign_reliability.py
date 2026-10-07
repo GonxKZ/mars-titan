@@ -16,9 +16,13 @@ from mars_titan.evaluation.session_metrics import SessionErrors
 from tests.evaluation.test_comparison_sources import Campaign, save
 
 
-def prepared_campaign(root, change=None, *, calibration_samples=20):
-    campaign = Campaign(root, matching=True)
+def prepared_campaign(root, change=None, *, calibration_samples=20, markets=("US",)):
+    campaign = Campaign(root, matching=True, markets=markets)
     campaign.counts.update(calibration=calibration_samples, evaluation=4)
+    if len(markets) > 1:
+        assert calibration_samples % 4 == 0
+        for asset in campaign.manifest["assets"]:
+            asset["counts"].update(calibration=calibration_samples // 4, evaluation=1)
     campaign.manifest_hash = save(campaign.manifest_path, campaign.manifest)
     for original in campaign.originals.values():
         if "identity" in original:
@@ -51,6 +55,24 @@ def prepared_campaign(root, change=None, *, calibration_samples=20):
                 parent=[0.0] * count,
                 zero=[0.0] * count,
             )
+            if len(markets) > 1:
+                values["market"] = [
+                    markets[min(index * len(markets) // count, len(markets) - 1)]
+                    for index in range(count)
+                ]
+                local_rows = [index % (count // len(markets)) for index in range(count)]
+                values["asset_id"] = [
+                    f"{market}/{'AB'[index % 2]}"
+                    for index, market in zip(local_rows, values["market"], strict=True)
+                ]
+                values["prediction_at"] = [
+                    datetime(2023, month, 2 + index // 2, 7 if market == "CN" else 21, tzinfo=UTC)
+                    for index, market in zip(local_rows, values["market"], strict=True)
+                ]
+                if partition == "calibration":
+                    values["target"] = [
+                        0.1 if market == "US" else 1.0 for market in values["market"]
+                    ]
             if change is not None:
                 change(identifier, partition, values)
             values["prediction_at"] = pa.array(
@@ -116,6 +138,8 @@ def test_pipeline_calibrates_the_same_frozen_checkpoint_and_reports_real_denomin
     assert str(campaign.reference.parent) not in json.dumps(report)
     csv_rows = list(csv.DictReader((output / "cases.csv").open()))
     assert len(csv_rows) == 24
+    assert all("market" not in row for row in report["cases"])
+    assert "market_pooling" not in report["method"]
     assert sha256(output / "cases.csv") == report["artifacts"]["cases.csv"]
     with pytest.raises(ValueError, match="salida"):
         evaluate_campaign_reliability(campaign.reference, campaign.completion, output)
@@ -270,3 +294,207 @@ def test_interrupted_publication_leaves_no_destination_and_can_be_retried(
     )
     assert completed["status"] == "completed"
     assert sha256(output / "cases.csv") == completed["artifacts"]["cases.csv"]
+
+
+def joint_reviews(tmp_path, *, cn_calibration_samples=20, cn_error=1.0, cn_evaluation=True):
+    identity = dict(
+        fold="fold-000",
+        id="reference/search/winner",
+        stage="reference",
+        phase="search",
+        family="rnn",
+        method="supervised",
+        seed=42,
+        included=True,
+        primary=True,
+        parent_id=None,
+        checkpoint_sha256="a" * 64,
+        metadata={},
+    )
+    sources, reviews = [], []
+    for partition in ("calibration", "evaluation"):
+        calibrating = partition == "calibration"
+        us_target = [0.1] * 20 if calibrating else [-1.0, 1.0, 0.0, 1.0]
+        cn_target = [cn_error] * cn_calibration_samples if calibrating else [1.0, -1.0, 0.0]
+        if not calibrating and not cn_evaluation:
+            cn_target = []
+        us_prediction = [0.0] * 20 if calibrating else [0.0, 2.0, 3.0, 1.0]
+        cn_prediction = (
+            [0.0] * len(cn_target) if calibrating else [-2.0, -0.5, 2.0][: len(cn_target)]
+        )
+        markets = ["US"] * len(us_target) + ["CN"] * len(cn_target)
+        times = [
+            datetime(2023, 11 if calibrating else 12, 2 if i < count - 1 else 3, hour, tzinfo=UTC)
+            for count, hour in ((len(us_target), 21), (len(cn_target), 7))
+            for i in range(count)
+        ]
+        target = np.asarray(us_target + cn_target)
+        prediction = np.asarray(us_prediction + cn_prediction)
+        cohort = pa.table(
+            dict(
+                sample_id=[f"{partition}-{i}" for i in range(len(markets))],
+                asset_id=[f"{market}/A{i}" for i, market in enumerate(markets)],
+                market=markets,
+                prediction_at=pa.array(times, pa.timestamp("us", tz="UTC")),
+                target=target,
+            )
+        )
+        errors = SessionErrors()
+        errors.update(markets, cohort["prediction_at"].to_numpy(), prediction - target)
+        reviews.append(
+            dict(cohort=cohort, prediction=prediction, metrics=dict(prediction=errors.summary()))
+        )
+        path = tmp_path / f"{partition}.parquet"
+        pq.write_table(cohort.append_column("prediction", pa.array(prediction)), path)
+        bounds = ["2023-11-01", "2023-12-01"] if calibrating else ["2023-12-01", "2024-01-01"]
+        sources.append(
+            identity
+            | dict(
+                partition=partition,
+                path=path,
+                sha256=sha256(path),
+                source_report_sha256=("b" if calibrating else "c") * 64,
+                bounds=bounds,
+                bounds_by_market={market: list(bounds) for market in ("US", "CN")},
+            )
+        )
+    return (*sources, *reviews)
+
+
+def test_joint_calibration_uses_each_market_and_preserves_its_denominators(tmp_path):
+    from mars_titan.evaluation.campaign_reliability import _case_rows
+
+    rows = list(_case_rows(*joint_reviews(tmp_path)))
+    assert len(rows) == 6
+    assert {(row["market"], row["prediction_kind"], row["confidence"]) for row in rows} == {
+        (market, kind, confidence)
+        for market in ("US", "CN")
+        for kind, confidence in (("point", None), ("interval", 0.9), ("interval", 0.95))
+    }
+    for row in rows:
+        assert row["fold"] == "fold-000" and row["seed"] == 42
+        assert row["checkpoint_sha256"] == "a" * 64
+        assert row["calibration_samples"] == 20
+        assert row["calibration_sessions"] == row["evaluation_sessions"] == 2
+        assert row["samples"] == row["evaluation_samples"] == (4 if row["market"] == "US" else 3)
+        assert row["coverage_guaranteed"] is False
+    us, cn = [
+        next(row for row in rows if row["market"] == market and row["prediction_kind"] == "point")
+        for market in ("US", "CN")
+    ]
+    assert (us["eligible_targets"], us["calls"], us["abstentions"]) == (3, 2, 1)
+    assert us["direction_accuracy"] == pytest.approx(2 / 3)
+    assert us["positive_precision"] == 1 and us["negative_precision"] is None
+    assert us["mean_session_direction_accuracy"] == 0.75
+    assert us["defined_sessions_direction_accuracy"] == 2
+    assert (cn["eligible_targets"], cn["calls"], cn["abstentions"]) == (2, 2, 0)
+    assert cn["direction_accuracy"] == cn["negative_precision"] == 0.5
+    assert cn["positive_precision"] is None
+    assert cn["defined_sessions_direction_accuracy"] == 1
+    for row in rows:
+        if row["prediction_kind"] != "interval":
+            continue
+        if row["market"] == "US":
+            assert row["radius"] == 0.1 and row["coverage"] == 0.25
+        else:
+            assert row["radius"] == 1.0 and row["coverage"] == pytest.approx(1 / 3)
+            assert (row["calls"], row["abstentions"], row["correct_calls"]) == (1, 1, 0)
+            assert row["mean_session_coverage"] == 0.25
+
+
+@pytest.mark.parametrize("cn_samples", [0, 3])
+def test_joint_calibration_does_not_borrow_rows_from_the_other_market(tmp_path, cn_samples):
+    from mars_titan.evaluation.campaign_reliability import _case_rows
+
+    rows = list(_case_rows(*joint_reviews(tmp_path, cn_calibration_samples=cn_samples)))
+    assert len(rows) == 6
+    for row in rows:
+        if row["prediction_kind"] != "interval":
+            continue
+        if row["market"] == "US":
+            assert row["radius"] == 0.1 and row["calibration_samples"] == 20
+        else:
+            assert row["calibration_samples"] == cn_samples
+            assert row["radius"] is row["coverage"] is row["calls"] is None
+            assert row["reason"] and row["defined_sessions_direction_accuracy"] == 0
+
+
+def test_joint_market_changes_do_not_move_another_market_radius(tmp_path):
+    from mars_titan.evaluation.campaign_reliability import _case_rows
+
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    first.mkdir()
+    second.mkdir()
+    ordinary = list(_case_rows(*joint_reviews(first)))
+    changed = list(_case_rows(*joint_reviews(second, cn_error=1000.0)))
+    assert len(ordinary) == len(changed) == 6
+    for rows in (ordinary, changed):
+        assert {
+            row["radius"]
+            for row in rows
+            if row["market"] == "US" and row["prediction_kind"] == "interval"
+        } == {0.1}
+
+
+def test_joint_market_without_evaluation_rows_keeps_zero_denominators(tmp_path):
+    from mars_titan.evaluation.campaign_reliability import _case_rows
+
+    rows = list(_case_rows(*joint_reviews(tmp_path, cn_evaluation=False)))
+    assert len(rows) == 6
+    for row in rows:
+        if row["market"] == "CN":
+            assert row["samples"] == row["evaluation_samples"] == row["evaluation_sessions"] == 0
+            assert row["direction_accuracy"] is row["coverage"] is None
+            assert row["defined_sessions_direction_accuracy"] == 0
+
+
+def test_joint_pairs_validate_chronology_for_each_market(tmp_path):
+    from mars_titan.evaluation.campaign_reliability import _pairs
+
+    calibration, evaluation, *_ = joint_reviews(tmp_path)
+    evaluation["bounds_by_market"]["CN"] = ["2023-11-15", "2023-12-15"]
+    with pytest.raises(ValueError, match="mercado|anterior"):
+        _pairs([calibration, evaluation])
+
+
+@pytest.mark.parametrize("bounds", [None, {}, {"US": ["2023-11-01", "2023-12-01"]}])
+def test_joint_pairs_reject_missing_or_incomplete_market_bounds(tmp_path, bounds):
+    from mars_titan.evaluation.campaign_reliability import _pairs
+
+    calibration, evaluation, *_ = joint_reviews(tmp_path)
+    calibration["bounds_by_market"] = bounds
+    with pytest.raises(ValueError, match="mercados"):
+        _pairs([calibration, evaluation])
+
+
+def test_joint_cohort_cannot_silently_fall_back_to_a_pooled_calibrator(tmp_path):
+    from mars_titan.evaluation.campaign_reliability import _case_rows
+
+    calibration, evaluation, *reviews = joint_reviews(tmp_path)
+    calibration.pop("bounds_by_market")
+    evaluation.pop("bounds_by_market")
+    with pytest.raises(ValueError, match="límites por mercado"):
+        list(_case_rows(calibration, evaluation, *reviews))
+
+
+def test_joint_pipeline_publishes_market_rows_without_counting_models_twice(tmp_path):
+    from mars_titan.evaluation.campaign_reliability import evaluate_campaign_reliability
+
+    campaign = prepared_campaign(tmp_path / "sources", calibration_samples=40, markets=("US", "CN"))
+    output = tmp_path / "reliability"
+    report = evaluate_campaign_reliability(campaign.reference, campaign.completion, output)
+    assert report["counts"]["models"] == 8
+    assert report["counts"]["prediction_files"] == 16
+    assert len(report["cases"]) == 48
+    assert report["method"]["calibration_grouping"] == "model_fold_seed_market"
+    assert report["method"]["market_pooling"] is False
+    assert report["coverage_guaranteed"] is False
+    for row in report["cases"]:
+        assert row["evaluation_samples"] == row["samples"] == 2
+        assert row["calibration_samples"] == 20
+        if row["prediction_kind"] == "interval":
+            assert row["radius"] == (0.1 if row["market"] == "US" else 1.0)
+    csv_rows = list(csv.DictReader((output / "cases.csv").open()))
+    assert len(csv_rows) == 48 and {row["market"] for row in csv_rows} == {"US", "CN"}
+    assert sha256(output / "cases.csv") == report["artifacts"]["cases.csv"]

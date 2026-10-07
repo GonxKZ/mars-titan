@@ -242,7 +242,7 @@ def prepare_temporal_corpus(
     if output.exists() or output.is_symlink():
         raise FileExistsError("Las vistas temporales ya existen")
     parent = CorpusDataset(parent_path)
-    if "temporal_view" in parent.manifest or parent.manifest.get("final_test_opened") is True:
+    if parent.temporal is not None or parent.manifest.get("final_test_opened") is True:
         raise ValueError("Se necesita un corpus original con el test reservado")
     for source in [
         *parent.roots.values(),
