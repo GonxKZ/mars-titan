@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "scope": "reviewed_h15_documents_not_macro_admission",
+  "date": "2026-10-07",
+  "sources": [
+    {
+      "publication_date": "2000-01-10",
+      "html_url": "https://www.federalreserve.gov/releases/h15/20000110/h15.htm",
+      "pdf_url": "https://www.federalreserve.gov/releases/h15/20000110/h15.pdf",
+      "pdf_sha256": "1fc4249cb588ed29000793860085d173de161df2df3424d49545e27fc2d0d997"
+    },
+    {
+      "publication_date": "2000-01-18",
+      "html_url": "https://www.federalreserve.gov/releases/h15/20000118/h15.htm",
+      "pdf_url": "https://www.federalreserve.gov/releases/h15/20000118/h15.pdf",
+      "pdf_sha256": "4397e70ff4a724df23ac33fa4005cbc4bfad78ca6758c0daa848adc1255cf3ec"
+    }
+  ],
+  "indicator_ids": [
+    "us_fed_funds",
+    "us_treasury_3m",
+    "us_treasury_2y",
+    "us_treasury_5y",
+    "us_treasury_10y",
+    "us_treasury_30y"
+  ],
+  "observations": 60,
+  "market_rows": 120,
+  "exact_decimal_matches": 120,
+  "availability_matches": 120,
+  "recovery_preserves_bytes_and_mtime": true,
+  "admission_required": true,
+  "training_ready": false,
+  "final_test_opened": false,
+  "models_executed": false,
+  "source_code_sha256": {
+    "macro_h15_archive.py": "a55f4185614882eb7119489f87d9a13608bdba070acc54f81a3adc7b8c73f02c",
+    "macro_h15_documents.py": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
+    "macro_release_documents.py": "fbe50afc4b1acef4883db273249e6bf78f3a5d5feb7c82dd0d29af12bec99b7b",
+    "macro.py": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d",
+    "temporal.py": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41",
+    "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "macro_coverage.py": "f881c55afaf298056faea69562d7e8fa4618b6b20564ec7a1f5812e699c064d6",
+    "macro_acquisition.py": "650191af7ca281eb2c376e8b07169a0fa9adc530d994786449636973a5d8ab58",
+    "preparation.py": "9cd0a46b6d2165a384464f068d4c86bd7206c7d3ffba3026781f7f682299d58f",
+    "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd"
+  },
+  "parquet_sha256": "ecd0db681e0fb65b3ff9e6f3c35a48c3adf2cd080f90bf3d78b19e7030e35409",
+  "parquet_bytes": 8947,
+  "source_bytes": 321654,
+  "measurements": {
+    "materialization_seconds": 0.30887636299939913,
+    "recovery_seconds": 0.07510573300078249,
+    "peak_rss_bytes": 147742720,
+    "cpu_quota_percent": 200,
+    "memory_limit_bytes": 1073741824,
+    "threads": 2,
+    "cuda_visible_devices": "-1",
+    "repetitions": 1,
+    "limit": "Una preparación y una recuperación en el mismo proceso. El RSS es el máximo de vida de ese proceso. No es un benchmark comparativo ni incluye la descarga y revisión documental previas."
+  },
+  "tests": {
+    "related_data_tests_passed": 339,
+    "h15_tests_passed": 62,
+    "related_suite_seconds": 13.23,
+    "scope": "Pruebas de H.15, comunicados, vintages, cobertura, recálculo y GSCPI. No se ejecutó la suite de entrenamiento, optimizadores o inferencia.",
+    "test_source_sha256": "c583cf9b06f63a9afbcfbb42b108123ad444f0c6564186ce06935a8ccbf59a64"
+  },
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Sentencias ejecutables identificadas por coverage.py dentro del rango AST de cada función o método. Cobertura de ramas registrada por separado.",
+    "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
+    "files": {
+      "macro_h15_archive.py": {
+        "sha256": "a55f4185614882eb7119489f87d9a13608bdba070acc54f81a3adc7b8c73f02c",
+        "statement_coverage_percent": 84.58498023715416,
+        "branch_coverage_percent": 72.41379310344827
+      },
+      "macro_h15_documents.py": {
+        "sha256": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
+        "statement_coverage_percent": 87.39495798319328,
+        "branch_coverage_percent": 79.6875
+      }
+    },
+    "maximum_function_ccn": 53,
+    "maximum_function_crap": 79.21023472809446,
+    "maximum_location": "macro_h15_archive._document",
+    "directed_mutations_detected": 6,
+    "directed_mutations_attempted": 6,
+    "snapshot_import_verified": true,
+    "limit": "La validación de documento concentra complejidad y sentencias sin cubrir. Estas medidas orientan la revisión y no prueban ausencia de errores."
+  },
+  "limitations": [
+    "Solo dos boletines, sin cobertura continua del año 2000.",
+    "Precisión de publicación de día, sin hora histórica verificada.",
+    "El contraste de celdas requiere una transcripción documental revisada, no una aprobación inferida por el parser.",
+    "No se ha probado identidad de bytes con una captura contemporánea de 2000 ni ausencia de otras revisiones.",
+    "No se generan fines de semana de DFF ni se sustituyen SOFR, TIPS o GSCPI.",
+    "La admisión en un panel macro requiere una decisión y una edición separadas."
+  ],
+  "unique_observation_values_compared": 60
+}
