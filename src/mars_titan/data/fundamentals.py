@@ -1,6 +1,8 @@
 """Hechos contables por publicación. El contenedor no fecha las cifras internas."""
 
+import json
 import math
+import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +11,25 @@ import ijson
 from ijson.common import ObjectBuilder
 
 from .input_policy import STRICT_INPUTS, masked_inputs
+from .storage import sha256
 from .temporal import MarketClock, aware
+
+_MAX_EXCLUSION_BYTES = 16 * 1024**2
+
+
+def _record_exclusion(exclusions, key, entry, total_bytes):
+    """Agrupar registros excluidos sin perder su fuente ni crecer sin límite."""
+    previous = exclusions.get(key)
+    old_bytes = len(json.dumps(previous).encode()) if previous else 0
+    if previous:
+        entry["first_ordinal"] = min(previous["first_ordinal"], entry["first_ordinal"])
+        entry["last_ordinal"] = max(previous["last_ordinal"], entry["last_ordinal"])
+        entry["source_records"] += previous["source_records"]
+    total_bytes += len(json.dumps(entry).encode()) + (2 if previous is None else 0) - old_bytes
+    if total_bytes > _MAX_EXCLUSION_BYTES:
+        raise ValueError("El diagnóstico de exclusiones supera el presupuesto")
+    exclusions[key] = entry
+    return total_bytes
 
 
 def _us_facts(path: Path):
@@ -49,6 +69,7 @@ def read_fundamentals(
     if type(max_unique_facts) is not int or max_unique_facts < 1:
         raise ValueError("El presupuesto de hechos contables debe ser positivo")
     unique, ambiguous = {}, set()
+    exclusions, source_hashes, exclusion_bytes = {}, {}, 2
     counts = Counter(rows=0, missing_publication=0, duplicates=0, invalid=0, ambiguous_facts=0)
     for path in paths:
         if market == "CN":
@@ -61,7 +82,7 @@ def read_fundamentals(
                     else:
                         counts["unverified_publication_field"] += 1
             continue
-        for (namespace, concept, unit), fact in _us_facts(path):
+        for ordinal, ((namespace, concept, unit), fact) in enumerate(_us_facts(path), 1):
             counts["rows"] += 1
             filed = fact.get("filed")
             if not filed:
@@ -85,10 +106,17 @@ def read_fundamentals(
                     raise ValueError(
                         "El valor no es finito o falta el identificador de presentación"
                     )
+                if masked and any(
+                    not isinstance(day, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day)
+                    for day in (fact["end"], fact.get("start"), filed)
+                    if day is not None and day != ""
+                ):
+                    raise ValueError("Las fechas contables deben ser días ISO completos")
                 end = datetime.fromisoformat(fact["end"]).date()
                 if fact.get("start") and datetime.fromisoformat(fact["start"]).date() > end:
                     raise ValueError("El inicio del periodo es posterior a su cierre")
-                if filed and end > datetime.fromisoformat(filed).date():
+                filed_day = datetime.fromisoformat(filed).date() if filed else None
+                if filed_day and end > filed_day and not masked:
                     raise ValueError("El periodo termina después de la fecha de presentación")
                 available = clock.date_available(filed) if filed else None
             except (ValueError, KeyError, TypeError) as error:
@@ -99,6 +127,37 @@ def read_fundamentals(
                 counts["invalid"] += 1
                 continue
             key = (namespace, concept, unit, fact.get("start"), fact["end"], filed, fact["accn"])
+            if filed_day and end > filed_day:
+                if path not in source_hashes:
+                    source_hashes[path] = sha256(path)
+                excluded_key = (path.name, source_hashes[path], *key)
+                if (
+                    excluded_key not in exclusions
+                    and len(unique) + len(exclusions) >= max_unique_facts
+                ):
+                    raise ValueError("Los hechos y exclusiones únicos superan el presupuesto")
+                exclusion_bytes = _record_exclusion(
+                    exclusions,
+                    excluded_key,
+                    dict(
+                        reason="period_after_filing",
+                        concept=f"{namespace}:{concept}:{unit}",
+                        unit=unit,
+                        period_start=fact.get("start"),
+                        period_end=fact["end"],
+                        filed=filed,
+                        accession=fact["accn"],
+                        source_file=path.name,
+                        source_sha256=source_hashes[path],
+                        diagnostic_available_at=available.isoformat(),
+                        first_ordinal=ordinal,
+                        last_ordinal=ordinal,
+                        source_records=1,
+                    ),
+                    exclusion_bytes,
+                )
+                counts["temporal_excluded"] += 1
+                continue
             row = {
                 "concept": f"{namespace}:{concept}:{unit}",
                 "unit": unit,
@@ -117,7 +176,7 @@ def read_fundamentals(
                 else:
                     counts["duplicates"] += 1
             else:
-                if len(unique) >= max_unique_facts:
+                if len(unique) + len(exclusions) >= max_unique_facts:
                     raise ValueError("Los hechos contables únicos superan el presupuesto")
                 unique[key] = row
     counts["ambiguous_facts"] = len(ambiguous)
@@ -132,7 +191,13 @@ def read_fundamentals(
         )
     )
     counts["accepted"] = len(rows)
-    return rows, dict(counts)
+    audit = dict(counts)
+    if masked:
+        audit.update(
+            temporal_excluded=counts["temporal_excluded"],
+            temporal_exclusions=list(exclusions.values()),
+        )
+    return rows, audit
 
 
 def snapshot(rows: list[dict], cutoff: datetime) -> dict[str, dict]:
