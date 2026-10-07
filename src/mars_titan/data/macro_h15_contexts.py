@@ -13,12 +13,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pyarrow as pa
+import pyarrow.parquet as pq
 
 from .batches import read_bounded_table
 from .cohort_files import read_manifest, safe_destination
 from .macro import _available, calculate_macro, macro_calculation_contract
 from .macro_acquisition import _archive_text, _readme_metadata
-from .macro_coverage import _publish_directory, _read_catalog
+from .macro_coverage import _TEXT_LIMITS, _bounded_decode, _publish_directory, _read_catalog
 from .macro_h15_archive import _Sources, prepare_h15_archive
 from .macro_h15_documents import _SERIES, _day
 from .macro_recalculation import _SCHEMA
@@ -126,13 +127,20 @@ def load_h15_events(manifest_path, document_edition, catalog_path, *, metadata_m
     required = ("configuration.json", "report.json", "observations.parquet", "source-manifest.json")
     if not all((document_edition / name).is_file() for name in required):
         raise ValueError("La edición documental debe estar confirmada antes de adaptarla")
-    configuration, _ = read_manifest(document_edition / "configuration.json", 2 * 1024**2)
+    configuration, config_hash = read_manifest(document_edition / "configuration.json", 2 * 1024**2)
+    document_report, report_hash = read_manifest(document_edition / "report.json", 2 * 1024**2)
     verified = prepare_h15_archive(
         manifest_path,
         document_edition,
         markets=configuration["markets"],
         cutoff=configuration["cutoff"],
     )
+    if (
+        verified != dict(document_report, reused=True)
+        or verified["configuration_sha256"] != config_hash
+    ):
+        raise ValueError("El recibo documental cambió durante su verificación")
+    catalog_hash = sha256(catalog_path)
     entries = _read_catalog(catalog_path)
     if any(len(entry["unit"]) > 256 for entry in entries.values()):
         raise ValueError("La unidad del catálogo supera la longitud permitida")
@@ -149,8 +157,19 @@ def load_h15_events(manifest_path, document_edition, catalog_path, *, metadata_m
         ):
             raise ValueError("El catálogo cambia la definición de una serie H.15")
     metadata, hashes = _metadata(metadata_manifest)
-    for path in (manifest_path, catalog_path, *(document_edition / name for name in required)):
-        hashes[str(path.absolute())] = sha256(path)
+    hashes.update(
+        {
+            str(manifest_path.absolute()): verified["source_manifest_sha256"],
+            str(catalog_path.absolute()): catalog_hash,
+            str((document_edition / "configuration.json").absolute()): config_hash,
+            str((document_edition / "report.json").absolute()): report_hash,
+            **{
+                str((document_edition / name).absolute()): digest
+                for name, digest in verified["artifacts"].items()
+            },
+        }
+    )
+    _confirm(hashes)
     manifest, signature = read_manifest(manifest_path, 2 * 1024**2)
     if signature != verified["source_manifest_sha256"]:
         raise ValueError("El manifiesto documental cambió después de comprobarlo")
@@ -264,9 +283,55 @@ def _coverage(table, decisions):
     )
 
 
-def _recover(output, configuration, events):
+def _panel(events, catalog, clock, configuration):
+    rows = calculate_macro(
+        events,
+        catalog,
+        clock,
+        daily_lag_policy=configuration["calculation"]["daily_lag_policy"],
+        decision_start=datetime.combine(_day(configuration["start"]), datetime.min.time(), UTC),
+    )
+    if len(rows) != configuration["decisions"][clock.market] * len(catalog):
+        raise ValueError("El panel no conserva todas las posiciones del catálogo")
+    table = pa.Table.from_pylist(rows, schema=_SCHEMA)
+    if table.nbytes > _MAX_BYTES:
+        raise ValueError("El panel decodificado supera el presupuesto")
+    return table
+
+
+def _compare_panel(path, reference):
+    with pq.ParquetFile(path) as file:
+        metadata = file.metadata
+        if file.schema_arrow != reference.schema or metadata.num_rows != reference.num_rows:
+            raise ValueError("El panel no conserva su esquema o recuento")
+        if any(
+            metadata.row_group(i).total_byte_size > _MAX_BYTES
+            or any(
+                metadata.row_group(i).column(j).num_values > _MAX_CELLS
+                for j in range(metadata.num_columns)
+            )
+            for i in range(metadata.num_row_groups)
+        ):
+            raise ValueError("Un grupo del panel supera el presupuesto")
+    dictionaries = [
+        metadata.schema.column(i).path
+        for i in range(metadata.num_columns)
+        if metadata.schema.column(i).path.split(".")[0] in _TEXT_LIMITS
+    ]
+    offset = 0
+    with pq.ParquetFile(path, metadata=metadata, read_dictionary=dictionaries) as file:
+        for batch in file.iter_batches(batch_size=512, use_threads=False):
+            decoded = pa.Table.from_batches([_bounded_decode(batch)])
+            if not decoded.equals(reference.slice(offset, batch.num_rows)):
+                raise ValueError("El panel no coincide con el cálculo de los eventos verificados")
+            offset += batch.num_rows
+    if offset != reference.num_rows:
+        raise ValueError("El panel no conserva todas las filas calculadas")
+
+
+def _recover(output, configuration, events, catalog, clocks):
     saved, digest = read_manifest(output / "configuration.json", 2 * 1024**2)
-    report, _ = read_manifest(output / "report.json", 2 * 1024**2)
+    report, report_hash = read_manifest(output / "report.json", 2 * 1024**2)
     if (
         saved != configuration
         or report.get("configuration_sha256") != digest
@@ -293,20 +358,22 @@ def _recover(output, configuration, events):
         raise ValueError("El recibo no conserva sus artefactos")
     if any((output / name).stat().st_size > _MAX_BYTES for name in expected):
         raise ValueError("Un artefacto de la edición supera el presupuesto")
-    _confirm({str(output / name): digest for name, digest in report["artifacts"].items()})
+    hashes = {
+        str(output / "configuration.json"): digest,
+        str(output / "report.json"): report_hash,
+        **{str(output / name): signature for name, signature in report["artifacts"].items()},
+    }
+    _confirm(hashes)
     if read_manifest(output / "events.json", _MAX_BYTES)[0] != events:
         raise ValueError("El recibo no conserva los eventos documentales")
     coverage = {}
     for market in configuration["markets"]:
-        table = read_bounded_table(
-            output / f"macro-{market}.parquet", max_rows=_MAX_CELLS, max_bytes=_MAX_BYTES
-        )
-        count = configuration["decisions"][market]
-        if table.schema != _SCHEMA or table.num_rows != count * len(configuration["indicator_ids"]):
-            raise ValueError("El panel no conserva su esquema o recuento")
-        coverage[market] = _coverage(table, count)
+        reference = _panel(events, catalog, clocks[market], configuration)
+        _compare_panel(output / f"macro-{market}.parquet", reference)
+        coverage[market] = _coverage(reference, configuration["decisions"][market])
     if report.get("markets") != coverage:
         raise ValueError("El recibo no conserva los recuentos del panel")
+    _confirm(hashes)
     return dict(report, reused=True)
 
 
@@ -376,7 +443,7 @@ def prepare_h15_contexts(
         limits=dict(cells=_MAX_CELLS, artifact_bytes=_MAX_BYTES),
     )
     if output.exists():
-        report = _recover(output, configuration, events)
+        report = _recover(output, configuration, events, catalog, clocks)
         _confirm(inputs["sources"])
         return report
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -390,18 +457,7 @@ def prepare_h15_contexts(
         atomic_json(stage / "events.json", events)
         coverage = {}
         for market, clock in clocks.items():
-            rows = calculate_macro(
-                events,
-                catalog,
-                clock,
-                daily_lag_policy=daily_lag_policy,
-                decision_start=datetime.combine(first, datetime.min.time(), UTC),
-            )
-            if len(rows) != decisions[market] * len(catalog):
-                raise ValueError("El panel no conserva todas las posiciones del catálogo")
-            table = pa.Table.from_pylist(rows, schema=_SCHEMA)
-            if table.nbytes > _MAX_BYTES:
-                raise ValueError("El panel decodificado supera el presupuesto")
+            table = _panel(events, catalog, clock, configuration)
             path = stage / f"macro-{market}.parquet"
             atomic_parquet(path, table)
             if path.stat().st_size > _MAX_BYTES:
