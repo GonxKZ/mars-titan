@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "scope": "reviewed_h15_documents_not_macro_admission",
+  "date": "2026-10-07",
+  "sources": [
+    {
+      "publication_date": "2000-01-10",
+      "html_url": "https://www.federalreserve.gov/releases/h15/20000110/h15.htm",
+      "pdf_url": "https://www.federalreserve.gov/releases/h15/20000110/h15.pdf",
+      "pdf_sha256": "1fc4249cb588ed29000793860085d173de161df2df3424d49545e27fc2d0d997"
+    },
+    {
+      "publication_date": "2000-01-18",
+      "html_url": "https://www.federalreserve.gov/releases/h15/20000118/h15.htm",
+      "pdf_url": "https://www.federalreserve.gov/releases/h15/20000118/h15.pdf",
+      "pdf_sha256": "4397e70ff4a724df23ac33fa4005cbc4bfad78ca6758c0daa848adc1255cf3ec"
+    }
+  ],
+  "indicator_ids": [
+    "us_fed_funds",
+    "us_treasury_3m",
+    "us_treasury_2y",
+    "us_treasury_5y",
+    "us_treasury_10y",
+    "us_treasury_30y"
+  ],
+  "observations": 60,
+  "market_rows": 120,
+  "exact_decimal_matches": 120,
+  "availability_matches": 120,
+  "recovery_preserves_bytes_and_mtime": true,
+  "admission_required": true,
+  "training_ready": false,
+  "final_test_opened": false,
+  "models_executed": false,
+  "source_code_sha256": {
+    "macro_h15_archive.py": "3c5cca67a79b77a9b40bd35c947f0cdab46c30bf94467e659d263f6242b6b7bd",
+    "macro_h15_documents.py": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
+    "macro_release_documents.py": "fbe50afc4b1acef4883db273249e6bf78f3a5d5feb7c82dd0d29af12bec99b7b",
+    "macro.py": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d",
+    "temporal.py": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41",
+    "cohort_files.py": "732c7265561c42a6cecba88f43dea80ff697fbc3ab6d20ba9877e97d5081a9e4",
+    "macro_coverage.py": "f881c55afaf298056faea69562d7e8fa4618b6b20564ec7a1f5812e699c064d6",
+    "macro_acquisition.py": "650191af7ca281eb2c376e8b07169a0fa9adc530d994786449636973a5d8ab58",
+    "preparation.py": "9cd0a46b6d2165a384464f068d4c86bd7206c7d3ffba3026781f7f682299d58f",
+    "storage.py": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd"
+  },
+  "parquet_sha256": "ecd0db681e0fb65b3ff9e6f3c35a48c3adf2cd080f90bf3d78b19e7030e35409",
+  "parquet_bytes": 8947,
+  "source_bytes": 321654,
+  "measurements": {
+    "materialization_seconds": 0.29497206000087317,
+    "recovery_seconds": 0.07083265099936398,
+    "peak_rss_bytes": 148967424,
+    "cpu_quota_percent": null,
+    "memory_limit_bytes": null,
+    "threads": 2,
+    "cuda_visible_devices": "-1",
+    "repetitions": 1,
+    "limit": "Una preparación y una recuperación local en el mismo proceso, con dos hilos y sin cuota cgroup añadida en esta pasada. RSS de vida del proceso. No es una comparación de rendimiento ni incluye adquisición o revisión de fuentes."
+  },
+  "tests": {
+    "related_data_tests_passed": 487,
+    "h15_tests_passed": 86,
+    "related_suite_seconds": 29.84,
+    "scope": "Todas las pruebas tests/data/test_macro*.py. Sin suites de entrenamiento, optimizadores o inferencia.",
+    "test_source_sha256": "5587a25ce4e8a617bce587196a6ae0b80c3a1c028f71cb335938e7d598d7f556"
+  },
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Sentencias ejecutables identificadas por coverage.py dentro del rango AST de cada función o método. Cobertura de ramas registrada por separado.",
+    "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
+    "files": {
+      "macro_h15_archive.py": {
+        "sha256": "3c5cca67a79b77a9b40bd35c947f0cdab46c30bf94467e659d263f6242b6b7bd",
+        "statement_coverage_percent": 85.86572438162544,
+        "branch_coverage_percent": 74.21875
+      },
+      "macro_h15_documents.py": {
+        "sha256": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
+        "statement_coverage_percent": 87.39495798319328,
+        "branch_coverage_percent": 79.6875
+      }
+    },
+    "maximum_function_ccn": 53,
+    "maximum_function_crap": 79.21023472809446,
+    "maximum_location": "macro_h15_archive._document",
+    "directed_mutations_detected": 7,
+    "directed_mutations_attempted": 8,
+    "snapshot_import_verified": true,
+    "limit": "La validación de documento concentra complejidad y sentencias sin cubrir. Estas medidas orientan la revisión y no prueban ausencia de errores.",
+    "directed_mutations": [
+      {
+        "id": "skip_creation_logical_budget",
+        "detected": false
+      },
+      {
+        "id": "charge_overhead_per_batch",
+        "detected": true
+      },
+      {
+        "id": "skip_logical_budget",
+        "detected": true
+      },
+      {
+        "id": "decode_dictionary_early",
+        "detected": true
+      },
+      {
+        "id": "skip_exact_comparison",
+        "detected": true
+      },
+      {
+        "id": "restore_two_day_calendar",
+        "detected": true
+      },
+      {
+        "id": "extend_calendar_past_cutoff",
+        "detected": true
+      },
+      {
+        "id": "omit_recovery_confirmation",
+        "detected": true
+      }
+    ],
+    "modified_functions": [
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_logical_overhead",
+        "line": 312,
+        "ccn": 3,
+        "statements": 2,
+        "covered_statements": 2,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_text_bytes",
+        "line": 321,
+        "ccn": 3,
+        "statements": 3,
+        "covered_statements": 3,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_logical_bytes",
+        "line": 330,
+        "ccn": 3,
+        "statements": 2,
+        "covered_statements": 2,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_check_parquet",
+        "line": 336,
+        "ccn": 14,
+        "statements": 23,
+        "covered_statements": 21,
+        "statement_coverage": 0.9130434782608695,
+        "crap": 14.12887318155667
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_recover",
+        "line": 371,
+        "ccn": 18,
+        "statements": 24,
+        "covered_statements": 22,
+        "statement_coverage": 0.9166666666666666,
+        "crap": 18.1875
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "prepare_h15_archive",
+        "line": 421,
+        "ccn": 24,
+        "statements": 54,
+        "covered_statements": 49,
+        "statement_coverage": 0.9074074074074074,
+        "crap": 24.457247370827616
+      }
+    ],
+    "modified_functions_maximum_ccn": 24,
+    "modified_functions_maximum_crap": 24.457247370827616,
+    "surviving_mutation_explanation": "skip_creation_logical_budget cambia el control inicial por table.nbytes. Sobrevive porque el Parquet temporal se comprueba de nuevo con el presupuesto canónico antes de publicar. El arnés conserva su salida de fallo por no detectar todos los cambios."
+  },
+  "limitations": [
+    "Solo dos boletines, sin cobertura continua del año 2000.",
+    "Precisión de publicación de día, sin hora histórica verificada.",
+    "El contraste de celdas requiere una transcripción documental revisada, no una aprobación inferida por el parser.",
+    "No se ha probado identidad de bytes con una captura contemporánea de 2000 ni ausencia de otras revisiones.",
+    "No se generan fines de semana de DFF ni se sustituyen SOFR, TIPS o GSCPI.",
+    "La admisión en un panel macro requiere una decisión y una edición separadas.",
+    "El calendario de apoyo CN requiere un año previo. Algunas publicaciones de 1991 quedan fuera de su cobertura. La revisión actual comprende historia desde 2000."
+  ],
+  "unique_observation_values_compared": 60,
+  "edition_revision": 4,
+  "review_corrections": {
+    "parquet_logical_expansion": {
+      "file_bytes": 6025,
+      "footer_uncompressed_bytes": 2099473,
+      "previous_materialized_bytes": 125859888,
+      "corrected_maximum_batch_bytes": 2097396,
+      "corrected_maximum_batch_columns": 1,
+      "dictionary_preserved_before_budget_check": true,
+      "rejected_before_dense_read": true,
+      "measurement_limit": "Los bytes del lote no equivalen al pico RSS del proceso."
+    },
+    "calendar_without_sessions": {
+      "technical_fixture_publication_date": "2000-02-07",
+      "cn_cutoff": "2000-02-07",
+      "retained_rows_with_null_availability": 30,
+      "later_cn_availability": "2000-02-14T07:05:00+00:00",
+      "later_us_availability": "2000-02-08T21:05:00+00:00",
+      "cutoff_not_extended": true,
+      "fixture_limit": "Comprueba calendarios y corte. No añade un boletín real a las dos fuentes revisadas."
+    },
+    "edition_parity": {
+      "previous_revision": 3,
+      "current_revision": 4,
+      "parquet_bytes_identical": true,
+      "protected_files": 23,
+      "sources_and_previous_edition_unchanged": true,
+      "configuration_sha256": "7b1250d20ee6e016bed9ad592719cc2175441f4f39e7c87183091d8247d0bd79",
+      "report_sha256": "d784ba5ca2938460ea836087cc3bbbfbffb141e2d17777630cb5d85476012ec7"
+    },
+    "logical_budget_boundary": {
+      "canonical_limit_bytes": 67108864,
+      "technical_rows_at_exact_limit": 115140,
+      "create_recover_variants": 4,
+      "same_budget_for_creation_and_recovery": true
+    }
+  },
+  "independent_review": {
+    "source_commit": "f83838ada4c06ba60c71d981df6cb1811c38d981",
+    "receipt_sha256": "fe004dd928490c42bcda4832c0c6ba8d690c27566be3a8e1d4ac6cb54a219780",
+    "quality_receipt_sha256": "c2cf6c46b273f7665af1a5640ced7b5538a201671ff4053fccbc882b9f95d6c8",
+    "scope": "no_findings_in_requested_2000_scope",
+    "h15_tests_passed": 86,
+    "h15_seconds": 5.72
+  }
+}
