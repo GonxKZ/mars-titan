@@ -371,5 +371,32 @@
     "No se han descargado PDF ni se han incorporado cifras al corpus.",
     "La cobertura de trimestres requiere sus categorías y publicaciones específicas.",
     "La prueba de reanudación verifica48 respuestas conservadas, sin repetir ni reescribir las24 anteriores."
-  ]
+  ],
+  "operational_followup": {
+    "observed_at_utc": "2026-10-07T05:00:32.380396+00:00",
+    "attempts": [
+      {
+        "status": "blocked",
+        "confirmed_requests": 61,
+        "announcements": 1710,
+        "http_status": 504,
+        "report_sha256": "bc2a8465df18ca462acd402092e8453181014a1d5c390578e2d177787b869f74"
+      },
+      {
+        "status": "blocked",
+        "confirmed_requests": 66,
+        "announcements": 1860,
+        "http_status": 504,
+        "report_sha256": "d4a77b507f17bdc2149358c8ae6329a6b0b1fe82f49f7514296e5239370feb50",
+        "minimum_spacing_seconds": 5
+      }
+    ],
+    "reused_successful_responses": 60,
+    "recovery_without_network": true,
+    "first_attempt_preserved": true,
+    "recovery_receipt_sha256": "3639108feb916ffba64b97afd5de267a28126a2e147e71a9e344f1d8f15f470f",
+    "status": "blocked_by_source_http_504",
+    "automatic_retries": false,
+    "interpretation": "La cola parcial se conserva. No se ha completado la recogida de 2022–2023 ni se ha atribuido una causa interna al error del proveedor."
+  }
 }

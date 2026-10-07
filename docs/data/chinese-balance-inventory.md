@@ -6,7 +6,8 @@ y de los originales. No convierte el cierre de un periodo en fecha de anuncio
 ni atribuye moneda, escala, norma contable o consolidación cuando faltan.
 
 La API es `inventory_chinese_balances(manifest, output, *, periods=PERIODS)`.
-La CLI `python -m mars_titan.data.china_inventory` recibe `--manifest`, `--output`
+La ejecución `PYTHONPATH=src uv run --no-sync python -m
+mars_titan.data.china_inventory` recibe `--manifest`, `--output`
 y `--period` repetible. Por defecto selecciona el 31 de diciembre de 2021 y de
 2022. Permite hasta 128 fechas ISO únicas y ordenadas entre 1990 y 2023. Son
 fechas de cierre, no una clasificación de informes anuales auditados.

@@ -35,8 +35,9 @@ Cambiar un indicador de truncamiento no convierte una respuesta incompleta en
 completa. Una respuesta 403 o 429 detiene la recogida sin reintentos automáticos.
 
 La API es `collect_chinese_announcements(queue, output, *, publication_start,
-publication_end, max_requests)`. La CLI `python -m
-mars_titan.data.china_announcements` recibe las mismas opciones con guiones.
+publication_end, max_requests)`. La ejecución local utiliza `PYTHONPATH=src uv
+run --no-sync python -m mars_titan.data.china_announcements`, con las mismas
+opciones expresadas con guiones.
 El presupuesto de peticiones es obligatorio y puede ampliarse en otra invocación
 con la misma configuración. El cursor distingue una colección parcial de una
 colección completada o bloqueada.
@@ -50,6 +51,13 @@ archivos. La ventana completa de publicaciones de 2022 y 2023 pasó de 24 a
 48 respuestas confirmadas y de 630 a 1.350 anuncios tras reanudarse. Los bytes
 y fechas de modificación de las respuestas anteriores permanecieron iguales.
 Ese corte todavía no acredita que se haya recorrido toda la ventana.
+
+La recogida posterior se detuvo con HTTP 504 tras conservar 1.710 anuncios.
+Un segundo intento reutilizó sus sesenta respuestas correctas, sin modificar
+el primero, y aumentó la espera mínima a cinco segundos. Alcanzó 1.860 anuncios
+y volvió a detenerse ante HTTP 504. Las respuestas y ambos fallos permanecen
+conservados. La colección completa sigue pendiente y no se ha identificado
+la causa interna del error del proveedor.
 
 Pasan 45 pruebas del módulo y cuatro comprobaciones privadas adicionales.
 Se detectaron doce mutaciones dirigidas. La cobertura es del 89,90 % de
