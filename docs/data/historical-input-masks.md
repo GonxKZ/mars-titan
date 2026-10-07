@@ -39,6 +39,8 @@ La CLI de preparación admite `--input-policy historical_masked_2000_v1` y `--pr
 
 Las huellas de los artefactos históricos no se reescriben. Una ejecución con código nuevo obtiene una identidad nueva aunque produzca exactamente los mismos vectores estrictos. La prueba de paridad compara esquema, filas y bytes del Parquet estricto anterior y posterior al cambio.
 
+La [verificación técnica](../../reports/data/historical-input-masks-verification-20261007.json) registra 144 pruebas de datos y la reproducción del caso con factores empresariales activados. Los hechos sin publicación permanecen en el diagnóstico, pero no entran en el cálculo de ratios. Las revisiones futuras conservan su fecha y no cambian el ratio de las decisiones anteriores. La fixture estricta con siete factores observados mantiene esquema, filas y bytes. Las cuatro mutaciones del último arreglo se detectan. Estas comprobaciones no sustituyen la materialización del corpus real.
+
 ## Dependencias pendientes
 
 La supervisión mantiene su objetivo residual original y su historia de 252 sesiones con un mínimo de 126 pares. Esta entrega no lo modifica. La falta de objetivo válido seguirá separada de la ausencia de noticias, cuentas o macro.
