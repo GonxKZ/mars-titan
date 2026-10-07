@@ -1,5 +1,6 @@
 """Admisión CUDA y recuperación del proceso sin reservar memoria real."""
 
+import errno
 import json
 import os
 import select
@@ -20,6 +21,97 @@ def module():
 
 def snapshot(free=7400, processes=()):
     return module().GpuSnapshot(8188, free, tuple(processes))
+
+
+@pytest.mark.parametrize("error_number", [errno.ENOENT, errno.ESRCH])
+def test_process_info_treats_a_disappearing_process_as_absent(monkeypatch, error_number):
+    engine = module()
+
+    def disappeared(path):
+        raise OSError(error_number, os.strerror(error_number), str(path))
+
+    monkeypatch.setattr(engine.Path, "read_text", disappeared)
+    assert engine._process_info(1234) is None
+
+
+@pytest.mark.parametrize("error_number", [errno.EACCES, errno.EPERM, errno.EIO])
+def test_process_info_preserves_permission_and_io_errors(monkeypatch, error_number):
+    engine = module()
+    error = OSError(error_number, os.strerror(error_number))
+
+    def failed(path):
+        raise error
+
+    monkeypatch.setattr(engine.Path, "read_text", failed)
+    with pytest.raises(OSError) as failure:
+        engine._process_info(1234)
+    assert failure.value is error
+
+
+def test_process_exit_between_open_and_read_returns_absent(monkeypatch):
+    engine = module()
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    path = engine.Path(f"/proc/{child.pid}/stat")
+    original = engine.Path.open
+
+    def open_then_exit(current, *args, **kwargs):
+        stream = original(current, *args, **kwargs)
+        if current == path:
+            child.terminate()
+            child.wait(timeout=3)
+        return stream
+
+    try:
+        monkeypatch.setattr(engine.Path, "open", open_then_exit)
+        assert engine._process_info(child.pid) is None
+        assert child.returncode is not None
+    finally:
+        if child.poll() is None:
+            child.kill()
+        child.wait(timeout=3)
+
+
+def test_stop_child_confirms_checkpoint_when_process_exits_during_stat_read(tmp_path, monkeypatch):
+    engine = module()
+    checkpoint, gate = tmp_path / "checkpoint", tmp_path / "gate"
+    code = f"""
+import signal,time
+from pathlib import Path
+def stop(*_):
+    Path({str(checkpoint)!r}).write_text('confirmed')
+    while not Path({str(gate)!r}).exists(): time.sleep(.001)
+    raise SystemExit(0)
+signal.signal(signal.SIGTERM,stop)
+print('ready',flush=True)
+while True: time.sleep(.01)
+"""
+    child = subprocess.Popen(
+        [sys.executable, "-c", code], start_new_session=True, stdout=subprocess.PIPE, text=True
+    )
+    path = engine.Path(f"/proc/{child.pid}/stat")
+    original, observed = engine.Path.open, []
+
+    def open_then_finish(current, *args, **kwargs):
+        stream = original(current, *args, **kwargs)
+        if current == path and checkpoint.exists():
+            gate.touch()
+            child.wait(timeout=3)
+            observed.append(current)
+        return stream
+
+    try:
+        assert select.select([child.stdout], [], [], 5)[0]
+        assert child.stdout.readline().strip() == "ready"
+        monkeypatch.setattr(engine.Path, "open", open_then_finish)
+        result = engine._stop_child(child, 3)
+        assert result == (0, False, True)
+        assert checkpoint.read_text() == "confirmed"
+        assert observed == [path]
+    finally:
+        gate.touch()
+        if child.poll() is None:
+            child.kill()
+        child.wait(timeout=3)
 
 
 def test_driver_memory_units_and_compute_processes_are_checked():

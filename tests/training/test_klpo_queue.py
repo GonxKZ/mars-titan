@@ -14,8 +14,8 @@ def engine():
     return importlib.import_module("mars_titan.training.klpo_queue")
 
 
-def parents(tmp_path):
-    reference, view, run = study(tmp_path)
+def parents(tmp_path, arm="US"):
+    reference, view, run = study(tmp_path, arm)
     meta = json.loads(reference.read_text())
     template = json.loads((run / "run.json").read_text())
     template["fitted_rows"] = 12
@@ -33,7 +33,7 @@ def parents(tmp_path):
             dict(
                 id=kind,
                 path=f"runs/{kind}",
-                arm="US",
+                arm=arm,
                 weighting="natural",
                 stage="search",
                 case={"kind": kind},
@@ -46,7 +46,7 @@ def parents(tmp_path):
         runs=runs,
         planned_runs=4,
         completed_runs=4,
-        selected={f"US-natural/{kind}": kind for kind in ("rnn", "lstm", "gru", "dlinear")},
+        selected={f"{arm}-natural/{kind}": kind for kind in ("rnn", "lstm", "gru", "dlinear")},
     )
     reference.write_text(json.dumps(meta))
     tabular = tmp_path / "tabular/summary.json"

@@ -123,13 +123,15 @@ def evaluate_partition(
     return scores
 
 
-def _jobs(reference, tabular, adjustments):
+def _jobs(reference, tabular, adjustments, *, arm="US"):
+    if arm not in ("US", "CN"):
+        raise ValueError("La evaluación temporal requiere un único mercado")
     adjustment_summary, _ = read_manifest(adjustments, 8 * 1024**2)
     seeds = matching_seeds(adjustment_summary["identity"]["proof"])
     proof = (
-        matching_parents(reference, tabular, "US", seeds=seeds)
+        matching_parents(reference, tabular, arm, seeds=seeds)
         if seeds is not None
-        else selected_parents(reference, tabular, "US")
+        else selected_parents(reference, tabular, arm)
     )
     summaries, jobs = {}, []
     for stage, path in (
@@ -262,9 +264,9 @@ def _confirmed_results(output, summary, jobs):
             _verified_file(result_path.parent, record)
 
 
-def run_evaluation(reference, tabular, adjustments, output, *, stop=None):
+def run_evaluation(reference, tabular, adjustments, output, *, arm="US", stop=None):
     reference, tabular, adjustments, output = map(Path, (reference, tabular, adjustments, output))
-    proof, sources, jobs = _jobs(reference, tabular, adjustments)
+    proof, sources, jobs = _jobs(reference, tabular, adjustments, arm=arm)
     ordered = adjustments.parent / "ordered/manifest.json"
     source, ordered_hash = read_manifest(ordered, 8 * 1024**2)
     if source.get("source_manifest", {}).get("sha256") != proof["manifest_sha256"]:
@@ -279,6 +281,7 @@ def run_evaluation(reference, tabular, adjustments, output, *, stop=None):
         outside_source(protected, output)
         outside_source(output, protected)
     identity = dict(
+        arm=arm,
         sources=sources,
         jobs=jobs,
         ordered_sha256=ordered_hash,
@@ -436,6 +439,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("reference", "tabular", "adjustments", "output"):
         parser.add_argument(f"--{name}", type=Path, required=True)
+    parser.add_argument("--arm", choices=("US", "CN"), default="US")
     args = vars(parser.parse_args())
     with StopRequest() as stop:
         result = run_evaluation(**args, stop=stop)
