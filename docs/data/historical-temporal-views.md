@@ -15,3 +15,5 @@ El contrato temporal histórico tiene versión 2 e incluye política, contrato d
 `prepare_joint_temporal_corpus` recibe un protocolo por mercado. Conserva los cierres y festivos propios de US y CN y une sus filas por fase, sin intersectar instantes UTC. Los recuentos de la unión son la suma de los recuentos locales, incluidos los tramos que no tengan objetivos válidos. El censo sigue incluyendo los candidatos sin precios. Los cursores y las cachés conservan los IDs y sus presencias.
 
 Esta preparación no ejecuta modelos ni acredita que el corpus histórico real esté materializado. Los consumidores de aprendizaje necesitan su propia adaptación explícita a la política histórica. La reserva y el bloqueo previo al aprendizaje permanecen vigentes.
+
+El [recibo de comprobación](../../reports/data/historical-temporal-views-20261008.json) recoge las 154 pruebas técnicas, las diez mutaciones detectadas, la paridad estricta y la revisión independiente. La cobertura y la complejidad se incluyen con su convención y sus límites.
