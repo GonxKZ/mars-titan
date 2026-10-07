@@ -156,7 +156,7 @@ redirecciones ni reintentos. Las ediciones H.15 del
 [18 de enero de 2000](https://www.federalreserve.gov/releases/h15/20000118/h15.htm)
 aportan 60 cifras diarias de seis tipos. Coinciden con los valores locales
 numéricos, pero sus HTML declaran actualización web el 11 de octubre de 2001.
-Falta contrastar los PDF de esas ediciones y acreditar su versión histórica.
+La revisión posterior de los PDF de esas ediciones se describe al final de este apartado.
 La coincidencia numérica no prueba que los bytes capturados ahora fueran los
 publicados en 2000, ni acredita una hora de publicación contemporánea.
 
@@ -172,7 +172,19 @@ Son 63 cifras candidatas, todavía sin incorporar al catálogo ni a los paneles.
 La secuencia BCE no es completa y no permite extender tipos entre fechas
 alejadas. H.15 no aporta en este lote los días de fin de semana necesarios para
 DFF. Ninguna sonda sustituye SOFR o GSCPI ni resuelve la historia multimodal.
-La revisión PDF continúa separada y no se presenta como realizada en esta entrega.
+La revisión PDF se conserva en un recibo separado del resumen inicial.
+
+El contraste posterior de los PDF del [10 de enero](https://www.federalreserve.gov/releases/h15/20000110/h15.pdf)
+y del [18 de enero](https://www.federalreserve.gov/releases/h15/20000118/h15.pdf)
+revisó sus cuatro páginas. Las 60 cifras diarias y 36 celdas agregadas coinciden
+con los HTML. Los documentos imprimen las fechas de publicación, pero no una
+hora. Sus metadatos internos carecen de zona horaria y declaran modificaciones
+anteriores a la creación, por lo que no se utilizan para fijar la disponibilidad.
+El recibo de esta revisión tiene SHA-256
+`dce22ab2e5e55590d846645c6c69748bf63dc4c8e5e72b329b1a87714c226e5d`.
+Esta evidencia permite preparar una edición documental con disponibilidad
+conservadora por fecha. Todavía requiere su contrato de admisión y no acredita
+que los bytes descargados sean una captura contemporánea de 2000.
 
 ## Reproducción y límites
 
