@@ -19,8 +19,14 @@ from .reference_search import _configuration, run_search
 
 def _inputs(config, views):
     plan, cases, config_hash = _configuration(config)
-    if plan["schema_version"] not in {2, 3} or plan["arms"] != ["US"]:
-        raise ValueError("La campaña temporal requiere el diseño estricto estadounidense")
+    if (
+        plan["schema_version"] not in {2, 3}
+        or len(plan["arms"]) != 1
+        or plan["arms"][0] not in {"US", "CN"}
+        or plan["pooled_weightings"] != ["natural"]
+    ):
+        raise ValueError("La campaña temporal requiere un único mercado US o CN y peso natural")
+    market = plan["arms"][0]
     report, report_hash = read_manifest(views / "report.json", 1024**2)
     if (
         not isinstance(report, dict)
@@ -44,11 +50,27 @@ def _inputs(config, views):
             raise ValueError("Las ventanas deben ser consecutivas y tener todas sus particiones")
         path = views / name / "manifest.json"
         meta, digest = read_manifest(path, 8 * 1024**2)
+        if not isinstance(meta, dict):
+            raise ValueError("El manifiesto de la ventana no es un objeto")
         contract = meta.get("temporal_view", {})
         if not isinstance(contract, dict):
             raise ValueError("La ventana no declara un contrato temporal")
         if protocol is None:
             protocol = contract.get("protocol")
+        assets = meta.get("assets")
+        if (
+            not isinstance(protocol, dict)
+            or protocol.get("market") != market
+            or meta.get("markets", [market]) != [market]
+            or not isinstance(assets, list)
+            or not assets
+            or any(not isinstance(asset, dict) or asset.get("market") != market for asset in assets)
+            or meta.get("scope") != plan["scope"]
+            or (plan["scope"] == "full_corpus" and meta.get("cohort_complete") is not True)
+        ):
+            raise ValueError(
+                "La ventana no conserva el mercado, la población y el alcance del diseño"
+            )
         if (
             digest != row.get("manifest_sha256")
             or set(meta.get("counts", {})) != set(PARTITIONS)

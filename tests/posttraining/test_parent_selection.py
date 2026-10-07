@@ -9,8 +9,8 @@ from mars_titan.data.storage import atomic_json, sha256
 from tests.training.test_klpo_queue import parents
 
 
-def matched_campaign(tmp_path):
-    reference, tabular, view = parents(tmp_path)
+def matched_campaign(tmp_path, arm="US"):
+    reference, tabular, view = parents(tmp_path, arm)
     for path in (reference, tabular):
         summary = json.loads(path.read_text())
         originals = list(summary["runs"])
@@ -30,7 +30,7 @@ def matched_campaign(tmp_path):
             row["report_sha256"] = sha256(path.parent / relative / "run.json")
             if neural:
                 finalists.append(
-                    dict(arm="US", weighting="natural", kind=kind, seed=42, run_id=row["id"])
+                    dict(arm=arm, weighting="natural", kind=kind, seed=42, run_id=row["id"])
                 )
             if kind == "ridge":
                 continue
@@ -46,7 +46,7 @@ def matched_campaign(tmp_path):
                     replica["path"] = destination
                     finalists.append(
                         dict(
-                            arm="US",
+                            arm=arm,
                             weighting="natural",
                             kind=kind,
                             seed=seed,
