@@ -1,0 +1,890 @@
+{
+  "schema_version": 1,
+  "kind": "all_price_window_coverage_summary",
+  "checked_at_utc": "2026-10-07T20:30:10.018110+00:00",
+  "scope": "price_window_candidates_not_supervised_samples",
+  "window": {
+    "start": "2000-01-01",
+    "end": "2023-12-31",
+    "context_sessions": 64,
+    "consecutive_market_sessions": true
+  },
+  "totals": [
+    {
+      "market": "US",
+      "group": "all_prices",
+      "assets": 4213,
+      "price_rows": 16090522,
+      "windows_64": 14407908
+    },
+    {
+      "market": "US",
+      "group": "four_sources",
+      "assets": 2639,
+      "price_rows": 11033120,
+      "windows_64": 10121378
+    },
+    {
+      "market": "US",
+      "group": "additional_prices",
+      "assets": 1574,
+      "price_rows": 5057402,
+      "windows_64": 4286530
+    },
+    {
+      "market": "CN",
+      "group": "all_prices",
+      "assets": 810,
+      "price_rows": 2891924,
+      "windows_64": 2668116
+    },
+    {
+      "market": "CN",
+      "group": "four_sources",
+      "assets": 810,
+      "price_rows": 2891924,
+      "windows_64": 2668116
+    },
+    {
+      "market": "CN",
+      "group": "additional_prices",
+      "assets": 0,
+      "price_rows": 0,
+      "windows_64": 0
+    }
+  ],
+  "annual": [
+    {
+      "market": "US",
+      "year": 2000,
+      "all_prices": {
+        "price_rows": 327259,
+        "windows_64": 193001
+      },
+      "four_sources": {
+        "price_rows": 280768,
+        "windows_64": 167989
+      },
+      "additional_prices": {
+        "price_rows": 46491,
+        "windows_64": 25012
+      }
+    },
+    {
+      "market": "US",
+      "year": 2001,
+      "all_prices": {
+        "price_rows": 337272,
+        "windows_64": 267724
+      },
+      "four_sources": {
+        "price_rows": 287791,
+        "windows_64": 232944
+      },
+      "additional_prices": {
+        "price_rows": 49481,
+        "windows_64": 34780
+      }
+    },
+    {
+      "market": "US",
+      "year": 2002,
+      "all_prices": {
+        "price_rows": 357346,
+        "windows_64": 285125
+      },
+      "four_sources": {
+        "price_rows": 301374,
+        "windows_64": 246909
+      },
+      "additional_prices": {
+        "price_rows": 55972,
+        "windows_64": 38216
+      }
+    },
+    {
+      "market": "US",
+      "year": 2003,
+      "all_prices": {
+        "price_rows": 376153,
+        "windows_64": 302592
+      },
+      "four_sources": {
+        "price_rows": 311206,
+        "windows_64": 259262
+      },
+      "additional_prices": {
+        "price_rows": 64947,
+        "windows_64": 43330
+      }
+    },
+    {
+      "market": "US",
+      "year": 2004,
+      "all_prices": {
+        "price_rows": 401883,
+        "windows_64": 327935
+      },
+      "four_sources": {
+        "price_rows": 324573,
+        "windows_64": 272714
+      },
+      "additional_prices": {
+        "price_rows": 77310,
+        "windows_64": 55221
+      }
+    },
+    {
+      "market": "US",
+      "year": 2005,
+      "all_prices": {
+        "price_rows": 426338,
+        "windows_64": 358236
+      },
+      "four_sources": {
+        "price_rows": 339274,
+        "windows_64": 291060
+      },
+      "additional_prices": {
+        "price_rows": 87064,
+        "windows_64": 67176
+      }
+    },
+    {
+      "market": "US",
+      "year": 2006,
+      "all_prices": {
+        "price_rows": 452481,
+        "windows_64": 387360
+      },
+      "four_sources": {
+        "price_rows": 352927,
+        "windows_64": 309353
+      },
+      "additional_prices": {
+        "price_rows": 99554,
+        "windows_64": 78007
+      }
+    },
+    {
+      "market": "US",
+      "year": 2007,
+      "all_prices": {
+        "price_rows": 499919,
+        "windows_64": 425747
+      },
+      "four_sources": {
+        "price_rows": 373843,
+        "windows_64": 329527
+      },
+      "additional_prices": {
+        "price_rows": 126076,
+        "windows_64": 96220
+      }
+    },
+    {
+      "market": "US",
+      "year": 2008,
+      "all_prices": {
+        "price_rows": 538075,
+        "windows_64": 459760
+      },
+      "four_sources": {
+        "price_rows": 391903,
+        "windows_64": 344607
+      },
+      "additional_prices": {
+        "price_rows": 146172,
+        "windows_64": 115153
+      }
+    },
+    {
+      "market": "US",
+      "year": 2009,
+      "all_prices": {
+        "price_rows": 556994,
+        "windows_64": 482707
+      },
+      "four_sources": {
+        "price_rows": 398488,
+        "windows_64": 359111
+      },
+      "additional_prices": {
+        "price_rows": 158506,
+        "windows_64": 123596
+      }
+    },
+    {
+      "market": "US",
+      "year": 2010,
+      "all_prices": {
+        "price_rows": 587277,
+        "windows_64": 512227
+      },
+      "four_sources": {
+        "price_rows": 411819,
+        "windows_64": 371658
+      },
+      "additional_prices": {
+        "price_rows": 175458,
+        "windows_64": 140569
+      }
+    },
+    {
+      "market": "US",
+      "year": 2011,
+      "all_prices": {
+        "price_rows": 619765,
+        "windows_64": 545778
+      },
+      "four_sources": {
+        "price_rows": 427156,
+        "windows_64": 389535
+      },
+      "additional_prices": {
+        "price_rows": 192609,
+        "windows_64": 156243
+      }
+    },
+    {
+      "market": "US",
+      "year": 2012,
+      "all_prices": {
+        "price_rows": 646315,
+        "windows_64": 568202
+      },
+      "four_sources": {
+        "price_rows": 439423,
+        "windows_64": 401465
+      },
+      "additional_prices": {
+        "price_rows": 206892,
+        "windows_64": 166737
+      }
+    },
+    {
+      "market": "US",
+      "year": 2013,
+      "all_prices": {
+        "price_rows": 684929,
+        "windows_64": 600136
+      },
+      "four_sources": {
+        "price_rows": 461718,
+        "windows_64": 425456
+      },
+      "additional_prices": {
+        "price_rows": 223211,
+        "windows_64": 174680
+      }
+    },
+    {
+      "market": "US",
+      "year": 2014,
+      "all_prices": {
+        "price_rows": 730946,
+        "windows_64": 649858
+      },
+      "four_sources": {
+        "price_rows": 488703,
+        "windows_64": 457758
+      },
+      "additional_prices": {
+        "price_rows": 242243,
+        "windows_64": 192100
+      }
+    },
+    {
+      "market": "US",
+      "year": 2015,
+      "all_prices": {
+        "price_rows": 779908,
+        "windows_64": 704863
+      },
+      "four_sources": {
+        "price_rows": 514441,
+        "windows_64": 484463
+      },
+      "additional_prices": {
+        "price_rows": 265467,
+        "windows_64": 220400
+      }
+    },
+    {
+      "market": "US",
+      "year": 2016,
+      "all_prices": {
+        "price_rows": 819312,
+        "windows_64": 748831
+      },
+      "four_sources": {
+        "price_rows": 533664,
+        "windows_64": 508523
+      },
+      "additional_prices": {
+        "price_rows": 285648,
+        "windows_64": 240308
+      }
+    },
+    {
+      "market": "US",
+      "year": 2017,
+      "all_prices": {
+        "price_rows": 858458,
+        "windows_64": 785405
+      },
+      "four_sources": {
+        "price_rows": 553688,
+        "windows_64": 527455
+      },
+      "additional_prices": {
+        "price_rows": 304770,
+        "windows_64": 257950
+      }
+    },
+    {
+      "market": "US",
+      "year": 2018,
+      "all_prices": {
+        "price_rows": 917774,
+        "windows_64": 840292
+      },
+      "four_sources": {
+        "price_rows": 588156,
+        "windows_64": 560554
+      },
+      "additional_prices": {
+        "price_rows": 329618,
+        "windows_64": 279738
+      }
+    },
+    {
+      "market": "US",
+      "year": 2019,
+      "all_prices": {
+        "price_rows": 983170,
+        "windows_64": 909161
+      },
+      "four_sources": {
+        "price_rows": 625519,
+        "windows_64": 598616
+      },
+      "additional_prices": {
+        "price_rows": 357651,
+        "windows_64": 310545
+      }
+    },
+    {
+      "market": "US",
+      "year": 2020,
+      "all_prices": {
+        "price_rows": 1042155,
+        "windows_64": 980247
+      },
+      "four_sources": {
+        "price_rows": 654981,
+        "windows_64": 633102
+      },
+      "additional_prices": {
+        "price_rows": 387174,
+        "windows_64": 347145
+      }
+    },
+    {
+      "market": "US",
+      "year": 2021,
+      "all_prices": {
+        "price_rows": 1049446,
+        "windows_64": 1013579
+      },
+      "four_sources": {
+        "price_rows": 657984,
+        "windows_64": 647236
+      },
+      "additional_prices": {
+        "price_rows": 391462,
+        "windows_64": 366343
+      }
+    },
+    {
+      "market": "US",
+      "year": 2022,
+      "all_prices": {
+        "price_rows": 1049363,
+        "windows_64": 1026933
+      },
+      "four_sources": {
+        "price_rows": 657412,
+        "windows_64": 650721
+      },
+      "additional_prices": {
+        "price_rows": 391951,
+        "windows_64": 376212
+      }
+    },
+    {
+      "market": "US",
+      "year": 2023,
+      "all_prices": {
+        "price_rows": 1047984,
+        "windows_64": 1032209
+      },
+      "four_sources": {
+        "price_rows": 656309,
+        "windows_64": 651360
+      },
+      "additional_prices": {
+        "price_rows": 391675,
+        "windows_64": 380849
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2000,
+      "all_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "four_sources": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2001,
+      "all_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "four_sources": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2002,
+      "all_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "four_sources": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2003,
+      "all_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "four_sources": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2004,
+      "all_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "four_sources": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2005,
+      "all_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "four_sources": {
+        "price_rows": 0,
+        "windows_64": 0
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2006,
+      "all_prices": {
+        "price_rows": 107469,
+        "windows_64": 72879
+      },
+      "four_sources": {
+        "price_rows": 107469,
+        "windows_64": 72879
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2007,
+      "all_prices": {
+        "price_rows": 117215,
+        "windows_64": 105958
+      },
+      "four_sources": {
+        "price_rows": 117215,
+        "windows_64": 105958
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2008,
+      "all_prices": {
+        "price_rows": 126710,
+        "windows_64": 114724
+      },
+      "four_sources": {
+        "price_rows": 126710,
+        "windows_64": 114724
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2009,
+      "all_prices": {
+        "price_rows": 128038,
+        "windows_64": 119099
+      },
+      "four_sources": {
+        "price_rows": 128038,
+        "windows_64": 119099
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2010,
+      "all_prices": {
+        "price_rows": 138259,
+        "windows_64": 125875
+      },
+      "four_sources": {
+        "price_rows": 138259,
+        "windows_64": 125875
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2011,
+      "all_prices": {
+        "price_rows": 150434,
+        "windows_64": 139659
+      },
+      "four_sources": {
+        "price_rows": 150434,
+        "windows_64": 139659
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2012,
+      "all_prices": {
+        "price_rows": 157065,
+        "windows_64": 147064
+      },
+      "four_sources": {
+        "price_rows": 157065,
+        "windows_64": 147064
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2013,
+      "all_prices": {
+        "price_rows": 154806,
+        "windows_64": 148210
+      },
+      "four_sources": {
+        "price_rows": 154806,
+        "windows_64": 148210
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2014,
+      "all_prices": {
+        "price_rows": 161493,
+        "windows_64": 153534
+      },
+      "four_sources": {
+        "price_rows": 161493,
+        "windows_64": 153534
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2015,
+      "all_prices": {
+        "price_rows": 165605,
+        "windows_64": 153555
+      },
+      "four_sources": {
+        "price_rows": 165605,
+        "windows_64": 153555
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2016,
+      "all_prices": {
+        "price_rows": 168872,
+        "windows_64": 162149
+      },
+      "four_sources": {
+        "price_rows": 168872,
+        "windows_64": 162149
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2017,
+      "all_prices": {
+        "price_rows": 175608,
+        "windows_64": 170849
+      },
+      "four_sources": {
+        "price_rows": 175608,
+        "windows_64": 170849
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2018,
+      "all_prices": {
+        "price_rows": 179441,
+        "windows_64": 174174
+      },
+      "four_sources": {
+        "price_rows": 179441,
+        "windows_64": 174174
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2019,
+      "all_prices": {
+        "price_rows": 184216,
+        "windows_64": 117768
+      },
+      "four_sources": {
+        "price_rows": 184216,
+        "windows_64": 117768
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2020,
+      "all_prices": {
+        "price_rows": 190779,
+        "windows_64": 182077
+      },
+      "four_sources": {
+        "price_rows": 190779,
+        "windows_64": 182077
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2021,
+      "all_prices": {
+        "price_rows": 194309,
+        "windows_64": 191131
+      },
+      "four_sources": {
+        "price_rows": 194309,
+        "windows_64": 191131
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2022,
+      "all_prices": {
+        "price_rows": 195596,
+        "windows_64": 193881
+      },
+      "four_sources": {
+        "price_rows": 195596,
+        "windows_64": 193881
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    },
+    {
+      "market": "CN",
+      "year": 2023,
+      "all_prices": {
+        "price_rows": 196009,
+        "windows_64": 195530
+      },
+      "four_sources": {
+        "price_rows": 196009,
+        "windows_64": 195530
+      },
+      "additional_prices": {
+        "price_rows": 0,
+        "windows_64": 0
+      }
+    }
+  ],
+  "empty_assets_before_2024": {
+    "US": 11,
+    "CN": 0
+  },
+  "assets_without_full_window": {
+    "US": 15,
+    "CN": 0
+  },
+  "source_state_sha256": "b065c8edc3a099dc1f0c8f4ee5e21f3bdf3d897f45f919dbdbd59a2b2e40b42c",
+  "evidence_sha256": {
+    "report.json": "8394b4d9dbb7fc1effb5336b156799fc1f8c55a4f3395d93bc56206045a53bb3",
+    "count.py": "377f3e17713a149d03e0d12a71efaf6a5f61b160082bae43ba418d5cf087330e",
+    "count_v2.py": "8624d55cf80b0fa3426cee5577a5e1896e0b8ea0b8e78b0e6e74f0203e884daa",
+    "count_v3.py": "dde91f3ea408fdd56d9b51528b1368d7d1b6d5fddfe05f70b44cabfdf7e569f5",
+    "run.log": "953039f2464d11f1f3de1b78c7f82e5f3e61e03a3b6655c57e98abccce184727",
+    "run-v2.log": "7f15102d01fc2d32acf9cbdb5c1b53a1938d667c1b1b03b4966d8abad350c977",
+    "run-v3.log": "f5b13e9b24402cb2bb8c96f380596dbbd2f3228eb630f220b5197794f615a14b"
+  },
+  "verification": {
+    "verified_source_files": 5023,
+    "verified_source_bytes": 852835869,
+    "source_signatures_unchanged": true,
+    "unique_asset_identities": 5023,
+    "annual_reconciled": true,
+    "prior_four_source_counts_equal": true
+  },
+  "measurement": {
+    "internal_seconds": 23.78584360199966,
+    "process_peak_rss_bytes": 196739072,
+    "systemd_service_seconds": 24.613,
+    "systemd_cpu_seconds": 22.908,
+    "systemd_memory_peak_reported": "774.2M",
+    "cpu_quota_percent": 100,
+    "memory_limit_bytes": 2147483648,
+    "arrow_threads": 1,
+    "blas_threads": 1,
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "repetitions": 1,
+    "warmup": 0,
+    "limit": "Comprobación funcional de una pasada, sin comparación de rendimiento. El pico de la unidad incluye contabilidad del grupo y no equivale al RSS del proceso."
+  },
+  "failed_harness_runs": [
+    {
+      "script": "count.py",
+      "reason": "El esquema usa large_string y la primera comprobación solo aceptaba string."
+    },
+    {
+      "script": "count_v2.py",
+      "reason": "Un activo sin sesiones antes del corte produjo un vector NumPy vacío de tipo float. Se fijó el tipo textual."
+    }
+  ],
+  "economic_values_read": false,
+  "labels_read": false,
+  "models_executed": false,
+  "final_test_opened": false,
+  "training_allowed": false,
+  "limits": [
+    "El recuento requiere continuidad de precios pero todavía no comprueba el objetivo residual ni prepara embeddings.",
+    "Las ausencias de fuentes opcionales no excluyen ventanas de este censo.",
+    "La validez OHLC y las exclusiones se heredan de la edición de precios auditada, cuyas huellas se verifican.",
+    "Se conservan las limitaciones de ajustes retrospectivos de los precios distribuidos."
+  ]
+}

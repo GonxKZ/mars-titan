@@ -1,5 +1,7 @@
 """Contextos temporales sin acumular cuerpos ni recalcular todo el historial."""
 
+import hashlib
+import json
 from collections import OrderedDict
 from itertools import groupby
 from pathlib import Path
@@ -10,6 +12,9 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
+from .batches import _check_string_width
+from .cohort_files import safe_destination
+from .input_policy import STRICT_INPUTS, masked_inputs, numeric_observations, policy_identity
 from .samples import macro_vector
 from .storage import sha256
 from .temporal import aware
@@ -139,13 +144,65 @@ class FactCursor:
 class MacroVectors:
     """Calcular una vez los vectores macro y compartirlos entre los activos."""
 
-    def __init__(self, path, *, max_bytes=64 * 1024**2, cutoff_year=2023):
+    def __init__(
+        self,
+        path,
+        *,
+        max_bytes=64 * 1024**2,
+        cutoff_year=2023,
+        input_policy=STRICT_INPUTS,
+        indicators=None,
+    ):
         if type(max_bytes) is not int or max_bytes < 1:
             raise ValueError("El presupuesto macro debe ser positivo")
-        self.path = Path(path)
-        self.sha256 = sha256(self.path)
+        masked = masked_inputs(input_policy)
+        if type(cutoff_year) is not int or cutoff_year > 2023:
+            raise ValueError("El contexto macro debe mantener cerrada la reserva desde 2024")
+        self.input_policy, self.cutoff_year = input_policy, cutoff_year
+        declared = None if indicators is None else list(indicators)
+        if declared is not None and (
+            not 1 <= len(declared) <= 1024
+            or len(set(declared)) != len(declared)
+            or any(not isinstance(name, str) or not 1 <= len(name) <= 128 for name in declared)
+        ):
+            raise ValueError("El catálogo macro declarado no es válido")
+        self.path = None if path is None else Path(path)
         self.index, self.available, self.indicators = {}, [], []
-        with pq.ParquetFile(path) as file:
+        self.missing = []
+        if path is None:
+            if not masked or declared is None:
+                raise ValueError("Una fuente macro ausente necesita política histórica y catálogo")
+            self.indicators = sorted(declared)
+            self.empty = np.zeros(3 * len(declared), dtype=np.float32)
+            self.empty.flags.writeable = False
+            self.values = np.empty((0, len(self.empty)), dtype=np.float32)
+            self.values.flags.writeable = False
+            self.nbytes = self.empty.nbytes
+            if self.nbytes > max_bytes:
+                raise ValueError("El vector macro ausente supera el presupuesto")
+            self.sha256 = hashlib.sha256(
+                json.dumps(
+                    dict(**policy_identity(input_policy), indicators=self.indicators, source=None),
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+            return
+        safe_destination(self.path)
+        if self.path.stat().st_size > max_bytes:
+            raise ValueError("El archivo macro supera el presupuesto")
+        self.sha256 = sha256(self.path)
+        with pq.ParquetFile(path) as metadata:
+            dictionaries = [
+                name
+                for name in ("indicator_id", "missing_reason")
+                if name in metadata.schema_arrow.names
+            ]
+        with pq.ParquetFile(path, read_dictionary=dictionaries) as file:
+            if any(
+                file.metadata.row_group(i).total_byte_size > max_bytes
+                for i in range(file.num_row_groups)
+            ):
+                raise ValueError("Un grupo macro supera el presupuesto")
             columns = ["prediction_at", "indicator_id", "value", "available_at"]
             if not set(columns) <= set(file.schema_arrow.names):
                 raise ValueError("Faltan columnas del contexto macro")
@@ -153,30 +210,65 @@ class MacroVectors:
                 dtype = file.schema_arrow.field(name).type
                 if not pa.types.is_timestamp(dtype) or not dtype.tz:
                     raise ValueError("Las fechas macro deben incluir zona horaria")
-            names = set()
+            if masked and "missing_reason" in file.schema_arrow.names:
+                columns.append("missing_reason")
+            names, moments, previous_time = set(), 0, None
+            current_names = set()
             for batch in file.iter_batches(
-                batch_size=4096, columns=["indicator_id"], use_threads=False
+                batch_size=4096,
+                columns=["indicator_id", "prediction_at"] if masked else ["indicator_id"],
+                use_threads=False,
             ):
-                for name in batch.column(0).to_pylist():
+                if batch.nbytes > max_bytes:
+                    raise ValueError("El lote de identificadores macro supera el presupuesto")
+                _check_string_width(batch.column(0), 128, "indicador")
+                times = batch.column(1).to_pylist() if masked else None
+                for index, name in enumerate(batch.column(0).to_pylist()):
                     if not isinstance(name, str) or not 1 <= len(name) <= 128:
                         raise ValueError("El identificador macro no es válido")
                     names.add(name)
+                    if masked:
+                        stamp = aware(times[index])
+                        if previous_time is not None and stamp < previous_time:
+                            raise ValueError("Las decisiones macro no están ordenadas")
+                        if stamp != previous_time:
+                            current_names.clear()
+                            if stamp.year <= cutoff_year:
+                                moments += 1
+                        if name in current_names:
+                            raise ValueError("La decisión macro repite indicadores")
+                        current_names.add(name)
+                        previous_time = stamp
+                        if moments > max_bytes // 256:
+                            raise ValueError("Los índices macro superan el presupuesto")
                 if len(names) > 1024:
                     raise ValueError("El catálogo macro supera el presupuesto")
-            self.indicators = sorted(names)
-            width = 3 * len(names)
+            if declared is not None and (
+                not names <= set(declared) or (not masked and names != set(declared))
+            ):
+                raise ValueError("El panel no corresponde al catálogo macro declarado")
+            self.indicators = sorted(declared if declared is not None else names)
+            width = 3 * len(self.indicators)
             if not width:
                 raise ValueError("El contexto macro está vacío")
-            capacity = file.metadata.num_rows // len(names)
-            if capacity * (width * 4 + 256) > max_bytes:
+            capacity = moments if masked else file.metadata.num_rows // len(names)
+            row_bytes = width * 4 + (len(self.indicators) * 8 + 512 if masked else 256)
+            if capacity * row_bytes > max_bytes:
                 raise ValueError("Los vectores e índices macro superan el presupuesto")
             self.values = np.empty((capacity, width), dtype=np.float32)
 
             def records():
                 for batch in file.iter_batches(batch_size=1024, columns=columns, use_threads=False):
+                    if batch.nbytes > max_bytes:
+                        raise ValueError("El lote macro supera el presupuesto")
+                    _check_string_width(batch.column("indicator_id"), 128, "indicador")
+                    if "missing_reason" in columns:
+                        _check_string_width(
+                            batch.column("missing_reason"), 2048, "causa de ausencia"
+                        )
                     yield from batch.to_pylist()
 
-            previous = None
+            previous, reason_bytes = None, 0
             for moment, group in groupby(records(), key=lambda r: r["prediction_at"]):
                 moment = aware(moment)
                 if previous is not None and moment <= previous:
@@ -189,13 +281,29 @@ class MacroVectors:
                             "La decisión macro repite indicadores o excede su presupuesto"
                         )
                     rows.append(row)
-                if sorted(row["indicator_id"] for row in rows) != self.indicators:
+                found = [row["indicator_id"] for row in rows]
+                if len(set(found)) != len(found) or not set(found) <= set(self.indicators):
+                    raise ValueError("La decisión macro repite indicadores o cambia su catálogo")
+                if not masked and sorted(found) != self.indicators:
                     raise ValueError("La decisión macro no conserva todos sus indicadores")
                 if moment.year > cutoff_year:
                     continue
-                if not any(row["value"] is not None for row in rows):
+                if not masked and not any(row["value"] is not None for row in rows):
                     continue
-                vector, available = macro_vector(rows, moment)
+                if masked:
+                    by_id = {row["indicator_id"]: row for row in rows}
+                    rows = [
+                        by_id.get(name, dict(indicator_id=name, value=None, available_at=None))
+                        for name in self.indicators
+                    ]
+                    causes = numeric_observations(rows, moment)[3]
+                    reason_bytes += sum(
+                        len(reason.encode()) + 64 for reason in causes if reason is not None
+                    )
+                    if capacity * row_bytes + reason_bytes > max_bytes:
+                        raise ValueError("Las causas de ausencia macro superan el presupuesto")
+                    self.missing.append(causes)
+                vector, available = macro_vector(rows, moment, input_policy=input_policy)
                 position = len(self.index)
                 if position >= capacity:
                     raise ValueError("Las decisiones macro exceden el presupuesto declarado")
@@ -203,6 +311,8 @@ class MacroVectors:
                 self.index[moment] = position
                 self.available.append(available)
         self.values.flags.writeable = False
+        self.empty = np.zeros(width, dtype=np.float32)
+        self.empty.flags.writeable = False
         self.nbytes = self.values.nbytes
         if sha256(self.path) != self.sha256:
             raise ValueError("El contexto macro cambió durante su lectura")
@@ -210,6 +320,8 @@ class MacroVectors:
 
     def verify(self):
         """Reutilizar la lectura solo mientras siga identificando el mismo archivo."""
+        if self.path is None:
+            return
         current = self.path.stat()
         fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
         if any(getattr(current, field) != getattr(self.signature, field) for field in fields):
@@ -218,5 +330,20 @@ class MacroVectors:
             self.signature = current
 
     def at(self, moment):
-        position = self.index.get(aware(moment))
+        moment = aware(moment)
+        if moment.year > self.cutoff_year:
+            return None
+        position = self.index.get(moment)
+        if position is None and masked_inputs(self.input_policy):
+            return self.empty, None
         return None if position is None else (self.values[position], self.available[position])
+
+    def missing_at(self, moment):
+        position = self.index.get(aware(moment))
+        if not masked_inputs(self.input_policy):
+            raise ValueError("La política estricta no publica causas de ausencia por celda")
+        if position is None:
+            return ["source_missing" if self.path is None else "missing_session"] * len(
+                self.indicators
+            )
+        return list(self.missing[position])
