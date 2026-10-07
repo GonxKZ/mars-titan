@@ -3,6 +3,7 @@
 #include <ATen/ATen.h>
 #include <torch/serialize/archive.h>
 #include <torch/version.h>
+#include <miniz.h>
 
 #include <array>
 #include <cstddef>
@@ -12,12 +13,15 @@
 #include <stdexcept>
 #include <string_view>
 #include <utility>
+#include <unordered_set>
 #include <vector>
 
 namespace mars_titan::candidate {
 namespace {
-constexpr int64_t schema_version = 1;
+constexpr int64_t schema_version = 2;
 constexpr std::size_t maximum_archive_bytes = 128U << 20;
+constexpr mz_uint maximum_records = 1024;
+constexpr mz_uint maximum_record_name = 512;
 constexpr std::size_t read_block_bytes = 64U << 10;
 constexpr int64_t metadata_width = 3;
 constexpr int64_t fp32_code = 32;
@@ -45,6 +49,54 @@ std::string read_bounded(std::istream& source) {
     require(source.eof() && !source.bad() && !bytes.empty(), "No se pudo leer el archivo candidato");
     return bytes;
 }
+struct ZipDirectory {
+    ZipDirectory() = default;
+    ZipDirectory(const ZipDirectory&) = delete;
+    ZipDirectory& operator=(const ZipDirectory&) = delete;
+    ZipDirectory(ZipDirectory&&) = delete;
+    ZipDirectory& operator=(ZipDirectory&&) = delete;
+    mz_zip_archive archive{};
+    ~ZipDirectory() { if (archive.m_pState != nullptr) { (void)mz_zip_reader_end(&archive); } }
+};
+void check_archive_directory(const std::string& bytes) {
+    ZipDirectory directory;
+    require(mz_zip_reader_init_mem(&directory.archive, bytes.data(), bytes.size(), 0) != 0,
+            "El directorio ZIP es inválido o está truncado");
+    const auto records = mz_zip_reader_get_num_files(&directory.archive);
+    require(records > 0 && records <= maximum_records, "El número de registros ZIP excede el límite");
+    std::size_t expanded = 0;
+    std::unordered_set<std::string> names;
+    for (mz_uint i = 0; i < records; ++i) {
+        mz_zip_archive_file_stat stat{};
+        require(mz_zip_reader_file_stat(&directory.archive, i, &stat) != 0,
+                "No se pudo leer un registro del directorio ZIP");
+        require(stat.m_uncomp_size <= maximum_archive_bytes - expanded,
+                "El tamaño descomprimido del archivo excede 128 MiB");
+        expanded += static_cast<std::size_t>(stat.m_uncomp_size);
+        const auto size = mz_zip_reader_get_filename(&directory.archive, i, nullptr, 0);
+        require(size > 1 && size <= maximum_record_name, "El nombre de registro ZIP excede el límite");
+        std::vector<char> filename(size);
+        require(mz_zip_reader_get_filename(&directory.archive, i, filename.data(), size) == size &&
+                filename.back() == '\0', "El nombre de registro ZIP es inválido");
+        std::string name(filename.data(), size - 1);
+        // miniz busca registros sin distinguir mayúsculas por defecto.
+        for (auto& character : name) {
+            if (character >= 'A' && character <= 'Z') { character = static_cast<char>(character + ('a' - 'A')); }
+        }
+        require(names.insert(std::move(name)).second, "El archivo ZIP contiene un registro duplicado");
+        require(stat.m_is_encrypted == 0 && stat.m_is_supported != 0,
+                "El registro ZIP usa cifrado o compresión no admitidos");
+    }
+}
+void read_projection(torch::serialize::InputArchive& archive, const std::string& name, at::Tensor& expected) {
+    at::Tensor value;
+    archive.read(name, value, true);
+    require(value.sizes() == expected.sizes() && value.scalar_type() == expected.scalar_type() &&
+            value.device().is_cpu() && at::isfinite(value).all().item<bool>(),
+            "La proyección recuperada tiene forma, tipo o valores incompatibles");
+    // Un archivo puede compartir storage entre parámetros y proyecciones.
+    expected = value.detach().clone();
+}
 struct TensorShape {
     std::string name;
     std::vector<int64_t> dimensions;
@@ -68,7 +120,6 @@ void check_loaded(const torch::OrderedDict<std::string, at::Tensor>& tensors,
 }
 
 void Candidate::save_state(std::ostream& destination) const {
-    check_fixed_buffers();
     torch::serialize::OutputArchive archive;
     archive.write("schema", at::tensor({schema_version,
         feature_projection_.scalar_type() == at::kDouble ? fp64_code : fp32_code,
@@ -80,6 +131,8 @@ void Candidate::save_state(std::ostream& destination) const {
     archive.write("normalization_id", c10::IValue(config_.normalization_id));
     archive.write("representation_id", c10::IValue(representation_id_));
     archive.write("torch_version", c10::IValue(TORCH_VERSION));
+    archive.write("feature_projection", feature_projection_, true);
+    archive.write("key_projection", key_projection_, true);
     torch::serialize::OutputArchive network;
     torch::nn::Module::save(network);
     archive.write("network", network);
@@ -87,12 +140,15 @@ void Candidate::save_state(std::ostream& destination) const {
     archive.save_to(buffer);
     const auto bytes = std::move(buffer).str();
     require(bytes.size() <= maximum_archive_bytes, "El archivo candidato excede 128 MiB");
+    check_archive_directory(bytes);
     destination.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
     require(destination.good(), "No se pudo guardar el cálculo candidato");
 }
 
 std::shared_ptr<Candidate> Candidate::load_state(std::istream& source, const at::Device& device) {
-    std::istringstream buffer(read_bounded(source));
+    auto bytes = read_bounded(source);
+    check_archive_directory(bytes);
+    std::istringstream buffer(std::move(bytes));
     torch::serialize::InputArchive archive;
     archive.load_from(buffer, at::Device(at::kCPU));
     c10::IValue torch_version;
@@ -129,12 +185,12 @@ std::shared_ptr<Candidate> Candidate::load_state(std::istream& source, const at:
     const auto dtype = schema[1].item<int64_t>() == fp64_code ? at::kDouble : at::kFloat;
     auto result = std::make_shared<Candidate>(std::move(config), dtype);
     const auto parameter_shapes = shapes(result->named_parameters());
-    const auto buffer_shapes = shapes(result->named_buffers());
     torch::serialize::InputArchive network;
     archive.read("network", network);
     result->torch::nn::Module::load(network);
     check_loaded(result->named_parameters(), parameter_shapes, dtype);
-    check_loaded(result->named_buffers(), buffer_shapes, dtype);
+    read_projection(archive, "feature_projection", result->feature_projection_);
+    read_projection(archive, "key_projection", result->key_projection_);
     result->refresh_representation();
     c10::IValue representation;
     archive.read("representation_id", representation);

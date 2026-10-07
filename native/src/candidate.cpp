@@ -102,10 +102,10 @@ Candidate::Candidate(Config config, at::ScalarType dtype, const at::Device& devi
     auto feature_generator = at::detail::createCPUGenerator(static_cast<uint64_t>(config_.feature_seed));
     auto key_generator = at::detail::createCPUGenerator(static_cast<uint64_t>(config_.key_seed));
     const auto width = input_width(config_);
-    feature_projection_ = register_buffer("feature_projection", at::empty({width, feature_width}, options)
-        .normal_(0, 1 / std::sqrt(static_cast<double>(width)), feature_generator));
-    key_projection_ = register_buffer("key_projection", at::empty({feature_width, hidden_width}, options)
-        .normal_(0, 1 / std::sqrt(static_cast<double>(feature_width)), key_generator));
+    feature_projection_ = at::empty({width, feature_width}, options)
+        .normal_(0, 1 / std::sqrt(static_cast<double>(width)), feature_generator);
+    key_projection_ = at::empty({feature_width, hidden_width}, options)
+        .normal_(0, 1 / std::sqrt(static_cast<double>(feature_width)), key_generator);
     refresh_representation();
     to(device);
 }
@@ -122,7 +122,6 @@ at::Tensor Candidate::Linear::operator()(const at::Tensor& value) const {
 }
 const Config& Candidate::config() const noexcept { return config_; }
 std::string Candidate::representation_id() const {
-    check_fixed_buffers();
     return representation_id_;
 }
 MemorySnapshot Candidate::empty_memory() const {
@@ -161,7 +160,6 @@ MemorySnapshot Candidate::snapshot(const at::Tensor& keys, const at::Tensor& fea
     return result;
 }
 Encoded Candidate::encode(const Inputs& inputs) const {
-    check_fixed_buffers();
     require(inputs.prices.defined() && inputs.prices.dim() == 3, "Los precios necesitan tres dimensiones");
     const auto batch = inputs.prices.size(0);
     require(batch > 0 && batch <= config_.max_batch, "El lote está vacío o supera el presupuesto");
@@ -197,7 +195,8 @@ Encoded Candidate::encode(const Inputs& inputs) const {
     return {fused, features, keys};
 }
 at::Tensor Candidate::initial_state(const at::Tensor& fused) const {
-    require(fused.defined() && fused.dim() == 2, "La fusión debe ser una matriz");
+    require(fused.defined() && fused.dim() == 2 && fused.size(0) > 0 && fused.size(0) <= config_.max_batch,
+            "La fusión debe ser un lote dentro del presupuesto");
     check_tensor(fused, {fused.size(0), feature_width}, feature_projection_);
     return initial_(fused);
 }
@@ -234,7 +233,8 @@ Read Candidate::read(const at::Tensor& state, const MemorySnapshot& memory) cons
             at::ones({batch, 1}, state.options().dtype(at::kBool))};
 }
 at::Tensor Candidate::refine(const at::Tensor& state, const at::Tensor& fused, const Read& memory_read) const {
-    require(state.defined() && state.dim() == 2, "El estado debe ser una matriz");
+    require(state.defined() && state.dim() == 2 && state.size(0) > 0 && state.size(0) <= config_.max_batch,
+            "El estado debe ser un lote dentro del presupuesto");
     const auto batch = state.size(0);
     check_tensor(state, {batch, hidden_width}, feature_projection_);
     check_tensor(fused, {batch, feature_width}, feature_projection_);
@@ -247,7 +247,8 @@ at::Tensor Candidate::refine(const at::Tensor& state, const at::Tensor& fused, c
     return state + step_logit_.sigmoid() * update_(joined).tanh();
 }
 at::Tensor Candidate::quantiles(const at::Tensor& state) const {
-    require(state.defined() && state.dim() == 2, "El estado debe ser una matriz");
+    require(state.defined() && state.dim() == 2 && state.size(0) > 0 && state.size(0) <= config_.max_batch,
+            "El estado debe ser un lote dentro del presupuesto");
     check_tensor(state, {state.size(0), hidden_width}, feature_projection_);
     const auto raw = head_(state);
     const auto median = raw.select(1, median_index);

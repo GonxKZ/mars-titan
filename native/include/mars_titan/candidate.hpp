@@ -106,13 +106,6 @@ public:
     [[nodiscard]] static std::shared_ptr<Candidate> load_state(
         std::istream& source, const at::Device& device = at::Device(at::kCPU));
 private:
-    struct BufferStamp {
-        const void* data = nullptr;
-        int64_t version = 0;
-        at::ScalarType dtype = at::kFloat;
-    };
-    void check_fixed_buffers() const;
-    void remember_buffers();
     void refresh_representation();
     struct Linear {
         at::Tensor weight;
@@ -134,7 +127,6 @@ private:
     at::Tensor feature_projection_;
     at::Tensor key_projection_;
     std::string representation_id_;
-    std::array<BufferStamp, 2> buffer_stamps_;
 };
 }
 #endif

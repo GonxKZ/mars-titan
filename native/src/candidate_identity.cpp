@@ -43,46 +43,24 @@ std::string digest(const at::Tensor& tensor) {
     return result;
 }
 }
-void Candidate::remember_buffers() {
-    const std::array<at::Tensor, 2> tensors{feature_projection_, key_projection_};
-    for (std::size_t i = 0; i < tensors.size(); ++i) {
-        const auto& tensor = tensors.at(i);
-        buffer_stamps_.at(i) = {tensor.const_data_ptr(), tensor._version(), tensor.scalar_type()};
-    }
-}
-void Candidate::check_fixed_buffers() const {
-    const std::array<at::Tensor, 2> tensors{feature_projection_, key_projection_};
-    for (std::size_t i = 0; i < tensors.size(); ++i) {
-        const auto& tensor = tensors.at(i);
-        const auto& stamp = buffer_stamps_.at(i);
-        if (!tensor.defined() || tensor.const_data_ptr() != stamp.data || tensor._version() != stamp.version ||
-            tensor.scalar_type() != stamp.dtype) {
-            throw std::invalid_argument("Las proyecciones fijas se han modificado fuera del contrato");
-        }
-    }
-}
 void Candidate::refresh_representation() {
     std::string id = "candidate-fixed-v1:" + config_.normalization_id + ":";
     for (const auto dimension : config_.dimensions) { id += std::to_string(dimension) + ":"; }
     representation_id_ = id + std::to_string(static_cast<int>(feature_projection_.scalar_type())) + ":" +
                          digest(feature_projection_) + ":" + digest(key_projection_);
-    remember_buffers();
 }
 void Candidate::to(torch::Device device, torch::Dtype dtype, bool non_blocking) {
-    check_fixed_buffers(); check_device(device); check_dtype(dtype);
+    check_device(device); check_dtype(dtype);
     const bool changed = dtype != feature_projection_.scalar_type();
     torch::nn::Module::to(device, dtype, non_blocking);
-    if (changed) { refresh_representation(); } else { remember_buffers(); }
+    feature_projection_ = feature_projection_.to(device, dtype, non_blocking);
+    key_projection_ = key_projection_.to(device, dtype, non_blocking);
+    if (changed) { refresh_representation(); }
 }
 void Candidate::to(torch::Dtype dtype, bool non_blocking) {
-    check_fixed_buffers(); check_dtype(dtype);
-    const bool changed = dtype != feature_projection_.scalar_type();
-    torch::nn::Module::to(dtype, non_blocking);
-    if (changed) { refresh_representation(); } else { remember_buffers(); }
+    to(feature_projection_.device(), dtype, non_blocking);
 }
 void Candidate::to(torch::Device device, bool non_blocking) {
-    check_fixed_buffers(); check_device(device);
-    torch::nn::Module::to(device, non_blocking);
-    remember_buffers();
+    to(device, feature_projection_.scalar_type(), non_blocking);
 }
 }

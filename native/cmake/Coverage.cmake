@@ -50,7 +50,7 @@ function(mars_titan_coverage_report)
                    memory_stress_tests mars-titan-memory-stress replay_schedule_tests mars-titan-replay-control
                    adapter_control_tests mars-titan-adapter-control cohort_execution_tests mars-titan-cohorts
                    financial_controls_tests mars-titan-financial-controls
-                   candidate_tests candidate_contract_tests mars-titan-candidate)
+                   candidate_tests candidate_contract_tests candidate_archive_tests mars-titan-candidate)
         if(TARGET ${target})
             list(APPEND objects "$<TARGET_FILE:${target}>")
             list(APPEND targets ${target})

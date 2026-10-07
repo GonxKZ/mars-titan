@@ -184,6 +184,14 @@ void configuration_and_boundaries_fail_fast() {
     invalid = config(); invalid.normalization_id.clear();
     rejected([&] { (void)Candidate(invalid); });
     const Candidate model(config(), at::kDouble);
+    for (const int64_t rows : {0, 9}) {
+        const auto state = at::zeros({rows, 128}, at::kDouble);
+        const auto fused = at::zeros({rows, 256}, at::kDouble);
+        const Read read{at::zeros_like(state), {}, {}, at::zeros({rows, 1}, at::kBool)};
+        rejected([&] { (void)model.initial_state(fused); });
+        rejected([&] { (void)model.refine(state, fused, read); });
+        rejected([&] { (void)model.quantiles(state); });
+    }
     rejected([&] { (void)model.forward(inputs(), model.empty_memory(), 3); });
     auto data = inputs(); data.news = at::zeros({2, 0}, at::kDouble);
     rejected([&] { (void)model.encode(data); });
@@ -238,15 +246,22 @@ void serialization_restores_changed_parameters_and_configuration() {
     std::stringstream corrupted("not an archive");
     rejected([&] { (void)Candidate::load_state(corrupted); });
 }
-void changed_fixed_buffers_reject_old_snapshots() {
+void public_aliases_cannot_change_fixed_projections() {
     Candidate model(config(), at::kDouble);
-    const auto snapshot = memory(model);
+    const auto before = model.encode(inputs());
+    const auto identity = model.representation_id();
+    const auto snapshot = model.snapshot(before.episode_keys, before.episode_features,
+        at::ones({2}, at::kDouble), at::arange(2, at::kLong), identity);
+    const auto prediction = model.forward(inputs(), snapshot).quantiles;
     {
         const at::NoGradGuard guard;
-        model.named_buffers()["key_projection"].add_(0.5);
+        for (const auto& buffer : model.named_buffers()) { buffer.value().data().zero_(); }
     }
-    rejected([&] { (void)model.forward(inputs(), snapshot); });
-    rejected([&] { std::stringstream archive; model.save_state(archive); });
+    require(at::equal(before.episode_features, model.encode(inputs()).episode_features),
+            "Un alias público modificó las proyecciones fijas");
+    require(identity == model.representation_id(), "La identidad fija cambió mediante un alias público");
+    require(at::equal(prediction, model.forward(inputs(), snapshot).quantiles),
+            "Un alias público invalidó una instantánea de la misma representación");
 }
 void large_finite_query_keeps_its_direction() {
     Candidate model(config(), at::kFloat);
@@ -281,7 +296,7 @@ int main() {
         {"límites", configuration_and_boundaries_fail_fast},
         {"serialización", serialization_restores_changed_parameters_and_configuration},
         {"permutación y precisión", rows_are_independent_and_fp32_matches_fp64},
-        {"identidad de buffers", changed_fixed_buffers_reject_old_snapshots},
+        {"propiedad de proyecciones", public_aliases_cannot_change_fixed_projections},
         {"consulta finita grande", large_finite_query_keeps_its_direction}}};
     int failures = 0;
     for (const auto& [name, test] : tests) {
