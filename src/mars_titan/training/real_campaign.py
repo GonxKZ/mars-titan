@@ -18,6 +18,7 @@ from .checkpoints import StopRequest
 from .reference_search import _configuration as neural_configuration
 from .run_receipts import initialize_receipt
 from .tabular_search import _configuration as tabular_configuration
+from .temporal_contract import temporal_contracts
 from .temporal_search import _inputs as temporal_inputs
 
 _FAMILIES = ("rnn", "lstm", "gru", "dlinear", "ridge", "xgboost")
@@ -71,7 +72,10 @@ def prepare_campaign(args):
     encoded, encoded_hash = read_manifest(args.encoded, 8 * 1024**2)
     first, _ = read_manifest(records[0]["manifest"], 8 * 1024**2)
     _require(
-        first["temporal_view"]["protocol"]["final_test_start"] == "2024-01-01"
+        all(
+            contract["protocol"]["final_test_start"] == "2024-01-01"
+            for contract in temporal_contracts(first).values()
+        )
         and all(row["fold"]["evaluation"][1] <= "2024-01-01" for row in records)
         and encoded.get("final_test_opened") is False
         and neural["scope"] == "full_corpus"
@@ -95,20 +99,20 @@ def prepare_campaign(args):
         )
         metadata, metadata_hash = read_manifest(record["manifest"], 8 * 1024**2)
         _require(metadata_hash == record["manifest_sha256"], "La vista cambió durante la admisión")
-        contract = metadata["temporal_view"]
-        path = Path(contract["admission_path"])
-        safe_destination(path)
-        admission, signature = read_manifest(path, 8 * 1024**2)
-        indicators = admission.get("required_indicator_ids")
-        _require(
-            signature == contract["admission_sha256"]
-            and isinstance(indicators, list)
-            and len(indicators) == 140
-            and all(isinstance(name, str) and name for name in indicators)
-            and len(set(indicators)) == 140,
-            "La admisión debe conservar los 140 indicadores y su huella",
-        )
-        admissions[str(path.resolve())] = signature
+        for contract in temporal_contracts(metadata).values():
+            path = Path(contract["admission_path"])
+            safe_destination(path)
+            admission, signature = read_manifest(path, 8 * 1024**2)
+            indicators = admission.get("required_indicator_ids")
+            _require(
+                signature == contract["admission_sha256"]
+                and isinstance(indicators, list)
+                and len(indicators) == 140
+                and all(isinstance(name, str) and name for name in indicators)
+                and len(set(indicators)) == 140,
+                "La admisión debe conservar los 140 indicadores y su huella",
+            )
+            admissions[str(path.resolve())] = signature
     stages = stage_plan(
         [row["id"] for row in records],
         reference_runs=reference_runs,

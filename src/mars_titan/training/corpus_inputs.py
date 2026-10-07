@@ -126,11 +126,19 @@ class CorpusDataset:
             raise ValueError("El manifiesto no es regular o supera 8 MiB")
         self.manifest, self.identity = read_manifest(self.path, 8 * 1024**2)
         meta = self.manifest
-        self.temporal = None
-        if "temporal_view" in meta:
+        from .temporal_contract import temporal_contracts
+
+        contracts = temporal_contracts(meta)
+        self.temporals = {}
+        if contracts:
             from .temporal_corpus import TemporalInputs
 
-            self.temporal = TemporalInputs(meta["temporal_view"])
+            self.temporals = {market: TemporalInputs(view) for market, view in contracts.items()}
+        self.temporal = (
+            next(iter(self.temporals.values()))
+            if len(self.temporals) == 1
+            else self.temporals or None
+        )
         self.partitions = (
             ("train", "validation", "calibration", "evaluation")
             if self.temporal
@@ -164,6 +172,7 @@ class CorpusDataset:
                 or symbol in {".", ".."}
                 or not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol)
                 or market not in {"US", "CN"}
+                or (self.temporals and market not in self.temporals)
                 or (market, symbol) in identities
                 or set(asset["counts"]) != set(counts)
                 or any(type(n) is not int or n < 0 for n in asset["counts"].values())
@@ -337,8 +346,9 @@ class CorpusDataset:
         years = prediction.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
         mature_years = maturity.astype("datetime64[us]").astype("datetime64[Y]").astype(int) + 1970
         if self.temporal:
-            _, available, eligible = self.temporal.lookup(prediction)
-            assigned = self.temporal.assign(prediction, available, maturity, eligible)
+            temporal = self.temporals[asset["market"]]
+            _, available, eligible = temporal.lookup(prediction)
+            assigned = temporal.assign(prediction, available, maturity, eligible)
             valid = (assigned["partition"] == partitions) & (assigned["reason"] == "accepted")
         else:
             valid = ((partitions == "train") & (years <= 2022) & (mature_years <= 2022)) | (
@@ -375,6 +385,7 @@ class CorpusDataset:
         dimensions = None
         for asset_position in range(cursor["asset"], len(order)):
             asset = self.assets[int(order[asset_position])]
+            temporal = self.temporals.get(asset["market"])
             key = f"{asset['market']}/{asset['symbol']}"
             path = self._file(asset, "samples")
             with pq.ParquetFile(path) as file:
@@ -437,7 +448,7 @@ class CorpusDataset:
                     if table.nbytes > MAX_TABLE_BYTES:
                         raise ValueError("El grupo decodificado supera el presupuesto")
                     timestamps = _times(table["prediction_at"])
-                    macro = self.temporal.lookup(timestamps) if self.temporal else None
+                    macro = temporal.lookup(timestamps) if temporal else None
                     availability, availability_valid = _availability(
                         table, macro_override=macro[1:] if macro else None
                     )
@@ -518,8 +529,8 @@ class CorpusDataset:
             raise ValueError("La partición, el lote, la época o la semilla no son válidos")
         if sha256(self.path) != self.identity:
             raise ValueError("El manifiesto ha cambiado desde su confirmación")
-        if self.temporal:
-            self.temporal.verify()
+        for temporal in self.temporals.values():
+            temporal.verify()
         identity = {
             "manifest_sha256": self.identity,
             "partition": partition,

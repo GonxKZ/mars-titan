@@ -8,6 +8,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 
 from .checkpoints import StopRequest
 from .tabular_search import _artifact, run_tabular_search
+from .temporal_contract import temporal_contracts
 
 
 def reference_market(path):
@@ -16,8 +17,12 @@ def reference_market(path):
     identity = summary.get("identity") if isinstance(summary, dict) else None
     configuration = identity.get("configuration") if isinstance(identity, dict) else None
     arms = configuration.get("arms") if isinstance(configuration, dict) else None
-    if arms not in (["US"], ["CN"]):
-        raise ValueError("La continuación temporal requiere un único mercado declarado")
+    if arms not in (["US"], ["CN"], ["US+CN"]):
+        raise ValueError("La continuación temporal requiere un brazo con mercados declarados")
+    if arms == ["US+CN"]:
+        view, _ = read_manifest(Path(path).parent / "views/US+CN.json", 8 * 1024**2)
+        if set(temporal_contracts(view)) != {"US", "CN"}:
+            raise ValueError("El brazo conjunto necesita los dos contratos de mercado")
     runs = summary.get("runs")
     if (
         not isinstance(runs, list)
