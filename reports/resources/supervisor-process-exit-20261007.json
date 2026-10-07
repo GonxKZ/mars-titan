@@ -53,8 +53,23 @@
     "elapsed_seconds": 0.18355698601226322
   },
   "limits": [
-    "Comprobación de control de procesos en CPU. No se ejecutó entrenamiento ni integración CUDA.",
-    "La prueba de despliegue utiliza un sondeo de GPU simulado y un hijo que confirma un marcador de pausa.",
-    "Los servicios y el runtime científico no se han modificado durante estas comprobaciones."
-  ]
+    "Las pruebas de código y el apartado external_guard se comprobaron en CPU, sin integración CUDA.",
+    "external_guard utiliza un sondeo de GPU simulado y un hijo que confirma un marcador de pausa.",
+    "deployment recoge la pausa y reanudación reales tras cambiar únicamente la ruta de la guarda externa. Las fuentes y la identidad científicas permanecieron iguales."
+  ],
+  "deployment": {
+    "verified_at_utc": "2026-10-07T07:23:07.882377+00:00",
+    "supervisor_commit": "5c94003041853dbbc62fa2f8716cf8741850495b",
+    "supervisor_sha256": "6208132b377d661acd9aa216cd1f375ae479e65f8c3aa42703a8c803056a2951",
+    "scientific_runtime_commit": "301a41e9497d2d0f37cbeff07c6ebef95550835d",
+    "scientific_source_unchanged": true,
+    "scientific_identity_unchanged": true,
+    "scientific_command_unchanged": true,
+    "working_directory_and_pythonpath_unchanged": true,
+    "completed_before": 446,
+    "completed_at_pause": 446,
+    "completed_after": 446,
+    "service_running": true,
+    "scope": "Se cambió solo la ruta del supervisor externo. Se confirmó la pausa científica y la reanudación con la misma identidad."
+  }
 }
