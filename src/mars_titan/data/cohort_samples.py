@@ -577,9 +577,11 @@ def materialize_cohort_asset(
             _chinese_facts(facts, clock, origin["policy"]["cutoff"])
         factor_audit = {}
         if company_factors:
+            # Los hechos sin publicación conservan su diagnóstico, pero no forman ratios.
+            factor_facts = [r for r in facts if r["available_at"] is not None] if masked else facts
             derived, factor_audit = write_company_factors(
                 destination / "company-factors.parquet",
-                facts,
+                factor_facts,
                 batch_rows=batch_rows,
                 max_facts=max_partition_rows,
                 source_unit=source_unit,
