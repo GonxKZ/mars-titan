@@ -42,6 +42,60 @@ El presupuesto de peticiones es obligatorio y puede ampliarse en otra invocació
 con la misma configuración. El cursor distingue una colección parcial de una
 colección completada o bloqueada.
 
+## Consulta por emisor
+
+La opción por emisor añade cuatro argumentos, que deben suministrarse juntos:
+
+- `--issuer-symbol`, con un símbolo de la cola, como `000066.SZ`.
+- `--issuer-receipt`, con el `receipt.json` de una respuesta pública conservada,
+  junto a su `body.json`.
+- `--issuer-receipt-sha256`, con la huella esperada de ese recibo.
+- `--issuer-announcement-id`, con el identificador del anuncio elegido dentro de
+  la respuesta.
+
+La API usa los mismos nombres con guiones bajos. El código y el `orgId` se
+obtienen del anuncio y se contrastan con el símbolo. No se recibe un `orgId`
+libre ni se construye uno a partir del código. La evidencia debe proceder de una
+captura pública completa con HTTP 200, con la petición anual original, las
+fechas y el vínculo al documento conservados. Una captura con transporte
+inyectado no sirve como evidencia pública.
+
+El filtro `stock=código,orgId` forma parte de cada petición y de su recibo. Cada
+página, incluida su recuperación, debe contener únicamente ese código, mercado
+y `orgId`. Se mantienen los controles de población, duplicados, intervalos y
+`hasMore`. Si la ventana incluye la publicación del anuncio elegido, ese anuncio
+debe aparecer antes de completar la recogida. Una respuesta vacía o la pérdida
+del anuncio conocido bloquean ese ámbito. Fuera de esa ventana, una respuesta
+vacía solo acredita que el proveedor no devolvió resultados.
+
+Estas colecciones usan configuración e informe de versión 2 y el ámbito
+`issuer_annual_category_only`. Conservan las rutas y hashes de la evidencia, que
+se vuelven a comprobar antes de pedir datos, al recuperar y antes de confirmar.
+La espera mínima es de cinco segundos. `--max-requests` sigue siendo el máximo
+de peticiones nuevas por invocación de esa colección, incluidas las páginas y
+subdivisiones de fechas. No es un presupuesto para recorrer todo el censo.
+
+Cada emisor necesita una salida separada. Las capturas generales permanecen en
+versión 1, con su comportamiento y recuperación originales. Como la identidad
+incluye hashes del código, las capturas antiguas se reanudan desde su runtime
+congelado. No se migran ni se ignoran sus controles para abrirlas con otro código.
+Tampoco se transforma una colección general existente en una colección por emisor.
+
+`completed` indica que se han conciliado las respuestas del ámbito solicitado.
+`issuer_history_complete=false`, `period_coverage_verified=false` y
+`financial_values_admitted=false` evitan interpretar ese estado como historia
+completa, cobertura de todos los cierres o admisión de cifras.
+
+El [piloto por emisor](../../reports/data/chinese-issuer-announcements-20261007.json)
+utilizó el código y `orgId` de un anuncio oficial de `000066.SZ`. Tres peticiones
+devolvieron cuatro anuncios únicos. La ventana 2022–2023 dio cuatro y cada año
+por separado dio dos, con unión exacta. Todas las filas pertenecían al emisor y
+los dos anuncios ya conservados mantuvieron sus metadatos. `totalpages` devolvió
+cero pese a contener filas y no se utiliza para acreditar la población.
+Esta prueba justifica la opción, sin demostrar estabilidad general ni una
+aceleración del catálogo completo. La integración de la opción reproduce esos
+cuerpos guardados sin red y recupera sus salidas sin repetir peticiones.
+
 ## Comprobaciones ejecutadas
 
 El [recibo real](../../reports/data/chinese-announcements-20261007.json)

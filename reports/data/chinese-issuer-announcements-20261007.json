@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "kind": "issuer_announcement_catalogue_validation",
+  "observed_at_utc": "2026-10-07T16:03:37.737685+00:00",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/105",
+  "base_commit": "bac61cddd885f6803b640574198fe22562a102ca",
+  "source_sha256": "0590ca42aefc8cf228c1bb10f367ad2aab7ee492862c071f7f00797e99accc61",
+  "tests_sha256": "bec71c7132d247078bf55a11cfd00a5e097ffe9c359007f3c6d473b0fb6ddd4c",
+  "contract": {
+    "general_schema_version": 1,
+    "issuer_schema_version": 2,
+    "issuer_scope": "issuer_annual_category_only",
+    "identity_fields": [
+      "symbol",
+      "org_id",
+      "announcement_id",
+      "publication_date",
+      "receipt_sha256",
+      "body_sha256",
+      "source_configuration_sha256"
+    ],
+    "org_id_derived_from_saved_public_announcement": true,
+    "foreign_issuer_response_rejected": true,
+    "known_announcement_required_when_in_window": true,
+    "missing_known_announcement_blocks_completion": true,
+    "empty_result_does_not_prove_historical_absence": true,
+    "previous_runtime_required_for_old_code_fingerprints": true,
+    "migration_performed": false,
+    "issuer_history_complete": false,
+    "period_coverage_verified": false,
+    "financial_values_admitted": false
+  },
+  "limits": {
+    "max_requests_required_per_invocation": true,
+    "request_spacing_seconds": 5,
+    "response_bytes": 1048576,
+    "page_size": 30,
+    "pages_per_interval": 100,
+    "total_records": 100000,
+    "timeout_seconds": 30,
+    "automatic_retries": 0
+  },
+  "live_probe": {
+    "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+    "symbol": "000066.SZ",
+    "org_id": "gssz0000066",
+    "identity_announcement_id": "1213249559",
+    "requests": 3,
+    "body_bytes": 5402,
+    "elapsed_window_seconds": 14.324274,
+    "minimum_request_start_gap_seconds": 6.408501,
+    "unique_announcements": 4,
+    "responses": [
+      {
+        "window": "2022-01-01~2023-12-31",
+        "records": 4,
+        "total_record_num": 4,
+        "total_announcements": 4,
+        "totalpages": 0,
+        "has_more": false,
+        "foreign_issuer_records": 0,
+        "body_sha256": "dab35123facb129adc7b3604a916ee46b08a8d8839649400f3ec7dbc683d4e18"
+      },
+      {
+        "window": "2022-01-01~2022-12-31",
+        "records": 2,
+        "total_record_num": 2,
+        "total_announcements": 2,
+        "totalpages": 0,
+        "has_more": false,
+        "foreign_issuer_records": 0,
+        "body_sha256": "c888f2776c3118ccad66489d8ff1ad6542db2284d153726676396ac3f56fc73e"
+      },
+      {
+        "window": "2023-01-01~2023-12-31",
+        "records": 2,
+        "total_record_num": 2,
+        "total_announcements": 2,
+        "totalpages": 0,
+        "has_more": false,
+        "foreign_issuer_records": 0,
+        "body_sha256": "f46222dcb4d0bb93b51a7e6c2e2b964c5ac9429564f51c269ebfb4addbab9a52"
+      }
+    ],
+    "full_window_equals_disjoint_year_union": true,
+    "previous_announcement_metadata_preserved": 2,
+    "claim": "Prueba previa de un emisor. No demuestra estabilidad del proveedor ni aceleración global.",
+    "rss_measured": false
+  },
+  "offline_integration": {
+    "network_requests": 0,
+    "rows": [
+      4,
+      2,
+      2
+    ],
+    "metadata_equal_to_saved_responses": true,
+    "resume_requests": 0,
+    "resume_bytes_identical": true,
+    "peak_process_rss_bytes": 180121600,
+    "elapsed_seconds": [
+      0.06389883800875396,
+      0.05812213200260885,
+      0.05870552099077031
+    ]
+  },
+  "verification": {
+    "tests_passed": 73,
+    "new_tests_passed": 28,
+    "prior_tests_passed": 45,
+    "red_tests_observed": 21,
+    "additional_boundary_red_tests": 2,
+    "mutants_detected": 5,
+    "mutants_executed": 5,
+    "branch_coverage_enabled": true,
+    "coverage_tool": "coverage.py 7.16.2",
+    "coverage": {
+      "covered_lines": 406,
+      "num_statements": 445,
+      "percent_covered": 87.88368336025849,
+      "percent_covered_display": "88",
+      "missing_lines": 39,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.23595505617978,
+      "percent_statements_covered_display": "91",
+      "num_branches": 174,
+      "num_partial_branches": 36,
+      "covered_branches": 138,
+      "missing_branches": 36,
+      "percent_branches_covered": 79.3103448275862,
+      "percent_branches_covered_display": "79"
+    },
+    "complexity_tool": "radon 6.0.1",
+    "crap_convention": "CRAP=CCN²*(1-cobertura de sentencias de la función)³+CCN. Las ramas se registran por separado.",
+    "function_diagnostics": [
+      {
+        "name": "_issuer",
+        "line": 357,
+        "ccn": 27,
+        "statement_fraction": 0.925,
+        "crap": 27.307546875,
+        "summary": {
+          "covered_lines": 37,
+          "num_statements": 40,
+          "percent_covered": 90.0,
+          "percent_covered_display": "90",
+          "missing_lines": 3,
+          "excluded_lines": 0,
+          "percent_statements_covered": 92.5,
+          "percent_statements_covered_display": "92",
+          "num_branches": 20,
+          "num_partial_branches": 3,
+          "covered_branches": 17,
+          "missing_branches": 3,
+          "percent_branches_covered": 85.0,
+          "percent_branches_covered_display": "85"
+        }
+      },
+      {
+        "name": "collect_chinese_announcements",
+        "line": 686,
+        "ccn": 29,
+        "statement_fraction": 0.9420289855072463,
+        "crap": 29.16384330414083,
+        "summary": {
+          "covered_lines": 65,
+          "num_statements": 69,
+          "percent_covered": 91.57894736842105,
+          "percent_covered_display": "92",
+          "missing_lines": 4,
+          "excluded_lines": 0,
+          "percent_statements_covered": 94.20289855072464,
+          "percent_statements_covered_display": "94",
+          "num_branches": 26,
+          "num_partial_branches": 4,
+          "covered_branches": 22,
+          "missing_branches": 4,
+          "percent_branches_covered": 84.61538461538461,
+          "percent_branches_covered_display": "85"
+        }
+      },
+      {
+        "name": "_Catalogue._page",
+        "line": 474,
+        "ccn": 37,
+        "statement_fraction": 0.9743589743589743,
+        "crap": 37.02307860887743,
+        "summary": {
+          "covered_lines": 38,
+          "num_statements": 39,
+          "percent_covered": 96.49122807017544,
+          "percent_covered_display": "96",
+          "missing_lines": 1,
+          "excluded_lines": 0,
+          "percent_statements_covered": 97.43589743589743,
+          "percent_statements_covered_display": "97",
+          "num_branches": 18,
+          "num_partial_branches": 1,
+          "covered_branches": 17,
+          "missing_branches": 1,
+          "percent_branches_covered": 94.44444444444444,
+          "percent_branches_covered_display": "94"
+        }
+      },
+      {
+        "name": "_Catalogue._finish",
+        "line": 551,
+        "ccn": 11,
+        "statement_fraction": 1.0,
+        "crap": 11.0,
+        "summary": {
+          "covered_lines": 12,
+          "num_statements": 12,
+          "percent_covered": 100.0,
+          "percent_covered_display": "100",
+          "missing_lines": 0,
+          "excluded_lines": 0,
+          "percent_statements_covered": 100.0,
+          "percent_statements_covered_display": "100",
+          "num_branches": 10,
+          "num_partial_branches": 0,
+          "covered_branches": 10,
+          "missing_branches": 0,
+          "percent_branches_covered": 100.0,
+          "percent_branches_covered_display": "100"
+        }
+      }
+    ]
+  },
+  "evidence_sha256": {
+    "live_probe": "432bbd152ac868f896908066b61952f861a68a0ebd858c66810886d89e655677",
+    "live_requests": "773bd239dbe8105fa1b15182bfcde8c12e1f4ec714dd9957d3455b79535b0239",
+    "offline_integration": "494c2857cf5873c0ad0cee670379827fc3e1716e2a4254c15ad48e387afa9557",
+    "coverage": "37b0a5bc24b604f5263e233b64a603a68647e1f0b3bfa4c9f34d97f47d209544",
+    "complexity": "7b560f32ef571643095209b5bfc6934a0021968e79cfe983e66ab816c3dbc438",
+    "mutations": "29176bb934b04a2d5445a4ae2bf60c93673328986f5235905565308f1e7e3d95"
+  },
+  "interpretation": [
+    "Una respuesta completed concilia las páginas devueltas para un emisor, una categoría y una ventana. No acredita ausencia histórica absoluta ni la primera versión documental.",
+    "La categoría anual no cubre todos los cierres trimestrales de la cola.",
+    "Las capturas generales existentes y los intentos bloqueados permanecen en sus directorios y runtimes. No se reemplazan ni se reinterpretan.",
+    "La integración utiliza transporte inyectado con los cuerpos del piloto ya conservados. No añade consultas reales ni descargas de PDF.",
+    "Cobertura, complejidad y cinco mutaciones dirigidas son diagnósticos focales, no una demostración de ausencia general de errores."
+  ],
+  "gpu_used": false,
+  "final_test_opened": false,
+  "new_financial_values_admitted": 0
+}
