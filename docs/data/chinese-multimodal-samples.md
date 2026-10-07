@@ -74,3 +74,9 @@ con validación, calibración y evaluación separadas. La comparación conjunta
 necesita una representación común que conserve los conceptos de cada moneda.
 El candidato MARS-TITAN sigue sin implementarse ni entrenarse y el test de 2024
 permanece cerrado.
+
+La [ampliación de historia contable](chinese-fact-history.md) conserva esta primera
+edición y añade publicaciones anteriores de Ping An y dos informes de Vanke.
+Sus ediciones independientes contienen 721 muestras y 671 etiquetas, con filas
+de entrenamiento de 2022. La comparación china aún necesita un corpus común y
+ventanas temporales separadas.
