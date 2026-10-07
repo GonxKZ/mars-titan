@@ -106,6 +106,36 @@ La consulta de todos los paneles inspeccionados devuelve cero filas anteriores a
 
 En 2023 la edición US tiene una sesión macro incompleta por `brent_wti_spread`. CN tiene completas sus 242 sesiones de ese año. Resolver únicamente el GSCPI preliminar podría añadir siete sesiones US del 20 al 31 de mayo de 2022, según la [auditoría previa de GSCPI](../../reports/data/gscpi-release-audit-20261006.json). La revisión FRASER no acreditó captura contemporánea y esas siete sesiones continúan sin admitir.
 
+## Edición histórica adicional con ausencias explícitas
+
+Se define una edición adicional con todos los datos utilizables desde 2000 y
+máscaras de ausencia. Su preparación y verificación están pendientes. La
+comparación estricta que exige las cuatro modalidades y los 140 indicadores
+observados se conserva como control separado, con sus propias filas y resultados.
+Los recuentos de esta auditoría no cambian ni acreditan que la nueva edición
+esté implementada.
+
+La presencia de un archivo, un valor observado igual a cero y una ausencia son
+estados distintos. Un cero observado conserva su máscara de presencia. Una
+entrada ausente o temporalmente inadmisible conserva su máscara de ausencia y
+su causa. Si se desconoce la publicación, la entrada permanece ausente y no se
+usa el cierre contable como fecha de publicación.
+No hace falta disponer de noticias de 2000 para registrar que faltan en esta
+copia, ni se inventan textos o cifras para completar esa modalidad.
+
+Los precios y objetivos necesarios para una fila deben ser reales y válidos.
+Una máscara no permite crear precios, rendimientos ni etiquetas maduras. Un
+indicador macro solo se calcula cuando su fórmula, sus entradas y su
+disponibilidad lo permiten. En caso contrario queda ausente, sin sustituir su
+definición ni adelantar observaciones futuras.
+
+Todos los modelos y etapas de la misma comparación reciben los mismos IDs,
+particiones temporales, máscaras y objetivos. Los resultados se desglosan por
+patrón de cobertura, con denominadores explícitos. La edición histórica y el
+control estricto mantienen identidades y análisis separados. La pausa de
+aprendizaje continúa hasta preparar y verificar la edición histórica adicional.
+Este contrato no inicia ni reanuda modelos.
+
 ## Tramos de ampliación que respetan las fuentes
 
 1. Conservar el panel desde 2000 con las ausencias reales y recalcular sobre cada calendario solo cuando exista una nueva fuente fechada. La recuperación de archivos o retardos no acredita una publicación contemporánea del GSCPI anterior a 2022. Mantener los mismos 140 como requisito completo impide una historia desde 2000 con los contratos actuales.
