@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "kind": "joint_market_preparation_verification",
+  "observed_at_utc": "2026-10-07T11:01:39.854197+00:00",
+  "implemented": true,
+  "scientific_joint_campaign_executed": false,
+  "final_test_opened": false,
+  "corpus": {
+    "scope": "development_snapshot",
+    "cohort_complete": false,
+    "samples": 408200,
+    "assets": 2223,
+    "source_counts": {
+      "US": {
+        "samples": 402826,
+        "candidate_count": 4784,
+        "assets": 2198
+      },
+      "CN": {
+        "samples": 5374,
+        "candidate_count": 25,
+        "assets": 25
+      }
+    },
+    "source_manifest_sha256": {
+      "US": "22b6b8f282f381e36b17857f1f4dfbb14fabe975d8d922d80e505ae89160dcf1",
+      "CN": "fa2ac6dea50856142e883b5189687fd92e837d5135cc1cf1c79a23ba60304fa3"
+    },
+    "manifest_sha256": "ab1dd8b8000ac85082530bde6d0c263bb168d22fdb85f97387e3435ca3d953be",
+    "configuration_sha256": "221ae0b138f35437a832eabfad73dbd8a11764e82e1a9a4ca1a6f06cfe54e91b",
+    "macro_concepts": 140,
+    "accounting_concepts": 26,
+    "accounting_components": 78,
+    "new_inference": false,
+    "numerical_checks": {
+      "all_other_columns_equal": true,
+      "accounting_channels_bitwise_equal": true,
+      "prices_and_labels_byte_equal": true
+    },
+    "annual_partitions": {
+      "train": {
+        "rows": 142120,
+        "seconds": 28.590429878997384
+      },
+      "validation": {
+        "rows": 265039,
+        "seconds": 47.46043261498562
+      }
+    }
+  },
+  "temporal": {
+    "folds": 10,
+    "counts_by_market": {
+      "US": {
+        "unique_rows": 400367,
+        "unique_evaluation_rows": 212337
+      },
+      "CN": {
+        "unique_rows": 5327,
+        "unique_evaluation_rows": 2844
+      }
+    },
+    "unique_rows": 405694,
+    "unique_evaluation_rows": 215181,
+    "labels_byte_equal_to_separate_editions": true,
+    "largest_fold_full_reader": {
+      "train": 321610,
+      "validation": 43185,
+      "calibration": 21936,
+      "evaluation": 17961
+    },
+    "report_sha256": "0e0182b59b7a705052d8c55aebb8770e4f4bf236fbc9f64166bc5eba031decb0",
+    "fold_manifests": {
+      "fold-000": "44003b2bcc328edd39eeff5f3edf78d4f7c35ab998d2dc884353a2fe25856123",
+      "fold-001": "ff4bc66e62153c5e6b62cce50e31787b660533de623d714f4bf69c5af133002a",
+      "fold-002": "523b4304415ee7cca3e9a82e4d8264df00c04f97420aec17af9a1178cb3c2524",
+      "fold-003": "d5900c4138d899cae5828c918df7eeff4c6a226929fa65def616a825c667c91d",
+      "fold-004": "b4c917086e989316c8c7396ba63581e8b5d82e569ad57d879eff9da0023721f5",
+      "fold-005": "5f7479308877147566fb615c2b499dbebd6462d4e23389bd9d38d581370f4eec",
+      "fold-006": "43a171e95e65c525a0da06ab7c24d4df579fbacb837e5b0aba0ddcf72268001f",
+      "fold-007": "4ba5b390f1943f765565e7f1481a95e2c6211025acea3e4467154d0d295165a8",
+      "fold-008": "24e50b1dcd77f2c16a8733a433a6be5b822ad16ae91c5e7c8e080a461c1f4bf0",
+      "fold-009": "15557065995869d870ce4c32ed7886108b8331bd328f0cbf40c5226ff510d695"
+    }
+  },
+  "measurements": {
+    "hardware": {
+      "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+      "ram_gib": 32
+    },
+    "software": {
+      "python": "3.12.14",
+      "numpy": "2.5.3",
+      "pyarrow": "25.0.1",
+      "operating_system": "Linux",
+      "kernel": "7.0.0-34-generic"
+    },
+    "materialization_wall_seconds": 137.39,
+    "materialization_internal_seconds": 136.614826539997,
+    "materialization_peak_rss_bytes": 324988928,
+    "parity_check_seconds": 113.92780327302171,
+    "parity_check_peak_rss_bytes": 290381824,
+    "temporal_preparation_wall_seconds": 180.57,
+    "temporal_preparation_peak_rss_bytes": 824086528,
+    "temporal_verification_seconds": 150.95793785600108,
+    "temporal_verification_peak_rss_bytes": 364818432,
+    "input_compressed_artifact_bytes": 2283983893,
+    "output_compressed_artifact_bytes": 2301996743,
+    "repetitions": 1,
+    "concurrency": "Campa\u00f1a US activa. Verificaci\u00f3n de paridad y preparaci\u00f3n temporal ejecutadas a la vez.",
+    "limits": "M\u00e1ximo de dos CPU y cuatro GiB de RAM por proceso de preparaci\u00f3n. BLAS y OpenMP con un hilo.",
+    "performance_claim": "Medici\u00f3n de preparaci\u00f3n y verificaci\u00f3n. No demuestra aceleraci\u00f3n del entrenamiento.",
+    "unmeasured": [
+      "energ\u00eda",
+      "transferencias CPU/GPU",
+      "contadores de cach\u00e9",
+      "latencias percentiles",
+      "pico de VRAM en las pruebas CUDA"
+    ]
+  },
+  "verification": {
+    "pipeline_cpu": {
+      "passed": 102,
+      "seconds": 13.51
+    },
+    "evaluation_cpu": {
+      "passed": 158,
+      "seconds": 8.93
+    },
+    "producer": {
+      "passed": 21,
+      "targeted_mutants_detected": 8,
+      "coverage": {
+        "tool": "coverage.py 7.16.2",
+        "statements_covered": 231,
+        "statements_total": 262,
+        "statements_percent": 88.16793893129771,
+        "branches_covered": 82,
+        "branches_total": 108,
+        "branches_percent": 75.92592592592592
+      },
+      "complexity": {
+        "tool": "Radon 6.0.1",
+        "max_ccn_modified_functions": 38,
+        "max_crap": 38.33651706873009,
+        "convention": "CRAP por funci\u00f3n = CCN\u00b2 \u00d7 (1 - cobertura de sentencias)\u00b3 + CCN. Sentencias ejecutables de coverage.py dentro del intervalo AST de la funci\u00f3n, incluidas sus funciones anidadas. La funci\u00f3n batches tambi\u00e9n se informa de forma independiente. No se usan ramas en CRAP."
+      }
+    },
+    "reliability": {
+      "source_sha256": "9a4cd6240881b0b33852d19708039a98cd8daf2d16d844b4c350a0ff36d0d287",
+      "passed": 140,
+      "targeted_mutants_detected": 4,
+      "statements_percent": 99.40119760479043,
+      "branches_percent": 97.82608695652173,
+      "max_crap": 12,
+      "coverage_tool": "coverage.py 7.16.2",
+      "complexity_tool": "radon 6.0.1",
+      "crap_convention": "CC^2*(1-cobertura_de_sentencias)^3+CC, con la cobertura por funci\u00f3n de coverage.py."
+    },
+    "cuda": {
+      "software": {
+        "torch": "2.14.0+cu130",
+        "cuda": "13.0",
+        "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "capability": [
+          8,
+          9
+        ],
+        "free_total_bytes": [
+          7590117376,
+          8183676928
+        ]
+      },
+      "joint_cn_heldout_tests_passed": 3,
+      "predictive_reader_tests_passed": 20,
+      "joint_technical_cases": 30,
+      "checkpoint_hashes_and_timestamps_unchanged_after_resume": true,
+      "calibration_and_evaluation_checked": true,
+      "scientific_campaign_restarted": true,
+      "elapsed_seconds": 51.82558066002093
+    }
+  },
+  "evidence_sha256": {
+    "real-union-v2/report.json": "69190ae2d1f90ef9f56b5183fcb3232c0425718318c2130385bf687ea447028e",
+    "real-verification-v2.json": "6d91ee6bbd1a62d5e1c8283d135c0ef1a3f6e58f061f31960fa0144c02fab8b6",
+    "temporal-verification-v2.json": "eb2ce43b5ed74240f4c6f80f77ef916f822e598917d635787f0a5ea7ad081601",
+    "producer-review/review-final.json": "e3822a99d455d4a0c9e9393d26b4fcdc26636041f981976f521e6eabc77ae4b8",
+    "contracts-review/review.json": "29aebec85bdceb46a2558f23e1dfa49d86913268aa5ae06a6ad630dba748f02a",
+    "reliability-review/implementation-quality.json": "3684c7be70b198f1b2a06037b31ce427030b0e1eeb52884ced6d7f779ed5b742",
+    "pipeline-commit-tests.log": "3ceb10eaf72873b32026d76efff6cfe7c68217b0af10e806c1eba865ba32b5c0",
+    "evaluation-commit-tests.log": "abb1b7cbf214d9c2b0536615deb6a2ee20640688b4629251b190121c15a9f408",
+    "cuda-checks-v1/window.json": "db6e3ec73172ecba125f9a35b8993731300eff987623874f2ccf9c5d1f64a6bd",
+    "cuda-checks-v1/joint-and-legacy.log": "dc645fe65a2df0bf7aa250c1b06e21de18c12c752316437376c33825de935e07",
+    "cuda-checks-v1/predictive-readers.log": "b5aeccb86fbfcbeb7ce1d15ac2f809f28f8dcabd9a8c6ffe92c2d8c1fcf6eb4f",
+    "materialization-v2.log": "6ff25798a28f3ab9084c817d40d0bec872a72b5afe242007de2423a8e342c19c",
+    "temporal-v2.log": "0fd778459fbaac41a5f4f70fef397f0bfd9c0f34018ece2a8e8d2381fb4e5c61"
+  },
+  "limitations": [
+    "CN contiene 25 empresas. La ampliaci\u00f3n de cobertura sigue pendiente.",
+    "Las pruebas CUDA usan fixtures. No son resultados cient\u00edficos del corpus conjunto.",
+    "Las mutaciones son dirigidas y la cobertura no demuestra ausencia de fallos.",
+    "La rama de detecci\u00f3n de c\u00f3digo alterado del productor se revis\u00f3 sin ejecutarla en la suite focal.",
+    "La campa\u00f1a US anterior usa 69 componentes contables. Una comparaci\u00f3n entre brazos debe controlar el cambio a 78.",
+    "La simulaci\u00f3n hist\u00f3rica con posiciones persistentes sigue pendiente de admisi\u00f3n de precios y acciones corporativas."
+  ]
+}
