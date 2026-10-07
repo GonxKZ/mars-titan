@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "MARS-TITAN",
-  "generated_at": "2026-10-07T13:36:34.010796Z",
+  "generated_at": "2026-10-07T13:41:49.047942Z",
   "source_status": "available",
   "poll_interval_seconds": 60,
   "stale_after_seconds": 900,
@@ -1337,8 +1337,8 @@
       "phase": "validation",
       "started_at": null,
       "updated_at": "2026-10-07T13:36:30.509798Z",
-      "heartbeat_at": "2026-10-07T13:36:33.272830Z",
-      "completed_steps": 0,
+      "heartbeat_at": "2026-10-07T13:41:48.313119Z",
+      "completed_steps": 14634,
       "total_steps": 27100,
       "epoch": null,
       "max_epochs": 50,
@@ -1362,7 +1362,7 @@
       },
       "history": [],
       "checkpoint": {
-        "step": 0,
+        "step": 14634,
         "saved_at": null,
         "resumable": null
       },
