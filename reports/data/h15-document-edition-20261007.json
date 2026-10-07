@@ -34,7 +34,7 @@
   "final_test_opened": false,
   "models_executed": false,
   "source_code_sha256": {
-    "macro_h15_archive.py": "2654a499e42b50a0de93db74ab3c37ed2a4389889f1ff4b50978aea7a5b17885",
+    "macro_h15_archive.py": "3c5cca67a79b77a9b40bd35c947f0cdab46c30bf94467e659d263f6242b6b7bd",
     "macro_h15_documents.py": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
     "macro_release_documents.py": "fbe50afc4b1acef4883db273249e6bf78f3a5d5feb7c82dd0d29af12bec99b7b",
     "macro.py": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d",
@@ -49,22 +49,22 @@
   "parquet_bytes": 8947,
   "source_bytes": 321654,
   "measurements": {
-    "materialization_seconds": 0.3183530679998512,
-    "recovery_seconds": 0.07225603900042188,
-    "peak_rss_bytes": 148480000,
-    "cpu_quota_percent": 200,
-    "memory_limit_bytes": 1073741824,
+    "materialization_seconds": 0.29497206000087317,
+    "recovery_seconds": 0.07083265099936398,
+    "peak_rss_bytes": 148967424,
+    "cpu_quota_percent": null,
+    "memory_limit_bytes": null,
     "threads": 2,
     "cuda_visible_devices": "-1",
     "repetitions": 1,
-    "limit": "Una preparación y una recuperación en el mismo proceso. El RSS es el máximo de vida de ese proceso. No es un benchmark comparativo ni incluye la descarga y revisión documental previas."
+    "limit": "Una preparación y una recuperación local en el mismo proceso, con dos hilos y sin cuota cgroup añadida en esta pasada. RSS de vida del proceso. No es una comparación de rendimiento ni incluye adquisición o revisión de fuentes."
   },
   "tests": {
-    "related_data_tests_passed": 358,
-    "h15_tests_passed": 81,
-    "related_suite_seconds": 14.54,
-    "scope": "Pruebas de H.15, comunicados, vintages, cobertura, recálculo y GSCPI. No se ejecutó la suite de entrenamiento, optimizadores o inferencia.",
-    "test_source_sha256": "9951cac931082e6fdd18ebe36bca51aa5ae2eebd0c9969205431182f1048030c"
+    "related_data_tests_passed": 487,
+    "h15_tests_passed": 86,
+    "related_suite_seconds": 29.84,
+    "scope": "Todas las pruebas tests/data/test_macro*.py. Sin suites de entrenamiento, optimizadores o inferencia.",
+    "test_source_sha256": "5587a25ce4e8a617bce587196a6ae0b80c3a1c028f71cb335938e7d598d7f556"
   },
   "quality": {
     "coverage_version": "7.16.2",
@@ -73,9 +73,9 @@
     "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
     "files": {
       "macro_h15_archive.py": {
-        "sha256": "2654a499e42b50a0de93db74ab3c37ed2a4389889f1ff4b50978aea7a5b17885",
-        "statement_coverage_percent": 85.4014598540146,
-        "branch_coverage_percent": 73.80952380952381
+        "sha256": "3c5cca67a79b77a9b40bd35c947f0cdab46c30bf94467e659d263f6242b6b7bd",
+        "statement_coverage_percent": 85.86572438162544,
+        "branch_coverage_percent": 74.21875
       },
       "macro_h15_documents.py": {
         "sha256": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
@@ -86,33 +86,89 @@
     "maximum_function_ccn": 53,
     "maximum_function_crap": 79.21023472809446,
     "maximum_location": "macro_h15_archive._document",
-    "directed_mutations_detected": 6,
-    "directed_mutations_attempted": 6,
+    "directed_mutations_detected": 7,
+    "directed_mutations_attempted": 8,
     "snapshot_import_verified": true,
     "limit": "La validación de documento concentra complejidad y sentencias sin cubrir. Estas medidas orientan la revisión y no prueban ausencia de errores.",
     "directed_mutations": [
-      "skip_logical_budget",
-      "decode_dictionary_early",
-      "skip_exact_comparison",
-      "restore_two_day_calendar",
-      "extend_calendar_past_cutoff",
-      "omit_recovery_confirmation"
+      {
+        "id": "skip_creation_logical_budget",
+        "detected": false
+      },
+      {
+        "id": "charge_overhead_per_batch",
+        "detected": true
+      },
+      {
+        "id": "skip_logical_budget",
+        "detected": true
+      },
+      {
+        "id": "decode_dictionary_early",
+        "detected": true
+      },
+      {
+        "id": "skip_exact_comparison",
+        "detected": true
+      },
+      {
+        "id": "restore_two_day_calendar",
+        "detected": true
+      },
+      {
+        "id": "extend_calendar_past_cutoff",
+        "detected": true
+      },
+      {
+        "id": "omit_recovery_confirmation",
+        "detected": true
+      }
     ],
     "modified_functions": [
       {
         "file": "macro_h15_archive.py",
+        "function": "_logical_overhead",
+        "line": 312,
+        "ccn": 3,
+        "statements": 2,
+        "covered_statements": 2,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_text_bytes",
+        "line": 321,
+        "ccn": 3,
+        "statements": 3,
+        "covered_statements": 3,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_logical_bytes",
+        "line": 330,
+        "ccn": 3,
+        "statements": 2,
+        "covered_statements": 2,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "macro_h15_archive.py",
         "function": "_check_parquet",
-        "line": 311,
-        "ccn": 15,
-        "statements": 25,
-        "covered_statements": 23,
-        "statement_coverage": 0.92,
-        "crap": 15.1152
+        "line": 336,
+        "ccn": 14,
+        "statements": 23,
+        "covered_statements": 21,
+        "statement_coverage": 0.9130434782608695,
+        "crap": 14.12887318155667
       },
       {
         "file": "macro_h15_archive.py",
         "function": "_recover",
-        "line": 353,
+        "line": 371,
         "ccn": 18,
         "statements": 24,
         "covered_statements": 22,
@@ -122,16 +178,17 @@
       {
         "file": "macro_h15_archive.py",
         "function": "prepare_h15_archive",
-        "line": 403,
-        "ccn": 23,
-        "statements": 51,
-        "covered_statements": 46,
-        "statement_coverage": 0.9019607843137255,
-        "crap": 23.498488514975385
+        "line": 421,
+        "ccn": 24,
+        "statements": 54,
+        "covered_statements": 49,
+        "statement_coverage": 0.9074074074074074,
+        "crap": 24.457247370827616
       }
     ],
-    "modified_functions_maximum_ccn": 23,
-    "modified_functions_maximum_crap": 23.498488514975385
+    "modified_functions_maximum_ccn": 24,
+    "modified_functions_maximum_crap": 24.457247370827616,
+    "surviving_mutation_explanation": "skip_creation_logical_budget cambia el control inicial por table.nbytes. Sobrevive porque el Parquet temporal se comprueba de nuevo con el presupuesto canónico antes de publicar. El arnés conserva su salida de fallo por no detectar todos los cambios."
   },
   "limitations": [
     "Solo dos boletines, sin cobertura continua del año 2000.",
@@ -139,10 +196,11 @@
     "El contraste de celdas requiere una transcripción documental revisada, no una aprobación inferida por el parser.",
     "No se ha probado identidad de bytes con una captura contemporánea de 2000 ni ausencia de otras revisiones.",
     "No se generan fines de semana de DFF ni se sustituyen SOFR, TIPS o GSCPI.",
-    "La admisión en un panel macro requiere una decisión y una edición separadas."
+    "La admisión en un panel macro requiere una decisión y una edición separadas.",
+    "El calendario de apoyo CN requiere un año previo. Algunas publicaciones de 1991 quedan fuera de su cobertura. La revisión actual comprende historia desde 2000."
   ],
   "unique_observation_values_compared": 60,
-  "edition_revision": 3,
+  "edition_revision": 4,
   "review_corrections": {
     "parquet_logical_expansion": {
       "file_bytes": 6025,
@@ -164,13 +222,27 @@
       "fixture_limit": "Comprueba calendarios y corte. No añade un boletín real a las dos fuentes revisadas."
     },
     "edition_parity": {
-      "previous_revision": 2,
-      "current_revision": 3,
+      "previous_revision": 3,
+      "current_revision": 4,
       "parquet_bytes_identical": true,
-      "protected_files": 16,
+      "protected_files": 23,
       "sources_and_previous_edition_unchanged": true,
-      "configuration_sha256": "5982a4fe62b41e463b792b634ef27fe0225fc279f8eec54457ad39f15ffdaadd",
-      "report_sha256": "a3e684be5aaf7f2ff6adc17c406d7aa6fd246441a1062ecd467affbf0967bece"
+      "configuration_sha256": "7b1250d20ee6e016bed9ad592719cc2175441f4f39e7c87183091d8247d0bd79",
+      "report_sha256": "d784ba5ca2938460ea836087cc3bbbfbffb141e2d17777630cb5d85476012ec7"
+    },
+    "logical_budget_boundary": {
+      "canonical_limit_bytes": 67108864,
+      "technical_rows_at_exact_limit": 115140,
+      "create_recover_variants": 4,
+      "same_budget_for_creation_and_recovery": true
     }
+  },
+  "independent_review": {
+    "source_commit": "f83838ada4c06ba60c71d981df6cb1811c38d981",
+    "receipt_sha256": "fe004dd928490c42bcda4832c0c6ba8d690c27566be3a8e1d4ac6cb54a219780",
+    "quality_receipt_sha256": "c2cf6c46b273f7665af1a5640ced7b5538a201671ff4053fccbc882b9f95d6c8",
+    "scope": "no_findings_in_requested_2000_scope",
+    "h15_tests_passed": 86,
+    "h15_seconds": 5.72
   }
 }
