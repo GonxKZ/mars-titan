@@ -129,6 +129,70 @@ def test_missing_known_announcement_cannot_complete_its_publication_window(input
     assert not (inputs["output"] / "announcements.parquet").exists()
 
 
+def changed_anchor(fault, day="2022-04-01"):
+    row = notice(7)
+    if fault == "date":
+        changed = notice(7, day=day)
+        changed["announcementId"] = row["announcementId"]
+        changed["adjunctUrl"] = f"finalpage/{day}/{row['announcementId']}.PDF"
+        return changed
+    if fault == "pdf":
+        row["adjunctUrl"] = row["adjunctUrl"].replace(".PDF", ".pdf")
+    else:
+        row["announcementTitle"] = "2021年年度报告摘要"
+    return row
+
+
+@pytest.mark.parametrize("fault", ["date", "pdf", "title"])
+def test_known_announcement_keeps_all_normalized_metadata(inputs, issuer, fault):
+    result, calls, _ = scoped(inputs, issuer, [response([changed_anchor(fault)])])
+    assert result["status"] == "blocked" and len(calls) == 1
+    assert not (inputs["output"] / "announcements.parquet").exists()
+    again, calls, _ = scoped(inputs, issuer, [])
+    assert again["status"] == "blocked" and calls == []
+
+
+@pytest.mark.parametrize("fault", ["date", "pdf", "title"])
+def test_orphan_recovery_checks_known_announcement_metadata(inputs, issuer, monkeypatch, fault):
+    module = api()
+    original = module.atomic_json
+
+    def cut(path, value):
+        if path.name == "cursor.json" and value["responses"]:
+            raise OSError("Corte antes de confirmar el cursor")
+        return original(path, value)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "atomic_json", cut)
+        with pytest.raises(OSError):
+            scoped(inputs, issuer, [response([changed_anchor(fault)])])
+    assert not (inputs["output"] / "report.json").exists()
+    result, calls, delays = scoped(inputs, issuer, [])
+    assert result["status"] == "blocked" and calls == delays == []
+    assert not (inputs["output"] / "announcements.parquet").exists()
+
+
+def test_anchor_cannot_reappear_with_another_date_outside_its_original_window(inputs, issuer):
+    inputs.update(publication_start="2023-01-01", publication_end="2023-12-31")
+    result, _, _ = scoped(inputs, issuer, [response([changed_anchor("date", "2023-04-01")])])
+    assert result["status"] == "blocked"
+    assert result["known_announcement_required"] is False
+    assert not (inputs["output"] / "announcements.parquet").exists()
+
+
+def test_announcement_comparison_uses_normalized_text_and_persists_the_anchor(inputs, issuer):
+    row = notice(7)
+    row["announcementTitle"] = "<em>2021</em>年年度报告（更正后）"
+    result, _, _ = scoped(inputs, issuer, [response([row])])
+    assert result["status"] == "completed"
+    anchor = result["issuer"]["announcement"]
+    assert anchor["title"] == notice(7)["announcementTitle"]
+    assert anchor["publication_date"] == "2022-03-31"
+    assert anchor["pdf_url"] == "https://static.cninfo.com.cn/" + notice(7)["adjunctUrl"]
+    config = json.loads((inputs["output"] / "configuration.json").read_text())
+    assert config["issuer"]["announcement"] == anchor
+
+
 def test_empty_other_window_only_records_no_returned_results(inputs, issuer):
     inputs.update(publication_start="2023-01-01", publication_end="2023-12-31")
     result, _, _ = scoped(inputs, issuer, [response([])])

@@ -415,6 +415,7 @@ def _issuer(symbol, receipt_path, receipt_hash, announcement_id, census, output,
         **issuer,
         announcement_id=announcement_id,
         publication_date=notice["publication_date"],
+        announcement=notice,
         category=parameters["category"],
         receipt_path=str(path.resolve()),
         receipt_sha256=signature,
@@ -504,6 +505,12 @@ class _Catalogue:
             for row in records
         ):
             raise ValueError("La respuesta no conserva el emisor y orgId solicitados")
+        if self.issuer and any(
+            row["announcement_id"] == self.issuer["announcement_id"]
+            and row != self.issuer["announcement"]
+            for row in records
+        ):
+            raise ValueError("El anuncio de referencia cambió sus metadatos normalizados")
         signatures = {
             r["announcement_id"]: hashlib.sha256(_canonical(r).encode()).hexdigest()
             for r in records

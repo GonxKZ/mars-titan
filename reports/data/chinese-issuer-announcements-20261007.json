@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "kind": "issuer_announcement_catalogue_validation",
-  "observed_at_utc": "2026-10-07T16:03:37.737685+00:00",
+  "observed_at_utc": "2026-10-07T16:24:44.097518+00:00",
   "issue": "https://github.com/GonxKZ/mars-titan/issues/105",
   "base_commit": "bac61cddd885f6803b640574198fe22562a102ca",
-  "source_sha256": "0590ca42aefc8cf228c1bb10f367ad2aab7ee492862c071f7f00797e99accc61",
-  "tests_sha256": "bec71c7132d247078bf55a11cfd00a5e097ffe9c359007f3c6d473b0fb6ddd4c",
+  "source_sha256": "bdd163dde72a70e82d7ff336710840761f2aa2c48e09915dc29ba60bcdee3981",
+  "tests_sha256": "992385e4bb94f05727e1fbaff7c0884160f7f68e5459c38387f0d03c38c4cee3",
   "contract": {
     "general_schema_version": 1,
     "issuer_schema_version": 2,
@@ -17,7 +17,8 @@
       "publication_date",
       "receipt_sha256",
       "body_sha256",
-      "source_configuration_sha256"
+      "source_configuration_sha256",
+      "announcement"
     ],
     "org_id_derived_from_saved_public_announcement": true,
     "foreign_issuer_response_rejected": true,
@@ -28,7 +29,10 @@
     "migration_performed": false,
     "issuer_history_complete": false,
     "period_coverage_verified": false,
-    "financial_values_admitted": false
+    "financial_values_admitted": false,
+    "anchor_normalized_metadata_pinned": true,
+    "anchor_metadata_checked_whenever_id_appears": true,
+    "anchor_metadata_checked_outside_original_window": true
   },
   "limits": {
     "max_requests_required_per_invocation": true,
@@ -97,38 +101,40 @@
     "metadata_equal_to_saved_responses": true,
     "resume_requests": 0,
     "resume_bytes_identical": true,
-    "peak_process_rss_bytes": 180121600,
+    "peak_process_rss_bytes": 180535296,
     "elapsed_seconds": [
-      0.06389883800875396,
-      0.05812213200260885,
-      0.05870552099077031
-    ]
+      0.0655828199815005,
+      0.05569525799364783,
+      0.05667894100770354
+    ],
+    "anchor_metadata_preserved": true,
+    "resume_mtime_identical": true
   },
   "verification": {
-    "tests_passed": 73,
-    "new_tests_passed": 28,
+    "tests_passed": 81,
+    "new_tests_passed": 36,
     "prior_tests_passed": 45,
     "red_tests_observed": 21,
     "additional_boundary_red_tests": 2,
-    "mutants_detected": 5,
-    "mutants_executed": 5,
+    "mutants_detected": 3,
+    "mutants_executed": 3,
     "branch_coverage_enabled": true,
     "coverage_tool": "coverage.py 7.16.2",
     "coverage": {
-      "covered_lines": 406,
-      "num_statements": 445,
-      "percent_covered": 87.88368336025849,
+      "covered_lines": 408,
+      "num_statements": 447,
+      "percent_covered": 87.96147672552166,
       "percent_covered_display": "88",
       "missing_lines": 39,
       "excluded_lines": 0,
-      "percent_statements_covered": 91.23595505617978,
+      "percent_statements_covered": 91.2751677852349,
       "percent_statements_covered_display": "91",
-      "num_branches": 174,
+      "num_branches": 176,
       "num_partial_branches": 36,
-      "covered_branches": 138,
+      "covered_branches": 140,
       "missing_branches": 36,
-      "percent_branches_covered": 79.3103448275862,
-      "percent_branches_covered_display": "79"
+      "percent_branches_covered": 79.54545454545455,
+      "percent_branches_covered_display": "80"
     },
     "complexity_tool": "radon 6.0.1",
     "crap_convention": "CRAP=CCN²*(1-cobertura de sentencias de la función)³+CCN. Las ramas se registran por separado.",
@@ -157,54 +163,31 @@
         }
       },
       {
-        "name": "collect_chinese_announcements",
-        "line": 686,
-        "ccn": 29,
-        "statement_fraction": 0.9420289855072463,
-        "crap": 29.16384330414083,
-        "summary": {
-          "covered_lines": 65,
-          "num_statements": 69,
-          "percent_covered": 91.57894736842105,
-          "percent_covered_display": "92",
-          "missing_lines": 4,
-          "excluded_lines": 0,
-          "percent_statements_covered": 94.20289855072464,
-          "percent_statements_covered_display": "94",
-          "num_branches": 26,
-          "num_partial_branches": 4,
-          "covered_branches": 22,
-          "missing_branches": 4,
-          "percent_branches_covered": 84.61538461538461,
-          "percent_branches_covered_display": "85"
-        }
-      },
-      {
         "name": "_Catalogue._page",
-        "line": 474,
-        "ccn": 37,
-        "statement_fraction": 0.9743589743589743,
-        "crap": 37.02307860887743,
+        "line": 475,
+        "ccn": 41,
+        "statement_fraction": 0.975609756097561,
+        "crap": 41.02439024390244,
         "summary": {
-          "covered_lines": 38,
-          "num_statements": 39,
-          "percent_covered": 96.49122807017544,
-          "percent_covered_display": "96",
+          "covered_lines": 40,
+          "num_statements": 41,
+          "percent_covered": 96.72131147540983,
+          "percent_covered_display": "97",
           "missing_lines": 1,
           "excluded_lines": 0,
-          "percent_statements_covered": 97.43589743589743,
-          "percent_statements_covered_display": "97",
-          "num_branches": 18,
+          "percent_statements_covered": 97.5609756097561,
+          "percent_statements_covered_display": "98",
+          "num_branches": 20,
           "num_partial_branches": 1,
-          "covered_branches": 17,
+          "covered_branches": 19,
           "missing_branches": 1,
-          "percent_branches_covered": 94.44444444444444,
-          "percent_branches_covered_display": "94"
+          "percent_branches_covered": 95.0,
+          "percent_branches_covered_display": "95"
         }
       },
       {
         "name": "_Catalogue._finish",
-        "line": 551,
+        "line": 558,
         "ccn": 11,
         "statement_fraction": 1.0,
         "crap": 11.0,
@@ -224,25 +207,68 @@
           "percent_branches_covered": 100.0,
           "percent_branches_covered_display": "100"
         }
+      },
+      {
+        "name": "collect_chinese_announcements",
+        "line": 693,
+        "ccn": 29,
+        "statement_fraction": 0.9420289855072463,
+        "crap": 29.16384330414083,
+        "summary": {
+          "covered_lines": 65,
+          "num_statements": 69,
+          "percent_covered": 91.57894736842105,
+          "percent_covered_display": "92",
+          "missing_lines": 4,
+          "excluded_lines": 0,
+          "percent_statements_covered": 94.20289855072464,
+          "percent_statements_covered_display": "94",
+          "num_branches": 26,
+          "num_partial_branches": 4,
+          "covered_branches": 22,
+          "missing_branches": 4,
+          "percent_branches_covered": 84.61538461538461,
+          "percent_branches_covered_display": "85"
+        }
       }
-    ]
+    ],
+    "independent_tests_passed": 5,
+    "directed_battery_passed": 86,
+    "anchor_regression_tests": 8,
+    "anchor_independent_red_cases": 2,
+    "mutation_scope": "Comprobación completa del anuncio de referencia, recuperación y aparición fuera de su ventana original."
   },
   "evidence_sha256": {
     "live_probe": "432bbd152ac868f896908066b61952f861a68a0ebd858c66810886d89e655677",
     "live_requests": "773bd239dbe8105fa1b15182bfcde8c12e1f4ec714dd9957d3455b79535b0239",
-    "offline_integration": "494c2857cf5873c0ad0cee670379827fc3e1716e2a4254c15ad48e387afa9557",
-    "coverage": "37b0a5bc24b604f5263e233b64a603a68647e1f0b3bfa4c9f34d97f47d209544",
-    "complexity": "7b560f32ef571643095209b5bfc6934a0021968e79cfe983e66ab816c3dbc438",
-    "mutations": "29176bb934b04a2d5445a4ae2bf60c93673328986f5235905565308f1e7e3d95"
+    "offline_integration": "068cdb677c558a13dfc472fed972f2b619f5e59f4d726bc5afa231a309162a0f",
+    "coverage": "7a7e0294c650750fa8278cb66ea447d28221df391c15a7db69631d3cffd33521",
+    "complexity": "44657343caa6f199a727be4d533e2461a7f2b87afb0fe62089ac4761e78cec79",
+    "mutations": "d3cfaa4bea553368a8ecf3a52dc2e391cb34f09db242e9bd5fcda993475e8d94",
+    "anchor_regressions_red": "7a7e6cb2b1d14b6d3c4b48e78a1ee85aed26052c18a20ccc8337d049334dc4f5",
+    "independent_red": "d9a794ca6cb1c75417089381828cc49cb0a741090bbee13ba371616d27970d15",
+    "directed_green": "56acae318c67ef2e7bfc47cd0f51642060430ec647fb2ceef9bebeb5a7a831cf"
   },
   "interpretation": [
     "Una respuesta completed concilia las páginas devueltas para un emisor, una categoría y una ventana. No acredita ausencia histórica absoluta ni la primera versión documental.",
     "La categoría anual no cubre todos los cierres trimestrales de la cola.",
     "Las capturas generales existentes y los intentos bloqueados permanecen en sus directorios y runtimes. No se reemplazan ni se reinterpretan.",
     "La integración utiliza transporte inyectado con los cuerpos del piloto ya conservados. No añade consultas reales ni descargas de PDF.",
-    "Cobertura, complejidad y cinco mutaciones dirigidas son diagnósticos focales, no una demostración de ausencia general de errores."
+    "Cobertura, complejidad y mutaciones dirigidas son diagnósticos focales, no una demostración de ausencia general de errores."
   ],
   "gpu_used": false,
   "final_test_opened": false,
-  "new_financial_values_admitted": 0
+  "new_financial_values_admitted": 0,
+  "previous_validation": {
+    "commit": "a6b1a672e8b3775829cafa69ef3464700147d857",
+    "source_sha256": "0590ca42aefc8cf228c1bb10f367ad2aab7ee492862c071f7f00797e99accc61",
+    "private_quality_sha256": "fd873d79b14802bab3bf968db6312fe3f0e028fd1a2da193dba4e64035069906",
+    "tests_passed": 73,
+    "mutants_detected": 5,
+    "mutants_executed": 5
+  },
+  "anchor_fix": {
+    "previous_failure": "Se aceptaba el mismo ID con fecha, enlace PDF o título cambiados. La presencia del ID no acreditaba el anuncio conservado.",
+    "behavior": "Los metadatos normalizados deben coincidir cada vez que aparece el ID, tanto al consumir como al recuperar. El texto equivalente tras retirar marcado HTML permanece válido."
+  }
 }

@@ -68,6 +68,12 @@ debe aparecer antes de completar la recogida. Una respuesta vacía o la pérdida
 del anuncio conocido bloquean ese ámbito. Fuera de esa ventana, una respuesta
 vacía solo acredita que el proveedor no devolvió resultados.
 
+La configuración fija también los metadatos normalizados de ese anuncio. Cuando
+su ID aparece, la fecha, el instante de publicación, el enlace PDF, el título y
+los demás campos deben coincidir con la evidencia. Esta comprobación se aplica
+al consumir y al recuperar respuestas, incluso si la fecha original queda fuera
+de la ventana solicitada. No basta con conservar el ID de un anuncio distinto.
+
 Estas colecciones usan configuración e informe de versión 2 y el ámbito
 `issuer_annual_category_only`. Conservan las rutas y hashes de la evidencia, que
 se vuelven a comprobar antes de pedir datos, al recuperar y antes de confirmar.
