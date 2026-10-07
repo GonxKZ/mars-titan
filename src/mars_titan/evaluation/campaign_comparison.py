@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import safe_destination
@@ -41,6 +42,32 @@ def _mean(values):
     return math.fsum(present) / len(present) if present else None
 
 
+def _market_aggregates(admitted, daily, sessions, markets, **options):
+    result = {name: [] for name in ("overall", "by_fold", "intervals")}
+    for market in markets:
+        cases = []
+        for key, original in admitted.items():
+            rows = [row for (name, _), row in daily[key].items() if name == market]
+            _require(rows, "Un modelo no conserva las sesiones de todos los mercados")
+            cases.append(
+                dict(
+                    original,
+                    sessions=len(rows),
+                    samples=sum(row["samples"] for row in rows),
+                    session_mse=_mean(row.get("mse_prediction") for row in rows),
+                    mean_session_rank_ic=_mean(row.get("rank_ic") for row in rows),
+                    mean_session_direction_accuracy=_mean(
+                        row.get("direction_accuracy") for row in rows
+                    ),
+                )
+            )
+        selected = sessions.filter(pc.equal(sessions["market"], market))
+        local = aggregate_results(cases, selected, **options)
+        for name in result:
+            result[name].extend(dict(row, market=market) for row in local[name])
+    return result
+
+
 def aggregate_results(cases, sessions, *, block_lengths=(1, 5, 10, 20), repetitions=2000, seed=42):
     """Promediar errores de semillas y dar el mismo peso descriptivo a cada ventana."""
     _require(len({_key(row) for row in cases}) == len(cases), "Hay casos duplicados")
@@ -59,6 +86,18 @@ def aggregate_results(cases, sessions, *, block_lengths=(1, 5, 10, 20), repetiti
     for case in admitted.values():
         _require(len(daily[_key(case)]) == case["sessions"], "Faltan sesiones de un caso")
         grouped[(case["fold"], *(case[name] for name in GROUP))].append(case)
+    markets = sorted({market for rows in daily.values() for market, _ in rows})
+    _require(set(markets) <= {"US", "CN"}, "Las pérdidas contienen un mercado desconocido")
+    if len(markets) > 1:
+        return _market_aggregates(
+            admitted,
+            daily,
+            sessions,
+            markets,
+            block_lengths=block_lengths,
+            repetitions=repetitions,
+            seed=seed,
+        )
     fold_results, comparisons = [], defaultdict(list)
     for (fold, partition, family, method), rows in sorted(grouped.items()):
         _require(len({row["seed"] for row in rows}) == len(rows), "Hay semillas duplicadas")
@@ -245,6 +284,12 @@ def _case(source, result, seconds, parent_difference):
             if role in scores and (role != "parent" or source["parent_id"] is not None)
             else None
         )
+    markets = sorted(set(result["sessions"]["market"].to_pylist()))
+    if len(markets) > 1:
+        for market in markets:
+            selected = result["sessions"].filter(pc.equal(result["sessions"]["market"], market))
+            row[f"sessions_{market}"] = len(selected)
+            row[f"samples_{market}"] = sum(selected["samples"].to_pylist())
     return row
 
 
@@ -316,7 +361,7 @@ def compare_campaigns(
     daily = pa.concat_tables(tables, promote_options="default")
     aggregates = aggregate_results(cases, daily, repetitions=repetitions, seed=seed)
     report = dict(
-        schema_version=1,
+        schema_version=2,
         status="completed",
         created_at_utc=datetime.now(UTC).isoformat(),
         final_test_opened=False,
@@ -368,8 +413,18 @@ def compare_campaigns(
                 "prediction_statistics.py",
                 "campaign_comparison.py",
             )
+        }
+        | {
+            "training/temporal_contract.py": sha256(
+                Path(__file__).parents[1] / "training/temporal_contract.py"
+            )
         },
     )
+    if len(set(daily["market"].to_pylist())) > 1:
+        report["method"].update(
+            market_stratification="separate_markets",
+            markets=sorted(set(daily["market"].to_pylist())),
+        )
     output.mkdir(parents=True, exist_ok=False)
     pq.write_table(daily, output / "session-errors.parquet", compression="zstd")
     for name, records in (

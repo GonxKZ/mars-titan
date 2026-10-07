@@ -96,8 +96,21 @@ def match_summary(records, summary, identity):
         raise ValueError("El resumen JSON no corresponde a su CSV")
 
 
+def comparison_markets(method):
+    if "market_stratification" not in method:
+        return (None,)
+    if method["market_stratification"] != "separate_markets" or method.get("markets") != [
+        "CN",
+        "US",
+    ]:
+        raise ValueError("La comparación conjunta debe separar explícitamente US y CN")
+    return ("CN", "US")
+
+
 def validate_predictive(report, tables, folds):
-    aggregate_key = ("partition", "family", "method")
+    markets = comparison_markets(report["method"])
+    extra = ("market",) if markets != (None,) else ()
+    aggregate_key = ("partition", "family", "method", *extra)
     for field, filename, identity in (
         ("overall", "methods.csv", aggregate_key),
         ("by_fold", "folds.csv", ("fold", *aggregate_key)),
@@ -134,8 +147,25 @@ def validate_predictive(report, tables, folds):
                 raise ValueError("La huella del estado congelado no es válida")
         cases[key] = row
         models[key[:2]][key[2]] = row
-        if row["included"] == "True":
-            groups[(row["fold"], row["partition"], row["family"], row["method"])].append(row)
+        if extra:
+            declared = identifiers[key[0]].get("market_counts", {})
+            if (
+                set(declared) != set(markets)
+                or sum(int(row.get(f"samples_{market}", 0)) for market in markets)
+                != int(row["samples"])
+                or sum(int(row.get(f"sessions_{market}", 0)) for market in markets)
+                != int(row["sessions"])
+            ):
+                raise ValueError("Los recuentos por mercado no concilian con el caso completo")
+        for market in markets:
+            member = row
+            if market is not None:
+                samples, sessions = int(row[f"samples_{market}"]), int(row[f"sessions_{market}"])
+                if not 1 <= sessions <= samples or samples != declared[market].get(key[2]):
+                    raise ValueError("Un mercado no conserva su población y sesiones")
+                member = dict(row, samples=str(samples), sessions=str(sessions), market=market)
+            if row["included"] == "True":
+                groups[(row["fold"], *(member[name] for name in aggregate_key))].append(member)
     if (
         len(cases) != report["counts"]["prediction_files"]
         or len(models) != report["counts"]["models"]
@@ -152,7 +182,7 @@ def validate_predictive(report, tables, folds):
             raise ValueError("Las particiones no pertenecen al mismo modelo congelado")
     by_fold, overall = {}, defaultdict(list)
     for row in tables["folds.csv"]:
-        key = tuple(row[name] for name in ("fold", "partition", "family", "method"))
+        key = tuple(row[name] for name in ("fold", *aggregate_key))
         members = groups.get(key, [])
         if (
             key in by_fold
@@ -168,7 +198,7 @@ def validate_predictive(report, tables, folds):
         raise ValueError("Faltan agregados de la población seleccionada")
     seen = set()
     for row in tables["methods.csv"]:
-        key = tuple(row[name] for name in ("partition", "family", "method"))
+        key = tuple(row[name] for name in aggregate_key)
         members = overall.get(key, [])
         if (
             key in seen
@@ -181,7 +211,7 @@ def validate_predictive(report, tables, folds):
     if seen != set(overall):
         raise ValueError("Faltan agregados por método")
     for row in tables["intervals.csv"]:
-        key = tuple(row[name] for name in ("fold", "partition", "family", "method"))
+        key = tuple(row[name] for name in ("fold", *aggregate_key))
         if key not in by_fold or any(
             row[name] != by_fold[key][name] for name in ("models", "sessions")
         ):
@@ -191,6 +221,8 @@ def validate_predictive(report, tables, folds):
 
 def validate_reliability(report, records, predictive, cases):
     method = report["method"]
+    markets = comparison_markets(predictive["method"])
+    extra = ("market",) if markets != (None,) else ()
     if (
         report.get("kind") != "frozen_campaign_reliability"
         or report.get("target_kind") != "residual_return"
@@ -200,6 +232,13 @@ def validate_reliability(report, records, predictive, cases):
         or method.get("evaluation_partition") != "evaluation"
         or method.get("selection") != "frozen_before_calibration"
         or method.get("seed_or_fold_pooling") is not False
+        or (
+            extra
+            and (
+                method.get("calibration_grouping") != "model_fold_seed_market"
+                or method.get("market_pooling") is not False
+            )
+        )
     ):
         raise ValueError("El recibo de fiabilidad no acredita el diagnóstico residual congelado")
     for field in ("reference_sha256", "completion_sha256", "folds", "final_test_opened"):
@@ -211,14 +250,21 @@ def validate_reliability(report, records, predictive, cases):
         or report["counts"]["folds"] != len(predictive["provenance"]["folds"])
     ):
         raise ValueError("La fiabilidad no incluye la misma población de modelos")
-    match_summary(records, report["cases"], ("fold", "id", "prediction_kind", "confidence"))
+    match_summary(records, report["cases"], ("fold", "id", "prediction_kind", "confidence", *extra))
     folds = {fold["id"]: fold for fold in predictive["provenance"]["folds"]}
     seen = set()
     for row in records:
-        key = (row["fold"], row["id"], row["prediction_kind"], row["confidence"])
+        key = (
+            row["fold"],
+            row["id"],
+            row["prediction_kind"],
+            row["confidence"],
+            *(row[name] for name in extra),
+        )
         if (
             key in seen
-            or key[2:] not in {("point", ""), ("interval", "0.9"), ("interval", "0.95")}
+            or key[2:4] not in {("point", ""), ("interval", "0.9"), ("interval", "0.95")}
+            or (extra and row["market"] not in markets)
             or row["target_kind"] != "residual_return"
             or row["coverage_guaranteed"] != "False"
         ):
@@ -237,8 +283,16 @@ def validate_reliability(report, records, predictive, cases):
                     "La comparación antigua requiere regenerarse con las huellas "
                     "del checkpoint y del recibo"
                 )
+            scoped = (
+                dict(
+                    case,
+                    **{name: case[f"{name}_{row['market']}"] for name in ("samples", "sessions")},
+                )
+                if extra
+                else case
+            )
             if row["checkpoint_sha256"] != case["checkpoint_sha256"] or any(
-                row[f"{partition}_{name}"] != case[name]
+                row[f"{partition}_{name}"] != scoped[name]
                 for name in ("predictions_sha256", "source_report_sha256", "samples", "sessions")
             ):
                 raise ValueError("La fiabilidad no corresponde al checkpoint o a sus predicciones")
@@ -247,10 +301,11 @@ def validate_reliability(report, records, predictive, cases):
             ]:
                 raise ValueError("La fiabilidad no corresponde al mismo corte temporal")
     expected = {
-        (fold, identifier, kind, confidence)
+        (fold, identifier, kind, confidence, *((market,) if extra else ()))
         for fold, identifier, partition in cases
         if partition == "evaluation"
         for kind, confidence in (("point", ""), ("interval", "0.9"), ("interval", "0.95"))
+        for market in markets
     }
     if seen != expected:
         raise ValueError("Faltan diagnósticos puntuales o de intervalo")
@@ -355,7 +410,14 @@ def windows(provenance):
     return folds
 
 
-def predictive_series(records, folds, method):
+def predictive_series(records, folds, method, *, market=None):
+    markets = comparison_markets(method)
+    if market not in markets:
+        raise ValueError("La serie necesita un mercado declarado por la comparación")
+    if markets != (None,):
+        if {row.get("market") for row in records} != set(markets):
+            raise ValueError("Los intervalos no contienen los dos mercados declarados")
+        records = [row for row in records if row["market"] == market]
     if (
         not 0 < number(method["confidence"]) < 1
         or 5 not in method["block_lengths"]
@@ -416,7 +478,11 @@ def predictive_series(records, folds, method):
 
 def predictions(directory, folds, method_metadata, records=None):
     records = rows(directory / "predictive-intervals.csv") if records is None else records
-    series = predictive_series(records, folds, method_metadata)
+    markets = comparison_markets(method_metadata)
+    series_by_market = {
+        market: predictive_series(records, folds, method_metadata, market=market)
+        for market in markets
+    }
     count = len(folds)
 
     starts = {row["id"]: date.fromisoformat(row["windows"]["evaluation"][0]) for row in folds}
@@ -439,8 +505,18 @@ def predictions(directory, folds, method_metadata, records=None):
         ("neural_mae", "Continuación MAE (rejilla)", "#b26322", "s"),
         ("neural_mse", "Continuación MSE (rejilla)", "#706223", "^"),
     )
-    fig, axes = plt.subplots(2, 2, figsize=(11, max(7, 2 + 0.8 * count)), sharex=True, sharey=True)
-    for ax, family in zip(axes.flat, ("rnn", "lstm", "gru", "dlinear"), strict=True):
+    fig, axes = plt.subplots(
+        2 * len(markets),
+        2,
+        figsize=(11, len(markets) * max(7, 2 + 0.8 * count)),
+        sharex=True,
+        sharey=len(markets) == 1,
+    )
+    panels = [
+        (market, family) for market in markets for family in ("rnn", "lstm", "gru", "dlinear")
+    ]
+    for ax, (market, family) in zip(axes.flat, panels, strict=True):
+        series = series_by_market[market]
         for offset, (method, label, color, marker) in zip((-0.2, 0, 0.2), methods, strict=True):
             chosen = series[(family, method)]
             estimate = np.array([float(r["estimate"]) for r in chosen]) * 10000
@@ -453,7 +529,8 @@ def predictions(directory, folds, method_metadata, records=None):
             )
             ax.scatter(estimate, positions, color=color, marker=marker, s=28, label=label)
         ax.axvline(0, color="#333333", linestyle=":", linewidth=1)
-        ax.set_title(family.upper() if family != "dlinear" else "DLinear")
+        title = family.upper() if family != "dlinear" else "DLinear"
+        ax.set_title(f"{market} · {title}" if market is not None else title)
         ax.set_yticks(
             range(count),
             [
@@ -465,12 +542,17 @@ def predictions(directory, folds, method_metadata, records=None):
         ax.grid(axis="x", color="#dddddd", linewidth=0.6)
         ax.set_axisbelow(True)
         ax.spines[["top", "right"]].set_visible(False)
-    axes[0, 0].set_ylim(count - 0.5, -0.5)
+        ax.set_ylim(count - 0.5, -0.5)
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False)
     fig.supxlabel("Δ MAE frente a cero (×10⁻⁴). Un valor negativo indica menor error.", y=0.065)
     fig.suptitle("Evaluación por periodo · media de errores por semilla", y=0.93)
-    undefined = any(not row["lower"] for group in series.values() for row in group)
+    undefined = any(
+        not row["lower"]
+        for series in series_by_market.values()
+        for group in series.values()
+        for row in group
+    )
     fig.text(
         0.5,
         0.02,
