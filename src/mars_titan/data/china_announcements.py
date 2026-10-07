@@ -126,14 +126,14 @@ def _key(task):
     return f"{task['start']}_{task['end']}_{task['page']:03}"
 
 
-def _parameters(task):
+def _parameters(task, issuer=None):
     return dict(
         pageNum=str(task["page"]),
         pageSize=str(_PAGE_SIZE),
         column="szse",
         tabName="fulltext",
         plate="",
-        stock="",
+        stock=f"{issuer['symbol'].split('.')[0]},{issuer['org_id']}" if issuer else "",
         searchkey="",
         secid="",
         category="category_ndbg_szsh",
@@ -201,7 +201,7 @@ def _truncated(headers, read_bytes, stored_bytes):
     )
 
 
-def _save_response(directory, task, configuration, response, requested_at, injected):
+def _save_response(directory, task, configuration, response, requested_at, injected, issuer=None):
     status, headers, body = response
     if type(status) is not int or not 100 <= status <= 599 or not isinstance(body, bytes):
         raise ValueError("El transporte no devolvió un estado HTTP y bytes válidos")
@@ -232,7 +232,7 @@ def _save_response(directory, task, configuration, response, requested_at, injec
         configuration_sha256=configuration,
         url=_URL,
         method="POST",
-        parameters=_parameters(task),
+        parameters=_parameters(task, issuer),
         status=status,
         headers=kept,
         requested_at_utc=requested_at,
@@ -256,7 +256,7 @@ def _save_response(directory, task, configuration, response, requested_at, injec
         _sync(directory.parent)
 
 
-def _response(directory, task, configuration, sources, expected=None):
+def _response(directory, task, configuration, sources, expected=None, issuer=None):
     receipt, signature = _json(directory / "receipt.json", 64 * 1024)
     if expected is not None and signature != _hash(expected):
         raise ValueError("Cambió el recibo de una respuesta confirmada")
@@ -267,7 +267,7 @@ def _response(directory, task, configuration, sources, expected=None):
         or receipt.get("configuration_sha256") != configuration
         or receipt.get("url") != _URL
         or receipt.get("method") != "POST"
-        or _canonical(receipt.get("parameters")) != _canonical(_parameters(task))
+        or _canonical(receipt.get("parameters")) != _canonical(_parameters(task, issuer))
         or type(receipt.get("status")) is not int
         or not 100 <= receipt["status"] <= 599
         or type(receipt.get("bytes")) is not int
@@ -354,12 +354,89 @@ def _notice(row, task, census):
     )
 
 
+def _issuer(symbol, receipt_path, receipt_hash, announcement_id, census, output, sources):
+    values = (symbol, receipt_path, receipt_hash, announcement_id)
+    if all(value is None for value in values):
+        return None
+    if any(value is None for value in values) or symbol not in census:
+        raise ValueError("El emisor necesita símbolo del censo, recibo, huella e ID del anuncio")
+    path = Path(receipt_path)
+    if path.name != "receipt.json":
+        raise ValueError("La evidencia necesita receipt.json junto a su body.json conservado")
+    outside_source(path.parent, output)
+    outside_source(output, path.parent)
+    receipt, signature = _json(path, 64 * 1024)
+    if signature != _hash(receipt_hash) or not isinstance(receipt, dict):
+        raise ValueError("La evidencia del emisor no conserva la huella suministrada")
+    parameters = receipt.get("parameters")
+    if not isinstance(parameters, dict) or not isinstance(parameters.get("seDate"), str):
+        raise ValueError("La evidencia no conserva su ventana de publicación")
+    dates = parameters["seDate"].split("~")
+    if len(dates) != 2 or _day(dates[0]) > _day(dates[1]):
+        raise ValueError("La ventana de la evidencia no es válida")
+    page = parameters.get("pageNum")
+    if (
+        not isinstance(page, str)
+        or not re.fullmatch(r"[1-9][0-9]{0,2}", page)
+        or int(page) > _MAX_PAGES
+    ):
+        raise ValueError("La evidencia no conserva una página acotada")
+    task = _task(*dates)
+    task.update(page=int(page), collected=(int(page) - 1) * _PAGE_SIZE)
+    body_path = path.with_name("body.json")
+    value, _ = _json(body_path, _MAX_RESPONSE)
+    model = _Catalogue(*dates, census)
+    model.pending[0] = task.copy()
+    model._page(value, _hash(receipt.get("sha256")))
+    matches = [
+        _notice(row, task, census)
+        for row in value["announcements"] or []
+        if row["announcementId"] == announcement_id
+    ]
+    if len(matches) != 1 or matches[0]["symbol"] != symbol:
+        raise ValueError("El anuncio seleccionado no identifica el emisor solicitado")
+    notice = matches[0]
+    if not isinstance(notice["org_id"], str) or not re.fullmatch(
+        r"[A-Za-z0-9_-]{1,128}", notice["org_id"]
+    ):
+        raise ValueError("El anuncio no acredita un orgId individual válido")
+    issuer = dict(symbol=symbol, org_id=notice["org_id"])
+    checked, _, _ = _response(
+        path.parent,
+        task,
+        _hash(receipt.get("configuration_sha256")),
+        sources,
+        receipt_hash,
+        issuer=issuer if parameters.get("stock") else None,
+    )
+    if checked["status"] != 200 or checked["truncated"] or checked["transport"] != "urllib_public":
+        raise ValueError("La identidad necesita una respuesta pública completa con HTTP 200")
+    return dict(
+        **issuer,
+        announcement_id=announcement_id,
+        publication_date=notice["publication_date"],
+        announcement=notice,
+        category=parameters["category"],
+        receipt_path=str(path.resolve()),
+        receipt_sha256=signature,
+        body_path=str(body_path.resolve()),
+        body_sha256=checked["sha256"],
+        source_configuration_sha256=checked["configuration_sha256"],
+    )
+
+
 class _Catalogue:
     """Estado derivado de las respuestas confirmadas y del árbol de intervalos."""
 
-    def __init__(self, start, end, census):
+    def __init__(self, start, end, census, issuer=None):
         self.pending = [_task(start, end)]
         self.census = census
+        self.issuer = issuer
+        self.known_announcement = (
+            issuer["announcement_id"]
+            if issuer and start <= issuer["publication_date"] <= end
+            else None
+        )
         self.responses = []
         self.records = {}
         self.signatures = {}
@@ -423,6 +500,17 @@ class _Catalogue:
         ):
             raise ValueError("La población, los totales o hasMore cambiaron entre páginas")
         records = [_notice(row, task, self.census) for row in raw]
+        if self.issuer and any(
+            row["symbol"] != self.issuer["symbol"] or row["org_id"] != self.issuer["org_id"]
+            for row in records
+        ):
+            raise ValueError("La respuesta no conserva el emisor y orgId solicitados")
+        if self.issuer and any(
+            row["announcement_id"] == self.issuer["announcement_id"]
+            and row != self.issuer["announcement"]
+            for row in records
+        ):
+            raise ValueError("El anuncio de referencia cambió sus metadatos normalizados")
         signatures = {
             r["announcement_id"]: hashlib.sha256(_canonical(r).encode()).hexdigest()
             for r in records
@@ -480,6 +568,9 @@ class _Catalogue:
             ):
                 raise ValueError("Los subintervalos no concilian con la población y anuncios padre")
             self.completed[interval] = split["total"]
+        if not self.pending and self.known_announcement is not None:
+            if self.known_announcement not in self.records:
+                raise ValueError("Falta el anuncio conocido dentro de la ventana consultada")
 
 
 def _verify(sources):
@@ -499,8 +590,8 @@ def _write_cursor(output, model, configuration, sources):
     sources[path] = signature
 
 
-def _replay(output, configuration, start, end, census, sources):
-    model = _Catalogue(start, end, census)
+def _replay(output, configuration, start, end, census, sources, issuer=None):
+    model = _Catalogue(start, end, census, issuer)
     path = output / "cursor.json"
     if not path.exists():
         responses = output / "responses"
@@ -527,6 +618,7 @@ def _replay(output, configuration, start, end, census, sources):
             configuration,
             sources,
             _hash(reference["receipt_sha256"]),
+            issuer=issuer,
         )
         model.consume(receipt, body)
         model.responses.append(actual)
@@ -560,6 +652,17 @@ def _report(model, configuration, config, output, sources):
         failure=model.failure,
         scope="annual_category_only",
     )
+    if model.issuer:
+        report.update(
+            schema_version=2,
+            scope="issuer_annual_category_only",
+            issuer=model.issuer,
+            known_announcement_required=model.known_announcement is not None,
+            known_announcement_present=model.known_announcement in model.records
+            if model.known_announcement is not None
+            else None,
+            issuer_history_complete=False,
+        )
     if model.status == "partial":
         return report
     path = output / "report.json"
@@ -594,6 +697,10 @@ def collect_chinese_announcements(
     publication_start,
     publication_end,
     max_requests,
+    issuer_symbol=None,
+    issuer_receipt=None,
+    issuer_receipt_sha256=None,
+    issuer_announcement_id=None,
     transport=None,
     sleep=time.sleep,
 ):
@@ -610,8 +717,18 @@ def collect_chinese_announcements(
         outside_source(output, source)
     census, queue_hash, count = _queue(queue)
     sources = {queue: queue_hash}
-    sources.update(
-        {Path(__file__).with_name(name): sha256(Path(__file__).with_name(name)) for name in _CODE}
+    code_sources = {
+        Path(__file__).with_name(name): sha256(Path(__file__).with_name(name)) for name in _CODE
+    }
+    sources.update(code_sources)
+    issuer = _issuer(
+        issuer_symbol,
+        issuer_receipt,
+        issuer_receipt_sha256,
+        issuer_announcement_id,
+        census,
+        output,
+        sources,
     )
     config = dict(
         schema_version=1,
@@ -627,7 +744,7 @@ def collect_chinese_announcements(
         searchkey="",
         scope="annual_category_only",
         period_coverage_verified=False,
-        code={p.name: d for p, d in sources.items() if p != queue},
+        code={p.name: d for p, d in code_sources.items()},
         limits=dict(
             page_size=_PAGE_SIZE,
             pages_per_interval=_MAX_PAGES,
@@ -638,6 +755,9 @@ def collect_chinese_announcements(
             confirmed_responses=_MAX_RESPONSES,
         ),
     )
+    if issuer:
+        config.update(schema_version=2, scope="issuer_annual_category_only", issuer=issuer)
+        config["limits"]["request_spacing_seconds"] = 5
     output.mkdir(parents=True, exist_ok=True)
     lock_path = output / ".catalogue.lock"
     safe_destination(lock_path)
@@ -665,7 +785,9 @@ def collect_chinese_announcements(
                 or sha256(cursor) != _hash(previous.get("cursor_sha256"))
             ):
                 raise ValueError("El informe terminal no conserva su cursor confirmado")
-        model = _replay(output, configuration, start.isoformat(), end.isoformat(), census, sources)
+        model = _replay(
+            output, configuration, start.isoformat(), end.isoformat(), census, sources, issuer
+        )
         used = 0
         while model.status == "partial":
             task = model.pending[0]
@@ -677,25 +799,33 @@ def collect_chinese_announcements(
                 if len(model.responses) >= _MAX_RESPONSES:
                     raise ValueError("El historial supera el presupuesto de respuestas")
                 _verify(sources)
-                sleep(2)
+                sleep(config["limits"]["request_spacing_seconds"])
                 requested_at = datetime.now(UTC).isoformat()
                 used += 1
                 try:
-                    response = (transport or _request)(_parameters(task))
+                    response = (transport or _request)(_parameters(task, issuer))
                 except OSError as error:
                     atomic_json(
                         output / f"transport-error-{time.time_ns()}.json",
                         dict(
                             requested_at_utc=requested_at,
-                            parameters=_parameters(task),
+                            parameters=_parameters(task, issuer),
                             error=str(error),
                         ),
                     )
                     raise
                 _save_response(
-                    directory, task, configuration, response, requested_at, transport is not None
+                    directory,
+                    task,
+                    configuration,
+                    response,
+                    requested_at,
+                    transport is not None,
+                    issuer,
                 )
-            receipt, body, reference = _response(directory, task, configuration, sources)
+            receipt, body, reference = _response(
+                directory, task, configuration, sources, issuer=issuer
+            )
             model.consume(receipt, body)
             model.responses.append(reference)
             _verify(sources)
@@ -712,6 +842,10 @@ def main(argv=None, *, transport=None, sleep=time.sleep):
     parser.add_argument("--publication-start", required=True)
     parser.add_argument("--publication-end", required=True)
     parser.add_argument("--max-requests", type=int, required=True)
+    parser.add_argument("--issuer-symbol")
+    parser.add_argument("--issuer-receipt", type=Path)
+    parser.add_argument("--issuer-receipt-sha256")
+    parser.add_argument("--issuer-announcement-id")
     args = parser.parse_args(argv)
     report = collect_chinese_announcements(**vars(args), transport=transport, sleep=sleep)
     print(f"Catálogo: {report['status']}. Anuncios: {report['announcements']}.")
