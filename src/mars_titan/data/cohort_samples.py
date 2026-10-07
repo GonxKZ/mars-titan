@@ -248,6 +248,7 @@ def _rows(
     admitted_decisions=None,
     input_policy=STRICT_INPUTS,
     missing_sources=(),
+    fundamental_exclusions=(),
 ):
     masked = masked_inputs(input_policy)
     positions = {day.isoformat(): i for i, day in enumerate(clock.days)}
@@ -264,6 +265,20 @@ def _rows(
     # La diferencia entre extremos acredita continuidad porque las sesiones son únicas y ordenadas.
     ohlc = prices[["open", "high", "low", "close"]].to_numpy()
     unknown_publication = {r["concept"] for r in facts if r.get("available_at") is None}
+    excluded_publications = {}
+    if masked:
+        for row in fundamental_exclusions:
+            if row["reason"] != "period_after_filing":
+                raise ValueError("La exclusión contable tiene un motivo desconocido")
+            available = aware(datetime.fromisoformat(row["diagnostic_available_at"]))
+            if available != clock.date_available(row["filed"]):
+                raise ValueError(
+                    "La disponibilidad de la exclusión no corresponde a su publicación"
+                )
+            concept = row["concept"]
+            excluded_publications[concept] = min(
+                available, excluded_publications.get(concept, available)
+            )
     cursor = FactCursor(
         [r for r in facts if r.get("available_at") is not None] if masked else facts
     )
@@ -315,6 +330,8 @@ def _rows(
                 (
                     "source_missing"
                     if "fundamentals" in missing_sources
+                    else "period_after_filing"
+                    if concept in excluded_publications and excluded_publications[concept] <= cutoff
                     else "unknown_publication"
                     if concept in unknown_publication
                     else reason
@@ -611,6 +628,9 @@ def materialize_cohort_asset(
                 admitted_decisions=admitted_decisions,
                 input_policy=input_policy,
                 missing_sources=origin.get("missing_sources", ()),
+                fundamental_exclusions=origin.get("fundamentals_audit", {}).get(
+                    "temporal_exclusions", ()
+                ),
             )
 
             def batches():
