@@ -34,7 +34,7 @@
   "final_test_opened": false,
   "models_executed": false,
   "source_code_sha256": {
-    "macro_h15_archive.py": "a55f4185614882eb7119489f87d9a13608bdba070acc54f81a3adc7b8c73f02c",
+    "macro_h15_archive.py": "2654a499e42b50a0de93db74ab3c37ed2a4389889f1ff4b50978aea7a5b17885",
     "macro_h15_documents.py": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
     "macro_release_documents.py": "fbe50afc4b1acef4883db273249e6bf78f3a5d5feb7c82dd0d29af12bec99b7b",
     "macro.py": "17b0576e81045931e5760d1d479b4baa24dace2babff940d9839cff0babb034d",
@@ -49,9 +49,9 @@
   "parquet_bytes": 8947,
   "source_bytes": 321654,
   "measurements": {
-    "materialization_seconds": 0.30887636299939913,
-    "recovery_seconds": 0.07510573300078249,
-    "peak_rss_bytes": 147742720,
+    "materialization_seconds": 0.3183530679998512,
+    "recovery_seconds": 0.07225603900042188,
+    "peak_rss_bytes": 148480000,
     "cpu_quota_percent": 200,
     "memory_limit_bytes": 1073741824,
     "threads": 2,
@@ -60,11 +60,11 @@
     "limit": "Una preparación y una recuperación en el mismo proceso. El RSS es el máximo de vida de ese proceso. No es un benchmark comparativo ni incluye la descarga y revisión documental previas."
   },
   "tests": {
-    "related_data_tests_passed": 339,
-    "h15_tests_passed": 62,
-    "related_suite_seconds": 13.23,
+    "related_data_tests_passed": 358,
+    "h15_tests_passed": 81,
+    "related_suite_seconds": 14.54,
     "scope": "Pruebas de H.15, comunicados, vintages, cobertura, recálculo y GSCPI. No se ejecutó la suite de entrenamiento, optimizadores o inferencia.",
-    "test_source_sha256": "c583cf9b06f63a9afbcfbb42b108123ad444f0c6564186ce06935a8ccbf59a64"
+    "test_source_sha256": "9951cac931082e6fdd18ebe36bca51aa5ae2eebd0c9969205431182f1048030c"
   },
   "quality": {
     "coverage_version": "7.16.2",
@@ -73,9 +73,9 @@
     "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
     "files": {
       "macro_h15_archive.py": {
-        "sha256": "a55f4185614882eb7119489f87d9a13608bdba070acc54f81a3adc7b8c73f02c",
-        "statement_coverage_percent": 84.58498023715416,
-        "branch_coverage_percent": 72.41379310344827
+        "sha256": "2654a499e42b50a0de93db74ab3c37ed2a4389889f1ff4b50978aea7a5b17885",
+        "statement_coverage_percent": 85.4014598540146,
+        "branch_coverage_percent": 73.80952380952381
       },
       "macro_h15_documents.py": {
         "sha256": "591dd150b0a94425a84c23369639b0fb645e89f89ebe6b90f4de28c05cfa4e62",
@@ -89,7 +89,49 @@
     "directed_mutations_detected": 6,
     "directed_mutations_attempted": 6,
     "snapshot_import_verified": true,
-    "limit": "La validación de documento concentra complejidad y sentencias sin cubrir. Estas medidas orientan la revisión y no prueban ausencia de errores."
+    "limit": "La validación de documento concentra complejidad y sentencias sin cubrir. Estas medidas orientan la revisión y no prueban ausencia de errores.",
+    "directed_mutations": [
+      "skip_logical_budget",
+      "decode_dictionary_early",
+      "skip_exact_comparison",
+      "restore_two_day_calendar",
+      "extend_calendar_past_cutoff",
+      "omit_recovery_confirmation"
+    ],
+    "modified_functions": [
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_check_parquet",
+        "line": 311,
+        "ccn": 15,
+        "statements": 25,
+        "covered_statements": 23,
+        "statement_coverage": 0.92,
+        "crap": 15.1152
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "_recover",
+        "line": 353,
+        "ccn": 18,
+        "statements": 24,
+        "covered_statements": 22,
+        "statement_coverage": 0.9166666666666666,
+        "crap": 18.1875
+      },
+      {
+        "file": "macro_h15_archive.py",
+        "function": "prepare_h15_archive",
+        "line": 403,
+        "ccn": 23,
+        "statements": 51,
+        "covered_statements": 46,
+        "statement_coverage": 0.9019607843137255,
+        "crap": 23.498488514975385
+      }
+    ],
+    "modified_functions_maximum_ccn": 23,
+    "modified_functions_maximum_crap": 23.498488514975385
   },
   "limitations": [
     "Solo dos boletines, sin cobertura continua del año 2000.",
@@ -99,5 +141,36 @@
     "No se generan fines de semana de DFF ni se sustituyen SOFR, TIPS o GSCPI.",
     "La admisión en un panel macro requiere una decisión y una edición separadas."
   ],
-  "unique_observation_values_compared": 60
+  "unique_observation_values_compared": 60,
+  "edition_revision": 3,
+  "review_corrections": {
+    "parquet_logical_expansion": {
+      "file_bytes": 6025,
+      "footer_uncompressed_bytes": 2099473,
+      "previous_materialized_bytes": 125859888,
+      "corrected_maximum_batch_bytes": 2097396,
+      "corrected_maximum_batch_columns": 1,
+      "dictionary_preserved_before_budget_check": true,
+      "rejected_before_dense_read": true,
+      "measurement_limit": "Los bytes del lote no equivalen al pico RSS del proceso."
+    },
+    "calendar_without_sessions": {
+      "technical_fixture_publication_date": "2000-02-07",
+      "cn_cutoff": "2000-02-07",
+      "retained_rows_with_null_availability": 30,
+      "later_cn_availability": "2000-02-14T07:05:00+00:00",
+      "later_us_availability": "2000-02-08T21:05:00+00:00",
+      "cutoff_not_extended": true,
+      "fixture_limit": "Comprueba calendarios y corte. No añade un boletín real a las dos fuentes revisadas."
+    },
+    "edition_parity": {
+      "previous_revision": 2,
+      "current_revision": 3,
+      "parquet_bytes_identical": true,
+      "protected_files": 16,
+      "sources_and_previous_edition_unchanged": true,
+      "configuration_sha256": "5982a4fe62b41e463b792b634ef27fe0225fc279f8eec54457ad39f15ffdaadd",
+      "report_sha256": "a3e684be5aaf7f2ff6adc17c406d7aa6fd246441a1062ecd467affbf0967bece"
+    }
+  }
 }
