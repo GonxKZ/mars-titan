@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "verified_at_utc": "2026-10-07T21:29:14.842530+00:00",
+  "policy": "historical_masked_2000_v1",
+  "scope": "preparation_and_encoding_contracts",
+  "implementation_commit": "75c404fdcab9c32273eae900e339a332e719a30b",
+  "technical_data_tests_passed": 144,
+  "independent_suite_seconds": 5.69,
+  "default_company_factors_reproduction_passed": true,
+  "strict_parity": {
+    "samples": true,
+    "factors": true,
+    "strict_schema": true,
+    "factor_values": true,
+    "samples.parquet": {
+      "schema_equal": true,
+      "table_equal": true,
+      "bytes_equal": true,
+      "sha256": "d5e12eab446768bf585c1698a707e313f0967636644d0972106b70cb8d18c267"
+    },
+    "company-factors.parquet": {
+      "schema_equal": true,
+      "table_equal": true,
+      "bytes_equal": true,
+      "sha256": "bb3e4a8ae7892098098564732db37f9da9c10b6534eadcb80d15bd38b9d57ea6"
+    },
+    "source_before_sha256": "1991a3b84044604d8a8321ca19b1cf5c036986bfa463e5150075785897c487bd",
+    "source_after_sha256": "8f1fa6c6258b014bb6dac9a223b09c0b461d5bddca4301b8cbb79ebccf9d1e00",
+    "snapshot_import_verified": true
+  },
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Sentencias ejecutables de coverage.py dentro del rango AST de cada función. Ramas por separado.",
+    "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
+    "statement_coverage_percent": 81.27340823970037,
+    "branch_coverage_percent": 69.04761904761905,
+    "modified_functions": [
+      {
+        "file": "cohort_samples.py",
+        "function": "materialize_cohort_asset",
+        "line": 396,
+        "ccn": 60,
+        "statement_coverage": 0.83,
+        "crap": 77.6868
+      }
+    ],
+    "mutations_detected": 4,
+    "mutations_attempted": 4,
+    "mutations": [
+      {
+        "exit_code": 1,
+        "seconds": 1.2668262410006719,
+        "log": "include_unknown_in_factors.log",
+        "id": "include_unknown_in_factors",
+        "module": "cohort_samples.py",
+        "detected": true
+      },
+      {
+        "exit_code": 1,
+        "seconds": 1.2168656419999024,
+        "log": "erase_unknown_diagnostics.log",
+        "id": "erase_unknown_diagnostics",
+        "module": "cohort_samples.py",
+        "detected": true
+      },
+      {
+        "exit_code": 1,
+        "seconds": 1.216772020999997,
+        "log": "remove_all_observed_components.log",
+        "id": "remove_all_observed_components",
+        "module": "cohort_samples.py",
+        "detected": true
+      },
+      {
+        "exit_code": 1,
+        "seconds": 1.1666901539992978,
+        "log": "backdate_factor_availability.log",
+        "id": "backdate_factor_availability",
+        "module": "cohort_samples.py",
+        "detected": true
+      }
+    ],
+    "snapshot_import_verified": true
+  },
+  "source_code_sha256": {
+    "input_policy.py": "0f04dc2012cc76d60962f39df5005d286a2363367ac27e4ef69bfcccc80d11cd",
+    "audited_prices.py": "e6de27565777b1b979b6cd64748537d5a6ab0dcab9ff496b17a7f70efecc02eb",
+    "cohort_preparation.py": "93c001b48e05c15f9474f854e7235b2e14b5c56c648b474f4819f239490a689a",
+    "fundamentals.py": "0f2da7c261f1c6697ab35e7d40d6cb7888bbf4849fbde9c4d0c9f9fefcfeac65",
+    "cohort_samples.py": "8f1fa6c6258b014bb6dac9a223b09c0b461d5bddca4301b8cbb79ebccf9d1e00",
+    "corpus_preparation.py": "1322da2ec00f052aed9b82e8d8290767bd03d3b0fef0437cc49e27b3d0618d7a",
+    "corpus_encoding.py": "659c9a727699afc11c1d3f86b4390b699530790ffccba4388451438e054bf411",
+    "cohort_contexts.py": "12c4e0bc956e23d63640f685f54fc4e54f15aec0383f188fd1e08e62b25034fc",
+    "samples.py": "ca4fa8da84db79a4f0376f158b7c3aba365bf204521a14113b521d47dc9f0002",
+    "cohort_news.py": "3a7b1a8c0f9947da27ae62d3062019b1ec5cc52f0725842514e68fb9f8df740d"
+  },
+  "source_receipts_sha256": {
+    "review-fixes/handoff.json": "1f2dfb1c4c80f868e63beecc9850c3ab92e97549e7fd78700850588e49cb52e6",
+    "factor-fix/handoff.json": "bac674a7fc8c71bc3e5e6ff342a00f6fcd7b23ce49e993a7808f87e142f3a713",
+    "root-final-review/tests.log": "c6214c831a8b7883b9105acf345e8011da7ca58dca7734b7f75821b5316b15e2",
+    "root-final-review/probe_default_factors.json": "e0bcc6adee0e91f7b2c4d8ee1f438149aa26df93ebfd884abe099edd9a950bc4"
+  },
+  "resolved_findings": [
+    "Los valores NaN, infinitos y texto no numérico provocan error en la política histórica.",
+    "Los hechos sin publicación mantienen diagnóstico, máscara y fecha nula.",
+    "La recuperación comprueba la dependencia de precios auditados.",
+    "Los factores empresariales reciben solo hechos publicados, sin perder el diagnóstico de los desconocidos."
+  ],
+  "models_executed": false,
+  "real_corpus_materialized": false,
+  "training_ready": false,
+  "final_test_opened": false,
+  "limits": [
+    "Las pruebas usan codificadores de fixture identificados. No acreditan la codificación GPU de toda la historia real.",
+    "La paridad estricta por bytes corresponde a fixtures, incluida la ruta con siete factores observados.",
+    "Los lectores supervisados, la unión de catálogos y los modelos necesitan adhesión explícita al nuevo formato en entregas posteriores.",
+    "Cobertura y CRAP se miden sobre las rutas del último arreglo. No equivalen a cobertura global del proyecto."
+  ]
+}

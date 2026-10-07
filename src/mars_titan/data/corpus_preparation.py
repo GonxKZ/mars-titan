@@ -13,9 +13,11 @@ from pathlib import Path
 
 from ijson.common import JSONError
 
+from .audited_prices import audit_catalog
 from .cohort_news import COHORT_POLICIES
 from .cohort_preparation import prepare_cohort_asset
 from .corpus_catalog import corpus_candidates
+from .input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs, policy_identity
 from .news_registry import reviews_for_asset
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock
@@ -71,8 +73,13 @@ def prepare_cohort(
     markets: tuple[str, ...] = ("US", "CN"),
     cutoff: str = "2023-12-31",
     stop_after_assets: int | None = None,
+    input_policy: str = STRICT_INPUTS,
+    price_audit_state: Path | None = None,
 ) -> dict:
     """Reanudar las confirmaciones sin sustituir errores por una selección menor."""
+    masked = masked_inputs(input_policy)
+    if price_audit_state is not None and not masked:
+        raise ValueError("El estado de precios auditados requiere la política histórica")
     if (
         cohort not in COHORT_POLICIES
         or not markets
@@ -95,6 +102,7 @@ def prepare_cohort(
     if not inventory.is_file() or not registry.is_file():
         raise ValueError("Faltan el inventario o las revisiones editoriales")
     configuration = dict(
+        **policy_identity(input_policy),
         cohort_id=cohort,
         markets=list(markets),
         cutoff=cutoff,
@@ -103,7 +111,16 @@ def prepare_cohort(
         registry_source=str(registry),
         code_sha256=sha256(Path(__file__)),
         preparation_sha256=sha256(Path(__file__).with_name("cohort_preparation.py")),
+        input_policy_sha256=sha256(Path(__file__).with_name("input_policy.py")),
+        audited_prices_sha256=sha256(Path(__file__).with_name("audited_prices.py")),
     )
+    audited, audit_hash = {}, None
+    if price_audit_state is not None:
+        price_audit_state = Path(price_audit_state).resolve()
+        outside_source(output, price_audit_state)
+        audited, audit_hash = audit_catalog(price_audit_state)
+        configuration["price_audit_state"] = str(price_audit_state)
+        configuration["price_audit_sha256"] = audit_hash
     for name in (
         ".edition.lock",
         "configuration.json",
@@ -133,7 +150,8 @@ def prepare_cohort(
         ]
         clocks = {market: MarketClock(market, STARTS[market], "2026-01-01") for market in markets}
         report = dict(
-            schema_version=1,
+            **policy_identity(input_policy),
+            schema_version=2 if masked else 1,
             kind="prepared_cohort",
             status="running",
             cohort_id=cohort,
@@ -153,11 +171,20 @@ def prepare_cohort(
             row = dict(market=asset["market"], symbol=asset["symbol"])
             if asset["source_errors"]:
                 row["source_errors"] = asset["source_errors"]
-            if not asset["has_all_sources"]:
+            if masked and not asset["paths"]["prices"] and not asset["source_errors"]:
+                row.update(state="missing_required_prices", missing=["prices"])
+            elif not masked and not asset["has_all_sources"]:
                 row.update(state="missing_modalities", missing=asset["missing_modalities"])
             else:
                 try:
                     reviews = reviews_for_asset(snapshot, asset["symbol"], market=asset["market"])
+                    audited_prices = None
+                    if price_audit_state is not None:
+                        audited_prices = audited.get((asset["market"], asset["symbol"]))
+                        if audited_prices is None:
+                            raise ValueError(
+                                "El estado auditado no contiene los precios de este activo"
+                            )
                     result = prepare_cohort_asset(
                         source,
                         output / "prepared",
@@ -166,6 +193,8 @@ def prepare_cohort(
                         cohort=cohort,
                         reviews=reviews,
                         cutoff=cutoff,
+                        input_policy=input_policy,
+                        audited_prices=audited_prices,
                     )
                     row.update(
                         state="prepared",
@@ -190,6 +219,8 @@ def prepare_cohort(
         report["elapsed_seconds"] = time.perf_counter() - started
         if sha256(inventory) != configuration["inventory_sha256"]:
             raise ValueError("El inventario cambió durante el recorrido")
+        if price_audit_state is not None and sha256(price_audit_state) != audit_hash:
+            raise ValueError("El estado de precios auditados cambió durante el recorrido")
         atomic_json(output / "manifest.json", report)
         return report
 
@@ -202,6 +233,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cohort", choices=tuple(COHORT_POLICIES), required=True)
     parser.add_argument("--market", choices=("US", "CN", "all"), default="all")
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
+    parser.add_argument(
+        "--price-audit-state", type=Path, help="Estado identificado de precios auditados"
+    )
     parser.add_argument(
         "--stop-after-assets", type=int, help="Pausa operativa, no tamaño de muestra"
     )
@@ -214,6 +249,8 @@ def main():
         cohort=args.cohort,
         markets=("US", "CN") if args.market == "all" else (args.market,),
         stop_after_assets=args.stop_after_assets,
+        input_policy=args.input_policy,
+        price_audit_state=args.price_audit_state,
     )
     print(json.dumps({k: v for k, v in result.items() if k != "assets"}, ensure_ascii=False))
     return 2 if result["failed_assets"] else 0

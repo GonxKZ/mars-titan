@@ -17,6 +17,7 @@ from .batches import MacroContexts, atomic_parquet_batches, read_bounded_table
 from .charts import chart_png
 from .company_factors import FACTOR_CONCEPTS, FACTOR_DEFINITIONS, write_company_factors
 from .fundamentals import snapshot
+from .input_policy import STRICT_INPUTS, masked_inputs, numeric_observations
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, admission_errors, aware
 
@@ -70,8 +71,16 @@ def numeric_context(values: list[float | None], ages: list[float]) -> list[float
     )
 
 
-def macro_vector(rows: list[dict], cutoff: datetime) -> tuple[list[float], datetime]:
+def macro_vector(
+    rows: list[dict], cutoff: datetime, *, input_policy=STRICT_INPUTS
+) -> tuple[list[float], datetime | None]:
     cutoff = aware(cutoff)
+    if masked_inputs(input_policy):
+        rows = sorted(rows, key=lambda r: r["indicator_id"])
+        if not rows or len({r["indicator_id"] for r in rows}) != len(rows):
+            raise ValueError("El catálogo macro está vacío o contiene duplicados")
+        values, ages, available, _ = numeric_observations(rows, cutoff)
+        return numeric_context(values, ages), available
     known = [r for r in rows if r["value"] is not None]
     if not known:
         raise ValueError("No hay contexto macro observado en esta decisión")
