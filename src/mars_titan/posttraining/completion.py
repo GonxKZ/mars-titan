@@ -156,6 +156,7 @@ def _inputs(args):
     from mars_titan.training.baseline_queue import reference_market, reference_view
     from mars_titan.training.partition_contract import supervision_bounds
     from mars_titan.training.tabular_search import _code, _configuration
+    from mars_titan.training.temporal_contract import temporal_contracts
 
     root, digest = read_manifest(args.reference / "summary.json", 8 * 1024**2)
     if root.get("kind") != "temporal_reference_search" or root.get("status") != "completed":
@@ -179,13 +180,21 @@ def _inputs(args):
         market = arm
         proof = reference_view(reference, arm)
         source, _ = read_manifest(Path(proof["manifest"]), 8 * 1024**2)
-        if source.get("temporal_view", {}).get("protocol", {}).get("market") != arm:
+        contracts = temporal_contracts(source)
+        expected_markets = {"US", "CN"} if arm == "US+CN" else {arm}
+        if set(contracts) != expected_markets:
             raise ValueError("El mercado de la referencia no coincide con su protocolo")
-        if set(supervision_bounds(source)) != {"train", "validation", "calibration", "evaluation"}:
-            raise ValueError("Faltan las cuatro particiones temporales")
-        admission, _ = read_manifest(Path(source["temporal_view"]["admission_path"]), 8 * 1024**2)
-        if len(admission["required_indicator_ids"]) != 140:
-            raise ValueError("La nueva campaña requiere los 140 indicadores")
+        for source_market, contract in contracts.items():
+            if set(supervision_bounds(source, market=source_market)) != {
+                "train",
+                "validation",
+                "calibration",
+                "evaluation",
+            }:
+                raise ValueError("Faltan las cuatro particiones temporales")
+            admission, _ = read_manifest(Path(contract["admission_path"]), 8 * 1024**2)
+            if len(admission["required_indicator_ids"]) != 140:
+                raise ValueError("La nueva campaña requiere los 140 indicadores")
         encoder_contract(Path(proof["manifest"]), args.encoded)
         references[row["id"]] = proof
     if len({row["planned_runs"] for row in folds}) != 1:

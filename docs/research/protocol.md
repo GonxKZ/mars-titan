@@ -48,6 +48,8 @@ $$y_{i,t}=r^{OC}_{i,t+1}-\hat\alpha_{i,t}-\hat\beta_{i,t}r^{OC}_{m,t+1}.$$
 
 Los coeficientes se estimarán exclusivamente con pares de retornos cuyo cierre ya sea conocido en t. Propuesta inicial: ventana móvil de 252 sesiones y mínimo de 126 observaciones. Descartar los casos sin historial suficiente. El residualizador se calcula según la misma regla temporal para todas las muestras y modelos, sin ajustar coeficientes con el periodo completo. El retorno futuro del mercado forma parte de la **etiqueta**, nunca de las entradas de la predicción.
 
+El [ejemplo reproducible del objetivo](target-definition.md) aplica esta fórmula con 252 pares técnicos y el calendario real. Distingue decisión, apertura, cierre anticipado y maduración cuando el factor está disponible después que el activo, sin cargar datos del corpus ni entrenar un predictor.
+
 La extensión sectorial añadiría un factor y su coeficiente con la misma regla. Requiere pertenencia sectorial histórica y una serie de comparación verificable. La etiqueta `Sector` actual del CSV no basta para acreditarlo. Residualizar no demuestra causalidad ni garantiza que la cartera resultante sea neutral al mercado. Se informarán también los retornos brutos y las exposiciones de la simulación.
 
 ## Modalidades y disponibilidad

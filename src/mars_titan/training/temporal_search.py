@@ -15,6 +15,48 @@ from mars_titan.evaluation.splits import PARTITIONS, build_folds
 from .checkpoints import StopRequest
 from .experiment_resources import GpuLease
 from .reference_search import _configuration, run_search
+from .temporal_contract import temporal_contracts, temporal_fold
+
+
+def _source_reports(report, views, markets):
+    if report["schema_version"] == 1:
+        if len(markets) != 1:
+            raise ValueError("La campaña conjunta necesita un informe temporal de versión 2")
+        result = {next(iter(markets)): report}
+    else:
+        sources = report.get("sources")
+        if (
+            report.get("kind") != "joint_temporal_views"
+            or markets != {"US", "CN"}
+            or not isinstance(sources, dict)
+            or set(sources) != markets
+        ):
+            raise ValueError("La unión no identifica los informes de sus dos mercados")
+        result = {}
+        for market, record in sources.items():
+            relative = f"markets/{market}/report.json"
+            if (
+                not isinstance(record, dict)
+                or set(record) != {"path", "sha256"}
+                or record["path"] != relative
+            ):
+                raise ValueError("El informe local queda fuera de la unión temporal")
+            local, digest = read_manifest(views / relative, 1024**2)
+            if (
+                digest != record["sha256"]
+                or local.get("schema_version") != 1
+                or local.get("status") != "temporal_views_prepared"
+                or local.get("final_test_opened") is not False
+            ):
+                raise ValueError("Un informe local no conserva su identidad temporal")
+            result[market] = local
+    for local in result.values():
+        if any(
+            not re.fullmatch(r"[0-9a-f]{64}", str(local.get(key)))
+            for key in ("parent_sha256", "macro_sha256", "admission_sha256", "protocol_sha256")
+        ):
+            raise ValueError("Faltan huellas de procedencia de la preparación")
+    return result
 
 
 def _inputs(config, views):
@@ -22,28 +64,28 @@ def _inputs(config, views):
     if (
         plan["schema_version"] not in {2, 3}
         or len(plan["arms"]) != 1
-        or plan["arms"][0] not in {"US", "CN"}
+        or plan["arms"][0] not in {"US", "CN", "US+CN"}
         or plan["pooled_weightings"] != ["natural"]
     ):
-        raise ValueError("La campaña temporal requiere un único mercado US o CN y peso natural")
-    market = plan["arms"][0]
+        raise ValueError("La campaña temporal requiere un único brazo y peso natural")
+    markets = {"US", "CN"} if plan["arms"] == ["US+CN"] else set(plan["arms"])
     report, report_hash = read_manifest(views / "report.json", 1024**2)
     if (
         not isinstance(report, dict)
         or type(report.get("schema_version")) is not int
-        or report.get("schema_version") != 1
+        or report.get("schema_version") not in {1, 2}
         or report.get("status") != "temporal_views_prepared"
         or report.get("final_test_opened") is not False
         or not isinstance(report.get("folds"), list)
         or not 1 <= len(report["folds"]) <= 128
     ):
         raise ValueError("Las vistas no tienen un informe de preparación admisible")
-    if any(
-        not re.fullmatch(r"[0-9a-f]{64}", str(report.get(key)))
-        for key in ("parent_sha256", "macro_sha256", "admission_sha256", "protocol_sha256")
-    ):
+    if not re.fullmatch(r"[0-9a-f]{64}", str(report.get("parent_sha256"))):
         raise ValueError("Faltan huellas de procedencia de la preparación")
-    records, protocol = [], None
+    evidence = _source_reports(report, views, markets)
+    if any(len(local.get("folds", [])) != len(report["folds"]) for local in evidence.values()):
+        raise ValueError("Los informes locales no contienen todas las ventanas conjuntas")
+    records, protocols = [], None
     for index, row in enumerate(report["folds"]):
         name = f"fold-{index:03}"
         if row.get("id") != name or row.get("has_all_partitions") is not True:
@@ -52,19 +94,22 @@ def _inputs(config, views):
         meta, digest = read_manifest(path, 8 * 1024**2)
         if not isinstance(meta, dict):
             raise ValueError("El manifiesto de la ventana no es un objeto")
-        contract = meta.get("temporal_view", {})
-        if not isinstance(contract, dict):
-            raise ValueError("La ventana no declara un contrato temporal")
-        if protocol is None:
-            protocol = contract.get("protocol")
+        contracts = temporal_contracts(meta)
+        current = {market: contract["protocol"] for market, contract in contracts.items()}
+        if protocols is None:
+            protocols = current
         assets = meta.get("assets")
         if (
-            not isinstance(protocol, dict)
-            or protocol.get("market") != market
-            or meta.get("markets", [market]) != [market]
+            set(contracts) != markets
+            or current != protocols
+            or meta.get("markets", sorted(markets))
+            not in (sorted(markets), sorted(markets, reverse=True))
             or not isinstance(assets, list)
             or not assets
-            or any(not isinstance(asset, dict) or asset.get("market") != market for asset in assets)
+            or any(
+                not isinstance(asset, dict) or asset.get("market") not in markets
+                for asset in assets
+            )
             or meta.get("scope") != plan["scope"]
             or (plan["scope"] == "full_corpus" and meta.get("cohort_complete") is not True)
         ):
@@ -77,14 +122,40 @@ def _inputs(config, views):
             or any(type(v) is not int or v <= 0 for v in meta["counts"].values())
             or meta["counts"] != row.get("counts")
             or meta.get("final_test_opened") is not False
-            or contract.get("protocol") != protocol
-            or contract.get("macro_sha256") != report.get("macro_sha256")
-            or contract.get("parent_sha256") != report.get("parent_sha256")
-            or contract.get("admission_sha256") != report.get("admission_sha256")
         ):
             raise ValueError("Una ventana no conserva su identidad y población declaradas")
-        records.append(dict(id=name, manifest=path, manifest_sha256=digest, fold=contract["fold"]))
-    if [r["fold"] for r in records] != build_folds(protocol):
+        for market, contract in contracts.items():
+            local = evidence[market]
+            if any(
+                contract.get(key) != local.get(key)
+                for key in ("macro_sha256", "parent_sha256", "admission_sha256")
+            ):
+                raise ValueError("Una ventana no conserva las fuentes de su mercado")
+            if report["schema_version"] == 2:
+                local_record = local["folds"][index]
+                local_path = views / "markets" / market / name / "manifest.json"
+                local_view, signature = read_manifest(local_path, 8 * 1024**2)
+                if (
+                    local_record.get("id") != name
+                    or signature != local_record.get("manifest_sha256")
+                    or local_view.get("temporal_view") != contract
+                    or local_view.get("counts") != local_record.get("counts")
+                    or local_view.get("assets")
+                    != [asset for asset in assets if asset["market"] == market]
+                    or row.get("market_counts", {}).get(market) != local_view.get("counts")
+                ):
+                    raise ValueError("La unión no conserva exactamente su ventana local")
+        if report["schema_version"] == 2 and meta["counts"] != {
+            part: sum(local["folds"][index]["counts"][part] for local in evidence.values())
+            for part in PARTITIONS
+        }:
+            raise ValueError("Los recuentos conjuntos no suman las poblaciones locales")
+        records.append(
+            dict(id=name, manifest=path, manifest_sha256=digest, fold=temporal_fold(meta))
+        )
+    if any(
+        [r["fold"] for r in records] != build_folds(protocol) for protocol in protocols.values()
+    ):
         raise ValueError("La campaña no contiene todas las ventanas del protocolo")
     per_fold = len(cases) + len(plan["models"]) * (
         len(plan["finalist_seeds"]) - 1 + 2 * len(plan["finalist_seeds"])
@@ -94,9 +165,17 @@ def _inputs(config, views):
     identity = dict(
         config_sha256=config_hash,
         views_report_sha256=report_hash,
-        protocol_sha256=report["protocol_sha256"],
         manifests={r["id"]: r["manifest_sha256"] for r in records},
         code_sha256=sha256(Path(__file__)),
+    )
+    identity.update(
+        {"protocol_sha256": report["protocol_sha256"]}
+        if report["schema_version"] == 1
+        else {
+            "protocols_sha256": {
+                market: local["protocol_sha256"] for market, local in evidence.items()
+            }
+        }
     )
     return records, identity, per_fold
 

@@ -16,6 +16,7 @@ from .checkpoints import StopRequest
 from .cohort_contract import cohort_identity
 from .corpus_inputs import CorpusDataset
 from .reference_run import read_json, run_reference_case, scientific_identity
+from .temporal_contract import temporal_contracts
 
 
 def campaign_views(manifest: Path, arms: list[str]) -> dict:
@@ -38,6 +39,13 @@ def campaign_views(manifest: Path, arms: list[str]) -> dict:
             "selected_arm": arm,
             "source_manifest_sha256": source.identity,
         }
+        if "markets" in views[arm]:
+            views[arm]["markets"] = sorted(markets)
+        if "temporal_views" in source.manifest:
+            contracts = temporal_contracts(source.manifest)
+            if len(markets) == 1:
+                views[arm].pop("temporal_views")
+                views[arm]["temporal_view"] = contracts[next(iter(markets))]
         if source.cohort:
             coverage = [row for row in source.manifest["coverage"] if row["market"] in markets]
             views[arm].update(

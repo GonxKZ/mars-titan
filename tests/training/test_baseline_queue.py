@@ -85,13 +85,22 @@ def test_single_market_is_read_from_the_declared_reference_configuration(tmp_pat
     assert module().reference_view(summary, market)["manifest"] == str(view.resolve())
 
 
-@pytest.mark.parametrize("arms", [None, [], ["US", "CN"], ["US+CN"], ["XX"], "CN", [["CN"]]])
+@pytest.mark.parametrize("arms", [None, [], ["US", "CN"], ["XX"], "CN", [["CN"]]])
 def test_temporal_market_cannot_be_guessed_from_a_missing_or_mixed_design(tmp_path, arms):
     summary, _, _ = study(tmp_path)
     content = json.loads(summary.read_text())
     content["identity"]["configuration"]["arms"] = arms
     summary.write_text(json.dumps(content))
     with pytest.raises(ValueError, match="mercado"):
+        module().reference_market(summary)
+
+
+def test_joint_arm_requires_its_explicit_temporal_manifest(tmp_path):
+    summary, _, _ = study(tmp_path)
+    content = json.loads(summary.read_text())
+    content["identity"]["configuration"]["arms"] = ["US+CN"]
+    summary.write_text(json.dumps(content))
+    with pytest.raises(ValueError):
         module().reference_market(summary)
 
 

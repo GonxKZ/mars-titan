@@ -12,6 +12,7 @@ from mars_titan.posttraining.parent_selection import (
     matching_seeds,
     same_configuration,
 )
+from mars_titan.training.temporal_contract import temporal_contracts, temporal_fold
 
 _HELDOUT = ("calibration", "evaluation")
 _STAGES = ("reference", "tabular", "posttraining")
@@ -201,15 +202,16 @@ def _temporal(reader, proof, reference_proof, fold_id, base_hash):
         set(counts) == set(PARTITIONS) and all(type(n) is int and n > 0 for n in counts.values()),
         "La cohorte necesita las cuatro poblaciones temporales",
     )
-    view = manifest["temporal_view"]
-    protocol, fold = view["protocol"], view["fold"]
-    _require(
-        view["schema_version"] == 1
-        and fold["id"] == fold_id
-        and protocol["final_test_start"] == "2024-01-01"
-        and fold in build_folds(protocol),
-        "La ventana temporal no conserva el protocolo y el test reservado",
-    )
+    fold = temporal_fold(manifest)
+    for view in temporal_contracts(manifest).values():
+        protocol = view["protocol"]
+        _require(
+            view["schema_version"] == 1
+            and fold["id"] == fold_id
+            and protocol["final_test_start"] == "2024-01-01"
+            and fold in build_folds(protocol),
+            "La ventana temporal no conserva el protocolo y el test reservado",
+        )
     return manifest, signature, fold
 
 
@@ -353,6 +355,8 @@ def _metadata(original, result):
 
 
 def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, signature, proof):
+    window = temporal_fold(manifest)
+    contracts = temporal_contracts(manifest)
     _require(
         evaluation.get("kind") == "frozen_temporal_evaluation",
         "La evaluación no acredita el trabajo temporal congelado",
@@ -473,7 +477,17 @@ def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, sig
                     checkpoint_sha256=_digest(original["checkpoint"]["sha256"]),
                     source_report_sha256=job["sha256"],
                     declared_metrics=metrics,
-                    bounds=manifest["temporal_view"]["fold"][partition],
+                    bounds=window[partition],
+                    **(
+                        {
+                            "bounds_by_market": {
+                                market: contract["fold"][partition]
+                                for market, contract in contracts.items()
+                            }
+                        }
+                        if len(contracts) > 1
+                        else {}
+                    ),
                     parent_id=parent_id,
                     metadata=_metadata(original, result),
                 )
@@ -623,6 +637,21 @@ def predictive_sources(reference: Path, completion: Path) -> tuple[list[dict], d
                     included_files=sum(r["included"] for r in rows),
                 )
             )
+            if "temporal_views" in manifest:
+                provenance["folds"][-1].update(
+                    markets=sorted(manifest["temporal_views"]),
+                    market_counts={
+                        market: {
+                            part: sum(
+                                asset["counts"][part]
+                                for asset in manifest["assets"]
+                                if asset["market"] == market
+                            )
+                            for part in PARTITIONS
+                        }
+                        for market in manifest["temporal_views"]
+                    },
+                )
             reader.cache.clear()
         provenance["counts"] = dict(
             prediction_files=len(sources),

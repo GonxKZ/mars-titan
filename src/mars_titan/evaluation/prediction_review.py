@@ -15,6 +15,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import session_metrics, splits
+from mars_titan.training.temporal_contract import temporal_contracts, temporal_fold
 
 METRICS = ("samples", "session_count", "session_mae", "session_mse", "mae", "mse")
 PARTITIONS = ("validation", "train")
@@ -78,15 +79,20 @@ def _temporal_contract(source, summary):
         or manifest.get("final_test_opened") is not False
     ):
         raise ValueError("El resumen y el manifiesto temporal no conservan su contrato y huella")
-    view = manifest["temporal_view"]
-    protocol, fold = view["protocol"], view["fold"]
-    if view["schema_version"] != 1 or fold not in splits.build_folds(protocol):
-        raise ValueError("La ventana temporal no pertenece al protocolo confirmado")
-    # Las ventanas no pueden ampliar la reserva final vigente del proyecto.
-    if protocol["final_test_start"] > "2024-01-01":
-        raise ValueError("El protocolo temporal invade el test reservado")
+    contracts = temporal_contracts(manifest)
+    fold = temporal_fold(manifest)
+    for view in contracts.values():
+        protocol = view["protocol"]
+        if view["schema_version"] != 1 or fold not in splits.build_folds(protocol):
+            raise ValueError("La ventana temporal no pertenece al protocolo confirmado")
+        if protocol["final_test_start"] > "2024-01-01":
+            raise ValueError("El protocolo temporal invade el test reservado")
     return dict(
-        manifest_sha256=digest, fold=fold["id"], windows={p: fold[p] for p in PARTITIONS}, view=view
+        manifest_sha256=digest,
+        fold=fold["id"],
+        windows={p: fold[p] for p in PARTITIONS},
+        view=manifest.get("temporal_view"),
+        views=contracts,
     )
 
 
@@ -106,7 +112,12 @@ def _run_manifest(folder, run, report, temporal, views):
         view, digest = _json(_inside(folder, path.relative_to(folder)))
         if (
             view.get("source_manifest_sha256") != temporal["manifest_sha256"]
-            or view.get("temporal_view") != temporal["view"]
+            or temporal_contracts(view)
+            != {
+                market: contract
+                for market, contract in temporal["views"].items()
+                if arm == "US+CN" or market == arm
+            }
             or view.get("selected_arm") != arm
             or view.get("kind") != "corpus_supervision"
             or view.get("final_test_opened") is not False

@@ -18,6 +18,7 @@ from .reference_campaign import _check_finished, campaign_views
 from .reference_design import candidate_indices, design_cases
 from .reference_run import _confirmed_state, read_json, run_reference_case, scientific_identity
 from .selection import validate_selection
+from .temporal_contract import temporal_contracts
 
 
 class _Paused(Exception):
@@ -297,7 +298,7 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False, prog
     plan, cases, config_hash = _configuration(config)
     views = campaign_views(manifest, plan["arms"])
     first = next(iter(views.values()))
-    if plan["schema_version"] in {2, 3} and "temporal_view" not in first:
+    if plan["schema_version"] in {2, 3} and not temporal_contracts(first):
         raise ValueError("La búsqueda estricta necesita una vista temporal con admisión macro")
     if first["context_sessions"] != plan["context_sessions"]:
         raise ValueError("El contexto de la edición no coincide con el diseño de búsqueda")

@@ -18,16 +18,21 @@ def save(path, value):
 
 
 class Campaign:
-    def __init__(self, root, *, materialize=False, matching=False):
+    def __init__(self, root, *, materialize=False, matching=False, markets=("US",)):
         self.materialize = materialize
         self.matching = matching
+        self.markets = markets
+        self.arm = "US+CN" if len(markets) == 2 else markets[0]
         self.reference = root / "reference"
         self.completion = root / "completion"
         self.fold = "fold-000"
-        self.counts = dict(train=4, validation=2, calibration=2, evaluation=2)
+        self.counts = {
+            name: count * len(markets)
+            for name, count in dict(train=4, validation=2, calibration=2, evaluation=2).items()
+        }
         protocol = dict(
             schema_version=1,
-            market="US",
+            market=markets[0],
             train_start="2022-01-01",
             first_validation_start="2023-10-01",
             validation_months=1,
@@ -41,7 +46,7 @@ class Campaign:
             primary_metric="session_mae",
             seeds=[42, 43, 44],
         )
-        self.manifest_path = self.reference / self.fold / "views/US.json"
+        self.manifest_path = self.reference / self.fold / "views" / f"{self.arm}.json"
         self.manifest = dict(
             kind="corpus_supervision",
             scope="full_corpus",
@@ -49,10 +54,28 @@ class Campaign:
             final_test_opened=False,
             cohort_id="fixture",
             counts=self.counts,
-            selected_arm="US",
+            selected_arm=self.arm,
             source_manifest_sha256="b" * 64,
             temporal_view=dict(schema_version=1, protocol=protocol, fold=build_folds(protocol)[0]),
         )
+        if len(markets) == 2:
+            contract = self.manifest.pop("temporal_view")
+            self.manifest.update(
+                markets=list(markets),
+                assets=[
+                    dict(
+                        market=market,
+                        symbol=symbol,
+                        counts=dict(train=2, validation=1, calibration=1, evaluation=1),
+                    )
+                    for market in markets
+                    for symbol in ("A", "B")
+                ],
+                temporal_views={
+                    market: dict(contract, protocol=dict(protocol, market=market))
+                    for market in markets
+                },
+            )
         self.manifest_hash = save(self.manifest_path, self.manifest)
         self.rows = {stage: [] for stage in ("reference", "tabular", "posttraining")}
         self.originals = {}
@@ -218,7 +241,7 @@ class Campaign:
             )
             if stage != "posttraining":
                 summary["selected"] = (
-                    {"US-natural/rnn": "search/winner"}
+                    {f"{self.arm}-natural/rnn": "search/winner"}
                     if stage == "reference"
                     else {"ridge": "ridge"}
                 )
@@ -261,7 +284,7 @@ class Campaign:
                     reference_summary_sha256=signature,
                     confirmed_runs=len(entries),
                     matched_runs=len(entries),
-                    arm="US",
+                    arm=self.arm,
                     counts=self.counts,
                     final_test_opened=False,
                 )
@@ -269,7 +292,12 @@ class Campaign:
                 self.proof["tabular_summary_sha256"] = signature
         evaluated = {}
         metrics = {
-            name: dict(samples=2, session_count=1, session_mae=0.1, session_mse=0.01)
+            name: dict(
+                samples=2 * len(self.markets),
+                session_count=len(self.markets),
+                session_mae=0.1,
+                session_mse=0.01,
+            )
             for name in ("prediction", "parent", "zero")
         }
         for job in jobs:
@@ -302,17 +330,23 @@ class Campaign:
                 for month, part in ((11, "calibration"), (12, "evaluation")):
                     table = pa.table(
                         dict(
-                            sample_id=["a", "b"],
-                            asset_id=["US/A", "US/B"],
-                            market=["US", "US"],
+                            sample_id=[
+                                f"{part}/{market}/{name}"
+                                for market in self.markets
+                                for name in ("a", "b")
+                            ],
+                            asset_id=[
+                                f"{market}/{name}" for market in self.markets for name in ("A", "B")
+                            ],
+                            market=[market for market in self.markets for _ in range(2)],
                             prediction_at=pa.array(
-                                [datetime(2023, month, 2, tzinfo=UTC)] * 2,
+                                [datetime(2023, month, 2, tzinfo=UTC)] * (2 * len(self.markets)),
                                 pa.timestamp("us", tz="UTC"),
                             ),
-                            target=[0.1, 0.1],
-                            prediction=[0.0, 0.0],
-                            parent=[0.0, 0.0],
-                            zero=[0.0, 0.0],
+                            target=[0.1] * (2 * len(self.markets)),
+                            prediction=[0.0] * (2 * len(self.markets)),
+                            parent=[0.0] * (2 * len(self.markets)),
+                            zero=[0.0] * (2 * len(self.markets)),
                         )
                     )
                     parquet = path.parent / f"{part}.parquet"

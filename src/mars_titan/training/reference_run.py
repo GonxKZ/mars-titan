@@ -67,6 +67,7 @@ def scientific_identity():
         "training/checkpoints.py",
         "training/corpus_inputs.py",
         "training/temporal_corpus.py",
+        "training/temporal_contract.py",
         "evaluation/splits.py",
         "evaluation/split_readiness.py",
         "data/cohort_contexts.py",
