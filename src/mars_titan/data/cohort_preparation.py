@@ -11,9 +11,11 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .audited_prices import read_audited_prices
 from .cohort_news import COHORT_POLICIES, write_cohort_news
 from .corpus_catalog import _source_path
 from .fundamentals import read_fundamentals
+from .input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from .preparation import atomic_parquet
 from .prices import read_prices
 from .storage import atomic_json, outside_source, sha256
@@ -46,9 +48,12 @@ def prepare_cohort_asset(
     cohort: str,
     reviews: dict,
     cutoff: str = "2023-12-31",
+    input_policy: str = STRICT_INPUTS,
+    audited_prices: dict | None = None,
 ) -> dict:
     """Normalizar una empresa completa o conservar un fallo visible, sin cambiar fuentes."""
     outside_source(source, destination)
+    masked = masked_inputs(input_policy)
     if cohort not in COHORT_POLICIES:
         raise ValueError("La cohorte no está admitida")
     if asset.get("market") != clock.market:
@@ -60,11 +65,21 @@ def prepare_cohort_asset(
         or not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol)
     ):
         raise ValueError("El símbolo no es válido")
-    if any(not asset["paths"].get(name) for name in ("prices", "news", "fundamentals", "charts")):
+    required = ("prices",) if masked else ("prices", "news", "fundamentals", "charts")
+    if any(not asset["paths"].get(name) for name in required):
         raise ValueError("Falta una modalidad del activo")
     if len(asset["paths"]["prices"]) != 1 or asset.get("source_errors"):
         raise ValueError("El inventario contiene fuentes ambiguas o con errores")
     end = date.fromisoformat(cutoff)
+    if masked and end >= date(2024, 1, 1):
+        raise ValueError("La reserva final permanece cerrada desde 2024")
+    if audited_prices is not None and not masked:
+        raise ValueError("La reutilización auditada necesita la política histórica explícita")
+    if audited_prices is not None:
+        if not isinstance(audited_prices, dict) or not isinstance(audited_prices.get("path"), str):
+            raise ValueError("El recibo de precios auditados no identifica su ruta")
+        outside_source(Path(audited_prices["path"]), destination)
+        outside_source(destination, Path(audited_prices["path"]))
     relative_paths = sorted(
         {path for kind in ("prices", "news", "fundamentals") for path in asset["paths"][kind]}
     )
@@ -73,6 +88,7 @@ def prepare_cohort_asset(
     if any(asset["hashes"].get(name) != digest for name, digest in hashes.items()):
         raise ValueError("Una huella de fuente no coincide con el inventario")
     policy = dict(
+        **policy_identity(input_policy),
         cohort_id=cohort,
         cutoff=cutoff,
         pyarrow=pa.__version__,
@@ -95,9 +111,18 @@ def prepare_cohort_asset(
                 "batches.py",
                 "storage.py",
                 "preparation.py",
+                "input_policy.py",
+                "audited_prices.py",
             )
         },
     )
+    if masked:
+        policy["audited_prices"] = audited_prices
+        policy["missing_sources"] = [
+            name
+            for name in ("prices", "news", "fundamentals", "charts")
+            if not asset["paths"].get(name)
+        ]
     fingerprint = hashlib.sha256(
         json.dumps([clock.market, symbol, hashes, policy], sort_keys=True).encode()
     ).hexdigest()
@@ -140,7 +165,9 @@ def prepare_cohort_asset(
             if (
                 previous.get("fingerprint") != fingerprint
                 or set(previous.get("artifacts", {})) != expected
-                or previous.get("schema_version") != 3
+                or previous.get("schema_version") != (4 if masked else 3)
+                or any(previous.get(k) != v for k, v in policy_identity(input_policy).items())
+                or (masked and previous.get("missing_sources") != policy["missing_sources"])
                 or previous.get("cohort_id") != cohort
                 or previous.get("news_content_policy") != COHORT_POLICIES[cohort]
                 or previous.get("market") != clock.market
@@ -176,10 +203,16 @@ def prepare_cohort_asset(
             cohort=cohort,
             reviews=reviews,
             cutoff=cutoff,
+            input_policy=input_policy,
         )
-        prices, price_audit = read_prices(paths[asset["paths"]["prices"][0]], clock)
-        reserved_prices = int((prices.session > cutoff).sum())
-        prices = prices.loc[prices.session <= cutoff].reset_index(drop=True)
+        if audited_prices is None:
+            prices, price_audit = read_prices(paths[asset["paths"]["prices"][0]], clock)
+            reserved_prices = int((prices.session > cutoff).sum())
+            prices = prices.loc[prices.session <= cutoff].reset_index(drop=True)
+        else:
+            prices, price_audit, reserved_prices = read_audited_prices(
+                audited_prices, hashes[asset["paths"]["prices"][0]], clock, cutoff
+            )
         facts, fact_audit = read_fundamentals(
             [paths[p] for p in asset["paths"]["fundamentals"]], clock.market, clock
         )
@@ -194,7 +227,8 @@ def prepare_cohort_asset(
         if any(sha256(path) != hashes[name] for name, path in paths.items()):
             raise ValueError("Las fuentes cambiaron durante la preparación")
         report = dict(
-            schema_version=3,
+            **policy_identity(input_policy),
+            schema_version=4 if masked else 3,
             market=clock.market,
             symbol=symbol,
             cohort_id=cohort,
@@ -216,5 +250,7 @@ def prepare_cohort_asset(
             elapsed_seconds=time.perf_counter() - started,
             reused=False,
         )
+        if masked:
+            report["missing_sources"] = policy["missing_sources"]
         atomic_json(manifest_path, report)
         return report
