@@ -42,6 +42,96 @@ El presupuesto de peticiones es obligatorio y puede ampliarse en otra invocació
 con la misma configuración. El cursor distingue una colección parcial de una
 colección completada o bloqueada.
 
+## Consulta por emisor
+
+La opción por emisor añade cuatro argumentos, que deben suministrarse juntos:
+
+- `--issuer-symbol`, con un símbolo de la cola, como `000066.SZ`.
+- `--issuer-receipt`, con el `receipt.json` de una respuesta pública conservada,
+  junto a su `body.json`.
+- `--issuer-receipt-sha256`, con la huella esperada de ese recibo.
+- `--issuer-announcement-id`, con el identificador del anuncio elegido dentro de
+  la respuesta.
+
+La API usa los mismos nombres con guiones bajos. El código y el `orgId` se
+obtienen del anuncio y se contrastan con el símbolo. No se recibe un `orgId`
+libre ni se construye uno a partir del código. La evidencia debe proceder de una
+captura pública completa con HTTP 200, con la petición anual original, las
+fechas y el vínculo al documento conservados. Una captura con transporte
+inyectado no sirve como evidencia pública.
+
+El filtro `stock=código,orgId` forma parte de cada petición y de su recibo. Cada
+página, incluida su recuperación, debe contener únicamente ese código, mercado
+y `orgId`. Se mantienen los controles de población, duplicados, intervalos y
+`hasMore`. Si la ventana incluye la publicación del anuncio elegido, ese anuncio
+debe aparecer antes de completar la recogida. Una respuesta vacía o la pérdida
+del anuncio conocido bloquean ese ámbito. Fuera de esa ventana, una respuesta
+vacía solo acredita que el proveedor no devolvió resultados.
+
+La configuración fija también los metadatos normalizados de ese anuncio. Cuando
+su ID aparece, la fecha, el instante de publicación, el enlace PDF, el título y
+los demás campos deben coincidir con la evidencia. Esta comprobación se aplica
+al consumir y al recuperar respuestas, incluso si la fecha original queda fuera
+de la ventana solicitada. No basta con conservar el ID de un anuncio distinto.
+
+Estas colecciones usan configuración e informe de versión 2 y el ámbito
+`issuer_annual_category_only`. Conservan las rutas y hashes de la evidencia, que
+se vuelven a comprobar antes de pedir datos, al recuperar y antes de confirmar.
+La espera mínima es de cinco segundos. `--max-requests` sigue siendo el máximo
+de peticiones nuevas por invocación de esa colección, incluidas las páginas y
+subdivisiones de fechas. No es un presupuesto para recorrer todo el censo.
+
+Cada emisor necesita una salida separada. Las capturas generales permanecen en
+versión 1, con su comportamiento y recuperación originales. Como la identidad
+incluye hashes del código, las capturas antiguas se reanudan desde su runtime
+congelado. No se migran ni se ignoran sus controles para abrirlas con otro código.
+Tampoco se transforma una colección general existente en una colección por emisor.
+
+`completed` indica que se han conciliado las respuestas del ámbito solicitado.
+`issuer_history_complete=false`, `period_coverage_verified=false` y
+`financial_values_admitted=false` evitan interpretar ese estado como historia
+completa, cobertura de todos los cierres o admisión de cifras.
+
+El [piloto por emisor](../../reports/data/chinese-issuer-announcements-20261007.json)
+utilizó el código y `orgId` de un anuncio oficial de `000066.SZ`. Tres peticiones
+devolvieron cuatro anuncios únicos. La ventana 2022–2023 dio cuatro y cada año
+por separado dio dos, con unión exacta. Todas las filas pertenecían al emisor y
+los dos anuncios ya conservados mantuvieron sus metadatos. `totalpages` devolvió
+cero pese a contener filas y no se utiliza para acreditar la población.
+Esta prueba justifica la opción, sin demostrar estabilidad general ni una
+aceleración del catálogo completo. La integración de la opción reproduce esos
+cuerpos guardados sin red y recupera sus salidas sin repetir peticiones.
+
+### Comprobación real con dos emisores
+
+Una segunda comprobación ejecutó el colector congelado en `2b12f0b7` sobre un
+emisor de Shenzhen y otro de Shanghái. Las ventanas corresponden a fechas de
+publicación, dentro de la categoría anual de CNINFO.
+
+| Emisor | Publicaciones 2022–2023 | Solo 2022 | Solo 2023 | Anuncios anteriores con metadatos idénticos |
+| --- | ---: | ---: | ---: | ---: |
+| `000333.SZ` | 6 | 3 | 3 | 3 |
+| `600000.SS` | 4 | 2 | 2 | 2 |
+
+En ambos emisores, la unión de los años disjuntos coincidió con la consulta
+conjunta, incluidos sus metadatos normalizados. Las seis peticiones POST
+devolvieron HTTP 200 y 14.100 bytes de cuerpos JSON en total, sin emisores ajenos
+y con `hasMore=false`. La separación mínima entre inicios fue de 5,515290
+segundos. Las seis salidas se recuperaron sin red ni cambios de bytes o fechas
+de modificación. El recibo conserva las huellas de cada respuesta y de su
+comprobación.
+
+El verificador inicial falló después de la primera petición porque comparaba
+también `requests_this_invocation`, que pasa de uno a cero al recuperar. Se
+corrigió solo esa comprobación y su reanudación. La respuesta confirmada se
+reutilizó sin otra petición. Los 31,09 segundos registrados corresponden al
+proceso reanudado, con cinco POST nuevos, y no al tiempo total de las seis
+peticiones. No se midió una aceleración.
+
+Este segundo piloto queda separado del de `000066.SZ`. Sus diez anuncios únicos
+no acreditan una historia completa ni cobertura de todos los cierres. No se
+descargaron PDF ni se admitieron cifras financieras.
+
 ## Comprobaciones ejecutadas
 
 El [recibo real](../../reports/data/chinese-announcements-20261007.json)

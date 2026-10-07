@@ -1,0 +1,468 @@
+{
+  "schema_version": 1,
+  "kind": "issuer_announcement_catalogue_validation",
+  "observed_at_utc": "2026-10-07T16:31:02.719106+00:00",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/105",
+  "base_commit": "bac61cddd885f6803b640574198fe22562a102ca",
+  "source_sha256": "bdd163dde72a70e82d7ff336710840761f2aa2c48e09915dc29ba60bcdee3981",
+  "tests_sha256": "992385e4bb94f05727e1fbaff7c0884160f7f68e5459c38387f0d03c38c4cee3",
+  "contract": {
+    "general_schema_version": 1,
+    "issuer_schema_version": 2,
+    "issuer_scope": "issuer_annual_category_only",
+    "identity_fields": [
+      "symbol",
+      "org_id",
+      "announcement_id",
+      "publication_date",
+      "receipt_sha256",
+      "body_sha256",
+      "source_configuration_sha256",
+      "announcement"
+    ],
+    "org_id_derived_from_saved_public_announcement": true,
+    "foreign_issuer_response_rejected": true,
+    "known_announcement_required_when_in_window": true,
+    "missing_known_announcement_blocks_completion": true,
+    "empty_result_does_not_prove_historical_absence": true,
+    "previous_runtime_required_for_old_code_fingerprints": true,
+    "migration_performed": false,
+    "issuer_history_complete": false,
+    "period_coverage_verified": false,
+    "financial_values_admitted": false,
+    "anchor_normalized_metadata_pinned": true,
+    "anchor_metadata_checked_whenever_id_appears": true,
+    "anchor_metadata_checked_outside_original_window": true
+  },
+  "limits": {
+    "max_requests_required_per_invocation": true,
+    "request_spacing_seconds": 5,
+    "response_bytes": 1048576,
+    "page_size": 30,
+    "pages_per_interval": 100,
+    "total_records": 100000,
+    "timeout_seconds": 30,
+    "automatic_retries": 0
+  },
+  "live_probe": {
+    "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+    "symbol": "000066.SZ",
+    "org_id": "gssz0000066",
+    "identity_announcement_id": "1213249559",
+    "requests": 3,
+    "body_bytes": 5402,
+    "elapsed_window_seconds": 14.324274,
+    "minimum_request_start_gap_seconds": 6.408501,
+    "unique_announcements": 4,
+    "responses": [
+      {
+        "window": "2022-01-01~2023-12-31",
+        "records": 4,
+        "total_record_num": 4,
+        "total_announcements": 4,
+        "totalpages": 0,
+        "has_more": false,
+        "foreign_issuer_records": 0,
+        "body_sha256": "dab35123facb129adc7b3604a916ee46b08a8d8839649400f3ec7dbc683d4e18"
+      },
+      {
+        "window": "2022-01-01~2022-12-31",
+        "records": 2,
+        "total_record_num": 2,
+        "total_announcements": 2,
+        "totalpages": 0,
+        "has_more": false,
+        "foreign_issuer_records": 0,
+        "body_sha256": "c888f2776c3118ccad66489d8ff1ad6542db2284d153726676396ac3f56fc73e"
+      },
+      {
+        "window": "2023-01-01~2023-12-31",
+        "records": 2,
+        "total_record_num": 2,
+        "total_announcements": 2,
+        "totalpages": 0,
+        "has_more": false,
+        "foreign_issuer_records": 0,
+        "body_sha256": "f46222dcb4d0bb93b51a7e6c2e2b964c5ac9429564f51c269ebfb4addbab9a52"
+      }
+    ],
+    "full_window_equals_disjoint_year_union": true,
+    "previous_announcement_metadata_preserved": 2,
+    "claim": "Prueba previa de un emisor. No demuestra estabilidad del proveedor ni aceleración global.",
+    "rss_measured": false
+  },
+  "offline_integration": {
+    "network_requests": 0,
+    "rows": [
+      4,
+      2,
+      2
+    ],
+    "metadata_equal_to_saved_responses": true,
+    "resume_requests": 0,
+    "resume_bytes_identical": true,
+    "peak_process_rss_bytes": 180535296,
+    "elapsed_seconds": [
+      0.0655828199815005,
+      0.05569525799364783,
+      0.05667894100770354
+    ],
+    "anchor_metadata_preserved": true,
+    "resume_mtime_identical": true
+  },
+  "verification": {
+    "tests_passed": 81,
+    "new_tests_passed": 36,
+    "prior_tests_passed": 45,
+    "red_tests_observed": 21,
+    "additional_boundary_red_tests": 2,
+    "mutants_detected": 3,
+    "mutants_executed": 3,
+    "branch_coverage_enabled": true,
+    "coverage_tool": "coverage.py 7.16.2",
+    "coverage": {
+      "covered_lines": 408,
+      "num_statements": 447,
+      "percent_covered": 87.96147672552166,
+      "percent_covered_display": "88",
+      "missing_lines": 39,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.2751677852349,
+      "percent_statements_covered_display": "91",
+      "num_branches": 176,
+      "num_partial_branches": 36,
+      "covered_branches": 140,
+      "missing_branches": 36,
+      "percent_branches_covered": 79.54545454545455,
+      "percent_branches_covered_display": "80"
+    },
+    "complexity_tool": "radon 6.0.1",
+    "crap_convention": "CRAP=CCN²*(1-cobertura de sentencias de la función)³+CCN. Las ramas se registran por separado.",
+    "function_diagnostics": [
+      {
+        "name": "_issuer",
+        "line": 357,
+        "ccn": 27,
+        "statement_fraction": 0.925,
+        "crap": 27.307546875,
+        "summary": {
+          "covered_lines": 37,
+          "num_statements": 40,
+          "percent_covered": 90.0,
+          "percent_covered_display": "90",
+          "missing_lines": 3,
+          "excluded_lines": 0,
+          "percent_statements_covered": 92.5,
+          "percent_statements_covered_display": "92",
+          "num_branches": 20,
+          "num_partial_branches": 3,
+          "covered_branches": 17,
+          "missing_branches": 3,
+          "percent_branches_covered": 85.0,
+          "percent_branches_covered_display": "85"
+        }
+      },
+      {
+        "name": "_Catalogue._page",
+        "line": 475,
+        "ccn": 41,
+        "statement_fraction": 0.975609756097561,
+        "crap": 41.02439024390244,
+        "summary": {
+          "covered_lines": 40,
+          "num_statements": 41,
+          "percent_covered": 96.72131147540983,
+          "percent_covered_display": "97",
+          "missing_lines": 1,
+          "excluded_lines": 0,
+          "percent_statements_covered": 97.5609756097561,
+          "percent_statements_covered_display": "98",
+          "num_branches": 20,
+          "num_partial_branches": 1,
+          "covered_branches": 19,
+          "missing_branches": 1,
+          "percent_branches_covered": 95.0,
+          "percent_branches_covered_display": "95"
+        }
+      },
+      {
+        "name": "_Catalogue._finish",
+        "line": 558,
+        "ccn": 11,
+        "statement_fraction": 1.0,
+        "crap": 11.0,
+        "summary": {
+          "covered_lines": 12,
+          "num_statements": 12,
+          "percent_covered": 100.0,
+          "percent_covered_display": "100",
+          "missing_lines": 0,
+          "excluded_lines": 0,
+          "percent_statements_covered": 100.0,
+          "percent_statements_covered_display": "100",
+          "num_branches": 10,
+          "num_partial_branches": 0,
+          "covered_branches": 10,
+          "missing_branches": 0,
+          "percent_branches_covered": 100.0,
+          "percent_branches_covered_display": "100"
+        }
+      },
+      {
+        "name": "collect_chinese_announcements",
+        "line": 693,
+        "ccn": 29,
+        "statement_fraction": 0.9420289855072463,
+        "crap": 29.16384330414083,
+        "summary": {
+          "covered_lines": 65,
+          "num_statements": 69,
+          "percent_covered": 91.57894736842105,
+          "percent_covered_display": "92",
+          "missing_lines": 4,
+          "excluded_lines": 0,
+          "percent_statements_covered": 94.20289855072464,
+          "percent_statements_covered_display": "94",
+          "num_branches": 26,
+          "num_partial_branches": 4,
+          "covered_branches": 22,
+          "missing_branches": 4,
+          "percent_branches_covered": 84.61538461538461,
+          "percent_branches_covered_display": "85"
+        }
+      }
+    ],
+    "independent_tests_passed": 5,
+    "directed_battery_passed": 86,
+    "anchor_regression_tests": 8,
+    "anchor_independent_red_cases": 2,
+    "mutation_scope": "Comprobación completa del anuncio de referencia, recuperación y aparición fuera de su ventana original."
+  },
+  "evidence_sha256": {
+    "live_probe": "432bbd152ac868f896908066b61952f861a68a0ebd858c66810886d89e655677",
+    "live_requests": "773bd239dbe8105fa1b15182bfcde8c12e1f4ec714dd9957d3455b79535b0239",
+    "offline_integration": "068cdb677c558a13dfc472fed972f2b619f5e59f4d726bc5afa231a309162a0f",
+    "coverage": "7a7e0294c650750fa8278cb66ea447d28221df391c15a7db69631d3cffd33521",
+    "complexity": "44657343caa6f199a727be4d533e2461a7f2b87afb0fe62089ac4761e78cec79",
+    "mutations": "d3cfaa4bea553368a8ecf3a52dc2e391cb34f09db242e9bd5fcda993475e8d94",
+    "anchor_regressions_red": "7a7e6cb2b1d14b6d3c4b48e78a1ee85aed26052c18a20ccc8337d049334dc4f5",
+    "independent_red": "d9a794ca6cb1c75417089381828cc49cb0a741090bbee13ba371616d27970d15",
+    "directed_green": "56acae318c67ef2e7bfc47cd0f51642060430ec647fb2ceef9bebeb5a7a831cf"
+  },
+  "interpretation": [
+    "Una respuesta completed concilia las páginas devueltas para un emisor, una categoría y una ventana. No acredita ausencia histórica absoluta ni la primera versión documental.",
+    "La categoría anual no cubre todos los cierres trimestrales de la cola.",
+    "Las capturas generales existentes y los intentos bloqueados permanecen en sus directorios y runtimes. No se reemplazan ni se reinterpretan.",
+    "La integración offline de 000066.SZ utiliza transporte inyectado con los cuerpos del piloto inicial. La comprobación real posterior de 000333.SZ y 600000.SS queda separada y comprende seis POST, sin descargar PDF.",
+    "Cobertura, complejidad y mutaciones dirigidas son diagnósticos focales, no una demostración de ausencia general de errores."
+  ],
+  "gpu_used": false,
+  "final_test_opened": false,
+  "new_financial_values_admitted": 0,
+  "previous_validation": {
+    "commit": "a6b1a672e8b3775829cafa69ef3464700147d857",
+    "source_sha256": "0590ca42aefc8cf228c1bb10f367ad2aab7ee492862c071f7f00797e99accc61",
+    "private_quality_sha256": "fd873d79b14802bab3bf968db6312fe3f0e028fd1a2da193dba4e64035069906",
+    "tests_passed": 73,
+    "mutants_detected": 5,
+    "mutants_executed": 5
+  },
+  "anchor_fix": {
+    "previous_failure": "Se aceptaba el mismo ID con fecha, enlace PDF o título cambiados. La presencia del ID no acreditaba el anuncio conservado.",
+    "behavior": "Los metadatos normalizados deben coincidir cada vez que aparece el ID, tanto al consumir como al recuperar. El texto equivalente tras retirar marcado HTML permanece válido."
+  },
+  "live_validation_two_issuers": {
+    "observed_at_utc": "2026-10-07T16:31:02.719106+00:00",
+    "runtime_commit": "2b12f0b74a3b6cb2a0e1210c8d0c85d2146393ae",
+    "source_sha256": "bdd163dde72a70e82d7ff336710840761f2aa2c48e09915dc29ba60bcdee3981",
+    "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+    "method": "POST",
+    "category": "category_ndbg_szsh",
+    "scope": "issuer_annual_category_only",
+    "publication_window": [
+      "2022-01-01",
+      "2023-12-31"
+    ],
+    "requests": 6,
+    "response_body_bytes": 14100,
+    "minimum_request_start_gap_seconds": 5.51529,
+    "request_start_gaps_seconds": [
+      112.51871,
+      6.727966,
+      5.51529,
+      6.222378,
+      5.824055
+    ],
+    "unique_announcements": 10,
+    "response_rows_including_repeated_windows": 20,
+    "issuers": [
+      {
+        "symbol": "000333.SZ",
+        "unique_announcements": 6,
+        "full_window_equals_disjoint_year_union": true,
+        "previous_unique_announcements_preserved": 3
+      },
+      {
+        "symbol": "600000.SS",
+        "unique_announcements": 4,
+        "full_window_equals_disjoint_year_union": true,
+        "previous_unique_announcements_preserved": 2
+      }
+    ],
+    "normalized_metadata_equal_between_windows": true,
+    "previous_normalized_metadata_unchanged": true,
+    "recovery": {
+      "outputs_checked": 6,
+      "network_requests": 0,
+      "bytes_unchanged": true,
+      "mtime_unchanged": true
+    },
+    "resumed_verification_process": {
+      "elapsed_seconds": 31.09375313197961,
+      "peak_rss_bytes": 221110272,
+      "new_post_requests": 5,
+      "previous_response_reused": 1,
+      "scope": "Proceso reanudado con cinco POST nuevos y una respuesta reutilizada. No mide el proceso inicial ni el tiempo total de las seis peticiones.",
+      "full_six_request_process_elapsed_seconds": null,
+      "speedup_measured": false
+    },
+    "initial_verifier_failure": {
+      "after_post_requests": 1,
+      "reason": "La igualdad del informe incluía requests_this_invocation, que cambia de uno a cero durante la recuperación.",
+      "correction": "Se ajustó el verificador para excluir ese contador de la igualdad y reanudar con la respuesta ya confirmada.",
+      "collector_changed": false,
+      "confirmed_response_requested_again": false,
+      "initial_script_and_failure_log_preserved": true
+    },
+    "responses": [
+      {
+        "symbol": "000333.SZ",
+        "publication_window": [
+          "2022-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:28:44.244553+00:00",
+        "status": 200,
+        "body_bytes": 3898,
+        "announcements": 6,
+        "totalAnnouncement": 6,
+        "totalRecordNum": 6,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "1b4b7e14b7f22744db50c00feb355df97226293a4f7de751ae2135a638425895",
+        "receipt_sha256": "267f3e9dc1e90f25f824a6280c978273f4bf9dbee529581ed2b3657132a4cda1",
+        "report_sha256": "b0f510a6230006e80fb5976dca0f168b104db27be1428349ec0e3be6d7b3ee09"
+      },
+      {
+        "symbol": "000333.SZ",
+        "publication_window": [
+          "2022-01-01",
+          "2022-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:36.763263+00:00",
+        "status": 200,
+        "body_bytes": 2033,
+        "announcements": 3,
+        "totalAnnouncement": 3,
+        "totalRecordNum": 3,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "8c563022de0b931eca56df6e46e1583356d35e18d8b8e71fd236381f8e6e2535",
+        "receipt_sha256": "500121e4ed38ef5f814c07d5b5ee573456b45c9b48bc7e8d337c1eb1d0a22c71",
+        "report_sha256": "c972ea57305c2ee10c588acc13526b0d16e7b9e7b8d646630163c7beb2d964f1"
+      },
+      {
+        "symbol": "000333.SZ",
+        "publication_window": [
+          "2023-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:43.491229+00:00",
+        "status": 200,
+        "body_bytes": 2027,
+        "announcements": 3,
+        "totalAnnouncement": 3,
+        "totalRecordNum": 3,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "607bcc309793a449a5169afe14ef6956523000ce063a80fe33606ac6201c95a6",
+        "receipt_sha256": "eab20d8446f588ed0e4903c588a290ea35d521f12c021827e447a61916703a0f",
+        "report_sha256": "cf2c883713ad1c9e464a50b66e944357f93dbc4a4633794933754f660ff83783"
+      },
+      {
+        "symbol": "600000.SS",
+        "publication_window": [
+          "2022-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:49.006519+00:00",
+        "status": 200,
+        "body_bytes": 2990,
+        "announcements": 4,
+        "totalAnnouncement": 4,
+        "totalRecordNum": 4,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "cb49a3ca7e3f8ebd59fe2919c15163b04405150ecbc846b061fce0db0996554c",
+        "receipt_sha256": "c69042365f7ed3c9a84b9e96c8c4934038a0a3926678efdcebd5fbba9fa06609",
+        "report_sha256": "3ba74f6e263fcdc01843b4b0018a944a560a657750de4d233c6cda9c19f6045c"
+      },
+      {
+        "symbol": "600000.SS",
+        "publication_window": [
+          "2022-01-01",
+          "2022-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:30:55.228897+00:00",
+        "status": 200,
+        "body_bytes": 1576,
+        "announcements": 2,
+        "totalAnnouncement": 2,
+        "totalRecordNum": 2,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "328225feb7c45c565ad42b3129fd534e867ca2ae4e6a602c7350d7111a24770b",
+        "receipt_sha256": "4313a703fe65e87af76f3125b28ebdff98a33a9a48148849c6ed86a4caff5659",
+        "report_sha256": "f9a9d0864d927e10d6e52c04f560bdd6155aed50080bf85e45f44f454a57aac7"
+      },
+      {
+        "symbol": "600000.SS",
+        "publication_window": [
+          "2023-01-01",
+          "2023-12-31"
+        ],
+        "requested_at_utc": "2026-10-07T16:31:01.052952+00:00",
+        "status": 200,
+        "body_bytes": 1576,
+        "announcements": 2,
+        "totalAnnouncement": 2,
+        "totalRecordNum": 2,
+        "totalpages": 0,
+        "hasMore": false,
+        "foreign_issuer_rows": 0,
+        "body_sha256": "f7cd24635f438867f2c3db4e75643cce78ca83dc9c2ab4ec41cd8acdcb673997",
+        "receipt_sha256": "7b8d569af142624fc554aeeb431f9f9f60f0509211368a5e7c192ff6f3ab7ed0",
+        "report_sha256": "624f2bd2f15310e49847681540fe04cd84ba9c28020cbc36690bbfa8c48e13b6"
+      }
+    ],
+    "evidence_sha256": {
+      "verification": "39d739fffdad8577c1a50abe7db33011e5c7396a11be4f8c90328539203b24dd",
+      "selection": "bfed2f128ce6143a40a31111225b2cd4f975e0e4af4f4b145a9837b3ab250124",
+      "initial_verifier": "29225843c588ffe35cc2ecd4d0607301ef3d277554f75d8e6e2a6ddcf2daa3cb",
+      "initial_failure_log": "097ae99f90dbc13f6241f91e2c544151746b424e42a51b5b5a2d3fcb0873f590",
+      "resumed_verifier": "89f75395e8367526828cf1f0528e37b687c320a60e5bb7c417f50a770fa4b0e6",
+      "resumed_log": "ad46f4276439ab97a95943470b42a5215fe1813671840ec867163b6bb7fbc7c3"
+    },
+    "issuer_history_complete": false,
+    "period_coverage_verified": false,
+    "financial_values_admitted": false,
+    "pdf_downloads": 0,
+    "gpu_used": false,
+    "final_test_opened": false
+  }
+}
