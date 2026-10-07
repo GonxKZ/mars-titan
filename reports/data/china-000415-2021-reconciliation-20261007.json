@@ -1,0 +1,559 @@
+{
+  "schema_version": 1,
+  "symbol": "000415.SZ",
+  "source_file": "table/hs300_tabular/000415.SZ/balance_sheet.jsonl",
+  "source_file_sha256": "ce6cc99a50bfb2255362ce7134a66bc60def10d79f69ef4f25461fe472f620d3",
+  "physical_page_numbering": true,
+  "read_pages": [
+    130,
+    131
+  ],
+  "accounting_basis_page": 148,
+  "reviewed_at_utc": "2026-10-07T16:45:08.463168+00:00",
+  "proof": {
+    "scope_and_dates": {
+      "source_pages": [
+        130,
+        131
+      ],
+      "description": "Balance consolidado con columnas 2021年12月31日 y 2020年12月31日. Los totales se transcriben de sus filas explícitas."
+    },
+    "unit": {
+      "source_page": 130,
+      "description": "La cabecera expresa 人民币千元. Los valores conservan las unidades enteras impresas y el multiplicador 1000 se declara separado."
+    },
+    "currency_and_CAS": {
+      "source_page": 148,
+      "description": "Declara cumplimiento de 企业会计准则. La moneda funcional y de presentación del grupo es el renminbi. Las filiales extranjeras pueden tener otra moneda funcional y se convierten a renminbi."
+    },
+    "equity_includes_minority": {
+      "source_page": 131,
+      "description": "Se toma el patrimonio total, posterior a las filas de patrimonio atribuible a la matriz y participaciones no dominantes.",
+      "2021_parent_equity": "25594571",
+      "2021_minority": "14284494",
+      "2020_parent_equity": "27169667",
+      "2020_minority": "14383539"
+    }
+  },
+  "results": [
+    {
+      "evidence": {
+        "symbol": "000415.SZ",
+        "field": "total_assets",
+        "value": "248231069",
+        "currency": "CNY",
+        "unit_multiplier": 1000,
+        "quantity_kind": "stock",
+        "period_start": null,
+        "period_end": "2021-12-31",
+        "statement_scope": "consolidated",
+        "accounting_standard": "CAS",
+        "publication_kind": "actual",
+        "publication_date": "2022-04-30",
+        "published_at": null,
+        "report_id": "1213265873",
+        "source_page": 130,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+        "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+        "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+        "numeric_match_policy": "binary64_roundtrip"
+      },
+      "original_matches": [
+        {
+          "array_record_1_based": 16,
+          "update_flag": "1",
+          "source_value_exact": "248231069000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2021-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 130,
+              "symbol": "000415.SZ",
+              "field": "total_assets",
+              "concept": "cn-reported:Assets:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "248231069000"
+            },
+            "original_context_recovered": false
+          }
+        },
+        {
+          "array_record_1_based": 17,
+          "update_flag": "0",
+          "source_value_exact": "248231069000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2021-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 130,
+              "symbol": "000415.SZ",
+              "field": "total_assets",
+              "concept": "cn-reported:Assets:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "248231069000"
+            },
+            "original_context_recovered": false
+          }
+        }
+      ]
+    },
+    {
+      "evidence": {
+        "symbol": "000415.SZ",
+        "field": "total_liab",
+        "value": "208352004",
+        "currency": "CNY",
+        "unit_multiplier": 1000,
+        "quantity_kind": "stock",
+        "period_start": null,
+        "period_end": "2021-12-31",
+        "statement_scope": "consolidated",
+        "accounting_standard": "CAS",
+        "publication_kind": "actual",
+        "publication_date": "2022-04-30",
+        "published_at": null,
+        "report_id": "1213265873",
+        "source_page": 131,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+        "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+        "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+        "numeric_match_policy": "binary64_roundtrip"
+      },
+      "original_matches": [
+        {
+          "array_record_1_based": 16,
+          "update_flag": "1",
+          "source_value_exact": "208352004000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2021-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_liab",
+              "concept": "cn-reported:Liabilities:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "208352004000"
+            },
+            "original_context_recovered": false
+          }
+        },
+        {
+          "array_record_1_based": 17,
+          "update_flag": "0",
+          "source_value_exact": "208352004000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2021-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_liab",
+              "concept": "cn-reported:Liabilities:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "208352004000"
+            },
+            "original_context_recovered": false
+          }
+        }
+      ]
+    },
+    {
+      "evidence": {
+        "symbol": "000415.SZ",
+        "field": "total_hldr_eqy_inc_min_int",
+        "value": "39879065",
+        "currency": "CNY",
+        "unit_multiplier": 1000,
+        "quantity_kind": "stock",
+        "period_start": null,
+        "period_end": "2021-12-31",
+        "statement_scope": "consolidated",
+        "accounting_standard": "CAS",
+        "publication_kind": "actual",
+        "publication_date": "2022-04-30",
+        "published_at": null,
+        "report_id": "1213265873",
+        "source_page": 131,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+        "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+        "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+        "numeric_match_policy": "binary64_roundtrip"
+      },
+      "original_matches": [
+        {
+          "array_record_1_based": 16,
+          "update_flag": "1",
+          "source_value_exact": "39879065000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2021-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_hldr_eqy_inc_min_int",
+              "concept": "cn-reported:EquityIncludingNoncontrollingInterest:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "39879065000"
+            },
+            "original_context_recovered": false
+          }
+        },
+        {
+          "array_record_1_based": 17,
+          "update_flag": "0",
+          "source_value_exact": "39879065000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2021-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_hldr_eqy_inc_min_int",
+              "concept": "cn-reported:EquityIncludingNoncontrollingInterest:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "39879065000"
+            },
+            "original_context_recovered": false
+          }
+        }
+      ]
+    },
+    {
+      "evidence": {
+        "symbol": "000415.SZ",
+        "field": "total_assets",
+        "value": "250212275",
+        "currency": "CNY",
+        "unit_multiplier": 1000,
+        "quantity_kind": "stock",
+        "period_start": null,
+        "period_end": "2020-12-31",
+        "statement_scope": "consolidated",
+        "accounting_standard": "CAS",
+        "publication_kind": "actual",
+        "publication_date": "2022-04-30",
+        "published_at": null,
+        "report_id": "1213265873",
+        "source_page": 130,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+        "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+        "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+        "numeric_match_policy": "binary64_roundtrip"
+      },
+      "original_matches": [
+        {
+          "array_record_1_based": 22,
+          "update_flag": "0",
+          "source_value_exact": "250212275000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2020-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 130,
+              "symbol": "000415.SZ",
+              "field": "total_assets",
+              "concept": "cn-reported:Assets:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "250212275000"
+            },
+            "original_context_recovered": false
+          }
+        },
+        {
+          "array_record_1_based": 23,
+          "update_flag": "1",
+          "source_value_exact": "250212275000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2020-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 130,
+              "symbol": "000415.SZ",
+              "field": "total_assets",
+              "concept": "cn-reported:Assets:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "250212275000"
+            },
+            "original_context_recovered": false
+          }
+        }
+      ]
+    },
+    {
+      "evidence": {
+        "symbol": "000415.SZ",
+        "field": "total_liab",
+        "value": "208659069",
+        "currency": "CNY",
+        "unit_multiplier": 1000,
+        "quantity_kind": "stock",
+        "period_start": null,
+        "period_end": "2020-12-31",
+        "statement_scope": "consolidated",
+        "accounting_standard": "CAS",
+        "publication_kind": "actual",
+        "publication_date": "2022-04-30",
+        "published_at": null,
+        "report_id": "1213265873",
+        "source_page": 131,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+        "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+        "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+        "numeric_match_policy": "binary64_roundtrip"
+      },
+      "original_matches": [
+        {
+          "array_record_1_based": 22,
+          "update_flag": "0",
+          "source_value_exact": "208659069000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2020-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_liab",
+              "concept": "cn-reported:Liabilities:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "208659069000"
+            },
+            "original_context_recovered": false
+          }
+        },
+        {
+          "array_record_1_based": 23,
+          "update_flag": "1",
+          "source_value_exact": "208659069000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2020-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_liab",
+              "concept": "cn-reported:Liabilities:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "208659069000"
+            },
+            "original_context_recovered": false
+          }
+        }
+      ]
+    },
+    {
+      "evidence": {
+        "symbol": "000415.SZ",
+        "field": "total_hldr_eqy_inc_min_int",
+        "value": "41553206",
+        "currency": "CNY",
+        "unit_multiplier": 1000,
+        "quantity_kind": "stock",
+        "period_start": null,
+        "period_end": "2020-12-31",
+        "statement_scope": "consolidated",
+        "accounting_standard": "CAS",
+        "publication_kind": "actual",
+        "publication_date": "2022-04-30",
+        "published_at": null,
+        "report_id": "1213265873",
+        "source_page": 131,
+        "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+        "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+        "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+        "numeric_match_policy": "binary64_roundtrip"
+      },
+      "original_matches": [
+        {
+          "array_record_1_based": 22,
+          "update_flag": "0",
+          "source_value_exact": "41553206000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2020-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_hldr_eqy_inc_min_int",
+              "concept": "cn-reported:EquityIncludingNoncontrollingInterest:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "41553206000"
+            },
+            "original_context_recovered": false
+          }
+        },
+        {
+          "array_record_1_based": 23,
+          "update_flag": "1",
+          "source_value_exact": "41553206000.0",
+          "exact_decimal_status": "reconciled",
+          "result": {
+            "status": "reconciled",
+            "fact": {
+              "statement_scope": "consolidated",
+              "accounting_standard": "CAS",
+              "currency": "CNY",
+              "period_end": "2020-12-31",
+              "publication_date": "2022-04-30",
+              "source_url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213265873.PDF",
+              "document_sha256": "16949ee904bf8c18ebb1ac4881814ba234222dee1af095eac323616418f02a1d",
+              "publication_evidence_sha256": "571b1a6c1427b061c55f97adcb06243bde34983840baf76107aed16da4410be1",
+              "report_id": "1213265873",
+              "source_page": 131,
+              "symbol": "000415.SZ",
+              "field": "total_hldr_eqy_inc_min_int",
+              "concept": "cn-reported:EquityIncludingNoncontrollingInterest:CNY",
+              "quantity_kind": "stock",
+              "period_start": null,
+              "published_at": null,
+              "value_cny": "41553206000"
+            },
+            "original_context_recovered": false
+          }
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "accounting_identities": [
+    {
+      "period_end": "2021-12-31",
+      "residual_reported_units": "0"
+    },
+    {
+      "period_end": "2020-12-31",
+      "residual_reported_units": "0"
+    }
+  ],
+  "comparative_review": {
+    "restated": false,
+    "policy_change_declared": true,
+    "source_pages": [
+      8,
+      69
+    ],
+    "description": "La casilla de la página 8 indica que no se reajustan ni reexpresan los datos anteriores. La página 69 describe la adopción de la norma de arrendamientos el 1 de enero de 2021, con ajuste de la apertura de 2021 y sin ajustar las cifras comparativas de 2020."
+  },
+  "final_test_opened": false
+}

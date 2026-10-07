@@ -1,6 +1,6 @@
 # Documentación de MARS-TITAN
 
-La documentación reúne el diseño de investigación, las decisiones de ingeniería y sus comprobaciones. La preparación de datos y los ensayos de coste ya tienen evidencia ejecutada. La arquitectura candidata y la comparación confirmatoria siguen pendientes.
+La documentación reúne el diseño de investigación, las decisiones de ingeniería y sus comprobaciones. La preparación de datos y los ensayos de coste ya tienen evidencia ejecutada. El candidato base está en implementación, todavía sin entrenamiento. La comparación confirmatoria sigue pendiente.
 
 | Para qué | Documento |
 | --- | --- |
@@ -8,7 +8,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Consultar el recorrido completo de noticias | [Índice de ambos mercados](../reports/data/corpus-index-20260922.md) y [contrato del catálogo](data/corpus-catalog.md), con fuentes pendientes separadas de muestras entrenables. |
 | Revisar la admisión de noticias | [Fechas, procedencia y problemas de contenido](data/news-policy.md), con auditorías separadas del piloto y del panel técnico. |
 | Contrastar cuerpos completos y retomar la revisión | [Verificación editorial](data/news-verification.md), con capturas acotadas y una cola persistente por registro. |
-| Revisar la procedencia contable china | [Contrato y contraste con CNINFO](data/china-provenance.md), [corpus temporal](data/chinese-corpus.md), [primera ampliación](data/chinese-balance-expansion.md), [segundo lote](data/chinese-balance-batch02.md) y [tercer lote de balances](data/chinese-balance-batch03.md), con cobertura pendiente separada de datos ya admitidos. |
+| Revisar la procedencia contable china | [Contrato y contraste con CNINFO](data/china-provenance.md), [corpus temporal](data/chinese-corpus.md), [primera ampliación](data/chinese-balance-expansion.md), [segundo lote](data/chinese-balance-batch02.md), [tercer lote](data/chinese-balance-batch03.md) y [cuarto lote de balances](data/chinese-balance-batch04.md), con cobertura pendiente separada de datos ya admitidos. |
 | Revisar precios y su universo | [Auditoría de los 5.023 CSV](../reports/data/price-audit.md), con exclusiones, acciones corporativas y límites de identidad. |
 | Revisar los codificadores | [Pesos, tokenización y preentrenamiento](data/pretraining-audit.md), con repetibilidad comprobada en CUDA y límites históricos. |
 | Consultar entrenamientos medidos | [100 ajustes sobre 470 muestras](../reports/baselines/post-scan-reference-study.md), con cuatro modalidades, macro y comparación frente a cero. Las ediciones de [405 muestras](../reports/baselines/streaming-reference-study.md) y [295 muestras](../reports/baselines/verified-reference-study.md) permanecen separadas. |
@@ -33,7 +33,7 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 | Consultar el estado del arte | [Bibliografía y biblioteca](references/README.md), [finanzas](references/finance-review.md), [memoria neural](references/neural-review.md), [libros](references/books-review.md). |
 | Contrastar especialistas y contexto externo | [Fuentes, hipótesis y falsaciones](research/contextual-experts.md), [regímenes](research/markov-regimes.md) y [entornos C++20 por lotes](engineering/batched-rl-environments.md). |
 | Contrastar cerebro, recurrencia y eficiencia | [Aprendizaje y memoria](references/brain-review.md), [antecedentes recientes](references/frontier-review.md), [sistemas](references/systems-review.md) y [DeepSeek](references/deepseek-review.md). |
-| Revisar una variante ampliada del candidato | [Memoria, contexto, neurociencia y comparaciones justas](research/neuroarchitecture-review.md), con [condiciones matemáticas y comprobaciones](research/memory-mathematics.md). Es diseño separado, sin implementar ni entrenar MARS-TITAN. |
+| Revisar una variante ampliada del candidato | [Memoria, contexto, neurociencia y comparaciones justas](research/neuroarchitecture-review.md), con [condiciones matemáticas y comprobaciones](research/memory-mathematics.md). La variante permanece en diseño separado. El candidato base está en implementación y todavía no se ha entrenado. |
 | Estudiar atención, práctica, eventos y menos señales | [Foco y replay](research/attention-replay-review.md), [eventos y entradas reducidas](research/event-signal-comparison.md) y [límites matemáticos](research/attention-replay-mathematics.md). Contrastes sobre la misma cohorte y sin atribuir consciencia ni pericia humana al candidato. |
 | Decidir dónde integrar la ampliación | [Arquitectura, postentrenamiento y estimaciones](research/system-integration.md), con rutas de código inspeccionadas, estados, dependencias y [24 pruebas de contratos](../reports/research/system-integration-20261004.json). |
 | Ejecutar las preparaciones verificadas | [Controles experimentales](engineering/experimental-controls.md): memoria y ruido, documentos, vistas reducidas, replay, adaptadores y cohortes, con perfiles C++20 y límites de lo comprobado. |
