@@ -286,8 +286,105 @@
     "model_mode": "train"
   },
   "cuda": {
-    "executed": false,
-    "status": "Pendiente de una comprobación técnica coordinada."
+    "executed": true,
+    "source_commit": "24015a58967134dfa31448b2f634c3b69ab006f2",
+    "result": {
+      "torch": "2.14.0+cu130",
+      "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1070 MiB",
+      "records": [
+        {
+          "mode": "disabled",
+          "dtype": "torch.float32",
+          "gradient_max_absolute_error": 1.8189894035458565e-12,
+          "next_prediction_exact": true,
+          "next_fast_update_exact": true,
+          "incompatible_contract_rejected": true
+        },
+        {
+          "mode": "diagnostic",
+          "dtype": "torch.float32",
+          "gradient_max_absolute_error": 1.8189894035458565e-12,
+          "next_prediction_exact": true,
+          "next_fast_update_exact": true,
+          "incompatible_contract_rejected": true
+        },
+        {
+          "mode": "penalty",
+          "dtype": "torch.float32",
+          "gradient_max_absolute_error": 1.862645149230957e-09,
+          "next_prediction_exact": true,
+          "next_fast_update_exact": true,
+          "incompatible_contract_rejected": true
+        },
+        {
+          "mode": "disabled",
+          "dtype": "torch.float64",
+          "gradient_max_absolute_error": 6.352747104407253e-22,
+          "next_prediction_exact": true,
+          "next_fast_update_exact": true,
+          "incompatible_contract_rejected": true
+        },
+        {
+          "mode": "diagnostic",
+          "dtype": "torch.float64",
+          "gradient_max_absolute_error": 6.352747104407253e-22,
+          "next_prediction_exact": true,
+          "next_fast_update_exact": true,
+          "incompatible_contract_rejected": true
+        },
+        {
+          "mode": "penalty",
+          "dtype": "torch.float64",
+          "gradient_max_absolute_error": 1.5178830414797062e-18,
+          "next_prediction_exact": true,
+          "next_fast_update_exact": true,
+          "incompatible_contract_rejected": true
+        }
+      ],
+      "peak_torch_bytes": 77671424,
+      "cap_torch_bytes": 268435456,
+      "cpu_rng_unchanged": true,
+      "cuda_rng_unchanged": true,
+      "peak_torch_reserved_bytes": 92274688,
+      "peak_rss_bytes": 1722900480,
+      "elapsed_seconds": 2.3254502799973125,
+      "tf32": false,
+      "scope": "Fixtures técnicos. Sin optimizador, datos reales, tiempos comparativos ni evaluación científica."
+    },
+    "gradients_compared": [
+      "price_encoder.projection.weight",
+      "fusion.0.weight",
+      "mac.memory.eta_projection.weight"
+    ],
+    "fixture": {
+      "rows": 1,
+      "context": 64,
+      "hidden_size": 32,
+      "rank": 2,
+      "grid_size": 13,
+      "dimensions": {
+        "prices": 5,
+        "news": 2,
+        "charts": 2,
+        "fundamentals": 3,
+        "macro": 3
+      }
+    },
+    "evidence_sha256": {
+      "test_cuda_local_control.py": "35f4b4796b4f411095a5f6e90432827994f921b1162068adde915a08ca4a9c29",
+      "cuda-local-control.json": "28e3127b4782ec3e3ed8d81b9b386c2acaa2af4a58a31717c9c2b898dee63fec",
+      "cuda-local-control.log": "7710e3d3f1eb43f170abc59843fa9a9639524337b1f2ed127eb3467412926fb8",
+      "cuda-local-control-invalid-map-location.log": "191697fbda4333bb56d332e025e19f58dc1cee5d93db6feddeed08f9a662a1eb"
+    },
+    "initial_fixture_failure": "map_location=cuda desplazó los contadores CPU y el contrato lo rechazó. Se corrigió el fixture para conservar los dispositivos originales, sin cambiar producción.",
+    "timing_scope": "Una comprobación técnica, sin calentamiento o repeticiones de rendimiento. El tiempo no es un benchmark.",
+    "public_reproduction": {
+      "path": "tests/models/titans/cuda_local_control_check.py",
+      "sha256": "5a1dbef4f1cdfa817d4601f82f3cb2182b3c86929624317d4cc790bb96619a02",
+      "log_sha256": "0430a89eaeb6b30509faea0658b64830d1bc5082cebaec6347ad4020c0475bd5",
+      "test_functions_passed": 1,
+      "cases": 6
+    }
   },
   "mathematical_limits": [
     "La compresión puede omitir direcciones expansivas.",
@@ -347,5 +444,13 @@
       "limits": "Una selección CPU técnica. Tracemalloc no incluye todos los buffers C++ ni los objetos de entrada creados antes. No es RSS ni benchmark aislado.",
       "timing_instrumentation": "tracemalloc activo durante la medición"
     }
+  },
+  "independent_review": {
+    "source_commit": "24015a58967134dfa31448b2f634c3b69ab006f2",
+    "review_sha256": "84fe0476e90dd31a1b002d468e9876e32d30352cdcfcf1fb15082b6d15bbf081",
+    "public_tests": 67,
+    "additional_cpu_probes": 23,
+    "reproduced_findings": 0,
+    "scope": "Diferencias finitas de F con momentum no nulo, profundidades 1 y 2, gradiente de eta, carga anidada, selección restaurada y ocho pares con la implementación financiera anterior."
   }
 }
