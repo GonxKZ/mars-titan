@@ -68,7 +68,8 @@ void validate_ppo_behavior(const at::Tensor& weights, const at::Tensor& actions,
     const auto expected = selected_logp.exp();
     constexpr double relative_rounding = 2e-6;
     constexpr double absolute_rounding = 2. * static_cast<double>(std::numeric_limits<float>::denorm_min());
-    const auto matches = (selected > 0) &
+    const auto representable = selected_logp.to(at::kFloat).exp() > 0;
+    const auto matches = (selected > 0) & representable &
         ((selected - expected).abs() <= expected.abs() * relative_rounding + absolute_rounding);
     require((matches | ~valid).all().item<bool>(),
             "La acción válida no corresponde a los pesos históricos registrados");

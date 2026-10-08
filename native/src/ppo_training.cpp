@@ -752,6 +752,8 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
         adaptive.ticks = state.transitions / lanes;
     }
     if (objective_.enabled()) {
+        state.controller.validate(objective_, static_cast<int64_t>(state.optimizer_steps),
+                                   hyperparameters_.epochs, static_cast<int64_t>(config_.rollout_transitions));
         const auto rollout_ticks = config_.rollout_transitions / lanes;
         const auto completed = adaptive.ticks / rollout_ticks + static_cast<std::size_t>(
             state.transitions == config_.total_transitions && adaptive.ticks % rollout_ticks != 0);

@@ -12,6 +12,7 @@ inline constexpr double ppo_default_target_kl = 0.01;
 inline constexpr double ppo_default_beta_min = 1e-6;
 inline constexpr double ppo_default_beta_max = 1e6;
 inline constexpr double ppo_kl_band = 1.5;
+inline constexpr int64_t ppo_maximum_rollout_rows = 16384;
 inline constexpr std::string_view ppo_sampler_contract = "categorical_fp32_weights_normalized_fp64_v1";
 
 struct PpoObjectiveConfig {
@@ -40,7 +41,8 @@ struct PpoControllerState {
     int64_t skipped_epochs = 0;
     std::optional<double> full_kl;
     bool threshold_exceeded = false;
-    void validate(const PpoObjectiveConfig& config, int64_t adam_steps, int64_t epochs) const;
+    void validate(const PpoObjectiveConfig& config, int64_t adam_steps, int64_t epochs,
+                  int64_t rollout_limit = ppo_maximum_rollout_rows) const;
     bool operator==(const PpoControllerState&) const = default;
 };
 

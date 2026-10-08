@@ -11,7 +11,8 @@ namespace {
 constexpr std::array<std::string_view, 4> identities{
     "ppo_clip_legacy", "ppo_clip_full_kl_v1", "ppo_kl_penalty_adaptive_v1", "ppo_clip_kl_epoch_stop_v1"};
 constexpr int64_t maximum_epochs = 64;
-constexpr int64_t maximum_rows = 1 << 20;
+// Incluye el calentamiento, conforme a la cota de observaciones del entrenador.
+constexpr int64_t maximum_completed_rollouts = int64_t{1} << 28;
 constexpr double negative_kl_tolerance = 1e-12;
 
 void require(bool condition, const char* message) {
@@ -19,7 +20,7 @@ void require(bool condition, const char* message) {
 }
 
 double checked_kl(int64_t rows, std::optional<double> value) {
-    require(rows >= 0 && rows <= maximum_rows && (rows == 0) == !value.has_value(),
+    require(rows >= 0 && rows <= ppo_maximum_rollout_rows && (rows == 0) == !value.has_value(),
             "La medición KL no corresponde al número de filas válidas");
     if (!value) { return 0; }
     require(std::isfinite(*value) && *value >= -negative_kl_tolerance,
@@ -84,10 +85,12 @@ double next_beta(const PpoObjectiveConfig& config, double current_beta,
     return current_beta;
 }
 
-void PpoControllerState::validate(const PpoObjectiveConfig& config, int64_t adam_steps, int64_t epochs) const {
+void PpoControllerState::validate(const PpoObjectiveConfig& config, int64_t adam_steps,
+                                  int64_t epochs, int64_t rollout_limit) const {
     config.validate();
     require(config.enabled() && epochs > 0 && epochs <= maximum_epochs &&
-                completed_rollouts >= 0 && completed_rollouts <= maximum_rows &&
+                rollout_limit > 0 && rollout_limit <= ppo_maximum_rollout_rows && valid_rows <= rollout_limit &&
+                completed_rollouts >= 0 && completed_rollouts <= maximum_completed_rollouts &&
                 optimizer_steps == adam_steps && adam_steps >= 0 &&
                 completed_epochs >= 0 && skipped_epochs >= 0,
             "El estado del controlador no concuerda con Adam o su presupuesto");

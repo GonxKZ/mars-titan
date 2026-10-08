@@ -88,6 +88,42 @@ void weights_preserve_sampler_mass_and_support() {
     rejected([&] { (void)ppo_behavior_log_probabilities(at::full({1,6},-.1F)); });
 }
 
+void observed_subnormal_mass_needs_a_representable_logged_probability() {
+    const auto weights = at::tensor({1.F,std::numeric_limits<float>::denorm_min(),0.F,0.F,0.F,0.F}).reshape({1,6});
+    const auto actions = at::tensor({1},at::kLong);
+    const auto logp = weights.select(1,1).to(at::kDouble).log();
+    const auto valid = at::ones({1},at::kBool);
+    validate_ppo_behavior(weights, actions, logp, valid);
+    const auto impossible = at::full({1},-200.,at::kDouble);
+    require(impossible.to(at::kFloat).exp().item<float>() == 0, "El fixture debe perder soporte FP32");
+    rejected([&] { validate_ppo_behavior(weights, actions, impossible, valid); });
+    validate_ppo_behavior(weights, actions, impossible, at::zeros_like(valid));
+}
+
+void stored_row_counts_respect_the_rollout_limit() {
+    PpoObjectiveConfig config;
+    config.kind = PpoObjectiveKind::clip_full_kl;
+    PpoControllerState state;
+    state.completed_rollouts = 1;
+    state.optimizer_steps = 4;
+    state.completed_epochs = 4;
+    state.full_kl = 0.;
+    state.valid_rows = 16384;
+    state.validate(config,4,4);
+    state.valid_rows = 16385;
+    rejected([&] { state.validate(config,4,4); });
+    state.valid_rows = 1024;
+    state.validate(config,4,4,1024);
+    state.valid_rows = 1025;
+    rejected([&] { state.validate(config,4,4,1024); });
+    state.valid_rows = 0;
+    state.optimizer_steps = 0;
+    state.completed_epochs = 0;
+    state.full_kl.reset();
+    state.completed_rollouts = (int64_t{1} << 20) + 1;
+    state.validate(config,0,4);
+}
+
 void configurations_have_distinct_contracts() {
     PpoObjectiveConfig legacy;
     require(!legacy.enabled(), "Se activó el camino nuevo por defecto");
@@ -118,6 +154,8 @@ int main() {
         beta_changes_only_outside_the_band();
         epoch_stop_preserves_the_completed_epoch();
         weights_preserve_sampler_mass_and_support();
+        stored_row_counts_respect_the_rollout_limit();
+        observed_subnormal_mass_needs_a_representable_logged_probability();
         configurations_have_distinct_contracts();
         require(at::equal(rng,at::detail::getDefaultCPUGenerator().get_state()), "Se consumió RNG");
         std::cout << "Controladores PPO comprobados sin actualizaciones\n";
