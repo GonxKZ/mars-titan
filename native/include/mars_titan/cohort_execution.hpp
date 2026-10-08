@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -44,23 +45,46 @@ struct Limits {
     std::size_t max_log_bytes = default_log_bytes;
     std::size_t max_cohorts = default_max_cohorts;
 };
-enum class PredictionMode : std::uint8_t { stateless, prepared };
+enum class PredictionMode : std::uint8_t { stateless, prepared, financial };
+enum class EventKind : std::uint8_t { warmup, decision, settlement };
+enum class PrefixReason : std::uint8_t { insufficient_pairs, zero_market_variance };
+struct PhaseContract {
+    std::string partition;
+    std::int64_t warmup_start = 0;
+    std::int64_t decision_start = 0;
+    std::int64_t decision_end = 0;
+    std::int64_t close_at = 0;
+    std::string prefix_policy_sha256;
+};
 struct Definition {
     Identity identity;
     std::vector<Task> tasks;
     Json initial_state;
     Limits limits;
     PredictionMode prediction_mode = PredictionMode::stateless;
+    PhaseContract phase = {};
 };
 struct Observation {
     std::string asset;
     std::int64_t available_at = 0;
     std::vector<double> features;
 };
+struct PrefixExclusion {
+    std::string asset;
+    Task task;
+    std::int64_t decision_at = 0;
+    PrefixReason reason = PrefixReason::insufficient_pairs;
+    std::size_t history_pairs = 0;
+    std::optional<double> market_variance;
+    std::string evidence_sha256;
+};
 struct Cohort {
     std::size_t cursor = 0;
     std::int64_t cutoff = 0;
     std::vector<Observation> observations;
+    EventKind kind = EventKind::decision;
+    bool close_phase = false;
+    std::vector<PrefixExclusion> prefix_exclusions = {};
 };
 struct Prediction {
     std::string id;
@@ -81,6 +105,14 @@ struct ResolvedFeedback {
     Prediction prediction;
     Feedback label;
 };
+struct ResolvedPrefixExclusion {
+    Prediction prediction;
+    PrefixExclusion evidence;
+};
+struct AdministrativeFinalization {
+    Prediction prediction;
+    std::int64_t closed_at = 0;
+};
 struct PreparedCohort {
     // Orden canónico activo/tarea. Una propuesta compartida por toda la cohorte.
     std::vector<double> values;
@@ -95,6 +127,13 @@ struct Callbacks {
     std::function<PreparedCohort(std::span<const Observation>, std::span<const Task>, std::int64_t,
                                  const Json&, std::size_t)>
         prepare = {};
+    std::function<PreparedCohort(EventKind, std::span<const Observation>, std::span<const Task>,
+                                 std::int64_t, const Json&, std::size_t)>
+        prepare_event = {};
+    std::function<Json(const Json&, std::span<const ResolvedFeedback>,
+                       std::span<const ResolvedPrefixExclusion>,
+                       std::span<const AdministrativeFinalization>)>
+        resolve = {};
 };
 enum class Boundary : std::uint8_t {
     before_predictions,
@@ -110,6 +149,8 @@ struct Commit {
     std::vector<Prediction> predictions;
     std::vector<ResolvedFeedback> applied;
     std::string record_sha256;
+    std::vector<ResolvedPrefixExclusion> excluded = {};
+    std::vector<AdministrativeFinalization> finalized = {};
 };
 
 [[nodiscard]] std::string replay_id(const ResolvedFeedback& feedback, std::uint64_t visit);

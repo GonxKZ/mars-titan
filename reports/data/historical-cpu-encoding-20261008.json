@@ -1,0 +1,170 @@
+{
+  "recorded_at_utc": "2026-10-08T19:52:18.857528+00:00",
+  "kind": "historical_frozen_encoding_prefix",
+  "edition_id": "encoded-history-v3-cpu-words",
+  "runtime_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+  "run_id": "20261008T190609Z-9d17d957ff",
+  "prepared_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407",
+  "factor_descriptor_sha256": "60ff0f7c553026a808f794f096f3d53bf96cf4097acc20d49b2b093d93e39750",
+  "encoder_options": {
+    "word_embedding_placement": "cpu",
+    "text_batch_size": 8,
+    "image_batch_size": 2,
+    "cuda_memory_bytes": 234881024,
+    "min_free_cuda_bytes": 335544320
+  },
+  "encoders": {
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+    },
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizers_version": "0.23.2",
+    "tokenizer_class": "TokenizersBackend",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "code_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "device": "cuda:0",
+    "precision": "float32",
+    "runtime_precision": {
+      "dtype": "float32",
+      "matmul_tf32": false,
+      "cudnn_tf32": true
+    },
+    "historical_simulation": false,
+    "word_embedding_placement": "cpu",
+    "word_embedding_lookup": {
+      "policy": "cpu_word_inputs_embeds_fp32_v1",
+      "code_sha256": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35"
+    },
+    "batch_sizes": {
+      "text_chunks": 8,
+      "images": 2
+    }
+  },
+  "hardware_observation": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1090 MiB, 595.91.07",
+  "budgets": {
+    "cpu_threads": 2,
+    "cpu_quota_percent": 200,
+    "ram_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "max_new_assets": 64,
+    "disk_reserve_bytes": 21474836480
+  },
+  "execution": {
+    "started_at_utc": "2026-10-08T19:06:09.359024+00:00",
+    "finished_at_utc": "2026-10-08T19:43:07.893528+00:00",
+    "elapsed_seconds": 2218.5287888189923,
+    "peak_rss_bytes": 2603032576,
+    "peak_cuda_allocated_bytes": 163579392,
+    "peak_cuda_reserved_bytes": 192937984
+  },
+  "process_wall_seconds": 2221.6,
+  "process_swaps": 0,
+  "verification": {
+    "checked_at_utc": "2026-10-08T19:47:02.841127+00:00",
+    "encoded_runtime_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+    "validator_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+    "verifier_sha256": "6deee125fe2abef6c6a8e8331f05d95a8f6c222d450a0052f0d7303c195ddad7",
+    "validation_source_sha256": {
+      "mars_titan.data.corpus_preparation": "1322da2ec00f052aed9b82e8d8290767bd03d3b0fef0437cc49e27b3d0618d7a",
+      "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+      "mars_titan.data.storage": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+      "mars_titan.data.temporal": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41"
+    },
+    "numpy_version": "2.5.3",
+    "progress_sha256": "26d1f63eb0655641e2dd07a9aadbbd05974816f00a8d205d46ba88d224f8f72f",
+    "candidate_count": 5676,
+    "reviewed_prefix_candidates": 72,
+    "verified_encoded_assets": 64,
+    "samples": 230957,
+    "cache_news_entries": 65288,
+    "chart_cache_entries": 0,
+    "samples_bytes": 807222843,
+    "elapsed_seconds": 9.229933412992978,
+    "peak_rss_bytes": 269398016,
+    "corpus_complete": false,
+    "training_ready": false,
+    "final_test_opened": false,
+    "scope": "Verificación de un prefijo confirmado. Sin objetivos, modelos ni aprendizaje."
+  },
+  "parity": {
+    "checked_at_utc": "2026-10-08T19:47:21.693681+00:00",
+    "kind": "encoding_edition_value_parity",
+    "old_edition": "encoded-history-v2-batch8",
+    "new_edition": "encoded-history-v3-cpu-words",
+    "old_progress_sha256": "8a4bba924495057b6eb2ce061d32a4ce156dc311216ecf3c9ae933b2fa28e1b1",
+    "new_progress_sha256": "26d1f63eb0655641e2dd07a9aadbbd05974816f00a8d205d46ba88d224f8f72f",
+    "script_sha256": "f8172e1c8a84090c4a51692ef6924ec7e6381a2cdee94e744d634ff2ca865ed8",
+    "pyarrow": "25.0.1",
+    "numpy": "2.5.3",
+    "samples": 230957,
+    "nonfloating_columns_equal": true,
+    "floating_values_bit_equal": true,
+    "rtol": 2e-05,
+    "atol": 2e-06,
+    "all_floating_values_within_tolerance": true,
+    "maximum_absolute_error": {
+      "news": 0.0,
+      "charts": 0.0,
+      "fundamentals": 0.0,
+      "macro": 0.0
+    },
+    "maximum_tolerance_ratio": {
+      "news": 0.0,
+      "charts": 0.0,
+      "fundamentals": 0.0,
+      "macro": 0.0
+    },
+    "identities_kept_separate": true,
+    "maximum_two_batch_bytes": 4363408,
+    "peak_rss_bytes": 258600960,
+    "elapsed_seconds": 12.107942257993273,
+    "scientific_evaluation": false,
+    "labels_compared": false,
+    "training_ready": false,
+    "limits": [
+      "Solo el primer bloque de 64 activos. No acredita el resto del corpus.",
+      "La igualdad de valores no modifica las identidades ni autoriza mezclar cachés.",
+      "No se comparan tiempos del productor ni capacidad predictiva."
+    ]
+  },
+  "corpus_complete": false,
+  "training_ready": false,
+  "new_learning_executed": false,
+  "labels_materialized": false,
+  "final_test_opened": false,
+  "receipts_sha256": {
+    "encoding-v3-run-20261008T190609Z-9d17d957ff.json": "9363460ff260361d0991aa422313ea4a4fd5f481c80883c48f8e4dcdc4e6b68d",
+    "encoding-v3-prefix-64-verification.json": "82a5ebc88579eb6478c5f29dd7b1058b7f7872521ce020d5358d0906531b4bec",
+    "encoding-v3-prefix-64-parity.json": "0e7b40db89e57a71bcb2b597b197b9b467a2663211c8671a7e22841b1bb28a55",
+    "encoding-v3-to64.log": "5edfb4b07f122a922bb1013e0b9144fd742ec0d15b8e050ab3221a407f3a4603",
+    "encoding-v3-prefix64-verification.log": "7ebd034987173b24863311a7274900f0a0dd49ca6a1502b1ddd908143b6626fc",
+    "encoding-v3-prefix64-parity.log": "467272fbc7d72c3b3bb1adac50772fc2d9b09af7932b41fae0e511ee1c2ebffa"
+  },
+  "limits": [
+    "El prefijo tiene 64 activos de 5.023 con precios. No es el corpus completo.",
+    "Las 230.957 filas también existen en el prefijo v2 conservado. No se suman entre ediciones como observaciones nuevas.",
+    "La comparación conserva identidades distintas y no habilita cachés heterogéneas.",
+    "Los factores identifican una supervisión futura. No se han calculado ni comparado etiquetas.",
+    "El tiempo corresponde a una ejecución con otras aplicaciones activas, sin comparación controlada de velocidad.",
+    "El pico CUDA es del asignador de PyTorch y excluye parte del contexto y de las bibliotecas. No se midió energía."
+  ],
+  "verified_assets_by_market": {
+    "US": 64
+  },
+  "verified_samples_by_market": {
+    "US": 230957
+  }
+}

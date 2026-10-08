@@ -1,0 +1,809 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T21:20:17.558073+00:00",
+  "tested_commit": "a0420ab0b473892b356f55bc648d52c2a05018b1",
+  "cpu_tests": 492,
+  "cpu_seconds_instrumented": 107.57,
+  "tools": {
+    "coverage": "7.16.2",
+    "radon": "6.0.1"
+  },
+  "convention": "Líneas ejecutables y ramas de coverage.py. CCN de Function devueltas por Radon, que ya incluye métodos, y closures. No se cuentan agregados Class. CRAP=CCN²×(1−fracción de líneas cubiertas)³+CCN. Los rangos de closures pueden compartir líneas con su función contenedora.",
+  "files": [
+    {
+      "path": "src/mars_titan/data/audited_prices.py",
+      "sha256": "1f455aa7d8bcba91a86133df974682bc362ddf184a1b97b7126e349d13ff6e6a",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 30,
+      "max_crap": 34.166666666666664,
+      "largest_crap": [
+        {
+          "name": "_read_audited_columns",
+          "line": 79,
+          "end": 178,
+          "complexity": 30,
+          "executable_lines": 54,
+          "line_coverage": 0.8333333333333334,
+          "crap": 34.166666666666664
+        },
+        {
+          "name": "confirm_audited_prices",
+          "line": 50,
+          "end": 67,
+          "complexity": 10,
+          "executable_lines": 10,
+          "line_coverage": 0.9,
+          "crap": 10.1
+        },
+        {
+          "name": "audit_catalog",
+          "line": 20,
+          "end": 47,
+          "complexity": 9,
+          "executable_lines": 15,
+          "line_coverage": 0.8666666666666667,
+          "crap": 9.192
+        }
+      ],
+      "coverage": {
+        "covered_lines": 83,
+        "num_statements": 95,
+        "percent_covered": 82.75862068965517,
+        "percent_covered_display": "83",
+        "missing_lines": 12,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.36842105263158,
+        "percent_statements_covered_display": "87",
+        "num_branches": 50,
+        "num_partial_branches": 13,
+        "covered_branches": 37,
+        "missing_branches": 13,
+        "percent_branches_covered": 74.0,
+        "percent_branches_covered_display": "74"
+      }
+    },
+    {
+      "path": "src/mars_titan/environments/corpus_source.py",
+      "sha256": "d240ada79d82db0d6e48045dd0ded7dc6aa8fb2d49a5fab68152c1215588fbad",
+      "scope": "Solo _ordered_parquet cambió. No se ejecutó ActionGrid.fit ni se mide la ruta RL antigua.",
+      "max_complexity": 8,
+      "max_crap": 8.1865889212828,
+      "largest_crap": [
+        {
+          "name": "_ordered_parquet",
+          "line": 126,
+          "end": 161,
+          "complexity": 8,
+          "executable_lines": 7,
+          "line_coverage": 0.8571428571428571,
+          "crap": 8.1865889212828
+        }
+      ],
+      "line_coverage": 0.8571428571428571
+    },
+    {
+      "path": "src/mars_titan/memory/episodic_session.py",
+      "sha256": "c702f28684774cfa2ad81791128697fce9f04dd37970294702d0d98c20a447cd",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 32,
+      "max_crap": 34.0,
+      "largest_crap": [
+        {
+          "name": "EpisodicSession._prepare",
+          "line": 541,
+          "end": 612,
+          "complexity": 32,
+          "executable_lines": 32,
+          "line_coverage": 0.875,
+          "crap": 34.0
+        },
+        {
+          "name": "EpisodicSession._input_rows",
+          "line": 417,
+          "end": 472,
+          "complexity": 27,
+          "executable_lines": 22,
+          "line_coverage": 0.9090909090909091,
+          "crap": 27.54770848985725
+        },
+        {
+          "name": "_check_metadata",
+          "line": 109,
+          "end": 150,
+          "complexity": 24,
+          "executable_lines": 10,
+          "line_coverage": 0.9,
+          "crap": 24.576
+        }
+      ],
+      "coverage": {
+        "covered_lines": 329,
+        "num_statements": 363,
+        "percent_covered": 86.03696098562628,
+        "percent_covered_display": "86",
+        "missing_lines": 34,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.633608815427,
+        "percent_statements_covered_display": "91",
+        "num_branches": 124,
+        "num_partial_branches": 34,
+        "covered_branches": 90,
+        "missing_branches": 34,
+        "percent_branches_covered": 72.58064516129032,
+        "percent_branches_covered_display": "73"
+      }
+    },
+    {
+      "path": "src/mars_titan/memory/financial_observations.py",
+      "sha256": "de1a72c3e30524b22c2b252690293091c3e9af647096d26bbd5a172e685967ab",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 22,
+      "max_crap": 24.909090909090907,
+      "largest_crap": [
+        {
+          "name": "FinancialObservationSource.events",
+          "line": 396,
+          "end": 432,
+          "complexity": 22,
+          "executable_lines": 33,
+          "line_coverage": 0.8181818181818182,
+          "crap": 24.909090909090907
+        },
+        {
+          "name": "FinancialObservationSource._validate_groups",
+          "line": 269,
+          "end": 296,
+          "complexity": 17,
+          "executable_lines": 24,
+          "line_coverage": 0.75,
+          "crap": 21.515625
+        },
+        {
+          "name": "run_observation_source",
+          "line": 450,
+          "end": 484,
+          "complexity": 17,
+          "executable_lines": 23,
+          "line_coverage": 0.8260869565217391,
+          "crap": 18.520177529382757
+        }
+      ],
+      "coverage": {
+        "covered_lines": 229,
+        "num_statements": 272,
+        "percent_covered": 78.04878048780488,
+        "percent_covered_display": "78",
+        "missing_lines": 43,
+        "excluded_lines": 0,
+        "percent_statements_covered": 84.19117647058823,
+        "percent_statements_covered_display": "84",
+        "num_branches": 138,
+        "num_partial_branches": 45,
+        "covered_branches": 91,
+        "missing_branches": 47,
+        "percent_branches_covered": 65.94202898550725,
+        "percent_branches_covered_display": "66"
+      }
+    },
+    {
+      "path": "src/mars_titan/memory/financial_session.py",
+      "sha256": "654394ff6f39cb390d00a4dad28aca2fddf86f0caf1e86cbea13074067ed29e6",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 40,
+      "max_crap": 44.05709992486852,
+      "largest_crap": [
+        {
+          "name": "FinancialSession._prepare_event",
+          "line": 460,
+          "end": 562,
+          "complexity": 40,
+          "executable_lines": 44,
+          "line_coverage": 0.8636363636363636,
+          "crap": 44.05709992486852
+        },
+        {
+          "name": "FinancialSession._verify_bundle",
+          "line": 726,
+          "end": 782,
+          "complexity": 29,
+          "executable_lines": 40,
+          "line_coverage": 0.75,
+          "crap": 42.140625
+        },
+        {
+          "name": "FinancialSession._resolve",
+          "line": 614,
+          "end": 700,
+          "complexity": 25,
+          "executable_lines": 55,
+          "line_coverage": 0.9272727272727272,
+          "crap": 25.240420736288506
+        }
+      ],
+      "coverage": {
+        "covered_lines": 342,
+        "num_statements": 387,
+        "percent_covered": 83.93881453154876,
+        "percent_covered_display": "84",
+        "missing_lines": 45,
+        "excluded_lines": 0,
+        "percent_statements_covered": 88.37209302325581,
+        "percent_statements_covered_display": "88",
+        "num_branches": 136,
+        "num_partial_branches": 39,
+        "covered_branches": 97,
+        "missing_branches": 39,
+        "percent_branches_covered": 71.32352941176471,
+        "percent_branches_covered_display": "71"
+      }
+    },
+    {
+      "path": "src/mars_titan/memory/financial_state_artifacts.py",
+      "sha256": "231abc4d0a0d6db0835670a37386ef9c2e45607fa64dd8a08f320b819fa0fb2f",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 18,
+      "max_crap": 18.072126220886553,
+      "largest_crap": [
+        {
+          "name": "FinancialStateArtifacts._gather",
+          "line": 111,
+          "end": 144,
+          "complexity": 18,
+          "executable_lines": 33,
+          "line_coverage": 0.9393939393939394,
+          "crap": 18.072126220886553
+        },
+        {
+          "name": "FinancialStateArtifacts._header",
+          "line": 44,
+          "end": 70,
+          "complexity": 16,
+          "executable_lines": 15,
+          "line_coverage": 0.8,
+          "crap": 18.048
+        },
+        {
+          "name": "FinancialStateArtifacts.compact",
+          "line": 182,
+          "end": 218,
+          "complexity": 7,
+          "executable_lines": 25,
+          "line_coverage": 0.92,
+          "crap": 7.025088
+        }
+      ],
+      "coverage": {
+        "covered_lines": 126,
+        "num_statements": 135,
+        "percent_covered": 90.27027027027027,
+        "percent_covered_display": "90",
+        "missing_lines": 9,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.33333333333333,
+        "percent_statements_covered_display": "93",
+        "num_branches": 50,
+        "num_partial_branches": 9,
+        "covered_branches": 41,
+        "missing_branches": 9,
+        "percent_branches_covered": 82.0,
+        "percent_branches_covered_display": "82"
+      }
+    },
+    {
+      "path": "src/mars_titan/memory/retention_bank.py",
+      "sha256": "a43153020cac4d71312b594812a861bc332139174cb1a8683e3c50831efed98a",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 35,
+      "max_crap": 35.49789158156785,
+      "largest_crap": [
+        {
+          "name": "_check_receipt",
+          "line": 73,
+          "end": 144,
+          "complexity": 35,
+          "executable_lines": 27,
+          "line_coverage": 0.9259259259259259,
+          "crap": 35.49789158156785
+        },
+        {
+          "name": "_check_receipt_selection",
+          "line": 30,
+          "end": 70,
+          "complexity": 26,
+          "executable_lines": 12,
+          "line_coverage": 1.0,
+          "crap": 26.0
+        },
+        {
+          "name": "RetentionBank.propose",
+          "line": 322,
+          "end": 397,
+          "complexity": 22,
+          "executable_lines": 40,
+          "line_coverage": 0.925,
+          "crap": 22.2041875
+        }
+      ],
+      "coverage": {
+        "covered_lines": 164,
+        "num_statements": 175,
+        "percent_covered": 91.2133891213389,
+        "percent_covered_display": "91",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.71428571428571,
+        "percent_statements_covered_display": "94",
+        "num_branches": 64,
+        "num_partial_branches": 10,
+        "covered_branches": 54,
+        "missing_branches": 10,
+        "percent_branches_covered": 84.375,
+        "percent_branches_covered_display": "84"
+      }
+    },
+    {
+      "path": "src/mars_titan/models/titans/financial_blocks.py",
+      "sha256": "2ef1ffe6770e13ea28cd28976399e47ccb6b655389473fcff6a04bdda5545df5",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 21,
+      "max_crap": 21.0,
+      "largest_crap": [
+        {
+          "name": "_gather_cpu",
+          "line": 172,
+          "end": 235,
+          "complexity": 21,
+          "executable_lines": 39,
+          "line_coverage": 1.0,
+          "crap": 21.0
+        },
+        {
+          "name": "_validate_references",
+          "line": 243,
+          "end": 282,
+          "complexity": 18,
+          "executable_lines": 30,
+          "line_coverage": 1.0,
+          "crap": 18.0
+        },
+        {
+          "name": "_replace_state_references",
+          "line": 291,
+          "end": 331,
+          "complexity": 10,
+          "executable_lines": 24,
+          "line_coverage": 1.0,
+          "crap": 10.0
+        }
+      ],
+      "coverage": {
+        "covered_lines": 168,
+        "num_statements": 169,
+        "percent_covered": 99.14163090128756,
+        "percent_covered_display": "99",
+        "missing_lines": 1,
+        "excluded_lines": 0,
+        "percent_statements_covered": 99.40828402366864,
+        "percent_statements_covered_display": "99",
+        "num_branches": 64,
+        "num_partial_branches": 1,
+        "covered_branches": 63,
+        "missing_branches": 1,
+        "percent_branches_covered": 98.4375,
+        "percent_branches_covered_display": "98"
+      }
+    },
+    {
+      "path": "src/mars_titan/models/titans/frozen_financial.py",
+      "sha256": "9a5238a66cd23333b0e4ff8e24719a954b11d8c95efef196f121b6c7dade7a31",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 31,
+      "max_crap": 32.31824417009602,
+      "largest_crap": [
+        {
+          "name": "_execution_signature",
+          "line": 117,
+          "end": 193,
+          "complexity": 31,
+          "executable_lines": 36,
+          "line_coverage": 0.8888888888888888,
+          "crap": 32.31824417009602
+        },
+        {
+          "name": "_module_settings",
+          "line": 73,
+          "end": 114,
+          "complexity": 11,
+          "executable_lines": 27,
+          "line_coverage": 1.0,
+          "crap": 11.0
+        },
+        {
+          "name": "FrozenFinancialConsumer.verify",
+          "line": 265,
+          "end": 280,
+          "complexity": 10,
+          "executable_lines": 10,
+          "line_coverage": 0.8,
+          "crap": 10.799999999999999
+        }
+      ],
+      "coverage": {
+        "covered_lines": 124,
+        "num_statements": 136,
+        "percent_covered": 89.10891089108911,
+        "percent_covered_display": "89",
+        "missing_lines": 12,
+        "excluded_lines": 0,
+        "percent_statements_covered": 91.17647058823529,
+        "percent_statements_covered_display": "91",
+        "num_branches": 66,
+        "num_partial_branches": 10,
+        "covered_branches": 56,
+        "missing_branches": 10,
+        "percent_branches_covered": 84.84848484848484,
+        "percent_branches_covered_display": "85"
+      }
+    },
+    {
+      "path": "src/mars_titan/training/corpus_inputs.py",
+      "sha256": "8d944bc72392b229076b05d503a165f30669e29ba05ce0b26af0652881e48c67",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 45,
+      "max_crap": 62.21221599843603,
+      "largest_crap": [
+        {
+          "name": "CorpusDataset.__init__",
+          "line": 189,
+          "end": 285,
+          "complexity": 45,
+          "executable_lines": 49,
+          "line_coverage": 0.7959183673469388,
+          "crap": 62.21221599843603
+        },
+        {
+          "name": "CorpusDataset._labels",
+          "line": 371,
+          "end": 459,
+          "complexity": 24,
+          "executable_lines": 58,
+          "line_coverage": 0.6551724137931034,
+          "crap": 47.61720447742835
+        },
+        {
+          "name": "CorpusDataset.batches",
+          "line": 687,
+          "end": 757,
+          "complexity": 27,
+          "executable_lines": 40,
+          "line_coverage": 0.85,
+          "crap": 29.460375000000003
+        }
+      ],
+      "coverage": {
+        "covered_lines": 410,
+        "num_statements": 496,
+        "percent_covered": 79.08847184986595,
+        "percent_covered_display": "79",
+        "missing_lines": 86,
+        "excluded_lines": 0,
+        "percent_statements_covered": 82.66129032258064,
+        "percent_statements_covered_display": "83",
+        "num_branches": 250,
+        "num_partial_branches": 66,
+        "covered_branches": 180,
+        "missing_branches": 70,
+        "percent_branches_covered": 72.0,
+        "percent_branches_covered_display": "72"
+      }
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "sha256": "8b2e827b280aacad33dfd7304fbf2203f668c97d427cdaec9b9ea1dc04bd9e8e",
+      "scope": "Módulo medido con la suite indicada.",
+      "max_complexity": 20,
+      "max_crap": 21.610631104432755,
+      "largest_crap": [
+        {
+          "name": "PrefixTargetVerifier.__init__",
+          "line": 95,
+          "end": 170,
+          "complexity": 20,
+          "executable_lines": 44,
+          "line_coverage": 0.8409090909090909,
+          "crap": 21.610631104432755
+        },
+        {
+          "name": "PrefixEvidence.__post_init__",
+          "line": 53,
+          "end": 74,
+          "complexity": 14,
+          "executable_lines": 3,
+          "line_coverage": 0.6666666666666666,
+          "crap": 21.25925925925926
+        },
+        {
+          "name": "PrefixTargetVerifier.evidence",
+          "line": 229,
+          "end": 257,
+          "complexity": 12,
+          "executable_lines": 23,
+          "line_coverage": 0.9565217391304348,
+          "crap": 12.011835292183775
+        }
+      ],
+      "coverage": {
+        "covered_lines": 147,
+        "num_statements": 164,
+        "percent_covered": 84.68468468468468,
+        "percent_covered_display": "85",
+        "missing_lines": 17,
+        "excluded_lines": 0,
+        "percent_statements_covered": 89.63414634146342,
+        "percent_statements_covered_display": "90",
+        "num_branches": 58,
+        "num_partial_branches": 17,
+        "covered_branches": 41,
+        "missing_branches": 17,
+        "percent_branches_covered": 70.6896551724138,
+        "percent_branches_covered_display": "71"
+      }
+    }
+  ],
+  "mutations": {
+    "tested": 8,
+    "detected": 8,
+    "cases": [
+      {
+        "name": "forged_prefix",
+        "source": "src/mars_titan/training/prefix_eligibility.py",
+        "test": "tests/training/test_prefix_eligibility.py::test_forged_evidence_is_rejected",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 2.254365567001514
+      },
+      {
+        "name": "future_in_prefix",
+        "source": "src/mars_titan/training/prefix_eligibility.py",
+        "test": "tests/training/test_prefix_eligibility.py::test_future_suffix_cannot_change_prefix_arithmetic_or_records",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 1.2332026899966877
+      },
+      {
+        "name": "skip_strong_bytes",
+        "source": "src/mars_titan/models/titans/frozen_financial.py",
+        "test": "tests/models/titans/test_frozen_financial.py::test_strong_boundary_verification_detects_data_bypass",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 2.1915258840017486
+      },
+      {
+        "name": "permit_fused_backend",
+        "source": "src/mars_titan/models/titans/frozen_financial.py",
+        "test": "tests/models/titans/test_frozen_financial.py::test_fused_transformer_backend_is_rejected_without_changing_the_global_flag",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 2.226137468998786
+      },
+      {
+        "name": "ignore_numeric_settings",
+        "source": "src/mars_titan/models/titans/frozen_financial.py",
+        "test": "tests/models/titans/test_frozen_financial.py::test_numeric_layer_attributes_cannot_change_after_sealing",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 2.3949380419944646
+      },
+      {
+        "name": "admit_no_mature_episodes",
+        "source": "src/mars_titan/memory/financial_session.py",
+        "test": "tests/memory/test_financial_session.py::test_unlabeled_observations_prefix_exclusion_settlement_and_closure",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 5.525483393998002
+      },
+      {
+        "name": "trust_fast_reference_cursors",
+        "source": "src/mars_titan/memory/financial_state_artifacts.py",
+        "test": "tests/memory/test_financial_state_artifacts.py::test_references_match_rows_identity_and_cursors",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 2.2709693999931915
+      },
+      {
+        "name": "trust_index_summary",
+        "source": "src/mars_titan/memory/financial_observations.py",
+        "test": "tests/memory/test_financial_observation_source.py::test_index_summary_is_verified_before_the_first_event",
+        "detected": true,
+        "returncode": 1,
+        "seconds": 2.624581064999802
+      }
+    ],
+    "initial_harness_limit": "Dos casos iniciales se omitieron porque faltaba MARS_TITAN_EPISODIC_NATIVE. Se repitieron con binario fijado y controles verdes."
+  },
+  "cost": {
+    "commit": "a0420ab0b473892b356f55bc648d52c2a05018b1",
+    "torch": "2.14.0+cu130",
+    "threads": 2,
+    "dtype": "float32",
+    "mha_fastpath": false,
+    "K": 1,
+    "variant": "mac_online",
+    "assets": 32,
+    "source_dimensions": {
+      "prices": 5,
+      "news": 2,
+      "charts": 1,
+      "fundamentals": 3,
+      "macro": 3
+    },
+    "context": 64,
+    "hidden_size": 32,
+    "records": [
+      {
+        "block_rows": 8,
+        "repeat": 0,
+        "seconds": 2.445723089011153,
+        "observations": 128,
+        "emissions": 64,
+        "matured": 32,
+        "observations_per_second": 52.33626021486862,
+        "log_bytes": 38441,
+        "final_artifact_bytes": 701275,
+        "final_artifact_files": 15,
+        "protected_checkpoint_bytes": 8093,
+        "source_cache_bytes": 1161216,
+        "diagnostics": {
+          "cursor": 6,
+          "admitted": 32,
+          "retained": 32,
+          "pending": 0
+        },
+        "prefix_excluded": 0,
+        "administratively_finalized": 32
+      },
+      {
+        "block_rows": 8,
+        "repeat": 1,
+        "seconds": 2.4961210940091405,
+        "observations": 128,
+        "emissions": 64,
+        "matured": 32,
+        "observations_per_second": 51.27956344233806,
+        "log_bytes": 38441,
+        "final_artifact_bytes": 701275,
+        "final_artifact_files": 15,
+        "protected_checkpoint_bytes": 8093,
+        "source_cache_bytes": 1161216,
+        "diagnostics": {
+          "cursor": 6,
+          "admitted": 32,
+          "retained": 32,
+          "pending": 0
+        },
+        "prefix_excluded": 0,
+        "administratively_finalized": 32
+      },
+      {
+        "block_rows": 8,
+        "repeat": 2,
+        "seconds": 2.4335734659980517,
+        "observations": 128,
+        "emissions": 64,
+        "matured": 32,
+        "observations_per_second": 52.59754915494401,
+        "log_bytes": 38441,
+        "final_artifact_bytes": 701275,
+        "final_artifact_files": 15,
+        "protected_checkpoint_bytes": 8093,
+        "source_cache_bytes": 1161216,
+        "diagnostics": {
+          "cursor": 6,
+          "admitted": 32,
+          "retained": 32,
+          "pending": 0
+        },
+        "prefix_excluded": 0,
+        "administratively_finalized": 32
+      },
+      {
+        "block_rows": 32,
+        "repeat": 0,
+        "seconds": 1.8040373090043431,
+        "observations": 128,
+        "emissions": 64,
+        "matured": 32,
+        "observations_per_second": 70.95196943052348,
+        "log_bytes": 38441,
+        "final_artifact_bytes": 681052,
+        "final_artifact_files": 12,
+        "protected_checkpoint_bytes": 8093,
+        "source_cache_bytes": 1161216,
+        "diagnostics": {
+          "cursor": 6,
+          "admitted": 32,
+          "retained": 32,
+          "pending": 0
+        },
+        "prefix_excluded": 0,
+        "administratively_finalized": 32
+      },
+      {
+        "block_rows": 32,
+        "repeat": 1,
+        "seconds": 1.7863909260049695,
+        "observations": 128,
+        "emissions": 64,
+        "matured": 32,
+        "observations_per_second": 71.65284940528404,
+        "log_bytes": 38441,
+        "final_artifact_bytes": 681052,
+        "final_artifact_files": 12,
+        "protected_checkpoint_bytes": 8093,
+        "source_cache_bytes": 1161216,
+        "diagnostics": {
+          "cursor": 6,
+          "admitted": 32,
+          "retained": 32,
+          "pending": 0
+        },
+        "prefix_excluded": 0,
+        "administratively_finalized": 32
+      },
+      {
+        "block_rows": 32,
+        "repeat": 2,
+        "seconds": 1.8214065059873974,
+        "observations": 128,
+        "emissions": 64,
+        "matured": 32,
+        "observations_per_second": 70.27536114493579,
+        "log_bytes": 38441,
+        "final_artifact_bytes": 681052,
+        "final_artifact_files": 12,
+        "protected_checkpoint_bytes": 8093,
+        "source_cache_bytes": 1161216,
+        "diagnostics": {
+          "cursor": 6,
+          "admitted": 32,
+          "retained": 32,
+          "pending": 0
+        },
+        "prefix_excluded": 0,
+        "administratively_finalized": 32
+      }
+    ],
+    "setup_seconds": 0.12179974600439891,
+    "total_process_seconds": 13.164239260004251,
+    "peak_rss_bytes": 694005760,
+    "numerical_parity": {
+      "rtol": 5e-05,
+      "atol": 3e-06
+    },
+    "limits": [
+      "Fuente técnica de cuatro filas por activo. No extrapola coste al corpus completo.",
+      "Lectura, validación, MAC, lector, admisión y publicación incluidos. Índice y fuente ya preparados.",
+      "Cada repetición estrena cachés de lector y prefijo. La caché del sistema operativo no se vacía.",
+      "Convive con codificación de datos ajena a la sonda. No mide energía ni atribuye mejora predictiva."
+    ],
+    "hardware": {
+      "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+      "logical_cpus": 16,
+      "physical_cores": 8,
+      "python": "3.12.14",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+    }
+  },
+  "evidence": {
+    "coverage_sha256": "c790e0df1ba5a275366a2dd01995086b24c23f3838e51e92f0f3b64df5513ba0",
+    "quality_sha256": "61c863fefd48f36f277180eeec7b7c82356d4f32b80aff233eeeeb774a4d502d",
+    "tests_sha256": "73b69172dcd1038e4e1bf08049c299a5e34fff58550aefbb72fd8c47e5e9e2d9",
+    "mutations_sha256": "52fbbfd0275985a9bb23df3a1972e08bbf5d1f45cc4fbac9e84b43e93956ebc2",
+    "cost_sha256": "985d0a8333b96db5cc04cc2347cbfbd87da36a7d78f71fbd9287f9e3519f2338"
+  },
+  "limits": [
+    "Cobertura, CCN, CRAP y mutaciones son evidencia diagnóstica, no una garantía de ausencia de errores.",
+    "No se ejecutaron rutas de fit, optimizadores ni modelos sobre corpus real.",
+    "La sonda CUDA de la guarda numérica espera ventana coordinada. La matriz CUDA anterior conserva su recibo."
+  ]
+}

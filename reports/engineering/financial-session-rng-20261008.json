@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T20:45:08.246838+00:00",
+  "change": "RNG explícito de v2 separado del ámbito de integridad. Archivos y particiones de v1 conservados.",
+  "sources": {
+    "native/include/mars_titan/episodic_memory.hpp": "2ac2fe7a21a4404fb1c63a205e9a3883d44c4a7a5adf1e032a60c885fe1677f4",
+    "native/src/episodic_memory.cpp": "4d7341bb9e31fdc48ef77ba4cada5ac46be61bcc2b080cf7f797a1d17a4a7d59",
+    "native/src/episodic_python.cpp": "c65b63b0de8593e7838e1a56742030ac0a045c246a17a37857d87152dcac2508",
+    "native/tests/episodic_memory_tests.cpp": "4ef22b877f93370f87abde1200d754a1df2fa90969a246a0fbaaa498daed2110",
+    "src/mars_titan/memory/retention_bank.py": "a43153020cac4d71312b594812a861bc332139174cb1a8683e3c50831efed98a",
+    "src/mars_titan/memory/financial_session.py": "654394ff6f39cb390d00a4dad28aca2fddf86f0caf1e86cbea13074067ed29e6",
+    "tests/memory/test_causal_retention_rng.py": "097b805029bc03ba89f19587f15804e469dc093296d72f08da404c5ebfd00ef2",
+    "tests/memory/test_financial_session.py": "6ef5f7bc5474a736521f3c23f619b44ba253d8a08a2e46761ffe8e4837914686"
+  },
+  "native_module_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "cpu": {
+    "integrated_before_private_enum_size_adjustment": 121,
+    "final_targeted": 10,
+    "native_release": true,
+    "native_asan_ubsan": true,
+    "clang_tidy": true,
+    "clang_static_analyzer": true
+  },
+  "private_type_adjustment": {
+    "change": "Enum privado uint32_t a uint8_t",
+    "native_archives_exact": 160,
+    "versions": [
+      1,
+      2
+    ],
+    "phases": [
+      "train",
+      "validation",
+      "calibration",
+      "evaluation"
+    ]
+  },
+  "native_legacy_parity": {
+    "original_archives_exact": 32,
+    "restored_continuations_exact": 13
+  },
+  "mutations": {
+    "tested": 2,
+    "detected": 2,
+    "predicates": [
+      "scope_seed_in_v2",
+      "accept_cross_version_restore"
+    ],
+    "scope": "Predicados sin cambios tras el ajuste del enum privado."
+  },
+  "independent_cpu_review": {
+    "counterfactual_cases": 12,
+    "retention_decisions_per_case": 16,
+    "changes": [
+      "future_label",
+      "future_input",
+      "arm_identity"
+    ],
+    "policies": [
+      "reservoir",
+      "uniform",
+      "recent",
+      "anchored"
+    ],
+    "prefix_equal": true,
+    "ties_equal": true,
+    "cross_identity_restore_rejected": true,
+    "forged_outer_identity_rejected": true,
+    "logical_flows": 4,
+    "physical_blocks": [
+      1,
+      4
+    ],
+    "numerical_tolerance": 1e-12,
+    "numeric_ids_equal": true,
+    "recovery_exact": true,
+    "report_sha256": "63423123be49db441e7824759ad3842668349f73fe0c87a714d560331d575e3c",
+    "numeric_ids_report_sha256": "13965da1cd0f00c6e273203fef41f1d1747f9e2bc2b15854aaa02f4632a9ae66"
+  },
+  "limits": [
+    "V1 mezcla el ámbito y la representación con la semilla. Su evidencia previa no acredita invariancia frente a sufijos futuros.",
+    "La sesión Python histórica exige código y binario fijados. No se falsifican sus hashes para cargarla en v2.",
+    "La comprobación CUDA del consumidor queda abierta por una discrepancia FP64 ya observada en transformer_direct sin MAC ni lector.",
+    "Sin aprendizaje, optimizadores, corpus real ni mejora predictiva medida."
+  ]
+}
