@@ -6,7 +6,17 @@ Estas salidas son tablas normalizadas y paneles macro. Todavía faltan su codifi
 
 La [codificación acotada](historical-encoding-budgets.md) permite pausar por activo y omitir la copia secundaria de gráficos en caché. Conserva los vectores en Parquet y registra los límites de disco, CUDA y lotes antes de completar el recorrido.
 
-La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos tiene 288 activos y 990.866 muestras verificadas. Sus Parquet ocupan 3.430.135.570 bytes y la caché conserva 190.504 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos tiene 416 activos y 1.452.871 muestras verificadas. Sus Parquet ocupan 4.964.579.911 bytes y la caché conserva 228.512 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+
+## Ventanas de entrada y condiciones del objetivo
+
+El [censo de ventanas](../../reports/data/historical-window-census-20261008.json) concilia los 5.023 activos y sus 18.982.446 precios. Contiene 17.076.024 ventanas de 64 sesiones consecutivas. Este es el denominador de la geometría de entradas, no un recuento de objetivos residuales válidos ni de muestras ya codificadas.
+
+Hay 16.162 ventanas sin precio en la sesión siguiente dentro del periodo y 4.962 en el corte final. Otra auditoría del prefijo encuentra 266.297 ventanas sin los 126 pares pasados observables que exige el residual. De ellas, 201.492 pertenecen a activos cuya primera ventana de esta copia es posterior a 2000. Esa fecha no se interpreta como fecha de salida a bolsa. Los grupos de exclusión no se suman como si fueran disjuntos.
+
+El segundo recuento usa SPY de la preparación verificada y el factor CN v16, ambos limitados a 2023. Todavía debe fijarse la revisión efectiva del factor US para las etiquetas. No se afirma que sea idéntico al descriptor anterior. Se conserva la ventana de 252 sesiones, la disponibilidad anterior a la decisión y el umbral de varianza vigente. Se contrastaron 40.064 posiciones con el cálculo directo y 16 fixtures de umbral y sufijo futuro. No se calcularon alpha, beta ni etiquetas. La ausencia de revisiones históricas tampoco queda acreditada por estos controles.
+
+Estas condiciones necesitan resoluciones distintas. La falta de historia puede comprobarse desde el prefijo. La ausencia retrospectiva del precio siguiente no acredita que se conociese al emitir. El consumidor debe avanzar con todos los inputs admitidos y resolver los casos sin fabricar etiquetas o utilizar ese motivo como entrada. Los recuentos son acumulados, no un pico medido de pendientes. La suficiencia de la cola y los cortes de cada fase siguen pendientes de conciliación.
 
 ## Tablas preparadas
 
