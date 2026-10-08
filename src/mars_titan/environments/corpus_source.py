@@ -8,6 +8,7 @@ import resource
 import tempfile
 import time
 from collections import OrderedDict
+from contextlib import contextmanager
 from pathlib import Path
 
 import duckdb
@@ -121,6 +122,45 @@ def _bounded_groups(path, shapes):
     return regrouped
 
 
+@contextmanager
+def _ordered_parquet(
+    source,
+    destination,
+    temporary,
+    *,
+    columns=("prediction_at", "asset_id"),
+    threads=4,
+    memory_limit="8GiB",
+):
+    """Ordenar metadatos o modalidades con el mismo límite de spill y backend."""
+    if (
+        type(threads) is not int
+        or not 1 <= threads <= 4
+        or memory_limit not in {"256MiB", "8GiB"}
+        or not columns
+        or any(not re.fullmatch(r"[a-z_]+", name) for name in columns)
+    ):
+        raise ValueError("Las opciones de ordenación no son válidas")
+    order = ", ".join('"' + name + '"' for name in columns)
+    with duckdb.connect(
+        config={
+            "threads": threads,
+            "memory_limit": memory_limit,
+            "temp_directory": str(temporary / "spill"),
+            "max_temp_directory_size": "32GiB",
+            "preserve_insertion_order": True,
+            "autoinstall_known_extensions": False,
+            "autoload_known_extensions": False,
+        }
+    ) as connection:
+        connection.execute(
+            "COPY (SELECT * FROM read_parquet($source_path) ORDER BY " + order + ") "
+            "TO $destination (FORMAT PARQUET, ROW_GROUP_SIZE 2048, COMPRESSION ZSTD)",
+            {"source_path": str(source), "destination": str(destination)},
+        )
+        yield connection
+
+
 def _partition(dataset, output, partition, report, stop):
     with tempfile.TemporaryDirectory(prefix=f"{partition}-pending-", dir=output) as directory:
         temporary = Path(directory)
@@ -131,22 +171,7 @@ def _partition(dataset, output, partition, report, stop):
         )
         if count != report["counts"][partition]:
             raise ValueError("La partición no conserva el número de muestras")
-        with duckdb.connect(
-            config={
-                "threads": 4,
-                "memory_limit": "8GiB",
-                "temp_directory": str(temporary / "spill"),
-                "max_temp_directory_size": "32GiB",
-                "preserve_insertion_order": True,
-                "autoinstall_known_extensions": False,
-                "autoload_known_extensions": False,
-            }
-        ) as connection:
-            connection.execute(
-                "COPY (SELECT * FROM read_parquet($source_path) ORDER BY prediction_at, asset_id) "
-                "TO $destination (FORMAT PARQUET, ROW_GROUP_SIZE 2048, COMPRESSION ZSTD)",
-                {"source_path": str(raw), "destination": str(ordered)},
-            )
+        with _ordered_parquet(raw, ordered, temporary) as connection:
             index = connection.execute(
                 "SELECT prediction_at, count(*), count(DISTINCT asset_id), min(available_at), "
                 "max(available_at), min(target_available_at), max(target_available_at) "

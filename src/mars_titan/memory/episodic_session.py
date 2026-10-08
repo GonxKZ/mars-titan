@@ -12,7 +12,7 @@ from types import MappingProxyType
 import numpy as np
 import torch
 
-from mars_titan.data.input_policy import MODALITIES
+from mars_titan.data.input_policy import MODALITIES, masked_inputs
 from mars_titan.memory import episodic_codec, native_backend, retention_bank, session_artifacts
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.retention_bank import RetentionBank, RetentionConfig
@@ -150,11 +150,11 @@ def _check_metadata(row, *, episode=False):
         raise ValueError("El episodio no conserva los tipos de su predicción y etiqueta")
 
 
-def _check_pending(pending):
+def _check_pending(pending, *, maximum=32768):
     if not isinstance(pending, dict) or set(pending) != {"rows", "key_inputs", "values"}:
         raise ValueError("La cola de rasgos no conserva su formato")
     rows = pending["rows"]
-    if not isinstance(rows, list) or len(rows) > 32768:
+    if not isinstance(rows, list) or len(rows) > maximum:
         raise ValueError("La cola de rasgos supera el presupuesto")
     for value in (pending["key_inputs"], pending["values"]):
         if (
@@ -352,7 +352,7 @@ class EpisodicSession:
             raise ValueError("El bundle no conserva su generación o formato")
         return bundle
 
-    def _rows(self, batches):
+    def _rows(self, batches, *, allow_mixed_cutoffs=False):
         if not isinstance(batches, (list, tuple)) or not 1 <= len(batches) <= 8192:
             raise ValueError("Falta el grupo lógico de entradas")
         rows, total_bytes = [], 0
@@ -392,10 +392,9 @@ class EpisodicSession:
                 )
             if len(rows) > 8192:
                 raise ValueError("La cohorte supera 8192 flujos")
-        rows.sort(key=lambda row: row.flow_id)
-        if (
-            len({row.flow_id for row in rows}) != len(rows)
-            or len({row.prediction_at for row in rows}) != 1
+        rows.sort(key=lambda row: (row.flow_id, row.prediction_at))
+        if len({(row.flow_id, row.prediction_at) for row in rows}) != len(rows) or (
+            not allow_mixed_cutoffs and len({row.prediction_at for row in rows}) != 1
         ):
             raise ValueError("Los flujos se repiten o mezclan cortes")
         return tuple(rows)
@@ -415,7 +414,7 @@ class EpisodicSession:
             references.append(self._stage(payload, "inputs"))
         return references
 
-    def _input_rows(self, reference):
+    def _input_rows(self, reference, *, allow_mixed_cutoffs=False):
         value = self._read(reference, "inputs")
         if (
             not isinstance(value, dict)
@@ -442,7 +441,32 @@ class EpisodicSession:
                 [row["input_available_at"] for row in metadata], dtype="datetime64[us]"
             ),
         )
-        rows = self._rows([validated_cpu_batch(raw, self._input_spec)])
+        if not masked_inputs(self._input_spec.input_policy):
+            presence = raw.pop("presence")
+            if (
+                presence.dtype != np.bool_
+                or presence.shape != (len(metadata), len(MODALITIES))
+                or not presence.all()
+            ):
+                raise ValueError("El artefacto estricto necesita todas sus modalidades presentes")
+        blocks = [raw]
+        if allow_mixed_cutoffs:
+            blocks = []
+            for moment in np.unique(raw["prediction_at"]):
+                positions = np.flatnonzero(raw["prediction_at"] == moment)
+                blocks.append(
+                    dict(
+                        inputs={name: values[positions] for name, values in raw["inputs"].items()},
+                        **({"presence": raw["presence"][positions]} if "presence" in raw else {}),
+                        sample_ids=[raw["sample_ids"][i] for i in positions],
+                        prediction_at=raw["prediction_at"][positions],
+                        input_available_at=raw["input_available_at"][positions],
+                    )
+                )
+        rows = self._rows(
+            [validated_cpu_batch(block, self._input_spec) for block in blocks],
+            allow_mixed_cutoffs=allow_mixed_cutoffs,
+        )
         if [row.metadata() for row in rows] != metadata:
             raise ValueError("Los inputs completos no conservan la huella de sus observaciones")
         return rows
