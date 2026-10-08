@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-from mars_titan.data.audited_prices import MAX_PRICE_BYTES, read_audited_prices
+from mars_titan.data.audited_prices import MAX_PRICE_BYTES, read_audited_factor, read_audited_prices
 from mars_titan.data.budget_targets import _aligned_returns
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import sha256
@@ -164,6 +164,7 @@ class PrefixTargetVerifier:
             pandas_version=pd.__version__,
             exchange_calendars_version=exchange_calendars.__version__,
             code_sha256=sha256(Path(__file__)),
+            price_reader_sha256=sha256(Path(__file__).parents[1] / "data/audited_prices.py"),
             target_reference_sha256=sha256(Path(__file__).parents[1] / "data/budget_targets.py"),
         )
         self.policy_id = _digest(self._identity)
@@ -190,9 +191,9 @@ class PrefixTargetVerifier:
     def identity(self):
         return json.loads(json.dumps(self._identity))
 
-    def _returns(self, path, market):
+    def _returns(self, path, market, *, factor=False):
         self._confirm(path)
-        key = path, market
+        key = path, market, factor
         if key in self._cache:
             self._cache.move_to_end(key)
             return self._cache[key]
@@ -203,9 +204,8 @@ class PrefixTargetVerifier:
             rows=metadata.num_rows,
             source_sha256=self.source_id,
         )
-        frame, _, reserved = read_audited_prices(
-            record, self.source_id, self._clocks[market], _CUTOFF
-        )
+        reader = read_audited_factor if factor else read_audited_prices
+        frame, _, reserved = reader(record, self.source_id, self._clocks[market], _CUTOFF)
         if reserved:
             raise ValueError(
                 "La fuente efectiva del prefijo contiene sesiones reservadas posteriores a 2023"
@@ -241,7 +241,7 @@ class PrefixTargetVerifier:
         for path in self._manifest_paths:
             self._confirm(path)
         stock, stock_at = self._returns(self._prices[flow_id], market)
-        factor, factor_at = self._returns(self._factors[market], market)
+        factor, factor_at = self._returns(self._factors[market], market, factor=True)
         window = slice(max(0, position - _HISTORY + 1), position + 1)
         y, x, y_at, x_at = (a[window] for a in (stock, factor, stock_at, factor_at))
         valid = np.isfinite(x) & np.isfinite(y) & (x_at <= decision_at) & (y_at <= decision_at)

@@ -68,9 +68,19 @@ def confirm_audited_prices(record, source_hash):
 
 
 def read_audited_prices(record, source_hash, clock, cutoff):
+    return _read_audited_columns(record, source_hash, clock, cutoff, COLUMNS[:5])
+
+
+def read_audited_factor(record, source_hash, clock, cutoff):
+    """Leer solo los precios de apertura/cierre que necesita el residual."""
+    return _read_audited_columns(record, source_hash, clock, cutoff, ("open", "close"))
+
+
+def _read_audited_columns(record, source_hash, clock, cutoff, value_columns):
+    columns = (*value_columns, "session", "available_at")
     path = confirm_audited_prices(record, source_hash)
     with pq.ParquetFile(path, read_dictionary=["session"]) as file:
-        if file.metadata.num_rows != record["rows"] or not set(COLUMNS) <= set(
+        if file.metadata.num_rows != record["rows"] or not set(columns) <= set(
             file.schema_arrow.names
         ):
             raise ValueError("Los precios auditados no conservan su esquema o recuento")
@@ -84,7 +94,7 @@ def read_audited_prices(record, source_hash, clock, cutoff):
                 pa.types.is_floating(file.schema_arrow.field(name).type)
                 or pa.types.is_integer(file.schema_arrow.field(name).type)
             )
-            for name in COLUMNS[:5]
+            for name in value_columns
         ):
             raise ValueError("Los precios auditados no contienen columnas numéricas")
         stamp_type = file.schema_arrow.field("available_at").type
@@ -116,7 +126,7 @@ def read_audited_prices(record, source_hash, clock, cutoff):
                 raise ValueError("Los precios auditados superan el presupuesto decodificado")
             batch = next(
                 file.iter_batches(
-                    batch_size=count, row_groups=[group], columns=list(COLUMNS), use_threads=False
+                    batch_size=count, row_groups=[group], columns=list(columns), use_threads=False
                 )
             )
             decoded += batch.nbytes
@@ -127,24 +137,28 @@ def read_audited_prices(record, source_hash, clock, cutoff):
             pa.concat_tables(parts)
             if parts
             else pa.Table.from_batches(
-                [], schema=pa.schema([file.schema_arrow.field(name) for name in COLUMNS])
+                [], schema=pa.schema([file.schema_arrow.field(name) for name in columns])
             )
         )
     frame = table.to_pandas()
     if len(frame):
-        values = frame[list(COLUMNS[:5])].to_numpy(dtype=np.float64)
-        o, h, lo, c, v = values.T
-        if not np.isfinite(values).all() or np.any(
-            (o <= 0)
-            | (lo <= 0)
-            | (c <= 0)
-            | (h < lo)
-            | (h < o)
-            | (h < c)
-            | (lo > o)
-            | (lo > c)
-            | (v < 0)
-        ):
+        values = frame[list(value_columns)].to_numpy(dtype=np.float64)
+        if value_columns == COLUMNS[:5]:
+            o, h, lo, c, v = values.T
+            invalid = (
+                (o <= 0)
+                | (lo <= 0)
+                | (c <= 0)
+                | (h < lo)
+                | (h < o)
+                | (h < c)
+                | (lo > o)
+                | (lo > c)
+                | (v < 0)
+            )
+        else:
+            invalid = (values <= 0).any(axis=1)
+        if not np.isfinite(values).all() or np.any(invalid):
             raise ValueError("Los precios auditados contienen OHLCV inválido")
         for day, available in zip(frame.session, frame.available_at, strict=True):
             if aware(available) != clock.decision(day):

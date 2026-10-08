@@ -128,6 +128,48 @@ def test_zero_variance_uses_original_epsilon_with_at_least_126_pairs(tmp_path):
     assert proof.market_variance <= np.finfo(float).eps
 
 
+def test_factor_without_volume_preserves_the_residual_prefix(tmp_path):
+    path = supervised(tmp_path)
+    before = verifier(path).evidence("US/AAA", moment(125))
+    rewrite_factor(path, lambda frame: frame.drop(columns="volume", inplace=True))
+    after = verifier(path).evidence("US/AAA", moment(125))
+    assert (after.history_pairs, after.market_variance, after.records_sha256) == (
+        before.history_pairs,
+        before.market_variance,
+        before.records_sha256,
+    )
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda frame: frame.__setitem__("open", np.nan),
+        lambda frame: frame.__setitem__("close", np.inf),
+        lambda frame: frame.__setitem__("open", 0.0),
+        lambda frame: frame.__setitem__(
+            "available_at", frame["available_at"] + pd.Timedelta(days=1)
+        ),
+        lambda frame: frame.__setitem__("session", "not-a-date"),
+    ],
+)
+def test_factor_fields_used_by_the_residual_remain_validated(tmp_path, change):
+    path = supervised(tmp_path)
+    rewrite_factor(path, change)
+    with pytest.raises(ValueError):
+        verifier(path).evidence("US/AAA", moment(125))
+
+
+def test_asset_without_volume_is_still_rejected(tmp_path):
+    path = supervised(tmp_path)
+    prices = tmp_path / "prepared/US/AAA/prices.parquet"
+    pq.write_table(pq.read_table(prices).drop_columns("volume"), prices)
+    metadata = json.loads(path.read_text())
+    metadata["assets"][0]["prices_sha256"] = sha256(prices)
+    path.write_text(json.dumps(metadata))
+    with pytest.raises(ValueError):
+        verifier(path).evidence("US/AAA", moment(125))
+
+
 def test_reserved_or_non_session_dates_are_rejected(tmp_path):
     source = verifier(supervised(tmp_path))
     for stamp in (1_704_067_200_000_000, moment(63) + 1, True):
