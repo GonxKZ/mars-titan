@@ -345,3 +345,69 @@ def test_estimate_covers_observed_saved_storage_events(dimension, rank):
         result = evaluate(control, mac, token, state, differentiable=True)
         torch.autograd.grad(result.penalty, tuple(mac.parameters()), allow_unused=True)
     assert sum(saved) < control.estimated_bytes(1)
+
+
+@pytest.mark.parametrize("case", ["contract", "frozen", "dimension", "dtype", "rank"])
+def test_constructor_rejects_unsupported_contracts(case):
+    settings = api().MACProjectionConfig(rank=2)
+    mac = MACConfig(memory=MemoryConfig(dim=2))
+    dtype = torch.float64
+    if case == "contract":
+        settings = None
+    elif case == "frozen":
+        mac = replace(mac, memory_mode="frozen")
+    elif case == "dimension":
+        mac = replace(mac, memory=MemoryConfig(dim=128))
+    elif case == "dtype":
+        dtype = torch.float16
+    else:
+        mac = replace(mac, memory=MemoryConfig(dim=1, depth=1))
+        settings = replace(settings, rank=3)
+    with pytest.raises(ValueError):
+        api().MACProjectionControl(settings, mac, dtype=dtype)
+
+
+@pytest.mark.parametrize("case", ["context", "list_ids", "float_counter", "negative", "overflow"])
+def test_logical_plan_rejects_invalid_contexts_ids_and_counters(case):
+    _, control, _, state = fixture()
+    ids, counters, context = ("a",), state.memory.steps, "a" * 64
+    if case == "context":
+        context = "not-a-digest"
+    elif case == "list_ids":
+        ids = ["a"]
+    elif case == "float_counter":
+        counters = counters.float()
+    elif case == "negative":
+        counters = torch.tensor([-1], dtype=torch.int64)
+    else:
+        counters = torch.tensor([torch.iinfo(torch.int64).max], dtype=torch.int64)
+    with pytest.raises(ValueError):
+        control.select_flows(ids, counters, context_id=context)
+
+
+def test_runtime_contract_precision_and_basis_changes_are_rejected():
+    mac, control, token, state = fixture()
+    other = TitansMAC(replace(mac.config, heads=2), dtype=torch.float64)
+    with pytest.raises(ValueError):
+        evaluate(control, other, token, state)
+    with torch.inference_mode(), pytest.raises(ValueError):
+        evaluate(control, mac, token, state)
+    control.float()
+    with pytest.raises(ValueError):
+        evaluate(control, mac, token, state)
+    control.double()
+    with torch.no_grad():
+        control.basis.add_(0.01)
+    with pytest.raises(ValueError):
+        evaluate(control, mac, token, state)
+
+
+def test_strong_basis_boundary_detects_data_bypass_and_half_cast_leaves_basis_intact():
+    _, control, _, _ = fixture()
+    previous = control.basis.clone()
+    with pytest.raises(ValueError):
+        control.half()
+    torch.testing.assert_close(control.basis, previous, rtol=0, atol=0)
+    control.basis.data[0, 0] += 0.01
+    with pytest.raises(ValueError):
+        control.state_dict()

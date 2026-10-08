@@ -2,16 +2,19 @@
 
 import hashlib
 import re
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 
 import torch
 from torch import nn
+from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.data.input_policy import MODALITIES, masked_inputs
 from mars_titan.models.baselines.multimodal import MultimodalReference, validate_architecture
 
 from .config import MACConfig, MemoryConfig, bounded_integer, canonical, require_identity
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
+from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .state import MACState, check_differentiable, check_finite, require_payload
 
@@ -89,6 +92,8 @@ class PreparedDecisions:
     next_state: FinancialState
     representation_id: str
     input_digest: str
+    working_state: torch.Tensor | None = None
+    local_control: ProjectedMACResult | None = None
 
 
 def _tensor_digest(value):
@@ -101,7 +106,7 @@ def _tensor_digest(value):
 class FinancialPredictor(nn.Module):
     """Preparar una decisión por flujo. El llamante confirma o descarta la propuesta."""
 
-    def __init__(self, config, *, device="cpu", dtype=torch.float32):
+    def __init__(self, config, *, local_control=None, device="cpu", dtype=torch.float32):
         super().__init__()
         if torch.is_inference_mode_enabled():
             raise ValueError(
@@ -109,6 +114,12 @@ class FinancialPredictor(nn.Module):
             )
         if not isinstance(config, FinancialConfig) or dtype not in (torch.float32, torch.float64):
             raise ValueError("La configuración o precisión financiera no es válida")
+        if local_control is not None and (
+            not isinstance(local_control, MACProjectionConfig)
+            or config.variant != "mac_online"
+            or config.hidden_size > 64
+        ):
+            raise ValueError("El control local requiere MAC online de dimensión hasta 64")
         self.config = config
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -149,6 +160,11 @@ class FinancialPredictor(nn.Module):
                 ),
                 dtype=dtype,
             )
+        self.local_control = (
+            MACProjectionControl(local_control, self.mac.config, dtype=dtype)
+            if local_control is not None
+            else None
+        )
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
@@ -193,13 +209,16 @@ class FinancialPredictor(nn.Module):
             raise ValueError("Los parámetros cambiaron fuera de una carga o copia identificada")
 
     def get_extra_state(self):
-        return dict(
+        result = dict(
             configuration=self.config.identity(),
             dtype=str(self.head.weight.dtype),
             backbone_contract=self.price_encoder.configuration,
             mac_contract=self.mac.config.identity() if self.mac else None,
             training=self.training,
         )
+        if self.local_control is not None:
+            result["local_control"] = self.local_control.get_extra_state()
+        return result
 
     def _validate_extra_state(self, state):
         expected = self.get_extra_state()
@@ -217,6 +236,8 @@ class FinancialPredictor(nn.Module):
 
     def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
         expected = self.state_dict()
+        if self.local_control is not None:
+            self.local_control.validate_payload(state_dict, prefix + "local_control.")
         actual = {
             name.removeprefix(prefix): value
             for name, value in state_dict.items()
@@ -427,7 +448,9 @@ class FinancialPredictor(nn.Module):
             mac=mac,
         )
 
-    def prepare(self, batch, state, *, differentiable=False):
+    def prepare(
+        self, batch, state, *, differentiable=False, control_selection=None, control_context_id=None
+    ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide la actualización asociativa, utilice no_grad")
@@ -453,7 +476,16 @@ class FinancialPredictor(nn.Module):
                 raise ValueError("Las entradas y los parámetros necesitan el mismo dispositivo")
         if any(value.dtype != self.head.weight.dtype for value in batch.inputs.values()):
             raise ValueError("Las entradas y los parámetros necesitan la misma precisión")
-        with torch.set_grad_enabled(differentiable):
+        if self.local_control is None:
+            if control_selection is not None or control_context_id is not None:
+                raise ValueError("El predictor anterior no admite una selección de C")
+        elif self.local_control.config.mode != "disabled":
+            self.local_control._resolve_selection(
+                control_selection, control_context_id, batch.flow_ids, state.observed_steps
+            )
+        backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
+        local_result = None
+        with torch.set_grad_enabled(differentiable), backend:
             representations = [self.price_encoder(batch.inputs["prices"])]
             for index, name in enumerate(MODALITIES[1:], 1):
                 projected = self.encoders[name](batch.inputs[name])
@@ -470,8 +502,20 @@ class FinancialPredictor(nn.Module):
                 )
             else:
                 encoded, next_mac = token, None
+            if self.local_control is not None:
+                local_result = self.local_control(
+                    self.mac,
+                    token.unsqueeze(1),
+                    state.mac,
+                    flow_ids=batch.flow_ids,
+                    observed_steps=state.observed_steps,
+                    selection=control_selection,
+                    context_id=control_context_id,
+                    differentiable=differentiable,
+                )
             point = self.head(encoded).squeeze(-1)
             check_finite(point, "La predicción")
+            working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
             state,
             last_sample_ids=batch.sample_ids,
@@ -485,6 +529,8 @@ class FinancialPredictor(nn.Module):
             next_state,
             hashlib.sha256(canonical([self._config_id(), self._parameter_id]).encode()).hexdigest(),
             batch.input_digest,
+            working,
+            local_result,
         )
 
     def export_state(self, state):
@@ -564,6 +610,32 @@ def copy_paired_parameters(source, target):
         }
 
     require_identity(identity(source), identity(target))
+    control_receipt = None
+    if source.local_control is not None or target.local_control is not None:
+        if source.local_control is None or target.local_control is None:
+            raise ValueError("El nuevo factorial requiere Math en ambos controles")
+        left, right = source.local_control, target.local_control
+        require_identity(
+            {
+                key: value
+                for key, value in left.config.identity().items()
+                if key not in {"mode", "weight"}
+            },
+            {
+                key: value
+                for key, value in right.config.identity().items()
+                if key not in {"mode", "weight"}
+            },
+        )
+        if left.get_extra_state()["basis_sha256"] != right.get_extra_state()["basis_sha256"]:
+            raise ValueError("Los controles emparejados necesitan la misma base de proyección")
+        control_receipt = dict(
+            source_id=left.fingerprint(),
+            target_id=right.fingerprint(),
+            basis_sha256=left.get_extra_state()["basis_sha256"],
+            basis_transferred=False,
+            attention_backend="math",
+        )
     original, destination = dict(source.named_parameters()), dict(target.named_parameters())
     copied = sorted(original.keys() & destination.keys())
     for name in copied:
@@ -589,7 +661,7 @@ def copy_paired_parameters(source, target):
     if any(record["source_sha256"] != record["target_sha256"] for record in transfers.values()):
         raise ValueError("La copia emparejada no conserva los bytes de origen")
     target._seal_parameters()
-    return dict(
+    receipt = dict(
         schema_version=1,
         source_variant=source.config.variant,
         target_variant=target.config.variant,
@@ -600,3 +672,6 @@ def copy_paired_parameters(source, target):
         initialized_only=sorted(destination.keys() - original.keys()),
         copied_parameters=transfers,
     )
+    if control_receipt is not None:
+        receipt["local_control"] = control_receipt
+    return receipt

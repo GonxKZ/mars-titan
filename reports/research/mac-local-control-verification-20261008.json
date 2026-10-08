@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-08T06:42:51.569632+00:00",
+  "scope": "Control local proyectado e integración financiera con fixtures técnicos. Sin optimizadores ni datos reales.",
+  "base_commit": "63706efc9565da99e0e9e34cb132d9c700a34706",
+  "source_sha256": {
+    "src/mars_titan/models/titans/local_control.py": "b7227743f37ff31d262a38ebf434294442b53df77d834922904265595d9269b0",
+    "src/mars_titan/models/titans/financial.py": "e45b36ca647ffd4c3f2c82d1622525baa301fccc58786ff37a81f8da3aa74d63"
+  },
+  "cpu": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "hardware": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "threads": 2
+  },
+  "tests": {
+    "passed": 288,
+    "new": 60,
+    "paths": [
+      "tests/models/titans",
+      "tests/cm"
+    ],
+    "log_sha256": "d3ab97998eacb16728a1a5013e0e4094c3b77750354ac6678093397908c7061c"
+  },
+  "mutations": {
+    "detected": 12,
+    "total": 12,
+    "focal_tests": 48,
+    "names": [
+      "retain_history_graph",
+      "detach_current_token",
+      "omit_momentum_derivative",
+      "physical_block_denominator",
+      "row_order_selection",
+      "frequency_previous_step",
+      "ignore_context_binding",
+      "skip_graph_budget",
+      "skip_basis_bytes",
+      "skip_nested_prevalidation",
+      "mismatched_baseline_backend",
+      "change_legacy_identity"
+    ]
+  },
+  "legacy_parity": {
+    "exact_prediction_and_state_pairs": 32,
+    "controls": 4,
+    "dtypes": [
+      "float32",
+      "float64"
+    ],
+    "modes": [
+      "train",
+      "eval"
+    ],
+    "rng_unchanged": true
+  },
+  "coverage": {
+    "src/mars_titan/models/titans/local_control.py": {
+      "covered_lines": 221,
+      "num_statements": 222,
+      "percent_covered": 99.29577464788733,
+      "percent_covered_display": "99",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 99.54954954954955,
+      "percent_statements_covered_display": "99",
+      "num_branches": 62,
+      "num_partial_branches": 1,
+      "covered_branches": 61,
+      "missing_branches": 1,
+      "percent_branches_covered": 98.38709677419355,
+      "percent_branches_covered_display": "98"
+    },
+    "src/mars_titan/models/titans/financial.py": {
+      "covered_lines": 313,
+      "num_statements": 340,
+      "percent_covered": 88.34745762711864,
+      "percent_covered_display": "88",
+      "missing_lines": 27,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.05882352941177,
+      "percent_statements_covered_display": "92",
+      "num_branches": 132,
+      "num_partial_branches": 28,
+      "covered_branches": 104,
+      "missing_branches": 28,
+      "percent_branches_covered": 78.78787878787878,
+      "percent_branches_covered_display": "79"
+    }
+  },
+  "quality_tools": {
+    "coverage": "7.16.2",
+    "radon": "6.0.1"
+  },
+  "crap_convention": "Cobertura de ramas instrumentada. CRAP = CC^2*(1-c)^3+CC, con c la fracción de sentencias ejecutadas en el intervalo inclusivo de cada función. Los intervalos incluyen funciones locales. No es una garantía de corrección.",
+  "highest_crap": {
+    "src/mars_titan/models/titans/local_control.py": {
+      "name": "_resolve_selection",
+      "line": 277,
+      "end_line": 310,
+      "complexity": 22,
+      "statement_fraction": 1.0,
+      "crap": 22.0
+    },
+    "src/mars_titan/models/titans/financial.py": {
+      "name": "prepare",
+      "line": 451,
+      "end_line": 533,
+      "complexity": 23,
+      "statement_fraction": 0.8958333333333334,
+      "crap": 23.59791847511574
+    }
+  },
+  "benchmark": {
+    "dtype": "float64",
+    "threads": 2,
+    "warmup": 1,
+    "repetitions": 3,
+    "dimensions": {
+      "prices": 5,
+      "news": 2,
+      "charts": 2,
+      "fundamentals": 3,
+      "macro": 3
+    },
+    "context": 64,
+    "batch": 2,
+    "rank": 4,
+    "grid_size": 64,
+    "max_flows": 1,
+    "workload_seconds": 2.0629641370032914,
+    "process_peak_rss_bytes": 690569216,
+    "records": [
+      {
+        "dimension": 32,
+        "batch": 2,
+        "context": 64,
+        "mode": "disabled",
+        "rank": 4,
+        "grid_size": 64,
+        "max_flows": 1,
+        "dtype": "float64",
+        "backend": "math",
+        "seconds": [
+          0.011349357999279164,
+          0.009563915999024175,
+          0.008130084002914373
+        ],
+        "median_seconds": 0.009563915999024175,
+        "minimum_seconds": 0.008130084002914373,
+        "maximum_seconds": 0.011349357999279164,
+        "estimated_group_bytes": 0,
+        "disconnected_parameter_count": 2,
+        "parameter_count": 39,
+        "reevaluations": 0
+      },
+      {
+        "dimension": 32,
+        "batch": 2,
+        "context": 64,
+        "mode": "diagnostic",
+        "rank": 4,
+        "grid_size": 64,
+        "max_flows": 1,
+        "dtype": "float64",
+        "backend": "math",
+        "seconds": [
+          0.030180911999195814,
+          0.03144443900237093,
+          0.03020587799983332
+        ],
+        "median_seconds": 0.03020587799983332,
+        "minimum_seconds": 0.030180911999195814,
+        "maximum_seconds": 0.03144443900237093,
+        "estimated_group_bytes": 20889600,
+        "disconnected_parameter_count": 2,
+        "parameter_count": 39,
+        "reevaluations": 4
+      },
+      {
+        "dimension": 32,
+        "batch": 2,
+        "context": 64,
+        "mode": "penalty",
+        "rank": 4,
+        "grid_size": 64,
+        "max_flows": 1,
+        "dtype": "float64",
+        "backend": "math",
+        "seconds": [
+          0.049204720999114215,
+          0.049247930997808,
+          0.05181258400261868
+        ],
+        "median_seconds": 0.049247930997808,
+        "minimum_seconds": 0.049204720999114215,
+        "maximum_seconds": 0.05181258400261868,
+        "estimated_group_bytes": 20889600,
+        "disconnected_parameter_count": 2,
+        "parameter_count": 39,
+        "reevaluations": 4
+      },
+      {
+        "dimension": 64,
+        "batch": 2,
+        "context": 64,
+        "mode": "disabled",
+        "rank": 4,
+        "grid_size": 64,
+        "max_flows": 1,
+        "dtype": "float64",
+        "backend": "math",
+        "seconds": [
+          0.01533786400250392,
+          0.012402715998177882,
+          0.008169377004378475
+        ],
+        "median_seconds": 0.012402715998177882,
+        "minimum_seconds": 0.008169377004378475,
+        "maximum_seconds": 0.01533786400250392,
+        "estimated_group_bytes": 0,
+        "disconnected_parameter_count": 2,
+        "parameter_count": 39,
+        "reevaluations": 0
+      },
+      {
+        "dimension": 64,
+        "batch": 2,
+        "context": 64,
+        "mode": "diagnostic",
+        "rank": 4,
+        "grid_size": 64,
+        "max_flows": 1,
+        "dtype": "float64",
+        "backend": "math",
+        "seconds": [
+          0.03577230199880432,
+          0.03669918599916855,
+          0.035375487997953314
+        ],
+        "median_seconds": 0.03577230199880432,
+        "minimum_seconds": 0.035375487997953314,
+        "maximum_seconds": 0.03669918599916855,
+        "estimated_group_bytes": 75571200,
+        "disconnected_parameter_count": 2,
+        "parameter_count": 39,
+        "reevaluations": 4
+      },
+      {
+        "dimension": 64,
+        "batch": 2,
+        "context": 64,
+        "mode": "penalty",
+        "rank": 4,
+        "grid_size": 64,
+        "max_flows": 1,
+        "dtype": "float64",
+        "backend": "math",
+        "seconds": [
+          0.04882467899733456,
+          0.054621247996692546,
+          0.05101400899729924
+        ],
+        "median_seconds": 0.05101400899729924,
+        "minimum_seconds": 0.04882467899733456,
+        "maximum_seconds": 0.054621247996692546,
+        "estimated_group_bytes": 75571200,
+        "disconnected_parameter_count": 2,
+        "parameter_count": 39,
+        "reevaluations": 4
+      }
+    ],
+    "limits": [
+      "Fixtures técnicos sin datos ni objetivos reales, optimizador o GPU.",
+      "La pérdida de prueba es la suma cuadrática de las salidas y el término C opcional.",
+      "La medida incluye selección lógica, prepare, diagnóstico y gradiente a los parámetros conectados. Excluye creación del modelo, conversión del lote y guardado.",
+      "La instantánea rápida inicial está desacoplada y sus parámetros de inicialización no reciben gradiente.",
+      "No se ha aislado la carga ajena ni medido energía o VRAM."
+    ]
+  },
+  "cuda": {
+    "executed": false,
+    "status": "Pendiente de una comprobación técnica coordinada."
+  },
+  "mathematical_limits": [
+    "La compresión puede omitir direcciones expansivas.",
+    "La corrección angular corresponde al operador comprimido, no a J completo.",
+    "Las potencias de la compresión no representan las potencias del operador completo.",
+    "No se certifica estabilidad global, memoria del proceso ni efecto predictivo."
+  ]
+}

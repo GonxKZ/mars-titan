@@ -8,7 +8,7 @@ Los contadores son metadatos discretos. La puerta Hadamard final afecta a la pre
 
 ## Operador comprimido
 
-El control obtiene `A = RᵀJR`, con `J = ∂F/∂z`, mediante productos Jacobiano-vector. R es una base fija generada en CPU, con QR FP64, generador independiente y diagonal de R triangular positiva. Después se convierte a la precisión del núcleo. Una conversión explícita de dtype reconstruye la base desde esa definición, sin acumular redondeos de conversiones intermedias.
+El control obtiene `A = RᵀJR`, con `J = ∂F/∂z`, mediante productos Jacobiano-vector. R es una base fija generada en CPU, con QR FP64, generador independiente y diagonal positiva del factor triangular. Después se convierte a la precisión del núcleo. Una conversión explícita de dtype reconstruye la base desde esa definición, sin acumular redondeos de conversiones intermedias.
 
 En aritmética exacta y con columnas ortonormales, `u*Au = (Ru)*J(Ru)` para cada u unitario. Por tanto, `W(A) ⊆ W(J)` y `w(A) ≤ w(J)`. En coma flotante, la ortogonalidad y las estimaciones son aproximadas. La [corrección angular](mathematical_scope.md) solo corresponde a A. No es una cota superior del radio de J completo.
 
@@ -25,7 +25,9 @@ La selección se fija sobre el grupo lógico completo antes de dividirlo en lote
 ```python
 selection = control.select_flows(flow_ids, observed_steps, context_id=context_id)
 result = control(
-    mac, segment, state,
+    mac,
+    segment,
+    state,
     flow_ids=block_flow_ids,
     observed_steps=block_observed_steps,
     selection=selection,
@@ -50,4 +52,19 @@ La estimación incluye generación de base, pesos y momentum temporales, grafos 
 
 `state_dict` conserva la base y su huella. La carga directa o anidada debe comprobar el contrato antes de copiar, incluso con `strict=False`. Cambiar modo, frecuencia, configuración MAC, precisión o bytes de la base invalida la carga. Las firmas de tensores detectan modificaciones ordinarias durante el uso. `verify_basis` y el guardado verifican los bytes. Una modificación mediante `.data` puede eludir el contador de versiones y requiere esa frontera fuerte.
 
-Las pruebas utilizan fixtures técnicos CPU. Comprueban el Jacobiano denso pequeño, gradientes del token actual, desacoplamiento de la historia, selección y partición, presupuestos, recuperación, RNG y errores de entrada. No acreditan CUDA, una sesión financiera real ni un efecto predictivo.
+## Integración y comprobaciones
+
+`FinancialPredictor(..., local_control=None)` conserva la identidad y el recorrido anteriores. Una configuración explícita añade la base y el contrato al modelo y aplica Math a toda la preparación, incluido B con modo disabled. Solo se admite `mac_online`. El emparejamiento copia parámetros comunes y exige la misma base y configuración numérica, salvo modo y peso. Las cargas ordinarias siguen rechazando modos diferentes.
+
+Cada `prepare` recibe `control_selection` y `control_context_id` cuando C está activo. Valida el plan antes de codificar. Después prepara una sola transición ordinaria y evalúa el diagnóstico sobre copias del estado previo. `PreparedDecisions.local_control` devuelve su resultado. `working_state` expone la salida anterior a la cabeza para la lectura episódica posterior, sin repetir MAC. El modo desactivado no necesita selección.
+
+El 8 de octubre de 2026 pasaron 288 pruebas CPU de Titans y C/M, incluidas 60 nuevas. El diagnóstico coincide con el Jacobiano denso pequeño, conserva el gradiente hacia la fusión y el backbone, desacopla la historia y conserva la selección y el denominador al dividir un grupo. Doce mutaciones dirigidas fueron detectadas con las 48 primeras pruebas focales. Una comparación independiente con la revisión anterior obtuvo igualdad exacta en 32 pares de predicción y estado, con cuatro controles, dos precisiones y modos train/eval, sin C explícito.
+
+El coste técnico siguiente corresponde a dos flujos, ventanas de 64 sesiones, una capa de Transformer, cuatro prefijos persistentes, cuatro cabezas, rango 4, 64 ángulos y un flujo seleccionado. Se midieron selección, prepare y gradiente a los parámetros conectados. El objetivo del fixture es la suma cuadrática de salidas más el término opcional, sin objetivos financieros ni optimizador. Se utilizó CPU FP64, dos hilos, un calentamiento y tres repeticiones, con carga ajena sin aislar.
+
+| Dimensión | B con Math | Diagnóstico y gradiente de la salida | Penalización y gradiente conjunto |
+| ---: | ---: | ---: | ---: |
+| 32 | 9,56 ms | 30,21 ms | 49,25 ms |
+| 64 | 12,40 ms | 35,77 ms | 51,01 ms |
+
+Son medianas internas del fixture, sin conversión del lote, creación del modelo o guardado. El proceso alcanzó 690.569.216 bytes de RSS, incluidas importaciones y comprobaciones de paridad. El presupuesto estimado de C fue 20.889.600 y 75.571.200 bytes para las dos dimensiones. No es una medida incremental de RAM. No se han medido energía, una sesión financiera real ni efecto predictivo. La comprobación CUDA de esta opción sigue pendiente.
