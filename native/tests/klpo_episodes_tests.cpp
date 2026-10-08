@@ -15,7 +15,7 @@ void require(bool condition, const char* message) {
         throw std::runtime_error(message);
     }
 }
-template <class F> void rejected(F&& operation, const char* message) {
+template <class F> void rejected(F operation, const char* message) {
     try {
         operation();
     } catch (const std::invalid_argument&) {

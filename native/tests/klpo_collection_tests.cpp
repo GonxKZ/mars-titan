@@ -11,6 +11,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 // Registros y logits fijos. No se actualizan parámetros.
@@ -28,7 +29,7 @@ void require(bool value, const char* message) {
         throw std::runtime_error(message);
     }
 }
-template <class F> void rejected(F&& f, const char* message) {
+template <class F> void rejected(F f, const char* message) {
     try {
         f();
     } catch (const std::invalid_argument&) {
@@ -114,8 +115,9 @@ void no_decisions_is_an_explicit_no_update() {
              "Se ignoró una trayectoria parcial sin decisiones");
 }
 
-mars_titan::simulation::BatchInput input(char identity, std::size_t forced) {
+mars_titan::simulation::BatchInput input(std::string_view identity, std::size_t forced) {
     using namespace mars_titan::simulation;
+    require(identity.size() == 1, "El fixture requiere una marca de un carácter");
     auto tape = std::make_shared<MarketTape>();
     tape->assets = {"A"};
     tape->open_times = {1, 11, 21};
@@ -127,9 +129,9 @@ mars_titan::simulation::BatchInput input(char identity, std::size_t forced) {
     tape->domain = "synthetic";
     tape->partition = "train";
     tape->parent_id = "fixed-parent";
-    tape->source_sha256 = std::string(64, identity);
+    tape->source_sha256 = std::string(64, identity.front());
     ContextTape context;
-    context.source_sha256 = std::string(64, identity);
+    context.source_sha256 = std::string(64, identity.front());
     context.fields = {{"may_trade", "boolean"}};
     for (std::size_t row = 0; row < 3; ++row) {
         context.values.push_back({row < forced ? 0.F : 1.F, true, tape->close_times[row]});
@@ -152,7 +154,7 @@ KlpoCollectionOptions options(PpoNetworkKind kind) {
 }
 
 void collector_restores_a_partial_wave_without_refilling(PpoNetworkKind kind) {
-    const std::vector sources{input('a', 1), input('b', 2)};
+    const std::vector sources{input("a", 1), input("b", 2)};
     const auto config = options(kind);
     KlpoTerminalCollector run(sources, config);
     const auto rng = run.policy().random_state();
@@ -185,7 +187,7 @@ void collector_restores_a_partial_wave_without_refilling(PpoNetworkKind kind) {
 }
 
 void checkpoint_store_keeps_the_same_partial_wave() {
-    const std::vector sources{input('a', 1), input('b', 2)};
+    const std::vector sources{input("a", 1), input("b", 2)};
     KlpoTerminalCollector run(sources, options(PpoNetworkKind::mlp));
     const auto directory =
         std::filesystem::temp_directory_path() /
@@ -205,14 +207,14 @@ void checkpoint_store_keeps_the_same_partial_wave() {
 }
 
 void wave_valuation_failure_is_preserved_and_blocks_every_episode() {
-    auto damaged = input('a', 0);
+    auto damaged = input("a", 0);
     auto tape = std::make_shared<mars_titan::simulation::MarketTape>(*damaged.tape);
     const auto missing = std::numeric_limits<double>::quiet_NaN();
     for (std::size_t field = 0; field < 4; ++field) {
         tape->prices[10 + field] = missing;
     }
     damaged.tape = tape;
-    auto following = input('b', 0);
+    auto following = input("b", 0);
     auto second = std::make_shared<mars_titan::simulation::MarketTape>(*following.tape);
     for (std::size_t field = 0; field < 4; ++field) {
         second->prices[10 + field] = missing;
@@ -238,7 +240,7 @@ void wave_valuation_failure_is_preserved_and_blocks_every_episode() {
 }
 
 void failures_restore_sampler_and_only_adopt_complete_transitions() {
-    const std::vector sources{input('a', 0), input('b', 0)};
+    const std::vector sources{input("a", 0), input("b", 0)};
     for (const auto boundary :
          {KlpoCollectionBoundary::before_commit, KlpoCollectionBoundary::committed}) {
         KlpoTerminalCollector run(sources, options(PpoNetworkKind::gru));
@@ -273,7 +275,7 @@ void failures_restore_sampler_and_only_adopt_complete_transitions() {
 }
 
 void another_store_identity_is_rejected_before_publication() {
-    const std::vector sources{input('a', 1), input('b', 2)};
+    const std::vector sources{input("a", 1), input("b", 2)};
     KlpoTerminalCollector run(sources, options(PpoNetworkKind::mlp));
     auto foreign = run.identity();
     foreign["fold"] = "other";
@@ -290,7 +292,7 @@ void another_store_identity_is_rejected_before_publication() {
 }
 
 void coherent_shapes_do_not_hide_changed_probabilities_or_hidden_state() {
-    const std::vector sources{input('a', 1), input('b', 2)};
+    const std::vector sources{input("a", 1), input("b", 2)};
     KlpoTerminalCollector run(sources, options(PpoNetworkKind::gru));
     require(run.collect_tick() && run.collect_tick(), "No se completó el fixture");
     const auto state = run.snapshot();
@@ -311,7 +313,7 @@ void coherent_shapes_do_not_hide_changed_probabilities_or_hidden_state() {
 }
 
 void a_complete_forced_wave_never_samples_or_updates() {
-    const std::vector sources{input('a', 2), input('b', 2)};
+    const std::vector sources{input("a", 2), input("b", 2)};
     KlpoTerminalCollector run(sources, options(PpoNetworkKind::gru));
     const auto rng = run.policy().random_state();
     require(run.collect_tick() && run.collect_tick() && !run.collect_tick(),
@@ -336,7 +338,7 @@ void operator_precision_is_identified_without_changing_caller_flags() {
                                 at::Float32Precision::TF32);
     runtime.setFloat32Precision(at::Float32Backend::CUDA, at::Float32Op::RNN,
                                 at::Float32Precision::IEEE);
-    const std::vector sources{input('a', 1), input('b', 2)};
+    const std::vector sources{input("a", 1), input("b", 2)};
     KlpoTerminalCollector run(sources, options(PpoNetworkKind::gru));
     const auto precision = run.identity().at("precision");
     require(precision.at("cudnn_conv_tf32") == true && precision.at("cudnn_rnn_tf32") == false &&
