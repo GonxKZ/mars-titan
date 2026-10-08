@@ -17,8 +17,6 @@
       "file": "src/mars_titan/cm/anchored_medoids.py",
       "line": 108,
       "description": "La mezcla de fondo cdist y distancia variable hypot puede cambiar el representante en un empate geométrico.",
-      "reproduction": "/home/gonzalo/.local/state/mars-titan/cm-v1-20261007/anchored-selector-implementation/review/probe_backend_ties.py",
-      "evidence": "/home/gonzalo/.local/state/mars-titan/cm-v1-20261007/anchored-selector-implementation/review/probe_backend_ties.json",
       "numpy_ids": [
         "a",
         "b",
@@ -31,7 +29,9 @@
       ],
       "objective_both": 0.6996458385779952,
       "resolution": "El commit revisado conserva NumPy por defecto, rechaza el nombre SciPy sin calificación exploratoria e incorpora el contraejemplo en pruebas y documentación. No cambia el cálculo ni añade un umbral para ocultar el empate.",
-      "remaining_limit": "La paridad de objetivo en tolerancia no implica igualdad universal de IDs entre backends."
+      "remaining_limit": "La paridad de objetivo en tolerancia no implica igualdad universal de IDs entre backends.",
+      "test": "tests/cm/test_anchored_medoids.py",
+      "evidence_sha256": "16d78baf0431cc45717a29f60d76912b4f69811d6f0e96d76d5ac9d60f15f7cd"
     }
   ],
   "verified_properties": [
@@ -44,12 +44,12 @@
     "El guardado de estimaciones de memoria distingue sus buffers propios del RSS y de los espacios internos de biblioteca."
   ],
   "legacy_parity_evidence": {
-    "path": "/home/gonzalo/.local/state/mars-titan/cm-v1-20261007/anchored-selector-implementation/parity-original.json",
     "source_hash_matches": true,
     "cases": 48,
     "all_fields_equal": true,
     "reviewer_reexecuted": false,
-    "script_reviewed": true
+    "script_reviewed": true,
+    "sha256": "6865b0da03e3885a5dff7605c413265ccbc6deb6049cf8fbdb754497b98f0dd4"
   },
   "limits": [
     "No se ha ejecutado GPU, un modelo, un optimizador ni un estudio científico.",
