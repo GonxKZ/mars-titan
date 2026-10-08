@@ -64,8 +64,9 @@ def numerical_radius_estimates(
     block = min(grid_size, angle_block_size)
     matrix_bytes = batch * order**2 * 16
     forward_bytes = matrix_bytes * (8 + 4 * block) + 8 * block * batch * order + 32 * grid_size
+    # Las fases y reducciones también se retienen, incluso para matrices de orden 1.
     saved_bytes = (
-        matrix_bytes * (4 * grid_size + 8)
+        matrix_bytes * (4 * grid_size + 8) + 32 * grid_size * (batch + 1)
         if matrix.requires_grad and torch.is_grad_enabled()
         else 0
     )

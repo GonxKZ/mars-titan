@@ -1,10 +1,12 @@
 # Comprobaciones técnicas de CM-v1
 
-El 8 de octubre de 2026 se ejecutaron 72 pruebas CPU de los mecanismos aislados, sin construir modelos, optimizadores ni recorridos de aprendizaje. Pasaron los casos de matriz cero, normal, nilpotente y no normal, el contraejemplo alternante, las derivadas numéricas fuera de empates y los casos degenerados comprobados como finitud. Las pruebas también cubren entradas NaN/Inf, conversiones de precisión, presupuestos y conservación del RNG ajeno.
+El 8 de octubre de 2026 se ejecutaron 77 pruebas CPU de los mecanismos aislados, sin construir modelos, optimizadores ni recorridos de aprendizaje. Pasaron los casos de matriz cero, normal, nilpotente y no normal, el contraejemplo alternante, las derivadas numéricas fuera de empates y los casos degenerados comprobados como finitud. Las pruebas también cubren entradas NaN/Inf, conversiones de precisión, presupuestos y conservación del RNG ajeno.
 
 M se contrastó con un oráculo independiente de enumeración pequeña. Se probaron candidatos diferentes de los clientes, IDs compartidos, duplicados con multiplicidad, empates, permutaciones, ambas distancias, capacidades, límites y desbordamientos. Un caso L1 entero pasa de coste greedy 86 a 77 mediante dos intercambios. Es un fixture técnico y no una mejora predictiva.
 
-La suite detectó 14 mutaciones dirigidas en corrección angular, autovalor extremo, gradientes, memoria retenida, norma espectral, distancia euclídea, identidad compartida, desbordamiento entero, límite de pares, multiplicidad, orden canónico, intercambios, enumeración y tamaño de los IDs Unicode. Se ejecutaron en copias aisladas, comprobando el origen de importación.
+La suite detectó 15 mutaciones dirigidas en corrección angular, autovalor extremo, gradientes, memoria retenida, norma espectral, distancia euclídea, identidad compartida, desbordamiento entero, límite de pares, multiplicidad, orden canónico, intercambios, enumeración y tamaño de los IDs Unicode. Se ejecutaron en copias aisladas, comprobando el origen de importación.
+
+La estimación de autograd incluye las fases y las reducciones, también para matrices escalares. Una sonda de 27 combinaciones de orden, rejilla y bloque no superó la estimación, tanto al sumar tensores guardados como al contar almacenamientos únicos. La corrección de este desglose conserva exactamente valores y gradientes en 12 casos de cuatro tipos y tres formas. Las medidas de tiempo siguientes corresponden al cálculo anterior a ese ajuste del contador de bytes.
 
 Coverage.py 7.16.2 registró sentencias y ramas. Radon 6.0.1 calculó complejidad ciclomática. CRAP se calculó como `CCN² (1 - cobertura_sentencias)³ + CCN`, dentro del rango de cada función. C alcanzó 100 % de sentencias y ramas, con máximo CCN y CRAP 17. M alcanzó 98,81 % de sentencias y 97,37 % de ramas, con máximo CCN 16 y CRAP 16,021. Estos diagnósticos no demuestran ausencia de defectos.
 

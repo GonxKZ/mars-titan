@@ -160,16 +160,20 @@ def test_unknown_penalty_measure_rejected():
         radius_penalty(numerical_radius_estimates(torch.eye(2)), 1, measure="certified_bound")
 
 
-def test_autograd_saved_tensors_fit_declared_estimate():
+@pytest.mark.parametrize(
+    "order,grid,block,batch",
+    [(1, 2, 1, 1), (1, 17, 1, 1), (1, 128, 1, 1), (1, 128, 8, 1), (1, 128, 1, 16), (2, 17, 3, 1)],
+)
+def test_autograd_saved_tensors_fit_declared_estimate(order, grid, block, batch):
     saved = []
-    matrix = torch.tensor([[1.4, 0.2], [0.1, -0.4]], dtype=torch.float64, requires_grad=True)
+    matrix = torch.eye(order, dtype=torch.complex128).repeat(batch, 1, 1).requires_grad_()
 
     def pack(tensor):
         saved.append(tensor.numel() * tensor.element_size())
         return tensor
 
     with torch.autograd.graph.saved_tensors_hooks(pack, lambda value: value):
-        result = numerical_radius_estimates(matrix, grid_size=17, angle_block_size=3)
+        result = numerical_radius_estimates(matrix, grid_size=grid, angle_block_size=block)
     assert sum(saved) <= result.estimated_saved_bytes
 
 
