@@ -97,8 +97,8 @@ class _BankView:
 def _empty_pending():
     return dict(
         rows=[],
-        key_inputs=torch.empty((0, 64), dtype=torch.float32),
-        values=torch.empty((0, 64), dtype=torch.float32),
+        key_inputs=torch.empty((0, 64), dtype=torch.float32, device="cpu"),
+        values=torch.empty((0, 64), dtype=torch.float32, device="cpu"),
     )
 
 
@@ -407,10 +407,10 @@ class EpisodicSession:
             payload = dict(
                 rows=[row.metadata() for row in block],
                 inputs={
-                    name: torch.tensor(np.stack([row.inputs[name] for row in block]))
+                    name: torch.tensor(np.stack([row.inputs[name] for row in block]), device="cpu")
                     for name in MODALITIES
                 },
-                presence=torch.tensor(np.stack([row.presence for row in block])),
+                presence=torch.tensor(np.stack([row.presence for row in block]), device="cpu"),
             )
             references.append(self._stage(payload, "inputs"))
         return references
@@ -561,11 +561,16 @@ class EpisodicSession:
             raise ValueError("La preparación necesita una predicción finita por flujo")
         combined_rows = [*pending["rows"], *(row.metadata() for row in rows)]
         keys = torch.cat(
-            (pending["key_inputs"], torch.tensor(np.stack([r.key_inputs for r in rows])))
+            (
+                pending["key_inputs"],
+                torch.tensor(np.stack([r.key_inputs for r in rows]), device="cpu"),
+            )
         )
-        data = torch.cat((pending["values"], torch.tensor(np.stack([r.value for r in rows]))))
+        data = torch.cat(
+            (pending["values"], torch.tensor(np.stack([r.value for r in rows]), device="cpu"))
+        )
         order = sorted(range(len(combined_rows)), key=lambda index: _row_key(combined_rows[index]))
-        index = torch.tensor(order, dtype=torch.int64)
+        index = torch.tensor(order, dtype=torch.int64, device="cpu")
         next_pending = dict(
             rows=[combined_rows[i] for i in order],
             key_inputs=keys.index_select(0, index),
@@ -634,7 +639,7 @@ class EpisodicSession:
             "bank",
         )
         keep = [i for i, row in enumerate(pending["rows"]) if _row_key(row) not in removed]
-        index = torch.tensor(keep, dtype=torch.int64)
+        index = torch.tensor(keep, dtype=torch.int64, device="cpu")
         next_pending = dict(
             rows=[pending["rows"][i] for i in keep],
             key_inputs=pending["key_inputs"].index_select(0, index),

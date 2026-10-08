@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 import pytest
+import torch
 from test_episodic_codec import raw_batch, selected, specification
 
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
@@ -188,3 +189,33 @@ def test_prepared_executor_accepts_the_financial_flow_alphabet(native, tmp_path)
         assert len(run.step([batch], []).predictions) == 2
     with session(native, output, [], resume=True) as resumed:
         assert resumed.diagnostics()["pending"] == 2
+
+
+def test_cpu_storage_and_recovery_ignore_the_default_device(native, tmp_path):
+    batches = inputs(0), inputs(1)
+    snapshots, episodes, traces = [], [], []
+    for device in ("cpu", "meta"):
+        output = tmp_path / device
+        trace = []
+        with torch.device(device):
+            with session(native, output, trace) as run:
+                issued = run.step(batches[0], [], batch_rows=1)
+                labels = feedback(native, issued.predictions, batches[1][0].prediction_at[0])
+                run.step(batches[1], labels, batch_rows=2)
+                assert run.diagnostics() == dict(cursor=2, admitted=2, retained=2, pending=2)
+                snapshots.append(run.snapshot())
+                episodes.append(run.retained_episodes())
+            with session(native, output, [], resume=True) as recovered:
+                assert recovered.snapshot() == snapshots[-1]
+                assert recovered.retained_episodes() == episodes[-1]
+                bundle = recovered._bundle(recovered.snapshot()["state"])
+                pending = recovered._read(bundle["pending"], "pending")
+                assert pending["key_inputs"].device.type == pending["values"].device.type == "cpu"
+                for reference in bundle["inputs"]:
+                    source = recovered._read(reference, "inputs")
+                    assert source["presence"].device.type == "cpu"
+                    assert all(value.device.type == "cpu" for value in source["inputs"].values())
+        traces.append(trace)
+    assert snapshots[0] == snapshots[1]
+    assert episodes[0] == episodes[1]
+    assert traces[0] == traces[1]
