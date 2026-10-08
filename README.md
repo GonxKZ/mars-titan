@@ -14,7 +14,9 @@ Proyecto de investigación y desarrollo de **Gonzalo García Lama** sobre memori
 
 Los mercados cambian, las noticias llegan a distintas horas y una parte de la información financiera se publica después del periodo al que se refiere. En estas condiciones, una buena predicción sobre un histórico no basta para demostrar que un modelo generaliza.
 
-MARS-TITAN estudia si una memoria neural adaptativa, que selecciona eventos financieros relevantes y conserva información útil de distintos contextos de mercado, aporta valor frente a modelos más sencillos. Los entrenamientos combinan siempre cuatro modalidades de **FinMultiTime**: precios, noticias, fundamentales y gráficos. Cada muestra debe justificar la disponibilidad de las cuatro. El contexto macroeconómico las complementa, no sustituye ninguna de ellas.
+MARS-TITAN estudia si la memoria neuronal y la selección de episodios aportan información para predecir retornos residuales. Utiliza precios, noticias, fundamentales y gráficos de **FinMultiTime**, junto con contexto macroeconómico. La edición histórica desde 2000 conserva todos los datos utilizables y sus ausencias explícitas. La comparación estricta mantiene por separado las filas con cuatro modalidades y los 140 indicadores observados. Cada comparación utiliza las mismas filas y cortes para todos sus modelos.
+
+La [dirección arquitectónica](docs/research/titans-mac-architecture.md) conserva el candidato GRU con banco episódico, añade una referencia Transformer compacta y adopta Titans-MAC como núcleo identificable para otra adaptación. MARS-TITAN incorporará sus modificaciones sobre ese núcleo mediante componentes desactivables. La memoria neuronal de Titans guarda asociaciones en pesos rápidos y usa pérdida asociativa, gradientes, momentum y olvido. Su memoria persistente aprendida y el banco episódico del proyecto son estados diferentes. CM-v1 continúa como variante independiente, desactivada por defecto.
 
 La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia interna de pocos pasos y contexto macroeconómico. La inspiración biológica se traduce en hipótesis sobre retención, adaptación y reaprendizaje. Los antecedentes recientes, incluidos DeepSeek y modelos financieros con memoria, sirven para decidir qué comparar y qué técnicas pueden ser útiles en una GPU pequeña.
 
@@ -23,6 +25,8 @@ La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predic
 **Última edición analizada:** la [comparación del 5 de octubre](reports/baselines/campaign-comparison-20261005.md) revisa 756 estados y sus predicciones congeladas sobre cuatro ventanas con 140 indicadores. La evaluación real reúne 69 sesiones y no acredita una mejora estable frente a predecir cero. Se separan selección, efecto de la rejilla y aprendizaje adicional. La [revisión de validación del 30 de septiembre](reports/baselines/strict140-validation-20260930.md) y la [edición de 470 muestras](reports/baselines/post-scan-reference-study.md) conservan sus resultados por separado.
 
 La [edición documental H.15](docs/data/h15-archive.md) conserva dos boletines históricos de enero de 2000, con 60 observaciones revisadas y disponibilidad separada por mercado. Su recuperación y contraste están comprobados. Requiere admisión macro posterior y no reanuda la campaña.
+
+La [preparación histórica del 8 de octubre](docs/data/historical-materialization.md) recorre los 5.676 candidatos y conserva los 5.023 activos con precios, con 18.982.446 filas de precios verificadas. Los paneles macro US y CN mantienen todas sus sesiones de 2000 a 2023, con máscaras donde faltan valores admisibles. Todavía faltan la codificación conjunta, los objetivos y los cortes comunes. Entrenamientos, postentrenamientos, pilotos y evaluaciones científicas siguen bloqueados.
 
 La [edición real ampliada](docs/engineering/real-expanded-comparison.md), preparada el 6 de octubre, reúne 400.367 muestras únicas admitidas en diez ventanas, con cuatro modalidades y 140 conceptos macro. La mayor partición de entrenamiento contiene 317.426 muestras y las evaluaciones suman 212.337, sin duplicados entre meses. Los padres se emparejan por semilla y la evaluación añade acierto, abstención y cobertura calibrada. La campaña arrancó en CUDA el 6 de octubre y completó 400 casos neuronales el día 7. La campaña está pausada de forma recuperable para revisar la [cobertura histórica desde 2000](docs/data/historical-coverage.md). El estado comprobado el 7 de octubre conserva 511 operaciones terminadas, con el servicio deshabilitado y sin reanudación automática. Sus resultados comparativos siguen pendientes y no sustituyen los anteriores.
 
@@ -90,7 +94,7 @@ Las fechas siguientes corresponden a cambios del historial de desarrollo, en hor
 
 ## Alcance y recursos
 
-El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. La campaña prevista utiliza todo el universo admisible, sin límite de 64 o 128 activos, en tres brazos: Estados Unidos, China y ambos mercados juntos. La copia original contiene 108,2 GiB. Los datos preparados se guardan en Parquet y se leen por lotes, sin duplicar todas las ventanas en memoria. Los recursos limitan el tamaño del lote y condicionan el tiempo, no justifican presentar un panel pequeño como el corpus completo. El [presupuesto de almacenamiento](reports/resources/storage-budget.md) distingue disco, tensores y memoria. Cada brazo requiere cuatro modalidades válidas, contexto macro y disponibilidad temporal comprobada. La procedencia china pendiente debe resolverse antes de declarar preparado ese mercado o la comparación conjunta.
+El equipo de trabajo tiene **32 GB de RAM y una RTX 4070 Max-Q de 8 GB**. La campaña prevista utiliza todo el universo admisible, sin límite de 64 o 128 activos, en tres brazos: Estados Unidos, China y ambos mercados juntos. La copia original contiene 108,2 GiB. Los datos preparados se guardan en Parquet y se leen por lotes, sin duplicar todas las ventanas en memoria. Los recursos limitan el tamaño del lote y condicionan el tiempo, no justifican presentar un panel pequeño como el corpus completo. El [presupuesto de almacenamiento](reports/resources/storage-budget.md) distingue disco, tensores y memoria. La edición histórica admite modalidades ausentes con máscaras y causas. La estricta exige las cuatro modalidades y los 140 indicadores observados. La falta de precios u objetivos válidos se registra aparte y no se rellena con datos inventados.
 
 La preparación y las representaciones son reanudables. Las referencias neuronales conservan pesos, AdamW, generadores y cursor confirmado, con pruebas de continuidad exacta. La [persistencia comprobada](reports/reproducibility/reference-checkpoints.md) distingue esa implementación de los contratos pendientes de la futura memoria adaptativa. XGBoost recupera la última ronda confirmada. Ridge puede repetir el caso en curso si no terminó. El [plan de cómputo](docs/engineering/compute-plan.md) contempla la disponibilidad del equipo durante las 24 horas, sin confundirla con rendimiento máximo sostenido.
 
@@ -101,14 +105,20 @@ flowchart LR
     D[FinMultiTime<br/>precios · noticias · tablas · gráficos] --> P[Disponibilidad temporal<br/>calidad y procedencia]
     P --> X[Representaciones<br/>y objetivo residual]
     X --> B[Modelos base<br/>cero · Ridge · árboles<br/>RNN · LSTM · GRU · DLinear]
-    X --> M[MARS-TITAN<br/>memoria · sorpresa · régimen]
+    X --> G[Referencia GRU<br/>banco episódico]
+    X --> T[Transformer compacto<br/>sin memoria neuronal]
+    X --> N[Titans-MAC adaptado<br/>atención · memoria neuronal · persistentes]
+    N --> M[MARS-TITAN sobre Titans-MAC<br/>ampliaciones desactivables]
     M --> A[Ablaciones de componentes<br/>cuatro modalidades conservadas]
     B --> E[Evaluación walk-forward<br/>predicción · incertidumbre · costes]
+    G --> E
+    T --> E
+    N --> E
     A --> E
     E --> C[Análisis crítico<br/>mejoras, fallos y límites]
 ```
 
-Una predicción solo puede usar datos disponibles en su instante de decisión. La memoria se actualiza con errores de predicciones anteriores **cuando sus etiquetas ya han madurado**. Las tablas contables necesitan fechas de publicación y los gráficos se construirán exclusivamente con ventanas pasadas.
+Una predicción solo puede usar datos disponibles en su instante de decisión. La actualización asociativa de Titans utiliza entradas observadas bajo una política explícita. El error financiero de escritura episódica solo se calcula cuando madura la etiqueta de la predicción realmente emitida. Las tablas contables necesitan fechas de publicación y los gráficos se construyen exclusivamente con ventanas pasadas.
 
 ## Objetivos y evidencias
 
@@ -128,6 +138,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 - [Mapa de documentación](docs/README.md).
 - [Protocolo de investigación](docs/research/protocol.md), [experimentos](docs/research/experiment-matrix.md) y [revisión del documento inicial](docs/research/original-review.md).
 - [Arquitectura candidata](docs/research/candidate-architecture.md), [capacidad y coste por parámetro](docs/research/parameter-efficiency.md), [hipótesis y antecedentes](docs/research/novelty-ledger.md) y [revisión adversarial](docs/research/adversarial-review.md).
+- [Titans-MAC, Transformer y referencia GRU](docs/research/titans-mac-architecture.md), con estados, correspondencia matemática, controles y límites de implementación.
 - [Variante ampliada y comparaciones justas](docs/research/neuroarchitecture-review.md), con [condiciones de memoria y contraejemplos](docs/research/memory-mathematics.md). La variante sigue en diseño. El candidato base está en implementación y todavía no se ha entrenado.
 - [Atención, repetición y autoevaluación](docs/research/attention-replay-review.md), [eventos públicos y señales reducidas](docs/research/event-signal-comparison.md), con [límites de información y replay](docs/research/attention-replay-mathematics.md).
 - [Integración arquitectónica y postentrenamiento](docs/research/system-integration.md), con responsabilidades, puntos de extensión, dependencias de estado y estimaciones matemáticas.

@@ -172,7 +172,8 @@
     "Las funciones de publicación y recorrido conservan complejidad apreciable. Cobertura y mutación no prueban ausencia de errores.",
     "Los consumidores de aprendizaje requieren su propia adaptación explícita. Esta entrega no levanta la pausa."
   ],
-  "root_review": {
+  "source_receipt_sha256": "c16f33e0748e0a40f7c3a95fa7b3c9cd1419fdbb6781792bb06f36c37e181e56",
+  "independent_review": {
     "checked_at_utc": "2026-10-07T23:34:36.109263+00:00",
     "checked_commit": "407333701aa87f465c55fdf49e8ad61e9a486a1f",
     "tests_passed": 154,
@@ -189,6 +190,5 @@
     "models_executed": false,
     "cuda_used": false,
     "real_materialization": false
-  },
-  "source_receipt_sha256": "c16f33e0748e0a40f7c3a95fa7b3c9cd1419fdbb6781792bb06f36c37e181e56"
+  }
 }

@@ -1,6 +1,6 @@
-# Arquitectura candidata de memoria y recurrencia
+# Referencia episódica y recurrencia de MARS-TITAN
 
-Esta especificación concreta una hipótesis de MARS-TITAN. Se apoya en mecanismos publicados y en la [revisión adversarial](adversarial-review.md). Su funcionamiento, coste y posible aportación propia están pendientes de implementación y experimentación.
+Esta especificación conserva la referencia GRU con banco episódico y sus reglas de escritura. La [dirección arquitectónica vigente](titans-mac-architecture.md) añade Transformer compacto, Titans-MAC y ampliaciones de MARS-TITAN sobre ese núcleo. El banco no sustituye la memoria neuronal de Titans. Existe un componente nativo del candidato previo en [#296](https://github.com/GonxKZ/mars-titan/pull/296), con pruebas CPU. Su comprobación CUDA, integración cronológica y evaluación siguen pendientes.
 
 ## Separar memoria persistente y cálculo interno
 
@@ -24,11 +24,11 @@ flowchart LR
 
 La flecha de escritura solo afecta a decisiones posteriores. El gráfico no autoriza un ciclo que conozca el retorno futuro antes de predecirlo.
 
-## Núcleo que se comparará primero
+## Referencia GRU con banco episódico
 
-Un codificador temporal compacto procesa precios y máscaras. Las noticias se representan con un codificador congelado y una proyección pequeña. Los fundamentales y los gráficos deben tener disponibilidad verificable. Las cuatro modalidades y el contexto macro son obligatorios, conforme al [contrato de la campaña](../engineering/comparison-campaign.md). Las variables macro usan su última versión disponible y registran antigüedad y ausencias. La fusión se mantiene sencilla para poder atribuir el efecto de la memoria.
+Un codificador temporal compacto procesa precios y máscaras. Las noticias se representan con un codificador congelado y una proyección pequeña. Las entradas observadas deben tener disponibilidad verificable. La comparación estricta exige las cuatro modalidades y el contexto macro completo. La [edición histórica adicional](../data/historical-input-masks.md) conserva las ausencias explícitas y usa las mismas filas entre modelos. Las variables macro usan su última versión disponible y registran antigüedad y ausencias. La fusión común permite separar el cambio de codificador del efecto de la memoria.
 
-La referencia secuencial inicial es una GRU. La memoria asociativa compacta con regla delta, definida más adelante, aporta el contraste neural adaptativo identificable. Una SSM adicional entra solo si una pregunta y el presupuesto justifican su coste. El candidato comparte pesos entre activos y guarda estados pequeños por activo. No replica una red entrenable completa para cada uno de los miles de símbolos.
+La GRU se conserva como referencia. El Transformer compacto y Titans-MAC tienen identidades propias y reutilizan los componentes comunes pertinentes. La regla delta lineal descrita más adelante sigue siendo un control simplificado, no la implementación de Titans-MAC. Cualquier SSM adicional requiere una pregunta y un presupuesto propios. Los parámetros compartidos no se replican por símbolo y el coste de los estados por flujo se informa por separado.
 
 La memoria episódica tiene capacidad explícita. El punto inicial de dimensionamiento es E = 8.192 referencias de episodios, rasgos base de dimensión 256, claves de dimensión 128 y recuperación de hasta ocho entradas únicas por consulta. Son valores para el piloto, no hiperparámetros ya validados. Cada episodio conserva identificador estable, mercado, corte, origen, revisión de representación y motivo de escritura. Los vectores no sustituyen su procedencia.
 
@@ -60,7 +60,7 @@ El registro separará candidatos examinados, actualizaciones de índices, inserc
 
 ## Contraste con memoria neural de pesos rápidos
 
-El banco de episodios es una referencia de memoria externa con lectura aprendida. No se identifica con la memoria neuronal paramétrica de Titans. Para mantener esa distinción, la comparación incluirá una memoria asociativa lineal compacta con regla delta como referencia neural adaptativa, cuya formulación concreta se fijará antes de implementar.
+El banco de episodios es una referencia de memoria externa con lectura aprendida. No se identifica con la memoria neuronal paramétrica de Titans. El núcleo neural requerido es [Titans-MAC](titans-mac-architecture.md), con su pérdida asociativa, momentum, olvido y memoria persistente aprendida. La memoria lineal con regla delta que sigue es únicamente un control adicional simplificado.
 
 En esa variante, una matriz de estado A relaciona claves y valores permitidos. Una forma candidata de actualización es
 
