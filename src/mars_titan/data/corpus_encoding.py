@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 
+from .accounting_catalog import HISTORICAL_ACCOUNTING, JOINT_CONCEPTS, historical_accounting_context
 from .cohort_contexts import MacroVectors
 from .cohort_files import read_manifest as _read
 from .cohort_files import safe_destination
@@ -35,15 +36,28 @@ def encode_corpus(
     admitted_decisions=None,
     input_policy=STRICT_INPUTS,
     macro_indicators=None,
+    accounting_policy=None,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores."""
     masked = masked_inputs(input_policy)
+    if accounting_policy is not None and (
+        accounting_policy != HISTORICAL_ACCOUNTING
+        or not masked
+        or tuple(fundamental_concepts) != FUNDAMENTAL_CONCEPTS
+        or source_unit != "USD"
+        or company_factors is not True
+    ):
+        raise ValueError(
+            "La política contable conjunta requiere entradas históricas y sus opciones acordadas"
+        )
     if masked and (context != 64 or admitted_decisions is not None):
         raise ValueError(
             "La política histórica requiere 64 sesiones y no filtra por completitud macro"
         )
     preparation, output = Path(preparation), Path(output)
     meta, preparation_hash = _read(preparation)
+    if meta.get("accounting_policy") is not None and meta["accounting_policy"] != accounting_policy:
+        raise ValueError("La preparación requiere su política contable explícita")
     cohort = meta.get("cohort_id")
     if (
         meta.get("schema_version") != (2 if masked else 1)
@@ -143,7 +157,7 @@ def encode_corpus(
         macro_sha256={m: contexts[m].sha256 for m in markets},
         macro_indicators={m: contexts[m].indicators for m in markets},
         market_factors=factors,
-        fundamental_concepts=list(concepts),
+        fundamental_concepts=list(JOINT_CONCEPTS if accounting_policy else concepts),
         source_unit=source_unit,
         company_factors=company_factors,
         admitted_decisions={m: sorted(t.isoformat() for t in admitted[m]) for m in markets}
@@ -160,6 +174,18 @@ def encode_corpus(
             )
         },
     )
+    if accounting_policy:
+        identity["accounting_policy"] = accounting_policy
+        identity["accounting_contexts"] = {
+            market: {
+                key: list(value) if isinstance(value, tuple) else value
+                for key, value in historical_accounting_context(market).items()
+            }
+            for market in markets
+        }
+        identity["code"]["accounting_catalog.py"] = sha256(
+            Path(__file__).with_name("accounting_catalog.py")
+        )
     for name in (
         ".edition.lock",
         "configuration.json",
@@ -224,6 +250,15 @@ def encode_corpus(
                             raise ValueError("El activo no pertenece al origen declarado")
                         if sha256(source / "manifest.json") != asset["manifest_sha256"]:
                             raise ValueError("Ha cambiado el manifiesto del activo preparado")
+                        accounting = (
+                            historical_accounting_context(market)
+                            if accounting_policy
+                            else dict(
+                                fundamental_concepts=concepts,
+                                source_unit=source_unit,
+                                company_factors=company_factors,
+                            )
+                        )
                         receipt = materialize_cohort_asset(
                             source,
                             output / "samples" / market / symbol,
@@ -233,9 +268,7 @@ def encode_corpus(
                             cache,
                             cohort=cohort,
                             context=context,
-                            fundamental_concepts=concepts,
-                            source_unit=source_unit,
-                            company_factors=company_factors,
+                            **accounting,
                             admitted_decisions=admitted[market] if admitted is not None else None,
                             input_policy=input_policy,
                         )
@@ -292,6 +325,7 @@ def main():
     parser.add_argument("--cache", type=Path, help="Caché persistente de vectores")
     parser.add_argument("--context", type=int, default=64, help="Sesiones de contexto")
     parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
+    parser.add_argument("--accounting-policy", choices=(HISTORICAL_ACCOUNTING,))
     parser.add_argument(
         "--macro-catalog", type=Path, help="Catálogo explícito para conservar indicadores ausentes"
     )
@@ -309,6 +343,7 @@ def main():
         cache_path=args.cache,
         context=args.context,
         input_policy=args.input_policy,
+        accounting_policy=args.accounting_policy,
         macro_indicators=sorted(_read_catalog(args.macro_catalog)) if args.macro_catalog else None,
     )
     print(

@@ -16,20 +16,17 @@ import pyarrow.parquet as pq
 from mars_titan.training.cohort_contract import cohort_identity, representation_hash
 from mars_titan.training.corpus_targets import _label_batches
 
+from .accounting_catalog import CAD_CONCEPTS, COMMON_CONCEPTS
+from .accounting_catalog import USD_CONCEPTS as USD_CONCEPTS
 from .batches import atomic_parquet_batches, read_bounded_table
 from .cohort_contexts import MacroVectors
 from .cohort_files import read_manifest, safe_destination
 from .cohort_samples import _digest, _schema, materialize_cohort_asset
-from .company_factors import FACTOR_CONCEPTS
 from .embeddings import EmbeddingCache
 from .residual_arrays import residual_targets_array
-from .samples import FUNDAMENTAL_CONCEPTS
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock
 
-USD_CONCEPTS = FUNDAMENTAL_CONCEPTS + FACTOR_CONCEPTS
-CAD_CONCEPTS = tuple(name.removesuffix(":USD") + ":CAD" for name in FUNDAMENTAL_CONCEPTS)
-COMMON_CONCEPTS = USD_CONCEPTS + CAD_CONCEPTS
 POLICY = "separate_usd_cad_channels_v1"
 _LIMIT = 64 * 1024**2
 _SEAL = np.datetime64("2024-01-01", "us").astype(np.int64)
