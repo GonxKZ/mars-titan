@@ -44,13 +44,15 @@ struct PpoTrainingState {
     std::size_t next_source = 0;
     std::size_t observed_transitions = 0;
     std::string adaptive_archive;
+    PpoObjectiveConfig objective;
+    PpoControllerState controller;
 };
 
 class PpoTrainer {
 public:
     PpoTrainer(std::vector<simulation::BatchInput> inputs, PpoTrainingConfig config,
                PpoHyperparameters hyperparameters, std::string device, bool diagnostic,
-               PpoLearningOptions learning = {});
+               PpoLearningOptions learning = {}, PpoObjectiveConfig objective = {});
     PpoTrainer(const PpoTrainer&) = delete;
     PpoTrainer& operator=(const PpoTrainer&) = delete;
     PpoTrainer(PpoTrainer&&) = delete;
@@ -100,6 +102,7 @@ private:
     at::Tensor history_lengths_;
     std::unique_ptr<LearningReplay> replay_;
     std::size_t auxiliary_samples_ = 0;
+    PpoObjectiveConfig objective_;
 
     void reset_pending();
     void rebuild_hidden();

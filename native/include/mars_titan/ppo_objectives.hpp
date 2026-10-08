@@ -16,6 +16,13 @@ inline constexpr std::int64_t maximum_ppo_kl_rows = 65536;
 // Se rechazan pérdida de soporte de q y KL infinita. El gradiente solo pasa por p.
 [[nodiscard]] at::Tensor ppo_categorical_kl(const at::Tensor& log_probabilities,
                                            const at::Tensor& old_log_probabilities);
+// Conservar los pesos FP32 del sampler, normalizarlos en FP64 y mantener su soporte.
+[[nodiscard]] at::Tensor ppo_behavior_log_probabilities(const at::Tensor& weights);
+void validate_ppo_behavior(const at::Tensor& weights, const at::Tensor& actions,
+                           const at::Tensor& selected_logp, const at::Tensor& valid);
+[[nodiscard]] at::Tensor ppo_penalized_objective(const at::Tensor& logp,
+    const at::Tensor& old_weights, const at::Tensor& actions, const at::Tensor& old_logp,
+    const at::Tensor& advantages, double beta);
 } // namespace mars_titan::learning
 
 #endif

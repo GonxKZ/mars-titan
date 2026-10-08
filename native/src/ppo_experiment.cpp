@@ -95,6 +95,7 @@ struct ExperimentConfig {
     Json document;
     PpoTrainingConfig training;
     PpoHyperparameters hyperparameters;
+    PpoObjectiveConfig objective;
     simulation::Parameters environment;
     std::size_t environments = 0;
     std::size_t checkpoint_transitions = 0;
@@ -183,19 +184,52 @@ void configure_agent(ExperimentConfig& config, const std::filesystem::path& path
     config.markov_identity = Json{{"sha256", digest}, {"model", model}};
 }
 
+PpoObjectiveConfig objective_configuration(const Json& value) {
+    require(value.is_object() && value.contains("id") && value.at("id").is_string(),
+            "El objetivo PPO necesita una identidad explícita");
+    PpoObjectiveConfig result;
+    result.kind = objective_kind(value.at("id").get<std::string>());
+    require(result.enabled(), "El bloque de objetivo no puede migrar la política legacy");
+    if (result.kind == PpoObjectiveKind::kl_penalty_adaptive) {
+        require_fields(value, {"schema_version", "id", "target_kl", "beta_initial", "beta_min", "beta_max"});
+        result.beta_initial = finite_number(value.at("beta_initial"));
+        result.beta_min = finite_number(value.at("beta_min"));
+        result.beta_max = finite_number(value.at("beta_max"));
+    } else if (result.kind == PpoObjectiveKind::clip_kl_epoch_stop) {
+        require_fields(value, {"schema_version", "id", "target_kl"});
+    } else {
+        require_fields(value, {"schema_version", "id"});
+    }
+    require(read_json_int64(value.at("schema_version")) == 1, "El objetivo PPO usa otro esquema");
+    if (value.contains("target_kl")) { result.target_kl = finite_number(value.at("target_kl")); }
+    result.validate();
+    return result;
+}
+
 ExperimentConfig configuration(const std::filesystem::path& path) {
     ExperimentConfig result;
     result.document =
         parse_bounded_json(read_bounded_file(path, simulation::maximum_manifest_bytes));
     const auto& document = result.document;
+    auto base_document = document;
+    if (document.contains("policy_objective")) {
+        require(read_json_int64(document.at("schema_version")) >= 2,
+                "El objetivo explícito necesita una configuración adaptativa nueva");
+        result.objective = objective_configuration(document.at("policy_objective"));
+        base_document.erase("policy_objective");
+    }
     result.schema_version = read_json_int64(document.at("schema_version"));
     if (result.schema_version == 2 || result.schema_version == 3) {
-        require_fields(document, {"schema_version", "training", "environments", "hyperparameters",
+        require_fields(base_document, {"schema_version", "training", "environments", "hyperparameters",
                                   "environment", "checkpoint_transitions", "selection",
                                   "final_test_opened", "agent", "evaluation_transitions"});
         configure_agent(result, path);
+        require(!result.objective.enabled() ||
+                    (result.learning.variant != "double_dqn" && result.learning.variant != "ppo_recent_aux" &&
+                     result.learning.variant != "ppo_replay_aux"),
+                "El controlador PPO no admite Double DQN ni actualizaciones auxiliares");
     } else {
-        require_fields(document,
+        require_fields(base_document,
                        {"schema_version", "training", "environments", "hyperparameters",
                         "environment", "checkpoint_transitions", "selection", "final_test_opened"});
     }
@@ -774,6 +808,12 @@ Json experiment_identity(const PpoExperimentOptions& options, const ExperimentCo
                                             {"parent_id", reference.tape->parent_id},
                                             {"context_fields", fields}};
     }
+    if (config.objective.enabled()) {
+        result["policy_objective"] = config.document.at("policy_objective");
+        result["sampler_contract"] = ppo_sampler_contract;
+        result["kl_contract"] = "categorical_behavior_to_current_kl_v1";
+        result["kl_measurement"] = "complete_valid_rows_after_epoch_v1";
+    }
     return result;
 }
 
@@ -819,6 +859,34 @@ Json learning_identity(const ExperimentConfig& config) {
                                    : config.markov_identity.at("sha256")}};
 }
 
+Json controller_json(const PpoControllerState& state) {
+    return Json{{"beta", state.beta}, {"last_beta", state.last_beta},
+                {"completed_rollouts", state.completed_rollouts}, {"optimizer_steps", state.optimizer_steps},
+                {"valid_rows", state.valid_rows}, {"completed_epochs", state.completed_epochs},
+                {"skipped_epochs", state.skipped_epochs}, {"threshold_exceeded", state.threshold_exceeded},
+                {"full_kl", state.full_kl ? Json(*state.full_kl) : Json(nullptr)}};
+}
+
+PpoControllerState controller_state(const Json& value, const ExperimentConfig& config, int64_t adam_steps) {
+    require_fields(value, {"beta", "last_beta", "completed_rollouts", "optimizer_steps", "valid_rows",
+                          "completed_epochs", "skipped_epochs", "threshold_exceeded", "full_kl"});
+    require(value.at("beta").is_number_float() && value.at("last_beta").is_number_float() &&
+                (value.at("full_kl").is_null() || value.at("full_kl").is_number_float()),
+            "El controlador guardado necesita campos reales con su tipo original");
+    PpoControllerState result;
+    result.beta = finite_number(value.at("beta"));
+    result.last_beta = finite_number(value.at("last_beta"));
+    result.completed_rollouts = read_json_int64(value.at("completed_rollouts"));
+    result.optimizer_steps = read_json_int64(value.at("optimizer_steps"));
+    result.valid_rows = read_json_int64(value.at("valid_rows"));
+    result.completed_epochs = read_json_int64(value.at("completed_epochs"));
+    result.skipped_epochs = read_json_int64(value.at("skipped_epochs"));
+    result.threshold_exceeded = boolean(value.at("threshold_exceeded"));
+    if (!value.at("full_kl").is_null()) { result.full_kl = finite_number(value.at("full_kl")); }
+    result.validate(config.objective, adam_steps, config.hyperparameters.epochs);
+    return result;
+}
+
 Json state_json(const PpoTrainingState& state, const ExperimentConfig& config,
                 const Progress& progress) {
     Json sessions = Json::array();
@@ -843,6 +911,7 @@ Json state_json(const PpoTrainingState& state, const ExperimentConfig& config,
         result["observed_transitions"] = state.observed_transitions;
         result["learning"] = learning_identity(config);
     }
+    if (config.objective.enabled()) { result["policy_controller"] = controller_json(state.controller); }
     return result;
 }
 
@@ -850,6 +919,10 @@ PpoTrainingState restore_state(const PpoCheckpointBundle& bundle, const Experime
                                const PpoExperimentOptions& options) {
     const auto& metadata = bundle.metadata;
     auto legacy_metadata = metadata;
+    if (config.objective.enabled()) {
+        require(legacy_metadata.erase("policy_controller") == 1,
+                "Falta el controlador PPO en los metadatos del checkpoint");
+    }
     if (config.learning.enabled) {
         for (const auto* name :
              {"source_indices", "next_source", "observed_transitions", "learning"}) {
@@ -862,7 +935,8 @@ PpoTrainingState restore_state(const PpoCheckpointBundle& bundle, const Experime
                     "optimizer_steps", "invalid_transitions", "episodes", "reset_lanes", "sessions",
                     "context_sources", "progress"});
     require(read_json_int64(metadata.at("schema_version")) == config.schema_version &&
-                metadata.at("configuration") == config.document &&
+                (config.objective.enabled() ? metadata.at("configuration").dump() == config.document.dump()
+                                            : metadata.at("configuration") == config.document) &&
                 metadata.at("device") == options.device &&
                 boolean(metadata.at("diagnostic")) == options.diagnostic,
             "El checkpoint PPO no conserva la configuración del experimento");
@@ -880,6 +954,11 @@ PpoTrainingState restore_state(const PpoCheckpointBundle& bundle, const Experime
     state.diagnostic = options.diagnostic;
     state.transitions = count(metadata.at("transitions"));
     state.optimizer_steps = count(metadata.at("optimizer_steps"));
+    state.objective = config.objective;
+    if (config.objective.enabled()) {
+        state.controller = controller_state(metadata.at("policy_controller"), config,
+                                             read_json_int64(metadata.at("optimizer_steps")));
+    }
     state.invalid_transitions = count(metadata.at("invalid_transitions"));
     state.episodes = count(metadata.at("episodes"));
     for (const auto& lane : metadata.at("reset_lanes")) {
@@ -1117,7 +1196,7 @@ class ExperimentRun {
         : options_(options), config_(std::move(config)), inputs_(std::move(inputs)),
           identity_(experiment_identity(options_, config_, inputs_)),
           trainer_(inputs_.training, config_.training, config_.hyperparameters, options_.device,
-                   options_.diagnostic, config_.learning),
+                   options_.diagnostic, config_.learning, config_.objective),
           store_(options_.output, identity_, options_.resume), stop_(stop), started_(started) {}
 
     Json run() {
@@ -1441,6 +1520,10 @@ class ExperimentRun {
         if (config_.schema_version == 3) {
             report["evaluation_cursors"] = progress_.evaluation_cursors;
         }
+        if (config_.objective.enabled()) {
+            report["policy_objective"] = config_.document.at("policy_objective");
+            report["policy_controller"] = controller_json(trainer_.policy().controller_state());
+        }
         atomic_json_file(options_.output / "run.json", report);
         return report;
     }
@@ -1583,6 +1666,7 @@ Json run_audit(const PpoExperimentOptions& options, const ExperimentConfig& conf
     const auto policy = PpoPolicy::load(archive, options.device);
     require(policy.seed() == config.training.seed &&
                 policy.hyperparameters() == config.hyperparameters &&
+                policy.objective() == config.objective &&
                 policy.optimizer_steps() == count(selected.metadata.at("optimizer_steps")),
             "La política congelada no corresponde a los parámetros de la selección");
     constexpr std::array costs{0., 10., 25.};
