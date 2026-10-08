@@ -151,3 +151,26 @@ factor. La edición sigue siendo retrospectiva, con `point_in_time_verified=fals
 `financial_simulation_ready=false` y `training_ready=false`. No se han recalculado
 etiquetas ni ejecutado modelos con estos datos. La ampliación de los meses
 intermedios y la preparación de la supervisión histórica siguen pendientes.
+
+## Calendario completo de 2006 a 2023
+
+La [revisión del 8 de octubre](../../reports/data/csi300-complete-history-20261008.json)
+incorpora 167 tablas mensuales y 3.383 sesiones adicionales. La edición v16 reúne
+las 4.374 sesiones del calendario CN entre el 4 de enero de 2006 y el 29 de
+diciembre de 2023, sin duplicados ni huecos en ese intervalo. Se verifican las
+huellas de los factores intermedios y se conservan las 4.332 filas del padre
+inmediato. No se ha recuperado historia anterior a 2006.
+
+Los recibos identifican las 13.532 celdas OHLC adicionales, sus páginas, URL,
+huellas y métodos de contraste. Las tablas antiguas que lo necesitan usan
+transcripción visual independiente. Los meses con dos extracciones automáticas
+coincidentes mantienen también la revisión visual de la tabla. Septiembre de
+2013 y diciembre de 2015 se recuperaron en el último lote. Sus cuatro intentos
+anteriores fallidos permanecen archivados.
+
+La continuidad del calendario no elimina los límites retrospectivos. El factor
+no acredita versiones diarias contemporáneas ni representa una cotización
+ejecutable. No se han recalculado objetivos reales con v16. La revisión de los
+factores de etiquetas debe tener identidad propia y conservar intacta la
+codificación de las entradas. El corpus histórico sigue incompleto y el
+bloqueo de aprendizaje permanece activo.

@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-08T08:32:19.952591+00:00",
+  "scope": "Codec CPU de entradas disponibles a claves y valores episódicos. Sin admisión, etiquetas o predicciones.",
+  "source_commit": "69e58980358d199b981ab92b59b95b65ac1e4290",
+  "source_sha256": {
+    "src/mars_titan/memory/episodic_codec.py": "e5eda818831617124e49743e50786e5f589d109d0228512c52c95ce2b57f9ea0",
+    "tests/memory/test_episodic_codec.py": "5c17ccb496f28ba8d0ed078e184437bb937b6f91d58b9b9dc4155f85ffcb73da",
+    "docs/engineering/episodic-codec.md": "799021aa0df746413f427283d3e74355aac20438e74cde3ec7564f1c1cdec82e"
+  },
+  "tests": {
+    "public": 38,
+    "independent": 29,
+    "total_passed": 67,
+    "failed": 0,
+    "seconds": 1.52
+  },
+  "integration_tests": {
+    "passed": 84,
+    "scope": "Codec y adaptador financiero con fixtures CPU. No es el ciclo episódico integrado."
+  },
+  "memory_fix": {
+    "before_traced_plus_resident_bytes": 986952,
+    "after_traced_plus_resident_bytes": 625992,
+    "estimated_bytes": 816540,
+    "budget_bytes": 900000,
+    "context": 2,
+    "rows": 256,
+    "dimensions": [
+      5,
+      4,
+      6,
+      3,
+      3
+    ]
+  },
+  "independent_memory_probes": [
+    {
+      "context": 2,
+      "rows": 256,
+      "measurements": [
+        {
+          "traced_peak_bytes": 594424,
+          "resident_projection_bytes": 31496,
+          "total_traced_plus_resident_bytes": 625920,
+          "estimated_peak_bytes": 816540,
+          "max_buffer_bytes": 900000,
+          "values_sha256": "accfcd291f30371f88a55f7699e4f5c57bf6cfd5ce354a84c6ce2ba3eb1826ac"
+        },
+        {
+          "traced_peak_bytes": 593384,
+          "resident_projection_bytes": 31496,
+          "total_traced_plus_resident_bytes": 624880,
+          "estimated_peak_bytes": 816540,
+          "max_buffer_bytes": 900000,
+          "values_sha256": "accfcd291f30371f88a55f7699e4f5c57bf6cfd5ce354a84c6ce2ba3eb1826ac"
+        },
+        {
+          "traced_peak_bytes": 593384,
+          "resident_projection_bytes": 31496,
+          "total_traced_plus_resident_bytes": 624880,
+          "estimated_peak_bytes": 816540,
+          "max_buffer_bytes": 900000,
+          "values_sha256": "accfcd291f30371f88a55f7699e4f5c57bf6cfd5ce354a84c6ce2ba3eb1826ac"
+        }
+      ]
+    },
+    {
+      "context": 64,
+      "rows": 256,
+      "measurements": [
+        {
+          "traced_peak_bytes": 1228232,
+          "resident_projection_bytes": 346456,
+          "total_traced_plus_resident_bytes": 1574688,
+          "estimated_peak_bytes": 3036738,
+          "max_buffer_bytes": 67108864,
+          "values_sha256": "8f907cc834f47aadb73798aa34bf8b9d93cf22dd6460f32f55acd99cbaf84a14"
+        },
+        {
+          "traced_peak_bytes": 1228232,
+          "resident_projection_bytes": 346456,
+          "total_traced_plus_resident_bytes": 1574688,
+          "estimated_peak_bytes": 3036738,
+          "max_buffer_bytes": 67108864,
+          "values_sha256": "8f907cc834f47aadb73798aa34bf8b9d93cf22dd6460f32f55acd99cbaf84a14"
+        },
+        {
+          "traced_peak_bytes": 1228232,
+          "resident_projection_bytes": 346456,
+          "total_traced_plus_resident_bytes": 1574688,
+          "estimated_peak_bytes": 3036738,
+          "max_buffer_bytes": 67108864,
+          "values_sha256": "8f907cc834f47aadb73798aa34bf8b9d93cf22dd6460f32f55acd99cbaf84a14"
+        }
+      ]
+    }
+  ],
+  "verified": [
+    "La reproducción original cabe tras liberar temporales, con 625920, 624880 y 624880 bytes frente a una estimación de 816540 y un límite de 900000.",
+    "El presupuesto inferior a la estimación se rechaza antes de einsum.",
+    "Los contextos 2, 3, 8 y 64 conservan exactamente los seis arrays, identidad y digest respecto a 66e2d93b.",
+    "Las sondas originales de RNG, máscaras, extremos FP32, permutación, partición, identidad y buffers siguen pasando."
+  ],
+  "review_sha256": "49f284a367ff0a0f3167f6ad49faa2eedcdb4582edc1a31ad1651283f7ba696f",
+  "fix_evidence_sha256": {
+    "before/memory-repetitions.json": "e24fe2bcc8ab9742f5186a8bc74b5302967cc1713ba806e65bee9f3df884b3cd",
+    "after/memory-repetitions.json": "0e912143c541cc7c89582a92f9ac5babb25675b4f65787750a89359b3a3e1d4e",
+    "public-red.log": "451c1927fd1af7d079e4a5226ca69d22d2ad066ad719ba23c97483b930d9872a",
+    "public-final.log": "b567528c2ddd9e59678b223b8259074ea2eb6506380c6d71cddaa5e87b4d1a94",
+    "parity.json": "003fe911c5d6b855f7c9e8f91cf590f3f5cd6a32673f32a3a5398ed95750ee58",
+    "mutation.json": "0c86704cefedd5bd8c2a139a519263218399bf0a15e217f98c8ca86d9e72aade",
+    "mutation.log": "519150348109daf9eae59be60b67b11c6a2edd723d9bfbd7554f0ed6155efacd"
+  },
+  "original_review_sha256": "186c5c12138733058b19711bf62757579769789a2af8e1c0adf95e3cdc26e308",
+  "mutations": {
+    "original_detected": 8,
+    "original_source_commit": "66e2d93b",
+    "fix_detected": 1
+  },
+  "coverage_initial": {
+    "source_commit": "66e2d93b",
+    "tool": "coverage.py 7.16.2",
+    "statements_covered": 162,
+    "statements_total": 165,
+    "branches_covered": 35,
+    "branches_total": 38,
+    "complexity_tool": "radon 6.0.1",
+    "max_ccn": 16,
+    "scope": "Diagnóstico anterior al arreglo de vida de temporales, no cobertura del ciclo completo."
+  },
+  "limits": [
+    "Solo fixtures CPU, dos hilos y proceso limitado a 2 GiB. Sin datos reales, banco, predictor, GPU o aprendizaje.",
+    "Pico rastreado durante encode más proyección residente. Excluye la vista CPU y no es RSS.",
+    "Revisión focal del arreglo. No se revisa el banco o coordinador en desarrollo."
+  ],
+  "training_executed": false,
+  "final_test_opened": false
+}
