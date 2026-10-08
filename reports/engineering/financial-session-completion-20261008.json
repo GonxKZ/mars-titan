@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T21:40:22.429409+00:00",
+  "tested_head": "cc571c20ccb51c191b81be7bfbbc485689000ac7",
+  "production_commit": "a0420ab0b473892b356f55bc648d52c2a05018b1",
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "source_sha256": {
+    "src/mars_titan/models/titans/frozen_financial.py": "9a5238a66cd23333b0e4ff8e24719a954b11d8c95efef196f121b6c7dade7a31",
+    "src/mars_titan/memory/financial_session.py": "654394ff6f39cb390d00a4dad28aca2fddf86f0caf1e86cbea13074067ed29e6",
+    "tests/memory/cuda_financial_attributes_check.py": "4feb530164f00f06d016d36a1c8fda18a6d8991053cd3254cdbb6f5bef157b60"
+  },
+  "cuda_numeric_attributes": {
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1089 MiB",
+    "torch": "2.14.0+cu130",
+    "dtype": "float64",
+    "variant": "mac_online",
+    "K": 2,
+    "mha_fastpath": false,
+    "tf32": false,
+    "exact_recovery": true,
+    "mutation_rejected_without_publication": true,
+    "cpu_rng_unchanged": true,
+    "cuda_rng_unchanged": true,
+    "cap_torch_bytes": 134217728,
+    "peak_torch_bytes": 17908224,
+    "max_prediction_error": 3.469446951953614e-18,
+    "rtol": 2e-09,
+    "atol": 2e-10,
+    "pytest_seconds": 13.15,
+    "receipt_sha256": "8ae1118759fb6bb8a010ce08f2a15f6171613a37a1c30d65905ed11fd81d13ba"
+  },
+  "cpu": {
+    "tests_with_branch_coverage": 492,
+    "python_mutations_detected": 8,
+    "native_rng_mutations_detected": 2,
+    "post_merge_data_contract_tests": 77
+  },
+  "cuda_scope": "La matriz de 18 casos pertenece a la guarda de fastpath. Esta sonda focal posterior cubre los atributos, con las mismas operaciones y tolerancias.",
+  "independent_reviews": {
+    "consumer": "reports/engineering/financial-session-review-20261008.json",
+    "numeric_guards_cpu_checks": 61
+  },
+  "quality": {
+    "ruff": true,
+    "format": true,
+    "repository_contracts_and_links": true
+  },
+  "limits": [
+    "Aceptación técnica del componente, sin recorrido científico ni aprendizaje.",
+    "La cola, el almacenamiento y la supervisión definitiva de la población histórica necesitan su aceptación propia.",
+    "La ruta v1 conserva su mezcla de identidad y RNG. Sus recibos no prueban invariancia respecto a datos futuros.",
+    "La ruta financiera v2 usa RNG separado de los hashes de datos futuros y conserva las identidades para recuperación.",
+    "No acredita una ventaja predictiva ni completa las políticas M2/M3."
+  ]
+}

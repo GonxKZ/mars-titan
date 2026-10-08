@@ -8,15 +8,17 @@ El [recibo de fuentes](../../reports/research/titans-mac-source-audit-20261008.j
 
 ## Arquitecturas y estado comprobado
 
-| Referencia | Función | Estado del 8 de octubre de 2026 |
+| Referencia | Función | Estado revisado el 9 de octubre de 2026 |
 | --- | --- | --- |
 | GRU con banco episódico | Conservar el candidato previo y sus controles de escritura | [Componente C++20 integrado](../../native/candidate.md), con pruebas CPU/CUDA, gradientes y recuperación del módulo. Pendientes política histórica con máscaras e integración cronológica completa. No entrenado. |
 | Transformer compacto | Aislar el cambio de codificador con proyecciones, fusión y cabeza comunes | [Referencia integrada](../engineering/compact-transformer-reference.md), con pruebas CPU/CUDA y paridad de los modos anteriores. Sin resultados predictivos propios. |
-| Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | [Núcleo](../engineering/titans-memory-core.md) y [adaptador financiero](../engineering/titans-financial-adapter.md) integrados, con pruebas CPU/CUDA. Falta el recorrido cronológico completo. |
-| MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas mediante componentes desactivables | El adaptador reutiliza el núcleo y sus estados. Banco, consolidación y refinamientos siguen en integración. |
-| CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | [C integrado como diagnóstico local de MAC](../experiments/mars_titan_cm_v1/mac_local_control.md), con pruebas CPU/CUDA. M y el codec episódico tienen comprobaciones propias. Pendientes ciclo temporal y comparación integrada. Desactivada por defecto. |
+| Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | [Núcleo](../engineering/titans-memory-core.md), [adaptador](../engineering/titans-financial-adapter.md) y [consumidor cronológico](../engineering/financial-session-v2.md) integrados, con pruebas técnicas CPU/CUDA. Sin entrenamiento ni trayectoria histórica completa ejecutada. |
+| MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas mediante componentes desactivables | El consumidor conecta banco, lectura y estados con M0/M1. K repite la lectura sin multiplicar actualizaciones de MAC. M2/M3 y la mezcla de índices de la especificación continúan pendientes. |
+| CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | [C local de MAC](../experiments/mars_titan_cm_v1/mac_local_control.md), selector M y codec comprobados. El consumidor integra retenciones configurables. Pendientes la composición factorial completa y el estudio científico. Desactivada por defecto. |
 
 Estos nombres describen brazos del estudio. No renombran checkpoints ni convierten una referencia anterior en Titans. El valor de `baseline_id` de cada contraste debe señalar una configuración ejecutable y fijada. La elección de una nueva arquitectura para B crea otro contraste B, B+C, B+M y B+C+M, conservando los manifiestos anteriores.
+
+El consumidor congelado requiere `fastpath=False` explícito y guarda ese ajuste en su identidad. Su banco v2 separa la semilla de los hashes completos del corpus. La guía registra el fallo FP64 de la ruta fusionada, la dependencia futura del RNG v1 y sus correcciones, sin reinterpretar las comprobaciones históricas ni atribuir mejoras predictivas.
 
 ## Correspondencia con Titans-MAC
 

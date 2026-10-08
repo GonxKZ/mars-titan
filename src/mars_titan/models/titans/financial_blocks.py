@@ -121,8 +121,20 @@ def _copy_to(state, device):
 
 def export_state_cpu(predictor, state):
     predictor.verify_parameter_identity()
+    return _export_state_cpu(predictor, state)
+
+
+def _export_state_cpu(predictor, state):
+    """El coordinador ya verificó los bytes del modelo en la frontera de sesión."""
+    predictor._check_parameters()
     predictor._validate_state(state)
     copied = _copy_to(state, torch.device("cpu"))
+    return _cpu_payload(predictor, copied)
+
+
+def _cpu_payload(predictor, copied):
+    predictor._check_parameters()
+    predictor._validate_state(copied, device=torch.device("cpu"))
     payload = predictor._metadata(
         copied.flow_ids, copied.last_sample_ids, copied.last_prediction_at
     )
@@ -150,6 +162,16 @@ def restore_state(predictor, payload, *, device=None):
 def gather_state(predictor, blocks, flow_ids, *, max_source_bytes=512 * 1024**2):
     """blocks asigna cada ID pedido a (payload CPU, fila), sin inicialización implícita."""
     predictor.verify_parameter_identity()
+    result = _gather_cpu(predictor, blocks, flow_ids, max_source_bytes=max_source_bytes)
+    if predictor.head.weight.device.type != "cpu":
+        result = _copy_to(result, predictor.head.weight.device)
+    predictor._validate_state(result)
+    return result
+
+
+def _gather_cpu(predictor, blocks, flow_ids, *, max_source_bytes=512 * 1024**2):
+    """Selección CPU para transporte o compactación, sin cambiar el predictor."""
+    predictor._check_parameters()
     if not isinstance(flow_ids, (tuple, list)):
         raise ValueError("Los flujos deben ser una lista o tupla acotada")
     predictor._check_flows(flow_ids)
@@ -209,9 +231,7 @@ def gather_state(predictor, blocks, flow_ids, *, max_source_bytes=512 * 1024**2)
         collect(lambda state: state.observed_steps),
         mac,
     )
-    if predictor.head.weight.device.type != "cpu":
-        result = _copy_to(result, predictor.head.weight.device)
-    predictor._validate_state(result)
+    predictor._validate_state(result, device=torch.device("cpu"))
     return result
 
 
@@ -265,6 +285,11 @@ def _validate_references(predictor, references):
 def replace_state_references(predictor, references, previous, following, block_id):
     """Reemplazar exactamente los flujos avanzados y conservar las demás referencias."""
     predictor.verify_parameter_identity()
+    return _replace_state_references(predictor, references, previous, following, block_id)
+
+
+def _replace_state_references(predictor, references, previous, following, block_id):
+    predictor._check_parameters()
     _validate_references(predictor, references)
     _block_id(block_id)
     predictor._validate_state(previous)

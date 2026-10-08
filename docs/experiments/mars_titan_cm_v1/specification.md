@@ -2,7 +2,7 @@
 
 Esta entrega contiene dos mecanismos matemáticos independientes. C estima el radio numérico de una matriz proporcionada y calcula una penalización. M selecciona representantes reales de un conjunto de candidatos. Las funciones están en [`numerical_radius.py`](../../../src/mars_titan/cm/numerical_radius.py) y [`medoids.py`](../../../src/mars_titan/cm/medoids.py). Sus pruebas están en [`tests/cm`](../../../tests/cm).
 
-El [control local de MAC](mac_local_control.md) conecta C con una compresión del Jacobiano de su transición rápida completa, incluidos pesos y momentum. Admite diagnóstico y penalización heurística y tiene comprobaciones CPU/CUDA. M sigue pendiente de integración temporal con el banco episódico. La GRU episódica conserva su papel de referencia separada. El factorial descrito en el [protocolo](protocol.md) requiere fijar sus configuraciones y una nueva identidad de B que incluya el backend Math de MAC.
+El [control local de MAC](mac_local_control.md) conecta C con una compresión del Jacobiano de su transición rápida completa, incluidos pesos y momentum. Admite diagnóstico y penalización heurística y tiene comprobaciones CPU/CUDA. El [consumidor financiero](../../engineering/financial-session-v2.md) conecta núcleo, lectura y banco bajo M0/M1 y admite retenciones configuradas. El selector M mantiene sus pruebas propias. La GRU episódica conserva su papel de referencia separada. El factorial del [protocolo](protocol.md) requiere comprobar su composición completa y fijar una nueva identidad de B, incluido SDPA Math y el ajuste explícito `fastpath=False` del consumidor.
 
 ## Contrato de C
 
@@ -39,4 +39,4 @@ El presupuesto predeterminado limita los buffers propios estimados a 64 MiB, los
 
 Las comprobaciones ejecutadas y las dependencias pendientes constan en [resultados](results.md). La [auditoría de fuentes](source_audit.md) delimita qué resultados publicados respaldan el análisis y cuáles no se han reproducido.
 
-La [retención con centros fijos](anchored_retention.md) amplía la selección mediante un fondo de distancias y candidatos variables restringidos. Mantiene el objetivo sobre todo el conjunto de clientes actual. Su conexión al banco y al ciclo temporal requiere un codec congelado y la publicación conjunta de estados.
+La [retención con centros fijos](anchored_retention.md) amplía la selección mediante un fondo de distancias y candidatos variables restringidos. Mantiene el objetivo sobre todo el conjunto de clientes actual. El banco la ofrece como política `anchored` y el consumidor proporciona codec fijo y publicación conjunta. La existencia de esta ruta no acredita haber entrenado ni evaluado el factorial CM completo.

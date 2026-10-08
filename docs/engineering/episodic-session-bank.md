@@ -6,15 +6,18 @@ partición y fold. La comparación principal conserva un único objetivo residua
 al horizonte declarado. Si se abren instancias para otros objetivos, sus costes
 y capacidad retenida se suman.
 
-La integración con `FinancialPredictor` sigue pendiente. El puerto de preparación
-se ha ejercitado con callbacks escalares sintéticos. Falta reunir estados por
-flujo en bloques compatibles y consumir `working_state` después de MAC para el
-refinamiento episódico. Los tokens de fusión no son claves estables ni sustituyen
-a ese estado. La GRU y las cabezas del predictor no se implementan en este módulo.
-También quedan pendientes la publicación y poda de referencias anidadas a los
-bloques del estado rápido. El banco nativo admite las particiones `train` y
-`validation`. El uso de `calibration` y `evaluation`, y la censura de objetivos
-que no llegarán a madurar al cierre del periodo, necesitan un contrato posterior.
+Este documento describe el contrato v1, comprobado con callbacks escalares
+sintéticos. Su reservorio mezcla el ámbito y la representación con la semilla.
+Si la representación incorpora hashes de datos futuros, cambiar ese sufijo puede
+cambiar los sorteos del prefijo. La evidencia anterior no acredita invariancia
+frente a ese cambio. V1 conserva sus particiones `train` y `validation` y necesita
+su runtime fijado para recuperar sesiones Python históricas.
+
+El [ciclo financiero v2](financial-session-v2.md) añade la integración con
+`FinancialPredictor`, el RNG independiente de identidades, las cuatro particiones,
+las resoluciones temporales y las referencias anidadas de estados rápidos.
+Los tokens de fusión no son claves estables del banco. La GRU y las cabezas del
+predictor no se implementan en este módulo.
 
 ## Entradas y ciclo temporal
 

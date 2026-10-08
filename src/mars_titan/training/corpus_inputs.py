@@ -475,13 +475,66 @@ class CorpusDataset:
         self._remember(key, signature, (prices, available))
         return prices, available
 
+    def _sample_group(self, asset, file, group):
+        """Decodificar las modalidades una vez con las mismas reglas en ambos recorridos."""
+        path = self._file(asset, "samples")
+        temporal = self.temporals.get(asset["market"])
+        columns = ["prediction_at", "price_end_index", *VECTORS] + (
+            ["cohort_id"] if self.cohort else []
+        )
+        if self.masked:
+            if not {"presence", "news_count"} <= set(file.schema_arrow.names):
+                raise ValueError("Faltan las máscaras o los recuentos históricos")
+            columns.extend(("presence", "news_count"))
+        if self.temporal and not self.masked:
+            columns.remove("macro")
+        if "input_availability" in file.schema_arrow.names:
+            columns.append("input_availability")
+            if "macro_available_at" in file.schema_arrow.names:
+                columns.append("macro_available_at")
+        metadata = file.metadata.row_group(int(group))
+        size = sum(
+            metadata.column(c).total_uncompressed_size
+            for c in range(metadata.num_columns)
+            if metadata.column(c).path_in_schema.split(".")[0] in columns
+        )
+        if size > MAX_TABLE_BYTES:
+            raise ValueError("El grupo de características supera 64 MiB")
+        cache_key = "samples", path, int(group), tuple(columns)
+        signature = self.verified[path]
+        table = self._cached(cache_key, signature) if self.cache_sample_tables else None
+        cache_miss = table is None
+        if cache_miss:
+            if self.masked:
+                _historical_times(
+                    file.read_row_group(int(group), columns=["prediction_at"], use_threads=False)
+                )
+            table = file.read_row_group(int(group), columns=columns, use_threads=False)
+        validate_cohort_rows(table, self.cohort)
+        if table.nbytes > MAX_TABLE_BYTES:
+            raise ValueError("El grupo decodificado supera el presupuesto")
+        timestamps = _historical_times(table) if self.masked else _times(table["prediction_at"])
+        macro = temporal.lookup(timestamps) if temporal and not self.masked else None
+        ends = table["price_end_index"].to_numpy()
+        vectors = _vectors(
+            table, macro=macro[0] if macro is not None else None, historical=self.masked
+        )
+        presence = (
+            _presence(table, vectors, self.manifest["representation"]) if self.masked else None
+        )
+        availability, availability_valid = _availability(
+            table, macro_override=macro[1:] if macro else None, presence=presence
+        )
+        if self.cache_sample_tables and cache_miss:
+            self._remember(cache_key, signature, table)
+        return table, timestamps, ends, vectors, presence, availability, availability_valid
+
     def _blocks(self, partition, epoch, seed, cursor):
         order = _random(seed, epoch, "assets").permutation(len(self.assets))
         consumed = sum(self.assets[int(i)]["counts"][partition] for i in order[: cursor["asset"]])
         dimensions = None
         for asset_position in range(cursor["asset"], len(order)):
             asset = self.assets[int(order[asset_position])]
-            temporal = self.temporals.get(asset["market"])
             key = f"{asset['market']}/{asset['symbol']}"
             path = self._file(asset, "samples")
             with pq.ParquetFile(path) as file:
@@ -517,64 +570,13 @@ class CorpusDataset:
                             raise ValueError("El consumo confirmado del cursor no concilia")
                     if not len(indexes) or start == len(indexes):
                         continue
-                    columns = ["prediction_at", "price_end_index", *VECTORS] + (
-                        ["cohort_id"] if self.cohort else []
-                    )
-                    if self.masked:
-                        if not {"presence", "news_count"} <= set(file.schema_arrow.names):
-                            raise ValueError("Faltan las máscaras o los recuentos históricos")
-                        columns.extend(("presence", "news_count"))
-                    if self.temporal and not self.masked:
-                        columns.remove("macro")
-                    if "input_availability" in file.schema_arrow.names:
-                        columns.append("input_availability")
-                        if "macro_available_at" in file.schema_arrow.names:
-                            columns.append("macro_available_at")
-                    metadata = file.metadata.row_group(int(group))
-                    size = sum(
-                        metadata.column(c).total_uncompressed_size
-                        for c in range(metadata.num_columns)
-                        if metadata.column(c).path_in_schema.split(".")[0] in columns
-                    )
-                    if size > MAX_TABLE_BYTES:
-                        raise ValueError("El grupo de características supera 64 MiB")
-                    cache_key = "samples", path, int(group), tuple(columns)
-                    signature = self.verified[path]
-                    table = self._cached(cache_key, signature) if self.cache_sample_tables else None
-                    cache_miss = table is None
-                    if cache_miss:
-                        if self.masked:
-                            _historical_times(
-                                file.read_row_group(
-                                    int(group), columns=["prediction_at"], use_threads=False
-                                )
-                            )
-                        table = file.read_row_group(int(group), columns=columns, use_threads=False)
-                    validate_cohort_rows(table, self.cohort)
-                    if table.nbytes > MAX_TABLE_BYTES:
-                        raise ValueError("El grupo decodificado supera el presupuesto")
-                    timestamps = (
-                        _historical_times(table) if self.masked else _times(table["prediction_at"])
-                    )
-                    macro = temporal.lookup(timestamps) if temporal and not self.masked else None
-                    ends = table["price_end_index"].to_numpy()
-                    vectors = _vectors(
-                        table, macro=macro[0] if macro is not None else None, historical=self.masked
+                    table, timestamps, ends, vectors, presence, availability, availability_valid = (
+                        self._sample_group(asset, file, group)
                     )
                     shape = {name: values.shape[1] for name, values in vectors.items()}
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
-                    presence = (
-                        _presence(table, vectors, self.manifest["representation"])
-                        if self.masked
-                        else None
-                    )
-                    availability, availability_valid = _availability(
-                        table, macro_override=macro[1:] if macro else None, presence=presence
-                    )
-                    if self.cache_sample_tables and cache_miss:
-                        self._remember(cache_key, signature, table)
                     for offset in range(start, len(indexes), 256):
                         labels = indexes[offset : offset + 256]
                         block_rows = positions[labels] - offsets[group]
@@ -610,6 +612,77 @@ class CorpusDataset:
                 self._file(asset, kind)
         if consumed != self.manifest["counts"][partition]:
             raise ValueError("El recorrido no visita exactamente la población declarada")
+
+    def observation_batches(self, *, start, end, batch_size=256):
+        """Leer todas las filas históricas del intervalo, por activo y sin labels.
+
+        La ordenación temporal entre activos corresponde al índice de cohortes.
+        La ausencia de objetivo no elimina una observación del recorrido.
+        """
+        if (
+            not self.masked
+            or type(start) is not int
+            or type(end) is not int
+            or not 946_684_800_000_000 <= start < end <= 1_704_067_200_000_000
+            or type(batch_size) is not int
+            or not 1 <= batch_size <= 256
+        ):
+            raise ValueError(
+                "La lectura de observaciones necesita adhesión histórica y límites explícitos"
+            )
+        if sha256(self.path) != self.identity:
+            raise ValueError("El manifiesto cambió desde su confirmación")
+        dimensions = None
+        for asset in sorted(self.assets, key=lambda a: (a["market"], a["symbol"])):
+            path = self._file(asset, "samples")
+            prices, available = self._prices(asset)
+            key, previous = f"{asset['market']}/{asset['symbol']}", None
+            with pq.ParquetFile(path) as file:
+                if file.metadata.num_rows > 1_000_000:
+                    raise ValueError("El activo supera el presupuesto de muestras")
+                for group in range(file.num_row_groups):
+                    table, moments, ends, vectors, presence, availability, valid = (
+                        self._sample_group(asset, file, group)
+                    )
+                    if len(moments) and (
+                        np.any(np.diff(moments) <= 0)
+                        or (previous is not None and moments[0] <= previous)
+                    ):
+                        raise ValueError("Las observaciones necesitan un orden único por activo")
+                    if len(moments):
+                        previous = moments[-1]
+                    shape = {name: values.shape[1] for name, values in vectors.items()}
+                    if dimensions is not None and dimensions != shape:
+                        raise ValueError("Las dimensiones cambian entre activos")
+                    dimensions = shape
+                    selected = np.flatnonzero((moments >= start) & (moments < end))
+                    for offset in range(0, len(selected), batch_size):
+                        positions = selected[offset : offset + batch_size]
+                        block = dict(
+                            vectors=vectors,
+                            rows=positions,
+                            prices=_price_contexts(prices, ends[positions], self.context),
+                            key=key,
+                            prediction_at=moments[positions],
+                            sample_at=moments[positions],
+                            price_available_at=available[ends[positions]],
+                            input_available_at=availability[positions]
+                            if availability is not None
+                            else None,
+                            availability_valid=valid[positions] if valid is not None else None,
+                            presence=presence[positions],
+                        )
+                        batch = _new_batch(
+                            vectors, self.context, len(positions), masked=True, supervised=False
+                        )
+                        _fill_batch(batch, 0, block, 0, len(positions))
+                        batch["source_positions"] = np.asarray(positions, dtype=np.int64)
+                        batch["source_group"] = group
+                        yield batch
+            for kind in ("prices", "samples"):
+                self._file(asset, kind)
+        if sha256(self.path) != self.identity:
+            raise ValueError("El manifiesto cambió durante la lectura de observaciones")
 
     def batches(self, *, partition, batch_size, epoch, seed, cursor=None):
         from .target_factors import confirm_sources
@@ -684,8 +757,8 @@ class CorpusDataset:
             yield batch
 
 
-def _new_batch(vectors, context, size, *, masked=False):
-    return {
+def _new_batch(vectors, context, size, *, masked=False, supervised=True):
+    result = {
         **({"presence": np.empty((size, len(MODALITIES)), dtype=np.bool_)} if masked else {}),
         "inputs": {
             **{
@@ -702,6 +775,10 @@ def _new_batch(vectors, context, size, *, masked=False):
         "input_available_at": np.full(size, np.datetime64("NaT", "us")),
         "weight": np.ones(size, dtype=np.float64),
     }
+    if not supervised:
+        for name in ("target", "target_available_at", "weight"):
+            result.pop(name)
+    return result
 
 
 def _fill_batch(batch, filled, block, start, stop):
@@ -722,7 +799,8 @@ def _fill_batch(batch, filled, block, start, stop):
             raise ValueError("Una modalidad contiene valores no finitos")
     batch["inputs"]["prices"][destination] = block["prices"][source]
     for name in ("target", "prediction_at", "target_available_at"):
-        batch[name][destination] = block[name][source]
+        if name in batch:
+            batch[name][destination] = block[name][source]
     if available is not None:
         batch["input_available_at"][destination] = available[source]
     if block.get("presence") is not None:

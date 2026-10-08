@@ -488,6 +488,74 @@ void external_retention_rejects_invalid_batches_without_changing_the_bank() {
     require(memory.size() == 2 && memory.seen() == 2 && memory.snapshot().reservoir_rng == rng,
             "La retención externa consumió el RNG del reservorio");
 }
+
+void causal_rng_pairs_scopes_but_keeps_recovery_isolated() {
+    constexpr uint64_t other_lane = 42;
+    constexpr unsigned int seed_word_bits = 32;
+    auto other = scope(other_lane);
+    other.world = "another-arm";
+    other.partition = "evaluation";
+    other.fold = "fold-9";
+    other.representation = "different-future-source";
+    EpisodicMemory first(scope(), seed, small_capacity, 2);
+    EpisodicMemory second(other, seed, small_capacity, 2);
+    EpisodicMemory resumed(scope(), seed, small_capacity, 2);
+    for (uint64_t id = 1; id <= last_record; ++id) {
+        write(first, record(id));
+        write(second, record(id));
+        if (id == pause_record) {
+            resumed.restore(deserialize_memory(serialize_memory(first.snapshot())));
+        } else if (id > pause_record) {
+            write(resumed, record(id));
+        }
+        require(first.retained_records() == second.retained_records() &&
+                    first.snapshot().reservoir_rng == second.snapshot().reservoir_rng,
+                "Cambiar el ámbito alteró los sorteos de v2");
+    }
+    require(first.retained_records() == resumed.retained_records() &&
+                first.snapshot().reservoir_rng == resumed.snapshot().reservoir_rng,
+            "La recuperación de v2 no conserva los siguientes sorteos");
+    const auto before = serialize_memory(first.snapshot());
+    rejected([&] { first.restore(second.snapshot()); });
+    require(before == serialize_memory(first.snapshot()),
+            "El rechazo de un ámbito ajeno modificó el banco de v2");
+    EpisodicMemory high_seed(scope(), seed + (uint64_t{1} << seed_word_bits), small_capacity, 2);
+    require(high_seed.snapshot().reservoir_rng !=
+                EpisodicMemory(scope(), seed, small_capacity, 2).snapshot().reservoir_rng,
+            "La semilla de v2 perdió sus 32 bits superiores");
+}
+
+void memory_contract_versions_are_explicit_and_incompatible() {
+    EpisodicMemory legacy(scope(), seed, small_capacity);
+    EpisodicMemory explicit_legacy(scope(), seed, small_capacity, 1);
+    EpisodicMemory causal(scope(), seed, small_capacity, 2);
+    for (uint64_t id = 1; id <= dense_records; ++id) {
+        write(legacy, record(id));
+        write(explicit_legacy, record(id));
+    }
+    require(serialize_memory(legacy.snapshot()) == serialize_memory(explicit_legacy.snapshot()),
+            "La selección explícita de v1 cambió su archivo o sus sorteos");
+    require(deserialize_memory(serialize_memory(causal.snapshot())).schema_version == 2,
+            "El archivo de memoria perdió la versión de v2");
+    rejected([&] { causal.restore(legacy.snapshot()); });
+    rejected([&] { legacy.restore(causal.snapshot()); });
+    rejected([&] { EpisodicMemory invalid(scope(), seed, small_capacity, 0); });
+    rejected([&] { EpisodicMemory invalid(scope(), seed, small_capacity, 3); });
+    for (const std::string partition : {"train", "validation", "calibration", "evaluation"}) {
+        auto current = scope();
+        current.partition = partition;
+        EpisodicMemory phase(current, seed, small_capacity, 2);
+        write(phase, record(1));
+        phase.restore(deserialize_memory(serialize_memory(phase.snapshot())));
+        require(phase.seen() == 1, "La partición de v2 no se recupera");
+        if (partition == "calibration" || partition == "evaluation") {
+            rejected([&] { EpisodicMemory invalid(current, seed, small_capacity); });
+        }
+    }
+    auto invalid = causal.snapshot();
+    invalid.schema_version = 3;
+    rejected([&] { static_cast<void>(serialize_memory(invalid)); });
+}
 } // namespace
 
 int main() {
@@ -506,6 +574,8 @@ int main() {
         queries_bound_temporary_storage_to_scores();
         external_retention_changes_only_the_selected_records();
         external_retention_rejects_invalid_batches_without_changing_the_bank();
+        causal_rng_pairs_scopes_but_keeps_recovery_isolated();
+        memory_contract_versions_are_explicit_and_incompatible();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

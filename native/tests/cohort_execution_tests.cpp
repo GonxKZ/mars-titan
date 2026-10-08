@@ -25,6 +25,10 @@ constexpr double target_b = 6;
 constexpr double second_bias = 8;
 constexpr double third_bias = 24;
 constexpr std::size_t steady_pending = 6;
+constexpr std::size_t logical_asset_limit = 8192;
+constexpr std::int64_t phase_end = 3 * tick;
+constexpr std::int64_t phase_close = 4 * tick;
+constexpr std::size_t insufficient_pairs = 125;
 
 void require(bool condition, std::string_view message) {
     if (!condition) {
@@ -506,11 +510,11 @@ void invalid_prepared_outputs_and_mixed_contracts_are_rejected() {
 void prepared_mode_accepts_the_full_candidate_group_without_relaxing_classic_limits() {
     TemporaryDirectory directory;
     auto classic = definition();
-    classic.limits.max_assets = 8192;
+    classic.limits.max_assets = logical_asset_limit;
     rejected([&] { Executor invalid(directory.path / "classic", classic, callbacks()); },
              "El modo clásico amplió su límite sin otra identidad");
     auto prepared = prepared_definition();
-    prepared.limits.max_assets = 8192;
+    prepared.limits.max_assets = logical_asset_limit;
     Executor run(directory.path / "prepared", prepared, prepared_callbacks());
     Cohort group{0, tick, {}};
     constexpr std::size_t candidates = 5676;
@@ -521,6 +525,153 @@ void prepared_mode_accepts_the_full_candidate_group_without_relaxing_classic_lim
     require(committed.predictions.size() == 2 * candidates &&
                 run.snapshot().at("state").at("fast_steps") == 1,
             "La cohorte completa perdió flujos o repitió la preparación");
+}
+
+Definition financial_definition() {
+    auto result = definition();
+    result.prediction_mode = PredictionMode::financial;
+    result.tasks = {{"residual", 1}};
+    result.phase = {"validation", 1, tick, phase_end, phase_close, std::string(digest_width, 'e')};
+    result.initial_state = Json{{"observed", 0}, {"labels", 0}, {"excluded", 0}, {"closed", 0}};
+    return result;
+}
+Callbacks financial_callbacks() {
+    Callbacks result;
+    result.prepare_event = [](EventKind kind, std::span<const Observation> rows,
+                              std::span<const Task>, std::int64_t, const Json& state, std::size_t) {
+        PreparedCohort prepared{{}, state};
+        if (kind == EventKind::decision) {
+            for (const auto& row : rows) {
+                prepared.values.push_back(row.features.front() +
+                                          state.at("observed").get<double>());
+            }
+        }
+        prepared.proposed_state["observed"] = state.at("observed").get<std::size_t>() + rows.size();
+        return prepared;
+    };
+    result.resolve = [](const Json& state, std::span<const ResolvedFeedback> labels,
+                        std::span<const ResolvedPrefixExclusion> excluded,
+                        std::span<const AdministrativeFinalization> closed) {
+        auto result_state = state;
+        result_state["labels"] = state.at("labels").get<std::size_t>() + labels.size();
+        result_state["excluded"] = state.at("excluded").get<std::size_t>() + excluded.size();
+        result_state["closed"] = state.at("closed").get<std::size_t>() + closed.size();
+        return result_state;
+    };
+    return result;
+}
+Cohort financial_decision() {
+    auto result = cohort(0);
+    result.prefix_exclusions = {{"US/A",
+                                 {"residual", 1},
+                                 tick,
+                                 PrefixReason::insufficient_pairs,
+                                 insufficient_pairs,
+                                 std::nullopt,
+                                 std::string(digest_width, 'f')}};
+    return result;
+}
+void financial_exclusion_preserves_emission_and_recovery() {
+    TemporaryDirectory directory;
+    const auto output = directory.path / "run";
+    {
+        auto contract = financial_definition();
+        contract.limits.max_pending = 1;
+        Executor run(output, contract, financial_callbacks());
+        const auto decision = run.step(financial_decision(), {});
+        require(decision.predictions.size() == 2 && decision.excluded.size() == 1 &&
+                    decision.excluded.front().prediction.value == 1 && run.pending().size() == 1,
+                "La exclusión del prefijo eliminó una emisión o no liberó su pendiente");
+        const auto before = run.snapshot();
+        auto duplicate = financial_decision();
+        duplicate.cursor = 1;
+        duplicate.cutoff = 2 * tick;
+        duplicate.kind = EventKind::settlement;
+        duplicate.observations.clear();
+        rejected([&] { run.step(duplicate, {}); }, "La exclusión del prefijo se aplicó dos veces");
+        require(run.snapshot() == before, "El rechazo cambió la generación confirmada");
+    }
+    auto contract = financial_definition();
+    contract.limits.max_pending = 1;
+    Executor restored(output, contract, financial_callbacks(), true);
+    Cohort close{1, phase_close, {}};
+    close.kind = EventKind::settlement;
+    close.close_phase = true;
+    const auto committed = restored.step(close, {});
+    require(committed.predictions.empty() && committed.applied.empty() &&
+                committed.finalized.size() == 1 && restored.pending().empty() &&
+                restored.snapshot().at("state").at("observed") == 2,
+            "El cierre administrativo volvió a predecir o fabricó feedback");
+}
+void financial_warmup_and_phase_boundaries_are_explicit() {
+    TemporaryDirectory directory;
+    Executor run(directory.path / "run", financial_definition(), financial_callbacks());
+    auto warmup = cohort(0);
+    warmup.cutoff = 2;
+    warmup.kind = EventKind::warmup;
+    for (auto& row : warmup.observations) {
+        row.available_at = 2;
+    }
+    require(run.step(warmup, {}).predictions.empty() && run.pending().empty(),
+            "El calentamiento creó predicciones pendientes");
+    auto decision = cohort(0);
+    decision.cursor = 1;
+    const auto issued = run.step(decision, {});
+    require(issued.predictions.front().value == 3, "El calentamiento no avanzó el estado rápido");
+    Cohort settlement{2, phase_end, {}};
+    settlement.kind = EventKind::settlement;
+    const std::array crossing{Feedback{issued.predictions.front().id, 0, phase_end, 1}};
+    rejected([&] { run.step(settlement, crossing); }, "El label cruza el corte de la fase");
+    settlement.close_phase = true;
+    rejected([&] { run.step(settlement, {}); }, "Se adelantó el cierre administrativo");
+    settlement.cutoff = phase_close;
+    settlement.close_phase = false;
+    rejected([&] { run.step(settlement, {}); },
+             "El settlement terminal dejó la fase sin cierre posible");
+    settlement.close_phase = true;
+    require(run.step(settlement, {}).finalized.size() == 2, "El rechazo impidió cerrar la fase");
+}
+void financial_recovery_preserves_exclusions_and_finalizations() {
+    TemporaryDirectory directory;
+    const std::array boundaries{Boundary::before_predictions, Boundary::predictions_ready,
+                                Boundary::record_written,     Boundary::feedback_applied,
+                                Boundary::checkpoint_written, Boundary::before_commit,
+                                Boundary::committed};
+    for (const bool close : {false, true}) {
+        for (const auto boundary : boundaries) {
+            const auto output =
+                directory.path /
+                (std::to_string(close) + "-" + std::to_string(static_cast<unsigned int>(boundary)));
+            auto event = financial_decision();
+            if (close) {
+                event = {1, phase_close, {}};
+                event.kind = EventKind::settlement;
+                event.close_phase = true;
+            }
+            {
+                Executor run(output, financial_definition(), financial_callbacks());
+                if (close) {
+                    run.step(financial_decision(), {});
+                }
+                rejected(
+                    [&] {
+                        run.step(event, {}, 1, [boundary](Boundary current) {
+                            if (current == boundary) {
+                                throw std::runtime_error("Corte financiero de prueba");
+                            }
+                        });
+                    },
+                    "La frontera financiera no interrumpió la transacción");
+            }
+            Executor resumed(output, financial_definition(), financial_callbacks(), true);
+            if (boundary != Boundary::committed) {
+                resumed.step(event, {});
+            }
+            require(resumed.snapshot().at("excluded") == 1 &&
+                        resumed.snapshot().at("finalized") == (close ? 1 : 0),
+                    "La recuperación perdió o duplicó una resolución");
+        }
+    }
 }
 } // namespace
 
@@ -539,6 +690,9 @@ int main() {
         prepared_state_recovers_at_every_boundary();
         invalid_prepared_outputs_and_mixed_contracts_are_rejected();
         prepared_mode_accepts_the_full_candidate_group_without_relaxing_classic_limits();
+        financial_exclusion_preserves_emission_and_recovery();
+        financial_warmup_and_phase_boundaries_are_explicit();
+        financial_recovery_preserves_exclusions_and_finalizations();
         std::cout << "Comprobaciones de cohortes completadas\n";
         return 0;
     } catch (const std::exception& error) {
