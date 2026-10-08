@@ -62,6 +62,8 @@ Los contadores de observaciones son int64 en CPU. Los pesos rápidos, momentum y
 
 Estas cantidades no son el RSS ni el tamaño de un archivo de PyTorch. El presupuesto agregado de miles de activos y la retención de archivos pertenecen al coordinador. Superar un límite causa error, sin truncar la población ni reiniciar memorias silenciosamente.
 
+El [puente de estados por bloques](financial-state-blocks.md) añade exportación CPU, recuperación con dispositivo explícito y reunión de hasta 256 flujos desde payloads confirmados. Un índice de referencias permite conservar un censo mayor sin formar un único estado tensorial. La comprobación del contenido de los artefactos y la retención de referencias anidadas siguen correspondiendo al coordinador.
+
 El banco permanece desactivado y K debe ser 1. Su conexión posterior necesita un codec con representación congelada o versionada, snapshot único por sesión y un solo responsable de publicar predicciones, estados, pendientes y banco. K podrá repetir lecturas y refinamientos, pero no multiplicar las escrituras de MAC.
 
 La opción [`local_control`](../experiments/mars_titan_cm_v1/mac_local_control.md) añade C con identidad separada. `None` conserva la ruta anterior. Una configuración explícita identifica un nuevo factorial con SDPA Math en MAC también para B. Ese contexto no controla todos los caminos internos del backbone Transformer. La selección se fija sobre todo el grupo lógico y se pasa a los bloques físicos mediante `control_selection` y `control_context_id`. El resultado opcional `local_control` contiene el diagnóstico o la contribución de penalización, sin publicar estado adicional. M todavía no está conectado a este predictor.

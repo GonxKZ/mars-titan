@@ -268,11 +268,13 @@ struct EpisodicMemory::Impl {
         });
         if (candidate && candidate->slot) {
             overwritten = key_storage.subspan(*candidate->slot * episodic_memory_width,
-                                               episodic_memory_width);
+                                              episodic_memory_width);
             std::copy(overwritten.begin(), overwritten.end(), saved_row.begin());
-            std::copy(candidate->record.key.begin(), candidate->record.key.end(), overwritten.begin());
+            std::copy(candidate->record.key.begin(), candidate->record.key.end(),
+                      overwritten.begin());
         }
-        // La GEMV conserva el redondeo. La fila provisional se restaura incluso si falla la consulta.
+        // La GEMV conserva el redondeo. La fila provisional se restaura incluso si falla la
+        // consulta.
         const auto scores = at::matmul(matrix, normalized);
         std::array<std::pair<double, const MemoryRecord*>, episodic_memory_capacity> eligible{};
         std::size_t count = 0;
@@ -329,6 +331,60 @@ EpisodicMemory::EpisodicMemory(MemoryScope scope, uint64_t seed, std::size_t cap
     impl_ = std::make_unique<Impl>(seed, std::move(scope), capacity);
 }
 EpisodicMemory::~EpisodicMemory() = default;
+
+MemoryVector normalize_memory_key(const MemoryVector& key) { return normalize(key); }
+
+std::vector<MemoryRecord> EpisodicMemory::retained_records() const { return impl_->records; }
+
+std::vector<MemoryRecord> EpisodicMemory::validate_batch(std::span<const MemoryRecord> incoming,
+                                                         int64_t confirmed_at) const {
+    require(!incoming.empty() && incoming.size() <= maximum_retention_batch &&
+                incoming.size() <= maximum_seen - impl_->seen &&
+                confirmed_at >= impl_->confirmed_at,
+            "El lote de retención está vacío, retrocede o supera el presupuesto");
+    std::vector<MemoryRecord> normalized;
+    normalized.reserve(incoming.size());
+    auto last_id = impl_->last_id;
+    for (const auto& input : incoming) {
+        validate_record(input, confirmed_at, false);
+        require(input.id > last_id, "El lote repite o desordena una admisión episódica");
+        auto record = input;
+        record.key = normalize(record.key);
+        normalized.push_back(record);
+        last_id = input.id;
+    }
+    return normalized;
+}
+
+void EpisodicMemory::retain_batch(std::span<const MemoryRecord> incoming,
+                                  std::span<const uint64_t> retained_ids, int64_t confirmed_at) {
+    const auto normalized = validate_batch(incoming, confirmed_at);
+    const auto seen = impl_->seen + static_cast<uint64_t>(incoming.size());
+    require(retained_ids.size() == std::min(static_cast<uint64_t>(impl_->capacity), seen) &&
+                std::ranges::is_sorted(retained_ids) &&
+                std::ranges::adjacent_find(retained_ids) == retained_ids.end(),
+            "La selección necesita IDs crecientes únicos y la capacidad completa");
+    auto eligible = impl_->records;
+    eligible.insert(eligible.end(), normalized.begin(), normalized.end());
+    std::ranges::sort(eligible, {}, &MemoryRecord::id);
+    const at::NoGradGuard no_grad;
+    auto next = std::make_unique<Impl>(impl_->seed, impl_->scope, impl_->capacity);
+    for (const auto id : retained_ids) {
+        const auto found = std::ranges::lower_bound(eligible, id, {}, &MemoryRecord::id);
+        require(found != eligible.end() && found->id == id,
+                "La retención incluye un episodio ajeno al conjunto admisible");
+        const auto row = next->records.size();
+        next->records.push_back(*found);
+        std::copy(
+            found->key.begin(), found->key.end(),
+            next->key_storage.subspan(row * episodic_memory_width, episodic_memory_width).begin());
+    }
+    next->seen = seen;
+    next->last_id = incoming.back().id;
+    next->confirmed_at = confirmed_at;
+    next->rng = impl_->rng;
+    impl_ = std::move(next);
+}
 
 PreparedMemoryWrite EpisodicMemory::prepare_write(const MemoryRecord& input,
                                                   int64_t confirmed_at) const {

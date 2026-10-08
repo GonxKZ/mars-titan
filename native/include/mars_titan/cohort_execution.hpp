@@ -44,11 +44,13 @@ struct Limits {
     std::size_t max_log_bytes = default_log_bytes;
     std::size_t max_cohorts = default_max_cohorts;
 };
+enum class PredictionMode : std::uint8_t { stateless, prepared };
 struct Definition {
     Identity identity;
     std::vector<Task> tasks;
     Json initial_state;
     Limits limits;
+    PredictionMode prediction_mode = PredictionMode::stateless;
 };
 struct Observation {
     std::string asset;
@@ -79,11 +81,20 @@ struct ResolvedFeedback {
     Prediction prediction;
     Feedback label;
 };
+struct PreparedCohort {
+    // Orden canónico activo/tarea. Una propuesta compartida por toda la cohorte.
+    std::vector<double> values;
+    Json proposed_state;
+};
 struct Callbacks {
     // Funciones deterministas. Todo el estado del consumidor debe estar en el JSON explícito.
     std::function<std::vector<double>(std::span<const Observation>, const Task&, const Json&)>
         predict;
     std::function<Json(const Json&, std::span<const ResolvedFeedback>)> update;
+    // Se elige prepare o predict. Los tensores externos necesitan referencias verificables.
+    std::function<PreparedCohort(std::span<const Observation>, std::span<const Task>, std::int64_t,
+                                 const Json&, std::size_t)>
+        prepare = {};
 };
 enum class Boundary : std::uint8_t {
     before_predictions,

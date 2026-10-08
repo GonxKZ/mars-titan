@@ -106,9 +106,18 @@ La revisión técnica del 8 de octubre comprueba en CPU y CUDA la referencia GRU
 el núcleo Titans-MAC, su adaptador financiero y el diagnóstico local de C.
 Este último utiliza una compresión del Jacobiano conjunto de pesos rápidos
 y momentum y puede omitir direcciones expansivas. El codec episódico conserva
-una representación fija de las entradas y sus máscaras. La conexión temporal
-del banco y la recuperación conjunta siguen pendientes. No hay una mejora
+una representación fija de las entradas y sus máscaras. El banco por sesión
+y la recuperación de estados por bloques están implementados y comprobados.
+Su conexión con el predictor financiero sigue pendiente. No hay una mejora
 predictiva medida de estas variantes.
+
+La comparación de refuerzo conserva PPO y Double DQN y prepara tres controles
+PPO: recorte con diagnóstico KL, penalización KL adaptativa y parada por KL.
+KLPO tiene prioridad como candidato separado. El ajuste de una predicción y
+la política financiera secuencial necesitan objetivos distintos. La KL completa
+y la descomposición cuadrática predictiva tienen comprobaciones algebraicas
+CPU/CUDA. Las nuevas variantes y la comparación científica siguen pendientes,
+sin un algoritmo ganador seleccionado.
 
 Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
 retornos de activos y un registro de operaciones con costes de apertura y cierre.
