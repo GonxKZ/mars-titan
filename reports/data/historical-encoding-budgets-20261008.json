@@ -1,0 +1,411 @@
+{
+  "checked_at_utc": "2026-10-08T03:29:31.394126+00:00",
+  "scope": "Preparación y pruebas técnicas con pesos congelados. No es un experimento predictivo.",
+  "source_sha256": {
+    "src/mars_titan/data/embeddings.py": "77a998cee85440ea851c29c8a9e5e72cb9e8cf1ea0da3dcca09b8a426b46fce4",
+    "src/mars_titan/data/corpus_encoding.py": "8cba262a741d30bff74e5ca4d82bd6de8b8178821c251e7a408dc3bdf4e6c959"
+  },
+  "tests": {
+    "passed": 80,
+    "command": "uv run pytest -q tests/data/test_encoding_budgets.py tests/data/test_corpus_encoding.py tests/data/test_embeddings.py tests/data/test_historical_input_masks.py tests/data/test_historical_accounting.py",
+    "chart_cache_parquet_parity": "Igualdad de bytes en dos activos de fixture",
+    "invalid_configuration_type": "Regresión reproducida antes de corregir False frente a 0"
+  },
+  "mutations": [
+    {
+      "name": "chart_write",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "partial_manifest",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "count_reused",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "disk_admission",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "cuda_free",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "image_tail",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "text_batch",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "uncached_nonfinite",
+      "detected": true,
+      "exit_code": 1
+    },
+    {
+      "name": "configuration_type",
+      "detected": true,
+      "exit_code": 1
+    }
+  ],
+  "quality": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1"
+    },
+    "coverage_cpu": {
+      "covered_lines": 258,
+      "num_statements": 342,
+      "percent_covered": 75.61475409836065,
+      "percent_covered_display": "76",
+      "missing_lines": 84,
+      "excluded_lines": 0,
+      "percent_statements_covered": 75.43859649122807,
+      "percent_statements_covered_display": "75",
+      "num_branches": 146,
+      "num_partial_branches": 25,
+      "covered_branches": 111,
+      "missing_branches": 35,
+      "percent_branches_covered": 76.02739726027397,
+      "percent_branches_covered_display": "76"
+    },
+    "functions": [
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "text_artifact_fingerprints",
+        "complexity": 2,
+        "statement_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "token_chunks",
+        "complexity": 3,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "add_special_tokens",
+        "complexity": 3,
+        "statement_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "require_cuda",
+        "complexity": 8,
+        "statement_coverage": 1.0,
+        "crap": 8.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "__init__",
+        "complexity": 3,
+        "statement_coverage": 0.75,
+        "crap": 3.140625
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "identity",
+        "complexity": 1,
+        "statement_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "get",
+        "complexity": 13,
+        "statement_coverage": 0.8823529411764706,
+        "crap": 13.275188276002442
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "put",
+        "complexity": 6,
+        "statement_coverage": 1.0,
+        "crap": 6.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "close",
+        "complexity": 1,
+        "statement_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "__init__",
+        "complexity": 3,
+        "statement_coverage": 0.75,
+        "crap": 3.140625
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "identity",
+        "complexity": 1,
+        "statement_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "get",
+        "complexity": 13,
+        "statement_coverage": 0.8823529411764706,
+        "crap": 13.275188276002442
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "put",
+        "complexity": 6,
+        "statement_coverage": 1.0,
+        "crap": 6.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "close",
+        "complexity": 1,
+        "statement_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "__init__",
+        "complexity": 12,
+        "statement_coverage": 0.09999999999999998,
+        "crap": 116.97600000000001
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "text",
+        "complexity": 7,
+        "statement_coverage": 0.9090909090909091,
+        "crap": 7.036814425244177
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "images",
+        "complexity": 6,
+        "statement_coverage": 0.875,
+        "crap": 6.0703125
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "__init__",
+        "complexity": 12,
+        "statement_coverage": 0.09999999999999998,
+        "crap": 116.97600000000001
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "text",
+        "complexity": 7,
+        "statement_coverage": 0.9090909090909091,
+        "crap": 7.036814425244177
+      },
+      {
+        "file": "src/mars_titan/data/embeddings.py",
+        "name": "images",
+        "complexity": 6,
+        "statement_coverage": 0.875,
+        "crap": 6.0703125
+      },
+      {
+        "file": "src/mars_titan/data/corpus_encoding.py",
+        "name": "_free_disk_bytes",
+        "complexity": 2,
+        "statement_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/data/corpus_encoding.py",
+        "name": "_same_json",
+        "complexity": 1,
+        "statement_coverage": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/data/corpus_encoding.py",
+        "name": "encode_corpus",
+        "complexity": 128,
+        "statement_coverage": 0.8613138686131387,
+        "crap": 171.70378396120637
+      },
+      {
+        "file": "src/mars_titan/data/corpus_encoding.py",
+        "name": "main",
+        "complexity": 7,
+        "statement_coverage": 0.03448275862068961,
+        "crap": 51.10381729468203
+      }
+    ],
+    "convention": "CRAP = CC² × (1-cobertura de sentencias de la función)³ + CC. Cobertura CPU con ramas. La ejecución CUDA se registra por separado.",
+    "limits": [
+      "La cobertura CPU no incluye la ejecución CUDA separada.",
+      "encode_corpus conserva alta complejidad en la validación y recorrido existentes. El diagnóstico no acredita cobertura completa."
+    ]
+  },
+  "cuda": {
+    "checked_at_utc": "2026-10-08T03:02:10.613057+00:00",
+    "passed": true,
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1763 MiB, 595.91.07",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "maximum_absolute_errors": {
+      "text": 5.960464477539063e-08,
+      "images": 0.0
+    },
+    "rtol": 2e-05,
+    "atol": 2e-06,
+    "fixture": {
+      "texts": 2,
+      "images": 5,
+      "image_shape": [
+        224,
+        224,
+        3
+      ]
+    },
+    "peak_rss_bytes": 2763841536,
+    "scope": "Codificación de entradas sintéticas, sin entrenamiento ni evaluación predictiva",
+    "limits": [
+      "Existe una carga GPU ajena. Los tiempos incluyen carga y no acreditan aceleración.",
+      "El límite del asignador no incluye toda la memoria del contexto CUDA."
+    ]
+  },
+  "encoder_runs": [
+    {
+      "label": "reference",
+      "elapsed_seconds": 7.111843339000188,
+      "peak_allocated_bytes": 579823616,
+      "peak_reserved_bytes": 629145600
+    },
+    {
+      "label": "bounded",
+      "elapsed_seconds": 1.779215884002042,
+      "peak_allocated_bytes": 575889408,
+      "peak_reserved_bytes": 614465536
+    }
+  ],
+  "encoder_identities": [
+    {
+      "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+      "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+      "text_artifacts_sha256": {
+        "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+        "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+        "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+        "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+      },
+      "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+      "tokenizers_version": "0.23.2",
+      "tokenizer_class": "TokenizersBackend",
+      "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+      "image_model": "resnet18.IMAGENET1K_V1",
+      "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+      "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+      "image_policy": "224_rgb_imagenet_normalization_no_crop",
+      "code_sha256": "ea8077ca70587958679527b262f4aee1f94b19e00285e0fb6fe2300288caf7e3",
+      "torch": "2.14.0+cu130",
+      "torchvision": "0.29.0+cu130",
+      "transformers": "5.17.0",
+      "device": "cuda:0",
+      "precision": "float32",
+      "historical_simulation": false
+    },
+    {
+      "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+      "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+      "text_artifacts_sha256": {
+        "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+        "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+        "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+        "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+      },
+      "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+      "tokenizers_version": "0.23.2",
+      "tokenizer_class": "TokenizersBackend",
+      "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+      "image_model": "resnet18.IMAGENET1K_V1",
+      "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+      "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+      "image_policy": "224_rgb_imagenet_normalization_no_crop",
+      "code_sha256": "77a998cee85440ea851c29c8a9e5e72cb9e8cf1ea0da3dcca09b8a426b46fce4",
+      "torch": "2.14.0+cu130",
+      "torchvision": "0.29.0+cu130",
+      "transformers": "5.17.0",
+      "device": "cuda:0",
+      "precision": "float32",
+      "historical_simulation": false,
+      "batch_sizes": {
+        "text_chunks": 2,
+        "images": 2
+      }
+    }
+  ],
+  "disk": {
+    "checked_at_utc": "2026-10-08T02:43:15.600554+00:00",
+    "existing_samples": 1816369,
+    "existing_assets": 2226,
+    "parquet_file_bytes": 7995239328,
+    "parquet_uncompressed_row_groups_bytes": 9725577614,
+    "cache_logical_bytes": 10616950784,
+    "cache_kinds": [
+      {
+        "kind": "chart",
+        "entries": 1816369,
+        "vector_bytes": 3719923712
+      },
+      {
+        "kind": "news",
+        "entries": 966370,
+        "vector_bytes": 1484344320
+      }
+    ],
+    "historical_valid_price_windows": 17076024,
+    "free_bytes": 135054024704,
+    "estimates": {
+      "parquet_if_old_bytes_per_row": 75164737259,
+      "cache_if_old_bytes_per_entry": 65149949885,
+      "chart_vector_bytes_without_metadata": 34971697152,
+      "numeric_vectors_bytes_without_metadata": 95215909824
+    },
+    "limits": [
+      "La compresión y la proporción de noticias del histórico pueden diferir de esta edición",
+      "La estimación de caché no incorpora nuevas noticias ni duplicados de contenido",
+      "Faltan medidas reales del nuevo materializador antes de autorizar todo el recorrido"
+    ],
+    "elapsed_seconds": 61.90962222700182,
+    "peak_rss_bytes": 100704256
+  },
+  "provenance_sha256": {
+    "encoder-budget-cuda.json": "53d8cdc9e21634666dd32c892f9b138bc14d62d636c3dac790d19c1213b9281a",
+    "encoding-storage-audit.json": "db58220f68e93b37337cb4f457e859dac26953a1da89587c530b4114d55c7072",
+    "encoding-budget-quality-final/receipt.json": "f57970d613359a45ba5291fdf75edadff43cfb3323b1320f163dee2786d88288"
+  },
+  "limits": [
+    "La reserva se comprueba entre activos y no impone una cuota al sistema de archivos.",
+    "Las estimaciones de disco extrapolan otra distribución de muestras.",
+    "El recorrido completo histórico aún no se ha codificado.",
+    "El bloqueo de aprendizaje y el test final cerrado permanecen vigentes."
+  ],
+  "independent_review": {
+    "private_tests_passed": 7,
+    "elapsed_seconds": 1.61,
+    "open_findings": 0,
+    "receipt_sha256": "acfae7353c7654b58b75a2da200d313e8d1adb65007833100bbdba6049921a26",
+    "fixed_finding": "Rechazar False frente a 0 en la configuración recuperada"
+  }
+}

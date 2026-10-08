@@ -4,6 +4,8 @@ El recorrido de la edición `historical_masked_2000_v1` ha terminado para los 5.
 
 Estas salidas son tablas normalizadas y paneles macro. Todavía faltan su codificación conjunta, los objetivos válidos y la verificación de las mismas filas en las ventanas temporales de cada comparación. El aprendizaje continúa bloqueado y la reserva de 2024 permanece cerrada.
 
+La [codificación acotada](historical-encoding-budgets.md) permite pausar por activo y omitir la copia secundaria de gráficos en caché. Conserva los vectores en Parquet y registra los límites de disco, CUDA y lotes antes de completar el recorrido.
+
 ## Tablas preparadas
 
 | Mercado | Candidatos | Activos preparados | Sin precios | Filas de precios | Noticias admitidas | Hechos contables admitidos |
