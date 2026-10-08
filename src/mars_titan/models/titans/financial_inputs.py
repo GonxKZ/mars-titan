@@ -327,6 +327,7 @@ class DecisionBatch:
             or len(set(indices)) != len(indices)
         ):
             raise ValueError("La selección de flujos necesita índices únicos válidos")
+        indices = list(indices)
         return DecisionBatch._create(
             {name: values[indices] for name, values in self.inputs.items()},
             self.presence[indices],

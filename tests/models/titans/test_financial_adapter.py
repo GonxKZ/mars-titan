@@ -462,3 +462,20 @@ def test_tensor_conversion_rejects_changed_interpretation_of_verified_cpu_bytes(
     assert all(issubclass(notice.category, DeprecationWarning) for notice in notices)
     with pytest.raises(ValueError, match="contrato|cambi|huella"):
         api().DecisionBatch.from_validated(verified)
+
+
+def test_list_and_tuple_select_the_same_rows_and_preserve_state_parity():
+    model, batch = setup()
+    by_list, by_tuple = batch.select([1, 0]), batch.select((1, 0))
+    assert by_tuple.inputs["prices"].shape == (2, 64, 5)
+    assert by_tuple.presence.shape == (2, 5)
+    for name in DIMENSIONS:
+        torch.testing.assert_close(by_tuple.inputs[name], by_list.inputs[name], rtol=0, atol=0)
+    assert by_tuple.input_digest == by_list.input_digest
+    state = model.select_state(model.initial_state(batch.flow_ids), by_list.flow_ids)
+    left, right = model.prepare(by_list, state), model.prepare(by_tuple, state)
+    torch.testing.assert_close(left.point_predictions, right.point_predictions, rtol=0, atol=0)
+    for first, second in zip(
+        left.next_state.mac.memory.weights, right.next_state.mac.memory.weights, strict=True
+    ):
+        torch.testing.assert_close(first, second, rtol=0, atol=0)
