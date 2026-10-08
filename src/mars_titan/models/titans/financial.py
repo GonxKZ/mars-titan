@@ -16,7 +16,7 @@ from .config import MACConfig, MemoryConfig, bounded_integer, canonical, require
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
-from .state import MACState, check_differentiable, check_finite, require_payload
+from .state import MACState, check_differentiable, check_finite
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 
@@ -365,12 +365,12 @@ class FinancialPredictor(nn.Module):
         ):
             raise ValueError("Los flujos deben ser identificadores únicos de mercado y activo")
 
-    def _validate_state(self, state):
+    def _validate_state(self, state, *, device=None):
         self._validate_cursor(state)
         if self.mac:
             if not isinstance(state.mac, MACState):
                 raise ValueError("Falta el estado MAC identificado")
-            self.mac.memory.validate_state(state.mac.memory)
+            self.mac.memory.validate_state(state.mac.memory, device=device)
             if state.mac.config_id != self.mac.config.fingerprint():
                 raise ValueError("El contrato MAC del estado no coincide")
             expected = (
@@ -547,50 +547,22 @@ class FinancialPredictor(nn.Module):
             mac=self.mac.export_state(state.mac) if self.mac else None,
         )
 
-    def restore_state(self, payload):
-        self.verify_parameter_identity()
-        value = require_payload(
-            payload,
-            {
-                "schema_version",
-                "configuration",
-                "parameter_id",
-                "flow_ids",
-                "last_sample_ids",
-                "last_prediction_at",
-                "observed_steps",
-                "mac",
-            },
-        )
-        require_identity(value["configuration"], self.get_extra_state())
-        state = FinancialState(
-            self._config_id(),
-            value["parameter_id"],
-            value["flow_ids"],
-            value["last_sample_ids"],
-            value["last_prediction_at"],
-            value["observed_steps"],
-            None,
-        )
-        self._validate_cursor(state)
-        tensors = [state.observed_steps]
-        if self.mac:
-            mac = require_payload(value["mac"], {"schema_version", "configuration", "memory"})
-            memory = require_payload(
-                mac["memory"], {"schema_version", "configuration", "weights", "momentum", "steps"}
-            )
-            for name in ("weights", "momentum"):
-                if type(memory[name]) is not tuple or len(memory[name]) != 2:
-                    raise ValueError("El estado no conserva las dos capas de memoria")
-                tensors.extend(memory[name])
-            tensors.append(memory["steps"])
-        elif value["mac"] is not None:
-            raise ValueError("El control directo no admite estado MAC")
-        metadata = self._usage(state)["metadata_bytes"]
-        self._check_bytes(self._storage_bytes(tensors) + metadata)
-        state = replace(state, mac=self.mac.restore_state(value["mac"]) if self.mac else None)
-        self._validate_state(state)
-        return replace(state, observed_steps=state.observed_steps.clone())
+    def export_state_cpu(self, state):
+        """Exportar copias CPU sin grafo para artefactos de recuperación por bloques."""
+        from .financial_blocks import export_state_cpu
+
+        return export_state_cpu(self, state)
+
+    def restore_state(self, payload, *, device=None):
+        from .financial_blocks import restore_state
+
+        return restore_state(self, payload, device=device)
+
+    def gather_state(self, blocks, flow_ids, *, max_source_bytes=512 * 1024**2):
+        """Reunir filas confirmadas en CPU y transferir solo el resultado al predictor."""
+        from .financial_blocks import gather_state
+
+        return gather_state(self, blocks, flow_ids, max_source_bytes=max_source_bytes)
 
 
 def copy_paired_parameters(source, target):

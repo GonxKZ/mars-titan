@@ -23,6 +23,7 @@ option(MARS_TITAN_BUILD_FINANCIAL "Compilar la sesión financiera pura y sus pru
 option(MARS_TITAN_BUILD_RUNNER "Compilar el ejecutable financiero autónomo" OFF)
 option(MARS_TITAN_BUILD_PPO "Compilar PPO nativo con LibTorch" OFF)
 option(MARS_TITAN_BUILD_COHORT_EXECUTION "Compilar el ejecutor de cohortes recuperable" OFF)
+option(MARS_TITAN_BUILD_EPISODIC_PYTHON "Enlazar el banco y el ejecutor con Python" OFF)
 option(MARS_TITAN_BUILD_FINANCIAL_CONTROLS "Compilar referencias para auditorías financieras congeladas" OFF)
 option(MARS_TITAN_BUILD_FUZZER "Compilar el ejecutable de libFuzzer" OFF)
 set(MARS_TITAN_SANITIZER "none" CACHE STRING "Instrumentación independiente de memoria o hilos")
@@ -40,6 +41,10 @@ include(cmake/Instrumentation.cmake)
 include(cmake/Diagnostics.cmake)
 include(cmake/Coverage.cmake)
 
+if(MARS_TITAN_BUILD_EPISODIC_PYTHON)
+    set(MARS_TITAN_BUILD_COHORT_EXECUTION ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 if(MARS_TITAN_BUILD_RUNNER OR MARS_TITAN_BUILD_COHORT_EXECUTION OR MARS_TITAN_BUILD_FINANCIAL_CONTROLS)
     set(MARS_TITAN_BUILD_FINANCIAL ON)
 endif()
@@ -245,6 +250,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         endif()
     endif()
 
+    include(cmake/EpisodicPython.cmake)
+
     if(MARS_TITAN_BUILD_FINANCIAL)
         set(identity_files ${mars_analysis_sources}
             "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/simulation.h"
@@ -264,6 +271,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
         if(MARS_TITAN_BUILD_COHORT_EXECUTION)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/cohort_execution.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CohortExecution.cmake")
+        endif()
+        if(MARS_TITAN_BUILD_EPISODIC_PYTHON)
+            list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_memory.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EpisodicPython.cmake"
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TorchDependencies.cmake")
         endif()
         if(MARS_TITAN_BUILD_FINANCIAL_CONTROLS)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/financial_controls.hpp"
