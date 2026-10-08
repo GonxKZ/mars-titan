@@ -27,22 +27,49 @@ struct BoundExecutor {
     BoundExecutor(const std::string& output, cohorts::Definition definition, py::function prepare,
                   py::function update, bool resume) {
         cohorts::Callbacks callbacks;
-        callbacks.prepare = [prepare = std::move(prepare)](
-                                std::span<const cohorts::Observation> rows,
-                                std::span<const cohorts::Task> tasks, std::int64_t cutoff,
-                                const cohorts::Json& before, std::size_t batch_rows) {
-            const auto returned =
-                prepare(std::vector(rows.begin(), rows.end()),
-                        std::vector(tasks.begin(), tasks.end()), cutoff, before.dump(), batch_rows)
-                    .cast<std::pair<std::vector<double>, std::string>>();
-            return cohorts::PreparedCohort{returned.first, state_json(returned.second)};
-        };
-        callbacks.update = [update = std::move(update)](
-                               const cohorts::Json& proposed,
-                               std::span<const cohorts::ResolvedFeedback> feedback) {
-            return state_json(update(proposed.dump(), std::vector(feedback.begin(), feedback.end()))
-                                  .cast<std::string>());
-        };
+        if (definition.prediction_mode == cohorts::PredictionMode::financial) {
+            callbacks.prepare_event = [prepare = std::move(prepare)](
+                                          cohorts::EventKind kind,
+                                          std::span<const cohorts::Observation> rows,
+                                          std::span<const cohorts::Task> tasks, std::int64_t cutoff,
+                                          const cohorts::Json& before, std::size_t batch_rows) {
+                const auto returned = prepare(kind, std::vector(rows.begin(), rows.end()),
+                                              std::vector(tasks.begin(), tasks.end()), cutoff,
+                                              before.dump(), batch_rows)
+                                          .cast<std::pair<std::vector<double>, std::string>>();
+                return cohorts::PreparedCohort{returned.first, state_json(returned.second)};
+            };
+            callbacks.resolve =
+                [update = std::move(update)](
+                    const cohorts::Json& proposed,
+                    std::span<const cohorts::ResolvedFeedback> feedback,
+                    std::span<const cohorts::ResolvedPrefixExclusion> excluded,
+                    std::span<const cohorts::AdministrativeFinalization> finalized) {
+                    return state_json(update(proposed.dump(),
+                                             std::vector(feedback.begin(), feedback.end()),
+                                             std::vector(excluded.begin(), excluded.end()),
+                                             std::vector(finalized.begin(), finalized.end()))
+                                          .cast<std::string>());
+                };
+        } else {
+            callbacks.prepare = [prepare = std::move(prepare)](
+                                    std::span<const cohorts::Observation> rows,
+                                    std::span<const cohorts::Task> tasks, std::int64_t cutoff,
+                                    const cohorts::Json& before, std::size_t batch_rows) {
+                const auto returned = prepare(std::vector(rows.begin(), rows.end()),
+                                              std::vector(tasks.begin(), tasks.end()), cutoff,
+                                              before.dump(), batch_rows)
+                                          .cast<std::pair<std::vector<double>, std::string>>();
+                return cohorts::PreparedCohort{returned.first, state_json(returned.second)};
+            };
+            callbacks.update =
+                [update = std::move(update)](const cohorts::Json& proposed,
+                                             std::span<const cohorts::ResolvedFeedback> feedback) {
+                    return state_json(
+                        update(proposed.dump(), std::vector(feedback.begin(), feedback.end()))
+                            .cast<std::string>());
+                };
+        }
         executor = std::make_unique<cohorts::Executor>(output, std::move(definition),
                                                        std::move(callbacks), resume);
     }
@@ -88,6 +115,7 @@ void bind_memory(py::module_& module) {
     module.def("normalize_key", &memory::normalize_memory_key);
     py::class_<memory::EpisodicMemory>(module, "EpisodicMemory")
         .def(py::init<memory::MemoryScope, uint64_t, std::size_t>())
+        .def(py::init<memory::MemoryScope, uint64_t, std::size_t, std::uint32_t>())
         .def("write",
              [](memory::EpisodicMemory& bank, const memory::MemoryRecord& record,
                 int64_t confirmed_at) {
@@ -140,7 +168,24 @@ void bind_memory(py::module_& module) {
 void bind_cohorts(py::module_& module) {
     py::enum_<cohorts::PredictionMode>(module, "PredictionMode")
         .value("stateless", cohorts::PredictionMode::stateless)
-        .value("prepared", cohorts::PredictionMode::prepared);
+        .value("prepared", cohorts::PredictionMode::prepared)
+        .value("financial", cohorts::PredictionMode::financial);
+    py::enum_<cohorts::EventKind>(module, "EventKind")
+        .value("warmup", cohorts::EventKind::warmup)
+        .value("decision", cohorts::EventKind::decision)
+        .value("settlement", cohorts::EventKind::settlement);
+    py::enum_<cohorts::PrefixReason>(module, "PrefixReason")
+        .value("insufficient_pairs", cohorts::PrefixReason::insufficient_pairs)
+        .value("zero_market_variance", cohorts::PrefixReason::zero_market_variance);
+    py::class_<cohorts::PhaseContract>(module, "PhaseContract")
+        .def(py::init<std::string, std::int64_t, std::int64_t, std::int64_t, std::int64_t,
+                      std::string>())
+        .def_readonly("partition", &cohorts::PhaseContract::partition)
+        .def_readonly("warmup_start", &cohorts::PhaseContract::warmup_start)
+        .def_readonly("decision_start", &cohorts::PhaseContract::decision_start)
+        .def_readonly("decision_end", &cohorts::PhaseContract::decision_end)
+        .def_readonly("close_at", &cohorts::PhaseContract::close_at)
+        .def_readonly("prefix_policy_sha256", &cohorts::PhaseContract::prefix_policy_sha256);
     py::enum_<cohorts::Boundary>(module, "Boundary")
         .value("before_predictions", cohorts::Boundary::before_predictions)
         .value("predictions_ready", cohorts::Boundary::predictions_ready)
@@ -175,6 +220,7 @@ void bind_cohorts(py::module_& module) {
         .def_readwrite("tasks", &cohorts::Definition::tasks)
         .def_readwrite("limits", &cohorts::Definition::limits)
         .def_readwrite("prediction_mode", &cohorts::Definition::prediction_mode)
+        .def_readwrite("phase", &cohorts::Definition::phase)
         .def_property(
             "initial_state_json",
             [](const cohorts::Definition& definition) { return definition.initial_state.dump(); },
@@ -190,7 +236,20 @@ void bind_cohorts(py::module_& module) {
         .def(py::init<>())
         .def_readwrite("cursor", &cohorts::Cohort::cursor)
         .def_readwrite("cutoff", &cohorts::Cohort::cutoff)
-        .def_readwrite("observations", &cohorts::Cohort::observations);
+        .def_readwrite("observations", &cohorts::Cohort::observations)
+        .def_readwrite("kind", &cohorts::Cohort::kind)
+        .def_readwrite("close_phase", &cohorts::Cohort::close_phase)
+        .def_readwrite("prefix_exclusions", &cohorts::Cohort::prefix_exclusions);
+    py::class_<cohorts::PrefixExclusion>(module, "PrefixExclusion")
+        .def(py::init<std::string, cohorts::Task, std::int64_t, cohorts::PrefixReason, std::size_t,
+                      std::optional<double>, std::string>())
+        .def_readonly("asset", &cohorts::PrefixExclusion::asset)
+        .def_readonly("task", &cohorts::PrefixExclusion::task)
+        .def_readonly("decision_at", &cohorts::PrefixExclusion::decision_at)
+        .def_readonly("reason", &cohorts::PrefixExclusion::reason)
+        .def_readonly("history_pairs", &cohorts::PrefixExclusion::history_pairs)
+        .def_readonly("market_variance", &cohorts::PrefixExclusion::market_variance)
+        .def_readonly("evidence_sha256", &cohorts::PrefixExclusion::evidence_sha256);
     py::class_<cohorts::Prediction>(module, "Prediction")
         .def_readonly("id", &cohorts::Prediction::id)
         .def_readonly("asset", &cohorts::Prediction::asset)
@@ -208,11 +267,19 @@ void bind_cohorts(py::module_& module) {
         .def_readonly("id", &cohorts::ResolvedFeedback::id)
         .def_readonly("prediction", &cohorts::ResolvedFeedback::prediction)
         .def_readonly("label", &cohorts::ResolvedFeedback::label);
+    py::class_<cohorts::ResolvedPrefixExclusion>(module, "ResolvedPrefixExclusion")
+        .def_readonly("prediction", &cohorts::ResolvedPrefixExclusion::prediction)
+        .def_readonly("evidence", &cohorts::ResolvedPrefixExclusion::evidence);
+    py::class_<cohorts::AdministrativeFinalization>(module, "AdministrativeFinalization")
+        .def_readonly("prediction", &cohorts::AdministrativeFinalization::prediction)
+        .def_readonly("closed_at", &cohorts::AdministrativeFinalization::closed_at);
     py::class_<cohorts::Commit>(module, "Commit")
         .def_readonly("generation", &cohorts::Commit::generation)
         .def_readonly("predictions", &cohorts::Commit::predictions)
         .def_readonly("applied", &cohorts::Commit::applied)
-        .def_readonly("record_sha256", &cohorts::Commit::record_sha256);
+        .def_readonly("record_sha256", &cohorts::Commit::record_sha256)
+        .def_readonly("excluded", &cohorts::Commit::excluded)
+        .def_readonly("finalized", &cohorts::Commit::finalized);
     py::class_<BoundExecutor>(module, "Executor")
         .def(py::init<const std::string&, cohorts::Definition, py::function, py::function, bool>())
         .def(

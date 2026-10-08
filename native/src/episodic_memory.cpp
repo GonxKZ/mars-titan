@@ -28,6 +28,8 @@ constexpr std::size_t maximum_rng_bytes = 8192;
 constexpr uint64_t maximum_seen = uint64_t{1} << 32;
 constexpr double unit_norm_tolerance = 1e-6;
 constexpr int64_t snapshot_version = 1;
+constexpr std::uint32_t causal_snapshot_version = 2;
+enum class MemoryContract : std::uint8_t { legacy = 1, causal = 2 };
 constexpr int64_t metadata_width = 6;
 constexpr int64_t outcome_width = 2;
 constexpr int64_t id_column = 0;
@@ -50,7 +52,9 @@ void require(bool condition, const char* message) {
     }
 }
 
-void validate_scope(const MemoryScope& scope) {
+void validate_scope(const MemoryScope& scope, std::uint32_t version) {
+    require(version == snapshot_version || version == causal_snapshot_version,
+            "La versión del contrato de memoria no está admitida");
     for (const auto* text : {&scope.world, &scope.partition, &scope.fold, &scope.representation}) {
         require(!text->empty() && text->size() <= maximum_scope_bytes &&
                     std::all_of(text->begin(), text->end(),
@@ -59,8 +63,10 @@ void validate_scope(const MemoryScope& scope) {
                                 }),
                 "El ámbito episódico necesita identificadores ASCII no vacíos y acotados");
     }
-    require(scope.partition == "train" || scope.partition == "validation",
-            "La memoria episódica solo admite entrenamiento o validación");
+    require(scope.partition == "train" || scope.partition == "validation" ||
+                (version == causal_snapshot_version &&
+                 (scope.partition == "calibration" || scope.partition == "evaluation")),
+            "La partición no está admitida por esta versión de memoria");
 }
 
 MemoryVector normalize(const MemoryVector& input) {
@@ -109,8 +115,14 @@ void validate_record(const MemoryRecord& record, int64_t confirmed_at, bool norm
             "La clave guardada no conserva una norma unitaria");
 }
 
-ReservoirEngine initial_rng(uint64_t seed, const MemoryScope& scope) {
+ReservoirEngine initial_rng(uint64_t seed, const MemoryScope& scope, std::uint32_t version) {
     constexpr unsigned int word_bits = 32;
+    if (version == causal_snapshot_version) {
+        // El ámbito protege la recuperación. No participa en los sorteos de v2.
+        std::seed_seq sequence{static_cast<uint32_t>(seed),
+                               static_cast<uint32_t>(seed >> word_bits)};
+        return ReservoirEngine(sequence);
+    }
     std::vector<uint32_t> words{
         static_cast<uint32_t>(seed), static_cast<uint32_t>(seed >> word_bits),
         static_cast<uint32_t>(scope.lane), static_cast<uint32_t>(scope.lane >> word_bits)};
@@ -169,7 +181,7 @@ void tensor_shape(const at::Tensor& tensor, at::ScalarType dtype, int64_t rows, 
 }
 
 std::vector<MemoryRecord> snapshot_records(const MemorySnapshot& snapshot) {
-    validate_scope(snapshot.scope);
+    validate_scope(snapshot.scope, snapshot.schema_version);
     require(snapshot.capacity > 0 && snapshot.capacity <= episodic_memory_capacity &&
                 snapshot.seen <= maximum_seen && snapshot.last_id >= snapshot.seen &&
                 snapshot.last_id <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) &&
@@ -234,9 +246,11 @@ PreparedMemoryWrite& PreparedMemoryWrite::operator=(PreparedMemoryWrite&&) noexc
 PreparedMemoryWrite::~PreparedMemoryWrite() = default;
 
 struct EpisodicMemory::Impl {
-    Impl(uint64_t initial_seed, MemoryScope initial_scope, std::size_t initial_capacity)
-        : scope(std::move(initial_scope)), seed(initial_seed), capacity(initial_capacity),
-          rng(initial_rng(seed, scope)),
+    Impl(uint64_t initial_seed, MemoryScope initial_scope, std::size_t initial_capacity,
+         MemoryContract version)
+        : scope(std::move(initial_scope)), seed(initial_seed),
+          schema_version(static_cast<std::uint32_t>(version)), capacity(initial_capacity),
+          rng(initial_rng(seed, scope, schema_version)),
           keys(at::zeros(
               {static_cast<int64_t>(capacity), static_cast<int64_t>(episodic_memory_width)},
               at::kDouble)) {
@@ -313,6 +327,7 @@ struct EpisodicMemory::Impl {
     MemoryScope scope;
     std::shared_ptr<const MemoryScope> owner = std::make_shared<const MemoryScope>(scope);
     uint64_t seed;
+    std::uint32_t schema_version;
     std::size_t capacity;
     uint64_t seen = 0;
     uint64_t last_id = 0;
@@ -324,11 +339,15 @@ struct EpisodicMemory::Impl {
     std::span<double> key_storage;
 };
 
-EpisodicMemory::EpisodicMemory(MemoryScope scope, uint64_t seed, std::size_t capacity) {
-    validate_scope(scope);
+EpisodicMemory::EpisodicMemory(MemoryScope scope, uint64_t seed, std::size_t capacity)
+    : EpisodicMemory(std::move(scope), seed, capacity, snapshot_version) {}
+EpisodicMemory::EpisodicMemory(MemoryScope scope, uint64_t seed, std::size_t capacity,
+                               std::uint32_t version) {
+    validate_scope(scope, version);
     require(capacity > 0 && capacity <= episodic_memory_capacity,
             "La capacidad episódica debe estar entre 1 y 1024");
-    impl_ = std::make_unique<Impl>(seed, std::move(scope), capacity);
+    impl_ = std::make_unique<Impl>(seed, std::move(scope), capacity,
+                                   static_cast<MemoryContract>(version));
 }
 EpisodicMemory::~EpisodicMemory() = default;
 
@@ -368,7 +387,8 @@ void EpisodicMemory::retain_batch(std::span<const MemoryRecord> incoming,
     eligible.insert(eligible.end(), normalized.begin(), normalized.end());
     std::ranges::sort(eligible, {}, &MemoryRecord::id);
     const at::NoGradGuard no_grad;
-    auto next = std::make_unique<Impl>(impl_->seed, impl_->scope, impl_->capacity);
+    auto next = std::make_unique<Impl>(impl_->seed, impl_->scope, impl_->capacity,
+                                       static_cast<MemoryContract>(impl_->schema_version));
     for (const auto id : retained_ids) {
         const auto found = std::ranges::lower_bound(eligible, id, {}, &MemoryRecord::id);
         require(found != eligible.end() && found->id == id,
@@ -444,6 +464,7 @@ MemoryQuery EpisodicMemory::query_prepared(const MemoryVector& key, int64_t cuto
 MemorySnapshot EpisodicMemory::snapshot() const {
     MemorySnapshot result;
     result.scope = impl_->scope;
+    result.schema_version = impl_->schema_version;
     result.capacity = impl_->capacity;
     result.seed = impl_->seed;
     result.seen = impl_->seen;
@@ -475,18 +496,19 @@ MemorySnapshot EpisodicMemory::snapshot() const {
     return result;
 }
 void EpisodicMemory::restore(const MemorySnapshot& snapshot) {
-    require(snapshot.scope == impl_->scope && snapshot.seed == impl_->seed &&
-                snapshot.capacity == impl_->capacity &&
+    require(snapshot.scope == impl_->scope && snapshot.schema_version == impl_->schema_version &&
+                snapshot.seed == impl_->seed && snapshot.capacity == impl_->capacity &&
                 impl_->generation < std::numeric_limits<uint64_t>::max(),
             "El snapshot pertenece a otro ámbito, semilla o capacidad");
     auto records = snapshot_records(snapshot);
     auto rng = decode_rng(snapshot.reservoir_rng);
     if (snapshot.seen <= snapshot.capacity) {
-        require(rng == initial_rng(snapshot.seed, snapshot.scope),
+        require(rng == initial_rng(snapshot.seed, snapshot.scope, snapshot.schema_version),
                 "El reservorio sin reemplazos no conserva su estado aleatorio inicial");
     }
     const auto next_generation = impl_->generation + 1;
-    auto candidate = std::make_unique<Impl>(snapshot.seed, snapshot.scope, snapshot.capacity);
+    auto candidate = std::make_unique<Impl>(snapshot.seed, snapshot.scope, snapshot.capacity,
+                                            static_cast<MemoryContract>(snapshot.schema_version));
     candidate->records = std::move(records);
     for (std::size_t index = 0; index < candidate->records.size(); ++index) {
         const auto target =
@@ -506,11 +528,12 @@ std::size_t EpisodicMemory::size() const noexcept { return impl_->records.size()
 uint64_t EpisodicMemory::seen() const noexcept { return impl_->seen; }
 
 std::string serialize_memory(const MemorySnapshot& snapshot) {
-    EpisodicMemory validated(snapshot.scope, snapshot.seed, snapshot.capacity);
+    EpisodicMemory validated(snapshot.scope, snapshot.seed, snapshot.capacity,
+                             snapshot.schema_version);
     validated.restore(snapshot);
     const auto state = validated.snapshot();
     torch::serialize::OutputArchive archive;
-    archive.write("schema_version", c10::IValue(snapshot_version));
+    archive.write("schema_version", c10::IValue(static_cast<int64_t>(state.schema_version)));
     archive.write("capacity", c10::IValue(static_cast<int64_t>(state.capacity)));
     archive.write("seed", c10::IValue(std::bit_cast<int64_t>(state.seed)));
     archive.write("lane", c10::IValue(std::bit_cast<int64_t>(state.scope.lane)));
@@ -558,7 +581,8 @@ MemorySnapshot deserialize_memory(std::string_view bytes) {
         require(value.isString(), "El archivo episódico necesita una identidad de texto");
         return value.toStringRef();
     };
-    require(integer("schema_version") == snapshot_version,
+    const auto version = integer("schema_version");
+    require(version == snapshot_version || version == causal_snapshot_version,
             "La versión de memoria episódica no está admitida");
     const auto capacity = integer("capacity");
     const auto seen = integer("seen");
@@ -567,6 +591,7 @@ MemorySnapshot deserialize_memory(std::string_view bytes) {
                 seen >= 0 && last_id >= 0,
             "El archivo episódico contiene contadores fuera de rango");
     MemorySnapshot result;
+    result.schema_version = static_cast<std::uint32_t>(version);
     result.scope = {text("world"), text("partition"), text("fold"), text("representation"),
                     std::bit_cast<uint64_t>(integer("lane"))};
     result.capacity = static_cast<std::size_t>(capacity);
@@ -579,7 +604,7 @@ MemorySnapshot deserialize_memory(std::string_view bytes) {
     archive.read("values", result.values, true);
     archive.read("metadata", result.metadata, true);
     archive.read("outcomes", result.outcomes, true);
-    EpisodicMemory validated(result.scope, result.seed, result.capacity);
+    EpisodicMemory validated(result.scope, result.seed, result.capacity, result.schema_version);
     validated.restore(result);
     return validated.snapshot();
 }
