@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "kind": "terminal_klpo_collection_verification",
+  "date": "2026-10-09",
+  "captured_at": "2026-10-08T22:51:41.678438+00:00",
+  "implementation_revision": "88a2ed5a78d3f4e56a95bc18f9de25ccd3d088c5",
+  "base_revision": "3bdbee77b6b8825b541d284b21fd7edf0cae676c",
+  "issues": [
+    137
+  ],
+  "scope": "Registro y recogida de una oleada, pérdida con gradientes y recuperación. No incluye actualización ni selección de políticas.",
+  "source_sha256": {
+    "native/CMakeLists.txt": "5d7b9fd35049749947663500a1d198f261dd2bfc388ecf98c9ded20f196f9f23",
+    "native/cmake/BuildIdentity.cmake": "8ce343baf6ef14a3bf2f4cfb27971eaa6a49a27854855efddf665f39b2895eb3",
+    "native/cmake/RLObjectives.cmake": "d419ac1efde883813ae5844652dc837594bc43cd3374ace15bb076af592b066b",
+    "native/include/mars_titan/klpo_collection.hpp": "48707cf1b21ce8c6eb49b93e350c65ca3cb6e48370cc44b8f173dccaa2f3f4d2",
+    "native/include/mars_titan/klpo_episodes.hpp": "3ff0786dc9e39620f442cc5f1ae83d4fe6396c6daef03e844956564665468aa2",
+    "native/include/mars_titan/ppo_checkpoints.hpp": "ed2acb9a9f2661373cda990360c4c72b70d1571e0bd09330a263d3b3ec29bec8",
+    "native/include/mars_titan/ppo_policy.hpp": "a48c69d70e2e1259f552e845a2c968a7cdbc2abdc743eb95c87ed0ad98b16220",
+    "native/src/klpo_collection.cpp": "424edc169cfe05783321c59ad1a0577a3bd0066d9aee5369a796ceb3b402fc9e",
+    "native/src/klpo_episodes.cpp": "869a6b3ce68b56eb83d7cbf0f4d909a55602c426d7a53ccffc77b99640747c68",
+    "native/src/ppo_checkpoints.cpp": "2b29c5a61c248101a425bc0a160a16b9156ffacbf49cbd3b6a013906bbc21c53",
+    "native/src/ppo_policy.cpp": "d6d7ab1286bcfe69b05648ebe80bf23b30a22a248b1ba90896a2fabe7b4d4ab9",
+    "native/tests/klpo_collection_tests.cpp": "40ead8c48dc1879a5f10e1dab6bb3995136593ebcaedae0341241db1a0405b7d",
+    "native/tests/klpo_episodes_tests.cpp": "351af902103fc27c4bf95a60be56eb5e5c275e265c923347373ce5c1ea2a35e6",
+    "native/tests/klpo_policy_tests.cpp": "4076b4afcf5e789f3a564e5b90b480a4b8be2866659e0352b7b2d61489be1867"
+  },
+  "toolchain": {
+    "standard": "C++20",
+    "clang": "21.1.8",
+    "clang_tidy": "21.1.6",
+    "llvm": "21.1.8",
+    "lizard": "1.24.1",
+    "torch": "2.14.0+cu130",
+    "cuda_runtime": "13.0"
+  },
+  "cpu": {
+    "safe_tests": [
+      "klpo_episodes",
+      "klpo_terminal",
+      "klpo_collection",
+      "klpo_policy",
+      "ppo_variant_state",
+      "ppo_variant_objective",
+      "ppo_checkpoint"
+    ],
+    "release": {
+      "revision": "88a2ed5a",
+      "passed": 7,
+      "failed": 0,
+      "seconds": 1.89
+    },
+    "asan_ubsan": {
+      "initial_revision": "dacef31a",
+      "passed": 7,
+      "failed": 0,
+      "seconds": 7.45,
+      "leak_detection": true,
+      "precision_fix_collector_passed": 1,
+      "precision_fix_seconds": 0.79
+    },
+    "coverage_run": {
+      "revision": "88a2ed5a",
+      "passed": 7,
+      "failed": 0,
+      "seconds": 2.98
+    },
+    "test_helper_delta": {
+      "passed": 2,
+      "failed": 0,
+      "seconds": 0.44
+    },
+    "static_analysis": "clang-tidy en cuatro fuentes y tres pruebas nuevas. Clang Static Analyzer en cuatro fuentes, con repetición del colector tras corregir la precisión. Sin diagnósticos propios finales. Se conservan los avisos de cabeceras externas suprimidos por el perfil.",
+    "lifetime_analysis": "Clang Experimental Lifetime Safety, avisos estrictos como errores y _GLIBCXX_ASSERTIONS.",
+    "not_run": [
+      "ppo_policy",
+      "ppo_training",
+      "pasos de optimizador",
+      "PpoTrainer::advance"
+    ]
+  },
+  "coverage": {
+    "convention": "CCN Lizard por función cuyo rango contiene una línea modificada. Cobertura de regiones LLVM kind=0 dentro del rango, incluidas lambdas. CRAP=CCN²*(1-c)^3+CCN. No equivale a sentencias ni acredita ramas que ejecutan optimización.",
+    "files": [
+      {
+        "path": "native/src/klpo_episodes.cpp",
+        "summary": {
+          "branches": {
+            "count": 204,
+            "covered": 153,
+            "notcovered": 51,
+            "percent": 75
+          },
+          "functions": {
+            "count": 26,
+            "covered": 26,
+            "percent": 100
+          },
+          "instantiations": {
+            "count": 26,
+            "covered": 26,
+            "percent": 100
+          },
+          "lines": {
+            "count": 299,
+            "covered": 299,
+            "percent": 100
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0
+          },
+          "regions": {
+            "count": 208,
+            "covered": 206,
+            "notcovered": 2,
+            "percent": 99.03846153846155
+          }
+        }
+      },
+      {
+        "path": "native/src/klpo_collection.cpp",
+        "summary": {
+          "branches": {
+            "count": 238,
+            "covered": 177,
+            "notcovered": 61,
+            "percent": 74.36974789915966
+          },
+          "functions": {
+            "count": 29,
+            "covered": 28,
+            "percent": 96.55172413793103
+          },
+          "instantiations": {
+            "count": 29,
+            "covered": 28,
+            "percent": 96.55172413793103
+          },
+          "lines": {
+            "count": 586,
+            "covered": 572,
+            "percent": 97.61092150170649
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0
+          },
+          "regions": {
+            "count": 266,
+            "covered": 257,
+            "notcovered": 9,
+            "percent": 96.61654135338345
+          }
+        }
+      },
+      {
+        "path": "native/src/ppo_policy.cpp",
+        "summary": {
+          "branches": {
+            "count": 716,
+            "covered": 323,
+            "notcovered": 393,
+            "percent": 45.11173184357542
+          },
+          "functions": {
+            "count": 91,
+            "covered": 70,
+            "percent": 76.92307692307693
+          },
+          "instantiations": {
+            "count": 91,
+            "covered": 70,
+            "percent": 76.92307692307693
+          },
+          "lines": {
+            "count": 1302,
+            "covered": 845,
+            "percent": 64.90015360983102
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0
+          },
+          "regions": {
+            "count": 757,
+            "covered": 512,
+            "notcovered": 245,
+            "percent": 67.63540290620872
+          }
+        }
+      },
+      {
+        "path": "native/src/ppo_checkpoints.cpp",
+        "summary": {
+          "branches": {
+            "count": 264,
+            "covered": 180,
+            "notcovered": 84,
+            "percent": 68.18181818181817
+          },
+          "functions": {
+            "count": 32,
+            "covered": 32,
+            "percent": 100
+          },
+          "instantiations": {
+            "count": 32,
+            "covered": 32,
+            "percent": 100
+          },
+          "lines": {
+            "count": 411,
+            "covered": 355,
+            "percent": 86.37469586374696
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0
+          },
+          "regions": {
+            "count": 298,
+            "covered": 266,
+            "notcovered": 32,
+            "percent": 89.26174496644296
+          }
+        }
+      }
+    ],
+    "changed_function_count": 50,
+    "max_ccn": 23,
+    "max_crap": 23.00509521011722,
+    "diagnostic": "LLVM informa 12 correspondencias ausentes, dos funciones inline CashMovements::add/reconciled repetidas en seis binarios. Quedan fuera de los cuatro CPP resumidos. No se interpretan como cobertura de esos auxiliares."
+  },
+  "mutation_testing": {
+    "initial_revision": "dacef31a",
+    "initial_detected": 12,
+    "initial_total": 12,
+    "precision_revision": "88a2ed5a",
+    "precision_detected": 2,
+    "precision_total": 2,
+    "scope": "Copias privadas enlazadas a pruebas sin updates. Errores de compilación no cuentan como detecciones."
+  },
+  "parser_fuzz": {
+    "engine": "libFuzzer de Clang 21.1.8 con ASan/UBSan",
+    "runs": 5000,
+    "seed": 137,
+    "max_input_bytes": 4096,
+    "record_budget_bytes": 65536,
+    "rss_limit_mib": 512,
+    "failures": 0,
+    "scope": "Una semilla válida, cuerpos alterados y roundtrip exacto de los cuerpos admitidos. No acredita todos los registros posibles."
+  },
+  "cuda": {
+    "status": "passed",
+    "architectures": 2,
+    "device": "cuda:0",
+    "max_logits_error": 3.3155083656311035e-07,
+    "max_gradient_error": 2.0489096641540527e-08,
+    "max_loss_error": 2.468315357662121e-08,
+    "peak_allocated_bytes": 76160000,
+    "peak_reserved_bytes": 90177536,
+    "precision": {
+      "cudnn_benchmark": false,
+      "cudnn_conv_tf32": false,
+      "cudnn_deterministic": true,
+      "cudnn_rnn_tf32": false,
+      "deterministic_algorithms": true,
+      "matmul_tf32": false
+    },
+    "recovery_exact": true,
+    "global_rng_unchanged": true,
+    "parameter_updates": 0,
+    "dtype_device_rejections": 6,
+    "execution_seconds": 1.4680774890002795,
+    "started_at": "2026-10-08T22:39:51.580504+00:00",
+    "finished_at": "2026-10-08T22:39:53.048585+00:00",
+    "allocator_cap_bytes": 134217728,
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "rtol": 1e-05,
+    "atol": 1e-06,
+    "limits": "Fixtures pequeños. Los contadores Torch excluyen contexto CUDA y otras aplicaciones. No se mide aceleración ni aprendizaje."
+  },
+  "codec_benchmark": {
+    "operation": "serialize → deserialize → serialize con paridad de bytes y retornos",
+    "warmups": 1,
+    "repetitions": 5,
+    "threads": 1,
+    "shapes": [
+      {
+        "episodes": 1,
+        "steps": 2,
+        "width": 2,
+        "encoded_bytes": 505,
+        "seconds": [
+          2.024e-06,
+          1.893e-06,
+          1.763e-06,
+          1.673e-06,
+          1.653e-06
+        ],
+        "peak_rss_kib_process_cumulative": 4092,
+        "byte_and_return_parity": true,
+        "median_seconds": 1.763e-06,
+        "rows_per_second": 1134429.9489506523
+      },
+      {
+        "episodes": 16,
+        "steps": 64,
+        "width": 128,
+        "encoded_bytes": 633171,
+        "seconds": [
+          0.00365629,
+          0.00320517,
+          0.00296361,
+          0.00264925,
+          0.00262379
+        ],
+        "peak_rss_kib_process_cumulative": 8288,
+        "byte_and_return_parity": true,
+        "median_seconds": 0.00296361,
+        "rows_per_second": 345524.5460772503
+      },
+      {
+        "episodes": 128,
+        "steps": 256,
+        "width": 128,
+        "encoded_bytes": 20203295,
+        "seconds": [
+          0.102075,
+          0.102358,
+          0.102074,
+          0.101103,
+          0.101858
+        ],
+        "peak_rss_kib_process_cumulative": 137804,
+        "byte_and_return_parity": true,
+        "median_seconds": 0.102074,
+        "rows_per_second": 321022.0036444148
+      }
+    ],
+    "process_seconds": 0.79,
+    "peak_rss_kib": 137804,
+    "limits": "Solo el codec del registro. RSS acumulado del proceso independiente. No incluye actor, entorno ni almacenamiento del checkpoint. No se aisló la carga ajena ni se compara una optimización."
+  },
+  "failures_preserved": [
+    "El fixture CUDA inicial terminó con exit 1 al consultar TF32 de cuDNN sin distinguir operadores. Se reprodujo en CPU y se corrigió mediante identidad conv/RNN.",
+    "Dos ajustes de arnés de compilación no se cuentan como regresiones del producto. La primera extracción LLVM con --dump no produjo JSON y no generó métricas."
+  ],
+  "evidence_sha256": {
+    "frozen-release-tests.log": "14ec2e87dd173dfc1198571b4025b2d033b4742448e5058769247db9899725de",
+    "asan-tests.log": "201a2a21789c895f4df2786ee8e0fde347f4e3baf0d1bc497e0d0f0a9edc4ee4",
+    "coverage-tests.log": "ece51fb377fef5975ee04d667538baf7cf27257955c3fa8fdec9d3450fccf899",
+    "precision-release-tests.log": "e1ac841661f25daaeecdf9299826606227450a1f45f0bf85d6e86accad9a0141",
+    "precision-asan-tests.log": "58307440de99dc60e2aecb68f037202bd3241a8a696202d1f11dac25e0c2d4ff",
+    "test-helper-tests.log": "ba834e9cda5e28724a6df5c38f2373b0cf62dfb025190a2f6e23747aeca2b457",
+    "precision-coverage-tests.log": "29d1035da44af39d09983d932e109f870f58d09adb9917f237ac47eef73985f6",
+    "tidy-frozen.log": "c8746e257f53072398b7c6da476990872d4f344fd21c8f00e87e434e97757412",
+    "tidy-tests-final.log": "111af08209f43f00a53d37af2b0b2eef0b84b838a8542eb7d4b3ad0533c7b296",
+    "precision-analyzer.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mutations-dacef31a/results.json": "437ca97a23f90c7fde358ea9a22553e8a91ea1222abf3d95cdecc5a4bfa4b379",
+    "mutations-88a2ed5a/results.json": "97bbf939ab97753fa32b25db94c2eb40f78f82b12307c6852f2daeba95548d8d",
+    "codec-fuzz.log": "044d380611758a298cadfbf8258dc8ee19f198284ae36c80782a7fc6396f1a16",
+    "cuda-fixed-result.json": "38cb657d7cb9e5053a093c6fb1f051d8668150ee756801d3f5c4cc834ac43e8a",
+    "cuda-fixed-execution.json": "2edc737433c1efc76799f55d70764a2f0e2ab450db4b13f773356a04e8cd48ed",
+    "cuda-execution.json": "b9fb18ce1434aebf8e5d6921db8ab3f9f659ea25529ba39ec5c9653686554873",
+    "benchmark.jsonl": "163c8473cdd123edf9761f92e2dfe7f130af51ec61bc84f054e972b33a51303f",
+    "benchmark-time.log": "8a38b0595394b637afc524b768d86d557eff5335163af0a2d0b3361ac54030c3",
+    "ruff-check.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "ruff-format.log": "2d3ea7ed7b3921303db90cdfd70a9fd69296a9185ae7de517883237701186e9c",
+    "check-repository-final.log": "52dde48cd7466801f829bf928fd8bddb4298318e859267d2af794093414e0740"
+  },
+  "limits": [
+    "No se ejecutaron optimizadores, entrenamiento, evaluación científica, datos reales ni la reserva de 2024.",
+    "La referencia del colector se construye desde la semilla y queda fija. Importar políticas ajustadas, actualizar referencias entre oleadas y recuperar updates siguen pendientes.",
+    "La pérdida no usa la cabeza de valor. La separación de futuros momentos Adam del tensor compartido no se ha implementado ni probado.",
+    "TSan/MSan y herramientas Windows no se ejecutaron. LibTorch y Arrow no están instrumentados por estos perfiles."
+  ],
+  "repository_checks": {
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "clang_format_new_files": "passed",
+    "repository_files": 1321,
+    "references": 191,
+    "tasks": 64,
+    "macro_ids": 140
+  },
+  "independent_review": {
+    "status": "sin_hallazgos_materiales_abiertos",
+    "revision": "c4fe795b434aedfc848b0695399258f5c1a7e7b4",
+    "production_revision": "88a2ed5a78d3f4e56a95bc18f9de25ccd3d088c5",
+    "receipt_sha256": "6e3ff5d138b05cb0529d68f5a9244c832df8a170443b2e0a34068ce2b052f9bc",
+    "private_cases": [
+      {
+        "case": "mixed_horizons",
+        "passed": true
+      },
+      {
+        "case": "forged_q_history",
+        "passed": true
+      },
+      {
+        "case": "changed_rng_archive",
+        "passed": true
+      },
+      {
+        "case": "full_gru_critic_gradients",
+        "passed": true
+      },
+      {
+        "case": "invalid_forced_episode",
+        "passed": true
+      },
+      {
+        "case": "later_interruption",
+        "passed": true
+      },
+      {
+        "case": "declared_budget",
+        "passed": true
+      },
+      {
+        "case": "genuine_ruin",
+        "passed": true
+      }
+    ],
+    "public_ctest": [
+      "klpo_episodes",
+      "klpo_collection",
+      "klpo_policy"
+    ],
+    "precision_delta_ctest": "klpo_collection",
+    "optimizer_steps": 0,
+    "gpu_used": false,
+    "scope": "Ocho sondas CPU, tres ejecutables nuevos y repetición del colector tras el delta. No repite ni se atribuye los perfiles CUDA o sanitizadores de la implementación."
+  },
+  "develop_integration": {
+    "integrated_develop": "b79ab99cab308f424e2ef811ccd3ede6ed6ac93e",
+    "merge_commit": "a63f8eb24e33452eb0d087481673403c8c942e81",
+    "tests": {
+      "passed": 7,
+      "failed": 0,
+      "seconds": 1.98,
+      "regex": "^(klpo_episodes|klpo_collection|klpo_policy|ppo_variant_state|ppo_variant_objective|ppo_checkpoint|klpo_terminal)$"
+    },
+    "test_log_sha256": "724b4eba10a61b32067e00a9b98a65a3e9614aed6b5a34c025e9597a182b5cdc",
+    "build_log_sha256": "98c191775ed4462b8613bf8cc1b95f9c0bcc09c2e656d2d1f90ea1f3484c264f",
+    "cuda_repeated": false,
+    "cuda_reason": "Las rutas de cálculo GPU permanecen idénticas. Solo cambia la huella global de fuentes por la dependencia anfitriona v2 y se recompila todo el perfil seguro.",
+    "receipt_sha256": "375b930a369f84bc281f3647886ccf9708387e52e3dbf43cd89b7fe6c4c5aa34",
+    "unchanged_calculation_dependencies": {
+      "native/src/ppo_policy.cpp": "fd73fce93d8c16f88c0b9c9117f3ffd2d867e76901822b58ec0ca326c8505c12",
+      "native/src/ppo_training.cpp": "f45ce508fa49d46c8ddc67fb00366d110264f79c5d80d2586c5204d7f0d8585e",
+      "native/src/ppo_objectives.cpp": "b0e746a53b7fc898fca7863b611e862e55155481a93cdd0a2bf4b603aca8a513",
+      "native/src/ppo_controller.cpp": "62f8e0c99e861dc3ae7fe6821f26382d69fff9d196ddc305507c047eb01d7d0f",
+      "native/src/klpo_terminal.cpp": "09d2e77dd85bf125303594cc18985e97bc76a6a7b4df2665d28a9db632a2d89e",
+      "native/src/policy_context.cpp": "818d2f008c40e26c812ead78e7edccb1e46148ed47a3eaa6211dd03374ab0bfb",
+      "native/src/financial_batch.cpp": "9433a2088f0d1bfa70c23352416401a92c7bc7e2f8bfc15f17d41cae35f34bfe",
+      "native/src/financial_session.cpp": "fc3c382e75dd3e781e6f387daa8796210e60434601026f69bc505a9232143cb5",
+      "native/src/ppo_checkpoints.cpp": "38cc09e4fceed610b663c393c2f5aa3ccba7978a91dd61691553a6b30d6a6213",
+      "native/src/simulation_files.cpp": "256ad5162f88fb74a61d7e565ddf7437feca7add2a258488a128aef62b35ac4b"
+    },
+    "inspection": "EpisodicMemory conserva el constructor previo y delega en schema_version=1. Esa versión usa las mismas palabras de seed_seq y rechaza particiones distintas de train/validation. KLPO admite solo ppo/ppo_gru, por lo que no crea un banco episódico. PolicyContext solo realiza su comprobación de ámbito v1. El ejecutor de sesiones v2 y pybind no están activados en este perfil."
+  }
+}

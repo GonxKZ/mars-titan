@@ -176,6 +176,10 @@ public:
                                                const at::Tensor& lengths) const;
     [[nodiscard]] PpoInference infer(const at::Tensor& observations, const at::Tensor& state = {},
                                      const at::Tensor& episode_starts = {}) const;
+    // Historia completa [H,N,D], longitudes [N]. Conserva el modo autograd del llamante.
+    // No utiliza hidden histórico, no desacopla prefijos y no muestrea ni optimiza.
+    [[nodiscard]] PpoForward terminal_forward(const at::Tensor& history,
+                                             const at::Tensor& lengths) const;
     [[nodiscard]] PpoAction act_recurrent(const at::Tensor& observations, const at::Tensor& state = {},
                                           const at::Tensor& episode_starts = {}, bool deterministic = false);
     // Normaliza las ventajas válidas con desviación poblacional y suelo de 1e-8.
@@ -212,6 +216,8 @@ public:
     [[nodiscard]] std::size_t target_sync_step() const noexcept;
     [[nodiscard]] const PpoArchitecture& architecture() const noexcept;
     [[nodiscard]] std::size_t parameter_count() const noexcept;
+    // Parámetros FP32 y geometría, sin RNG, gradientes, Adam ni direcciones de memoria.
+    [[nodiscard]] std::string parameter_fingerprint() const;
 
 private:
     struct Impl;

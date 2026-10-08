@@ -10,11 +10,18 @@ include(CTest)
 include(cmake/TorchDependencies.cmake)
 mars_titan_find_torch()
 add_library(mars_titan_rl_objectives STATIC
-    src/ppo_objectives.cpp src/ppo_controller.cpp src/klpo_terminal.cpp)
+    src/ppo_objectives.cpp src/ppo_controller.cpp src/klpo_terminal.cpp src/klpo_episodes.cpp)
 target_include_directories(mars_titan_rl_objectives PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(mars_titan_rl_objectives PUBLIC mars_titan::torch)
 mars_titan_configure_target(mars_titan_rl_objectives)
 if(BUILD_TESTING)
+    add_executable(klpo_episodes_tests tests/klpo_episodes_tests.cpp)
+    target_link_libraries(klpo_episodes_tests PRIVATE mars_titan_rl_objectives)
+    mars_titan_configure_target(klpo_episodes_tests)
+    add_test(NAME klpo_episodes COMMAND klpo_episodes_tests)
+    set_tests_properties(klpo_episodes PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+    mars_titan_sanitizer_test_environment(klpo_episodes)
+    set_property(TEST klpo_episodes APPEND PROPERTY ENVIRONMENT "CUDA_VISIBLE_DEVICES=-1")
     add_executable(ppo_objective_tests tests/ppo_objective_tests.cpp)
     target_link_libraries(ppo_objective_tests PRIVATE mars_titan_rl_objectives)
     mars_titan_configure_target(ppo_objective_tests)
@@ -52,6 +59,9 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
             --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_terminal.cpp"
+        COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
+            --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_episodes.cpp"
         COMMENT "Analizar los objetivos y el controlador de PPO y KLPO"
         VERBATIM)
 endif()

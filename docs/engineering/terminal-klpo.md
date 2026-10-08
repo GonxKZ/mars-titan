@@ -1,4 +1,4 @@
-# Núcleo terminal Full-KL de seis acciones
+# KLPO terminal con episodios completos
 
 [`klpo_terminal_full_loss`](../../native/include/mars_titan/klpo_terminal.hpp)
 implementa `klpo_terminal_token_full_v1` con primitivas ATen. Recibe logp y logq
@@ -48,31 +48,66 @@ La pérdida no calcula descuento, GAE ni bootstrap. Si el retorno fijado es
 El tiempo financiero original no se sustituye por el índice tras retirar pasos
 forzados de la máscara.
 
-## Registro y consumidor pendientes
+## Registro, recogida y pérdida diferenciable
 
-El núcleo no recibe una bandera que pueda acreditar por sí sola completitud.
-El registro externo deberá verificar las siguientes correspondencias antes de
-llamar a la función:
+[`KlpoTerminalCollector`](../../native/include/mars_titan/klpo_collection.hpp)
+reutiliza `FinancialBatch`, `PolicyContext`, `PpoPolicy` y `PpoCheckpointStore`.
+Recoge una oleada de hasta 128 episodios, con un máximo declarado de 256 pasos
+por episodio. Rechaza horizontes mayores y cierres desde 2024. No corta episodios
+para ajustarlos al límite ni sustituye carriles terminados por otros episodios.
+La primera ruta admite MLP o GRU y su contexto PPO correspondiente. HMM,
+memoria episódica, auxiliares y Double DQN quedan fuera de este contrato.
 
-| Registro requerido | Componente existente | Diferencia pendiente |
-| --- | --- | --- |
-| Observaciones, acciones, reinicios y prefijos | `PpoRollout` y `PpoPolicy` | Recalcular p desde la historia completa bajo el actor actual. No reutilizar el hidden histórico como sustituto. |
-| Las seis probabilidades históricas y versión del sampler | `PpoAction.probabilities` | Sellarlas al recoger, junto con sus transformaciones, precisión e identidad. El logq de la acción elegida no permite reconstruirlas. |
-| Retorno completo y causa terminal | `FinancialSession::StepOutcome` | Separar horizonte fijado, ruina, falta de valoración y corte por recursos. `truncated` por sí solo no basta. |
-| Sampler fijo hasta terminar el episodio | Actor y RNG nativos | El colector PPO actual puede actualizar al llenar su buffer. No concatenar sus fragmentos como una trayectoria de q única. |
-| Recuperación | Archivos y checkpoints nativos | Añadir registro parcial, cursor, acumulador del retorno, sampler/RNG y comprobación de continuidad sin repetir decisiones. |
+El [registro versionado](../../native/include/mars_titan/klpo_episodes.hpp)
+conserva la fuente, el contexto, el calendario completo, el fold, el cursor,
+las observaciones FP32, la acción, los seis pesos FP32 realmente muestreados,
+la recompensa y las causas de cierre. El sampler, sus parámetros y precisión,
+beta y gamma permanecen fijos durante la oleada. La huella de parámetros excluye
+RNG, gradientes y direcciones de almacenamiento. La identidad incluye por
+separado la semilla, el orden de los sorteos, las fuentes y la compilación.
 
-Los pasos forzados no se presentan como acciones sorteadas. Si falta una
-valoración según la cartera elegida, descartar solo ese resultado introduciría
-selección. Se necesita un dominio de ejecución admisible y común, sin completar
-el retorno con ceros. La ruina conserva su penalización contractual. Las fuentes,
-folds, horizonte, escala de recompensa y estado inicial pertenecen a la identidad.
+Los pasos forzados actualizan la historia GRU sin sortear una acción. Conservan
+la recompensa válida del motor y su ordinal original en `sum_t gamma^t r_t`.
+La elegibilidad para sortear y la validez de la valoración son campos distintos.
+Un episodio formado solo por pasos forzados conserva su identidad, retorno y
+puesto en el denominador de la oleada, con contribución nula al gradiente.
+Si no hay ninguna decisión, el resultado declara `no_policy_decisions` y no
+llama al núcleo con un lote vacío.
 
-El consumidor mínimo puede recoger episodios completos bajo un sampler
-congelado y publicar otros pesos al terminar el lote. No necesita un entrenador
-nuevo ni concurrencia de versiones para empezar. Esa ruta, sus actualizaciones
-y la recuperación del actor no están implementadas aquí. Las comprobaciones del
-núcleo no habilitan aprendizaje ni una simulación histórica.
+El horizonte declarado y la ruina son cierres consumibles. Una valoración
+inválida conserva la evidencia y bloquea la oleada completa. No se retira ese
+episodio ni se usa su cero centinela como retorno. Un corte de recursos guarda
+un prefijo recuperable que todavía no puede producir la pérdida terminal.
+
+`PpoPolicy::terminal_forward` reconstruye la historia desde estado inicial
+cero y conserva el grafo de los pasos anteriores. No usa el hidden guardado
+como sustituto ni desacopla el prefijo cada 16 pasos. El consumidor reúne las
+decisiones sorteadas para el núcleo y devuelve la media sobre todos los episodios
+completos. Solo utiliza los logits del actor. La cabeza de valor no interviene
+en esta pérdida, aunque comparte el tensor de salida con las seis acciones.
+La separación de momentos de un futuro optimizador no se acredita aquí.
+
+La codificación binaria comprueba la geometría y su presupuesto antes de
+materializar observaciones. El registro admite hasta 128 MiB, mientras que el
+colector limita su parte a 64 MiB para compartir el archivo de recuperación con
+el contexto. El consumidor comprueba por separado el padding y las copias de
+la historia antes de reservarlas. Estos límites describen almacenamiento lógico
+propio, no el RSS, el grafo completo ni las bibliotecas cargadas.
+
+La recuperación usa el escritor atómico existente y su identidad. Conserva
+carteras, contexto, hidden, registros y RNG. Construye un candidato independiente
+y reproduce el prefijo con el sampler fijo antes de sustituir el estado en uso.
+Contrasta acciones, probabilidades, recompensas, observaciones y metadatos.
+Un fallo previo al commit permite repetir el paso con el RNG anterior. Un fallo
+posterior exige recuperar un checkpoint confirmado. La recuperación no publica
+otro estado durante esa comprobación.
+
+Esta entrega parte de una referencia inicial identificada por semilla y pesos.
+No incorpora actualización de parámetros, selección de política, importación de
+un actor ajustado ni alternancia de oleadas con referencias distintas. Tampoco
+se han comprobado recuperación después de optimizar ni resultados financieros.
+La ruta PPO anterior no usa estos métodos optativos. El bloqueo histórico sigue
+vigente.
 
 ## Comprobación local sin aprendizaje
 
@@ -123,3 +158,52 @@ referencia escalar y el gradiente cerrado del score centrado contrastaron dos
 precisiones y tres valores de beta, con longitudes distintas. También rechazó
 soporte perdido, retornos no finitos y máscaras con huecos. El recibo técnico
 separa estas pruebas de los cuatro fixtures CUDA y de los perfiles nativos.
+
+## Verificación del colector
+
+La [evidencia del registro y colector](../../reports/engineering/terminal-klpo-collection-verification-20261009.json)
+separa la entrega del núcleo de la integración posterior. Pasan siete ejecutables
+CPU en Release, ASan/UBSan y cobertura. Las doce mutaciones iniciales y las dos
+de la guarda de precisión se detectan. El codec supera 5.000 ejecuciones de
+libFuzzer con ASan/UBSan sobre cuerpos acotados. Esto no acredita todas las
+entradas posibles ni una campaña de aprendizaje.
+
+LLVM cubre 299/299 líneas del registro y 572/586 del colector. El CCN máximo
+de las funciones modificadas es 23 y el CRAP máximo 23,0051, con regiones de
+código LLVM como convención. El recibo conserva las coberturas de los archivos
+PPO compartidos, cuyas rutas de actualización no se han ejecutado.
+
+Los fixtures CUDA de MLP y GRU conservan la paridad dentro de `rtol=1e-5` y
+`atol=1e-6`, el gradiente del prefijo GRU, la recuperación exacta y el RNG global.
+El máximo error de logits fue 3,32×10⁻⁷ y el de gradientes 2,05×10⁻⁸. El pico
+Torch fue de 76.160.000 bytes asignados y 90.177.536 reservados, con una cuota
+de 128 MiB que no incluye el contexto CUDA. El primer intento detectó que la
+consulta genérica de TF32 no admitía flags distintos de conv/RNN. La identidad
+registra ahora ambos operadores y rechaza cambios durante la oleada.
+
+La comprobación CPU reproducible evita las pruebas anteriores que actualizan
+parámetros:
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 UV_OFFLINE=1 cmake --preset native-ppo-release -S native \
+  -B build/native/terminal-collector -DMARS_TITAN_BUILD_RUNNER=OFF \
+  -DMARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF
+cmake --build build/native/terminal-collector --target klpo_episodes_tests \
+  klpo_collection_tests klpo_policy_tests klpo_terminal_tests \
+  ppo_variant_state_tests ppo_variant_objective_tests ppo_checkpoint_tests -j 1
+CUDA_VISIBLE_DEVICES=-1 ctest --test-dir build/native/terminal-collector \
+  -R '^(klpo_episodes|klpo_collection|klpo_policy|klpo_terminal|ppo_variant_state|ppo_variant_objective|ppo_checkpoint)$' \
+  --output-on-failure
+```
+
+La revisión independiente del colector no encontró hallazgos materiales abiertos.
+Ocho sondas CPU contrastan horizontes mixtos, q e historia alteradas, RNG
+falsificado, gradiente GRU y fila del crítico, valoración inválida en un episodio
+forzado, interrupción tardía, presupuesto y ruina del motor. Su recibo distingue
+esas ejecuciones de las comprobaciones CUDA y sanitizadores anteriores.
+
+La conciliación con `develop` `b79ab99c` recompila el perfil y pasa los mismos
+siete ejecutables CPU en 1,98 segundos. El contrato episódico anterior sigue en
+v1. Los archivos de cálculo de política, objetivo y motor financiero permanecen
+idénticos, por lo que no se repite CUDA. El recibo separa esta compatibilidad de
+la revisión y de las comprobaciones anteriores.
