@@ -626,3 +626,77 @@ def test_final_confirmation_rechecks_asset_parquets(
         assert manifest.read_bytes() == previous
     else:
         assert not manifest.exists()
+
+
+@pytest.fixture
+def zero_row_candidate(revision, tmp_path):
+    folder = tmp_path / "samples/US/BBB"
+    folder.mkdir()
+    table = pq.read_table(tmp_path / "samples/US/AAA/samples.parquet").slice(0, 0)
+    path = folder / "samples.parquet"
+    pq.write_table(table, path)
+    receipt = json.loads((tmp_path / "samples/US/AAA/manifest.json").read_text())
+    receipt.update(symbol="BBB", samples=0, fingerprint="b" * 64, samples_sha256=sha256(path))
+    dump(folder / "manifest.json", receipt)
+    parent = json.loads(revision[0].read_text())
+    parent["coverage"][1].update(
+        market="US", symbol="BBB", state="encoded", samples=0, fingerprint="b" * 64
+    )
+    dump(revision[0], parent)
+    return revision, path, table
+
+
+@pytest.mark.parametrize("operation", ["prepare", "reuse", "reader"])
+def test_zero_row_candidate_keeps_its_confirmed_parquet_hash(
+    zero_row_candidate, tmp_path, operation
+):
+    revision, path, table = zero_row_candidate
+    confirmed = tmp_path / "confirmed"
+    result = prepare(revision, confirmed)
+    assert result["candidate_count"] == 2
+    assert [asset["symbol"] for asset in result["assets"]] == ["AAA"]
+    manifest = confirmed / "manifest.json"
+    previous = manifest.read_bytes()
+    checksum = sha256(path)
+    pq.write_table(table.replace_schema_metadata({b"changed": b"after-encoding"}), path)
+    assert sha256(path) != checksum
+    with pq.ParquetFile(path) as parquet:
+        assert parquet.metadata.num_rows == 0
+
+    with pytest.raises(ValueError, match="fuente|factor"):
+        if operation == "reader":
+            CorpusDataset(manifest, input_policy=HISTORICAL_MASKED)
+        else:
+            prepare(revision, confirmed if operation == "reuse" else tmp_path / "new-labels")
+
+    assert manifest.read_bytes() == previous
+    assert not (tmp_path / "new-labels").exists()
+
+
+@pytest.mark.parametrize("reuse", [False, True])
+def test_final_confirmation_rechecks_zero_row_candidate(
+    zero_row_candidate, tmp_path, monkeypatch, reuse
+):
+    import mars_titan.training.corpus_targets as module
+
+    revision, path, table = zero_row_candidate
+    output = tmp_path / "labels"
+    if reuse:
+        prepare(revision, output)
+    manifest = output / "manifest.json"
+    previous = manifest.read_bytes() if reuse else None
+    original = module.cohort_identity
+
+    def changed(meta, **kwargs):
+        result = original(meta, **kwargs)
+        if meta.get("kind") == "corpus_supervision":
+            pq.write_table(table.replace_schema_metadata({b"changed": b"before-confirm"}), path)
+        return result
+
+    monkeypatch.setattr(module, "cohort_identity", changed)
+    with pytest.raises(ValueError, match="fuente|factor"):
+        prepare(revision, output)
+    if reuse:
+        assert manifest.read_bytes() == previous
+    else:
+        assert not manifest.exists()

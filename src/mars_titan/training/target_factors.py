@@ -102,6 +102,10 @@ def _sample_counts(meta):
             if file.metadata.num_rows != row["samples"]:
                 raise ValueError("Las filas de muestras no concilian con la cobertura")
         sources[receipt_path] = (signature, _MANIFEST_BYTES)
+        sources[table_path] = (
+            _digest(receipt.get("samples_sha256")),
+            table_path.stat().st_size,
+        )
     return sources
 
 
