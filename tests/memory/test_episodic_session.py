@@ -161,6 +161,29 @@ def test_episode_envelope_rejects_numeric_type_aliases(native, tmp_path, field):
             run._bank(changed)
 
 
+@pytest.mark.parametrize("alteration", ["next_microsecond", "leading_zero", "extra_segment"])
+def test_episode_sample_id_matches_its_exact_decision_timestamp(native, tmp_path, alteration):
+    with session(native, tmp_path / "run", []) as run:
+        issued = run.step(inputs(0), [])
+        run.step(inputs(1), feedback(native, issued.predictions, inputs(1)[0].prediction_at[0]))
+        reference = run._bundle(run.snapshot()["state"])["bank"]
+        payload = run._read(reference, "bank")
+        first = payload["episodes"][min(payload["episodes"])]
+        at = first["prediction_at"]
+        suffix = (
+            str(at + 1)
+            if alteration == "next_microsecond"
+            else f"0{at}"
+            if alteration == "leading_zero"
+            else f"{at}/extra"
+        )
+        first["sample_id"] = f"{first['flow_id']}/{suffix}"
+        changed = run._stage(payload, "bank")
+        with pytest.raises(ValueError):
+            run._bank(changed)
+        run._bank(reference)
+
+
 def test_complete_predictor_inputs_are_referenced_and_checked_on_recovery(native, tmp_path):
     output = tmp_path / "run"
     with session(native, output, []) as run:

@@ -126,7 +126,7 @@ def _check_metadata(row, *, episode=False):
             not isinstance(row[name], str) or not row[name]
             for name in ("flow_id", "sample_id", "input_sha256")
         )
-        or not row["sample_id"].startswith(row["flow_id"] + "/")
+        or row["sample_id"] != f"{row['flow_id']}/{row['prediction_at']}"
         or not re.fullmatch(r"[0-9a-f]{64}", row["input_sha256"])
         or type(row["prediction_at"]) is not int
         or type(row["input_available_at"]) is not int
