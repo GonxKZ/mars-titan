@@ -86,6 +86,8 @@ if(MARS_TITAN_ENABLE_CUDA)
     message(STATUS "CUDA configurada con las herramientas ${CUDAToolkit_VERSION}")
 endif()
 
+include(cmake/RLObjectives.cmake)
+
 if(MARS_TITAN_BUILD_SIMULATION)
     add_library(mars_titan_simulation SHARED src/simulation.cpp)
     target_include_directories(mars_titan_simulation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -188,7 +190,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
         add_library(mars_titan_ppo STATIC src/ppo_policy.cpp src/ppo_training.cpp
             src/episodic_memory.cpp src/policy_context.cpp src/learning_replay.cpp)
         target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-        target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch)
+        target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch mars_titan_rl_objectives)
         mars_titan_configure_target(mars_titan_ppo)
         add_executable(mars-titan-memory-benchmark benchmarks/episodic_query.cpp)
         target_link_libraries(mars-titan-memory-benchmark PRIVATE mars_titan_ppo)
@@ -214,6 +216,22 @@ if(MARS_TITAN_BUILD_SIMULATION)
             add_executable(ppo_policy_tests tests/ppo_policy_tests.cpp)
             target_link_libraries(ppo_policy_tests PRIVATE mars_titan_ppo)
             mars_titan_configure_target(ppo_policy_tests)
+            add_executable(ppo_variant_state_tests tests/ppo_variant_state_tests.cpp)
+            target_link_libraries(ppo_variant_state_tests PRIVATE mars_titan_ppo)
+            mars_titan_configure_target(ppo_variant_state_tests)
+            add_test(NAME ppo_variant_state COMMAND ppo_variant_state_tests)
+            set_tests_properties(ppo_variant_state PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_sanitizer_test_environment(ppo_variant_state)
+            set_property(TEST ppo_variant_state APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            add_executable(ppo_variant_objective_tests tests/ppo_variant_objective_tests.cpp)
+            target_link_libraries(ppo_variant_objective_tests PRIVATE mars_titan_ppo)
+            mars_titan_configure_target(ppo_variant_objective_tests)
+            add_test(NAME ppo_variant_objective COMMAND ppo_variant_objective_tests)
+            set_tests_properties(ppo_variant_objective PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_sanitizer_test_environment(ppo_variant_objective)
+            set_property(TEST ppo_variant_objective APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             add_test(NAME ppo_policy COMMAND ppo_policy_tests)
             set_tests_properties(ppo_policy PROPERTIES TIMEOUT 120 LABELS "unit;integration;ppo")
             mars_titan_sanitizer_test_environment(ppo_policy)
@@ -283,6 +301,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
         endif()
         if(MARS_TITAN_BUILD_PPO)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_policy.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_controller.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_controller.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_objectives.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_objectives.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RLObjectives.cmake"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_training.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_checkpoints.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_inputs.hpp"
@@ -377,7 +400,6 @@ endif()
 include(cmake/MemoryStress.cmake)
 include(cmake/LearningControls.cmake)
 include(cmake/Candidate.cmake)
-include(cmake/RLObjectives.cmake)
 
 if(MARS_TITAN_ENABLE_STATIC_ANALYZER)
     if(NOT TARGET static-analysis)

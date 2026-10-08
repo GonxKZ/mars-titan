@@ -1,6 +1,8 @@
 #ifndef MARS_TITAN_PPO_POLICY_HPP
 #define MARS_TITAN_PPO_POLICY_HPP
 
+#include "mars_titan/ppo_controller.hpp"
+
 #include <ATen/core/Tensor.h>
 
 #include <cstddef>
@@ -92,6 +94,8 @@ struct PpoRollout {
     at::Tensor episode_starts = {};
     at::Tensor prefix_observations = {};
     at::Tensor prefix_lengths = {};
+    // Solo objetivos explícitos: los seis pesos FP32 usados al muestrear [T,N,6].
+    at::Tensor old_action_weights = {};
 };
 
 struct PpoAdvantages {
@@ -108,6 +112,10 @@ struct PpoUpdateStats {
     double approximate_kl = 0;
     double clip_fraction = 0;
     double gradient_norm = 0;
+    std::optional<double> full_kl;
+    int64_t completed_epochs = 0;
+    int64_t skipped_epochs = 0;
+    bool threshold_exceeded = false;
 };
 
 struct PpoAuxiliaryStats {
@@ -152,7 +160,7 @@ public:
     explicit PpoPolicy(std::size_t observation_width, const PpoHyperparameters& parameters,
                        uint64_t seed, std::string_view device = "cpu",
                        std::size_t memory_budget = default_ppo_memory_bytes,
-                       PpoArchitecture architecture = {});
+                       PpoArchitecture architecture = {}, PpoObjectiveConfig objective = {});
     PpoPolicy(const PpoPolicy&) = delete;
     PpoPolicy& operator=(const PpoPolicy&) = delete;
     PpoPolicy(PpoPolicy&&) noexcept;
@@ -177,6 +185,8 @@ public:
     // La conversión a FP32 y la normalización usan el dispositivo de la política.
     // Rechaza GRU y Double DQN.
     [[nodiscard]] PpoUpdateStats update_from_cpu(const PpoRollout& rollout);
+    // Diagnóstico completo con los parámetros actuales, sin gradiente ni cambios de RNG.
+    [[nodiscard]] std::optional<double> full_kl(const PpoRollout& rollout) const;
     // Solo MLP64 auxiliar. Admite entrada CPU y transfiere las filas elegidas al dispositivo.
     // Muestrea hasta 64 filas maduras por paso, con RNG independiente.
     [[nodiscard]] PpoAuxiliaryStats consolidate(const at::Tensor& observations,
@@ -196,6 +206,8 @@ public:
     [[nodiscard]] uint64_t seed() const;
     [[nodiscard]] std::size_t optimizer_steps() const;
     [[nodiscard]] std::size_t auxiliary_steps() const;
+    [[nodiscard]] const PpoObjectiveConfig& objective() const noexcept;
+    [[nodiscard]] const PpoControllerState& controller_state() const noexcept;
     [[nodiscard]] std::size_t dqn_environment_step() const noexcept;
     [[nodiscard]] std::size_t target_sync_step() const noexcept;
     [[nodiscard]] const PpoArchitecture& architecture() const noexcept;
