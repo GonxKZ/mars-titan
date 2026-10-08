@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "census_sha256": "2cf6e3c808f6d07a098f277b69d43b360acdb8e38489e61abcc5b11391dc4d0d",
+  "prepared_assets": 5023,
+  "possible_emissions": 17076024,
+  "task": "residual",
+  "horizon": 1,
+  "numeric_budget": {
+    "signed_integer_characters": 20,
+    "finite_double_characters": 32,
+    "extra_quoted_placeholder_bytes": 2
+  },
+  "emission_bytes_upper": 4428242660,
+  "resolution_bytes_upper": 10290871336,
+  "record_headers_upper": 409600000,
+  "synthetic_header_bytes": 874,
+  "max_events": 100000,
+  "log_bytes_upper": 15128713996,
+  "log_limit_bytes": 17179869184,
+  "separate_limits": {
+    "confirmed_checkpoints_bytes": 134217728,
+    "transient_checkpoint_bytes": 67108864,
+    "transient_record_bytes": 67108864,
+    "artifact_pool_including_two_generations_and_staged_proposals_bytes": 2147483648,
+    "position_index_file_bytes": 4294967296,
+    "position_index_spill_bytes": 34359738368,
+    "native_state_bytes": 1048576
+  },
+  "limits": [
+    "Cota de serialización por recorrido y brazo, no medida de coste ni ejecución de 17 millones de pasos.",
+    "Como máximo una emisión y una resolución por ventana. No acumula varios folds o brazos.",
+    "La cabecera de cada registro se reserva con 4096 bytes y como máximo 100000 eventos.",
+    "No suma 136 features al registro. Solo conserva observations_sha256.",
+    "El límite de artefactos cuenta las generaciones protegidas y propuestas antes de publicar.",
+    "El espacio de la fuente preparada, los parámetros compartidos y otros procesos queda fuera.",
+    "La suficiencia de pendientes, fragmentación y archivos para la trayectoria real requiere aceptación aparte."
+  ],
+  "script_sha256": "b7d05763e4bf8d5bdf5783e71a12ce169e61d082174d2979993db3dbcb5492ca",
+  "cohort_execution_sha256": "b2809bf7e5d09d65e19f7bbd7dc05c303d0b5e872fa85f81c1fb37b9c874e558"
+}

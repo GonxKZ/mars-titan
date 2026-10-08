@@ -132,3 +132,32 @@ al RSS completo del proceso. Si una fase no cabe, falla de forma explícita.
 La suficiencia de cola y disco para cada fase del censo real sigue siendo una
 aceptación separada. Esta implementación no declara materializada ni verificada
 una edición histórica completa.
+
+## Comprobaciones técnicas
+
+La [suite CPU](../../reports/engineering/financial-session-quality-20261008.json)
+comprende 492 casos con cobertura de ramas y ocho mutaciones Python detectadas.
+El [recibo del RNG](../../reports/engineering/financial-session-rng-20261008.json)
+separa la recuperación de v1 de los contrafactuales de v2. La
+[matriz CUDA](../../reports/engineering/financial-session-cuda-20261008.json)
+comprueba 18 configuraciones con parámetros compartidos congelados, paridad
+CPU/GPU y recuperación exacta. La guarda posterior de atributos numéricos tiene
+sus [regresiones propias](../../reports/engineering/financial-execution-attributes-20261008.json).
+La [revisión independiente](../../reports/engineering/financial-session-review-20261008.json)
+separa el ciclo nativo, el consumidor y los cambios de ejecución numérica.
+
+Un recorrido técnico con 32 activos sintéticos y 128 observaciones produjo
+64 emisiones, 32 resoluciones maduras y 32 cierres administrativos. Incluyó
+lectura, MAC, lector, retención y publicación. Con dos hilos CPU y FP32, las
+tres repeticiones tardaron entre 2,43 y 2,50 segundos con bloques de 8 filas y
+entre 1,79 y 1,82 segundos con bloques de 32. El pico del proceso fue de
+694.005.760 bytes. El fixture usa dimensiones pequeñas de modalidades y no
+permite extrapolar ese caudal al corpus real.
+
+La [cota de registro](../../reports/engineering/financial-session-storage-bound-20261008.json)
+utiliza los IDs y recuentos del censo de ventanas de precios. Para 17.076.024
+emisiones y como máximo una resolución por emisión, reserva 15.128.713.996 bytes,
+incluidas cabeceras de hasta 100.000 eventos. Es una cota de serialización por
+recorrido y brazo. El pool de artefactos, dos checkpoints protegidos, propuestas
+transitorias y el índice se presupuestan aparte. No demuestra que la cola de una
+fase real quepa en 32.768 pendientes.
