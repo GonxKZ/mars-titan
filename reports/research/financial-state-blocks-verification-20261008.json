@@ -520,5 +520,35 @@
     "before_sha256": "beb98d78808d7a6508178d6c9efad9814d93ab0b8d3d6c22d981e75ed038833d",
     "after_sha256": "d41b751da8a1b62d4272db5b15105950df87700a2c52f1483a971118325e72c7",
     "ast_identical": true
+  },
+  "independent_review": {
+    "checked_at_utc": "2026-10-08T11:06:17.814826+00:00",
+    "reviewed_commit": "d2e9d9e947eaacbe8357bac53e41297f409641af",
+    "findings": [],
+    "tests": {
+      "public": 54,
+      "independent": 5,
+      "passed": 59,
+      "log_sha256": "183165c706e16c326f5820ecd4d9d16363f4691a7d35502ec7d1e91845487564",
+      "test_sha256": "dca744aaabec36f159d67d170d69949db5d84c1c46d8193d0840b29efd1b9b61"
+    },
+    "checks": [
+      "Lectura de decodificación, copia, presupuestos, reunión e índice de referencias.",
+      "Cinco grupos sucesivos con activos ausentes y orden alternado se comparan con trayectorias independientes por activo, en los cuatro controles.",
+      "Los reemplazos conservan referencias de activos ausentes y no modifican el índice recibido.",
+      "Exportación, restauración y reunión conservan CPU bajo un dispositivo meta predeterminado.",
+      "RNG CPU intacto durante las trayectorias."
+    ],
+    "tolerances": {
+      "trajectory_rtol": 1e-12,
+      "trajectory_atol": 1e-13,
+      "transport_exact": true
+    },
+    "limits": [
+      "Fixtures CPU, sin optimizador, corpus real ni aprendizaje.",
+      "La comprobación CUDA corresponde al recibo independiente del implementador.",
+      "El consumidor debe verificar los artefactos y conservar sus referencias anidadas. Esta revisión no prueba esa integración aún pendiente."
+    ],
+    "receipt_sha256": "982d425bde369739df3d52a03043ee8c4ee6722c9d3af3fbc11b10d89209a45f"
   }
 }
