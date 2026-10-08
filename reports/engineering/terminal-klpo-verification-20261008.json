@@ -1,0 +1,443 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T15:23:38.442851+00:00",
+  "contract": "klpo_terminal_token_full_v1",
+  "base_commit": "4c575ff1825ebf92edf8a3a3606222f1267f516c",
+  "source_sha256": {
+    "native/include/mars_titan/klpo_terminal.hpp": "84c2b31dae81c311345789af79c7e423f85dd8dcf1e5f7c99ca5b3ec68ee051b",
+    "native/src/klpo_terminal.cpp": "09d2e77dd85bf125303594cc18985e97bc76a6a7b4df2665d28a9db632a2d89e",
+    "native/tests/klpo_terminal_tests.cpp": "eb9890d3e99cd23da9a125e023e5cafcc8cfa84868a0eb67d6fc2e141b3ca0a2",
+    "native/tests/klpo_terminal_oracle.py": "f8ee925d2d3c82c54e488dfeaf5e3753c0c7b18df2f35bb3ff936652a861aeb0",
+    "native/cmake/RLObjectives.cmake": "29e67d507a4182bda4bf4fc5314adf0d50a2a9829405f6e3d3cf45ab6757dfe0"
+  },
+  "source_pin": "304e5ac7ca573d45a0e42e6eaea95203260402bc",
+  "paper": "https://arxiv.org/abs/2610.08963v1",
+  "implementation": "Implementación matemática propia con ATen. No se copió código de la biblioteca KLPO.",
+  "cpu": {
+    "profiles": [
+      {
+        "profile": "release",
+        "stage": "configure",
+        "exit_code": 0
+      },
+      {
+        "profile": "release",
+        "stage": "build",
+        "exit_code": 0
+      },
+      {
+        "profile": "release",
+        "stage": "test",
+        "exit_code": 0
+      },
+      {
+        "profile": "asan",
+        "stage": "configure",
+        "exit_code": 0
+      },
+      {
+        "profile": "asan",
+        "stage": "build",
+        "exit_code": 0
+      },
+      {
+        "profile": "asan",
+        "stage": "test",
+        "exit_code": 0
+      },
+      {
+        "profile": "static",
+        "stage": "configure",
+        "exit_code": 0
+      },
+      {
+        "profile": "static",
+        "stage": "build",
+        "exit_code": 0
+      },
+      {
+        "profile": "static",
+        "stage": "test",
+        "exit_code": 0
+      },
+      {
+        "profile": "static",
+        "stage": "analyze",
+        "exit_code": 0
+      },
+      {
+        "profile": "coverage",
+        "stage": "configure",
+        "exit_code": 0
+      },
+      {
+        "profile": "coverage",
+        "stage": "build",
+        "exit_code": 0
+      },
+      {
+        "profile": "coverage",
+        "stage": "test",
+        "exit_code": 0
+      }
+    ],
+    "ctest_per_profile": [
+      "ppo_objectives",
+      "klpo_terminal"
+    ],
+    "coverage": {
+      "source_sha256": "09d2e77dd85bf125303594cc18985e97bc76a6a7b4df2665d28a9db632a2d89e",
+      "lizard_version": "1.24.1",
+      "llvm_version": "21.1.8",
+      "summary": {
+        "branches": {
+          "count": 84,
+          "covered": 59,
+          "notcovered": 25,
+          "percent": 70.23809523809523
+        },
+        "functions": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 4,
+          "covered": 4,
+          "percent": 100
+        },
+        "lines": {
+          "count": 71,
+          "covered": 71,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 74,
+          "covered": 73,
+          "notcovered": 1,
+          "percent": 98.64864864864865
+        }
+      },
+      "functions": [
+        {
+          "name": "mars_titan::learning::require",
+          "line": 19,
+          "ccn": 2,
+          "regions": 3,
+          "covered_regions": 3,
+          "region_coverage": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "mars_titan::learning::floating",
+          "line": 25,
+          "ccn": 2,
+          "regions": 3,
+          "covered_regions": 3,
+          "region_coverage": 1.0,
+          "crap": 2.0
+        },
+        {
+          "name": "mars_titan::learning::normalized",
+          "line": 29,
+          "ccn": 1,
+          "regions": 1,
+          "covered_regions": 1,
+          "region_coverage": 1.0,
+          "crap": 1.0
+        },
+        {
+          "name": "mars_titan::learning::klpo_terminal_full_loss",
+          "line": 44,
+          "ccn": 34,
+          "regions": 67,
+          "covered_regions": 66,
+          "region_coverage": 0.9850746268656716,
+          "crap": 34.003843557884444
+        }
+      ],
+      "convention": "CCN de Lizard, cobertura de regiones LLVM kind=0 en la función propia. CRAP=CCN²*(1-cobertura_de_regiones)³+CCN. No equivale a cobertura de sentencias Python."
+    },
+    "mutations": [
+      {
+        "name": "coefficient_gradient",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 5.835485578994849
+      },
+      {
+        "name": "historical_gradient",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 5.53559758499614
+      },
+      {
+        "name": "return_gradient",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 7.283098489002441
+      },
+      {
+        "name": "trajectory_mean",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 7.617788539006142
+      },
+      {
+        "name": "input_support",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 7.877692032008781
+      },
+      {
+        "name": "ignore_requested_budget",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 6.155258871993283
+      },
+      {
+        "name": "mask_holes",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 5.687137322995113
+      },
+      {
+        "name": "wrong_centering",
+        "exit_code": 1,
+        "detected": true,
+        "seconds": 5.635033967002528
+      }
+    ],
+    "measurement": {
+      "torch": "2.14.0+cu130",
+      "threads": 2,
+      "warmup": 1,
+      "repetitions": 5,
+      "records": [
+        {
+          "rows": 1,
+          "length": 1,
+          "dtype": "torch.float32",
+          "seconds": [
+            0.0003465330082690343,
+            0.00024924900208134204,
+            0.00022700800036545843,
+            0.00023569299082737416,
+            0.00022458299645222723
+          ],
+          "median_seconds": 0.00023569299082737416,
+          "input_bytes": 61,
+          "estimated_own_bytes": 66944
+        },
+        {
+          "rows": 1,
+          "length": 1,
+          "dtype": "torch.float64",
+          "seconds": [
+            0.0002078709949273616,
+            0.00021652699797414243,
+            0.00020836200565099716,
+            0.00020572800713125616,
+            0.0002054069918813184
+          ],
+          "median_seconds": 0.0002078709949273616,
+          "input_bytes": 113,
+          "estimated_own_bytes": 66944
+        },
+        {
+          "rows": 32,
+          "length": 64,
+          "dtype": "torch.float32",
+          "seconds": [
+            0.0006545619980897754,
+            0.0006757020018994808,
+            0.0006807020108681172,
+            0.0006240150105440989,
+            0.0007331599917961285
+          ],
+          "median_seconds": 0.0006757020018994808,
+          "input_bytes": 116864,
+          "estimated_own_bytes": 2691072
+        },
+        {
+          "rows": 32,
+          "length": 64,
+          "dtype": "torch.float64",
+          "seconds": [
+            0.0006690900045214221,
+            0.0007196549995569512,
+            0.0006609450065298006,
+            0.0007445020019076765,
+            0.0006245050026336685
+          ],
+          "median_seconds": 0.0006690900045214221,
+          "input_bytes": 215296,
+          "estimated_own_bytes": 2691072
+        },
+        {
+          "rows": 128,
+          "length": 256,
+          "dtype": "torch.float32",
+          "seconds": [
+            0.006488054001238197,
+            0.006548867997480556,
+            0.0066434170003049076,
+            0.0070759400114184245,
+            0.006383187006576918
+          ],
+          "median_seconds": 0.006548867997480556,
+          "input_bytes": 1868288,
+          "estimated_own_bytes": 42024960,
+          "profiled_tensor_peak_bytes": 11567616,
+          "profile_memory_timeline_sha256": "b831d96c5a9762f5b211b3f33ef4e6c222633bddd20322846dc13ef380b56258"
+        },
+        {
+          "rows": 128,
+          "length": 256,
+          "dtype": "torch.float64",
+          "seconds": [
+            0.006369891008944251,
+            0.007392457002424635,
+            0.0063359479972859845,
+            0.008263005001936108,
+            0.00530511699616909
+          ],
+          "median_seconds": 0.006369891008944251,
+          "input_bytes": 3441664,
+          "estimated_own_bytes": 42024960,
+          "profiled_tensor_peak_bytes": 13140992,
+          "profile_memory_timeline_sha256": "00015b4de5516d2f1079619c3e68dbf4c127dcd754820e4a07ca1623e103cc2a"
+        }
+      ],
+      "total_seconds": 1.231243196001742,
+      "process_peak_rss_kib": 694400,
+      "method": "Tiempo de forward y autograd.grad en CPU. El profiler mide almacenamientos de tensores de la función sin grafo previo del actor. No es un límite del allocator o del RSS.",
+      "optimizers": 0,
+      "gpu_used": false
+    }
+  },
+  "cuda": {
+    "status": "passed",
+    "torch": "2.14.0+cu130",
+    "device": "cuda:0",
+    "device_name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "allocator_limit_bytes": 134217728,
+    "free_before_bytes": 901644288,
+    "peak_allocated_bytes": 13140992,
+    "peak_reserved_bytes": 27262976,
+    "records": [
+      {
+        "rows": 3,
+        "length": 4,
+        "dtype": "torch.float32",
+        "rtol": 2e-06,
+        "atol": 2e-07,
+        "max_loss_absolute": 1.6479873021779667e-16,
+        "max_gradient_absolute": 0.0,
+        "synchronized_seconds": 0.19106036399898585
+      },
+      {
+        "rows": 3,
+        "length": 4,
+        "dtype": "torch.float64",
+        "rtol": 2e-12,
+        "atol": 2e-12,
+        "max_loss_absolute": 1.682681771697503e-16,
+        "max_gradient_absolute": 1.1102230246251565e-16,
+        "synchronized_seconds": 0.0010117930069100112
+      },
+      {
+        "rows": 128,
+        "length": 256,
+        "dtype": "torch.float32",
+        "rtol": 2e-06,
+        "atol": 2e-07,
+        "max_loss_absolute": 2.5937247023142792e-14,
+        "max_gradient_absolute": 0.0,
+        "synchronized_seconds": 0.001969874996575527
+      },
+      {
+        "rows": 128,
+        "length": 256,
+        "dtype": "torch.float64",
+        "rtol": 2e-12,
+        "atol": 2e-12,
+        "max_loss_absolute": 6.128425674920002e-15,
+        "max_gradient_absolute": 2.220446049250313e-16,
+        "synchronized_seconds": 0.0016452840063720942
+      }
+    ],
+    "rejected": [
+      "fp16",
+      "other_device",
+      "mask_dtype"
+    ],
+    "total_seconds": 0.8612110590038355,
+    "rng_unchanged": true,
+    "parameter_updates": 0,
+    "source_sha256": "09d2e77dd85bf125303594cc18985e97bc76a6a7b4df2665d28a9db632a2d89e",
+    "limits": "Fixtures técnicos de función pura, sin actor, optimizador o entrenamiento. Tiempos de una ejecución, no benchmark CUDA. Allocator excluye contexto y bibliotecas."
+  },
+  "oracles": {
+    "portable_report": "reports/engineering/terminal-klpo-oracle-20261008.json",
+    "portable_report_sha256": "55d05cf5bd31e233766170f189066478466f70d91612e78979b65cb2f9382fc4",
+    "population_paths": 100,
+    "actions": 6,
+    "gradient_points": 4,
+    "microbatch_sizes": [
+      37,
+      63
+    ],
+    "global_denominator": 100
+  },
+  "diagnostics": [
+    "El primer fixture utilizó una fábrica ATen bool no admitida. Se corrigió a int64 y conversión bool antes de confirmar el rojo por núcleo ausente.",
+    "clang-tidy detectó parámetros numéricos intercambiables. El presupuesto es ahora KlpoTerminalBudget. También se corrigieron accesos de arrays de la prueba y conversión de tamaños. No se suprimieron esos diagnósticos.",
+    "El profiler CPU consultó dispositivos CUDA con CUDA_VISIBLE_DEVICES=-1 y recibió error 100. La actividad medida fue exclusivamente CPU. Su exportación de memoria emitió un aviso de obsolescencia.",
+    "La sonda CUDA convirtió una diferencia con grafo a escalar al registrarla y emitió un aviso. No cambió los gradientes ni las tolerancias y se conserva el log."
+  ],
+  "logs_sha256": {
+    "red-release-test.log": "28a153279b9eb2c5fa454932926d91543284c5bda91e8202f28b41bb83d23617",
+    "red-corrected-release-test.log": "a33438c548e0a5a2c79a1ac6f3996e4930e65239f35dcc5de23b0ed74c965b00",
+    "diagnostics-fixed-release-test.log": "550300f69c56af3a72087c8f3f5ce3e53a11059fed785a38dd29cfa6f1d571ce",
+    "diagnostics-fixed-asan-test.log": "306f8d985db3feab19a7b9c1873e1bc396441f1b02f61a431f7eee55d8ba3eb6",
+    "diagnostics-fixed-static-build.log": "47d2e2741024212aa2c1c03f41bb3175b05a959cd6b9f2bb7971639eee4838d9",
+    "diagnostics-fixed-static-analyze.log": "44651b751bcbab9613a8c3677cb7ecdffbcf0a28bb84bf9677217bea388bba22",
+    "diagnostics-fixed-coverage-test.log": "a88e0acc7385a6cd88ca82406f05f1007784430c4ac6b483d0860663a4a8b504",
+    "mutations.json": "823edff3164090c4c4c998f4bc48a0a6b562945444288ff0f63b44182e9eba29",
+    "measure.log": "5da244706c26c74090c01020cfdf0103395ad070ef56b98fede1bed2bbaa949c",
+    "cuda.log": "892a1372d42eea2a81383ad814ec2a8d2a91d6800ddac3b979d8be7fddbbf6da",
+    "public-oracle.log": "3c31432274e1797f3983b1fa69b6e4998c44c8ed05d8c64d834c9648e90d544c"
+  },
+  "limits": [
+    "Función pura sin consumidor del actor ni registro de trayectorias implementados. Las pruebas no integran el candidato secuencial.",
+    "No se ejecutaron optimizadores, fit, entornos, rollouts científicos o datasets. El bloqueo de aprendizaje permanece vigente.",
+    "La máscara no acredita completitud, causa terminal o correspondencia de q con el sampler. Esas comprobaciones pertenecen al registro externo aún pendiente.",
+    "El presupuesto estima buffers lógicos propios. No limita el grafo previo del actor, las bibliotecas, el allocator o RSS.",
+    "ASan/UBSan no instrumentan LibTorch precompilado. TSan/MSan requieren otra biblioteca instrumentada y no se ejecutaron.",
+    "Los tiempos CPU proceden de una máquina compartida. No se afirma mejora de velocidad ni consumo energético. Los tiempos CUDA corresponden a una sola ejecución de comprobación."
+  ],
+  "legacy_byte_identical": {
+    "native/src/ppo_policy.cpp": "b954f7256edd1fb51a105e31bedcc1eadf35dd2b4907f92c0f04af76d92e17c6",
+    "native/src/ppo_training.cpp": "f45c13b3d252ec5ee3fcacf6e9cbb61408c3f748a6accebb807b3f584293f02c",
+    "native/src/ppo_checkpoints.cpp": "38cc09e4fceed610b663c393c2f5aa3ccba7978a91dd61691553a6b30d6a6213",
+    "src/mars_titan/models/klpo.py": "1b47ac15935f9a6a8446b9aa08ee90bfe17af4d94af3b70287663b7f106c7d59",
+    "src/mars_titan/models/klpo_quadratic.py": "f30164391f2e4428d174b67f7ee51bcdec9a7c5773f09b42707060768c816564",
+    "src/mars_titan/models/predictive_adaptation.py": "128b5ab4dc9153016d3922e5d2565673485b316e017fd27299ec49baa92fe9ff",
+    "src/mars_titan/posttraining/run.py": "6f42487a76f3880a27a7c9d45f7441d15135f29cfd9ef12e70d4981afc8c6db5"
+  },
+  "portable_oracle_reproduced": true,
+  "final_checks": {
+    "ruff": true,
+    "ruff_format": true,
+    "clang_format": true,
+    "repository": "1294 archivos, 191 referencias y 64 tareas",
+    "cuda_process_exited": true
+  }
+}

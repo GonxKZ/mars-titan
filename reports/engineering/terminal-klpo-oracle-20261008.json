@@ -1,0 +1,241 @@
+{
+  "status": "passed",
+  "precision_decimal_digits": 60,
+  "actions": 6,
+  "parameter_coordinates": 2,
+  "prefixes": 9,
+  "complete_paths": 100,
+  "lengths": [
+    1,
+    2
+  ],
+  "terminal_noise": true,
+  "intermediate_random_outcomes": true,
+  "beta": 0.3,
+  "gamma": 0.83,
+  "fixed_points": [
+    {
+      "theta": [
+        -0.4,
+        0.7
+      ],
+      "population_fd": [
+        -0.030967886318368134,
+        0.015907125478634522
+      ],
+      "terminal_full": [
+        -0.030967886318368134,
+        0.015907125478634522
+      ],
+      "sequence_fd": [
+        -0.030967886318368134,
+        0.015907125478634522
+      ],
+      "gamma_u_remaining": [
+        -0.030967886318368134,
+        0.015907125478634522
+      ],
+      "immediate": [
+        -0.24680213747914992,
+        0.04482723489806367
+      ],
+      "unscaled_remaining": [
+        -0.015549761925753946,
+        0.006142298066188063
+      ],
+      "divided_by_length": [
+        -0.03340891078834165,
+        0.007069380692977395
+      ],
+      "outcome_filtered": [
+        0.026304680777041112,
+        -0.023066012315568287
+      ],
+      "max_terminal_fd_error_decimal": "4.0318083153012E-48",
+      "max_sequence_fd_error_decimal": "5E-48"
+    },
+    {
+      "theta": [
+        0.0,
+        0.0
+      ],
+      "population_fd": [
+        0.19981448059665183,
+        -0.2082208520615879
+      ],
+      "terminal_full": [
+        0.19981448059665183,
+        -0.2082208520615879
+      ],
+      "sequence_fd": [
+        0.19981448059665183,
+        -0.2082208520615879
+      ],
+      "gamma_u_remaining": [
+        0.19981448059665183,
+        -0.2082208520615879
+      ],
+      "immediate": [
+        -0.016019770564129933,
+        -0.17930074264215876
+      ],
+      "unscaled_remaining": [
+        0.21523260498926602,
+        -0.21798567947403438
+      ],
+      "divided_by_length": [
+        0.08316950845668136,
+        -0.1064266268692828
+      ],
+      "outcome_filtered": [
+        0.23918851312525483,
+        -0.2389262523751083
+      ],
+      "max_terminal_fd_error_decimal": "3.297406776160E-48",
+      "max_sequence_fd_error_decimal": "5E-48"
+    },
+    {
+      "theta": [
+        0.37,
+        -0.2
+      ],
+      "population_fd": [
+        0.353297028377669,
+        -0.30653806942472367
+      ],
+      "terminal_full": [
+        0.353297028377669,
+        -0.30653806942472367
+      ],
+      "sequence_fd": [
+        0.353297028377669,
+        -0.30653806942472367
+      ],
+      "gamma_u_remaining": [
+        0.353297028377669,
+        -0.30653806942472367
+      ],
+      "immediate": [
+        0.13746277721688724,
+        -0.2776179600052945
+      ],
+      "unscaled_remaining": [
+        0.3687151527702832,
+        -0.3163028968371701
+      ],
+      "divided_by_length": [
+        0.16364137047649657,
+        -0.15707860488361824
+      ],
+      "outcome_filtered": [
+        0.4017388743352436,
+        -0.3379272112508137
+      ],
+      "max_terminal_fd_error_decimal": "3.305952185719E-48",
+      "max_sequence_fd_error_decimal": "0E-47"
+    },
+    {
+      "theta": [
+        1.1,
+        0.3
+      ],
+      "population_fd": [
+        0.5361860117487952,
+        -0.28261170618101344
+      ],
+      "terminal_full": [
+        0.5361860117487952,
+        -0.28261170618101344
+      ],
+      "sequence_fd": [
+        0.5361860117487952,
+        -0.28261170618101344
+      ],
+      "gamma_u_remaining": [
+        0.5361860117487952,
+        -0.28261170618101344
+      ],
+      "immediate": [
+        0.32035176058801346,
+        -0.2536915967615843
+      ],
+      "unscaled_remaining": [
+        0.5516041361414095,
+        -0.29237653359345994
+      ],
+      "divided_by_length": [
+        0.2632920967852319,
+        -0.1463253073456875
+      ],
+      "outcome_filtered": [
+        0.6228904169163938,
+        -0.31679355892979677
+      ],
+      "max_terminal_fd_error_decimal": "2.519459652952E-48",
+      "max_sequence_fd_error_decimal": "1E-47"
+    }
+  ],
+  "matched_collection": {
+    "reference": [
+      0.353297028377669,
+      -0.30653806942472367
+    ],
+    "wrong_conditional_q": [
+      0.35168802317140574,
+      -0.2884715228901827
+    ]
+  },
+  "computation": "Enumeración de una tabla finita y diferencias finitas Decimal. Sin llamar a la implementación propuesta ni usar autograd.",
+  "no_environment": true,
+  "no_sampling": true,
+  "no_fit": true,
+  "no_optimizer": true,
+  "no_gpu": true,
+  "schema_version": 1,
+  "source_pin": "304e5ac7ca573d45a0e42e6eaea95203260402bc",
+  "paper": "https://arxiv.org/abs/2610.08963v1",
+  "paper_sha256": "de3e299d401af2715a49090328f86a8e4ba284983e189d8119912f4a573f4590",
+  "independent_review_sha256": "61a23acc93dc30d07f0a854449e0683262fbf4411b1285f0b10d4ffe7aeb3746",
+  "collector_counterexample": {
+    "selected_action": 0,
+    "same_selected_logq": -1.6094379124341003,
+    "first_conditional": [
+      0.2,
+      0.16,
+      0.16,
+      0.16,
+      0.16,
+      0.16
+    ],
+    "second_conditional": [
+      0.2,
+      0.3,
+      0.1,
+      0.1,
+      0.1,
+      0.2
+    ],
+    "first_full_token_gradient": 0.6037571736305491,
+    "second_full_token_gradient": 0.716961643686277,
+    "conclusion": "El logaritmo de la acción elegida no identifica la corrección Full-KL.",
+    "finite_log_support": {
+      "logq": -1000.0,
+      "exp_fp64": 0.0,
+      "conclusion": "Un logaritmo finito no garantiza soporte positivo representable. Se necesita comprobar la probabilidad usada por el sampler."
+    },
+    "terminal_causes": {
+      "declared_horizon": "Puede completar la tarea si todas las recompensas y la valoración final son válidas y su horizonte quedó fijado antes de recoger.",
+      "ruin": "Resultado terminal que permanece en la población y conserva la penalización contractual.",
+      "missing_valuation": "No proporciona un retorno terminal válido. No sustituirlo por cero ni eliminarlo según la cartera elegida.",
+      "resource_stop": "Estado parcial recuperable, no final de tarea."
+    },
+    "no_environment": true,
+    "no_sampling": true,
+    "no_optimizer": true,
+    "no_gpu": true
+  },
+  "limits": [
+    "El oráculo usa probabilidades y retornos de una tabla finita, no un entorno financiero.",
+    "La igualdad es poblacional bajo q fija. No acredita igualdad muestra a muestra ni de Hessianas de sustitutos con stop-gradient."
+  ]
+}
