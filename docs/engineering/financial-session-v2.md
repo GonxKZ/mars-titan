@@ -31,8 +31,10 @@ primera emisión FP64 con la ruta fusionada activa. Las entradas y los pesos
 eran iguales. La diferencia apareció en el bloque fusionado, mientras que las
 etapas manuales de atención y FFN coincidieron hasta 1,11e-15. Con la ruta
 desactivada la emisión difirió 1,25e-16. Los recibos del fallo se conservan y las
-tolerancias no se ampliaron. Este ajuste no obliga a usar Math para toda la
-atención. C mantiene su requisito específico sobre SDPA de MAC.
+tolerancias no se ampliaron. Cuando `local_control` existe, también en modo
+`disabled`, el contexto SDPA Math de `FinancialPredictor.prepare` abarca el
+codificador de precios y MAC. El baseline correspondiente usa ese mismo contexto.
+El diagnóstico C sigue midiendo la transición rápida de MAC anterior al lector.
 
 Cada nueva observación produce un token multimodal y una preparación del núcleo.
 El lector utiliza `working_state` después de MAC y la cabeza existente. K = 1, 2

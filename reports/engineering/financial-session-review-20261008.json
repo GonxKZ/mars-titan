@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "recorded_at_utc": "2026-10-08T21:23:26.860122+00:00",
-  "status": "Sin hallazgos CPU abiertos en los alcances revisados. CUDA focal de atributos pendiente.",
+  "status": "Revisiones CPU cerradas sin hallazgos abiertos. La sonda CUDA focal posterior también está completada.",
   "receipts": {
     "lifecycle": "b340daae4aa52863a35921a219520dc633644fe5d89d8cb83493f5b365817331",
     "consumer": "6da6f156c2fb112655f5fe356fc23b152005bc903ee3356b4aa99d9156e47092",
@@ -98,5 +98,13 @@
     "La inspección de fuentes no determina qué rama concreta de CUDA ejecutó el fixture.",
     "No se afirma resistencia a manipulación arbitraria del intérprete o del binario.",
     "No se ha preparado ni verificado mediante este consumidor todo el corpus histórico. Sin aprendizaje ni resultados predictivos."
-  ]
+  ],
+  "supplemented_at_utc": "2026-10-08T21:53:35.673276+00:00",
+  "subsequent_cuda_verification": {
+    "report": "reports/engineering/financial-session-completion-20261008.json",
+    "tested_head": "cc571c20ccb51c191b81be7bfbbc485689000ac7",
+    "result": "Paridad FP64, recuperación exacta y rechazo sin publicación.",
+    "independently_rerun": false,
+    "scope": "Posterior a la revisión CPU. El estado pendiente de los recibos anteriores describe su fecha original."
+  }
 }
