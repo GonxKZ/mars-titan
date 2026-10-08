@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-08T07:53:34.410602+00:00",
+  "scope": "Comprobación técnica de la referencia GRU con lectura episódica. Sin optimizador ni evaluación científica.",
+  "production_commit": "df2be6ef70fc5bdfe086844ee28693c6e198b1c4",
+  "source_sha256": {
+    "native/tests/candidate_cuda_tests.cpp": "fdf4ea13d16d43d889d922f95ac321259fbf5f8d709528450163e708cb87749e",
+    "native/cmake/Candidate.cmake": "bf41e96589a079cb475d88bd0c87336cb95da991632eb44261bed5c8e74a911e",
+    "native/CMakePresets.json": "4ea1cac7b4703419dc92c8adf3d878cac1f1356a34be5834be8e0a925ae84189"
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "vram_mib": 8188,
+    "driver": "595.91.07",
+    "device": "cuda:0",
+    "concurrent_workload": "Otra aplicación ocupaba aproximadamente 6,7 GiB. No se detuvo."
+  },
+  "software": {
+    "libtorch": "2.14.0+cu130",
+    "cuda_runtime": "13.0",
+    "clang": "21.1.8",
+    "clang_tidy": "21.1.6",
+    "cmake": "4.2.3",
+    "compute_sanitizer": "2026.3.0.0",
+    "cxx_standard": 20
+  },
+  "fixture": {
+    "rows": 2,
+    "window": 64,
+    "price_channels": 5,
+    "news_width": 384,
+    "chart_width": 512,
+    "fundamental_width": 45,
+    "macro_width": 420,
+    "hidden_width": 128,
+    "fixed_feature_width": 256,
+    "key_width": 128,
+    "cases_per_dtype": [
+      {
+        "episodes": 0,
+        "memory_reads": 1
+      },
+      {
+        "episodes": 8,
+        "memory_reads": 1
+      },
+      {
+        "episodes": 8,
+        "memory_reads": 2
+      },
+      {
+        "episodes": 8,
+        "memory_reads": 4
+      }
+    ],
+    "dtypes": [
+      "float64",
+      "float32"
+    ],
+    "mode": "train",
+    "optimizer_steps": 0
+  },
+  "numerics": {
+    "fp64": {
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "maximum_quantile_error": 6.661338147750939e-16
+    },
+    "fp32": {
+      "rtol": 0.0002,
+      "atol": 2e-06,
+      "maximum_quantile_error": 2.384185791015625e-07
+    },
+    "tf32": false,
+    "cublas_workspace_config": ":4096:8"
+  },
+  "checks": {
+    "release_ctest_passed": 6,
+    "cpu_asan_ubsan_ctest_passed": 5,
+    "cuda_gradient_cases": 8,
+    "cuda_module_recovery_cases": 8,
+    "maximum_output_error_fp64": 6.661338147750939e-16,
+    "maximum_output_error_fp32": 2.384185791015625e-07,
+    "peak_torch_allocated_bytes": 99061760,
+    "peak_torch_reserved_bytes": 100663296,
+    "cpu_cuda_rng_unchanged": true,
+    "compute_sanitizer_memcheck_errors": 0
+  },
+  "allocator_limit_fraction": 0.0625,
+  "diagnostics": {
+    "strict_compiler_warnings": "Sin errores en los objetivos afectados",
+    "lifetime_safety": "Análisis experimental disponible en Clang 21 activado",
+    "clang_tidy_own_diagnostics": 0,
+    "clang_static_analyzer_own_diagnostics": 0,
+    "cpu_asan_ubsan": "Cinco casos correctos con detección de fugas",
+    "cuda_memcheck": "Ocho casos, cero errores",
+    "asan_ubsan_cuda": "No completado. cudaGetDeviceCount devuelve código 2 antes del modelo. Un programa mínimo con el mismo runtime reproduce el fallo al instrumentarse."
+  },
+  "review": {
+    "sha256": "9263b52d69ce68b8ab0141919172be7c6622b7d61d0365a23b46b316775b75f5",
+    "resolved": "El caso vacío ahora comprueba gradientes y recuperación y participa en el error máximo."
+  },
+  "evidence_sha256": {
+    "cuda-complete-checks.log": "bb46f41cf5600ca33f8685d27a0a3af0f71db98b9a2b69dfa560e62ec82fd804",
+    "asan-cpu-tests-complete.log": "7e4b8d3b48a87b6e0ebf1c9d9deb1ec3e28d022474367f600b92228ad02f7589",
+    "cuda-memcheck-complete.log": "fe1366e17fdab775fea9a5bdf526965d7489e93d9b2e084bd1f0e44b31bf7bf0",
+    "cuda-init-plain.log": "cd374d50e006e1dd8ed8f2705e37892f55b54850eec446df99b74efbe3ae3318",
+    "cuda-init-asan.log": "06eec275005dae9ee18146622421fafa772008852f36e585538147ddfc3a726e",
+    "cuda-parity-tidy-complete.log": "874c37798082276105539a3191e6ab744f25cea8adecf755365bd7d50b71a906",
+    "cuda-parity-analysis-complete.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limits": [
+    "Las entradas de esta referencia deben estar completas. La política histórica con ausencias sigue pendiente de integración.",
+    "La recuperación comprobada pertenece al módulo. La instantánea se reconstruye con el fixture y no se acredita recuperación cronológica completa.",
+    "El aviso de cuDNN por pesos GRU no contiguos permanece. No se ha medido una aceleración del recorrido completo.",
+    "No hay paridad bit a bit entre CPU y CUDA. Se aplican las tolerancias declaradas.",
+    "La memoria del asignador Torch no equivale al consumo total del proceso ni del driver.",
+    "La comprobación ASan/UBSan con CUDA queda pendiente por el fallo de inicialización reproducido.",
+    "No hay mejora predictiva medida ni acceso al test final."
+  ],
+  "training_executed": false,
+  "final_test_opened": false
+}

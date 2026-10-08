@@ -10,11 +10,11 @@ El [recibo de fuentes](../../reports/research/titans-mac-source-audit-20261008.j
 
 | Referencia | Función | Estado del 8 de octubre de 2026 |
 | --- | --- | --- |
-| GRU con banco episódico | Conservar el candidato previo y sus controles de escritura | Componente C++20 en [#296](https://github.com/GonxKZ/mars-titan/pull/296), con pruebas CPU. Pendientes comprobación CUDA e integración cronológica completa. No entrenado. |
+| GRU con banco episódico | Conservar el candidato previo y sus controles de escritura | [Componente C++20 integrado](../../native/candidate.md), con pruebas CPU/CUDA, gradientes y recuperación del módulo. Pendientes política histórica con máscaras e integración cronológica completa. No entrenado. |
 | Transformer compacto | Aislar el cambio de codificador con proyecciones, fusión y cabeza comunes | [Referencia integrada](../engineering/compact-transformer-reference.md), con pruebas CPU/CUDA y paridad de los modos anteriores. Sin resultados predictivos propios. |
 | Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | [Núcleo](../engineering/titans-memory-core.md) y [adaptador financiero](../engineering/titans-financial-adapter.md) integrados, con pruebas CPU/CUDA. Falta el recorrido cronológico completo. |
 | MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas mediante componentes desactivables | El adaptador reutiliza el núcleo y sus estados. Banco, consolidación y refinamientos siguen en integración. |
-| CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | [Mecanismos C/M implementados](../experiments/mars_titan_cm_v1/specification.md). Pendientes operador, ciclo episódico y comparación integrada. Desactivada por defecto. |
+| CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | [C integrado como diagnóstico local de MAC](../experiments/mars_titan_cm_v1/mac_local_control.md), con pruebas CPU/CUDA. M y el codec episódico tienen comprobaciones propias. Pendientes ciclo temporal y comparación integrada. Desactivada por defecto. |
 
 Estos nombres describen brazos del estudio. No renombran checkpoints ni convierten una referencia anterior en Titans. El valor de `baseline_id` de cada contraste debe señalar una configuración ejecutable y fijada. La elección de una nueva arquitectura para B crea otro contraste B, B+C, B+M y B+C+M, conservando los manifiestos anteriores.
 
