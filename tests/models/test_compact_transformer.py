@@ -12,6 +12,13 @@ from mars_titan.models.baselines.transformer import CompactPriceTransformer
 DIMENSIONS = dict(prices=5, news=8, charts=7, fundamentals=6, macro=9)
 
 
+def same_state(left, right):
+    return left.keys() == right.keys() and all(
+        torch.equal(value, right[name]) if isinstance(value, torch.Tensor) else value == right[name]
+        for name, value in left.items()
+    )
+
+
 def reference(**options):
     settings = dict(context=8, hidden_size=32, layers=2, dropout=0.0)
     settings.update(options)
@@ -79,7 +86,7 @@ def test_windows_batches_and_rng_have_no_hidden_carry():
     values = inputs()
     other = inputs()
     rng = torch.get_rng_state().clone()
-    weights = {name: value.clone() for name, value in model.state_dict().items()}
+    weights = deepcopy(model.state_dict())
     with torch.no_grad():
         expected = model(values)
         model(other)
@@ -89,7 +96,7 @@ def test_windows_batches_and_rng_have_no_hidden_carry():
             [model({key: value[i : i + 1] for key, value in values.items()}) for i in range(3)]
         )
     assert torch.equal(torch.get_rng_state(), rng)
-    assert all(torch.equal(value, weights[name]) for name, value in model.state_dict().items())
+    assert same_state(model.state_dict(), weights)
     torch.testing.assert_close(repeated, expected, rtol=0, atol=0)
     torch.testing.assert_close(reversed_batch.flip(0), expected, rtol=1e-5, atol=1e-6)
     torch.testing.assert_close(separate, expected, rtol=1e-5, atol=1e-6)
@@ -224,7 +231,7 @@ def test_checkpoint_contract_rejects_same_shapes_with_different_semantics(tmp_pa
     rng = torch.get_rng_state().clone()
     with pytest.raises(ValueError, match="contrato|arquitectura"):
         initialize_weights(restored, path, config=config, hashes=hashes)
-    assert all(torch.equal(value, original[name]) for name, value in restored.state_dict().items())
+    assert same_state(restored.state_dict(), original)
     assert torch.equal(rng, torch.get_rng_state())
 
 
@@ -352,3 +359,84 @@ def test_transformer_is_not_implicitly_admitted_to_the_campaign_design():
 
     with pytest.raises(ValueError, match="familias"):
         design_cases(["transformer"])
+
+
+@pytest.mark.parametrize("stage", ["prices", "macro", "head"])
+def test_nonfinite_results_are_rejected_without_clipping_or_substitution(stage):
+    torch.manual_seed(31)
+    model = reference().eval()
+    values = {
+        name: torch.ones((2, 8, size) if name == "prices" else (2, size))
+        for name, size in DIMENSIONS.items()
+    }
+    if stage == "head":
+        with torch.no_grad():
+            model.head.weight[0, 0] = float("nan")
+    else:
+        values[stage].fill_(torch.finfo(torch.float32).max / 2)
+        if stage == "macro":
+            # Nueve sumandos positivos desbordan float32 sin pesos no finitos.
+            with torch.no_grad():
+                model.encoders["macro"][0].weight.fill_(1)
+                model.encoders["macro"][0].bias.zero_()
+    assert all(torch.isfinite(value).all() for value in values.values())
+    with torch.no_grad(), pytest.raises(ValueError, match="finit"):
+        (model.encode if stage == "macro" else model)(values)
+
+
+def test_standalone_encoder_rejects_overflowing_representation():
+    torch.manual_seed(31)
+    encoder = CompactPriceTransformer(5, context=8, hidden_size=32, layers=2).eval()
+    prices = torch.full((2, 8, 5), torch.finfo(torch.float32).max / 2)
+    with torch.no_grad(), pytest.raises(ValueError, match="finit"):
+        encoder.encode_sequence(prices)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize("strict", [False, True])
+@pytest.mark.parametrize("fault", ["heads", "missing", "boolean_type"])
+def test_state_dict_contract_precedes_any_encoder_weight_copy(nested, strict, fault):
+    source = CompactPriceTransformer(5, context=8, hidden_size=32, layers=2, heads=4)
+    target = CompactPriceTransformer(
+        5, context=8, hidden_size=32, layers=2, heads=2 if fault == "heads" else 4
+    )
+    if nested:
+        source, target = torch.nn.Sequential(source), torch.nn.Sequential(target)
+    state = deepcopy(source.state_dict())
+    key = "0._extra_state" if nested else "_extra_state"
+    if fault == "missing":
+        state.pop(key, None)
+    elif fault == "boolean_type":
+        state[key] = (
+            {**source[0].configuration, "causal": 1}
+            if nested
+            else {**source.configuration, "causal": 1}
+        )
+    before = deepcopy(target.state_dict())
+    with pytest.raises(ValueError, match="contrato"):
+        target.load_state_dict(state, strict=strict)
+    assert same_state(before, target.state_dict())
+
+
+def test_multimodal_direct_load_rejects_heads_before_changing_any_modality():
+    source = reference()
+    target = reference(transformer=dict(heads=2, feedforward_multiplier=2))
+    before = deepcopy(target.state_dict())
+    with pytest.raises(ValueError, match="contrato"):
+        target.load_state_dict(source.state_dict(), strict=False)
+    assert same_state(before, target.state_dict())
+
+
+def test_initialization_rejects_contradictory_nested_extra_state_before_copy(tmp_path):
+    source, target = reference(), reference()
+    state = deepcopy(source.state_dict())
+    state["price_encoder._extra_state"] = {**source.price_encoder.configuration, "heads": 2}
+    path = tmp_path / "conflicting.pt"
+    hashes = {"fixture": "c" * 64}
+    torch.save(
+        dict(model=state, config=source.configuration, input_hashes=hashes, next_epoch=1), path
+    )
+    before = deepcopy(target.state_dict())
+    with pytest.raises(ValueError, match="contrato"):
+        initialize_weights(target, path, config=target.configuration, hashes=hashes)
+    assert same_state(before, target.state_dict())

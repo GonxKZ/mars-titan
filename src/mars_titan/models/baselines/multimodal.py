@@ -142,7 +142,13 @@ class MultimodalReference(nn.Module):
         else:
             price = self.price_encoder(prices)
         representations = [price] + [self.encoders[name](inputs[name]) for name in self.encoders]
-        return self.fusion(torch.cat(representations, dim=-1))
+        fused = self.fusion(torch.cat(representations, dim=-1))
+        if self.kind == "transformer" and not torch.isfinite(fused).all():
+            raise ValueError("La fusión Transformer contiene valores no finitos")
+        return fused
 
     def forward(self, inputs):
-        return self.head(self.encode(inputs)).squeeze(-1)
+        output = self.head(self.encode(inputs)).squeeze(-1)
+        if self.kind == "transformer" and not torch.isfinite(output).all():
+            raise ValueError("La salida Transformer contiene valores no finitos")
+        return output

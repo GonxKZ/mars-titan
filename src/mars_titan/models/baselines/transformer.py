@@ -1,5 +1,6 @@
 """Codificador de precios con atención causal y posiciones explícitas por ventana."""
 
+import json
 import math
 
 import torch
@@ -116,6 +117,30 @@ class CompactPriceTransformer(nn.Module):
             dtypes=("float32", "float64"),
         )
 
+    def get_extra_state(self):
+        """Guardar el contrato junto a los pesos, también dentro de otro módulo."""
+        return self.configuration
+
+    def set_extra_state(self, state):
+        """Validar el contrato sin cambiar la arquitectura construida."""
+        try:
+            matches = json.dumps(state, sort_keys=True, allow_nan=False) == json.dumps(
+                self.configuration, sort_keys=True, allow_nan=False
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError("El contrato del codificador Transformer no es válido") from error
+        if not matches:
+            raise ValueError("El contrato del codificador Transformer no coincide")
+
+    def _load_from_state_dict(
+        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+    ):
+        # El hook se ejecuta antes de copiar pesos de sus hijos. No depende de strict.
+        self.set_extra_state(state_dict.get(prefix + "_extra_state"))
+        super()._load_from_state_dict(
+            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        )
+
     def encode_sequence(self, prices):
         """Devolver todos los tokens para contrastar el orden de información."""
         if (
@@ -149,7 +174,10 @@ class CompactPriceTransformer(nn.Module):
         encoded = self.projection(prices) + self.positions.to(dtype=prices.dtype)
         for block in self.blocks:
             encoded = block(encoded, src_mask=self.causal_mask, is_causal=True)
-        return self.norm(encoded)
+        representation = self.norm(encoded)
+        if not torch.isfinite(representation).all():
+            raise ValueError("La representación Transformer contiene valores no finitos")
+        return representation
 
     def forward(self, prices):
         return self.encode_sequence(prices)[:, -1]

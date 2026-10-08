@@ -76,6 +76,10 @@ def initialize_weights(model, path, *, config, hashes, max_bytes=64 * 1024**2):
     if type(state["next_epoch"]) is not int or state["next_epoch"] < 1:
         raise ValueError("El origen no acredita una época completada")
     expected, weights = model.state_dict(), state["model"]
+    extra_state = None
+    if getattr(model, "kind", None) == "transformer":
+        extra_state = "price_encoder._extra_state"
+        model.price_encoder.set_extra_state(weights.get(extra_state))
     if expected.keys() != weights.keys() or any(
         not isinstance(weights[name], torch.Tensor)
         or weights[name].shape != value.shape
@@ -83,6 +87,7 @@ def initialize_weights(model, path, *, config, hashes, max_bytes=64 * 1024**2):
         or weights[name].layout != value.layout
         or not torch.isfinite(weights[name]).all()
         for name, value in expected.items()
+        if name != extra_state
     ):
         raise ValueError("Los pesos de origen no tienen formas, tipos o valores válidos")
     model.load_state_dict(weights)
