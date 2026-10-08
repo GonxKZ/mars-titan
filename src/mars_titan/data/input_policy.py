@@ -3,12 +3,49 @@
 import math
 from numbers import Real
 
+import numpy as np
+
 from .temporal import aware
 
 STRICT_INPUTS = "strict_inputs_v1"
 HISTORICAL_MASKED = "historical_masked_2000_v1"
 INPUT_POLICIES = (STRICT_INPUTS, HISTORICAL_MASKED)
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
+
+
+def validate_historical_vectors(vectors, presence, representation):
+    """Contrastar las máscaras y rellenos NumPy antes de convertirlos a tensores."""
+    if (
+        not isinstance(presence, np.ndarray)
+        or presence.dtype != np.bool_
+        or presence.ndim != 2
+        or presence.shape[1] != len(MODALITIES)
+    ):
+        raise ValueError("La presencia necesita cinco booleanos por muestra")
+    if not presence[:, [0, 2]].all():
+        raise ValueError("Los precios y gráficos causales son obligatorios")
+    for name, values in vectors.items():
+        if not np.isfinite(values).all():
+            raise ValueError("Una modalidad histórica contiene valores no finitos")
+        observed = presence[:, MODALITIES.index(name)]
+        if np.any(values[~observed] != 0):
+            raise ValueError("El vector de un bloque ausente debe contener solo ceros")
+        if name not in {"fundamentals", "macro"}:
+            continue
+        catalog = "fundamental_concepts" if name == "fundamentals" else "macro_indicators"
+        width = len(representation[catalog])
+        if values.shape[1] != 3 * width:
+            raise ValueError("El vector numérico no conserva la longitud de su catálogo")
+        data, masks, ages = np.split(values, 3, axis=1)
+        if not ((masks == 0) | (masks == 1)).all() or (ages < 0).any():
+            raise ValueError("Las máscaras por concepto o sus edades no son válidas")
+        missing = masks == 0
+        if (
+            not np.array_equal(observed, (~missing).any(axis=1))
+            or np.any(data[missing] != 0)
+            or np.any(ages[missing] != 0)
+        ):
+            raise ValueError("La ausencia del bloque no coincide con sus conceptos y relleno")
 
 
 def masked_inputs(policy):

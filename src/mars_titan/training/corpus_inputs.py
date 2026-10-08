@@ -12,7 +12,12 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_files import read_manifest
-from mars_titan.data.input_policy import MODALITIES, STRICT_INPUTS, masked_inputs
+from mars_titan.data.input_policy import (
+    MODALITIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    validate_historical_vectors,
+)
 from mars_titan.data.storage import sha256
 
 from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
@@ -115,28 +120,7 @@ def _presence(table, vectors, representation):
     events = counts.to_numpy()
     if (events < 0).any() or not np.array_equal(events > 0, presence[:, 1]):
         raise ValueError("La presencia de noticias no coincide con sus eventos admitidos")
-    for name, values in vectors.items():
-        if not np.isfinite(values).all():
-            raise ValueError("Una modalidad histórica contiene valores no finitos")
-        observed = presence[:, MODALITIES.index(name)]
-        if np.any(values[~observed] != 0):
-            raise ValueError("El vector de un bloque ausente debe contener solo ceros")
-        if name not in {"fundamentals", "macro"}:
-            continue
-        catalog = "fundamental_concepts" if name == "fundamentals" else "macro_indicators"
-        width = len(representation[catalog])
-        if values.shape[1] != 3 * width:
-            raise ValueError("El vector numérico no conserva la longitud de su catálogo")
-        data, masks, ages = np.split(values, 3, axis=1)
-        if not ((masks == 0) | (masks == 1)).all() or (ages < 0).any():
-            raise ValueError("Las máscaras por concepto o sus edades no son válidas")
-        missing = masks == 0
-        if (
-            not np.array_equal(observed, (~missing).any(axis=1))
-            or np.any(data[missing] != 0)
-            or np.any(ages[missing] != 0)
-        ):
-            raise ValueError("La ausencia del bloque no coincide con sus conceptos y relleno")
+    validate_historical_vectors(vectors, presence, representation)
     return presence
 
 
