@@ -20,7 +20,7 @@
 
 \title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
 \author{Gonzalo García Lama}
-\date{Revisión de arquitectura, 8 de octubre de 2026}
+\date{Revisión técnica, 9 de octubre de 2026}
 
 \begin{document}
 \maketitle
@@ -33,8 +33,8 @@ temporal y el presupuesto. La edición histórica adicional conserva todos los
 datos utilizables de FinMultiTime desde 2000, con ausencias explícitas. Se separa
 del control estricto y utiliza validación temporal, ablaciones e incertidumbre.
 Este documento es una base de redacción. La preparación de datos y los ensayos
-de referencia ya tienen informes separados. La arquitectura MARS-TITAN y la
-comparación confirmatoria siguen pendientes.
+de referencia ya tienen informes separados. La integración de todas las variantes
+y la comparación confirmatoria siguen pendientes.
 \end{abstract}
 \tableofcontents
 
@@ -102,7 +102,7 @@ No se presuponen superioridad ni reproducción de los resultados del artículo.
 Los entrenamientos y evaluaciones científicas siguen bloqueados hasta completar
 y verificar la edición histórica. Las pruebas técnicas no levantan esa condición.
 
-La revisión técnica del 8 de octubre comprueba en CPU y CUDA la referencia GRU,
+La revisión técnica del 9 de octubre recoge comprobaciones CPU/CUDA de la referencia GRU,
 el núcleo Titans-MAC, su adaptador financiero y el diagnóstico local de C.
 Este último utiliza una compresión del Jacobiano conjunto de pesos rápidos
 y momentum y puede omitir direcciones expansivas. El codec episódico conserva
@@ -116,11 +116,20 @@ La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
 controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
 parada por KL. Sus comprobaciones CPU/CUDA no ejecutan pasos de optimizador.
 La recuperación posterior a una actualización real sigue pendiente. KLPO tiene
-prioridad como candidato separado. Su objetivo terminal y gradientes están
-comprobados, con el recolector completo y el consumidor financiero aún pendientes.
+prioridad como candidato separado. Su objetivo terminal y sus gradientes están
+comprobados. El colector conserva episodios completos, la política de recogida,
+el reloj original y la historia GRU, con recuperación contrastada. Las
+actualizaciones del actor y la alternancia entre referencias ajustadas siguen pendientes.
 El ajuste de una predicción y la política financiera secuencial necesitan
 objetivos distintos. La comparación científica sigue bloqueada y no hay un
 algoritmo ganador seleccionado.
+
+Los benchmarks Silencio, Faro, Eco, Giro, Retorno, Contraste, Tormenta y Umbral
+reutilizan ocho mecanismos sintéticos existentes. Se han preparado 240 mundos,
+con ocho activos, perfiles de 64 y 256 sesiones y semillas separadas. Sus contratos
+se han comprobado sin ajustar modelos. La dificultad empírica y la comparación
+de algoritmos siguen pendientes. Su contexto técnico no sustituye las cuatro
+modalidades históricas de FinMultiTime.
 
 Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
 retornos de activos y un registro de operaciones con costes de apertura y cierre.

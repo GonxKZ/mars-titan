@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T23:28:56.237971+00:00",
+  "kind": "verified_historical_encoding_prefix",
+  "edition": "encoded-history-v3-cpu-words",
+  "runtime_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+  "configuration_sha256": "4ab83b6876dc076b34a98e2b0d42d9dddec0c2dc2aa3c75e13c22fce184912b1",
+  "candidate_count": 5676,
+  "reviewed_prefix_candidates": 357,
+  "verified_assets": 320,
+  "samples": 1102849,
+  "samples_bytes": 3808729386,
+  "news_cache_entries": 200177,
+  "chart_cache_entries": 0,
+  "verification": {
+    "checked_at_utc": "2026-10-08T23:16:04.590421+00:00",
+    "sha256": "ec9970acb3216d465e69fdc4b57865a4aa4741de5310415431b6088256f00285",
+    "confirmed_progress_sha256": "556aa24f478c6d660beff77f5bc9623c6b654fd4443a64353424ae376d3f6285",
+    "seconds": 46.28998283900728,
+    "peak_rss_bytes": 291782656,
+    "validator_source_sha256": {
+      "mars_titan.data.corpus_preparation": "1322da2ec00f052aed9b82e8d8290767bd03d3b0fef0437cc49e27b3d0618d7a",
+      "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+      "mars_titan.data.storage": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+      "mars_titan.data.temporal": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41"
+    }
+  },
+  "runs": [
+    {
+      "run_id": "20261008T190609Z-9d17d957ff",
+      "new_assets": 64,
+      "cumulative_assets": 64,
+      "cumulative_samples": 230957,
+      "elapsed_seconds": 2218.5287888189923,
+      "peak_rss_bytes": 2603032576,
+      "peak_cuda_allocated_bytes": 163579392,
+      "peak_cuda_reserved_bytes": 192937984,
+      "receipt_sha256": "9363460ff260361d0991aa422313ea4a4fd5f481c80883c48f8e4dcdc4e6b68d"
+    },
+    {
+      "run_id": "20261008T200238Z-004981f10c",
+      "new_assets": 64,
+      "cumulative_assets": 128,
+      "cumulative_samples": 435467,
+      "elapsed_seconds": 1524.920565444001,
+      "peak_rss_bytes": 2597470208,
+      "peak_cuda_allocated_bytes": 163579392,
+      "peak_cuda_reserved_bytes": 192937984,
+      "receipt_sha256": "61cecc8de74c0713e5aafd055b8f684e77cfb23a26ef43a8a223a012f5bf4571"
+    },
+    {
+      "run_id": "20261008T205830Z-1572c877df",
+      "new_assets": 64,
+      "cumulative_assets": 192,
+      "cumulative_samples": 653501,
+      "elapsed_seconds": 2040.225187243006,
+      "peak_rss_bytes": 2608607232,
+      "peak_cuda_allocated_bytes": 163579392,
+      "peak_cuda_reserved_bytes": 192937984,
+      "receipt_sha256": "66f9685f540394c7185e96834d16f22aca22fc5c9695d5af79ddf0139b372679"
+    },
+    {
+      "run_id": "20261008T214518Z-881887b16a",
+      "new_assets": 64,
+      "cumulative_assets": 256,
+      "cumulative_samples": 897350,
+      "elapsed_seconds": 1910.6415731860034,
+      "peak_rss_bytes": 2620805120,
+      "peak_cuda_allocated_bytes": 163579392,
+      "peak_cuda_reserved_bytes": 192937984,
+      "receipt_sha256": "e8d2997d097881b95544d705547cc3565960fa437fa537ca3e766b800e296de3"
+    },
+    {
+      "run_id": "20261008T225222Z-926b08d826",
+      "new_assets": 64,
+      "cumulative_assets": 320,
+      "cumulative_samples": 1102849,
+      "elapsed_seconds": 1261.0828251310013,
+      "peak_rss_bytes": 2617257984,
+      "peak_cuda_allocated_bytes": 163579392,
+      "peak_cuda_reserved_bytes": 192937984,
+      "receipt_sha256": "f71311b18b33243dd1232b9cb9f9d3f586c8b4f7b82b1a51c3e0503101bc7711"
+    }
+  ],
+  "total_active_generation_seconds": 8955.398939823004,
+  "budget": {
+    "cpu_quota_percent": 200,
+    "threads": 2,
+    "RAM_bytes": 4294967296,
+    "swap_bytes": 0,
+    "torch_CUDA_allocator_bytes": 234881024,
+    "minimum_free_CUDA_bytes": 335544320,
+    "minimum_free_disk_bytes": 21474836480
+  },
+  "previous_edition": {
+    "edition": "encoded-history-v2-batch8",
+    "verified_assets": 480,
+    "samples": 1673363,
+    "preserved": true
+  },
+  "parity_scope": {
+    "assets": 64,
+    "samples": 230957,
+    "all_vectors_bit_equal": true,
+    "reference": "historical-cpu-encoding-20261008.json",
+    "not_extrapolated_to_entire_prefix": true
+  },
+  "limits": [
+    "Los bloques procesan grupos de activos distintos. Sus tiempos no comparan la velocidad de dos implementaciones.",
+    "Los prefijos v2 y v3 se solapan y no se suman.",
+    "El prefijo actual tiene activos US. Todavía no cubre todo el universo ni las entradas CN.",
+    "Los objetivos, cortes comunes y aceptación de fases históricas siguen pendientes."
+  ],
+  "labels_materialized": false,
+  "training_ready": false,
+  "corpus_complete": false,
+  "scientific_evaluation_executed": false,
+  "final_test_opened": false
+}
