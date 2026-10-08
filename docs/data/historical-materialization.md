@@ -6,7 +6,9 @@ Estas salidas son tablas normalizadas y paneles macro. Todavía faltan su codifi
 
 La [codificación acotada](historical-encoding-budgets.md) permite pausar por activo y omitir la copia secundaria de gráficos en caché. Conserva los vectores en Parquet y registra los límites de disco, CUDA y lotes antes de completar el recorrido.
 
-La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos tiene 416 activos y 1.452.871 muestras verificadas. Sus Parquet ocupan 4.964.579.911 bytes y la caché conserva 228.512 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos conserva 480 activos y 1.673.363 muestras verificadas. Sus Parquet ocupan 5.704.577.747 bytes y la caché conserva 246.211 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+
+La ruta de [tabla de palabras en CPU](frozen-embedding-placement.md) prepara otra edición uniforme y reduce la VRAM requerida en las formas comprobadas. Los 480 activos anteriores conservan su identidad, no se incorporan como si hubiesen sido calculados por la ruta nueva. La nueva supervisión deberá identificar el manifiesto codificado y sus factores efectivos. La paridad de embeddings no deriva ni verifica las etiquetas.
 
 ## Ventanas de entrada y condiciones del objetivo
 
