@@ -1,4 +1,4 @@
-"""Vistas con particiones temporales y contexto macro completo, sin copiar modalidades."""
+"""Vistas por calendario con entradas estrictas o máscaras históricas, sin copiar modalidades."""
 
 import argparse
 import copy
@@ -18,12 +18,21 @@ import pyarrow.parquet as pq
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_contexts import MacroVectors
 from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.input_policy import (
+    INPUT_POLICIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    policy_identity,
+)
 from mars_titan.data.macro_coverage import _publish_directory
 from mars_titan.data.preparation import atomic_parquet
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation.split_readiness import _admission, _complete_dates
 from mars_titan.evaluation.splits import PARTITIONS, FoldPartitioner, build_folds
+
+from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
+from .temporal_contract import validate_temporal_view
 
 VIEW_REASONS = {
     "outside_window",
@@ -37,24 +46,8 @@ VIEW_REASONS = {
 class TemporalInputs:
     """Compartir vectores por sesión y comprobar las identidades del contrato temporal."""
 
-    def __init__(self, contract):
-        required = {
-            "schema_version",
-            "protocol",
-            "fold",
-            "macro_path",
-            "macro_sha256",
-            "admission_path",
-            "admission_sha256",
-            "parent_manifest",
-            "parent_sha256",
-        }
-        if (
-            not isinstance(contract, dict)
-            or set(contract) != required
-            or contract["schema_version"] != 1
-        ):
-            raise ValueError("La vista temporal no cumple su contrato")
+    def __init__(self, contract, *, input_policy=STRICT_INPUTS):
+        self.masked = validate_temporal_view(contract, input_policy=input_policy)
         self.contract = contract
         self.protocol, self.fold = contract["protocol"], contract["fold"]
         folds = build_folds(self.protocol)
@@ -64,6 +57,27 @@ class TemporalInputs:
             self.protocol["market"], self.protocol["train_start"], self.protocol["final_test_end"]
         )
         self.partitioner = FoldPartitioner(self.fold, self.clock, self.protocol)
+        if self.masked:
+            parent, parent_hash = read_manifest(Path(contract["parent_manifest"]), 8 * 1024**2)
+            cohort_identity(parent, input_policy=input_policy)
+            if parent_hash != contract["parent_sha256"] or any(
+                name in parent for name in ("temporal_view", "temporal_views")
+            ):
+                raise ValueError("El padre histórico no conserva su identidad anual")
+            self.representation = representation_identity(
+                parent["representation"], input_policy=input_policy
+            )
+            self.times = np.array(
+                [
+                    int(moment.timestamp() * 1_000_000)
+                    for moment in self.clock.decisions
+                    if moment.year < 2024
+                ],
+                dtype=np.int64,
+            )
+            self.macro = None
+            self.verify()
+            return
         self.admission_path = Path(contract["admission_path"])
         admission, identity = read_manifest(self.admission_path, 8 * 1024**2)
         if identity != contract["admission_sha256"]:
@@ -105,17 +119,19 @@ class TemporalInputs:
         self.verify()
 
     def verify(self):
-        self.macro.verify()
-        if (
-            sha256(self.admission_path) != self.contract["admission_sha256"]
-            or sha256(Path(self.contract["parent_manifest"])) != self.contract["parent_sha256"]
-        ):
+        if not self.masked:
+            self.macro.verify()
+            if sha256(self.admission_path) != self.contract["admission_sha256"]:
+                raise ValueError("Una fuente de la vista temporal ha cambiado")
+        if sha256(Path(self.contract["parent_manifest"])) != self.contract["parent_sha256"]:
             raise ValueError("Una fuente de la vista temporal ha cambiado")
 
     def lookup(self, prediction):
         indices = np.searchsorted(self.times, prediction)
         safe = np.minimum(indices, len(self.times) - 1)
         valid = (indices < len(self.times)) & (self.times[safe] == prediction)
+        if self.masked:
+            return None, np.zeros(len(prediction), dtype=np.int64), valid
         values = np.zeros((len(prediction), self.values.shape[1]), dtype=np.float32)
         available = np.zeros(len(prediction), dtype=np.int64)
         values[valid], available[valid] = self.values[safe[valid]], self.available[safe[valid]]
@@ -149,6 +165,8 @@ def _sample_state(parent, asset, temporal):
     from .corpus_inputs import MAX_TABLE_BYTES, VECTORS, _availability, _times
 
     parts = []
+    if parent.masked:
+        return _masked_sample_state(parent, asset)
     with pq.ParquetFile(parent._file(asset, "samples")) as file:
         required = {"prediction_at", "price_end_index", *VECTORS, "input_availability"}
         if not required <= set(file.schema_arrow.names):
@@ -207,6 +225,60 @@ def _sample_state(parent, asset, temporal):
     return tuple(np.concatenate([part[index] for part in parts]) for index in range(3))
 
 
+def _masked_sample_state(parent, asset):
+    """Conservar todas las entradas causales del padre, incluidas las ausencias explícitas."""
+    from .corpus_inputs import (
+        MAX_TABLE_BYTES,
+        VECTORS,
+        _availability,
+        _historical_times,
+        _presence,
+        _vectors,
+    )
+
+    parts = []
+    prices, price_available = parent._prices(asset)
+    with pq.ParquetFile(parent._file(asset, "samples")) as file:
+        if not 1 <= file.metadata.num_rows <= 1_000_000:
+            raise ValueError("Las muestras históricas superan el presupuesto de filas")
+        metadata = [
+            "prediction_at",
+            "price_end_index",
+            "input_availability",
+            "presence",
+            "news_count",
+            "cohort_id",
+        ]
+        columns = [*metadata, *VECTORS]
+        if not set(columns) <= set(file.schema_arrow.names):
+            raise ValueError("Falta el contrato de las muestras históricas")
+        for group in range(file.num_row_groups):
+            if file.metadata.row_group(group).total_byte_size > MAX_TABLE_BYTES:
+                raise ValueError("Un grupo de muestras supera el presupuesto")
+            table = file.read_row_group(group, columns=metadata, use_threads=False)
+            prediction = _historical_times(table)
+            validate_cohort_rows(table, parent.cohort)
+            payload = file.read_row_group(group, columns=list(VECTORS), use_threads=False)
+            if table.nbytes + payload.nbytes > MAX_TABLE_BYTES:
+                raise ValueError("Las modalidades decodificadas superan el presupuesto")
+            vectors = _vectors(payload, historical=True)
+            presence = _presence(table, vectors, parent.manifest["representation"])
+            available, valid = _availability(table, presence=presence)
+            ends = table["price_end_index"]
+            if not pa.types.is_integer(ends.type) or ends.null_count:
+                raise ValueError("La ventana histórica necesita un índice de precios entero")
+            ends = ends.to_numpy()
+            if (ends < parent.context - 1).any() or (ends >= len(prices)).any():
+                raise ValueError("La ventana histórica no tiene suficientes precios")
+            available = np.maximum(available, price_available[ends])
+            if not valid.all() or (available > prediction).any():
+                raise ValueError("Una entrada observada tiene disponibilidad ausente o futura")
+            parts.append((prediction, available, valid))
+    if not parts:
+        raise ValueError("El activo no contiene muestras")
+    return tuple(np.concatenate([part[index] for part in parts]) for index in range(3))
+
+
 def _annual_candidates(labels, prediction, maturity, reasons, boundary):
     """Comprobar el único corte anual recuperable del contrato supervisado original."""
     candidates = reasons == "target_crosses_partition_boundary"
@@ -229,27 +301,34 @@ def prepare_temporal_corpus(
     output,
     *,
     recover_annual_boundaries=False,
+    input_policy=STRICT_INPUTS,
 ):
     """Publicar etiquetas por ventana y referencias a las modalidades originales."""
     from .corpus_inputs import CorpusDataset, _times
 
     if type(recover_annual_boundaries) is not bool:
         raise ValueError("La recuperación anual debe indicarse mediante un booleano")
+    masked = masked_inputs(input_policy)
+    if masked and not recover_annual_boundaries:
+        raise ValueError("La edición histórica requiere recuperación anual explícita")
+    if masked and (macro_path is not None or admission_path is not None):
+        raise ValueError("La vista histórica conserva el macro del padre, sin otra admisión")
     began = time.perf_counter()
-    parent_path, protocol_path, macro_path, admission_path, output = map(
-        Path, (parent_path, protocol_path, macro_path, admission_path, output)
-    )
+    parent_path, protocol_path, output = map(Path, (parent_path, protocol_path, output))
+    if not masked:
+        if macro_path is None or admission_path is None:
+            raise ValueError("La política estricta requiere panel macro y admisión")
+        macro_path, admission_path = Path(macro_path), Path(admission_path)
     if output.exists() or output.is_symlink():
         raise FileExistsError("Las vistas temporales ya existen")
-    parent = CorpusDataset(parent_path)
+    parent = CorpusDataset(parent_path, input_policy=input_policy)
     if parent.temporal is not None or parent.manifest.get("final_test_opened") is True:
         raise ValueError("Se necesita un corpus original con el test reservado")
     for source in [
         *parent.roots.values(),
-        macro_path,
-        admission_path,
         protocol_path,
         Path("dataset"),
+        *([] if masked else [macro_path, admission_path]),
     ]:
         outside_source(source, output)
     protocol, protocol_hash = read_manifest(protocol_path)
@@ -261,17 +340,22 @@ def prepare_temporal_corpus(
         following = min(moment for moment in clock.decisions if moment.year == 2023)
         annual_boundary = tuple(int(moment.timestamp() * 1_000_000) for moment in (last, following))
     contract = dict(
-        schema_version=1,
+        schema_version=2 if masked else 1,
+        **policy_identity(input_policy),
         protocol=protocol,
         fold=folds[0],
-        macro_path=str(macro_path.resolve()),
-        macro_sha256=sha256(macro_path),
-        admission_path=str(admission_path.resolve()),
-        admission_sha256=sha256(admission_path),
-        parent_manifest=str(parent_path.resolve()),
-        parent_sha256=parent.identity,
     )
-    temporal = TemporalInputs(contract)
+    if masked:
+        contract.update(selection_partition="validation", recover_annual_boundaries=True)
+    else:
+        contract.update(
+            macro_path=str(macro_path.resolve()),
+            macro_sha256=sha256(macro_path),
+            admission_path=str(admission_path.resolve()),
+            admission_sha256=sha256(admission_path),
+        )
+    contract.update(parent_manifest=str(parent_path.resolve()), parent_sha256=parent.identity)
+    temporal = TemporalInputs(contract, input_policy=input_policy)
     views = {fold["id"]: copy.deepcopy(parent.manifest) for fold in folds}
     for fold in folds:
         view = views[fold["id"]]
@@ -375,6 +459,7 @@ def prepare_temporal_corpus(
                     view["recovered_annual_labels"] += int(np.sum(used & recovered))
             parent._file(asset, "samples")
             parent._file(asset, "labels")
+            parent._file(asset, "prices")
         temporal.verify()
         if sha256(protocol_path) != protocol_hash:
             raise ValueError("El protocolo cambió durante la preparación")
@@ -393,11 +478,15 @@ def prepare_temporal_corpus(
             if recover_annual_boundaries:
                 summaries[-1]["recovered_annual_labels"] = view["recovered_annual_labels"]
         report = dict(
-            schema_version=1,
+            schema_version=2 if masked else 1,
+            **policy_identity(input_policy),
             folds=summaries,
             parent_sha256=parent.identity,
-            macro_sha256=contract["macro_sha256"],
-            admission_sha256=contract["admission_sha256"],
+            **(
+                {}
+                if masked
+                else {key: contract[key] for key in ("macro_sha256", "admission_sha256")}
+            ),
             protocol_sha256=protocol_hash,
             status="temporal_views_prepared",
             scientific_training_started=False,
@@ -420,10 +509,15 @@ def prepare_temporal_corpus(
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("parent", "protocol", "macro", "admission", "output"):
+    for name in ("parent", "protocol", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    for name in ("macro", "admission"):
+        parser.add_argument("--" + name, type=Path)
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     parser.add_argument("--recover-annual-boundaries", action="store_true")
     args = parser.parse_args(argv)
+    if args.input_policy == STRICT_INPUTS and (args.macro is None or args.admission is None):
+        parser.error("La política estricta necesita --macro y --admission")
     report = prepare_temporal_corpus(
         args.parent,
         args.protocol,
@@ -431,6 +525,7 @@ def main(argv=None):
         args.admission,
         args.output,
         recover_annual_boundaries=args.recover_annual_boundaries,
+        input_policy=args.input_policy,
     )
     print(json.dumps(report, ensure_ascii=False))
     return 0

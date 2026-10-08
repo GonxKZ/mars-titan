@@ -4,6 +4,8 @@ El [Project](https://github.com/users/GonxKZ/projects/4) organiza tareas revisab
 
 El catálogo conserva **64 tareas canónicas y 183 dependencias**. Los estados de sus tablas son la instantánea de planificación inicial, no un contador en directo. Los títulos se han actualizado para describir sus resultados técnicos. El estado operativo se consulta en el Project y la evidencia posterior en [preparación](../data/preparation.md) y [mediciones](../../reports/resources/campaign-budget.md). Las cinco duplicadas permanecen cerradas como no planificadas y fuera del tablero.
 
+La [dirección arquitectónica vigente](titans-mac-architecture.md) separa codificador, memoria neuronal y banco episódico. Las nuevas implementaciones no habilitan aprendizaje ni evaluaciones científicas mientras siga vigente el bloqueo de la edición histórica.
+
 ## Cómo utilizar una issue
 
 Leer primero su contexto, guía y criterios. Las rutas de implementación son previstas salvo evidencia expresa de existencia. Crear la rama vinculada, mover la tarjeta a En curso y conservar comprobaciones y commits. Pasar a En revisión con evidencia y a Hecho solo tras comprobar sus criterios. No ejecutar por anticipado órdenes que dependen de componentes aún no implementados.
@@ -69,7 +71,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-020 · Comparar enrutamiento por regímenes](https://github.com/GonxKZ/mars-titan/issues/20) | Núcleo | P1 | Pendiente | MT-018, MT-019 |
 | [MT-021 · Verificar orden temporal y aislamiento](https://github.com/GonxKZ/mars-titan/issues/21) | Núcleo | P0 | Pendiente | MT-015, MT-018 |
 | [MT-022 · Implementar cuantiles y calibración](https://github.com/GonxKZ/mars-titan/issues/22) | Núcleo | P1 | Pendiente | MT-013, MT-017, MT-021, MT-030 |
-| [MT-023 · Integrar el modelo y ejecutar un ensayo mínimo](https://github.com/GonxKZ/mars-titan/issues/23) | Núcleo | P1 | Pendiente | MT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022 |
+| [MT-023 · Integrar Titans-MAC y sus controles multimodales](https://github.com/GonxKZ/mars-titan/issues/23) | Núcleo | P1 | Pendiente | MT-004, MT-017, MT-018, MT-019, MT-020, MT-021, MT-022 |
 | [MT-052 · Medir retención e interferencia](https://github.com/GonxKZ/mars-titan/issues/54) | Núcleo | P1 | Pendiente | MT-024, MT-030, MT-019 |
 | [MT-053 · Evaluar consolidación y replay](https://github.com/GonxKZ/mars-titan/issues/55) | Extensión | P2 | Pendiente | MT-019, MT-052, MT-059 |
 | [MT-059 · Comprobar compatibilidad de las versiones](https://github.com/GonxKZ/mars-titan/issues/61) | Apoyo | P0 | Pendiente | MT-010, MT-021, MT-022 |
@@ -82,7 +84,7 @@ Una prioridad P1 no significa opcional. La etiqueta `opcional` señala extension
 | [MT-024 · Validar cero, Ridge y el cálculo por bloques](https://github.com/GonxKZ/mars-titan/issues/24) | Núcleo | P0 | Pendiente | MT-015, MT-031, MT-032 |
 | [MT-025 · Evaluar la referencia de boosting](https://github.com/GonxKZ/mars-titan/issues/25) | Núcleo | P1 | Pendiente | MT-024 |
 | [MT-026 · Evaluar GRU y decidir sobre DLinear](https://github.com/GonxKZ/mars-titan/issues/26) | Núcleo | P1 | Pendiente | MT-004, MT-024 |
-| [MT-027 · Evaluar una referencia de memoria identificable](https://github.com/GonxKZ/mars-titan/issues/27) | Núcleo | P1 | Pendiente | MT-003, MT-018, MT-021, MT-031, MT-032 |
+| [MT-027 · Implementar Titans-MAC y comprobar su correspondencia matemática](https://github.com/GonxKZ/mars-titan/issues/27) | Núcleo | P1 | Pendiente | MT-003, MT-018, MT-021, MT-031, MT-032 |
 | [MT-028 · Diseñar ablaciones y falsaciones](https://github.com/GonxKZ/mars-titan/issues/28) | Núcleo | P0 | Pendiente | MT-013, MT-017, MT-030, MT-003 |
 | [MT-029 · Ejecutar ablaciones y falsaciones](https://github.com/GonxKZ/mars-titan/issues/29) | Núcleo | P1 | Pendiente | MT-010, MT-023, MT-027, MT-028, MT-031, MT-032 |
 | [MT-050 · Contrastar familias secuenciales adicionales](https://github.com/GonxKZ/mars-titan/issues/52) | Extensión | P2 | Pendiente | MT-026, MT-028, MT-048 |

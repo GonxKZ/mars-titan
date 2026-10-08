@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-08T01:23:36.910573+00:00",
+  "implementation_commit": "3f762f27a63c9211af8723dabf2040e4d2bf2ce0",
+  "tests": {
+    "baseline_passed": 107,
+    "focal_passed": 17,
+    "related_passed": 277,
+    "related_seconds": 29.21,
+    "mutations_detected": 8,
+    "mutations_attempted": 8,
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "repository_check": true
+  },
+  "strict_parity": {
+    "schema_equal": true,
+    "table_equal": true,
+    "bytes_equal": true,
+    "sha256": "8b0d0112ba230e6d2dd97eaddf7e4c787bb6599cee3893d1a54abfd59f58f55b",
+    "baseline_import_verified": true,
+    "current_import_verified": true
+  },
+  "independent_review": {
+    "technical_tests_passed": 153,
+    "seconds": 14.0,
+    "source_read": true,
+    "log_sha256": "1287bc3312a4cfde6a390b35f776ba4b47293cbf973b0b3d190692f22e71d60d"
+  },
+  "real_preparation": {
+    "checked_at_utc": "2026-10-08T00:59:37.927220+00:00",
+    "runtime_commit": "3f762f27a63c9211af8723dabf2040e4d2bf2ce0",
+    "parent_sha256": "770bb114be8c218bd27dfa92338d6e6489ea42bfcc24465116b90bf0a37d2cf1",
+    "child_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407",
+    "candidates": 5676,
+    "states": {
+      "US": {
+        "prepared": 4213,
+        "missing_required_prices": 571
+      },
+      "CN": {
+        "prepared": 810,
+        "missing_required_prices": 82
+      }
+    },
+    "rows": {
+      "US": {
+        "prices": 16090522,
+        "news": 2156832,
+        "fundamentals": 3027615
+      },
+      "CN": {
+        "prices": 2891924,
+        "news": 553392,
+        "fundamentals": 287
+      }
+    },
+    "unchanged_assets": 4974,
+    "enriched_assets": 49,
+    "reviewed_fact_rows": 287,
+    "artifacts_verified": 25115,
+    "artifact_bytes_verified": 4017318088,
+    "parent_artifacts_rehashed": true,
+    "price_and_news_bytes_unchanged": true,
+    "exact_decimal_and_publication_date_checked": true,
+    "publication_time_verified": false,
+    "publication_policy": "reviewed_cninfo_date_next_session_close",
+    "verification_elapsed_seconds": 28.910366996002267,
+    "peak_rss_bytes": 151404544,
+    "script_sha256": "1cb57582c25faec4feb5a5ce6c5468240a38f262009bc1015b5a69817d8e3ec2",
+    "training_ready": false,
+    "embeddings_materialized": false,
+    "targets_materialized": false,
+    "models_executed": false,
+    "final_test_opened": false
+  },
+  "preparation_resources": {
+    "process_elapsed_seconds": 548.428,
+    "peak_rss_bytes": 156340224,
+    "cgroup_memory_limit_bytes": 2147483648,
+    "cgroup_memory_peak_reported": "2G",
+    "cpu_quota_percent": 200,
+    "concurrent_workloads": true
+  },
+  "limits": [
+    "Son tablas normalizadas enriquecidas. La proyección numérica está comprobada con fixtures, pero la codificación completa sigue pendiente.",
+    "La disponibilidad contable usa fecha revisada y siguiente sesión. No acredita una hora exacta de publicación.",
+    "No se han ejecutado objetivos nuevos, entrenamiento ni evaluación científica."
+  ],
+  "first_verification_attempt": "El primer arnés asumía una hora de publicación exacta. Falló ante published_at nulo. Se corrigió para comprobar la regla explícita reviewed_cninfo_date_next_session_close y filed, sin cambiar datos ni el importador."
+}

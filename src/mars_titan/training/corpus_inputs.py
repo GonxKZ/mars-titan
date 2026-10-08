@@ -12,9 +12,15 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.input_policy import (
+    MODALITIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    validate_historical_vectors,
+)
 from mars_titan.data.storage import sha256
 
-from .cohort_contract import cohort_identity, validate_cohort_rows
+from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
 
 VECTORS = ("news", "charts", "fundamentals", "macro")
 MAX_TABLE_BYTES = 64 * 1024**2
@@ -40,8 +46,19 @@ def _random(seed, epoch, key):
     return np.random.default_rng(number)
 
 
-def _availability(table, *, macro_override=None):
+def _historical_times(table):
+    timestamps = _times(table["prediction_at"])
+    if (timestamps < np.datetime64("2000-01-01", "us").astype(np.int64)).any() or (
+        timestamps >= np.datetime64("2024-01-01", "us").astype(np.int64)
+    ).any():
+        raise ValueError("Una muestra histórica queda fuera del corte 2000–2023")
+    return timestamps
+
+
+def _availability(table, *, macro_override=None, presence=None):
     if "input_availability" not in table.column_names:
+        if presence is not None:
+            raise ValueError("Las máscaras necesitan disponibilidad explícita por bloque")
         return None, None
     column = table["input_availability"].combine_chunks()
     names = {"prices", "news", "charts", "fundamentals", "macro"}
@@ -49,7 +66,9 @@ def _availability(table, *, macro_override=None):
         raise ValueError("La disponibilidad no identifica las cuatro modalidades y macro")
     fields = {field.name for field in column.type}
     if fields != names and not (
-        fields == names - {"macro"} and "macro_available_at" in table.column_names
+        presence is None
+        and fields == names - {"macro"}
+        and "macro_available_at" in table.column_names
     ):
         raise ValueError("La disponibilidad no identifica las cuatro modalidades y macro")
     valid = ~column.is_null().to_numpy(zero_copy_only=False)
@@ -63,7 +82,13 @@ def _availability(table, *, macro_override=None):
         field = (
             column.field(name) if name in fields else table["macro_available_at"].combine_chunks()
         )
-        valid &= ~field.is_null().to_numpy(zero_copy_only=False)
+        known = ~field.is_null().to_numpy(zero_copy_only=False)
+        if presence is not None:
+            valid &= known == presence[:, MODALITIES.index(name)]
+            if not pa.types.is_timestamp(field.type) or not field.type.tz:
+                raise ValueError("La disponibilidad histórica necesita fechas con zona")
+        else:
+            valid &= known
         if field.null_count == len(field):
             continue
         if not pa.types.is_timestamp(field.type) or not field.type.tz:
@@ -71,6 +96,58 @@ def _availability(table, *, macro_override=None):
         filled = field.fill_null(pa.scalar(0, type=field.type))
         bounds = np.maximum(bounds, _times(filled))
     return bounds, valid
+
+
+def _presence(table, vectors, representation):
+    """Contrastar bloques y conceptos antes de seleccionar filas de un grupo."""
+    if "presence" not in table.column_names:
+        raise ValueError("Faltan las máscaras de presencia de la edición histórica")
+    column = table["presence"].combine_chunks()
+    if (
+        not (pa.types.is_list(column.type) or pa.types.is_fixed_size_list(column.type))
+        or not pa.types.is_boolean(column.type.value_type)
+        or column.null_count
+        or column.flatten().null_count
+        or not (pa.compute.list_value_length(column).to_numpy() == len(MODALITIES)).all()
+    ):
+        raise ValueError("La presencia necesita cinco booleanos por muestra")
+    presence = column.flatten().to_numpy(zero_copy_only=False).reshape(len(table), len(MODALITIES))
+    if not presence[:, [0, 2]].all():
+        raise ValueError("Los precios y gráficos causales son obligatorios")
+    counts = table["news_count"]
+    if not pa.types.is_integer(counts.type) or counts.null_count:
+        raise ValueError("El recuento de noticias debe ser un entero conocido")
+    events = counts.to_numpy()
+    if (events < 0).any() or not np.array_equal(events > 0, presence[:, 1]):
+        raise ValueError("La presencia de noticias no coincide con sus eventos admitidos")
+    validate_historical_vectors(vectors, presence, representation)
+    return presence
+
+
+def _vectors(table, *, macro=None, historical=False):
+    """Leer las formas y tipos del corpus antes de validar sus máscaras."""
+    vectors = {}
+    for name in VECTORS:
+        if name == "macro" and macro is not None:
+            vectors[name] = macro
+            continue
+        column = table[name].combine_chunks()
+        if not (pa.types.is_list(column.type) or pa.types.is_fixed_size_list(column.type)):
+            raise ValueError("Cada modalidad necesita un vector explícito")
+        if historical and column.type.value_type != pa.float32():
+            raise ValueError("Los vectores históricos deben conservar el tipo float32")
+        lengths = pa.compute.list_value_length(column).to_numpy()
+        if (
+            column.null_count
+            or not len(lengths)
+            or not 1 <= lengths[0] <= 2048
+            or not (lengths == lengths[0]).all()
+        ):
+            raise ValueError("Las dimensiones de una modalidad no son válidas")
+        vectors[name] = np.asarray(column.flatten().to_numpy(), dtype=np.float32).reshape(
+            len(table), int(lengths[0])
+        )
+    return vectors
 
 
 def _price_contexts(prices, ends, context):
@@ -110,7 +187,12 @@ class CorpusDataset:
     """Validar una edición y reutilizar sus huellas mientras no cambien los archivos."""
 
     def __init__(
-        self, manifest: Path, *, cache_bytes: int = 1024**3, cache_sample_tables: bool = False
+        self,
+        manifest: Path,
+        *,
+        cache_bytes: int = 1024**3,
+        cache_sample_tables: bool = False,
+        input_policy: str = STRICT_INPUTS,
     ):
         if type(cache_bytes) is not int or not 0 <= cache_bytes <= 4 * 1024**3:
             raise ValueError("La caché de entrada debe estar entre cero y cuatro GiB")
@@ -126,14 +208,25 @@ class CorpusDataset:
             raise ValueError("El manifiesto no es regular o supera 8 MiB")
         self.manifest, self.identity = read_manifest(self.path, 8 * 1024**2)
         meta = self.manifest
+        self.masked = masked_inputs(input_policy)
+        self.cohort = cohort_identity(meta, input_policy=input_policy)
         from .temporal_contract import temporal_contracts
 
-        contracts = temporal_contracts(meta)
+        contracts = temporal_contracts(meta, input_policy=input_policy)
         self.temporals = {}
         if contracts:
             from .temporal_corpus import TemporalInputs
 
-            self.temporals = {market: TemporalInputs(view) for market, view in contracts.items()}
+            self.temporals = {
+                market: TemporalInputs(view, input_policy=input_policy)
+                for market, view in contracts.items()
+            }
+            if self.masked and any(
+                temporal.representation
+                != representation_identity(meta["representation"], input_policy=input_policy)
+                for temporal in self.temporals.values()
+            ):
+                raise ValueError("La vista no conserva la representación del corpus de origen")
         self.temporal = (
             next(iter(self.temporals.values()))
             if len(self.temporals) == 1
@@ -144,15 +237,15 @@ class CorpusDataset:
             if self.temporal
             else ("train", "validation")
         )
-        self.cohort = cohort_identity(meta)
         if (
-            meta.get("schema_version") not in {1, 2}
+            meta.get("schema_version") not in ({3} if self.masked else {1, 2})
             or meta.get("kind") != "corpus_supervision"
             or meta.get("scope") not in {"development_snapshot", "full_corpus"}
             or type(meta.get("cohort_complete")) is not bool
             or (meta["scope"] == "full_corpus" and not meta["cohort_complete"])
             or type(meta.get("context_sessions")) is not int
             or not 2 <= meta["context_sessions"] <= 512
+            or (self.masked and meta["context_sessions"] != 64)
             or set(meta.get("roots", {})) != {"prepared", "samples", "labels"}
             or not isinstance(meta.get("assets"), list)
             or not meta["assets"]
@@ -424,7 +517,11 @@ class CorpusDataset:
                     columns = ["prediction_at", "price_end_index", *VECTORS] + (
                         ["cohort_id"] if self.cohort else []
                     )
-                    if self.temporal:
+                    if self.masked:
+                        if not {"presence", "news_count"} <= set(file.schema_arrow.names):
+                            raise ValueError("Faltan las máscaras o los recuentos históricos")
+                        columns.extend(("presence", "news_count"))
+                    if self.temporal and not self.masked:
                         columns.remove("macro")
                     if "input_availability" in file.schema_arrow.names:
                         columns.append("input_availability")
@@ -443,42 +540,36 @@ class CorpusDataset:
                     table = self._cached(cache_key, signature) if self.cache_sample_tables else None
                     cache_miss = table is None
                     if cache_miss:
+                        if self.masked:
+                            _historical_times(
+                                file.read_row_group(
+                                    int(group), columns=["prediction_at"], use_threads=False
+                                )
+                            )
                         table = file.read_row_group(int(group), columns=columns, use_threads=False)
                     validate_cohort_rows(table, self.cohort)
                     if table.nbytes > MAX_TABLE_BYTES:
                         raise ValueError("El grupo decodificado supera el presupuesto")
-                    timestamps = _times(table["prediction_at"])
-                    macro = temporal.lookup(timestamps) if temporal else None
-                    availability, availability_valid = _availability(
-                        table, macro_override=macro[1:] if macro else None
+                    timestamps = (
+                        _historical_times(table) if self.masked else _times(table["prediction_at"])
                     )
+                    macro = temporal.lookup(timestamps) if temporal and not self.masked else None
                     ends = table["price_end_index"].to_numpy()
-                    vectors = {}
-                    for name in VECTORS:
-                        if name == "macro" and macro is not None:
-                            vectors[name] = macro[0]
-                            continue
-                        column = table[name].combine_chunks()
-                        if not (
-                            pa.types.is_list(column.type)
-                            or pa.types.is_fixed_size_list(column.type)
-                        ):
-                            raise ValueError("Cada modalidad necesita un vector explícito")
-                        lengths = pa.compute.list_value_length(column).to_numpy()
-                        if (
-                            column.null_count
-                            or not len(lengths)
-                            or not 1 <= lengths[0] <= 2048
-                            or not (lengths == lengths[0]).all()
-                        ):
-                            raise ValueError("Las dimensiones de una modalidad no son válidas")
-                        vectors[name] = np.asarray(
-                            column.flatten().to_numpy(), dtype=np.float32
-                        ).reshape(len(table), int(lengths[0]))
+                    vectors = _vectors(
+                        table, macro=macro[0] if macro is not None else None, historical=self.masked
+                    )
                     shape = {name: values.shape[1] for name, values in vectors.items()}
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")
                     dimensions = shape
+                    presence = (
+                        _presence(table, vectors, self.manifest["representation"])
+                        if self.masked
+                        else None
+                    )
+                    availability, availability_valid = _availability(
+                        table, macro_override=macro[1:] if macro else None, presence=presence
+                    )
                     if self.cache_sample_tables and cache_miss:
                         self._remember(cache_key, signature, table)
                     for offset in range(start, len(indexes), 256):
@@ -503,6 +594,7 @@ class CorpusDataset:
                             availability_valid=(
                                 availability_valid[block_rows] if availability is not None else None
                             ),
+                            presence=presence[block_rows] if presence is not None else None,
                             cursor={
                                 "asset": asset_position,
                                 "group": group_position,
@@ -554,7 +646,10 @@ class CorpusDataset:
             while offset < len(block["rows"]):
                 if batch is None:
                     batch = _new_batch(
-                        block["vectors"], self.context, min(batch_size, total - consumed)
+                        block["vectors"],
+                        self.context,
+                        min(batch_size, total - consumed),
+                        masked=self.masked,
                     )
                     if self.cohort:
                         batch["cohort_id"] = self.cohort
@@ -583,8 +678,9 @@ class CorpusDataset:
             yield batch
 
 
-def _new_batch(vectors, context, size):
+def _new_batch(vectors, context, size, *, masked=False):
     return {
+        **({"presence": np.empty((size, len(MODALITIES)), dtype=np.bool_)} if masked else {}),
         "inputs": {
             **{
                 name: np.empty((size, values.shape[1]), dtype=np.float32)
@@ -623,6 +719,8 @@ def _fill_batch(batch, filled, block, start, stop):
         batch[name][destination] = block[name][source]
     if available is not None:
         batch["input_available_at"][destination] = available[source]
+    if block.get("presence") is not None:
+        batch["presence"][destination] = block["presence"][source]
     batch["sample_ids"].extend(f"{block['key']}/{moment}" for moment in at)
     batch["market"].extend([block["key"].split("/", 1)[0]] * (stop - start))
 
@@ -635,15 +733,18 @@ def supervised_batches(
     epoch: int,
     seed: int,
     cursor: dict | None = None,
+    input_policy: str = STRICT_INPUTS,
 ):
     """Crear un lector para una pasada. La campaña reutiliza CorpusDataset entre épocas."""
-    yield from CorpusDataset(manifest).batches(
+    yield from CorpusDataset(manifest, input_policy=input_policy).batches(
         partition=partition, batch_size=batch_size, epoch=epoch, seed=seed, cursor=cursor
     )
 
 
-def prepare_corpus_targets(manifest: Path, prepared: Path, output: Path) -> dict:
+def prepare_corpus_targets(
+    manifest: Path, prepared: Path, output: Path, *, input_policy: str = STRICT_INPUTS
+) -> dict:
     """Preparar las etiquetas mediante el mismo contrato que consume este lector."""
     from .corpus_targets import prepare_corpus_targets as prepare
 
-    return prepare(manifest, prepared, output)
+    return prepare(manifest, prepared, output, input_policy=input_policy)

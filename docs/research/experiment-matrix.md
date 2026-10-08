@@ -12,17 +12,22 @@ Estado: diseño de la comparación confirmatoria. Ninguna celda representa un re
 | B3 | GRU compacta | Referencia neural secuencial con presupuesto comparable. | Obligatoria |
 | B4 | DLinear | Control de complejidad de bajo coste, con adaptación documentada a la variable objetivo. | Deseable tras el piloto |
 | B5 | TCN o PatchTST reducido | Contraste adicional si aporta una pregunta distinta. | Extensión |
-| B6 | Memoria asociativa compacta con regla delta | Referencia neural adaptativa identificable, separada del banco episódico. | Obligatoria |
+| B6 | Memoria asociativa compacta con regla delta | Control simplificado, separado de Titans-MAC y del banco episódico. | Secundaria |
+| B7 | Transformer compacto | Aislar el cambio de codificador frente a la GRU, con fusión y cabeza comunes. | Obligatoria |
+| B8 | Titans-MAC adaptado | Atención cercana, memoria neuronal con momentum y olvido, y parámetros persistentes aprendidos. | Obligatoria |
+| B9 | MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas como componentes desactivables. | Obligatoria |
 | M0 | Codificador y cabeza de MARS-TITAN sin memoria | Aísla el efecto de introducir memoria. | Obligatoria |
 | M1 | Memoria global con escritura uniforme | Aísla la selección de eventos. | Obligatoria |
 | M2 | Memoria global y escritura por error maduro | Contrasta sorpresa predictiva frente a combinación económica. | Obligatoria |
 | M3 | Propuesta compacta con sorpresa, régimen e incertidumbre | Modelo principal de investigación. | Obligatoria |
 
-La elección de boosting aprovecha una dependencia ya prevista y evita incorporar dos librerías equivalentes al inicio. XGBoost o LightGBM pueden sustituirla mediante una decisión registrada. No se ejecutarán todos solo para ampliar la tabla de resultados.
+Las familias B7–B9 corresponden a la [dirección arquitectónica del 8 de octubre](titans-mac-architecture.md) y no representan resultados ejecutados. B0–B9 son identificadores de familias de esta tabla. No fijan el baseline B de CM-v1, que necesita su identidad completa. M0–M3 conservan las políticas del banco episódico. Si una arquitectura incluye memoria neuronal, debe indicar que desactivar el banco no retira esa otra memoria.
+
+La elección de boosting aprovecha las implementaciones existentes. Cada cambio de familia mantiene identidad y presupuesto propios. No se ejecutan modelos solo para ampliar la tabla de resultados.
 
 HistGradientBoosting no debe reservar aleatoriamente una parte del panel para parada temprana. Se utilizará `early_stopping=False` con selección externa cronológica, o un conjunto de validación explícito cuando la versión fijada lo admita. La [documentación de scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html) describe la activación automática de parada y la reserva interna. Leer el dataset por bloques no convierte ese estimador en un algoritmo incremental.
 
-El núcleo usa una sola lectura, K = 1. La comparación K = 2 o 4 y una eventual puerta adaptativa pertenecen a MT-054. No bloquearán la comparación principal si no aportan una pregunta viable bajo el presupuesto. Las cuatro modalidades y el contexto macro son obligatorios. El replay paramétrico, la destilación, el universo completo y otro mercado se estudian por separado.
+El contraste principal de refinamiento usa K = 1. K = 2 o 4 pertenece a MT-054 y no cuenta las actualizaciones asociativas de Titans. La edición histórica utiliza todas las filas admisibles con sus máscaras y conserva el control estricto por separado. Las nuevas arquitecturas y sus ampliaciones siguen sin entrenamientos ni evaluaciones científicas mientras esté vigente el bloqueo histórico.
 
 ## Ablaciones emparejadas
 

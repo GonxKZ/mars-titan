@@ -8,6 +8,7 @@ from pathlib import Path
 
 from mars_titan.training.corpus_targets import prepare_corpus_targets
 
+from .accounting_catalog import CNY_CONCEPTS
 from .china_preparation import _fact_editions, _fact_history, derive_chinese_preparation
 from .cohort_files import read_manifest, safe_destination
 from .corpus_encoding import encode_corpus
@@ -17,12 +18,8 @@ from .macro_coverage import _read_catalog
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock
 
-CNY_CONCEPTS = (
-    "cn-reported:Assets:CNY",
-    "cn-reported:Liabilities:CNY",
-    "cn-reported:EquityIncludingNoncontrollingInterest:CNY",
-)
 _CODE = (
+    "accounting_catalog.py",
     "chinese_samples.py",
     "china_preparation.py",
     "china_fundamentals.py",

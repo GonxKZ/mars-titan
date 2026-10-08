@@ -16,6 +16,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .accounting_catalog import historical_accounting_context
 from .batches import atomic_parquet_batches, read_bounded_table
 from .charts import chart_png
 from .china_sources import CONCEPTS as CHINESE_CONCEPTS
@@ -24,6 +25,14 @@ from .cohort_contexts import FactCursor, NewsWindows
 from .cohort_files import read_manifest, safe_destination
 from .cohort_news import COHORT_POLICIES
 from .company_factors import FACTOR_CONCEPTS, write_company_factors
+from .input_policy import (
+    MODALITIES,
+    STRICT_INPUTS,
+    masked_inputs,
+    numeric_observations,
+    policy_identity,
+)
+from .joint_projection import project_numeric_context
 from .samples import FUNDAMENTAL_CONCEPTS, numeric_context
 from .storage import atomic_json, outside_source, sha256
 from .temporal import admission_errors, aware
@@ -36,9 +45,9 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 
-def _schema(concepts, indicators):
+def _schema(concepts, indicators, input_policy=STRICT_INPUTS):
     stamp = pa.timestamp("us", tz="UTC")
-    return pa.schema(
+    schema = pa.schema(
         [(name, pa.string()) for name in ("cohort_id", "session", "chart_hash", "news_set_sha256")]
         + [
             (name, stamp)
@@ -74,6 +83,18 @@ def _schema(concepts, indicators):
             )
         ]
     )
+    if masked_inputs(input_policy):
+        schema = schema.append(pa.field("presence", pa.list_(pa.bool_(), len(MODALITIES))))
+        schema = schema.append(
+            pa.field("missing_reasons", pa.struct([(name, pa.string()) for name in MODALITIES]))
+        )
+        schema = schema.append(
+            pa.field("fundamental_missing_reasons", pa.list_(pa.string(), len(concepts)))
+        )
+        schema = schema.append(
+            pa.field("macro_missing_reasons", pa.list_(pa.string(), len(indicators)))
+        )
+    return schema
 
 
 def _artifact(path, root):
@@ -82,7 +103,7 @@ def _artifact(path, root):
     return sha256(path)
 
 
-def _prepared(source, clock, cohort):
+def _prepared(source, clock, cohort, input_policy=STRICT_INPUTS):
     path = source / "manifest.json"
     manifest, manifest_hash = read_manifest(path)
     calendar = hashlib.sha256("|".join(t.isoformat() for t in clock.decisions).encode()).hexdigest()
@@ -95,7 +116,8 @@ def _prepared(source, clock, cohort):
     }
     if (
         cohort not in COHORT_POLICIES
-        or manifest.get("schema_version") != 3
+        or manifest.get("schema_version") != (4 if masked_inputs(input_policy) else 3)
+        or any(manifest.get(k) != v for k, v in policy_identity(input_policy).items())
         or manifest.get("cohort_id") != cohort
         or manifest.get("news_content_policy") != COHORT_POLICIES[cohort]
         or manifest.get("market") != clock.market
@@ -226,7 +248,11 @@ def _rows(
     hits,
     misses,
     admitted_decisions=None,
+    input_policy=STRICT_INPUTS,
+    missing_sources=(),
+    fundamental_exclusions=(),
 ):
+    masked = masked_inputs(input_policy)
     positions = {day.isoformat(): i for i, day in enumerate(clock.days)}
     sessions = prices["session"].tolist()
     try:
@@ -240,9 +266,29 @@ def _rows(
         raise ValueError("Los precios contienen información futura")
     # La diferencia entre extremos acredita continuidad porque las sesiones son únicas y ordenadas.
     ohlc = prices[["open", "high", "low", "close"]].to_numpy()
-    cursor = FactCursor(facts)
+    unknown_publication = {r["concept"] for r in facts if r.get("available_at") is None}
+    excluded_publications = {}
+    if masked:
+        for row in fundamental_exclusions:
+            if row["reason"] != "period_after_filing":
+                raise ValueError("La exclusión contable tiene un motivo desconocido")
+            available = aware(datetime.fromisoformat(row["diagnostic_available_at"]))
+            if available != clock.date_available(row["filed"]):
+                raise ValueError(
+                    "La disponibilidad de la exclusión no corresponde a su publicación"
+                )
+            concept = row["concept"]
+            excluded_publications[concept] = min(
+                available, excluded_publications.get(concept, available)
+            )
+    cursor = FactCursor(
+        [r for r in facts if r.get("available_at") is not None] if masked else facts
+    )
     for index, position in enumerate(indices):
         cutoff = clock.decisions[position]
+        if masked and cutoff.date().isoformat() < "2000-01-01":
+            excluded["before_history_start"] += 1
+            continue
         if admitted_decisions is not None and cutoff not in admitted_decisions:
             excluded["outside_macro_admission"] += 1
             continue
@@ -251,28 +297,58 @@ def _rows(
             continue
         known = cursor.at(cutoff)
         selected = [known.get(concept) for concept in concepts]
-        if not any(r is not None and r["value"] is not None for r in selected):
+        if not masked and not any(r is not None and r["value"] is not None for r in selected):
             excluded["missing_fundamentals"] += 1
             continue
         start = clock.decisions[max(0, position - lookback + 1)]
         articles = news.between(start, cutoff)
         first = next(articles, None)
-        if first is None:
+        if first is None and not masked:
             excluded["missing_news"] += 1
             continue
         macro = macros.at(cutoff)
         if macro is None:
+            if masked:
+                raise ValueError("El contexto histórico no representa esta sesión macro")
             excluded["missing_macro"] += 1
             continue
-        text = _text_window(
-            chain((first,), articles), cohort, encoder_hash, encoders, cache, hits, misses
-        )
-        values = [r["value"] if r is not None else None for r in selected]
-        ages = [
-            (cutoff - r["available_at"]).total_seconds() / 86400 if r is not None else 0
-            for r in selected
-        ]
-        fact_time = max(r["available_at"] for r in selected if r is not None)
+        if first is None:
+            text = dict(
+                news=[0.0] * 384,
+                news_count=0,
+                news_kind_counts=dict.fromkeys(_KINDS, 0),
+                news_available_at=None,
+                news_set_sha256=hashlib.sha256(b"").hexdigest(),
+            )
+        else:
+            text = _text_window(
+                chain((first,), articles), cohort, encoder_hash, encoders, cache, hits, misses
+            )
+        if masked:
+            values, ages, fact_time, fact_reasons = numeric_observations(
+                [r if r is not None else {} for r in selected], cutoff
+            )
+            fact_reasons = [
+                (
+                    "source_missing"
+                    if "fundamentals" in missing_sources
+                    else "period_after_filing"
+                    if concept in excluded_publications and excluded_publications[concept] <= cutoff
+                    else "unknown_publication"
+                    if concept in unknown_publication
+                    else reason
+                )
+                if reason is not None
+                else None
+                for concept, reason in zip(concepts, fact_reasons, strict=True)
+            ]
+        else:
+            values = [r["value"] if r is not None else None for r in selected]
+            ages = [
+                (cutoff - r["available_at"]).total_seconds() / 86400 if r is not None else 0
+                for r in selected
+            ]
+            fact_time = max(r["available_at"] for r in selected if r is not None)
         available = dict(
             prices=availability[index],
             news=text["news_available_at"],
@@ -280,7 +356,11 @@ def _rows(
             charts=cutoff,
             macro=macro[1],
         )
-        if admission_errors(available, cutoff):
+        if (
+            any(aware(value) > cutoff for value in available.values() if value is not None)
+            if masked
+            else admission_errors(available, cutoff)
+        ):
             raise ValueError("Las modalidades contienen información futura o ausente")
         png = chart_png(ohlc, end_index=index, context=context)
         chart_hash = hashlib.sha256(png).hexdigest()
@@ -292,7 +372,7 @@ def _rows(
             hits,
             misses,
         )
-        yield dict(
+        row = dict(
             **text,
             cohort_id=cohort,
             session=sessions[index],
@@ -308,6 +388,48 @@ def _rows(
             chart_hash=chart_hash,
             charts=image.tolist(),
         )
+        if masked:
+            present = [
+                True,
+                text["news_count"] > 0,
+                True,
+                any(v is not None for v in values),
+                bool(np.any(macro[0][len(macros.indicators) : 2 * len(macros.indicators)])),
+            ]
+            row.update(
+                presence=present,
+                fundamental_missing_reasons=fact_reasons,
+                macro_missing_reasons=macros.missing_at(cutoff),
+                missing_reasons={
+                    name: None
+                    if observed
+                    else "source_missing"
+                    if name in missing_sources or (name == "macro" and macros.path is None)
+                    else "no_admissible_value"
+                    for name, observed in zip(MODALITIES, present, strict=True)
+                },
+            )
+        yield row
+
+
+def _project_fundamentals(table, source_concepts, target_concepts):
+    projected = project_numeric_context(table["fundamentals"], source_concepts, target_concepts)
+    table = table.set_column(
+        table.schema.get_field_index("fundamentals"), "fundamentals", projected
+    )
+    positions = {name: index for index, name in enumerate(source_concepts)}
+    reasons = [
+        [
+            row[positions[name]] if name in positions else "outside_source_accounting_catalog"
+            for name in target_concepts
+        ]
+        for row in table["fundamental_missing_reasons"].to_pylist()
+    ]
+    return table.set_column(
+        table.schema.get_field_index("fundamental_missing_reasons"),
+        "fundamental_missing_reasons",
+        pa.array(reasons, type=pa.list_(pa.string(), len(target_concepts))),
+    )
 
 
 def materialize_cohort_asset(
@@ -329,8 +451,15 @@ def materialize_cohort_asset(
     fundamental_concepts=FUNDAMENTAL_CONCEPTS,
     source_unit="USD",
     admitted_decisions=None,
+    input_policy=STRICT_INPUTS,
+    target_fundamental_concepts=None,
 ):
     """Confirmar un activo completo. La caché persiste aunque se interrumpa su escritura."""
+    masked = masked_inputs(input_policy)
+    if masked and (context != 64 or admitted_decisions is not None):
+        raise ValueError(
+            "La política histórica requiere 64 sesiones y no filtra por completitud macro"
+        )
     for value, low, high in (
         (context, 2, 512),
         (news_lookback_sessions, 1, 512),
@@ -352,12 +481,26 @@ def materialize_cohort_asset(
     outside_source(destination, source)
     safe_destination(destination)
     macros.verify()
-    origin, calendar, origin_hash = _prepared(source, clock, cohort)
+    if getattr(macros, "input_policy", STRICT_INPUTS) != input_policy:
+        raise ValueError("El contexto macro no corresponde a la política de entradas")
+    origin, calendar, origin_hash = _prepared(source, clock, cohort, input_policy)
     concepts = tuple(fundamental_concepts)
     if company_factors:
         concepts += tuple(name for name in FACTOR_CONCEPTS if name not in concepts)
     if not concepts or len(set(concepts)) != len(concepts):
         raise ValueError("El catálogo contable está vacío o duplicado")
+    target = concepts
+    if target_fundamental_concepts is not None:
+        expected_context = historical_accounting_context(clock.market)
+        target = tuple(target_fundamental_concepts)
+        if (
+            not masked
+            or concepts != expected_context["fundamental_concepts"]
+            or target != expected_context["target_fundamental_concepts"]
+            or source_unit != expected_context["source_unit"]
+            or company_factors != expected_context["company_factors"]
+        ):
+            raise ValueError("La proyección requiere el catálogo histórico y sus monedas acordadas")
     if source_unit == "CNY" or any(
         isinstance(name, str) and name.startswith("cn-reported:") for name in concepts
     ):
@@ -378,16 +521,19 @@ def materialize_cohort_asset(
         news_group_bytes=max_news_group_bytes,
     )
     identity = dict(
+        **policy_identity(input_policy),
         cohort_id=cohort,
         market=clock.market,
         symbol=origin["symbol"],
         prepared_manifest_sha256=origin_hash,
         calendar=calendar,
         macro_sha256=macros.sha256,
+        macro_indicators=list(macros.indicators),
+        macro_cutoff_year=getattr(macros, "cutoff_year", 2023),
         encoders_sha256=encoder_hash,
         context_sessions=context,
         news_lookback_sessions=news_lookback_sessions,
-        fundamental_concepts=list(concepts),
+        fundamental_concepts=list(target),
         source_unit=source_unit,
         admitted_decisions_sha256=_digest(sorted(value.isoformat() for value in admitted_decisions))
         if admitted_decisions is not None
@@ -405,10 +551,17 @@ def materialize_cohort_asset(
                 "batches.py",
                 "storage.py",
                 "temporal.py",
+                "input_policy.py",
             )
         },
     )
-    if source_unit == "CNY":
+    if target_fundamental_concepts is not None:
+        identity["accounting_projection"] = dict(
+            source_concepts=list(concepts), target_concepts=list(target)
+        )
+        for name in ("accounting_catalog.py", "joint_projection.py"):
+            identity["code"][name] = sha256(Path(__file__).with_name(name))
+    if source_unit == "CNY" or target_fundamental_concepts is not None:
         identity["code"]["china_sources.py"] = sha256(Path(__file__).with_name("china_sources.py"))
     fingerprint = _digest(identity)
     for name in (
@@ -434,7 +587,8 @@ def materialize_cohort_asset(
             atomic_json(config, identity)
         samples_path = destination / "samples.parquet"
         expected = dict(
-            schema_version=3,
+            **policy_identity(input_policy),
+            schema_version=4 if masked else 3,
             cohort_id=cohort,
             market=clock.market,
             symbol=origin["symbol"],
@@ -444,7 +598,7 @@ def materialize_cohort_asset(
             context_sessions=context,
             prepared_fingerprint=origin["fingerprint"],
             representation_code=identity["code"],
-            fundamental_concepts=list(concepts),
+            fundamental_concepts=list(target),
             macro_indicators=macros.indicators,
             encoders=encoders.spec,
             news_lookback_sessions=news_lookback_sessions,
@@ -459,6 +613,22 @@ def materialize_cohort_asset(
                 or type(old.get("samples")) is not int
             ):
                 raise ValueError("El recibo no conserva la identidad declarada")
+            if target_fundamental_concepts is not None:
+                projection = old.get("accounting_projection")
+                if (
+                    not isinstance(projection, dict)
+                    or _digest(
+                        {key: projection.get(key) for key in identity["accounting_projection"]}
+                    )
+                    != _digest(identity["accounting_projection"])
+                    or type(projection.get("outside_catalog_facts")) is not int
+                    or not 0
+                    <= projection["outside_catalog_facts"]
+                    <= origin["counts"]["fundamentals"]
+                ):
+                    raise ValueError(
+                        "El recibo no conserva los catálogos de la proyección contable"
+                    )
             if _artifact(samples_path, destination) != old.get("samples_sha256"):
                 raise ValueError("Ha cambiado el artefacto materializado")
             with pq.ParquetFile(samples_path) as table:
@@ -479,18 +649,28 @@ def materialize_cohort_asset(
         ).to_pylist()
         if source_unit == "CNY":
             _chinese_facts(facts, clock, origin["policy"]["cutoff"])
+        if target_fundamental_concepts is not None and any(
+            row["concept"].startswith("us-gaap:")
+            and row["concept"].rsplit(":", 1)[-1] != row.get("unit")
+            for row in facts
+        ):
+            raise ValueError("El concepto contable no conserva su moneda o unidad")
         factor_audit = {}
         if company_factors:
+            # Los hechos sin publicación conservan su diagnóstico, pero no forman ratios.
+            factor_facts = [r for r in facts if r["available_at"] is not None] if masked else facts
+            if target_fundamental_concepts is not None:
+                factor_facts = [r for r in factor_facts if r["unit"] == source_unit]
             derived, factor_audit = write_company_factors(
                 destination / "company-factors.parquet",
-                facts,
+                factor_facts,
                 batch_rows=batch_rows,
                 max_facts=max_partition_rows,
                 source_unit=source_unit,
             )
             facts.extend(derived)
-        excluded, hits, misses = Counter(), Counter(), Counter()
-        schema = _schema(concepts, macros.indicators)
+        excluded, hits, misses, missing = Counter(), Counter(), Counter(), Counter()
+        schema = _schema(concepts, macros.indicators, input_policy)
         with NewsWindows(
             source / "news/news.parquet", max_group_bytes=max_news_group_bytes
         ) as news:
@@ -511,16 +691,36 @@ def materialize_cohort_asset(
                 hits=hits,
                 misses=misses,
                 admitted_decisions=admitted_decisions,
+                input_policy=input_policy,
+                missing_sources=origin.get("missing_sources", ()),
+                fundamental_exclusions=origin.get("fundamentals_audit", {}).get(
+                    "temporal_exclusions", ()
+                ),
             )
 
             def batches():
                 pending = []
+
+                def table(rows):
+                    batch = pa.Table.from_pylist(rows, schema=schema)
+                    return (
+                        _project_fundamentals(batch, concepts, target)
+                        if target_fundamental_concepts is not None
+                        else batch
+                    )
+
                 for row in rows:
+                    if masked:
+                        missing.update(
+                            f"{name}:{reason}"
+                            for name, reason in row["missing_reasons"].items()
+                            if reason is not None
+                        )
                     pending.append(row)
                     if len(pending) == batch_rows:
-                        yield pa.Table.from_pylist(pending, schema=schema)
+                        yield table(pending)
                         pending = []
-                yield pa.Table.from_pylist(pending, schema=schema)
+                yield table(pending)
 
             count = atomic_parquet_batches(samples_path, batches())
         if sha256(source / "manifest.json") != origin_hash or any(
@@ -548,5 +748,12 @@ def materialize_cohort_asset(
             pending_for_scientific_training=["targets", "frozen_scientific_cohort_and_splits"],
             reused=False,
         )
+        if masked:
+            result["missing_input_reasons"] = dict(missing)
+        if target_fundamental_concepts is not None:
+            result["accounting_projection"] = dict(
+                identity["accounting_projection"],
+                outside_catalog_facts=sum(r["concept"] not in concepts for r in facts),
+            )
         atomic_json(receipt, result)
         return result

@@ -1,0 +1,120 @@
+{
+  "checked_at_utc": "2026-10-07T23:17:13.175855+00:00",
+  "scope": "Verificación de tablas normalizadas y censo de precios. No constituye todavía un corpus de aprendizaje.",
+  "manifest_sha256": "770bb114be8c218bd27dfa92338d6e6489ea42bfcc24465116b90bf0a37d2cf1",
+  "price_audit_sha256": "8394b4d9dbb7fc1effb5336b156799fc1f8c55a4f3395d93bc56206045a53bb3",
+  "runtime_commit": "b1d53dce911d9777a032682040c281e188eccdc4",
+  "input_policy": "historical_masked_2000_v1",
+  "candidates": 5676,
+  "prepared_assets": 5023,
+  "states": {
+    "US": {
+      "prepared": 4213,
+      "missing_required_prices": 571
+    },
+    "CN": {
+      "prepared": 810,
+      "missing_required_prices": 82
+    }
+  },
+  "rows": {
+    "US": {
+      "prices": 16090522,
+      "news": 2156832,
+      "fundamentals": 3027615
+    },
+    "CN": {
+      "prices": 2891924,
+      "news": 553392,
+      "fundamentals": 0
+    }
+  },
+  "missing_sources": {
+    "US": {
+      "fundamentals": 1537,
+      "news": 90
+    },
+    "CN": {}
+  },
+  "unknown_fundamental_publication": {
+    "US": 0
+  },
+  "excluded_fundamental_records": {
+    "US": {
+      "period_after_filing": 9224
+    }
+  },
+  "excluded_news": {
+    "US": {
+      "reserved": 613324,
+      "missing_content": 14,
+      "duplicate": 507,
+      "content_rejected": 11
+    },
+    "CN": {
+      "duplicate": 467384,
+      "reserved": 355153,
+      "availability_after_cutoff": 1316
+    }
+  },
+  "first_price_sessions": {
+    "US": "2000-01-03",
+    "CN": "2006-01-04"
+  },
+  "last_price_sessions": {
+    "US": "2023-12-29",
+    "CN": "2023-12-29"
+  },
+  "all_audited_price_assets_preserved": true,
+  "all_audited_price_counts_preserved": true,
+  "artifacts_verified": 25115,
+  "artifact_bytes_verified": 4017049727,
+  "largest_decoded_batch_bytes": 94056,
+  "verification_batch_rows": 512,
+  "elapsed_seconds": 33.55915389100119,
+  "peak_rss_bytes": 184053760,
+  "script_sha256": "be8ae163b2d757f8eabb5a8157e3384ee9c22f00156d80b2c5c55ff7d1f429c0",
+  "models_executed": false,
+  "embeddings_materialized": false,
+  "targets_materialized": false,
+  "training_ready": false,
+  "final_test_opened": false,
+  "source_receipt_sha256": "778b504be7a3164f9a47e45366f7fe152d2716ec2d506a81b1b742d446394e61",
+  "preparation_measurements": {
+    "elapsed_process_seconds": 4004.241,
+    "elapsed_preparation_seconds": 3988.3372989149975,
+    "peak_rss_bytes": 383995904,
+    "memory_limit_bytes": 3221225472,
+    "service_peak_memory_reported": "3G",
+    "service_swap_peak_reported": "50.4M",
+    "cpu_quota_percent": 200,
+    "blas_threads": 2,
+    "gpu_used": false,
+    "concurrent_workloads": "Preparación macro CPU, comprobaciones técnicas y carga GPU ajena al proyecto. No es una medida aislada de rendimiento."
+  },
+  "source_fundamental_audit_totals": {
+    "US": {
+      "rows": 179224951,
+      "missing_publication": 0,
+      "duplicates": 175822052,
+      "invalid": 0,
+      "ambiguous_facts": 0,
+      "accepted": 3393675,
+      "temporal_excluded": 9224
+    },
+    "CN": {
+      "rows": 202767,
+      "missing_publication": 202767,
+      "duplicates": 0,
+      "invalid": 0,
+      "ambiguous_facts": 0,
+      "accepted": 0,
+      "temporal_excluded": 0
+    }
+  },
+  "pending": [
+    "Proyectar las cuentas US y CN al catálogo común e incorporar los comunicados CN revisados.",
+    "Codificar las muestras de todos los activos con las máscaras explícitas y conservar sus identificadores.",
+    "Calcular objetivos válidos y verificar la igualdad de filas y cortes temporales entre modelos."
+  ]
+}

@@ -4,8 +4,10 @@ import argparse
 import fcntl
 import json
 import re
+import shutil
 from pathlib import Path
 
+from .accounting_catalog import HISTORICAL_ACCOUNTING, JOINT_CONCEPTS, historical_accounting_context
 from .cohort_contexts import MacroVectors
 from .cohort_files import read_manifest as _read
 from .cohort_files import safe_destination
@@ -13,9 +15,22 @@ from .cohort_news import COHORT_POLICIES
 from .cohort_samples import materialize_cohort_asset
 from .corpus_preparation import STARTS
 from .embeddings import EmbeddingCache, FrozenEncoders
+from .input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs, policy_identity
 from .samples import FUNDAMENTAL_CONCEPTS
 from .storage import atomic_json, outside_source, sha256
 from .temporal import MarketClock, aware
+
+
+def _free_disk_bytes(path):
+    while not path.exists():
+        path = path.parent
+    return shutil.disk_usage(path).free
+
+
+def _same_json(left, right):
+    return json.dumps(left, sort_keys=True, allow_nan=False) == json.dumps(
+        right, sort_keys=True, allow_nan=False
+    )
 
 
 def encode_corpus(
@@ -26,19 +41,56 @@ def encode_corpus(
     market_factors=None,
     cache_path=None,
     encoders=None,
+    encoder_options=None,
     clocks=None,
     context=64,
     fundamental_concepts=FUNDAMENTAL_CONCEPTS,
     source_unit="USD",
     company_factors=True,
     admitted_decisions=None,
+    input_policy=STRICT_INPUTS,
+    macro_indicators=None,
+    accounting_policy=None,
+    cache_charts=True,
+    max_new_assets=None,
+    min_free_disk_bytes=0,
 ):
     """Procesar todos los candidatos y publicar solo una cobertura completa sin errores."""
+    masked = masked_inputs(input_policy)
+    if encoder_options is not None and (
+        not isinstance(encoder_options, dict) or encoders is not None
+    ):
+        raise ValueError("Las opciones requieren construir un codificador nuevo")
+    if (
+        type(cache_charts) is not bool
+        or max_new_assets is not None
+        and (type(max_new_assets) is not int or max_new_assets < 1)
+        or type(min_free_disk_bytes) is not int
+        or min_free_disk_bytes < 0
+    ):
+        raise ValueError("La política de caché y los límites de ejecución no son válidos")
+    if accounting_policy is not None and (
+        accounting_policy != HISTORICAL_ACCOUNTING
+        or not masked
+        or tuple(fundamental_concepts) != FUNDAMENTAL_CONCEPTS
+        or source_unit != "USD"
+        or company_factors is not True
+    ):
+        raise ValueError(
+            "La política contable conjunta requiere entradas históricas y sus opciones acordadas"
+        )
+    if masked and (context != 64 or admitted_decisions is not None):
+        raise ValueError(
+            "La política histórica requiere 64 sesiones y no filtra por completitud macro"
+        )
     preparation, output = Path(preparation), Path(output)
     meta, preparation_hash = _read(preparation)
+    if meta.get("accounting_policy") is not None and meta["accounting_policy"] != accounting_policy:
+        raise ValueError("La preparación requiere su política contable explícita")
     cohort = meta.get("cohort_id")
     if (
-        meta.get("schema_version") != 1
+        meta.get("schema_version") != (2 if masked else 1)
+        or any(meta.get(k) != v for k, v in policy_identity(input_policy).items())
         or meta.get("kind") != "prepared_cohort"
         or meta.get("scope")
         not in {None, "full_corpus", "market_projection", "reviewed_asset_subset"}
@@ -61,12 +113,19 @@ def encode_corpus(
             or symbol in {".", ".."}
             or not re.fullmatch(r"[A-Z0-9.^_=\-]{1,64}", symbol)
             or (market, symbol) in identities
-            or asset.get("state") not in {"prepared", "missing_modalities"}
+            or asset.get("state")
+            not in (
+                {"prepared", "missing_required_prices"}
+                if masked
+                else {"prepared", "missing_modalities"}
+            )
         ):
             raise ValueError("La identidad o el estado de un candidato no es válido")
         identities.add((market, symbol))
     markets = sorted({market for market, _ in identities})
-    if not set(markets) <= set(macros):
+    if not isinstance(macros, dict):
+        raise ValueError("Los contextos macro deben identificar sus mercados")
+    if not masked and not set(markets) <= set(macros):
         raise ValueError("Falta el contexto macro de un mercado solicitado")
     if type(context) is not int or not 2 <= context <= 512:
         raise ValueError("El contexto debe contener entre 2 y 512 sesiones")
@@ -105,7 +164,10 @@ def encode_corpus(
         for moment in moments
     ):
         raise ValueError("La admisión debe pertenecer al calendario anterior a 2024")
-    contexts = {m: MacroVectors(macros[m]) for m in markets}
+    contexts = {
+        m: MacroVectors(macros.get(m), input_policy=input_policy, indicators=macro_indicators)
+        for m in markets
+    }
     factors = market_factors or {}
     for market, item in factors.items():
         if market not in markets or item.get("market") != market:
@@ -113,16 +175,20 @@ def encode_corpus(
         path = Path(item["prices_path"])
         if path.is_symlink() or not path.is_file() or sha256(path) != item["prices_sha256"]:
             raise ValueError("Ha cambiado la fuente del factor de mercado")
-    encoders = encoders if encoders is not None else FrozenEncoders()
+    if min_free_disk_bytes and _free_disk_bytes(output) < min_free_disk_bytes:
+        raise OSError("El disco libre no alcanza la reserva de codificación")
+    encoders = encoders if encoders is not None else FrozenEncoders(**(encoder_options or {}))
     identity = dict(
+        **policy_identity(input_policy),
         preparation_sha256=preparation_hash,
         prepared_root=str(prepared),
         cohort_id=cohort,
         context_sessions=context,
         encoders=encoders.spec,
         macro_sha256={m: contexts[m].sha256 for m in markets},
+        macro_indicators={m: contexts[m].indicators for m in markets},
         market_factors=factors,
-        fundamental_concepts=list(concepts),
+        fundamental_concepts=list(JOINT_CONCEPTS if accounting_policy else concepts),
         source_unit=source_unit,
         company_factors=company_factors,
         admitted_decisions={m: sorted(t.isoformat() for t in admitted[m]) for m in markets}
@@ -135,9 +201,24 @@ def encode_corpus(
                 "cohort_samples.py",
                 "cohort_contexts.py",
                 "cohort_files.py",
+                "input_policy.py",
             )
         },
     )
+    if accounting_policy:
+        identity["accounting_policy"] = accounting_policy
+        identity["accounting_contexts"] = {
+            market: {
+                key: list(value) if isinstance(value, tuple) else value
+                for key, value in historical_accounting_context(market).items()
+            }
+            for market in markets
+        }
+        identity["code"]["accounting_catalog.py"] = sha256(
+            Path(__file__).with_name("accounting_catalog.py")
+        )
+    if not cache_charts:
+        identity["cache_charts"] = False
     for name in (
         ".edition.lock",
         "configuration.json",
@@ -152,7 +233,7 @@ def encode_corpus(
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         config = output / "configuration.json"
         if config.exists():
-            if _read(config)[0] != identity:
+            if not _same_json(_read(config)[0], identity):
                 raise ValueError("La configuración pertenece a otra edición")
         elif any(p.name != ".edition.lock" for p in output.iterdir()):
             raise ValueError("El destino contiene una edición no identificada")
@@ -163,9 +244,10 @@ def encode_corpus(
         outside_source(prepared, cache_path)
         if cache_path.is_symlink():
             raise ValueError("La caché no puede ser un enlace")
-        cache = EmbeddingCache(cache_path)
+        cache = EmbeddingCache(cache_path, cache_charts=cache_charts)
         result = dict(
-            schema_version=2,
+            **policy_identity(input_policy),
+            schema_version=3 if masked else 2,
             markets=markets,
             preparation_scope=meta.get("scope", "full_corpus"),
             parent_preparation=meta.get("parent_preparation"),
@@ -188,12 +270,25 @@ def encode_corpus(
             training_ready=False,
         )
         reused = 0
+        new_assets = 0
         try:
             for asset in meta["assets"]:
                 market, symbol = asset["market"], asset["symbol"]
-                if asset["state"] == "missing_modalities":
+                if asset["state"] in {"missing_modalities", "missing_required_prices"}:
                     result["coverage"].append(dict(asset))
                 else:
+                    confirmed = output / "samples" / market / symbol / "manifest.json"
+                    if (
+                        max_new_assets is not None
+                        and new_assets >= max_new_assets
+                        and not confirmed.exists()
+                    ):
+                        result["stop_reason"] = "new_asset_limit"
+                        break
+                    if min_free_disk_bytes and _free_disk_bytes(output) < min_free_disk_bytes:
+                        result["stop_reason"] = "disk_reserve"
+                        break
+                    new_assets += int(not confirmed.exists())
                     source = prepared / market / symbol
                     try:
                         safe_destination(output / "samples" / market / symbol)
@@ -201,6 +296,15 @@ def encode_corpus(
                             raise ValueError("El activo no pertenece al origen declarado")
                         if sha256(source / "manifest.json") != asset["manifest_sha256"]:
                             raise ValueError("Ha cambiado el manifiesto del activo preparado")
+                        accounting = (
+                            historical_accounting_context(market)
+                            if accounting_policy
+                            else dict(
+                                fundamental_concepts=concepts,
+                                source_unit=source_unit,
+                                company_factors=company_factors,
+                            )
+                        )
                         receipt = materialize_cohort_asset(
                             source,
                             output / "samples" / market / symbol,
@@ -210,10 +314,9 @@ def encode_corpus(
                             cache,
                             cohort=cohort,
                             context=context,
-                            fundamental_concepts=concepts,
-                            source_unit=source_unit,
-                            company_factors=company_factors,
+                            **accounting,
                             admitted_decisions=admitted[market] if admitted is not None else None,
+                            input_policy=input_policy,
                         )
                         if receipt["symbol"] != symbol:
                             raise ValueError("El recibo pertenece a otro activo")
@@ -242,11 +345,11 @@ def encode_corpus(
             cache.close()
         if sha256(preparation) != identity["preparation_sha256"]:
             raise ValueError("La preparación cambió durante el recorrido")
-        if not result["failed_assets"]:
+        if not result["failed_assets"] and len(result["coverage"]) == len(meta["assets"]):
             if meta.get("scope") != "reviewed_asset_subset":
                 result.update(scope="full_corpus", cohort_complete=True)
             existing = output / "manifest.json"
-            if existing.exists() and _read(existing)[0] != result:
+            if existing.exists() and not _same_json(_read(existing)[0], result):
                 raise ValueError("El manifiesto confirmado no coincide con el recorrido")
             if not existing.exists():
                 atomic_json(existing, result)
@@ -266,9 +369,44 @@ def main():
         "--market-factors", type=Path, help="Identidades de los factores residuales"
     )
     parser.add_argument("--cache", type=Path, help="Caché persistente de vectores")
+    parser.add_argument(
+        "--cache-charts",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Conservar una copia de los gráficos en caché además del Parquet",
+    )
+    parser.add_argument(
+        "--max-new-assets", type=int, help="Pausar tras este número de activos nuevos"
+    )
+    parser.add_argument(
+        "--min-free-disk-bytes", type=int, default=0, help="Reserva de disco entre activos"
+    )
+    parser.add_argument(
+        "--cuda-memory-bytes",
+        type=int,
+        default=6 * 1024**3,
+        help="Límite del asignador Torch, sin incluir el contexto CUDA",
+    )
+    parser.add_argument(
+        "--min-free-cuda-bytes",
+        type=int,
+        default=0,
+        help="Memoria CUDA libre requerida antes de cargar pesos",
+    )
+    parser.add_argument(
+        "--text-batch-size", type=int, default=32, help="Fragmentos por lote de texto"
+    )
+    parser.add_argument("--image-batch-size", type=int, default=64, help="Gráficos por lote CUDA")
     parser.add_argument("--context", type=int, default=64, help="Sesiones de contexto")
+    parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
+    parser.add_argument("--accounting-policy", choices=(HISTORICAL_ACCOUNTING,))
+    parser.add_argument(
+        "--macro-catalog", type=Path, help="Catálogo explícito para conservar indicadores ausentes"
+    )
     args = parser.parse_args()
     import torch
+
+    from .macro_coverage import _read_catalog
 
     torch.set_num_threads(4)
     result = encode_corpus(
@@ -277,24 +415,34 @@ def main():
         macros={m: p for m, p in (("US", args.macro_us), ("CN", args.macro_cn)) if p},
         market_factors=_read(args.market_factors)[0] if args.market_factors else None,
         cache_path=args.cache,
+        encoder_options=dict(
+            cuda_memory_bytes=args.cuda_memory_bytes,
+            min_free_cuda_bytes=args.min_free_cuda_bytes,
+            text_batch_size=args.text_batch_size,
+            image_batch_size=args.image_batch_size,
+        ),
+        cache_charts=args.cache_charts,
+        max_new_assets=args.max_new_assets,
+        min_free_disk_bytes=args.min_free_disk_bytes,
         context=args.context,
+        input_policy=args.input_policy,
+        accounting_policy=args.accounting_policy,
+        macro_indicators=sorted(_read_catalog(args.macro_catalog)) if args.macro_catalog else None,
     )
-    print(
-        json.dumps(
-            {
-                k: result[k]
-                for k in (
-                    "cohort_id",
-                    "candidate_count",
-                    "samples",
-                    "failed_assets",
-                    "cohort_complete",
-                    "reused_assets",
-                )
-            },
-            ensure_ascii=False,
+    summary = {
+        k: result[k]
+        for k in (
+            "cohort_id",
+            "candidate_count",
+            "samples",
+            "failed_assets",
+            "cohort_complete",
+            "reused_assets",
         )
-    )
+    }
+    if "stop_reason" in result:
+        summary["stop_reason"] = result["stop_reason"]
+    print(json.dumps(summary, ensure_ascii=False))
     return int(result["failed_assets"] > 0)
 
 

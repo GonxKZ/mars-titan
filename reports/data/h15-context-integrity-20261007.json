@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-07T21:58:23.497947+00:00",
+  "previous_code_commit": "fd153534bc8aa1e0ad171d441313223c84f21bfe",
+  "code_sha256": "85080e0a8f04d739642eb8da51a4e2c134e9a34f8c28fc350dd4c5e10fb4bc3d",
+  "findings_reproduced": [
+    "panel_changed_with_updated_receipt_hash",
+    "document_changed_after_verification"
+  ],
+  "both_rejected_after_fix": true,
+  "coverage_of_integrity_checks": [
+    "value",
+    "prediction_at",
+    "available_at",
+    "period_start",
+    "indicator_id",
+    "source_hashes",
+    "unit",
+    "missing_reason",
+    "seasonal_adjustment",
+    "row_order",
+    "value_type",
+    "document_receipt",
+    "dictionary_expansion"
+  ],
+  "comparison": {
+    "reference": "calculate_macro_from_verified_events",
+    "batch_rows": 512,
+    "all_columns": true,
+    "exact_order": true,
+    "dictionary_text_checked_before_expansion": true
+  },
+  "unchanged_artifact_bytes": {
+    "events.json": true,
+    "macro-US.parquet": true,
+    "macro-CN.parquet": true
+  },
+  "input_document_edition_unchanged": true,
+  "real_edition": {
+    "observations": 60,
+    "markets": {
+      "US": {
+        "rows": 1960,
+        "decisions": 14,
+        "observed": 0,
+        "missing_reasons": {
+          "source_unavailable:not_in_h15_document_bundle": 1792,
+          "not_yet_available": 36,
+          "no_common_period": 36,
+          "missing_historical_metadata": 96
+        }
+      },
+      "CN": {
+        "rows": 1960,
+        "decisions": 14,
+        "observed": 0,
+        "missing_reasons": {
+          "source_unavailable:not_in_h15_document_bundle": 1792,
+          "not_yet_available": 36,
+          "no_common_period": 36,
+          "missing_historical_metadata": 96
+        }
+      }
+    },
+    "artifacts": {
+      "events.json": "39c3078866de623ae966d59203a00ba82af43839c9d644ed4df8b5f23845469f",
+      "macro-US.parquet": "09e7b135661fa4c21b6ec193013aaaf97a2c9939f58e1ea6afc92753dede94f0",
+      "macro-CN.parquet": "eee73405924d71e4cd328289657318a719f667e07fcd2156a860baf6f9aae64a"
+    },
+    "documentary_comparisons": 40,
+    "max_decimal_error": "6.4E-16"
+  },
+  "measurement": {
+    "initial_internal_seconds": 0.4639219359996787,
+    "recovery_internal_seconds": 0.45633850599915604,
+    "verification_process_seconds": 1.64,
+    "peak_process_rss_bytes": 162013184,
+    "repetitions": 1,
+    "warmup": false,
+    "cpu_quota_percent": 200,
+    "memory_limit_bytes": 1073741824,
+    "energy_measured": false,
+    "monetary_cost_measured": false
+  },
+  "training_ready": false,
+  "admission_required": true,
+  "final_test_opened": false,
+  "limits": [
+    "La comparación se ejecuta sobre dos boletines y no acredita toda la historia.",
+    "Los metadatos de NSA de enero de 2000 siguen sin acreditarse.",
+    "No se han ejecutado modelos, aprendizaje, GPU ni red.",
+    "Las medidas son una pasada funcional y no demuestran una aceleración."
+  ],
+  "validation": {
+    "related_macro_tests": 520,
+    "related_macro_seconds": 44.93,
+    "targeted_tests": 33,
+    "regression_tests": 14,
+    "mutations_detected": 8,
+    "mutations_attempted": 8,
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Sentencias ejecutables de coverage.py por rango AST. Ramas registradas aparte.",
+    "statement_coverage": 0.8448979591836735,
+    "branch_coverage": 0.73,
+    "crap_formula": "CCN**2 * (1 - statement_coverage)**3 + CCN",
+    "maximum_crap": 33.57305416477014
+  }
+}
