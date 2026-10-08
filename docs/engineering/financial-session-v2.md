@@ -145,6 +145,10 @@ CPU/GPU y recuperación exacta. La guarda posterior de atributos numéricos tien
 sus [regresiones propias](../../reports/engineering/financial-execution-attributes-20261008.json).
 La [revisión independiente](../../reports/engineering/financial-session-review-20261008.json)
 separa el ciclo nativo, el consumidor y los cambios de ejecución numérica.
+El [recibo de cierre técnico](../../reports/engineering/financial-session-completion-20261008.json)
+añade la sonda CUDA focal posterior de atributos y los 77 contratos de datos
+comprobados al conciliar la rama con `develop`. Esa sonda conserva recuperación
+exacta y rechaza una mutación de epsilon sin publicar.
 
 Un recorrido técnico con 32 activos sintéticos y 128 observaciones produjo
 64 emisiones, 32 resoluciones maduras y 32 cierres administrativos. Incluyó
