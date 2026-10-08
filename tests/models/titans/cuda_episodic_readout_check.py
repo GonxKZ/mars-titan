@@ -35,13 +35,13 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
     cuda_rng = torch.cuda.get_rng_state(device).clone()
     records = []
     for dtype in (torch.float32, torch.float64):
-        for steps in (1, 2, 4):
+        for steps, episodes in ((1, 16), (2, 16), (4, 16), (1, 0)):
             config = EpisodicReadoutConfig(CODEC, hidden_size=32, refinements=steps)
             cpu = EpisodicReadout(config, dtype=dtype)
             gpu = EpisodicReadout(config, dtype=dtype, device=device)
             gpu.load_state_dict(cpu.state_dict())
             memory = EpisodeSnapshot.create(
-                **source(8), cutoff=10, codec_id=CODEC, context_id=CONTEXT, dtype=dtype
+                **source(episodes), cutoff=10, codec_id=CODEC, context_id=CONTEXT, dtype=dtype
             )
             gpu_memory = EpisodeSnapshot.restore(
                 memory.export_cpu(),
@@ -58,6 +58,9 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
             rtol, atol = (5e-5, 3e-6) if dtype == torch.float32 else (2e-9, 2e-10)
             torch.testing.assert_close(actual.state.cpu(), expected.state, rtol=rtol, atol=atol)
             for left, right in zip(expected.reads, actual.reads, strict=True):
+                assert left.ids.shape == right.ids.shape == (2, min(8, episodes))
+                assert left.presence.tolist() == [[bool(episodes)], [bool(episodes)]]
+                assert torch.equal(left.presence, right.presence.cpu())
                 assert torch.equal(left.ids, right.ids.cpu())
                 torch.testing.assert_close(right.weights.cpu(), left.weights, rtol=rtol, atol=atol)
             gradients = []
@@ -72,10 +75,16 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
                             model.refinement.weight,
                             model.step_logit,
                         ),
+                        allow_unused=True,
                     )
                 )
             maximum = 0.0
-            for left, right in zip(*gradients, strict=True):
+            expected_missing = {1, 2} if episodes == 0 else set()
+            for index, (left, right) in enumerate(zip(*gradients, strict=True)):
+                if index in expected_missing:
+                    assert left is None and right is None
+                    continue
+                assert left is not None and right is not None
                 torch.testing.assert_close(right.cpu(), left, rtol=rtol, atol=atol)
                 maximum = max(maximum, float((right.cpu() - left).abs().max()))
             recovered = EpisodeSnapshot.restore(
@@ -93,6 +102,11 @@ def test_cuda_readout_parity_gradients_and_recovery(tmp_path):
                 dict(
                     dtype=str(dtype),
                     K=steps,
+                    scenario="empty" if episodes == 0 else "restricted_topk",
+                    episodes=episodes,
+                    selected_neighbors=min(8, episodes),
+                    compared_gradients=5 - len(expected_missing),
+                    unused_query_and_value_gradients=episodes == 0,
                     exact_ids=True,
                     exact_recovery=True,
                     max_gradient_error=maximum,

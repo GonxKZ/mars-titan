@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-10-08T14:57:27.069509+00:00",
+  "recorded_at": "2026-10-08T15:04:12.283753+00:00",
   "base_commit": "92021268a6f29010b34db1af470e268b08090ba1",
   "issue": 23,
   "scope": "Lector episódico puro posterior a MAC, sin integración de sesión, optimizador ni aprendizaje.",
@@ -8,7 +8,7 @@
     "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
     "src/mars_titan/models/titans/episodic_readout.py": "6c17db86ec885b26d898c394d62d8646a9b91287c32d47834bf67a1ebc5da4ea",
     "tests/models/titans/test_episodic_readout.py": "d2954dea96be6ea4fae5c4e7f2840a8e859c33afa74df1ef703e0bd101381c7f",
-    "tests/models/titans/cuda_episodic_readout_check.py": "783279f711710e186c89593261a5c6ba6fd9e85b72a4670a24a987f6b194b53a"
+    "tests/models/titans/cuda_episodic_readout_check.py": "220f8e724e76a3d546d9e52bd1ec017720cf7f286876fc864ea1c64e7d142ccb"
   },
   "tests": {
     "cpu_passed": 407,
@@ -805,11 +805,136 @@
     ]
   },
   "cuda": {
-    "executed": false,
+    "executed": true,
+    "status": "Ocho casos correctos",
     "script": "tests/models/titans/cuda_episodic_readout_check.py",
-    "status": "Pendiente de coordinación de la ventana GPU",
-    "planned_cases": 6,
-    "cap_torch_bytes": 134217728
+    "pytest_passed": 1,
+    "pytest_seconds": 2.53,
+    "records": [
+      {
+        "dtype": "torch.float32",
+        "K": 1,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 1.7881393432617188e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float32",
+        "K": 2,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 2.384185791015625e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float32",
+        "K": 4,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 4.76837158203125e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float32",
+        "K": 1,
+        "scenario": "empty",
+        "episodes": 0,
+        "selected_neighbors": 0,
+        "compared_gradients": 3,
+        "unused_query_and_value_gradients": true,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 1.1920928955078125e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 1,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 4.440892098500626e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 2,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 3.3306690738754696e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 4,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 8.881784197001252e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 1,
+        "scenario": "empty",
+        "episodes": 0,
+        "selected_neighbors": 0,
+        "compared_gradients": 3,
+        "unused_query_and_value_gradients": true,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 4.440892098500626e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      }
+    ],
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 961 MiB",
+    "torch": "2.14.0+cu130",
+    "tf32": false,
+    "cpu_rng_unchanged": true,
+    "cuda_rng_unchanged": true,
+    "cap_torch_bytes": 134217728,
+    "peak_torch_bytes": 17402880,
+    "peak_torch_reserved_bytes": 23068672,
+    "process_seconds": 1.1287077039887663,
+    "scope": "Fixtures del lector puro, sin MAC, corpus real ni optimizador.",
+    "timing_scope": "process_seconds procede del cuerpo de la prueba tras las importaciones. No es el tiempo total del proceso ni un benchmark aislado."
   },
   "limits": [
     "El snapshot verifica intervalos declarados. La procedencia y maduración real corresponden al consumidor.",
@@ -818,5 +943,14 @@
     "La selección discreta no tiene gradiente y los casi empates pueden depender del backend.",
     "C conserva el operador MAC previo y no controla todo el refinamiento.",
     "M2/M3, sesión real y entrenamiento externo siguen fuera de este componente."
-  ]
+  ],
+  "fixture_update": {
+    "production_commit": "3fb0bad43057102aca879feb4b17d7dc7629546f",
+    "production_unchanged": true,
+    "cpu_preflight_cases": 8,
+    "previous_fixture": "8 episodios con 8 vecinos, sin selección restringida",
+    "current_fixture": "16 episodios con top-8, K1/2/4 y banco vacío K1 por precisión",
+    "quality_duplicates": 0,
+    "quality_values_unchanged": true
+  }
 }
