@@ -2,13 +2,14 @@
 
 import copy
 import importlib
-from dataclasses import replace
+from dataclasses import asdict, replace
 
 import pytest
 import torch
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.models.titans import MACConfig, MemoryConfig, TitansMAC
+from mars_titan.models.titans.config import canonical
 
 
 def api():
@@ -411,3 +412,107 @@ def test_strong_basis_boundary_detects_data_bypass_and_half_cast_leaves_basis_in
     control.basis.data[0, 0] += 0.01
     with pytest.raises(ValueError):
         control.state_dict()
+
+
+def test_census_group_of_5676_flows_preserves_one_budget_across_physical_blocks():
+    mac = TitansMAC(
+        MACConfig(memory=MemoryConfig(dim=2, max_batch=256, max_tokens=1), max_segment=1),
+        dtype=torch.float64,
+    )
+    control = api().MACProjectionControl(
+        api().MACProjectionConfig(
+            mode="penalty",
+            weight=0.2,
+            threshold=0.0,
+            frequency=1,
+            rank=2,
+            max_flows=2,
+            grid_size=13,
+        ),
+        mac.config,
+        dtype=torch.float64,
+    )
+    identifiers = [f"US/A{index:05}" for index in range(5676)]
+    identifiers[0], identifiers[-1] = identifiers[-1], identifiers[0]
+    identifiers = tuple(identifiers)
+    plan = control.select_flows(
+        identifiers, torch.zeros(5676, dtype=torch.int64), context_id="a" * 64
+    )
+    assert plan.eligible_flows == 5676
+    assert plan.selected_flow_ids == ("US/A00000", "US/A00001")
+    assert len(plan.flow_steps) == 5676
+    assert plan.metadata_estimated_bytes >= len(canonical(asdict(plan)).encode())
+    assert plan.estimated_bytes == control.estimated_bytes(2) + plan.metadata_estimated_bytes
+    seen, selected, penalties = [], [], []
+    evaluations = 0
+    for start in range(0, len(identifiers), 256):
+        flows = identifiers[start : start + 256]
+        seen.extend(flows)
+        state = mac.initial_state(len(flows))
+        result = control(
+            mac,
+            torch.full((len(flows), 1, 2), 0.2, dtype=torch.float64),
+            state,
+            flow_ids=flows,
+            observed_steps=state.memory.steps,
+            selection=plan,
+            context_id="a" * 64,
+        )
+        if result:
+            selected.extend(result.flow_ids)
+            penalties.append(result.penalty)
+            evaluations += result.reevaluations
+            assert result.selection_id == plan.fingerprint()
+        assert state.memory.steps.tolist() == [0] * len(flows)
+    expected_state = mac.initial_state(2)
+    expected = control(
+        mac,
+        torch.full((2, 1, 2), 0.2, dtype=torch.float64),
+        expected_state,
+        flow_ids=plan.selected_flow_ids,
+        observed_steps=expected_state.memory.steps,
+        selection=plan,
+        context_id="a" * 64,
+    )
+    assert tuple(seen) == identifiers
+    assert sorted(selected) == list(plan.selected_flow_ids)
+    assert evaluations == 4
+    torch.testing.assert_close(
+        torch.stack(penalties).sum(), expected.penalty, rtol=1e-12, atol=1e-12
+    )
+
+
+def test_large_plan_metadata_is_budgeted_before_materializing_the_plan(monkeypatch):
+    mac, generous, _, _ = fixture()
+    limit = generous.estimated_bytes(1) + 64 * 1024
+    control = api().MACProjectionControl(
+        replace(generous.config, max_estimated_bytes=limit), mac.config, dtype=torch.float64
+    )
+    control.select_flows(("a",), torch.zeros(1, dtype=torch.int64), context_id="a" * 64)
+    identifiers = tuple(f"US/A{index:05}" for index in range(5676))
+    monkeypatch.setattr(
+        api(), "ProjectionSelection", lambda *args: pytest.fail("No debe construir el plan")
+    )
+    with pytest.raises(ValueError, match="metadatos"):
+        control.select_flows(identifiers, torch.zeros(5676, dtype=torch.int64), context_id="a" * 64)
+
+
+def test_plan_metadata_counts_escaped_text_and_enforces_the_new_census_limit():
+    _, control, _, _ = fixture()
+    identifiers = tuple(f"{index:05}" + "\x01" * 123 for index in range(128))
+    plan = control.select_flows(
+        identifiers, torch.zeros(128, dtype=torch.int64), context_id="a" * 64
+    )
+    assert plan.metadata_estimated_bytes >= 2 * len(canonical(asdict(plan)).encode())
+    boundary = control.select_flows(
+        tuple(str(index) for index in range(8192)),
+        torch.zeros(8192, dtype=torch.int64),
+        context_id="a" * 64,
+    )
+    assert len(boundary.flow_steps) == 8192
+    with pytest.raises(ValueError, match="8192"):
+        control.select_flows(
+            tuple(str(index) for index in range(8193)),
+            torch.zeros(8193, dtype=torch.int64),
+            context_id="a" * 64,
+        )

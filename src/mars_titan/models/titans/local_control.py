@@ -7,6 +7,7 @@ estabilidad global. Las reevaluaciones no publican ni modifican el estado.
 import hashlib
 import math
 import re
+import sys
 from dataclasses import asdict, dataclass, replace
 
 import torch
@@ -68,11 +69,12 @@ class MACProjectionConfig:
             mac_sdpa_backend="math",
             basis="cpu_float64_qr_positive_diagonal_then_cast",
             selection="logical_group_eligible_canonical_ids",
-            max_group_flows=4096,
+            max_group_flows=8192,
             schedule="next_observed_step_mod_frequency",
             measure="angular_corrected_estimate",
             reduction="sum_block_over_logical_selected_flows",
-            budget_version=1,
+            budget_version=2,
+            metadata_budget="python_objects_and_json_reserve_v1",
         )
 
 
@@ -83,6 +85,7 @@ class ProjectionSelection:
     flow_steps: tuple[tuple[str, int], ...]
     selected_flow_ids: tuple[str, ...]
     eligible_flows: int
+    metadata_estimated_bytes: int
     estimated_bytes: int
 
     def fingerprint(self):
@@ -143,10 +146,12 @@ class MACProjectionControl(nn.Module):
         radius = 16 * flows * rank**2 * (32 + 8 * grid) + 128 * grid * (flows + 1)
         return basis + graphs + radius + flows * (8 * state_bytes + 16 * tokens)
 
-    def _check_budget(self, flows, dtype):
-        estimated = self._estimate(flows, dtype)
+    def _check_budget(self, flows, dtype, *, metadata_bytes=0):
+        estimated = self._estimate(flows, dtype) + metadata_bytes
         if estimated > self.config.max_estimated_bytes:
-            raise ValueError("El control local supera el presupuesto estimado de base y grafos")
+            raise ValueError(
+                "El control local supera el presupuesto estimado de base, grafos y metadatos"
+            )
         return estimated
 
     def estimated_bytes(self, flows=1):
@@ -230,7 +235,7 @@ class MACProjectionControl(nn.Module):
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
     def _selection(self, flow_ids, observed_steps, batch):
-        bounded_integer(batch, "flujos del grupo lógico", 1, 4096)
+        bounded_integer(batch, "flujos del grupo lógico", 1, 8192)
         if (
             type(flow_ids) is not tuple
             or len(flow_ids) != batch
@@ -257,6 +262,18 @@ class MACProjectionControl(nn.Module):
         selected = sorted(eligible, key=lambda index: flow_ids[index])[: self.config.max_flows]
         return tuple(selected), len(eligible)
 
+    @staticmethod
+    def _metadata_bytes(flow_ids, selected):
+        # Contar los objetos de texto también cubre escalares str de mayor almacenamiento.
+        records = len(flow_ids) * (sys.getsizeof((None, None)) + sys.getsizeof(2**63 - 1))
+        retained = (
+            sys.getsizeof(flow_ids) + records + sum(sys.getsizeof(value) for value in flow_ids)
+        )
+        encoded = sum(len(canonical(value).encode()) + 32 for value in flow_ids)
+        encoded += sum(len(canonical(flow_ids[index]).encode()) + 4 for index in selected)
+        # Reserva para ordenar, validar y reconstruir el plan, más dos buffers JSON.
+        return 4 * retained + 2 * (encoded + 4096) + 4096
+
     def select_flows(self, flow_ids, observed_steps, *, context_id):
         """Fijar una selección para todo el snapshot/grupo, antes de dividirlo."""
         if not isinstance(context_id, str) or re.fullmatch(r"[0-9a-f]{64}", context_id) is None:
@@ -264,13 +281,15 @@ class MACProjectionControl(nn.Module):
         if type(flow_ids) is not tuple:
             raise ValueError("La selección necesita una tupla de IDs canónicos")
         selected, eligible = self._selection(flow_ids, observed_steps, len(flow_ids))
-        estimated = self._check_budget(len(selected), self.basis.dtype) if selected else 0
+        metadata = self._metadata_bytes(flow_ids, selected)
+        estimated = self._check_budget(len(selected), self.basis.dtype, metadata_bytes=metadata)
         return ProjectionSelection(
             self.fingerprint(),
             context_id,
             tuple(sorted(zip(flow_ids, observed_steps.tolist(), strict=True))),
             tuple(flow_ids[index] for index in selected),
             eligible,
+            metadata,
             estimated,
         )
 
@@ -280,11 +299,12 @@ class MACProjectionControl(nn.Module):
             or selection.control_id != self.fingerprint()
             or selection.context_id != context_id
             or type(selection.eligible_flows) is not int
+            or type(selection.metadata_estimated_bytes) is not int
             or type(selection.estimated_bytes) is not int
             or type(selection.selected_flow_ids) is not tuple
             or any(not isinstance(value, str) for value in selection.selected_flow_ids)
             or type(selection.flow_steps) is not tuple
-            or not 1 <= len(selection.flow_steps) <= 4096
+            or not 1 <= len(selection.flow_steps) <= 8192
             or any(
                 type(pair) is not tuple
                 or len(pair) != 2

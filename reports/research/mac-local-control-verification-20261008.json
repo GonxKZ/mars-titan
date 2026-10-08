@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "checked_at_utc": "2026-10-08T07:07:29.510407+00:00",
+  "checked_at_utc": "2026-10-08T07:58:09.317771+00:00",
   "scope": "Control local proyectado e integración financiera con fixtures técnicos. Sin optimizadores ni datos reales.",
   "base_commit": "63706efc9565da99e0e9e34cb132d9c700a34706",
   "source_sha256": {
-    "src/mars_titan/models/titans/local_control.py": "8b80dc1e0cc6c56bb7f72d06c5b8c0d432d257313cfea81f8d9e8a6f63ef04ce",
+    "src/mars_titan/models/titans/local_control.py": "60db5f09e0fdc1693977afa811cc33cae1c2bc09a61388e6bd5b26d465855d19",
     "src/mars_titan/models/titans/financial.py": "2ec27df1515e58b6dab7f76b63fb117bba1ce28a3d25dc1ecf1cc5b544aad273"
   },
   "cpu": {
@@ -14,13 +14,13 @@
     "threads": 2
   },
   "tests": {
-    "passed": 292,
-    "new": 64,
+    "passed": 295,
+    "new": 67,
     "paths": [
       "tests/models/titans",
       "tests/cm"
     ],
-    "log_sha256": "c1958bea01a02964daaac06e57a1f2bca4291f20367123f67d1026d63e1688f3"
+    "log_sha256": "d41a81ebe4b4dc70c54500795673233863c892670cae65ab0ad4f7a04377b812"
   },
   "mutations": {
     "detected": 12,
@@ -44,7 +44,7 @@
       "src/mars_titan/models/titans/local_control.py": "b7227743f37ff31d262a38ebf434294442b53df77d834922904265595d9269b0",
       "src/mars_titan/models/titans/financial.py": "e45b36ca647ffd4c3f2c82d1622525baa301fccc58786ff37a81f8da3aa74d63"
     },
-    "later_change": "El cambio posterior renombra el campo a mac_sdpa_backend y añade cuatro pruebas de trazado. No cambia el cálculo ni las validaciones mutadas."
+    "later_change": "Se precisó el contrato mac_sdpa_backend y se amplió el grupo lógico y su presupuesto. Las mutaciones iniciales conservan los hashes originales. Las dos regresiones nuevas tienen una ejecución separada."
   },
   "legacy_parity": {
     "exact_prediction_and_state_pairs": 32,
@@ -61,13 +61,13 @@
   },
   "coverage": {
     "src/mars_titan/models/titans/local_control.py": {
-      "covered_lines": 221,
-      "num_statements": 222,
-      "percent_covered": 99.29577464788733,
+      "covered_lines": 231,
+      "num_statements": 232,
+      "percent_covered": 99.31972789115646,
       "percent_covered_display": "99",
       "missing_lines": 1,
       "excluded_lines": 0,
-      "percent_statements_covered": 99.54954954954955,
+      "percent_statements_covered": 99.56896551724138,
       "percent_statements_covered_display": "99",
       "num_branches": 62,
       "num_partial_branches": 1,
@@ -101,11 +101,11 @@
   "highest_crap": {
     "src/mars_titan/models/titans/local_control.py": {
       "name": "_resolve_selection",
-      "line": 277,
-      "end_line": 310,
-      "complexity": 22,
+      "line": 296,
+      "end_line": 330,
+      "complexity": 23,
       "statement_fraction": 1.0,
-      "crap": 22.0
+      "crap": 23.0
     },
     "src/mars_titan/models/titans/financial.py": {
       "name": "prepare",
@@ -302,5 +302,50 @@
     "differentiable_true_false": true,
     "ordinary_and_probe_mac_route_equal": true,
     "backbone_eval_without_gradient": "_transformer_encoder_layer_fwd observado, sin promesa de backend global"
+  },
+  "census_mutations": {
+    "source_sha256": "60db5f09e0fdc1693977afa811cc33cae1c2bc09a61388e6bd5b26d465855d19",
+    "records": [
+      {
+        "name": "baseline",
+        "status": "passed",
+        "summary": "3 passed, 49 deselected in 0.76s",
+        "seconds": 2.667916108002828
+      },
+      {
+        "name": "restore_4096_limit",
+        "status": "detected",
+        "summary": "3 failed, 49 deselected in 0.14s",
+        "seconds": 1.659008554997854
+      },
+      {
+        "name": "omit_metadata_charge",
+        "status": "detected",
+        "summary": "2 failed, 1 passed, 49 deselected in 0.15s",
+        "seconds": 1.6442400399973849
+      }
+    ],
+    "detected": 2,
+    "total": 2
+  },
+  "logical_group": {
+    "max_flows": 8192,
+    "physical_batch_limit": 256,
+    "budget_version": 2,
+    "probe": {
+      "logical_flows": 5676,
+      "physical_max": 256,
+      "blocks": 23,
+      "selected_flows": 2,
+      "metadata_estimated_bytes": 3906244,
+      "calculation_estimated_bytes": 749696,
+      "total_estimated_bytes": 4655940,
+      "serialized_json_bytes": 91121,
+      "tracemalloc_current_bytes": 347197,
+      "tracemalloc_peak_bytes": 656044,
+      "selection_seconds": 0.027406957997300196,
+      "limits": "Una selección CPU técnica. Tracemalloc no incluye todos los buffers C++ ni los objetos de entrada creados antes. No es RSS ni benchmark aislado.",
+      "timing_instrumentation": "tracemalloc activo durante la medición"
+    }
   }
 }
