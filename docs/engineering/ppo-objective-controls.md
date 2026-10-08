@@ -91,7 +91,7 @@ quedar identificadas. [PPO, secciones 3–5](https://arxiv.org/pdf/1707.06347v2)
 | --- | --- | --- |
 | PPO-Clip con diagnóstico completo | Conservar el objetivo actual y medir la KL de las seis acciones. | Distribución histórica completa, versión del muestreador, máscara de filas válidas e identidad de observaciones. |
 | PPO con penalización KL adaptativa | Sustituir el término del actor por `-mean(r*A - beta*KL)`, conservando crítico y entropía declarados. | Beta vigente y sus límites, KL objetivo, regla de adaptación, contador de actualizaciones y medición pendiente. |
-| PPO-Clip con parada por KL | Medir el desplazamiento real de la política y detener las épocas restantes según una regla previa. | Época, cursor, última KL, estado de parada y fase anterior o posterior a la medición. |
+| PPO-Clip con parada por KL | Medir el desplazamiento real de la política y detener las épocas restantes según una regla previa. | Última KL, épocas completadas y omitidas, umbral superado y resumen del rollout confirmado. |
 
 Cada variante necesita un identificador distinto de objetivo y controlador,
 además del contrato de esta función. Los campos anteriores son requisitos para
@@ -101,8 +101,9 @@ checkpoint existente y a su validación, sin introducir un segundo escritor.
 `PpoAction` ya expone probabilidades completas, pero el rollout actual guarda
 solo el logaritmo de la acción elegida. Una extensión debe conservar las seis
 probabilidades del muestreador real, su normalización y versión. No se reconstruyen
-con los pesos nuevos. Almacenar seis valores FP64 por cada 1.024 decisiones
-añade 49.152 bytes de contenido, aparte de metadatos y temporales. Las filas sin
+con los pesos nuevos. La integración prevista conserva los seis pesos FP32
+originales y los normaliza en FP64 al calcular la KL. Para 1.024 decisiones
+son 24.576 bytes de contenido, aparte de metadatos y temporales. Las filas sin
 recompensa válida se excluyen según la máscara existente.
 
 `approximate_kl` utiliza las salidas calculadas antes de `optimizer.step()`.
@@ -112,8 +113,10 @@ los mismos prefijos y reinicios. En la red compartida, una actualización del
 crítico también puede cambiar el cuerpo de la política. Parar solo la cabeza
 del actor no impide ese desplazamiento.
 
-La recuperación debe distinguir una actualización ya confirmada de una medición
-pendiente, sin repetir el paso del optimizador. La parada por KL dentro del
+La recuperación conserva la frontera existente al terminar `advance()`. No se
+publica un checkpoint entre el paso y su medición. Un fallo invalida el estado
+en curso y exige cargar el último bundle confirmado, sin contar dos veces una
+actualización confirmada. La parada por KL dentro del
 rollout es distinta de la selección temporal de checkpoints. Una comparación
 con igualdad de actualizaciones requiere una regla conjunta o presupuesto fijo.
 Si se permiten paradas independientes, se registrará la diferencia efectiva.
@@ -125,3 +128,9 @@ Siguen pendientes la integración del controlador, su comprobación CUDA y los
 experimentos. El aprendizaje permanece bloqueado hasta preparar y verificar
 la edición histórica desde 2000, y la simulación financiera conserva sus
 requisitos de OHLC y acciones corporativas. El test final sigue cerrado.
+
+El [recibo de comprobación](../../reports/engineering/rl-objectives-verification-20261008.json)
+reúne las versiones, huellas del código, pruebas, revisión independiente y
+límites de estas primitivas. La revisión añadió seis casos Python y 24
+contrastes con aritmética Decimal, además de sondas nativas en Release y
+ASan/UBSan. No ejecutó optimizadores ni repitió las comprobaciones CUDA.

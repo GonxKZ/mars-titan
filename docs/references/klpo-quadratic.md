@@ -116,3 +116,9 @@ esta varianza dentro de esa familia no garantiza mejorar el MAE del centro
 ni el de la salida discreta. No se extrapola el caso a datos financieros.
 Las dos regresiones añadidas pasan junto a las 37 pruebas anteriores, sin
 ejecutar el caso antiguo que ajusta parámetros.
+
+Las huellas, perfiles y límites de las comprobaciones quedan en el
+[recibo técnico](../../reports/engineering/rl-objectives-verification-20261008.json).
+La revisión independiente contrastó además los coeficientes con aritmética
+Decimal de 70 dígitos y comprobó la diferencia entre las derivadas superiores
+del objetivo exacto y las de sus sustitutos desacoplados.
