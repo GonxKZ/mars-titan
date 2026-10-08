@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "commit": "7d9468ec74980a33a54e8b8b579930e38bfd3c39",
+  "public_tests_passed": 77,
+  "independent_tests_passed": 10,
+  "review_open_findings": 0,
+  "targeted_mutations_detected": 15,
+  "retention_probe_cases": 27,
+  "retention_overruns": 0,
+  "bitwise_parity_cases": 12,
+  "scientific_results_claimed": false,
+  "checked_at_utc": "2026-10-08T01:53:13.143754+00:00",
+  "cuda": {
+    "implementation_commit": "7d9468ec74980a33a54e8b8b579930e38bfd3c39",
+    "passed": true,
+    "device": "cuda:0",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "cases": [
+      {
+        "dtype": "torch.float32",
+        "shape": [
+          2,
+          2,
+          2
+        ],
+        "grid_size": 17,
+        "angle_block_size": 3,
+        "max_value_error": 6.661338147750939e-16,
+        "max_gradient_error": 0.0
+      },
+      {
+        "dtype": "torch.float64",
+        "shape": [
+          2,
+          2,
+          2
+        ],
+        "grid_size": 17,
+        "angle_block_size": 3,
+        "max_value_error": 4.440892098500626e-16,
+        "max_gradient_error": 6.661338147750939e-16
+      },
+      {
+        "dtype": "torch.complex64",
+        "shape": [
+          2,
+          2,
+          2
+        ],
+        "grid_size": 17,
+        "angle_block_size": 3,
+        "max_value_error": 4.440892098500626e-16,
+        "max_gradient_error": 0.0
+      },
+      {
+        "dtype": "torch.complex128",
+        "shape": [
+          2,
+          2,
+          2
+        ],
+        "grid_size": 17,
+        "angle_block_size": 3,
+        "max_value_error": 4.440892098500626e-16,
+        "max_gradient_error": 9.992970910418892e-16
+      }
+    ],
+    "alternating_product_eigenvalue": 2.25,
+    "peak_allocated_bytes": 17330176,
+    "peak_reserved_bytes": 23068672,
+    "allocator_limit_bytes": 536870912,
+    "certified_numerical_bound": false,
+    "global_stability_claim": false,
+    "optimizer_steps": 0,
+    "models_executed": false,
+    "concurrent_external_workload": true
+  },
+  "source_sha256": {
+    "src/mars_titan/cm/__init__.py": "ac9d0f63bc0cf0ca893c11dcf7e5e7fcbd6280b89d0043899cede3b91f71e5c4",
+    "src/mars_titan/cm/numerical_radius.py": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+    "src/mars_titan/cm/medoids.py": "dc3ca407c8557baf9aa46ccedc8935da137acea15c913640ac578211ddac59ae"
+  },
+  "review_receipt_sha256": "68367bb654821e5b9f105db0fede3a3f821fbd19fd5d1084f33180059f85a9e8",
+  "scope": "Mecanismos matemáticos aislados. M permanece en CPU. C conserva dispositivo y se ha comprobado también en CUDA con matrices pequeñas.",
+  "pending": [
+    "Seleccionar el operador real de la arquitectura e integrar la intervención C con alcance explícito.",
+    "Integrar la consolidación en el ciclo de elegibilidad, snapshots y persistencia del banco.",
+    "Comprobar la paridad integral de B con C y M desactivados.",
+    "Completar el corpus histórico antes de cualquier entrenamiento o evaluación científica."
+  ],
+  "training_ready": false
+}

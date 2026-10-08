@@ -1,0 +1,82 @@
+{
+  "issues": [
+    {
+      "number": 17,
+      "title": "MT-017 · Implementar codificación y fusión de eventos",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/17",
+      "updated_at": "2026-10-07T23:51:10Z",
+      "state": "open"
+    },
+    {
+      "number": 18,
+      "title": "MT-018 · Implementar memoria global acotada",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/18",
+      "updated_at": "2026-10-07T23:51:12Z",
+      "state": "open"
+    },
+    {
+      "number": 19,
+      "title": "MT-019 · Comparar políticas de escritura",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/19",
+      "updated_at": "2026-10-07T23:51:13Z",
+      "state": "open"
+    },
+    {
+      "number": 21,
+      "title": "MT-021 · Verificar orden temporal y aislamiento",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/21",
+      "updated_at": "2026-10-07T23:51:14Z",
+      "state": "open"
+    },
+    {
+      "number": 23,
+      "title": "MT-023 · Integrar Titans-MAC y sus controles multimodales",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/23",
+      "updated_at": "2026-10-07T23:57:41Z",
+      "state": "open"
+    },
+    {
+      "number": 27,
+      "title": "MT-027 · Implementar Titans-MAC y comprobar su correspondencia matemática",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/27",
+      "updated_at": "2026-10-07T23:57:42Z",
+      "state": "open"
+    },
+    {
+      "number": 28,
+      "title": "MT-028 · Diseñar ablaciones y falsaciones",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/28",
+      "updated_at": "2026-10-07T23:51:19Z",
+      "state": "open"
+    },
+    {
+      "number": 56,
+      "title": "MT-054 · Evaluar pasos recurrentes y parada",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/56",
+      "updated_at": "2026-10-07T23:51:20Z",
+      "state": "open"
+    },
+    {
+      "number": 105,
+      "title": "Recuperar la procedencia temporal de los datos chinos",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/105",
+      "updated_at": "2026-10-07T23:51:22Z",
+      "state": "open"
+    },
+    {
+      "number": 171,
+      "title": "Ampliar la cobertura macro histórica y verificar su admisión",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/171",
+      "updated_at": "2026-10-07T23:51:24Z",
+      "state": "open"
+    },
+    {
+      "number": 293,
+      "title": "Implementar y comparar MARS-TITAN-CM-v1 con el modelo base",
+      "html_url": "https://github.com/GonxKZ/mars-titan/issues/293",
+      "updated_at": "2026-10-07T23:51:25Z",
+      "state": "open"
+    }
+  ],
+  "scope": "Actualización técnica de arquitectura y del estado de preparación. No cierra los estudios científicos."
+}

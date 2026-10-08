@@ -15,7 +15,7 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import MODALITIES, STRICT_INPUTS, masked_inputs
 from mars_titan.data.storage import sha256
 
-from .cohort_contract import cohort_identity, validate_cohort_rows
+from .cohort_contract import cohort_identity, representation_identity, validate_cohort_rows
 
 VECTORS = ("news", "charts", "fundamentals", "macro")
 MAX_TABLE_BYTES = 64 * 1024**2
@@ -140,6 +140,32 @@ def _presence(table, vectors, representation):
     return presence
 
 
+def _vectors(table, *, macro=None, historical=False):
+    """Leer las formas y tipos del corpus antes de validar sus máscaras."""
+    vectors = {}
+    for name in VECTORS:
+        if name == "macro" and macro is not None:
+            vectors[name] = macro
+            continue
+        column = table[name].combine_chunks()
+        if not (pa.types.is_list(column.type) or pa.types.is_fixed_size_list(column.type)):
+            raise ValueError("Cada modalidad necesita un vector explícito")
+        if historical and column.type.value_type != pa.float32():
+            raise ValueError("Los vectores históricos deben conservar el tipo float32")
+        lengths = pa.compute.list_value_length(column).to_numpy()
+        if (
+            column.null_count
+            or not len(lengths)
+            or not 1 <= lengths[0] <= 2048
+            or not (lengths == lengths[0]).all()
+        ):
+            raise ValueError("Las dimensiones de una modalidad no son válidas")
+        vectors[name] = np.asarray(column.flatten().to_numpy(), dtype=np.float32).reshape(
+            len(table), int(lengths[0])
+        )
+    return vectors
+
+
 def _price_contexts(prices, ends, context):
     """Transformar hasta 256 ventanas, con las mismas operaciones y precisión por fila."""
     if (
@@ -200,16 +226,23 @@ class CorpusDataset:
         meta = self.manifest
         self.masked = masked_inputs(input_policy)
         self.cohort = cohort_identity(meta, input_policy=input_policy)
-        if self.masked and ("temporal_view" in meta or "temporal_views" in meta):
-            raise ValueError("Las vistas temporales todavía no admiten la política histórica")
         from .temporal_contract import temporal_contracts
 
-        contracts = temporal_contracts(meta)
+        contracts = temporal_contracts(meta, input_policy=input_policy)
         self.temporals = {}
         if contracts:
             from .temporal_corpus import TemporalInputs
 
-            self.temporals = {market: TemporalInputs(view) for market, view in contracts.items()}
+            self.temporals = {
+                market: TemporalInputs(view, input_policy=input_policy)
+                for market, view in contracts.items()
+            }
+            if self.masked and any(
+                temporal.representation
+                != representation_identity(meta["representation"], input_policy=input_policy)
+                for temporal in self.temporals.values()
+            ):
+                raise ValueError("La vista no conserva la representación del corpus de origen")
         self.temporal = (
             next(iter(self.temporals.values()))
             if len(self.temporals) == 1
@@ -504,7 +537,7 @@ class CorpusDataset:
                         if not {"presence", "news_count"} <= set(file.schema_arrow.names):
                             raise ValueError("Faltan las máscaras o los recuentos históricos")
                         columns.extend(("presence", "news_count"))
-                    if self.temporal:
+                    if self.temporal and not self.masked:
                         columns.remove("macro")
                     if "input_availability" in file.schema_arrow.names:
                         columns.append("input_availability")
@@ -536,34 +569,11 @@ class CorpusDataset:
                     timestamps = (
                         _historical_times(table) if self.masked else _times(table["prediction_at"])
                     )
-                    macro = temporal.lookup(timestamps) if temporal else None
+                    macro = temporal.lookup(timestamps) if temporal and not self.masked else None
                     ends = table["price_end_index"].to_numpy()
-                    vectors = {}
-                    for name in VECTORS:
-                        if name == "macro" and macro is not None:
-                            vectors[name] = macro[0]
-                            continue
-                        column = table[name].combine_chunks()
-                        if not (
-                            pa.types.is_list(column.type)
-                            or pa.types.is_fixed_size_list(column.type)
-                        ):
-                            raise ValueError("Cada modalidad necesita un vector explícito")
-                        if self.masked and column.type.value_type != pa.float32():
-                            raise ValueError(
-                                "Los vectores históricos deben conservar el tipo float32"
-                            )
-                        lengths = pa.compute.list_value_length(column).to_numpy()
-                        if (
-                            column.null_count
-                            or not len(lengths)
-                            or not 1 <= lengths[0] <= 2048
-                            or not (lengths == lengths[0]).all()
-                        ):
-                            raise ValueError("Las dimensiones de una modalidad no son válidas")
-                        vectors[name] = np.asarray(
-                            column.flatten().to_numpy(), dtype=np.float32
-                        ).reshape(len(table), int(lengths[0]))
+                    vectors = _vectors(
+                        table, macro=macro[0] if macro is not None else None, historical=self.masked
+                    )
                     shape = {name: values.shape[1] for name, values in vectors.items()}
                     if dimensions is not None and dimensions != shape:
                         raise ValueError("Las dimensiones cambian entre activos")

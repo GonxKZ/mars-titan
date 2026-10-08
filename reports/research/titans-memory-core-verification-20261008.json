@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-08T01:02:10.452304+00:00",
+  "implementation_commit": "f4dc0eacf5c94936b3c9240cb45cf1be500db71f",
+  "scope": "Núcleo técnico de memoria neuronal y MAC. Sin predictor financiero integrado ni estudio experimental.",
+  "cpu_tests": {
+    "passed": 61,
+    "seconds": 1.71,
+    "initialization_regression_failed_before_fix": 2
+  },
+  "quality_measured_commit": "d420b8d1bb1e6204281e6f924a15b07afccba457",
+  "quality": {
+    "totals": {
+      "covered_lines": 316,
+      "num_statements": 328,
+      "percent_covered": 94.76190476190476,
+      "percent_covered_display": "95",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.34146341463415,
+      "percent_statements_covered_display": "96",
+      "num_branches": 92,
+      "num_partial_branches": 10,
+      "covered_branches": 82,
+      "missing_branches": 10,
+      "percent_branches_covered": 89.1304347826087,
+      "percent_branches_covered_display": "89"
+    },
+    "convention": "Sentencias ejecutables de coverage.py dentro del rango de función identificado por radon. Ramas medidas por separado. CRAP = CCN**2 * (1 - cobertura_sentencias)**3 + CCN.",
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "torch_version": "2.14.0+cu130",
+    "threads": 2,
+    "max_crap": {
+      "file": "src/mars_titan/models/titans/neural_memory.py",
+      "name": "validate_state",
+      "line": 79,
+      "ccn": 22,
+      "statement_coverage": 0.9666666666666667,
+      "crap": 22.017925925925926
+    }
+  },
+  "targeted_mutations": {
+    "detected": 12,
+    "attempted": 12,
+    "measured_commit": "d420b8d1bb1e6204281e6f924a15b07afccba457"
+  },
+  "independent_review": {
+    "initialization_fix_reviewed": true,
+    "observed_defect": "La construcción CPU seguía el dispositivo ambiental de PyTorch antes del traslado explícito.",
+    "fix": "La inicialización aleatoria se ejecuta en un contexto CPU explícito."
+  },
+  "cuda_fp64": {
+    "status": "passed",
+    "torch": "2.14.0+cu130",
+    "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "shape": [
+      2,
+      2,
+      4
+    ],
+    "dtype": "float64",
+    "threads": 2,
+    "peak_allocated_bytes": 17097216,
+    "peak_reserved_bytes": 23068672,
+    "output_max_abs_error": 8.258571235729428e-20,
+    "scope": "Paridad CPU/CUDA, gradientes externos, recuperación y contratos. Fixture técnico, sin optimizador externo ni predictor.",
+    "limits": "Carga concurrente externa conservada. No es un benchmark aislado ni una evaluación científica."
+  },
+  "cuda_fp32": {
+    "passed": true,
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "shape": [
+      2,
+      8,
+      64
+    ],
+    "dtype": "float32",
+    "tf32": false,
+    "forward_rtol": 2e-05,
+    "forward_atol": 2e-07,
+    "gradient_rtol": 0.0002,
+    "gradient_atol": 2e-06,
+    "output_max_abs_error": 2.4868995751603507e-14,
+    "parameter_gradient_max_abs_error": 5.820766091346741e-11,
+    "peak_allocated_bytes": 19762688,
+    "peak_reserved_bytes": 25165824,
+    "recovery_exact": true,
+    "ambient_cuda_rng_unchanged": true,
+    "models_trained": false,
+    "concurrent_external_workload": true
+  },
+  "source_sha256": {
+    "src/mars_titan/models/titans/state.py": "59882c601332326797bdfad62c73eeed9934f2a8f157c0c4087149aa5b794b62",
+    "src/mars_titan/models/titans/__init__.py": "6cc877ce59157b1bbc8cd9d956f4e77a1ac3f82fecf9fb5889aa70d377a57bf9",
+    "src/mars_titan/models/titans/config.py": "b09c0021dc250192afba726471d53aaeb798e8550bd4d9456ab72a3e6a0c46fa",
+    "src/mars_titan/models/titans/mac.py": "44fa0e415aa962edcaebed383f5037fe849cb7de34a172fff5e883a3e8e1dc15",
+    "src/mars_titan/models/titans/neural_memory.py": "d22f7b9be6662f418ef5a77cf08c7f6c369e50fefa009f3086ad94ff85d69653"
+  },
+  "evidence_sha256": {
+    "device-red.log": "494fb79e555d5eda4e34a3291dc321b8c13f95a3bcfc5761c2eb9eccea0026fe",
+    "cpu-green.log": "1a498623565082a103805d5135ef51dc44cf4bd50e55e01eda41d5b210495239",
+    "cuda.log": "605e1ae752a3f17207470e2dc2a79f914691073809f0a1b096a7619ab66da9cf",
+    "cuda-fp32.log": "3818023b30125bf3c07b2e3133ae3018e6a9b65cc58e9dbfa1e7571dc8d51890"
+  },
+  "upstream_warning": "La primera carga CUDA compiló el controlador de Triton con un aviso de redefinición de _POSIX_C_SOURCE entre cabeceras del sistema y Python. Las pruebas finalizaron correctamente. No se modificaron esas dependencias ni se ocultó el aviso.",
+  "limits": [
+    "Las medidas CUDA corresponden a fixtures pequeños y a una carga concurrente externa. No son un benchmark aislado.",
+    "El pico del asignador Torch no incluye todo el contexto CUDA.",
+    "No se ha ejecutado el predictor financiero, entrenamientos, pilotos, C/M ni evaluaciones científicas.",
+    "El consumidor debe controlar la duración del grafo exterior y validar los archivos antes de cargar estados."
+  ],
+  "training_ready": false,
+  "final_test_opened": false
+}

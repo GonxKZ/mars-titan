@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "base_commit": "98b38edbe6554ad37a163b6ee224580b20f32aaa",
+  "feature_commit": "d0b8d1feda0502469211c22c687a079aa8cb1404",
+  "commit": "e9757ce70516d4bf72520652fd84856d803666ce",
+  "tests": {
+    "public_focal_passed": 115,
+    "seconds": 1.7,
+    "added_regressions": 18,
+    "independent_public_passed": 101,
+    "independent_private_passed": 14,
+    "independent_seconds": 1.71,
+    "counts_not_summed": true,
+    "optimizer_steps": 0,
+    "cuda_executed": true
+  },
+  "legacy_parity": {
+    "configurations": 144,
+    "forward_backward_pairs": 288,
+    "weights_outputs_input_gradients_parameter_gradients_rng_exact": true,
+    "reason_for_repeat": "Se modificaron encode/forward mediante guardas condicionadas al nuevo kind."
+  },
+  "checks": {
+    "ruff": true,
+    "format": true,
+    "repository": true,
+    "repository_files": 1174,
+    "references": 191,
+    "tasks": 64
+  },
+  "quality": {
+    "statement_coverage_percent": 94.23076923076923,
+    "max_ccn_modified_functions": 26,
+    "max_crap_modified_functions": 26.64008364426586,
+    "convention": "Cobertura de sentencias ejecutables del cuerpo de cada función, excluyendo definición y decoradores. CCN Radon. CRAP=CCN²×(1-cobertura)³+CCN. Solo funciones nuevas o con AST cambiado respecto a la base.",
+    "selected_mutations": 12,
+    "killed_mutations": 12,
+    "isolated_imports_verified": true
+  },
+  "checked_at_utc": "2026-10-08T01:22:47.546757+00:00",
+  "cuda": {
+    "status": "completed",
+    "kind": "technical_cuda_fixture",
+    "device": "cuda:0",
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "gpu_name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "cases": [
+      {
+        "dtype": "torch.float32",
+        "batch": 2,
+        "context": 8,
+        "hidden_size": 32,
+        "layers": 2,
+        "cpu_cuda_rtol": 3e-05,
+        "cpu_cuda_atol": 3e-06,
+        "gradient_rtol": 0.001,
+        "gradient_atol": 1e-05,
+        "output_max_abs_difference": 1.1175870895385742e-08,
+        "causal_prefix_exact": true,
+        "future_gradient_zero": true,
+        "roundtrip_exact": true,
+        "weights_unchanged": true,
+        "peak_allocated_bytes": 17593344,
+        "peak_reserved_bytes": 23068672,
+        "checkpoint_sha256": "f42f2a0e961981d729d41c3d33c2f23696b0ffee5b7828f180fc17855998c2c2"
+      },
+      {
+        "dtype": "torch.float64",
+        "batch": 2,
+        "context": 8,
+        "hidden_size": 32,
+        "layers": 2,
+        "cpu_cuda_rtol": 1e-10,
+        "cpu_cuda_atol": 1e-11,
+        "gradient_rtol": 1e-08,
+        "gradient_atol": 1e-10,
+        "output_max_abs_difference": 2.0816681711721685e-17,
+        "causal_prefix_exact": true,
+        "future_gradient_zero": true,
+        "roundtrip_exact": true,
+        "weights_unchanged": true,
+        "peak_allocated_bytes": 18094080,
+        "peak_reserved_bytes": 23068672,
+        "checkpoint_sha256": "77d64df5713dd0c80d6851225ce5f8abdff0a7ec8f9660dc90511b626469f2a5"
+      }
+    ],
+    "code_sha256": {
+      "transformer": "8b7f2e2a8e346e2169247a8a5c2b93d1196a1c0b3f1cd80f3d3e22e26f903bd3",
+      "multimodal": "68e47338a2eadc7f0ac021d0274f1e53fffd06575ec5d74ddcbea1e962b9b5c8",
+      "initialization": "b083b8795dc9732e3c4f6ad422354cfb5aefb462f2fe02d5b9c03821be944461"
+    },
+    "torch_budget_bytes": 536870912,
+    "context_memory_not_in_torch_counters": true,
+    "optimizer_steps": 0,
+    "scientific_training": false,
+    "dataset_used": false,
+    "benchmark": false,
+    "other_processes_stopped": false
+  },
+  "independent_review": {
+    "open_findings": 0,
+    "public_tests_passed": 101,
+    "private_probes_passed": 14,
+    "receipt_sha256": "4ef5b0a85fe032c2f09b13776d479cfefc1a28f85727a680d664dee0dedbf275"
+  },
+  "source_receipt_sha256": "017ea709e35fd3fe2d4a119706e1a37f4912070fde3c2dd9550fa5364ed82132",
+  "limits": [
+    "Las comprobaciones usan fixtures sin optimizador ni corpus real.",
+    "La ruta previa conserva sus pesos, salidas, gradientes y RNG en los 144 casos comprobados.",
+    "La comprobación CUDA utiliza formas pequeñas y una carga concurrente externa. No es una medición aislada de rendimiento.",
+    "El límite Torch no incluye toda la memoria del contexto CUDA.",
+    "El Transformer no es Titans-MAC ni sustituye la referencia GRU. No hay mejora predictiva medida."
+  ]
+}

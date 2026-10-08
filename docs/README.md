@@ -2,6 +2,8 @@
 
 La documentación reúne el diseño de investigación, las decisiones de ingeniería y sus comprobaciones. La preparación de datos y los ensayos de coste ya tienen evidencia ejecutada. El candidato base está en implementación, todavía sin entrenamiento. La comparación confirmatoria sigue pendiente.
 
+La [dirección arquitectónica vigente](research/titans-mac-architecture.md) distingue GRU con banco episódico, Transformer compacto, Titans-MAC y MARS-TITAN con ampliaciones desactivables. La [preparación histórica](data/historical-materialization.md) conserva los datos utilizables desde 2000 y sus ausencias. Estas tareas no levantan el bloqueo de aprendizaje.
+
 | Para qué | Documento |
 | --- | --- |
 | Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [cobertura histórica de 2000 a 2023](data/historical-coverage.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
