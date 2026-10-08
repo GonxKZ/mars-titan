@@ -7,8 +7,11 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/TorchDependencies.cmake")
 mars_titan_find_torch()
 get_filename_component(episode_project "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
-execute_process(COMMAND "${MARS_TITAN_UV}" run --no-sync --offline --project "${episode_project}"
+get_target_property(episode_environment mars_titan_torch MARS_TITAN_TORCH_ENVIRONMENT)
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env "UV_PROJECT_ENVIRONMENT=${episode_environment}"
+    "${MARS_TITAN_UV}" run --no-sync --offline --project "${episode_project}"
     python -c "import sys; print(sys.executable)"
+    WORKING_DIRECTORY "${episode_project}"
     RESULT_VARIABLE episode_probe OUTPUT_VARIABLE episode_python ERROR_VARIABLE episode_error
     OUTPUT_STRIP_TRAILING_WHITESPACE TIMEOUT 30)
 if(NOT episode_probe EQUAL 0)
@@ -32,6 +35,15 @@ set_target_properties(_episodic_native PROPERTIES CXX_VISIBILITY_PRESET hidden)
 mars_titan_configure_target(_episodic_native)
 list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_memory.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_python.cpp")
+if(BUILD_TESTING)
+    add_test(NAME episodic_python_environment COMMAND "${CMAKE_COMMAND}"
+        "-DSDK_ENVIRONMENT=${MARS_TITAN_TORCH_ENVIRONMENT}"
+        "-DPROJECT_ROOT=${episode_project}"
+        "-DUV_EXECUTABLE=${MARS_TITAN_UV}"
+        "-DSELECTED_PYTHON=${Python3_EXECUTABLE}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/episodic_python_environment.cmake")
+    set_tests_properties(episodic_python_environment PROPERTIES TIMEOUT 60 LABELS "configuration;memory")
+endif()
 if(BUILD_TESTING AND NOT TARGET episodic_memory_tests)
     add_executable(episodic_memory_tests tests/episodic_memory_tests.cpp)
     target_link_libraries(episodic_memory_tests PRIVATE mars_titan_episode_storage)

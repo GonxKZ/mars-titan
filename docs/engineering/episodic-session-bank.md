@@ -121,6 +121,10 @@ licencia BSD de tres cláusulas. No compila PPO para usar el banco. La carga exi
 un módulo ya compilado, conserva su SHA-256 y rechaza otro binario o una versión
 incompatible de PyTorch en el mismo proceso.
 
+`MARS_TITAN_TORCH_ENVIRONMENT` permite seleccionar un SDK externo. El enlace
+consulta Python en ese mismo entorno, aunque `UV_PROJECT_ENVIRONMENT` señale
+otro. La prueba CTest `episodic_python_environment` contrasta ambos intérpretes.
+
 ```bash
 cmake --preset native-release -S native \
   -DMARS_TITAN_BUILD_EPISODIC_PYTHON=ON \
