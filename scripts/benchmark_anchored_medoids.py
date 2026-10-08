@@ -24,8 +24,10 @@ def benchmark():
         points = rng.normal(size=(8192 + incoming, 64)).astype(np.float32)
         ids = tuple(f"{index:06d}" for index in range(len(points)))
         fixed, candidates = ids[:8184], ids[8184:8200]
-        samples = {name: [] for name in ("numpy", "scipy_cdist_fp32")}
+        samples = {name: [] for name in ("numpy", "scipy_cdist_fp32_exploratory")}
         results = {}
+        same_representatives = True
+        close_objectives = True
         for backend in samples:
             select_anchored_medoids(
                 points, ids, fixed, candidates, 8192, background_backend=backend, max_swaps=1
@@ -40,10 +42,10 @@ def benchmark():
                 samples[backend].append(time.perf_counter() - start)
                 results[backend] = result
             reference, candidate = (results[name] for name in samples)
-            if reference.retained_ids != candidate.retained_ids or not math.isclose(
+            same_representatives &= reference.retained_ids == candidate.retained_ids
+            close_objectives &= math.isclose(
                 reference.objective, candidate.objective, rel_tol=1e-14, abs_tol=0
-            ):
-                raise ArithmeticError("El backend cambia los representantes o el objetivo")
+            )
         peaks = {}
         if incoming == 512:
             for backend in samples:
@@ -66,11 +68,13 @@ def benchmark():
                 "variable_candidates": 16,
                 "dimensions": 64,
                 "coordinate_dtype": points.dtype.str,
+                "same_representatives": same_representatives,
+                "objectives_within_tolerance": close_objectives,
                 "distance_dtype": "float64",
                 "warmup_calls_per_backend": 1,
                 "seconds": samples,
                 "median_seconds": medians,
-                "observed_ratio": medians["numpy"] / medians["scipy_cdist_fp32"],
+                "observed_ratio": medians["numpy"] / medians["scipy_cdist_fp32_exploratory"],
                 "objective": result.objective,
                 "variable_ids": result.variable_ids,
                 "retained_ids_sha256": hashlib.sha256(
@@ -100,7 +104,8 @@ def benchmark():
         "limits": [
             "Incluye validación, IDs, conversión, fondo y selección mediante la API pública.",
             "No incluye codec, elegibilidad temporal, banco, modelo, snapshot o persistencia.",
-            "La comparación exige mismos representantes, rtol=1e-14 y atol=0 para el objetivo.",
+            "Se registran coincidencia de IDs y rtol=1e-14, atol=0 para el objetivo.",
+            "SciPy es exploratorio y puede elegir otros IDs en empates.",
             "No se controlan otras aplicaciones ni se mide GPU, energía o coste económico.",
         ],
     }

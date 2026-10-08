@@ -69,7 +69,7 @@ def _indices(ids: Sequence[str], ordered_ids: tuple[str, ...]) -> tuple[int, ...
 def _scipy_backend(points: np.ndarray, metric: str, backend: str):
     if backend == "numpy":
         return None, None
-    if backend != "scipy_cdist_fp32":
+    if backend != "scipy_cdist_fp32_exploratory":
         raise ValueError("Backend de fondo no admitido")
     if points.dtype.kind != "f" or points.dtype.itemsize != 4:
         raise TypeError("El fondo cdist exige coordenadas FP32, sin conversión implícita")
@@ -136,9 +136,10 @@ def select_anchored_medoids(
     clientes fijos aportan cero. Los demás minimizan su distancia al conjunto
     fijo y al variable. La enumeración solo es óptima sobre esta restricción.
 
-    El fondo NumPy conserva la referencia general. cdist exige FP32 y calcula
-    distancias euclídeas FP64. La selección variable mantiene la referencia
-    NumPy. La salida identifica ambos tipos y las versiones de bibliotecas.
+    El fondo NumPy conserva la referencia general. cdist es exploratorio,
+    exige FP32 y calcula distancias euclídeas FP64. Puede cambiar los IDs en
+    empates de redondeo. La selección variable mantiene la referencia NumPy.
+    La salida identifica ambos tipos y las versiones de bibliotecas.
     Los límites de pares y buffers son conjuntos para fondo y selección.
     """
     for value, name in (

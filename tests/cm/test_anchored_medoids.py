@@ -85,7 +85,7 @@ def test_no_fixed_centers_matches_existing_selector_and_external_rng():
     np.testing.assert_array_equal(state[1], after[1])
 
 
-@pytest.mark.parametrize("backend", ["numpy", "scipy_cdist_fp32"])
+@pytest.mark.parametrize("backend", ["numpy", "scipy_cdist_fp32_exploratory"])
 def test_permutations_and_geometry_duplicates_preserve_real_representatives(backend):
     points = np.array([[0, 0], [0, 0], [4, 0], [4, 0], [8, 0], [9, 0]], dtype=np.float32)
     ids = np.array(list("abcdef"))
@@ -159,7 +159,7 @@ def test_nonfinite_coordinates_rejected_before_library(value):
             ["a"],
             ["b"],
             2,
-            background_backend="scipy_cdist_fp32",
+            background_backend="scipy_cdist_fp32_exploratory",
         )
 
 
@@ -172,7 +172,7 @@ def test_specialized_backend_rejects_other_coordinate_types(dtype):
             ["a"],
             ["b"],
             2,
-            background_backend="scipy_cdist_fp32",
+            background_backend="scipy_cdist_fp32_exploratory",
         )
 
 
@@ -199,11 +199,11 @@ def test_specialized_backend_matches_reference_at_fp32_extremes(scale):
             list("bcd"),
             2,
             algorithm=algorithm,
-            background_backend="scipy_cdist_fp32",
+            background_backend="scipy_cdist_fp32_exploratory",
         )
         assert second.objective == pytest.approx(first.objective, rel=1e-14, abs=0)
         assert second.retained_ids == first.retained_ids
-        assert second.background_backend == "scipy_cdist_fp32"
+        assert second.background_backend == "scipy_cdist_fp32_exploratory"
         assert second.coordinate_dtype == np.dtype(np.float32).str
         assert second.distance_arithmetic == "float64"
 
@@ -289,7 +289,7 @@ def test_missing_optional_backend_fails_without_fallback(monkeypatch):
             ["a"],
             ["b"],
             2,
-            background_backend="scipy_cdist_fp32",
+            background_backend="scipy_cdist_fp32_exploratory",
         )
 
 
@@ -302,7 +302,7 @@ def test_specialized_metric_and_dimension_contracts():
             ["b"],
             2,
             metric="l1",
-            background_backend="scipy_cdist_fp32",
+            background_backend="scipy_cdist_fp32_exploratory",
         )
     with pytest.raises(ValueError, match="dimensiones"):
         select_anchored_medoids(
@@ -311,7 +311,7 @@ def test_specialized_metric_and_dimension_contracts():
             ["a"],
             ["b"],
             2,
-            background_backend="scipy_cdist_fp32",
+            background_backend="scipy_cdist_fp32_exploratory",
         )
 
 
@@ -365,7 +365,47 @@ def test_many_small_restricted_problems_match_independent_enumeration(metric):
                 candidates,
                 6,
                 algorithm="enumeration",
-                background_backend="scipy_cdist_fp32",
+                background_backend="scipy_cdist_fp32_exploratory",
             )
             assert accelerated.objective == pytest.approx(result.objective, rel=1e-14, abs=0)
             assert accelerated.retained_ids == result.retained_ids
+
+
+def test_exploratory_background_can_change_ids_at_a_geometric_tie():
+    points = np.array(
+        [
+            [-100, -100, -100],
+            [0, 0, 0],
+            [-100, -100, -100],
+            [0, 0, 0],
+            [0.3654440641403198, 0.4127326011657715, 0.4308210015296936],
+        ],
+        dtype=np.float32,
+    )
+    reference = select_anchored_medoids(
+        points, list("abcde"), list("ab"), list("cd"), 3, algorithm="enumeration"
+    )
+    exploratory = select_anchored_medoids(
+        points,
+        list("abcde"),
+        list("ab"),
+        list("cd"),
+        3,
+        algorithm="enumeration",
+        background_backend="scipy_cdist_fp32_exploratory",
+    )
+    assert reference.retained_ids == ("a", "b", "c")
+    assert exploratory.retained_ids == ("a", "b", "d")
+    assert reference.objective == exploratory.objective
+
+
+def test_unlabelled_scipy_backend_is_rejected():
+    with pytest.raises(ValueError, match="Backend"):
+        select_anchored_medoids(
+            np.zeros((2, 1), dtype=np.float32),
+            ["a", "b"],
+            ["a"],
+            ["b"],
+            2,
+            background_backend="scipy_cdist_fp32",
+        )
