@@ -6,7 +6,9 @@ Autor: Gonzalo García Lama. Versión de trabajo ampliada: 18 de septiembre de 2
 
 El estudio compara soluciones para predecir retornos residuales de los mercados estadounidense y chino disponibles en FinMultiTime. La campaña de referencias amplía el recorrido a todo el universo admisible, con comparaciones por mercado y conjunta. Se quiere determinar si una memoria adaptativa de eventos aporta información útil frente a modelos sin esa memoria, bajo las mismas condiciones de datos y evaluación. El trabajo no depende de demostrar superioridad: una comparación que identifique un efecto nulo o un coste desproporcionado también responde a la pregunta.
 
-La contribución prevista tiene tres partes: un protocolo temporal verificable, una adaptación compacta de memoria neural y una comparación con ablaciones. La novedad de esa combinación debe justificarse frente al [estado del arte](../references/neural-review.md). El nombre MARS-TITAN no acredita por sí mismo una arquitectura novedosa. La propuesta toma ideas de Titans, pero no se presentará como una reproducción completa de sus resultados.
+La contribución prevista comprende el protocolo temporal, una adaptación identificable de Titans-MAC y una comparación de sus ampliaciones. La [corrección arquitectónica del 8 de octubre](titans-mac-architecture.md) conserva la referencia GRU con banco episódico y añade un Transformer compacto, Titans-MAC sin las ampliaciones y MARS-TITAN con ellas. Cada mecanismo se contrasta por separado. La adaptación financiera no reproduce por sí misma los resultados del artículo y su novedad debe justificarse frente al [estado del arte](../references/neural-review.md).
+
+La edición histórica desde 2000 conserva todos los datos utilizables con ausencias explícitas y las mismas filas entre modelos. La comparación estricta permanece separada. Hasta completar y verificar el corpus histórico siguen bloqueados entrenamientos, postentrenamientos, pilotos y evaluaciones científicas. Las comprobaciones técnicas de implementación no levantan esa condición.
 
 Quedan fuera del núcleo las operaciones reales, la conexión a un bróker, las recomendaciones de inversión, la autoedición de modelos al estilo SEAL y el entrenamiento de grandes codificadores multimodales. La ampliación incorpora experimentos separados de refuerzo predictivo, decisiones financieras simuladas y ajuste conjunto. Su criterio principal sigue siendo el error predictivo, no el beneficio simulado. Varias escalas de memoria y kernels propios siguen condicionados a evidencia. La campaña china y la conjunta requieren resolver sus publicaciones, identidad y factor de mercado, sin dar por utilizables las cuatro modalidades solo porque existan sus archivos.
 
@@ -56,7 +58,7 @@ La extensión sectorial añadiría un factor y su coeficiente con la misma regla
 
 Todas las entradas deben cumplir `available_at <= prediction_at`. El calendario contable, la fecha del texto y el nombre de un archivo son indicios, no pruebas suficientes de disponibilidad. Las reglas completas se especifican en el [contrato de datos](../data/data-contract.md).
 
-Cada entrenamiento requiere precios, texto, fundamentales y gráficos, además de contexto macro verificado. No se admite una variante de dos modalidades como sustitución silenciosa. Cuando una noticia solo tiene fecha, se aplica un desplazamiento conservador hasta el cierre de la siguiente sesión posterior a esa fecha. Se estudiará sensibilidad a dos sesiones. Si no se puede verificar su fecha o relevancia para el activo, se excluye o se identifica como una aproximación en un análisis separado.
+La edición estricta exige precios, texto, fundamentales y gráficos, además de los 140 indicadores macro observados. La histórica conserva las cuatro posiciones de modalidad y el contexto macro con máscaras y causas de ausencia, sin eliminar una fila por una modalidad opcional ausente. Los precios y objetivos válidos siguen siendo necesarios. No se cambia la edición ni la población entre modelos. Cuando una noticia solo tiene fecha, se aplica un desplazamiento conservador hasta el cierre de la siguiente sesión posterior a esa fecha. Si no se puede acreditar su disponibilidad, no se convierte en una entrada conocida.
 
 Las tablas usarán cada hecho y su versión de publicación. Ni el fin del trimestre ni un filing exterior justifican retrospectivamente todas sus cifras. Los gráficos se regenerarán con una ventana que termine en t, evitando usar imágenes semestrales para predecir días interiores. Embeddings, normalizadores, selección de variables y diccionarios se registrarán por versión y corte de entrenamiento. Un codificador preentrenado publicado después del periodo evaluado puede introducir conocimiento retrospectivo: debe declararse y no presentarse como una simulación histórica estricta de disponibilidad del modelo.
 
@@ -64,9 +66,9 @@ El [catálogo macroeconómico](../data/macro-catalog.md) amplía los candidatos 
 
 ## Memoria y orden de actualización
 
-La memoria es un estado mutable, distinto de los parámetros compartidos del codificador. Los retornos futuros no pueden entrar en el estado en el momento de producir una predicción. La sorpresa económica se tratará como una puntuación operativa, no como una estimación de un efecto causal identificado.
+La memoria neuronal de Titans, su momentum, los parámetros persistentes del artículo y el banco episódico son estados distintos. Los parámetros compartidos y persistentes quedan congelados al evaluar. La adaptación de pesos rápidos usa un objetivo asociativo y entradas disponibles bajo una política explícita. El banco usa eventos elegibles y error financiero maduro. Los retornos futuros no pueden entrar en el estado antes de estar disponibles. La sorpresa económica es una puntuación operativa, no una estimación de un efecto causal identificado.
 
-En cada instante de decisión se procesarán los eventos en este orden:
+La predicción y la escritura episódica siguen este orden. Cualquier actualización asociativa local dentro de Titans-MAC conserva un estado de entrada común para la sesión y declara por separado sus efectos y su granularidad:
 
 1. Construir una instantánea común con datos ya disponibles. Consultar el estado previo.
 2. Emitir y conservar las predicciones de **todos** los activos de esa sesión con ese estado.
@@ -78,7 +80,7 @@ Esta convención es conservadora: una etiqueta conocida en t puede influir a par
 
 Cada ventana de evaluación reinicia la memoria y optimizador interno. El calentamiento solo puede usar historia previa al comienzo de evaluación y etiquetas maduras. No se hereda el estado del final de otra ventana. Se comparará memoria congelada con adaptación online predeterminada. Los hiperparámetros y reglas de actualización permanecerán fijados durante la evaluación.
 
-La [arquitectura candidata](candidate-architecture.md) distingue ese estado persistente de hasta cuatro pasos internos de lectura sobre una instantánea fija. Los pasos internos no escriben nuevos recuerdos ni consultan etiquetas futuras. La política de K se calibra como parte del predictor. Los errores de escritura proceden de predicciones conservadas, no recalculadas posteriormente. La consolidación de parámetros se limita inicialmente al entrenamiento y a reajustes programados anteriores al corte. Cambiar el codificador requiere reconstruir o migrar de forma comprobada los episodios.
+Los refinamientos K = 1, 2 y 4 de la [referencia episódica](candidate-architecture.md) son otro eje y no cuentan las actualizaciones de memoria neuronal. Las lecturas episódicas usan la misma instantánea y no consultan etiquetas futuras. La política de K se selecciona en validación. Los errores de escritura proceden de predicciones conservadas, no recalculadas posteriormente. Cambiar el codificador requiere reconstruir o migrar de forma comprobada los episodios. CM-v1 conserva un baseline identificado y un factorial propio, sin cambiar B al cambiar de arquitectura.
 
 ## Particiones, ajuste y calibración
 

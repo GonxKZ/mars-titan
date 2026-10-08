@@ -1,6 +1,6 @@
 # Integración de memoria, atención y aprendizaje en MARS-TITAN
 
-Revisión del 4 de octubre de 2026. Código inspeccionado: `96cab3616f78e6713b451b01437c816ba7bd010b`. Este documento distingue componentes existentes, modificaciones propuestas y resultados pendientes. El candidato MARS-TITAN continúa sin implementar ni entrenar. Las campañas comparativas conservan su código, datos y configuración.
+La auditoría original del 4 de octubre de 2026 inspeccionó `96cab3616f78e6713b451b01437c816ba7bd010b`. La corrección arquitectónica del 8 de octubre conserva ese inventario y adopta la [separación entre GRU, Transformer, Titans-MAC y ampliaciones](titans-mac-architecture.md). Existe un componente GRU nativo en #296, pendiente de CUDA e integración completa. Titans-MAC y las ampliaciones no se consideran implementados por disponer de utilidades aisladas. No se han entrenado estas nuevas variantes.
 
 ## Decisión arquitectónica
 
@@ -81,7 +81,7 @@ Conservar documentos individuales tampoco garantiza mejora. La media puede ser s
 
 ## Tres escalas de estado y un recorrido temporal
 
-Los parámetros compartidos, el estado persistente y el estado de trabajo tienen ciclos distintos. Los parámetros aprenden durante entrenamiento. La memoria y el HMM conservan información permitida entre decisiones. El estado de trabajo se descarta al terminar una predicción, aunque haya realizado varios refinamientos.
+Los parámetros compartidos, los pesos rápidos y su momentum, los parámetros persistentes de Titans, el banco episódico y el estado de trabajo tienen ciclos distintos. La memoria persistente del artículo es aprendida e independiente de la entrada y permanece fija al evaluar. La memoria neuronal se adapta con su objetivo asociativo explícito. El banco conserva episodios elegibles y el HMM información filtrada permitida. El estado de trabajo se descarta al terminar una predicción, aunque haya realizado varios refinamientos. La sorpresa asociativa y el error financiero maduro no se sustituyen entre sí.
 
 Cada ejecución tendrá identidad de modelo, fold, vista, representación, pesos, política y protocolo. Puede compartir archivos y rasgos inmutables con otra ejecución compatible. No compartirá memoria selectiva, optimizer, RNG o utilidad acumulada entre modelos independientes. Compartir un codificador entrenable entre cabezas de un solo modelo multitarea es otra decisión, no un ahorro neutral entre comparadores.
 

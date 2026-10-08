@@ -1,0 +1,901 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-07T23:12:07.092598+00:00",
+  "start": "2000-01-01",
+  "end": "2023-12-31",
+  "runtime_commit": "d3beffdf9af50dfaa09ad6c5b523baa8327dd89e",
+  "input_policy": "historical_masked_2000_v1",
+  "source_receipt_sha256": "0b78fc3dd8a2319847dd3acbc4e938a1bddf3e3216e00ec1798f93b09dda9d69",
+  "script_sha256": "78896eabafb292ed7318926522054a29135a9892d8737b7079e592821fa11f88",
+  "verification_elapsed_seconds": 4.595004851998965,
+  "verification_peak_rss_bytes": 283639808,
+  "duckdb_memory_limit": "512MB",
+  "batch_rows": 512,
+  "markets": [
+    {
+      "market": "US",
+      "grain": {
+        "rows": 845180,
+        "unique_rows": 845180,
+        "decisions": 6037,
+        "first": "2000-01-03T21:05:00+00:00",
+        "last": "2023-12-29T21:05:00+00:00",
+        "observed_zero": 14863
+      },
+      "observed": 612388,
+      "missing": 232792,
+      "invalid_observed": {
+        "missing_value": 0,
+        "nonfinite_value": 0,
+        "missing_availability": 0,
+        "future_availability": 0,
+        "declared_missing": 0,
+        "invalid_unit": 0,
+        "invalid_provenance": 0,
+        "missing_historical_adjustment": 0,
+        "invalid_period": 0,
+        "catalog_source_excluded": 0
+      },
+      "largest_batch_bytes": 93229,
+      "panel_bytes": 3636261,
+      "rows_per_session": 140,
+      "calendar_matches": true,
+      "overlap_2022_2023": {
+        "compared_rows": 70140,
+        "previous_rows": 70140,
+        "columns": [
+          {
+            "column": "value",
+            "different_rows": 0
+          },
+          {
+            "column": "available_at",
+            "different_rows": 6
+          },
+          {
+            "column": "period_start",
+            "different_rows": 0
+          },
+          {
+            "column": "missing_reason",
+            "different_rows": 0
+          },
+          {
+            "column": "source_hashes",
+            "different_rows": 0
+          },
+          {
+            "column": "unit",
+            "different_rows": 0
+          },
+          {
+            "column": "seasonal_adjustment",
+            "different_rows": 0
+          }
+        ]
+      },
+      "missing_reason_counts": {
+        "missing_historical_metadata": 7652,
+        "missing_source_value": 153,
+        "no_common_period": 79372,
+        "not_yet_available": 145615
+      },
+      "coverage_files": {
+        "coverage-by-year.csv": "e6f945ebcccc1b25925ea6798a7a7eb79033ac1e43990aaf4c84e924ea54ea4a",
+        "coverage-by-indicator.csv": "c11be834acc85c98e26e9f2570d563af8c38bae972366507aa84ae8252a43a0a"
+      },
+      "panel_sha256": "1529db030cf3992298395604826d9a4678beb0255465fc34666781e412d7ab77",
+      "catalog_sha256": "737f49e98896902db495aba598479e67c716042a724ec88edface6fb72eeebc2",
+      "previous_panel_sha256": "37c85410f02081c70079e6c7b654949512fd7563375d7669b74c9ef7d5abd14f",
+      "components": [
+        {
+          "component": "base",
+          "rows": 845180,
+          "sha256": "3bc7979737a1dd3e450b6926f7feb8d1172778d5663f5f05491513fc66246dd6",
+          "elapsed_seconds": 103.20073719799984,
+          "values": 589248,
+          "report_sha256": "d3a0a2155597518ad28638eb7d69987e45e088f4fd75ab678f1e40c3c2de4192"
+        },
+        {
+          "component": "oil",
+          "rows": 24148,
+          "sha256": "1d044fbedfeb23daba9d30ae9f58c775f7a6c1a2064e15e4f0765b5d5fde81ac",
+          "elapsed_seconds": 2.3019367270026123,
+          "values": 12654,
+          "report_sha256": "c44c875afc31af51713584572480c6f4332aa311a1a3305780e46ee7fd45538f"
+        },
+        {
+          "component": "models",
+          "rows": 18111,
+          "sha256": "f0413183f7c9f9a1cb7913f82f08d3e2a057c2cb593aa5419008220dec271252",
+          "elapsed_seconds": 4.877503525000066,
+          "values": 6624,
+          "report_sha256": "31154dff864559da2b150c13f68a0928e514d3fa787947d8bcc957ad3c05f5fb"
+        },
+        {
+          "component": "stlfsi3",
+          "rows": 6037,
+          "sha256": "118e50ed36451e239dcf6879eef77a1af2d3e4e2629ca3d258f2b1fdf7f671f2",
+          "elapsed_seconds": 0.6778242619984667,
+          "values": 492,
+          "report_sha256": "eed1907aea7f557788fe567fdae1b0abdeac99e7416c8b51696bd461f0118071"
+        },
+        {
+          "component": "daily-rates",
+          "rows": 18111,
+          "sha256": "b4dd4ed3c281935d9ae1f44be53256e2e3bfce5caa6646d0481ecc9dba683d07",
+          "elapsed_seconds": 10.85450396899978,
+          "values": 8357,
+          "report_sha256": "604b1294a0748ab31bec864059db9c1c5b70865e37646b9f364f5d1a0f15da0b"
+        },
+        {
+          "component": "daily-oil",
+          "rows": 6037,
+          "sha256": "e23c92470c7c74f03ed322e83b8abf9c35000d6575a949bf18930befbb0ec5ce",
+          "elapsed_seconds": 1.0792549830002827,
+          "values": 3204,
+          "report_sha256": "d2884a68bcdce5a4b6ca53b9c06a14c16c5b4c6eaf0a681fc7375655d69967a9"
+        },
+        {
+          "component": "gscpi",
+          "rows": 12074,
+          "sha256": "006011a84d57dbc73cdb5a50c450d4f6875a61960c889b8fa506260cae520f6b",
+          "values": 796,
+          "report_sha256": "8c81e7b1b4cbfc03c7c9c76c176b1f1e2043814585fec8453aff0a88dc661aa4"
+        },
+        {
+          "component": "releases",
+          "rows": 36222,
+          "sha256": "5cb0238c6cba72182054e4609c2adde8f934290a3f4b3461a8d5ee61500e3537",
+          "values": 2457,
+          "report_sha256": "44bbc567ce284758cfe7651996313e0d10a7a5ee5317eced7842d5f988a9d0ec"
+        }
+      ],
+      "component_elapsed_seconds": 127.6845508899969,
+      "component_peak_rss_bytes": 1132945408,
+      "composition_elapsed_seconds": 8.890178996000031,
+      "strict_complete_sessions": 397,
+      "completeness_used_to_filter_rows": false,
+      "formula_reference": [
+        {
+          "indicator_id": "us_curve_10y_2y",
+          "checked": 19,
+          "max_absolute_error": 5e-16
+        },
+        {
+          "indicator_id": "us_curve_10y_3m",
+          "checked": 19,
+          "max_absolute_error": 5e-16
+        },
+        {
+          "indicator_id": "us_curve_30y_10y",
+          "checked": 18,
+          "max_absolute_error": 5.7e-16
+        },
+        {
+          "indicator_id": "us_curve_5y_2y",
+          "checked": 19,
+          "max_absolute_error": 3e-16
+        },
+        {
+          "indicator_id": "us_real_curve_10y_5y",
+          "checked": 19,
+          "max_absolute_error": 2.13e-16
+        },
+        {
+          "indicator_id": "brent_wti_spread",
+          "checked": 13,
+          "max_absolute_error": 1.1e-14
+        }
+      ],
+      "coverage_by_year": [
+        {
+          "year": 2000,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 14700,
+          "missing": 20580,
+          "observed_indicators": 63
+        },
+        {
+          "year": 2001,
+          "sessions": 248,
+          "cells": 34720,
+          "observed": 16295,
+          "missing": 18425,
+          "observed_indicators": 68
+        },
+        {
+          "year": 2002,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 17136,
+          "missing": 18144,
+          "observed_indicators": 68
+        },
+        {
+          "year": 2003,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 17045,
+          "missing": 18235,
+          "observed_indicators": 68
+        },
+        {
+          "year": 2004,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 17213,
+          "missing": 18067,
+          "observed_indicators": 69
+        },
+        {
+          "year": 2005,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 19266,
+          "missing": 16014,
+          "observed_indicators": 87
+        },
+        {
+          "year": 2006,
+          "sessions": 251,
+          "cells": 35140,
+          "observed": 21837,
+          "missing": 13303,
+          "observed_indicators": 87
+        },
+        {
+          "year": 2007,
+          "sessions": 251,
+          "cells": 35140,
+          "observed": 21837,
+          "missing": 13303,
+          "observed_indicators": 87
+        },
+        {
+          "year": 2008,
+          "sessions": 253,
+          "cells": 35420,
+          "observed": 22020,
+          "missing": 13400,
+          "observed_indicators": 88
+        },
+        {
+          "year": 2009,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 22785,
+          "missing": 12495,
+          "observed_indicators": 93
+        },
+        {
+          "year": 2010,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 23832,
+          "missing": 11448,
+          "observed_indicators": 97
+        },
+        {
+          "year": 2011,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 26418,
+          "missing": 8862,
+          "observed_indicators": 109
+        },
+        {
+          "year": 2012,
+          "sessions": 250,
+          "cells": 35000,
+          "observed": 27140,
+          "missing": 7860,
+          "observed_indicators": 109
+        },
+        {
+          "year": 2013,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 26973,
+          "missing": 8307,
+          "observed_indicators": 109
+        },
+        {
+          "year": 2014,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 29237,
+          "missing": 6043,
+          "observed_indicators": 118
+        },
+        {
+          "year": 2015,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 29773,
+          "missing": 5507,
+          "observed_indicators": 119
+        },
+        {
+          "year": 2016,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 30472,
+          "missing": 4808,
+          "observed_indicators": 122
+        },
+        {
+          "year": 2017,
+          "sessions": 251,
+          "cells": 35140,
+          "observed": 30622,
+          "missing": 4518,
+          "observed_indicators": 122
+        },
+        {
+          "year": 2018,
+          "sessions": 251,
+          "cells": 35140,
+          "observed": 30615,
+          "missing": 4525,
+          "observed_indicators": 122
+        },
+        {
+          "year": 2019,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 31943,
+          "missing": 3337,
+          "observed_indicators": 130
+        },
+        {
+          "year": 2020,
+          "sessions": 253,
+          "cells": 35420,
+          "observed": 32890,
+          "missing": 2530,
+          "observed_indicators": 130
+        },
+        {
+          "year": 2021,
+          "sessions": 252,
+          "cells": 35280,
+          "observed": 32964,
+          "missing": 2316,
+          "observed_indicators": 131
+        },
+        {
+          "year": 2022,
+          "sessions": 251,
+          "cells": 35140,
+          "observed": 34376,
+          "missing": 764,
+          "observed_indicators": 140
+        },
+        {
+          "year": 2023,
+          "sessions": 250,
+          "cells": 35000,
+          "observed": 34999,
+          "missing": 1,
+          "observed_indicators": 140
+        }
+      ]
+    },
+    {
+      "market": "CN",
+      "grain": {
+        "rows": 814240,
+        "unique_rows": 814240,
+        "decisions": 5816,
+        "first": "2000-01-04T07:05:00+00:00",
+        "last": "2023-12-29T07:05:00+00:00",
+        "observed_zero": 14322
+      },
+      "observed": 590674,
+      "missing": 223566,
+      "invalid_observed": {
+        "missing_value": 0,
+        "nonfinite_value": 0,
+        "missing_availability": 0,
+        "future_availability": 0,
+        "declared_missing": 0,
+        "invalid_unit": 0,
+        "invalid_provenance": 0,
+        "missing_historical_adjustment": 0,
+        "invalid_period": 0,
+        "catalog_source_excluded": 0
+      },
+      "largest_batch_bytes": 93194,
+      "panel_bytes": 3507083,
+      "rows_per_session": 140,
+      "calendar_matches": true,
+      "overlap_2022_2023": {
+        "compared_rows": 67760,
+        "previous_rows": 67760,
+        "columns": [
+          {
+            "column": "value",
+            "different_rows": 0
+          },
+          {
+            "column": "available_at",
+            "different_rows": 0
+          },
+          {
+            "column": "period_start",
+            "different_rows": 0
+          },
+          {
+            "column": "missing_reason",
+            "different_rows": 0
+          },
+          {
+            "column": "source_hashes",
+            "different_rows": 0
+          },
+          {
+            "column": "unit",
+            "different_rows": 0
+          },
+          {
+            "column": "seasonal_adjustment",
+            "different_rows": 0
+          }
+        ]
+      },
+      "missing_reason_counts": {
+        "missing_historical_metadata": 7404,
+        "missing_source_value": 167,
+        "no_common_period": 76117,
+        "not_yet_available": 139878
+      },
+      "coverage_files": {
+        "coverage-by-year.csv": "9edcaee126c19cd0f0fd2a3040cbaa4fea2517c00ed233c126db301922d2e5b9",
+        "coverage-by-indicator.csv": "a20115172e061c17d58760f049b0bd852862f9c495541fcef23178342aa22d2b"
+      },
+      "panel_sha256": "c6687487b88b0b09e5f18f8367835964b473f366cefb352c9f004d693017cce1",
+      "catalog_sha256": "737f49e98896902db495aba598479e67c716042a724ec88edface6fb72eeebc2",
+      "previous_panel_sha256": "aa3e57c841862b04a3353959b93995c9839574bfa16120df353dd7bd89398645",
+      "components": [
+        {
+          "component": "base",
+          "rows": 814240,
+          "sha256": "caf82dbb8311db3e5abeebc9bea605c4b799c28657561cafb3abe93e1cf5ff4b",
+          "elapsed_seconds": 83.45985861000008,
+          "values": 568323,
+          "report_sha256": "a8250ca3bf2f50eda59147563945cf074a4e1bc11d082eda00606eb3c13274f3"
+        },
+        {
+          "component": "oil",
+          "rows": 23264,
+          "sha256": "2672292cdc43f1c81c221b5d794c9c7ff4c255cb48c8c4b6f9ef3be130898f38",
+          "elapsed_seconds": 2.4613158339998336,
+          "values": 12240,
+          "report_sha256": "72ca66048521cab60c6412e2864c9d42a9352ff83fa48aac4ace19abad9e3b0a"
+        },
+        {
+          "component": "models",
+          "rows": 17448,
+          "sha256": "487b4a99608acf10be1976595508998338932d79ff9099a81dcccb342e713eb6",
+          "elapsed_seconds": 5.1764063100017665,
+          "values": 6405,
+          "report_sha256": "d45f8096e703531d6581e7d941362b7e7d84e0958ac23e050d3b3c5e024d7325"
+        },
+        {
+          "component": "stlfsi3",
+          "rows": 5816,
+          "sha256": "6543b0930e9470bcf5e40e59df07860e44d5a64cd4b24c2ade25f038a5cc2af6",
+          "elapsed_seconds": 0.7934456190014316,
+          "values": 475,
+          "report_sha256": "74b73a99ebf97c4731d11ab93e2a47925b897e83fce1f29e9e1d7c5b64e79647"
+        },
+        {
+          "component": "daily-rates",
+          "rows": 17448,
+          "sha256": "a077ef0842c3d406ebfc1ea7df38a5a473f71d47f51abe246d7bcd1bd2186a63",
+          "elapsed_seconds": 8.414182213000458,
+          "values": 8076,
+          "report_sha256": "fd33805dfd6562546c6025eade7943789cdc2ff4f17129764c6cbb5be0a395ae"
+        },
+        {
+          "component": "daily-oil",
+          "rows": 5816,
+          "sha256": "489944bd696b2bdda11934fb20f616587b6cbb55f604652cbf050648d176dc62",
+          "elapsed_seconds": 1.0634120399990934,
+          "values": 3098,
+          "report_sha256": "fea4bca8be84c00763b73df79bb5f49b2c6bda351409318344987d765bfa13df"
+        },
+        {
+          "component": "gscpi",
+          "rows": 11632,
+          "sha256": "d14b0dddd2587831ed86106048ff7b2afb68b9c5c17bf308ca9b600cb81b4b7b",
+          "values": 774,
+          "report_sha256": "655a8c13575ab6a13fa3767fb073946aab8fb20d57a10941bfdf774fb3fad9a0"
+        },
+        {
+          "component": "releases",
+          "rows": 34896,
+          "sha256": "7008b20f663ea580abb9cf0097adbcea32e5456017226a080f17a066a44bd6eb",
+          "values": 2403,
+          "report_sha256": "e3991244680dceac9c9f0933aaba8cdeb26fb36556141785af8ae0f05da9f9da"
+        }
+      ],
+      "component_elapsed_seconds": 107.00621101899742,
+      "component_peak_rss_bytes": 1129185280,
+      "composition_elapsed_seconds": 8.583388957998977,
+      "strict_complete_sessions": 387,
+      "completeness_used_to_filter_rows": false,
+      "formula_reference": [
+        {
+          "indicator_id": "us_curve_10y_2y",
+          "checked": 19,
+          "max_absolute_error": 5e-16
+        },
+        {
+          "indicator_id": "us_curve_10y_3m",
+          "checked": 19,
+          "max_absolute_error": 5e-16
+        },
+        {
+          "indicator_id": "us_curve_30y_10y",
+          "checked": 18,
+          "max_absolute_error": 5.7e-16
+        },
+        {
+          "indicator_id": "us_curve_5y_2y",
+          "checked": 19,
+          "max_absolute_error": 3e-16
+        },
+        {
+          "indicator_id": "us_real_curve_10y_5y",
+          "checked": 19,
+          "max_absolute_error": 2.13e-16
+        },
+        {
+          "indicator_id": "brent_wti_spread",
+          "checked": 13,
+          "max_absolute_error": 1.1e-14
+        }
+      ],
+      "coverage_by_year": [
+        {
+          "year": 2000,
+          "sessions": 239,
+          "cells": 33460,
+          "observed": 13961,
+          "missing": 19499,
+          "observed_indicators": 63
+        },
+        {
+          "year": 2001,
+          "sessions": 240,
+          "cells": 33600,
+          "observed": 15803,
+          "missing": 17797,
+          "observed_indicators": 68
+        },
+        {
+          "year": 2002,
+          "sessions": 237,
+          "cells": 33180,
+          "observed": 16116,
+          "missing": 17064,
+          "observed_indicators": 68
+        },
+        {
+          "year": 2003,
+          "sessions": 241,
+          "cells": 33740,
+          "observed": 16297,
+          "missing": 17443,
+          "observed_indicators": 68
+        },
+        {
+          "year": 2004,
+          "sessions": 243,
+          "cells": 34020,
+          "observed": 16596,
+          "missing": 17424,
+          "observed_indicators": 69
+        },
+        {
+          "year": 2005,
+          "sessions": 242,
+          "cells": 33880,
+          "observed": 18558,
+          "missing": 15322,
+          "observed_indicators": 87
+        },
+        {
+          "year": 2006,
+          "sessions": 241,
+          "cells": 33740,
+          "observed": 20967,
+          "missing": 12773,
+          "observed_indicators": 87
+        },
+        {
+          "year": 2007,
+          "sessions": 242,
+          "cells": 33880,
+          "observed": 21054,
+          "missing": 12826,
+          "observed_indicators": 87
+        },
+        {
+          "year": 2008,
+          "sessions": 246,
+          "cells": 34440,
+          "observed": 21411,
+          "missing": 13029,
+          "observed_indicators": 88
+        },
+        {
+          "year": 2009,
+          "sessions": 244,
+          "cells": 34160,
+          "observed": 22062,
+          "missing": 12098,
+          "observed_indicators": 93
+        },
+        {
+          "year": 2010,
+          "sessions": 242,
+          "cells": 33880,
+          "observed": 22878,
+          "missing": 11002,
+          "observed_indicators": 97
+        },
+        {
+          "year": 2011,
+          "sessions": 244,
+          "cells": 34160,
+          "observed": 25604,
+          "missing": 8556,
+          "observed_indicators": 109
+        },
+        {
+          "year": 2012,
+          "sessions": 243,
+          "cells": 34020,
+          "observed": 26376,
+          "missing": 7644,
+          "observed_indicators": 109
+        },
+        {
+          "year": 2013,
+          "sessions": 238,
+          "cells": 33320,
+          "observed": 25462,
+          "missing": 7858,
+          "observed_indicators": 109
+        },
+        {
+          "year": 2014,
+          "sessions": 245,
+          "cells": 34300,
+          "observed": 28433,
+          "missing": 5867,
+          "observed_indicators": 118
+        },
+        {
+          "year": 2015,
+          "sessions": 244,
+          "cells": 34160,
+          "observed": 28831,
+          "missing": 5329,
+          "observed_indicators": 119
+        },
+        {
+          "year": 2016,
+          "sessions": 244,
+          "cells": 34160,
+          "observed": 29501,
+          "missing": 4659,
+          "observed_indicators": 122
+        },
+        {
+          "year": 2017,
+          "sessions": 244,
+          "cells": 34160,
+          "observed": 29768,
+          "missing": 4392,
+          "observed_indicators": 122
+        },
+        {
+          "year": 2018,
+          "sessions": 243,
+          "cells": 34020,
+          "observed": 29639,
+          "missing": 4381,
+          "observed_indicators": 122
+        },
+        {
+          "year": 2019,
+          "sessions": 244,
+          "cells": 34160,
+          "observed": 30924,
+          "missing": 3236,
+          "observed_indicators": 130
+        },
+        {
+          "year": 2020,
+          "sessions": 243,
+          "cells": 34020,
+          "observed": 31590,
+          "missing": 2430,
+          "observed_indicators": 130
+        },
+        {
+          "year": 2021,
+          "sessions": 243,
+          "cells": 34020,
+          "observed": 31787,
+          "missing": 2233,
+          "observed_indicators": 131
+        },
+        {
+          "year": 2022,
+          "sessions": 242,
+          "cells": 33880,
+          "observed": 33176,
+          "missing": 704,
+          "observed_indicators": 140
+        },
+        {
+          "year": 2023,
+          "sessions": 242,
+          "cells": 33880,
+          "observed": 33880,
+          "missing": 0,
+          "observed_indicators": 140
+        }
+      ]
+    }
+  ],
+  "availability_reconciliation": {
+    "checked_at_utc": "2026-10-07T23:18:57.315008+00:00",
+    "compared_rows": 12,
+    "availability_differences": 6,
+    "all_values_identical": true,
+    "short_calendar_reproduces_previous": true,
+    "rows": [
+      {
+        "prediction_at": "2022-01-03 21:05:00+00:00",
+        "indicator_id": "cny_per_usd_change_21obs",
+        "value": -0.3348458770145446,
+        "short_available": "2022-01-03 21:05:00+00:00",
+        "full_available": "2021-12-28 21:05:00+00:00",
+        "previous_available": "2022-01-03 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-03 21:05:00+00:00",
+        "indicator_id": "us_broad_dollar_change_21obs",
+        "value": -0.4246537933735084,
+        "short_available": "2022-01-03 21:05:00+00:00",
+        "full_available": "2021-12-28 21:05:00+00:00",
+        "previous_available": "2022-01-03 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-03 21:05:00+00:00",
+        "indicator_id": "us_treasury_10y_change_21obs",
+        "value": 0.030000000000000027,
+        "short_available": "2022-01-03 21:05:00+00:00",
+        "full_available": "2021-12-31 21:05:00+00:00",
+        "previous_available": "2022-01-03 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-03 21:05:00+00:00",
+        "indicator_id": "wti_spot_change_21obs",
+        "value": -3.613381001021454,
+        "short_available": "2022-01-03 21:05:00+00:00",
+        "full_available": "2021-12-30 21:05:00+00:00",
+        "previous_available": "2022-01-03 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-04 21:05:00+00:00",
+        "indicator_id": "cny_per_usd_change_21obs",
+        "value": 0.13513513513514486,
+        "short_available": "2022-01-04 21:05:00+00:00",
+        "full_available": "2022-01-04 21:05:00+00:00",
+        "previous_available": "2022-01-04 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-04 21:05:00+00:00",
+        "indicator_id": "us_broad_dollar_change_21obs",
+        "value": -0.7756987311754338,
+        "short_available": "2022-01-04 21:05:00+00:00",
+        "full_available": "2022-01-04 21:05:00+00:00",
+        "previous_available": "2022-01-04 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-04 21:05:00+00:00",
+        "indicator_id": "us_treasury_10y_change_21obs",
+        "value": 0.09000000000000008,
+        "short_available": "2022-01-04 21:05:00+00:00",
+        "full_available": "2022-01-04 21:05:00+00:00",
+        "previous_available": "2022-01-04 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-04 21:05:00+00:00",
+        "indicator_id": "wti_spot_change_21obs",
+        "value": -3.613381001021454,
+        "short_available": "2022-01-03 21:05:00+00:00",
+        "full_available": "2021-12-30 21:05:00+00:00",
+        "previous_available": "2022-01-03 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-05 21:05:00+00:00",
+        "indicator_id": "cny_per_usd_change_21obs",
+        "value": 0.13513513513514486,
+        "short_available": "2022-01-04 21:05:00+00:00",
+        "full_available": "2022-01-04 21:05:00+00:00",
+        "previous_available": "2022-01-04 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-05 21:05:00+00:00",
+        "indicator_id": "us_broad_dollar_change_21obs",
+        "value": -0.7756987311754338,
+        "short_available": "2022-01-04 21:05:00+00:00",
+        "full_available": "2022-01-04 21:05:00+00:00",
+        "previous_available": "2022-01-04 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-05 21:05:00+00:00",
+        "indicator_id": "us_treasury_10y_change_21obs",
+        "value": 0.18999999999999995,
+        "short_available": "2022-01-05 21:05:00+00:00",
+        "full_available": "2022-01-05 21:05:00+00:00",
+        "previous_available": "2022-01-05 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      },
+      {
+        "prediction_at": "2022-01-05 21:05:00+00:00",
+        "indicator_id": "wti_spot_change_21obs",
+        "value": -3.613381001021454,
+        "short_available": "2022-01-03 21:05:00+00:00",
+        "full_available": "2021-12-30 21:05:00+00:00",
+        "previous_available": "2022-01-03 21:05:00+00:00",
+        "same_value": true,
+        "reproduces_previous": true
+      }
+    ],
+    "source_report_hashes": [
+      "3d2fc2f5be5f352151c63bd051f6219e0054ab3ed20f816f3c0c57bcee2b18d7",
+      "654f16ac4c8db78b7e3bb79b1bd45cbfdadd6aef4027cfa3d2d3d752f4843e18"
+    ],
+    "script_sha256": "de0d5856523f4b862d75871ff0edc469c55d8bd54425b0eea0ae14864c565b1d",
+    "previous_edition_modified": false,
+    "interpretation": "El calendario iniciado en 2022 asignaba publicaciones previas a su primera decisión. El calendario desde 2000 conserva su disponibilidad anterior. Se reproducen las seis diferencias sin cambiar valores ni fuentes.",
+    "models_executed": false,
+    "final_test_opened": false
+  },
+  "training_ready": false,
+  "models_executed": false,
+  "final_test_opened": false,
+  "all_formulas_independently_recalculated": false,
+  "scope": "Admisión de celdas, calendario, solapamiento y seis diferencias con periodo común. No audita de nuevo todos los documentos fuente ni todas las fórmulas."
+}

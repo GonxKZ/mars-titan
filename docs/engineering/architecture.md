@@ -2,9 +2,9 @@
 
 MARS-TITAN se diseña como una comparación reproducible de componentes. La estructura separa las responsabilidades necesarias para implementar y comparar cada componente científico.
 
-La [especificación candidata](../research/candidate-architecture.md) desarrolla memoria episódica, retención, recurrencia y actualización coherente. Su [revisión adversarial](../research/adversarial-review.md) recoge objeciones y pruebas pendientes. La comparación principal prioriza una variante compacta sobre 128 activos propuestos, dentro de 32 GB de RAM y 8 GB de VRAM.
+La [dirección arquitectónica vigente](../research/titans-mac-architecture.md) separa la referencia GRU con banco episódico, Transformer compacto, Titans-MAC y MARS-TITAN con ampliaciones. La [especificación episódica](../research/candidate-architecture.md) conserva retención, recurrencia y escritura del candidato anterior. Las comparaciones usan todo el universo admisible de su edición con lectura por lotes, sin un límite de 128 activos.
 
-La [revisión de integración del 4 de octubre de 2026](../research/system-integration.md) contrasta este diseño con el código existente. Sitúa las ampliaciones en una vista común de información y un ciclo cronológico de decisión y maduración, con módulos separados de lectura, escritura y replay. Las referencias ya implementadas recorren su universo admitido según sus configuraciones. La cifra de 128 pertenece al dimensionamiento propuesto del candidato, que continúa sin implementar ni entrenar.
+La [revisión de integración](../research/system-integration.md) sitúa las ampliaciones en una vista común de información y un ciclo cronológico de decisión y maduración. Los componentes de lectura, actualización asociativa, escritura episódica y replay conservan responsabilidades distintas. El componente GRU de #296, las referencias existentes y los módulos aislados no acreditan la integración de Titans-MAC ni una comparación científica de las nuevas variantes.
 
 ## Límites entre componentes
 
@@ -21,11 +21,11 @@ La [revisión de integración del 4 de octubre de 2026](../research/system-integ
 
 ## Modelo compacto de partida
 
-El codificador de precios podrá ser una GRU pequeña o una TCN. El texto se representará con embeddings congelados y una proyección de dimensión reducida, con procedencia y fecha del modelo documentadas. La fusión incluirá máscaras de modalidad y un mecanismo sencillo de combinación antes de introducir atención adicional.
+La GRU y el Transformer compacto compartirán proyecciones, fusión y cabeza cuando el contraste aísle el codificador de precios. Titans-MAC añade atención cercana, memoria neuronal actualizable y parámetros persistentes aprendidos. El texto conserva embeddings congelados con procedencia y fecha documentadas. Las ausencias de la edición histórica mantienen sus máscaras, sin cambiar las filas por arquitectura.
 
 La primera memoria del candidato será global. Una consulta dependerá de la representación actual y recuperará un vector de contexto que la cabeza combine con el estado temporal. El estado y sus operaciones `read`, `update`, `reset` y `snapshot` deben tener responsabilidades separadas. Estas son interfaces previstas para el candidato. La memoria nativa ya implementada pertenece a los comparadores financieros y tiene otro ámbito y dimensiones. Después se podrá comparar la separación mercado/sector/activo manteniendo control de capacidad total.
 
-La actualización se estudiará en dos referencias separadas. Un banco episódico inserta y recupera eventos con lectura aprendida. Una memoria asociativa neural modifica un estado de pesos rápidos mediante una regla explícita. No son mecanismos equivalentes. La [candidata](../research/candidate-architecture.md) especifica esa separación y reserva su combinación para una extensión. En la variante neural se documentará qué gradientes se propagan, cuáles se detienen y qué estado persiste. Una adaptación no se denomina reproducción de Titans sin comprobar su correspondencia con [Titans, TTT y MIRAS](../references/neural-review.md).
+La memoria neuronal aplica la pérdida asociativa, gradientes, momentum y olvido dependientes de la entrada del núcleo Titans-MAC. El banco episódico sigue siendo una ampliación separada. Los pesos rápidos, los parámetros persistentes de Titans, los episodios y el estado de trabajo tienen ciclos y checkpoints distintos. Se documentará qué gradientes se propagan y qué estado se desacopla al persistirlo. Una regla delta aislada no sustituye esa correspondencia con el artículo.
 
 ## Sorpresa y régimen
 

@@ -20,18 +20,18 @@
 
 \title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
 \author{Gonzalo García Lama}
-\date{Septiembre de 2026}
+\date{Revisión de arquitectura, 8 de octubre de 2026}
 
 \begin{document}
 \maketitle
 \begin{abstract}
 MARS-TITAN plantea una comparación experimental de modelos para predecir
 retornos residuales de activos financieros a partir de información multimodal.
-La pregunta es si una memoria adaptativa de eventos aporta una mejora frente
-a referencias más sencillas cuando se controla la disponibilidad temporal de
-los datos y el presupuesto computacional. Se propone trabajar con un subconjunto
-de FinMultiTime, validación temporal con avance de ventana, ablaciones y análisis
-de incertidumbre.
+La pregunta es si la memoria neuronal y la selección de episodios aportan una
+mejora frente a referencias comparables cuando se controla la disponibilidad
+temporal y el presupuesto. La edición histórica adicional conserva todos los
+datos utilizables de FinMultiTime desde 2000, con ausencias explícitas. Se separa
+del control estricto y utiliza validación temporal, ablaciones e incertidumbre.
 Este documento es una base de redacción. La preparación de datos y los ensayos
 de referencia ya tienen informes separados. La arquitectura MARS-TITAN y la
 comparación confirmatoria siguen pendientes.
@@ -80,13 +80,27 @@ El retorno futuro del mercado pertenece a la etiqueta, nunca a las entradas.
 La residualización no identifica por sí misma un efecto causal económico.
 
 \chapter{Diseño de la comparativa}
-La comparación incluirá referencias ingenuas, regresión regularizada, árboles
-potenciados y una red temporal compacta. El modelo propuesto se contrastará con
-variantes sin
-memoria, con escritura uniforme y sin los componentes adicionales de sorpresa.
-Los datos, particiones y presupuestos se mantendrán comparables. La memoria se
-reiniciará en cada partición temporal y las actualizaciones respetarán la
-maduración de etiquetas.
+La comparación conserva el candidato GRU con banco episódico y añade una
+referencia Transformer compacta, una adaptación de Titans-MAC y MARS-TITAN con
+ampliaciones desactivables sobre ese núcleo. Las referencias ingenuas, lineales
+y de árboles mantienen sus propias identidades. El cambio de codificador,
+la memoria neuronal y el banco episódico requieren controles separados.
+
+Titans-MAC combina atención cercana, memoria neuronal con pérdida asociativa,
+gradientes, momentum y olvido dependientes de la entrada, y parámetros
+persistentes aprendidos independientes de ella. Los pesos rápidos y su momentum
+son distintos de los parámetros compartidos, de la memoria persistente del
+artículo, de los episodios y del estado de trabajo. La actualización asociativa
+utiliza entradas disponibles. El error financiero de escritura episódica espera
+a que madure el resultado de la predicción emitida. K cuenta los refinamientos
+del proyecto, no las actualizaciones internas de Titans.
+
+CM-v1 permanece independiente y desactivada. El contraste B, B+C, B+M y B+C+M
+fija una identidad concreta de B. Cambiar de arquitectura exige otro contraste.
+Los datos, filas, cortes y presupuestos pertinentes se mantienen comparables.
+No se presuponen superioridad ni reproducción de los resultados del artículo.
+Los entrenamientos y evaluaciones científicas siguen bloqueados hasta completar
+y verificar la edición histórica. Las pruebas técnicas no levantan esa condición.
 
 Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
 retornos de activos y un registro de operaciones con costes de apertura y cierre.

@@ -1,5 +1,7 @@
 # Cobertura histórica de 2000 a 2023
 
+La [materialización posterior](historical-materialization.md) prepara los 5.023 activos con precios y recalcula dos paneles macro con ausencias explícitas. Sus recuentos y comprobaciones se mantienen separados de esta auditoría inicial. Todavía no constituye el corpus histórico de aprendizaje verificado.
+
 La copia inspeccionada no permite formar una historia desde 2000 con cuatro modalidades y los 140 indicadores obligatorios. US dispone de precios desde el 3 de enero de 2000, pero sus noticias comienzan en abril de 2009. CN dispone de precios desde el 4 de enero de 2006 y noticias desde el 31 de marzo de 2020. El GSCPI y el contrato de versiones de estrés financiero limitan además la cesta actual al periodo reciente. Esta conclusión se refiere a los archivos conservados, no a todas las fuentes que puedan existir.
 
 El índice textual inspeccionado ocupa 2.201.612.288 bytes. Sus 5.586 recibos completos concilian 4.469.917 registros con el [recibo del índice original](../../reports/data/corpus-index-20260922.json). Se consultaron fechas, estados y localizadores, sin leer los cuerpos. `PRAGMA quick_check` devolvió `ok`.

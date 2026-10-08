@@ -16,6 +16,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .accounting_catalog import historical_accounting_context
 from .batches import atomic_parquet_batches, read_bounded_table
 from .charts import chart_png
 from .china_sources import CONCEPTS as CHINESE_CONCEPTS
@@ -31,6 +32,7 @@ from .input_policy import (
     numeric_observations,
     policy_identity,
 )
+from .joint_projection import project_numeric_context
 from .samples import FUNDAMENTAL_CONCEPTS, numeric_context
 from .storage import atomic_json, outside_source, sha256
 from .temporal import admission_errors, aware
@@ -410,6 +412,26 @@ def _rows(
         yield row
 
 
+def _project_fundamentals(table, source_concepts, target_concepts):
+    projected = project_numeric_context(table["fundamentals"], source_concepts, target_concepts)
+    table = table.set_column(
+        table.schema.get_field_index("fundamentals"), "fundamentals", projected
+    )
+    positions = {name: index for index, name in enumerate(source_concepts)}
+    reasons = [
+        [
+            row[positions[name]] if name in positions else "outside_source_accounting_catalog"
+            for name in target_concepts
+        ]
+        for row in table["fundamental_missing_reasons"].to_pylist()
+    ]
+    return table.set_column(
+        table.schema.get_field_index("fundamental_missing_reasons"),
+        "fundamental_missing_reasons",
+        pa.array(reasons, type=pa.list_(pa.string(), len(target_concepts))),
+    )
+
+
 def materialize_cohort_asset(
     source,
     destination,
@@ -430,6 +452,7 @@ def materialize_cohort_asset(
     source_unit="USD",
     admitted_decisions=None,
     input_policy=STRICT_INPUTS,
+    target_fundamental_concepts=None,
 ):
     """Confirmar un activo completo. La caché persiste aunque se interrumpa su escritura."""
     masked = masked_inputs(input_policy)
@@ -466,6 +489,18 @@ def materialize_cohort_asset(
         concepts += tuple(name for name in FACTOR_CONCEPTS if name not in concepts)
     if not concepts or len(set(concepts)) != len(concepts):
         raise ValueError("El catálogo contable está vacío o duplicado")
+    target = concepts
+    if target_fundamental_concepts is not None:
+        expected_context = historical_accounting_context(clock.market)
+        target = tuple(target_fundamental_concepts)
+        if (
+            not masked
+            or concepts != expected_context["fundamental_concepts"]
+            or target != expected_context["target_fundamental_concepts"]
+            or source_unit != expected_context["source_unit"]
+            or company_factors != expected_context["company_factors"]
+        ):
+            raise ValueError("La proyección requiere el catálogo histórico y sus monedas acordadas")
     if source_unit == "CNY" or any(
         isinstance(name, str) and name.startswith("cn-reported:") for name in concepts
     ):
@@ -498,7 +533,7 @@ def materialize_cohort_asset(
         encoders_sha256=encoder_hash,
         context_sessions=context,
         news_lookback_sessions=news_lookback_sessions,
-        fundamental_concepts=list(concepts),
+        fundamental_concepts=list(target),
         source_unit=source_unit,
         admitted_decisions_sha256=_digest(sorted(value.isoformat() for value in admitted_decisions))
         if admitted_decisions is not None
@@ -520,7 +555,13 @@ def materialize_cohort_asset(
             )
         },
     )
-    if source_unit == "CNY":
+    if target_fundamental_concepts is not None:
+        identity["accounting_projection"] = dict(
+            source_concepts=list(concepts), target_concepts=list(target)
+        )
+        for name in ("accounting_catalog.py", "joint_projection.py"):
+            identity["code"][name] = sha256(Path(__file__).with_name(name))
+    if source_unit == "CNY" or target_fundamental_concepts is not None:
         identity["code"]["china_sources.py"] = sha256(Path(__file__).with_name("china_sources.py"))
     fingerprint = _digest(identity)
     for name in (
@@ -557,7 +598,7 @@ def materialize_cohort_asset(
             context_sessions=context,
             prepared_fingerprint=origin["fingerprint"],
             representation_code=identity["code"],
-            fundamental_concepts=list(concepts),
+            fundamental_concepts=list(target),
             macro_indicators=macros.indicators,
             encoders=encoders.spec,
             news_lookback_sessions=news_lookback_sessions,
@@ -572,6 +613,22 @@ def materialize_cohort_asset(
                 or type(old.get("samples")) is not int
             ):
                 raise ValueError("El recibo no conserva la identidad declarada")
+            if target_fundamental_concepts is not None:
+                projection = old.get("accounting_projection")
+                if (
+                    not isinstance(projection, dict)
+                    or _digest(
+                        {key: projection.get(key) for key in identity["accounting_projection"]}
+                    )
+                    != _digest(identity["accounting_projection"])
+                    or type(projection.get("outside_catalog_facts")) is not int
+                    or not 0
+                    <= projection["outside_catalog_facts"]
+                    <= origin["counts"]["fundamentals"]
+                ):
+                    raise ValueError(
+                        "El recibo no conserva los catálogos de la proyección contable"
+                    )
             if _artifact(samples_path, destination) != old.get("samples_sha256"):
                 raise ValueError("Ha cambiado el artefacto materializado")
             with pq.ParquetFile(samples_path) as table:
@@ -592,10 +649,18 @@ def materialize_cohort_asset(
         ).to_pylist()
         if source_unit == "CNY":
             _chinese_facts(facts, clock, origin["policy"]["cutoff"])
+        if target_fundamental_concepts is not None and any(
+            row["concept"].startswith("us-gaap:")
+            and row["concept"].rsplit(":", 1)[-1] != row.get("unit")
+            for row in facts
+        ):
+            raise ValueError("El concepto contable no conserva su moneda o unidad")
         factor_audit = {}
         if company_factors:
             # Los hechos sin publicación conservan su diagnóstico, pero no forman ratios.
             factor_facts = [r for r in facts if r["available_at"] is not None] if masked else facts
+            if target_fundamental_concepts is not None:
+                factor_facts = [r for r in factor_facts if r["unit"] == source_unit]
             derived, factor_audit = write_company_factors(
                 destination / "company-factors.parquet",
                 factor_facts,
@@ -635,6 +700,15 @@ def materialize_cohort_asset(
 
             def batches():
                 pending = []
+
+                def table(rows):
+                    batch = pa.Table.from_pylist(rows, schema=schema)
+                    return (
+                        _project_fundamentals(batch, concepts, target)
+                        if target_fundamental_concepts is not None
+                        else batch
+                    )
+
                 for row in rows:
                     if masked:
                         missing.update(
@@ -644,9 +718,9 @@ def materialize_cohort_asset(
                         )
                     pending.append(row)
                     if len(pending) == batch_rows:
-                        yield pa.Table.from_pylist(pending, schema=schema)
+                        yield table(pending)
                         pending = []
-                yield pa.Table.from_pylist(pending, schema=schema)
+                yield table(pending)
 
             count = atomic_parquet_batches(samples_path, batches())
         if sha256(source / "manifest.json") != origin_hash or any(
@@ -676,5 +750,10 @@ def materialize_cohort_asset(
         )
         if masked:
             result["missing_input_reasons"] = dict(missing)
+        if target_fundamental_concepts is not None:
+            result["accounting_projection"] = dict(
+                identity["accounting_projection"],
+                outside_catalog_facts=sum(r["concept"] not in concepts for r in facts),
+            )
         atomic_json(receipt, result)
         return result
