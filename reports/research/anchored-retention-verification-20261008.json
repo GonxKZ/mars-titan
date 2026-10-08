@@ -1,0 +1,79 @@
+{
+  "reviewed_at_utc": "2026-10-08T04:41:36.060981+00:00",
+  "commit": "acdcb541a1b3538f747ce29497e9d84f616c879d",
+  "initial_commit": "7533277993df0dcb749300297ab8dc597f8108de",
+  "base": "9c76694efef82561935935e04d986aaed69b688a",
+  "source_sha256": {
+    "src/mars_titan/cm/anchored_medoids.py": "8a790f2d0832880dc2efa19d4af1ba6942b53bfd9be8826679c379b8df99f1f5",
+    "src/mars_titan/cm/medoids.py": "4a29454d5a14c6cdbb56e5cf8e4443f840ad3be934f01115c35b895b805b7764",
+    "tests/cm/test_anchored_medoids.py": "76f9e03713fb17c8a9a0e63f264e96e7e8ef4620e3626d2c39f229e82a1290d3",
+    "docs/experiments/mars_titan_cm_v1/anchored_retention.md": "91c323ffc81268992855caa27eae2322c04549608f951f514418b06352b71d05"
+  },
+  "status": "Sin hallazgos bloqueantes. El límite de paridad discreta queda declarado y SciPy se identifica como exploratorio.",
+  "blocking_findings": [],
+  "numerical_observations": [
+    {
+      "id": "ANCHORED-N1",
+      "file": "src/mars_titan/cm/anchored_medoids.py",
+      "line": 108,
+      "description": "La mezcla de fondo cdist y distancia variable hypot puede cambiar el representante en un empate geométrico.",
+      "numpy_ids": [
+        "a",
+        "b",
+        "c"
+      ],
+      "scipy_ids": [
+        "a",
+        "b",
+        "d"
+      ],
+      "objective_both": 0.6996458385779952,
+      "resolution": "El commit revisado conserva NumPy por defecto, rechaza el nombre SciPy sin calificación exploratoria e incorpora el contraejemplo en pruebas y documentación. No cambia el cálculo ni añade un umbral para ocultar el empate.",
+      "remaining_limit": "La paridad de objetivo en tolerancia no implica igualdad universal de IDs entre backends.",
+      "test": "tests/cm/test_anchored_medoids.py",
+      "evidence_sha256": "16d78baf0431cc45717a29f60d76912b4f69811d6f0e96d76d5ac9d60f15f7cd"
+    }
+  ],
+  "verified_properties": [
+    "El objetivo incluye E completo. Excluir las filas de A de la suma es válido porque cada centro fijo es un cliente real y su coste es cero.",
+    "Los clientes ajenos a F siguen contribuyendo. La capacidad incluye A y los representantes conservan IDs e índices originales.",
+    "La enumeración restringida concilia con un oráculo escalar independiente, con coste entero exacto en L1 y tolerancia 1e-14 en distancia flotante.",
+    "Los duplicados geométricos conservan multiplicidad. Los solapes o duplicados de IDs se rechazan.",
+    "El presupuesto de pares incluye fondo y candidatos. Se admite el borde exacto y se rechaza su exceso.",
+    "Los extremos FP32 siguen finitos hasta 4096 dimensiones en ambos backends. La ruta general conserva el rango FP64 probado.",
+    "El guardado de estimaciones de memoria distingue sus buffers propios del RSS y de los espacios internos de biblioteca."
+  ],
+  "legacy_parity_evidence": {
+    "source_hash_matches": true,
+    "cases": 48,
+    "all_fields_equal": true,
+    "reviewer_reexecuted": false,
+    "script_reviewed": true,
+    "sha256": "6865b0da03e3885a5dff7605c413265ccbc6deb6049cf8fbdb754497b98f0dd4"
+  },
+  "limits": [
+    "No se ha ejecutado GPU, un modelo, un optimizador ni un estudio científico.",
+    "No se repitió el benchmark grande. Los cocientes publicados pertenecen a sus formas y versiones medidas, no al banco completo.",
+    "La enumeración es óptima únicamente sobre los candidatos autorizados y la aritmética declarada.",
+    "No se atribuye un factor de aproximación publicado al heurístico ni estabilidad global.",
+    "SciPy exploratorio no es un reemplazo universalmente equivalente y no es el backend principal del banco."
+  ],
+  "tests": {
+    "initial_passed": 126,
+    "final_passed": 128,
+    "public_final": 121,
+    "private": 7,
+    "independent_oracle_cases": 60,
+    "device": "cpu",
+    "cuda_visible_devices": "-1",
+    "threads_environment": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    }
+  },
+  "default_backend": "numpy",
+  "exploratory_backend": "scipy_cdist_fp32_exploratory",
+  "consumer_integrated": false,
+  "review_receipt_sha256": "35a8815436134aec15728bcc0f9caa16524ae1f438afd6a6b8d1f72551cb86a0"
+}

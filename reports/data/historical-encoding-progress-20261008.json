@@ -1,0 +1,203 @@
+{
+  "checked_at_utc": "2026-10-08T05:24:05.279176+00:00",
+  "code_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+  "scope": "Dos activos históricos preparados y verificados. No representa el corpus completo ni un estudio predictivo.",
+  "samples": 11436,
+  "assets": [
+    {
+      "checked_at_utc": "2026-10-08T03:54:19.230182+00:00",
+      "code_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+      "asset": "US/A",
+      "price_rows": 6033,
+      "samples": 5776,
+      "missing_news_rows": 5418,
+      "missing_fundamental_rows": 5776,
+      "news_assignments": 1950,
+      "incomplete_price_windows": 257,
+      "complete_valid_windows_retained": true,
+      "mask_and_availability_checks": true,
+      "recovery_without_models_or_cache": true,
+      "confirmed_bytes_and_mtimes_unchanged": true,
+      "artifacts": {
+        "manifest.json": {
+          "sha256": "4a743bcc9391aae551bad09770300265d0e6ab5a37d2c1207a41f22557f34996",
+          "bytes": 11630
+        },
+        "samples.parquet": {
+          "sha256": "aa7cff7261ae42b44ea6b45f86d8373cfea231069d84ec183922bb56cf10d26c",
+          "bytes": 18744601
+        }
+      },
+      "elapsed_seconds": 12.047849927002972,
+      "peak_rss_bytes": 214110208,
+      "corpus_complete": false,
+      "training_ready": false,
+      "final_test_opened": false
+    },
+    {
+      "checked_at_utc": "2026-10-08T05:06:33.255719+00:00",
+      "code_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+      "asset": "US/AA",
+      "price_rows": 6031,
+      "samples": 5660,
+      "missing_news_rows": 3790,
+      "missing_fundamental_rows": 3880,
+      "news_assignments": 8015,
+      "incomplete_price_windows": 371,
+      "complete_valid_windows_retained": true,
+      "mask_and_availability_checks": true,
+      "recovery_without_models_or_cache": true,
+      "confirmed_bytes_and_mtimes_unchanged": true,
+      "artifacts": {
+        "manifest.json": {
+          "sha256": "585b8e902092ac996653962839b24aa3ea7d288e34bce36eae34a7dc0517828d",
+          "bytes": 11692
+        },
+        "samples.parquet": {
+          "sha256": "d2525bad493ac71dc2a26f8c34e884be46cfcf33ce11780d6ecb11fbc887a01b",
+          "bytes": 20660203
+        }
+      },
+      "elapsed_seconds": 12.269204198004445,
+      "peak_rss_bytes": 216064000,
+      "corpus_complete": false,
+      "training_ready": false,
+      "final_test_opened": false
+    }
+  ],
+  "text_batch_benchmark": {
+    "checked_at_utc": "2026-10-08T05:05:12.512880+00:00",
+    "source_sha256": "1945180bd161d005a2f39945c9fda906e43aeacaf09fb9bc073f168c12044d88",
+    "texts": [
+      {
+        "sha256": "5da6cde7e0ef95e4dfbd557275680cde34dc96b8619c2c541f68ff45b4b18c56",
+        "characters": 428,
+        "tokens": 103
+      },
+      {
+        "sha256": "4b62391e9ae54f68da3b1bd119deb043c5a952407469602104f8eba356706926",
+        "characters": 2616,
+        "tokens": 639
+      },
+      {
+        "sha256": "9c64a65eb53a20be3f1a87fd116562ca3882557e0b1f1cf76af89ca03a08b030",
+        "characters": 3553,
+        "tokens": 831
+      },
+      {
+        "sha256": "824d01ccd48a418818570a4b4340f82acef4a4848c9c033b0e685f1d12ea108f",
+        "characters": 5381,
+        "tokens": 1427
+      },
+      {
+        "sha256": "3bae465d5ad26836cf65a1d32e73f886ef86ba89a856530ba5d05fa019941f7a",
+        "characters": 7153,
+        "tokens": 1639
+      },
+      {
+        "sha256": "aeed0c3ca347abdfe2fdb1a38ccb4ca677b1fc0c50346ead0268e23b8e3776cc",
+        "characters": 8482,
+        "tokens": 1964
+      },
+      {
+        "sha256": "574b231d2ecf94927adf9b3388caf73ec22b01c0cb8c9db13f00fb9ebba9c033",
+        "characters": 15729,
+        "tokens": 3713
+      },
+      {
+        "sha256": "b2c9b5167cc9314f29e35ab61e47ada0c3a3155c80c3963d91e7d1e638396077",
+        "characters": 23484,
+        "tokens": 5373
+      }
+    ],
+    "code_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+    "cases": [
+      {
+        "text_batch_size": 2,
+        "elapsed_seconds": [
+          0.29016891199717065,
+          0.27674947700143093,
+          0.2635613079983159
+        ],
+        "median_seconds": 0.27674947700143093,
+        "maximum_absolute_error": 0.0,
+        "peak_allocated_bytes": 531002880,
+        "peak_reserved_bytes": 650117120
+      },
+      {
+        "text_batch_size": 4,
+        "elapsed_seconds": [
+          0.21823979200416943,
+          0.22635852899838937,
+          0.21263347900094232
+        ],
+        "median_seconds": 0.21823979200416943,
+        "maximum_absolute_error": 7.450580596923828e-08,
+        "peak_allocated_bytes": 534709760,
+        "peak_reserved_bytes": 650117120
+      },
+      {
+        "text_batch_size": 8,
+        "elapsed_seconds": [
+          0.1930738980008755,
+          0.20971835799718974,
+          0.2290700579978875
+        ],
+        "median_seconds": 0.20971835799718974,
+        "maximum_absolute_error": 1.1920928955078125e-07,
+        "peak_allocated_bytes": 546186752,
+        "peak_reserved_bytes": 650117120
+      },
+      {
+        "text_batch_size": 16,
+        "elapsed_seconds": [
+          0.1890197340035229,
+          0.20941085900267353,
+          0.21430296899779933
+        ],
+        "median_seconds": 0.20941085900267353,
+        "maximum_absolute_error": 1.1920928955078125e-07,
+        "peak_allocated_bytes": 562980352,
+        "peak_reserved_bytes": 650117120
+      },
+      {
+        "text_batch_size": 32,
+        "elapsed_seconds": [
+          0.18753067500074394,
+          0.20428612199611962,
+          0.20633530600025551
+        ],
+        "median_seconds": 0.20428612199611962,
+        "maximum_absolute_error": 1.1920928955078125e-07,
+        "peak_allocated_bytes": 594470400,
+        "peak_reserved_bytes": 650117120
+      }
+    ],
+    "rtol": 2e-05,
+    "atol": 2e-06,
+    "torch": "2.14.0+cu130",
+    "tf32": {
+      "matmul": false,
+      "cudnn": true
+    },
+    "scope": "Codificadores congelados sobre textos admitidos. No usa etiquetas ni mide capacidad predictiva.",
+    "limits": [
+      "Ocho textos seleccionados por longitud no representan por sí solos toda la distribución.",
+      "Hay otra aplicación en GPU. Se alterna el orden tras calentar todos los tamaños.",
+      "Los tiempos excluyen carga de pesos e incluyen tokenización, inferencia y copia del vector a CPU."
+    ]
+  },
+  "selected_text_chunks": 8,
+  "selection_reason": "Los lotes de ocho reducen el tiempo medido frente a dos, con menor pico asignado que 16 y 32. Las diferencias de tiempo desde ocho son pequeñas en estos textos.",
+  "limits": [
+    "La segunda codificación utilizó cProfile. Su duración no es comparable como benchmark limpio con la primera.",
+    "La edición ampliada con lotes de ocho tiene identidad independiente y necesita su propia verificación.",
+    "La geometría de memoria y las etiquetas aún no se han evaluado sobre este corpus.",
+    "Entrenamientos, postentrenamientos, RL, pilotos y evaluaciones científicas siguen bloqueados."
+  ],
+  "evidence_sha256": {
+    "first-encoding-verification.json": "e9f777288c7fa605acc15a6ae6eec75a10560a64fd34be301dbecd857937cf05",
+    "second-encoding-verification.json": "149667f039f594059fa861d43f68656e1b26086a1f32fa3d09528d55fce09b53",
+    "text-batch-benchmark.json": "6c87da6c229231e3402cae5876543a24ffdeccfb88bbdc02e6dd6376d16f50b7"
+  }
+}

@@ -45,7 +45,10 @@ def add_special_tokens(tokens: list[int], cls_id: int, sep_id: int) -> list[int]
 class EmbeddingCache:
     """Una fila confirmada por representación. Los valores corruptos nunca se reutilizan."""
 
-    def __init__(self, path: Path, *, read_only: bool = False):
+    def __init__(self, path: Path, *, read_only: bool = False, cache_charts: bool = True):
+        if type(cache_charts) is not bool:
+            raise ValueError("La política de caché de gráficos debe ser booleana")
+        self.cache_charts = cache_charts
         if read_only:
             self.db = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
             self.db.execute("PRAGMA query_only=ON")
@@ -66,6 +69,8 @@ class EmbeddingCache:
     def get(self, identity: dict, *, max_bytes: int = 64 * 1024**2) -> np.ndarray | None:
         if type(max_bytes) is not int or not 1 <= max_bytes <= 64 * 1024**2:
             raise ValueError("El presupuesto de la representación no es válido")
+        if not self.cache_charts and identity.get("kind") == "chart":
+            return None
         key, description = self.identity(identity)
         row = self.db.execute(
             "SELECT identity,CASE WHEN length(vector)<=? THEN vector END,checksum,length(vector) "
@@ -87,6 +92,8 @@ class EmbeddingCache:
         vector = np.asarray(vector, dtype="<f4")
         if vector.ndim != 1 or not vector.size or not np.isfinite(vector).all():
             raise ValueError("La representación debe ser un vector no vacío de valores finitos")
+        if not self.cache_charts and identity.get("kind") == "chart":
+            return
         key, description = self.identity(identity)
         payload = vector.tobytes()
         with self.db:
@@ -99,9 +106,16 @@ class EmbeddingCache:
         self.db.close()
 
 
-def require_cuda():
+def require_cuda(*, max_bytes=6 * 1024**3, min_free_bytes=0):
     import torch
 
+    if (
+        type(max_bytes) is not int
+        or max_bytes <= 0
+        or type(min_free_bytes) is not int
+        or min_free_bytes < 0
+    ):
+        raise ValueError("El presupuesto CUDA no es válido")
     subprocess.run(
         ["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv"],
         check=True,
@@ -112,14 +126,36 @@ def require_cuda():
         raise RuntimeError("CUDA no está disponible. La sustitución por CPU está desactivada.")
     torch.cuda.set_device("cuda:0")
     total = torch.cuda.get_device_properties(0).total_memory
-    torch.cuda.set_per_process_memory_fraction(min(1.0, 6 * 1024**3 / total), 0)
+    if min_free_bytes and torch.cuda.mem_get_info(0)[0] < min_free_bytes:
+        raise RuntimeError("La memoria CUDA libre no alcanza la reserva de codificación")
+    torch.cuda.set_per_process_memory_fraction(min(1.0, max_bytes / total), 0)
     return torch.device("cuda:0")
 
 
 class FrozenEncoders:
     """MiniLM por fragmentos completos y ResNet18 sin recortar los extremos del gráfico."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        cuda_memory_bytes=6 * 1024**3,
+        min_free_cuda_bytes=0,
+        text_batch_size=32,
+        image_batch_size=64,
+    ):
+        if (
+            type(cuda_memory_bytes) is not int
+            or cuda_memory_bytes <= 0
+            or type(min_free_cuda_bytes) is not int
+            or min_free_cuda_bytes < 0
+            or type(text_batch_size) is not int
+            or not 1 <= text_batch_size <= 32
+            or type(image_batch_size) is not int
+            or not 1 <= image_batch_size <= 64
+        ):
+            raise ValueError("Los presupuestos del codificador no son válidos")
+        self.text_batch_size = text_batch_size
+        self.image_batch_size = image_batch_size
         import tokenizers
         import torch
         import torchvision
@@ -128,7 +164,7 @@ class FrozenEncoders:
         from torchvision.models import ResNet18_Weights, resnet18
         from transformers import AutoModel, AutoTokenizer
 
-        self.device = require_cuda()
+        self.device = require_cuda(max_bytes=cuda_memory_bytes, min_free_bytes=min_free_cuda_bytes)
         self.tokenizer = AutoTokenizer.from_pretrained(
             TEXT_MODEL, revision=TEXT_REVISION, trust_remote_code=False, token=False
         )
@@ -192,6 +228,14 @@ class FrozenEncoders:
             "precision": "float32",
             "historical_simulation": False,
         }
+        if text_batch_size != 32 or image_batch_size != 64:
+            self.spec["batch_sizes"] = dict(text_chunks=text_batch_size, images=image_batch_size)
+        self.execution_budget = dict(
+            cuda_memory_bytes=cuda_memory_bytes,
+            min_free_cuda_bytes=min_free_cuda_bytes,
+            text_chunks=text_batch_size,
+            images=image_batch_size,
+        )
 
     def text(self, text: str) -> np.ndarray:
         import torch
@@ -211,8 +255,8 @@ class FrozenEncoders:
         chunks = list(token_chunks(tokens))
         total, count = np.zeros(384, dtype=np.float64), 0
         with torch.inference_mode():
-            for offset in range(0, len(chunks), 32):
-                group = chunks[offset : offset + 32]
+            for offset in range(0, len(chunks), self.text_batch_size):
+                group = chunks[offset : offset + self.text_batch_size]
                 examples = [
                     {
                         "input_ids": add_special_tokens(
@@ -236,12 +280,17 @@ class FrozenEncoders:
 
         if not pngs or len(pngs) > 64:
             raise ValueError("El lote de imágenes debe contener entre 1 y 64 gráficos")
-        pixels = []
-        for png in pngs:
-            with Image.open(BytesIO(png)) as image:
-                if image.size != (224, 224):
-                    raise ValueError("Las dimensiones del gráfico no son las esperadas")
-                pixels.append(np.asarray(image.convert("RGB"), dtype=np.float32) / 255)
-        batch = torch.from_numpy(np.stack(pixels).transpose(0, 3, 1, 2)).to(self.device)
+        outputs = []
         with torch.inference_mode():
-            return self.image_model((batch - self.mean) / self.std).float().cpu().numpy()
+            for offset in range(0, len(pngs), self.image_batch_size):
+                pixels = []
+                for png in pngs[offset : offset + self.image_batch_size]:
+                    with Image.open(BytesIO(png)) as image:
+                        if image.size != (224, 224):
+                            raise ValueError("Las dimensiones del gráfico no son las esperadas")
+                        pixels.append(np.asarray(image.convert("RGB"), dtype=np.float32) / 255)
+                batch = torch.from_numpy(np.stack(pixels).transpose(0, 3, 1, 2)).to(self.device)
+                outputs.append(
+                    self.image_model((batch - self.mean) / self.std).float().cpu().numpy()
+                )
+        return np.concatenate(outputs)

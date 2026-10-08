@@ -1,0 +1,235 @@
+{
+  "checked_at_utc": "2026-10-08T04:20:16.561780+00:00",
+  "code_commit": "c622a6b26d192fddea0fb85a9cac9cc323605a4c",
+  "scope": "Adaptador de cálculo por decisión. Sin banco, publicación de sesión, aprendizaje ni evaluación predictiva.",
+  "source_sha256": {
+    "src/mars_titan/data/input_policy.py": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+    "src/mars_titan/models/titans/financial.py": "7ee8ac08d924f7bce97bf5de8d476e5fa1c6f049ff62bc67c88f2ff1576152e9",
+    "src/mars_titan/models/titans/financial_inputs.py": "153e534e28685b7e41b6022914a237756c0b41d8e08eaff313a2928b025c0b87",
+    "src/mars_titan/training/corpus_inputs.py": "05b406702f9e5d63e73b4ae827cc2d0a9550e44197fb1580f836351cbd4ac7e1"
+  },
+  "cpu": {
+    "public_author_suite_passed": 208,
+    "independent_combined_suite_passed": 330,
+    "elapsed_seconds": 33.25,
+    "scope": "La segunda suite incluye las anteriores y los lectores históricos. No se suman ambos recuentos.",
+    "command": "uv run pytest -q tests/models/titans tests/models/test_compact_transformer.py tests/models/test_reference_initialization.py tests/training/test_corpus_inputs.py tests/training/test_historical_corpus_inputs.py"
+  },
+  "mutations": {
+    "attempted": 15,
+    "detected": 15
+  },
+  "quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "torch_version": "2.14.0+cu130",
+    "files": {
+      "src/mars_titan/models/titans/financial.py": {
+        "sha256": "7ee8ac08d924f7bce97bf5de8d476e5fa1c6f049ff62bc67c88f2ff1576152e9",
+        "summary": {
+          "covered_lines": 280,
+          "num_statements": 305,
+          "percent_covered": 87.71084337349397,
+          "percent_covered_display": "88",
+          "missing_lines": 25,
+          "excluded_lines": 0,
+          "percent_statements_covered": 91.80327868852459,
+          "percent_statements_covered_display": "92",
+          "num_branches": 110,
+          "num_partial_branches": 26,
+          "covered_branches": 84,
+          "missing_branches": 26,
+          "percent_branches_covered": 76.36363636363636,
+          "percent_branches_covered_display": "76"
+        }
+      },
+      "src/mars_titan/models/titans/financial_inputs.py": {
+        "sha256": "153e534e28685b7e41b6022914a237756c0b41d8e08eaff313a2928b025c0b87",
+        "summary": {
+          "covered_lines": 177,
+          "num_statements": 193,
+          "percent_covered": 88.10408921933086,
+          "percent_covered_display": "88",
+          "missing_lines": 16,
+          "excluded_lines": 0,
+          "percent_statements_covered": 91.70984455958549,
+          "percent_statements_covered_display": "92",
+          "num_branches": 76,
+          "num_partial_branches": 16,
+          "covered_branches": 60,
+          "missing_branches": 16,
+          "percent_branches_covered": 78.94736842105263,
+          "percent_branches_covered_display": "79"
+        }
+      },
+      "src/mars_titan/data/input_policy.py": {
+        "sha256": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+        "summary": {
+          "covered_lines": 35,
+          "num_statements": 67,
+          "percent_covered": 48.598130841121495,
+          "percent_covered_display": "49",
+          "missing_lines": 32,
+          "excluded_lines": 0,
+          "percent_statements_covered": 52.23880597014925,
+          "percent_statements_covered_display": "52",
+          "num_branches": 40,
+          "num_partial_branches": 5,
+          "covered_branches": 17,
+          "missing_branches": 23,
+          "percent_branches_covered": 42.5,
+          "percent_branches_covered_display": "42"
+        }
+      },
+      "src/mars_titan/training/corpus_inputs.py": {
+        "sha256": "05b406702f9e5d63e73b4ae827cc2d0a9550e44197fb1580f836351cbd4ac7e1",
+        "summary": {
+          "covered_lines": 49,
+          "num_statements": 447,
+          "percent_covered": 8.071748878923767,
+          "percent_covered_display": "8",
+          "missing_lines": 398,
+          "excluded_lines": 0,
+          "percent_statements_covered": 10.961968680089486,
+          "percent_statements_covered_display": "11",
+          "num_branches": 222,
+          "num_partial_branches": 5,
+          "covered_branches": 5,
+          "missing_branches": 217,
+          "percent_branches_covered": 2.2522522522522523,
+          "percent_branches_covered_display": "2"
+        }
+      }
+    },
+    "scope": "Módulos financieros completos y únicamente validate_historical_vectors/_presence en los módulos existentes. La cobertura global de esos lectores no representa esta extracción.",
+    "convention": "Sentencias ejecutables de coverage.py por rango de función de radon. Ramas registradas por separado. CRAP=CCN**2*(1-cobertura_sentencias)**3+CCN.",
+    "max_crap": {
+      "file": "src/mars_titan/models/titans/financial.py",
+      "name": "_validate_cursor",
+      "line": 366,
+      "ccn": 22,
+      "statement_coverage": 0.9230769230769231,
+      "crap": 22.22030040964952
+    }
+  },
+  "cuda": {
+    "checked_at_utc": "2026-10-08T03:52:18.394345+00:00",
+    "passed": true,
+    "code_commit": "c622a6b26d192fddea0fb85a9cac9cc323605a4c",
+    "cases": [
+      {
+        "dtype": "torch.float64",
+        "variant": "transformer_direct",
+        "rtol": 1e-09,
+        "atol": 1e-11,
+        "output_max_absolute_error": 2.0816681711721685e-17,
+        "parameter_gradient_max_absolute_error": 4.163336342344337e-17,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float64",
+        "variant": "mac_disabled",
+        "rtol": 1e-09,
+        "atol": 1e-11,
+        "output_max_absolute_error": 1.3877787807814457e-17,
+        "parameter_gradient_max_absolute_error": 5.551115123125783e-17,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float64",
+        "variant": "mac_frozen",
+        "rtol": 1e-09,
+        "atol": 1e-11,
+        "output_max_absolute_error": 0.0,
+        "parameter_gradient_max_absolute_error": 1.1858461261560205e-20,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float64",
+        "variant": "mac_online",
+        "rtol": 1e-09,
+        "atol": 1e-11,
+        "output_max_absolute_error": 0.0,
+        "parameter_gradient_max_absolute_error": 4.658681209898652e-21,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float32",
+        "variant": "transformer_direct",
+        "rtol": 2e-05,
+        "atol": 2e-06,
+        "output_max_absolute_error": 3.3527612686157227e-08,
+        "parameter_gradient_max_absolute_error": 2.9802322387695312e-08,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float32",
+        "variant": "mac_disabled",
+        "rtol": 2e-05,
+        "atol": 2e-06,
+        "output_max_absolute_error": 2.421438694000244e-08,
+        "parameter_gradient_max_absolute_error": 5.960464477539063e-08,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float32",
+        "variant": "mac_frozen",
+        "rtol": 2e-05,
+        "atol": 2e-06,
+        "output_max_absolute_error": 0.0,
+        "parameter_gradient_max_absolute_error": 9.094947017729282e-12,
+        "next_prediction_and_update_recovery_exact": true
+      },
+      {
+        "dtype": "torch.float32",
+        "variant": "mac_online",
+        "rtol": 2e-05,
+        "atol": 2e-06,
+        "output_max_absolute_error": 0.0,
+        "parameter_gradient_max_absolute_error": 2.2737367544323206e-12,
+        "next_prediction_and_update_recovery_exact": true
+      }
+    ],
+    "cpu_cuda_rng_unchanged": true,
+    "peak_allocated_bytes": 19154432,
+    "peak_reserved_bytes": 25165824,
+    "torch": "2.14.0+cu130",
+    "cuda": "13.0",
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 595.91.07",
+    "shape": [
+      2,
+      64,
+      5
+    ],
+    "hidden": 32,
+    "scope": "Fixtures técnicos en ocho controles/precisiones, sin optimizador ni datos reales",
+    "limits": [
+      "Carga ajena activa. No es una medición aislada de velocidad.",
+      "El asignador no contabiliza todo el contexto CUDA."
+    ]
+  },
+  "fixture_dimensions": {
+    "prices": 5,
+    "news": 2,
+    "charts": 2,
+    "fundamentals": 3,
+    "macro": 3
+  },
+  "independent_review": {
+    "resolved_findings": [
+      "La copia CPU podía reactivar escritura sin cambiar su digest. Ahora usa bytes inmutables y verificación de contenido.",
+      "La selección por tupla se interpretaba como índice multidimensional. Ahora se normaliza tras validar y conserva la selección por filas."
+    ]
+  },
+  "evidence_sha256": {
+    "handoff.json": "db3c9ba26b58b686784bc8e59e222831f5184a3e686600a3a1217cf5ec7054c1",
+    "root-cpu-final.log": "5644f8397647935a541e22fff5aca12dc8cecc09456df818016e1a2787f9d0eb",
+    "root-cuda-final.json": "ebafa166c7ee024d80df7be76776770606493daeb349568540f861fbb674a2f4"
+  },
+  "limits": [
+    "Las formas CUDA son fixtures pequeños con modalidades reducidas.",
+    "La mutación deliberada mediante .data puede eludir versiones y se comprueba mediante huellas en la frontera de publicación.",
+    "El consumidor cronológico, el banco, K ampliado y C/M siguen pendientes.",
+    "Entrenamientos y evaluaciones científicas siguen bloqueados por la edición histórica."
+  ]
+}

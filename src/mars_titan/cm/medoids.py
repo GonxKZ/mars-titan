@@ -167,11 +167,14 @@ def _integer_geometry(clients: np.ndarray, candidates: np.ndarray, metric: str) 
 class _Costs:
     """Estado lineal en clientes y dos buffers de distancia, sin tabla global."""
 
-    def __init__(self, clients, candidates, metric, integer, rows, columns, max_pairs):
+    def __init__(
+        self, clients, candidates, metric, integer, rows, columns, max_pairs, *, background=None
+    ):
         self.clients, self.candidates = clients, candidates
         self.metric, self.integer = metric, integer
         self.rows, self.columns, self.max_pairs = rows, columns, max_pairs
         self.pairs = self.evaluations = 0
+        self.background = background
         dtype = np.int64 if integer else np.float64
         self.distances = np.empty((rows, columns), dtype=dtype)
         self.scratch = np.empty_like(self.distances)
@@ -220,12 +223,19 @@ class _Costs:
             raise ValueError("Una distancia produjo un resultado no finito")
         return distance
 
+    def reset_nearest(self):
+        if self.background is None:
+            self.nearest.fill(np.iinfo(np.int64).max if self.integer else np.inf)
+        else:
+            self.nearest[:] = self.background
+
     def state(self, selected):
         """Recalcula exactamente el conjunto aceptado, incluidos sus empates."""
         self.evaluations += 1
-        self.nearest.fill(np.iinfo(np.int64).max if self.integer else np.inf)
+        self.reset_nearest()
         self.second[:] = self.nearest
-        self.owner.fill(-1)
+        # El propietario fijo no se sustituye por un candidato de mayor distancia.
+        self.owner.fill(-1 if self.background is None else -2)
         parts = []
         for start in range(0, len(self.clients), self.rows):
             end = min(start + self.rows, len(self.clients))
@@ -275,7 +285,7 @@ class _Costs:
 
 def _greedy_swap(costs, count, capacity, max_swaps):
     selected = ()
-    costs.nearest.fill(np.iinfo(np.int64).max if costs.integer else np.inf)
+    costs.reset_nearest()
     for _ in range(capacity):
         available = tuple(index for index in range(count) if index not in selected)
         incoming, _ = min(costs.proposals(available), key=lambda pair: (pair[1], pair[0]))
