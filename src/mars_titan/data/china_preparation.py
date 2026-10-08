@@ -18,7 +18,8 @@ import pyarrow.parquet as pq
 from .china_fundamentals import _SCHEMA
 from .china_sources import CONCEPTS, _day, _provenance
 from .cohort_files import read_manifest, safe_destination
-from .cohort_samples import _prepared
+from .cohort_samples import _digest, _prepared
+from .input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from .macro_coverage import _publish_directory
 from .preparation import atomic_parquet
 from .storage import atomic_json, outside_source, sha256
@@ -37,6 +38,7 @@ _CODE = (
     "cohort_preparation.py",
     "cohort_files.py",
     "cohort_news.py",
+    "input_policy.py",
     "macro_coverage.py",
     "preparation.py",
     "storage.py",
@@ -261,9 +263,10 @@ def _verify(sources, code):
         raise ValueError("El código cambió durante la preparación")
 
 
-def _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutoff):
+def _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutoff, input_policy):
     rule = _HISTORY_POLICY if parents.get("additional_facts") else _POLICY
     policy = dict(
+        **policy_identity(input_policy),
         derivation=rule,
         cutoff=cutoff,
         calendar=calendar,
@@ -276,7 +279,8 @@ def _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutof
         policy["max_fact_editions"] = _MAX_EDITIONS
     artifacts = {**origin["artifacts"], "fundamentals.parquet": facts_hash}
     report = dict(
-        schema_version=3,
+        **policy_identity(input_policy),
+        schema_version=4 if masked_inputs(input_policy) else 3,
         kind="derived_prepared_asset",
         market="CN",
         symbol=origin["symbol"],
@@ -307,6 +311,11 @@ def _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutof
         training_ready=False,
         final_test_opened=False,
     )
+    if masked_inputs(input_policy):
+        report["missing_sources"] = [
+            name for name in origin.get("missing_sources", ()) if name != "fundamentals"
+        ]
+        report["fundamentals_audit"]["original_audit"] = origin.get("fundamentals_audit", {})
     report["fingerprint"] = hashlib.sha256(
         json.dumps(report, sort_keys=True, allow_nan=False).encode()
     ).hexdigest()
@@ -314,7 +323,14 @@ def _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutof
 
 
 def derive_chinese_preparation(
-    prepared_manifest, facts_edition, output, *, clock, cutoff="2023-12-31", additional_facts=()
+    prepared_manifest,
+    facts_edition,
+    output,
+    *,
+    clock,
+    cutoff="2023-12-31",
+    additional_facts=(),
+    input_policy=STRICT_INPUTS,
 ):
     """Añadir publicaciones revisadas sin alterar sus fechas ni ediciones anteriores.
 
@@ -322,6 +338,7 @@ def derive_chinese_preparation(
     su perímetro consolidado. La salida es un activo, no un corpus admitido.
     """
     prepared_manifest, facts_edition, output = map(Path, (prepared_manifest, facts_edition, output))
+    masked_inputs(input_policy)
     editions = _fact_editions(facts_edition, additional_facts)
     if clock.market != "CN" or _day(cutoff) >= date(2024, 1, 1):
         raise ValueError("La preparación necesita calendario CN y reserva final cerrada")
@@ -346,7 +363,9 @@ def derive_chinese_preparation(
         if _hash(path) != digest:
             raise ValueError("Ha cambiado un artefacto preparado")
         sources[path] = digest
-    origin, calendar, verified_hash = _prepared(prepared_manifest.parent, clock, "original_audited")
+    origin, calendar, verified_hash = _prepared(
+        prepared_manifest.parent, clock, "original_audited", input_policy
+    )
     counts = origin.get("counts", {})
     if (
         verified_hash != parent_hash
@@ -391,11 +410,13 @@ def derive_chinese_preparation(
                 raise ValueError("La historia contable supera el presupuesto de memoria")
             atomic_parquet(stage / "fundamentals.parquet", table)
             facts_hash = _hash(stage / "fundamentals.parquet")
-        report = _derived_report(origin, parents, calendar, code, reviewed, facts_hash, cutoff)
+        report = _derived_report(
+            origin, parents, calendar, code, reviewed, facts_hash, cutoff, input_policy
+        )
         artifacts = report["artifacts"]
         if output.exists():
             previous, signature = read_manifest(output / "manifest.json", maximum=4 * 1024**2)
-            if previous != report:
+            if _digest(previous) != _digest(report):
                 raise ValueError("La edición existente no conserva la identidad derivada")
             _verify(
                 {
@@ -415,7 +436,7 @@ def derive_chinese_preparation(
                 os.fsync(stream.fileno())
         atomic_json(stage / "manifest.json", report)
         staged, signature = read_manifest(stage / "manifest.json", maximum=4 * 1024**2)
-        if staged != report:
+        if _digest(staged) != _digest(report):
             raise ValueError("El manifiesto temporal no conserva la identidad derivada")
         _verify(
             {

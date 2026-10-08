@@ -19,14 +19,14 @@ import pyarrow.parquet as pq
 from mars_titan.training.cohort_contract import representation_hash, representation_identity
 from mars_titan.training.corpus_inputs import CorpusDataset, _availability, _price_contexts
 
+from .accounting_catalog import CNY_CONCEPTS, COMMON_CONCEPTS
+from .accounting_catalog import JOINT_CONCEPTS as CONCEPTS
 from .batches import atomic_parquet_batches
-from .chinese_samples import CNY_CONCEPTS
 from .cohort_files import read_manifest, safe_destination
-from .currency_samples import COMMON_CONCEPTS, _checked, _metadata, _times
+from .currency_samples import _checked, _metadata, _times
 from .joint_projection import project_numeric_context
 from .storage import atomic_json, outside_source, sha256
 
-CONCEPTS = (*COMMON_CONCEPTS, *CNY_CONCEPTS)
 _MARKETS = ("US", "CN")
 _LIMIT = 64 * 1024**2
 _COMMON = (
@@ -37,6 +37,7 @@ _COMMON = (
     "news_lookback_sessions",
 )
 _CODE = (
+    "data/accounting_catalog.py",
     "data/joint_corpus.py",
     "data/joint_projection.py",
     "data/currency_samples.py",
