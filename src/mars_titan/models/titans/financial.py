@@ -634,7 +634,7 @@ def copy_paired_parameters(source, target):
             target_id=right.fingerprint(),
             basis_sha256=left.get_extra_state()["basis_sha256"],
             basis_transferred=False,
-            attention_backend="math",
+            mac_sdpa_backend="math",
         )
     original, destination = dict(source.named_parameters()), dict(target.named_parameters())
     copied = sorted(original.keys() & destination.keys())

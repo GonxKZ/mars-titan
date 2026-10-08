@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "checked_at_utc": "2026-10-08T06:42:51.569632+00:00",
+  "checked_at_utc": "2026-10-08T07:07:29.510407+00:00",
   "scope": "Control local proyectado e integración financiera con fixtures técnicos. Sin optimizadores ni datos reales.",
   "base_commit": "63706efc9565da99e0e9e34cb132d9c700a34706",
   "source_sha256": {
-    "src/mars_titan/models/titans/local_control.py": "b7227743f37ff31d262a38ebf434294442b53df77d834922904265595d9269b0",
-    "src/mars_titan/models/titans/financial.py": "e45b36ca647ffd4c3f2c82d1622525baa301fccc58786ff37a81f8da3aa74d63"
+    "src/mars_titan/models/titans/local_control.py": "8b80dc1e0cc6c56bb7f72d06c5b8c0d432d257313cfea81f8d9e8a6f63ef04ce",
+    "src/mars_titan/models/titans/financial.py": "2ec27df1515e58b6dab7f76b63fb117bba1ce28a3d25dc1ecf1cc5b544aad273"
   },
   "cpu": {
     "python": "3.12.14",
@@ -14,13 +14,13 @@
     "threads": 2
   },
   "tests": {
-    "passed": 288,
-    "new": 60,
+    "passed": 292,
+    "new": 64,
     "paths": [
       "tests/models/titans",
       "tests/cm"
     ],
-    "log_sha256": "d3ab97998eacb16728a1a5013e0e4094c3b77750354ac6678093397908c7061c"
+    "log_sha256": "c1958bea01a02964daaac06e57a1f2bca4291f20367123f67d1026d63e1688f3"
   },
   "mutations": {
     "detected": 12,
@@ -39,7 +39,12 @@
       "skip_nested_prevalidation",
       "mismatched_baseline_backend",
       "change_legacy_identity"
-    ]
+    ],
+    "source_sha256": {
+      "src/mars_titan/models/titans/local_control.py": "b7227743f37ff31d262a38ebf434294442b53df77d834922904265595d9269b0",
+      "src/mars_titan/models/titans/financial.py": "e45b36ca647ffd4c3f2c82d1622525baa301fccc58786ff37a81f8da3aa74d63"
+    },
+    "later_change": "El cambio posterior renombra el campo a mac_sdpa_backend y añade cuatro pruebas de trazado. No cambia el cálculo ni las validaciones mutadas."
   },
   "legacy_parity": {
     "exact_prediction_and_state_pairs": 32,
@@ -140,7 +145,6 @@
         "grid_size": 64,
         "max_flows": 1,
         "dtype": "float64",
-        "backend": "math",
         "seconds": [
           0.011349357999279164,
           0.009563915999024175,
@@ -152,7 +156,8 @@
         "estimated_group_bytes": 0,
         "disconnected_parameter_count": 2,
         "parameter_count": 39,
-        "reevaluations": 0
+        "reevaluations": 0,
+        "mac_sdpa_backend": "math"
       },
       {
         "dimension": 32,
@@ -163,7 +168,6 @@
         "grid_size": 64,
         "max_flows": 1,
         "dtype": "float64",
-        "backend": "math",
         "seconds": [
           0.030180911999195814,
           0.03144443900237093,
@@ -175,7 +179,8 @@
         "estimated_group_bytes": 20889600,
         "disconnected_parameter_count": 2,
         "parameter_count": 39,
-        "reevaluations": 4
+        "reevaluations": 4,
+        "mac_sdpa_backend": "math"
       },
       {
         "dimension": 32,
@@ -186,7 +191,6 @@
         "grid_size": 64,
         "max_flows": 1,
         "dtype": "float64",
-        "backend": "math",
         "seconds": [
           0.049204720999114215,
           0.049247930997808,
@@ -198,7 +202,8 @@
         "estimated_group_bytes": 20889600,
         "disconnected_parameter_count": 2,
         "parameter_count": 39,
-        "reevaluations": 4
+        "reevaluations": 4,
+        "mac_sdpa_backend": "math"
       },
       {
         "dimension": 64,
@@ -209,7 +214,6 @@
         "grid_size": 64,
         "max_flows": 1,
         "dtype": "float64",
-        "backend": "math",
         "seconds": [
           0.01533786400250392,
           0.012402715998177882,
@@ -221,7 +225,8 @@
         "estimated_group_bytes": 0,
         "disconnected_parameter_count": 2,
         "parameter_count": 39,
-        "reevaluations": 0
+        "reevaluations": 0,
+        "mac_sdpa_backend": "math"
       },
       {
         "dimension": 64,
@@ -232,7 +237,6 @@
         "grid_size": 64,
         "max_flows": 1,
         "dtype": "float64",
-        "backend": "math",
         "seconds": [
           0.03577230199880432,
           0.03669918599916855,
@@ -244,7 +248,8 @@
         "estimated_group_bytes": 75571200,
         "disconnected_parameter_count": 2,
         "parameter_count": 39,
-        "reevaluations": 4
+        "reevaluations": 4,
+        "mac_sdpa_backend": "math"
       },
       {
         "dimension": 64,
@@ -255,7 +260,6 @@
         "grid_size": 64,
         "max_flows": 1,
         "dtype": "float64",
-        "backend": "math",
         "seconds": [
           0.04882467899733456,
           0.054621247996692546,
@@ -267,7 +271,8 @@
         "estimated_group_bytes": 75571200,
         "disconnected_parameter_count": 2,
         "parameter_count": 39,
-        "reevaluations": 4
+        "reevaluations": 4,
+        "mac_sdpa_backend": "math"
       }
     ],
     "limits": [
@@ -276,7 +281,9 @@
       "La medida incluye selección lógica, prepare, diagnóstico y gradiente a los parámetros conectados. Excluye creación del modelo, conversión del lote y guardado.",
       "La instantánea rápida inicial está desacoplada y sus parámetros de inicialización no reciben gradiente.",
       "No se ha aislado la carga ajena ni medido energía o VRAM."
-    ]
+    ],
+    "source_commit": "c9df8ba155d74ce7777cbc8a078e87650411db2b",
+    "model_mode": "train"
   },
   "cuda": {
     "executed": false,
@@ -287,5 +294,13 @@
     "La corrección angular corresponde al operador comprimido, no a J completo.",
     "Las potencias de la compresión no representan las potencias del operador completo.",
     "No se certifica estabilidad global, memoria del proceso ni efecto predictivo."
-  ]
+  ],
+  "backend_scope": {
+    "contract": "mac_sdpa_backend=math",
+    "route_cases": 4,
+    "train_eval": true,
+    "differentiable_true_false": true,
+    "ordinary_and_probe_mac_route_equal": true,
+    "backbone_eval_without_gradient": "_transformer_encoder_layer_fwd observado, sin promesa de backend global"
+  }
 }

@@ -200,3 +200,67 @@ def test_pairing_rejects_different_control_bases():
     legacy, _ = setup()
     with pytest.raises(ValueError):
         api().copy_paired_parameters(legacy, source)
+
+
+@pytest.mark.parametrize("training", [False, True])
+@pytest.mark.parametrize("differentiable", [False, True])
+def test_mac_sdpa_math_matches_ordinary_and_probe_routes_in_each_mode(
+    training, differentiable, monkeypatch
+):
+    baseline, batch = configured("disabled")
+    diagnostic, _ = configured("diagnostic")
+    baseline.train(training)
+    diagnostic.train(training)
+    api().copy_paired_parameters(baseline, diagnostic)
+    active = []
+    routes, native_backbone = [], []
+    sdpa = torch.nn.functional.scaled_dot_product_attention
+    native = torch._transformer_encoder_layer_fwd
+
+    def record_sdpa(*args, **kwargs):
+        if active:
+            routes.append(
+                (
+                    active[-1],
+                    torch.is_grad_enabled(),
+                    torch.backends.cuda.math_sdp_enabled(),
+                    torch.backends.cuda.flash_sdp_enabled(),
+                )
+            )
+        return sdpa(*args, **kwargs)
+
+    def record_native(*args, **kwargs):
+        native_backbone.append(True)
+        return native(*args, **kwargs)
+
+    def wrap(module, label):
+        original = module.forward
+
+        def call(*args, **kwargs):
+            active.append(label)
+            try:
+                return original(*args, **kwargs)
+            finally:
+                active.pop()
+
+        monkeypatch.setattr(module, "forward", call)
+
+    monkeypatch.setattr(torch.nn.functional, "scaled_dot_product_attention", record_sdpa)
+    monkeypatch.setattr(torch, "_transformer_encoder_layer_fwd", record_native)
+    wrap(baseline.mac.attention, "baseline")
+    wrap(diagnostic.mac.attention, "diagnostic")
+    first = baseline.prepare(
+        batch, baseline.initial_state(batch.flow_ids), differentiable=differentiable
+    )
+    second = prepare(
+        diagnostic, batch, diagnostic.initial_state(batch.flow_ids), differentiable=differentiable
+    )
+    torch.testing.assert_close(first.point_predictions, second.point_predictions, rtol=0, atol=0)
+    assert routes == [
+        ("baseline", differentiable, True, False),
+        ("diagnostic", differentiable, True, False),
+        ("diagnostic", True, True, False),
+        ("diagnostic", True, True, False),
+    ]
+    assert len(native_backbone) == (2 if not training and not differentiable else 0)
+    assert diagnostic.local_control.config.identity()["mac_sdpa_backend"] == "math"

@@ -65,7 +65,7 @@ class MACProjectionConfig:
             token_gradient="preserved_when_differentiable_penalty",
             coordinate_metric="unscaled_euclidean",
             derivative="autograd_functional_jvp",
-            attention_backend="math",
+            mac_sdpa_backend="math",
             basis="cpu_float64_qr_positive_diagonal_then_cast",
             selection="logical_group_eligible_canonical_ids",
             max_group_flows=4096,
