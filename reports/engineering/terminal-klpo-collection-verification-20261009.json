@@ -383,7 +383,6 @@
     "No se ejecutaron optimizadores, entrenamiento, evaluación científica, datos reales ni la reserva de 2024.",
     "La referencia del colector se construye desde la semilla y queda fija. Importar políticas ajustadas, actualizar referencias entre oleadas y recuperar updates siguen pendientes.",
     "La pérdida no usa la cabeza de valor. La separación de futuros momentos Adam del tensor compartido no se ha implementado ni probado.",
-    "La revisión independiente está pendiente de su recibo final.",
     "TSan/MSan y herramientas Windows no se ejecutaron. LibTorch y Arrow no están instrumentados por estos perfiles."
   ],
   "repository_checks": {
@@ -394,5 +393,54 @@
     "references": 191,
     "tasks": 64,
     "macro_ids": 140
+  },
+  "independent_review": {
+    "status": "sin_hallazgos_materiales_abiertos",
+    "revision": "c4fe795b434aedfc848b0695399258f5c1a7e7b4",
+    "production_revision": "88a2ed5a78d3f4e56a95bc18f9de25ccd3d088c5",
+    "receipt_sha256": "6e3ff5d138b05cb0529d68f5a9244c832df8a170443b2e0a34068ce2b052f9bc",
+    "private_cases": [
+      {
+        "case": "mixed_horizons",
+        "passed": true
+      },
+      {
+        "case": "forged_q_history",
+        "passed": true
+      },
+      {
+        "case": "changed_rng_archive",
+        "passed": true
+      },
+      {
+        "case": "full_gru_critic_gradients",
+        "passed": true
+      },
+      {
+        "case": "invalid_forced_episode",
+        "passed": true
+      },
+      {
+        "case": "later_interruption",
+        "passed": true
+      },
+      {
+        "case": "declared_budget",
+        "passed": true
+      },
+      {
+        "case": "genuine_ruin",
+        "passed": true
+      }
+    ],
+    "public_ctest": [
+      "klpo_episodes",
+      "klpo_collection",
+      "klpo_policy"
+    ],
+    "precision_delta_ctest": "klpo_collection",
+    "optimizer_steps": 0,
+    "gpu_used": false,
+    "scope": "Ocho sondas CPU, tres ejecutables nuevos y repetición del colector tras el delta. No repite ni se atribuye los perfiles CUDA o sanitizadores de la implementación."
   }
 }

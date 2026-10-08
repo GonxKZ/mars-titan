@@ -195,3 +195,9 @@ CUDA_VISIBLE_DEVICES=-1 ctest --test-dir build/native/terminal-collector \
   -R '^(klpo_episodes|klpo_collection|klpo_policy|klpo_terminal|ppo_variant_state|ppo_variant_objective|ppo_checkpoint)$' \
   --output-on-failure
 ```
+
+La revisión independiente del colector no encontró hallazgos materiales abiertos.
+Ocho sondas CPU contrastan horizontes mixtos, q e historia alteradas, RNG
+falsificado, gradiente GRU y fila del crítico, valoración inválida en un episodio
+forzado, interrupción tardía, presupuesto y ruina del motor. Su recibo distingue
+esas ejecuciones de las comprobaciones CUDA y sanitizadores anteriores.
