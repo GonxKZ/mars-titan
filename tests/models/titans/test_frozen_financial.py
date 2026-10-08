@@ -136,6 +136,47 @@ def test_strong_boundary_verification_detects_data_bypass():
         engine.verify()
 
 
+@pytest.mark.parametrize(
+    "change", ["norm_eps", "norm_shape", "heads", "batch_first", "norm_first", "activation"]
+)
+def test_numeric_layer_attributes_cannot_change_after_sealing(change):
+    engine, batch = frozen("transformer_direct")
+    model = engine.predictor
+    block = model.price_encoder.blocks[0]
+    if change == "norm_eps":
+        model.price_encoder.norm.eps = 0.5
+    elif change == "norm_shape":
+        model.price_encoder.norm.normalized_shape = (1, model.config.hidden_size)
+    elif change == "heads":
+        block.self_attn.num_heads = 2
+    elif change == "batch_first":
+        block.self_attn.batch_first = False
+    elif change == "norm_first":
+        block.norm_first = False
+    else:
+        block.activation = torch.nn.functional.relu
+    with pytest.raises(ValueError):
+        engine.prepare(batch, model.initial_state(batch.flow_ids), context_id=CONTEXT)
+
+
+def test_execution_identity_serializes_attributes_without_object_addresses():
+    first, _ = frozen("transformer_direct")
+    second, _ = frozen("transformer_direct")
+    assert first.model_id == second.model_id
+    norm = first.identity()["modules"]["predictor/price_encoder.norm"]
+    assert norm["settings"] == dict(
+        normalized_shape=[32], eps=1e-5, elementwise_affine=True, bias=True
+    )
+    block = first.identity()["modules"]["predictor/price_encoder.blocks.0"]
+    assert block["settings"]["activation"] == "torch.nn.functional.gelu"
+
+
+def test_gelu_approximation_is_an_explicit_serializable_attribute():
+    api = importlib.import_module("mars_titan.models.titans.frozen_financial")
+    assert api._module_settings(torch.nn.GELU()) == {"approximate": "none"}
+    assert api._module_settings(torch.nn.GELU(approximate="tanh")) == {"approximate": "tanh"}
+
+
 def test_future_snapshot_is_rejected_at_the_actual_decision_cutoff():
     engine, batch = frozen(refinements=1)
     snapshot = EpisodeSnapshot.create(

@@ -235,6 +235,24 @@ def test_parameter_data_change_cannot_publish_another_generation(native, tmp_pat
         assert (tmp_path / "run/latest.json").read_bytes() == latest
 
 
+@pytest.mark.parametrize("when", ["before_step", "before_commit"])
+def test_numeric_layer_mutation_cannot_publish_another_generation(native, tmp_path, when):
+    data = resources(tmp_path)
+    with session(native, tmp_path / "run", data) as run:
+        run.step(inputs(data, 125), [])
+        latest = (tmp_path / "run/latest.json").read_bytes()
+
+        def change(boundary):
+            if boundary == native.Boundary.before_commit:
+                data[3].predictor.price_encoder.norm.eps = 0.5
+
+        if when == "before_step":
+            change(native.Boundary.before_commit)
+        with pytest.raises(ValueError):
+            run.step(inputs(data, 126), [], fault=change if when == "before_commit" else None)
+        assert (tmp_path / "run/latest.json").read_bytes() == latest
+
+
 def test_corrupting_nested_fast_payload_before_commit_keeps_previous_generation(native, tmp_path):
     data = resources(tmp_path)
     with session(native, tmp_path / "run", data) as run:

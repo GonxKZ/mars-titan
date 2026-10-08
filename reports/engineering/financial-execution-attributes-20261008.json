@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T21:06:59.164737+00:00",
+  "change": "Identificar atributos numéricos de las capas y rechazar su cambio antes de publicar.",
+  "sources": {
+    "src/mars_titan/models/titans/frozen_financial.py": "9a5238a66cd23333b0e4ff8e24719a954b11d8c95efef196f121b6c7dade7a31",
+    "tests/models/titans/test_frozen_financial.py": "8cec3a65061d7a18c1959fcd46c3e58b36cdd1802a7cf749134bf2335ef28d49",
+    "tests/memory/test_financial_session.py": "5614e2ca8f4265fb69523cf995cdd5ffe382b662fe5e0eeab8585144a1cfcdae"
+  },
+  "original_probes": {
+    "norm_eps_changed_prediction": 0.019145488600804887,
+    "activation_changed_prediction": 6.222180773937658e-06,
+    "receipt_sha256": "870cce68ffc5a079e13974629c7543dece4a7250f9c52fb158dc397172d7ca98"
+  },
+  "tests": {
+    "red": 8,
+    "base_passed": 55,
+    "additional_targeted_passed": 9,
+    "latest_unchanged_on_rejection": true,
+    "stable_identity_has_no_object_addresses": true
+  },
+  "logs": {
+    "numeric-attributes-red.log": "7cfbebccfe0e7aacec250ac4934aeb7ab5b04eaec801261a2ae1506e33779703",
+    "numeric-attributes-green.log": "1f4fae0c045f8ca02e76cbd6fafc0fb7b9cd0b2a9c5fabfaaaac9d2e137556d0",
+    "numeric-attributes-boundary.log": "9c66fb04f4321a036ffecaea861a5943fcf4f28b96878d10018182a437bd4f9b"
+  },
+  "limits": [
+    "La firma interna usa identidad de objetos, separada de la configuración serializada.",
+    "Se capturan los atributos de las capas utilizadas, sin congelar todo __dict__ de PyTorch.",
+    "El cambio añade validaciones y no modifica las operaciones del predictor.",
+    "La sonda CUDA focal de esta guarda permanece pendiente de una ventana coordinada."
+  ]
+}

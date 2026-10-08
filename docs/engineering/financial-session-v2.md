@@ -13,6 +13,11 @@ sustituidos. Las huellas completas se comprueban en fronteras de sesión y
 recuperación. Dentro de cada bloque se revisan versiones, formas y modos sin
 copiar los parámetros a CPU. El contador de versiones no detecta cualquier
 cambio mediante `.data`, por lo que no sustituye la verificación de bytes.
+La identidad serializa también los atributos numéricos de las capas usadas,
+como epsilon y forma de LayerNorm, cabezas y disposición de atención, orden de
+normalización y activación. Las direcciones de objetos solo intervienen en la
+firma interna del proceso. Cambiar esos atributos o sustituir la activación
+callable invalida la sesión antes de publicar otra generación.
 
 Antes de construir este consumidor se declara
 `torch.backends.mha.set_fastpath_enabled(False)`. El ajuste debe permanecer

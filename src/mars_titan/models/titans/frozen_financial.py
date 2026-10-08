@@ -14,6 +14,8 @@ from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .financial import FinancialPredictor, _tensor_digest
 from .local_control import MACProjectionControl
 
+_TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
+
 _TITANS_MODULES = (
     "config",
     "state",
@@ -68,6 +70,50 @@ def _numerics():
     )
 
 
+def _module_settings(module):
+    """Atributos del cálculo usado, sin serializar objetos ni recorrer __dict__."""
+    nn = torch.nn
+    fields, settings = (), {}
+    if isinstance(module, nn.Linear):
+        fields = ("in_features", "out_features")
+        settings["bias"] = module.bias is not None
+    elif isinstance(module, nn.LayerNorm):
+        fields = ("normalized_shape", "eps", "elementwise_affine")
+        settings["bias"] = module.bias is not None
+    elif isinstance(module, nn.MultiheadAttention):
+        fields = (
+            "embed_dim",
+            "num_heads",
+            "head_dim",
+            "kdim",
+            "vdim",
+            "dropout",
+            "batch_first",
+            "add_zero_attn",
+        )
+        settings.update(
+            qkv_same_embed_dim=module._qkv_same_embed_dim,
+            in_proj_bias=module.in_proj_bias is not None,
+            bias_k=module.bias_k is not None,
+            bias_v=module.bias_v is not None,
+        )
+    elif isinstance(module, nn.TransformerEncoderLayer):
+        if module.activation is not _TRANSFORMER_ACTIVATION:
+            raise ValueError("La activación del Transformer fue sustituida fuera de su contrato")
+        fields = ("norm_first", "activation_relu_or_gelu")
+        settings["activation"] = "torch.nn.functional.gelu"
+    elif isinstance(module, nn.Dropout):
+        fields = ("p", "inplace")
+    elif isinstance(module, nn.GELU):
+        fields = ("approximate",)
+    elif isinstance(module, (nn.ReLU, nn.SiLU)):
+        fields = ("inplace",)
+    elif type(module) is FinancialPredictor:
+        fields = ("masked",)
+    settings.update((name, getattr(module, name)) for name in fields)
+    return settings
+
+
 def _execution_signature(models):
     from torch.nn.modules import module as torch_module
 
@@ -115,8 +161,17 @@ def _execution_signature(models):
                 for key, value in inspect.getmembers(kind, inspect.isfunction)
             )
             qualified = prefix + "/" + name
-            modes[qualified] = dict(type=kind.__module__ + "." + kind.__qualname__, training=False)
-            signatures.append((qualified, id(module), methods))
+            settings = _module_settings(module)
+            try:
+                encoded_settings = canonical(settings)
+            except (TypeError, ValueError) as error:
+                raise ValueError(
+                    "Los atributos de la capa no tienen tipos finitos admitidos"
+                ) from error
+            modes[qualified] = dict(
+                type=kind.__module__ + "." + kind.__qualname__, training=False, settings=settings
+            )
+            signatures.append((qualified, id(module), methods, encoded_settings))
         for name, value in (*model.named_parameters(), *model.named_buffers()):
             if value.requires_grad or value.grad_fn is not None or value.grad is not None:
                 raise ValueError("Los parámetros y buffers compartidos deben estar congelados")
