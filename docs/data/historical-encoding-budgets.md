@@ -14,6 +14,8 @@ Las opciones pertenecen al comando existente y también están disponibles media
 uv run python -m mars_titan.data.corpus_encoding --help
 ```
 
+La [ubicación opcional de la tabla de palabras en CPU](frozen-embedding-placement.md) reduce su residencia en CUDA con una identidad nueva. No permite cambiar la implementación dentro de una edición confirmada.
+
 ## Evidencia de capacidad y paridad
 
 La auditoría de la edición anterior mide 7.995.239.328 bytes de Parquet y 10.616.950.784 bytes de caché para 1.816.369 muestras de 2.226 activos. La extrapolación simple a 17.076.024 ventanas históricas estima 75.164.737.259 bytes de Parquet y 65.149.949.885 bytes de caché. En ese momento había 135.054.024.704 bytes libres. La compresión y la proporción de noticias del histórico pueden diferir, por lo que estas cifras no sustituyen la medición de la nueva edición.

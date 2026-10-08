@@ -397,6 +397,12 @@ def main():
         "--text-batch-size", type=int, default=32, help="Fragmentos por lote de texto"
     )
     parser.add_argument("--image-batch-size", type=int, default=64, help="Gráficos por lote CUDA")
+    parser.add_argument(
+        "--word-embedding-placement",
+        choices=("cuda", "cpu"),
+        default="cuda",
+        help="Ubicación de la tabla de palabras FP32, con el resto del codificador en CUDA",
+    )
     parser.add_argument("--context", type=int, default=64, help="Sesiones de contexto")
     parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
     parser.add_argument("--accounting-policy", choices=(HISTORICAL_ACCOUNTING,))
@@ -420,6 +426,7 @@ def main():
             min_free_cuda_bytes=args.min_free_cuda_bytes,
             text_batch_size=args.text_batch_size,
             image_batch_size=args.image_batch_size,
+            word_embedding_placement=args.word_embedding_placement,
         ),
         cache_charts=args.cache_charts,
         max_new_assets=args.max_new_assets,

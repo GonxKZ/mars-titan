@@ -1,0 +1,1070 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T18:05:37.843499+00:00",
+  "scope": "Preparación con codificadores congelados. Sin corpus nuevo ni aprendizaje.",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/10",
+  "base_commit": "113286b5903c38e8220c3d9c6cbfadde3109072e",
+  "frozen_reference_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+  "source_sha256": {
+    "src/mars_titan/data/embeddings.py": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "src/mars_titan/data/embedding_placement.py": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35",
+    "src/mars_titan/data/corpus_encoding.py": "e779d39f4fab11cbdc4341389190eb619510d87ec607a1006d76d311ee5497ad",
+    "tests/data/test_embedding_placement.py": "9912417bbf3d174aa2ae624b82e9576744426483db2cb2fc3d343f54bdda592e",
+    "tests/data/test_encoding_budgets.py": "b1f933489e93470cef9365376c87b7224d1012da576586d02d1432a46beb6f45"
+  },
+  "encoder_spec_cpu": {
+    "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+    "text_artifacts_sha256": {
+      "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+      "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+    },
+    "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+    "tokenizers_version": "0.23.2",
+    "tokenizer_class": "TokenizersBackend",
+    "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+    "image_model": "resnet18.IMAGENET1K_V1",
+    "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+    "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "image_policy": "224_rgb_imagenet_normalization_no_crop",
+    "code_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "transformers": "5.17.0",
+    "device": "cuda:0",
+    "precision": "float32",
+    "runtime_precision": {
+      "dtype": "float32",
+      "matmul_tf32": false,
+      "cudnn_tf32": true
+    },
+    "historical_simulation": false,
+    "word_embedding_placement": "cpu",
+    "word_embedding_lookup": {
+      "policy": "cpu_word_inputs_embeds_fp32_v1",
+      "code_sha256": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35"
+    },
+    "batch_sizes": {
+      "text_chunks": 8,
+      "images": 2
+    }
+  },
+  "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1064 MiB, 595.91.07",
+  "cuda": "13.0",
+  "cpu_threads": 2,
+  "cpu_quota_percent": 200,
+  "memory_limit_bytes": 4294967296,
+  "concurrent_gpu_applications": true,
+  "precision": {
+    "weights": "float32",
+    "matmul_tf32": false,
+    "cudnn_tf32": true,
+    "cudnn_benchmark": false,
+    "rtol": 2e-05,
+    "atol": 2e-06
+  },
+  "input": {
+    "source_sha256": "1945180bd161d005a2f39945c9fda906e43aeacaf09fb9bc073f168c12044d88",
+    "texts": [
+      {
+        "sha256": "5da6cde7e0ef95e4dfbd557275680cde34dc96b8619c2c541f68ff45b4b18c56",
+        "characters": 428,
+        "tokens": 103
+      },
+      {
+        "sha256": "4b62391e9ae54f68da3b1bd119deb043c5a952407469602104f8eba356706926",
+        "characters": 2616,
+        "tokens": 639
+      },
+      {
+        "sha256": "9c64a65eb53a20be3f1a87fd116562ca3882557e0b1f1cf76af89ca03a08b030",
+        "characters": 3553,
+        "tokens": 831
+      },
+      {
+        "sha256": "824d01ccd48a418818570a4b4340f82acef4a4848c9c033b0e685f1d12ea108f",
+        "characters": 5381,
+        "tokens": 1427
+      },
+      {
+        "sha256": "3bae465d5ad26836cf65a1d32e73f886ef86ba89a856530ba5d05fa019941f7a",
+        "characters": 7153,
+        "tokens": 1639
+      },
+      {
+        "sha256": "aeed0c3ca347abdfe2fdb1a38ccb4ca677b1fc0c50346ead0268e23b8e3776cc",
+        "characters": 8482,
+        "tokens": 1964
+      },
+      {
+        "sha256": "574b231d2ecf94927adf9b3388caf73ec22b01c0cb8c9db13f00fb9ebba9c033",
+        "characters": 15729,
+        "tokens": 3713
+      },
+      {
+        "sha256": "b2c9b5167cc9314f29e35ab61e47ada0c3a3155c80c3963d91e7d1e638396077",
+        "characters": 23484,
+        "tokens": 5373
+      }
+    ],
+    "synthetic_images": 5,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "text_batch_chunks": 8,
+    "image_batch_size": 2,
+    "text_golden_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+    "image_golden_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03",
+    "reference_array_file_sha256": "da5574e8361f7f1fc9d91603c4da5652bff1965bdb6d1cefc3934487715864a6"
+  },
+  "inventory": {
+    "total_unique_storage_bytes": 515367840,
+    "word_table_shape": [
+      250037,
+      384
+    ],
+    "word_table_bytes": 384056832,
+    "remaining_model_storage_bytes": 131311008
+  },
+  "inputs_embeds_probe": {
+    "pairs": [
+      {
+        "pair": 0,
+        "wrapper_seconds": 0.16872109899122734,
+        "inputs_embeds_seconds": 0.16544216799957212,
+        "inputs_embeds_over_wrapper": 0.9805659694533776,
+        "allocated_reduction_bytes": 0
+      },
+      {
+        "pair": 1,
+        "wrapper_seconds": 0.17723743899841793,
+        "inputs_embeds_seconds": 0.1710429409868084,
+        "inputs_embeds_over_wrapper": 0.9650497206086078,
+        "allocated_reduction_bytes": 0
+      },
+      {
+        "pair": 2,
+        "wrapper_seconds": 0.17070359400531743,
+        "inputs_embeds_seconds": 0.17305509198922664,
+        "inputs_embeds_over_wrapper": 1.013775327916271,
+        "allocated_reduction_bytes": 0
+      },
+      {
+        "pair": 3,
+        "wrapper_seconds": 0.1719990069977939,
+        "inputs_embeds_seconds": 0.16923281000345014,
+        "inputs_embeds_over_wrapper": 0.9839173664858469,
+        "allocated_reduction_bytes": 0
+      }
+    ],
+    "avoided_index_h2d_bytes_per_pass": 131912,
+    "avoided_index_d2h_bytes_per_pass": 131912,
+    "extra_activations_h2d_bytes_per_pass": 25327104,
+    "conclusion": "Se eliminan las copias de IDs y el wrapper. No se atribuye aceleración porque el tiempo varía en ambos sentidos."
+  },
+  "cpu_tests": {
+    "passed": 149,
+    "skipped": 1,
+    "seconds": 7.81,
+    "skipped_reason": "Prueba real anterior requiere activación explícita. Los constructores finales se comprobaron por separado en CUDA.",
+    "test_files": [
+      "tests/data/test_embedding_placement.py",
+      "tests/data/test_embeddings.py",
+      "tests/data/test_encoding_budgets.py",
+      "tests/data/test_corpus_encoding.py",
+      "tests/data/test_cohort_samples.py",
+      "tests/data/test_chinese_cohort_samples.py",
+      "tests/data/test_historical_input_masks.py",
+      "tests/data/test_encoder_provenance_integration.py"
+    ]
+  },
+  "targeted_mutations": {
+    "source_sha256": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35",
+    "mutations": [
+      {
+        "mutation": "gradient",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "d07ad0cba343e29aafcc3cf49a2520e07d5eeef3ef57d28a0270f58087c0fa72"
+      },
+      {
+        "mutation": "trainable",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "95a43760850584af78b0afb6d0c7e716ed3696f6117747da0a585d398e4cfdc3"
+      },
+      {
+        "mutation": "dtype",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "492040d43bfecffa2bf0fd04f2a56a9f9a9cb28b74426a3f61b357b8e5526b93"
+      },
+      {
+        "mutation": "max_norm",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "0b750311db27b5f8e29dd36d84cb129db941ec0786a10892eb3bbe4b311bc7cf"
+      },
+      {
+        "mutation": "width",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "f8816933cba72990dd75558c373bbed2b8a7d9bbf7d23d9a515f915e612779ef"
+      },
+      {
+        "mutation": "query_device",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "61e2048103b2d5ac1d658fc896711d992ce3732d1f93e89a1eb1d43e1b0fc4d9"
+      },
+      {
+        "mutation": "row_order",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "21137a2a42a5657dbbda8d28195c02921092d82c600717c61bb7b2c1413acc7f"
+      },
+      {
+        "mutation": "exclude_table",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "aa2845eef663b3a7b162f4d2d167ac0647325b356d17b84c066138480beabed5"
+      },
+      {
+        "mutation": "restore_table",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "2210ac37637a97b9b1ac93c08a3f0bbda2cf19a392f89a39547a1bf86aa2f34c"
+      }
+    ]
+  },
+  "quality": {
+    "tool": "CPython sys.settrace, dis y ast",
+    "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+    "convention": "Líneas asociadas a instrucciones distintas de RESUME, incluidas definiciones. CCN=1+if/for/while/ifexp/except+operandos booleanos adicionales. CRAP=CCN²*(1-cobertura de líneas)³+CCN.",
+    "scope": "Nuevo módulo de ubicación. No se mide cobertura de arcos ni de terceros.",
+    "source": "src/mars_titan/data/embedding_placement.py",
+    "source_sha256": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35",
+    "executed_lines": [
+      1,
+      3,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      15,
+      18,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      27,
+      28,
+      30,
+      31,
+      34,
+      36,
+      37,
+      38,
+      39,
+      40,
+      42,
+      43
+    ],
+    "missing_lines": [],
+    "functions": [
+      {
+        "function": "check_cpu_word_table",
+        "line": 6,
+        "ccn": 7,
+        "executable_lines": 8,
+        "missing_lines": [],
+        "coverage": 1.0,
+        "crap": 7.0
+      },
+      {
+        "function": "cpu_word_values",
+        "line": 18,
+        "ccn": 7,
+        "executable_lines": 11,
+        "missing_lines": [],
+        "coverage": 1.0,
+        "crap": 7.0
+      },
+      {
+        "function": "place_cpu_word_embeddings",
+        "line": 34,
+        "ccn": 1,
+        "executable_lines": 8,
+        "missing_lines": [],
+        "coverage": 1.0,
+        "crap": 1.0
+      }
+    ],
+    "limitations": [
+      "coverage.py y radon no están instalados en el entorno compartido. No se añaden dependencias.",
+      "Este diagnóstico local no es intercambiable con la convención de coverage.py y radon.",
+      "La cobertura no prueba ausencia de errores."
+    ]
+  },
+  "preserved_failures": [
+    {
+      "artifact": "initial-report.json",
+      "sha256": "cec65b3f67ed4d5f95ff3fc12ab1d79318bb6a4906a52f5a4095556895da2224",
+      "cause": "Inicialización incompleta del tokenizador en la primera sonda.",
+      "status": "failed",
+      "error_type": "AssertionError"
+    },
+    {
+      "artifact": "report.json",
+      "sha256": "6bb93ad5cf4b818a6150c0cf1d737f306ead563a0b8521304ea8a9f894961927",
+      "cause": "Reserva CUDA de384 MiB insuficiente antes de cargar pesos.",
+      "status": "failed",
+      "error_type": "RuntimeError"
+    },
+    {
+      "artifact": "attempt-224/report.json",
+      "sha256": "02849086d565396fe553dcba5adb8c9a9d02bd55bdffb819af3a2bc4735639d0",
+      "cause": "Importación de un paquete editable antiguo, detectada por firma incompatible.",
+      "status": "failed",
+      "error_type": "TypeError"
+    },
+    {
+      "artifact": "paired-comparison/report.json",
+      "sha256": "29b47c66ab8725329d637fe27ee08466b29a1b5cf057b95d8c3e1297ea9af208",
+      "cause": "Guarda de la sonda que exigía cero bytes del asignador tras descargar parámetros. Se sustituyó por referencias débiles y registro del remanente.",
+      "status": "failed",
+      "error_type": "AssertionError"
+    },
+    {
+      "artifact": "precision-final-paired.log",
+      "sha256": "4dd9b16001511a5c8dae290dc4421bfba88c2f3f08b444621e23b1cafa99b3c8",
+      "cause": "Error de sintaxis en la sonda adicional, antes de imports y de cargar modelos. Corregido en otro archivo.",
+      "status": "failed",
+      "error_type": "SyntaxError"
+    }
+  ],
+  "corrections": [
+    {
+      "artifact": "constructor-224/report.json",
+      "field": "limits",
+      "correction": "No se ejecutó entonces una pareja temporal. La frase heredada que afirmaba falta de VRAM era inexacta, había961 MiB antes del contexto. La pareja se midió después en recibos distintos."
+    }
+  ],
+  "continuity": {
+    "recommended": "new_uniform_edition",
+    "automatic_reuse": false,
+    "old_identity_unchanged": true,
+    "existing_readers_require_identical_encoders": true,
+    "prefix_cost": {
+      "recorded_at": "2026-10-08T17:30:50.000291+00:00",
+      "progress_sha256": "8a4bba924495057b6eb2ce061d32a4ce156dc311216ecf3c9ae933b2fa28e1b1",
+      "configuration_sha256": "19797b56cf326a04b53373cc9173cba51459b3e2bf5480f6dd60f450a63255f0",
+      "assets": 480,
+      "samples": 1673363,
+      "cohort_complete": false,
+      "failed_assets": 0,
+      "parquet_bytes": 5704577747,
+      "cache_file_bytes": {
+        "embeddings.sqlite": 526045184,
+        "embeddings.sqlite-wal": 0,
+        "embeddings.sqlite-shm": 32768
+      },
+      "disk_free_bytes": 123957870592,
+      "scope": "Solo stat de artefactos y lectura de recibos, no reverificación de sus bytes.",
+      "estimated_additional_reencoding_samples": 1673363
+    },
+    "recoding_time": "No medido. No se extrapola del lote de codificadores al corpus."
+  },
+  "evidence_sha256": {
+    "inventory-runtime.json": "7ef8b99dbaa0c73cf5f365826930cfd47e1043c8b3b9faac157c133cc13d448e",
+    "attempt-224-runtime/report.json": "0d838ffdc20843f8126da8b92760fe0ee6debe8aaffc414f9f083717ef43018a",
+    "constructor-224/report.json": "c0ff26424a9d4366bdbcb91e041fab7ddeeb345a8b056a2f1ad872bc53d6084e",
+    "paired-comparison/report.json": "29b47c66ab8725329d637fe27ee08466b29a1b5cf057b95d8c3e1297ea9af208",
+    "paired-comparison-lifetime/report.json": "a10d9bff2c8748fd638e325c8effb288003eb61e37dfcdb3537ef2a02c03856c",
+    "inputs-embeds-prototype/report.json": "6778a684862834da2c056feda5d0121292b28bc27538b03c5e501d327dbbf6ca",
+    "final-paired-comparison/report.json": "348019ec4b81e4cce2199ac3f0979311abcfbd3f74a178cc0eca623e8251c53c",
+    "probe_final_paired.py": "bedb80d7faa4c137afa35fdfd833f03a48035cca866aa00ea4707b1daea96329",
+    "final-paired.log": "a33524a9360493fb2bc2ae2a5a328ed1083ab3b46eb8d6aff34c8d3333d956a1",
+    "implementation/red.log": "25fce9da36898d8a09bc63a755eed41aa5e1bb8777c59af4a5b8cb26f834ce6e",
+    "implementation/inputs-embeds-red.log": "b9f8213233900d9c09c2c99c76da2f52a03392eee6bc49d9f3e937b98f77a233",
+    "implementation/final/integration.log": "4dbdcd91cdecd6dcb7534244811f4f604bc0a1533ebbb6aa95028b36f1e8d715",
+    "implementation/final/quality.json": "260a5fe846a98bb4d23addfc4e990a2def7e01a6fd6b7d2580f38358f7993fd0",
+    "implementation/final/mutations.json": "adb5990b50e99b0cf04c688481ae189944035976b837df7d4a2685226f8bdf25",
+    "continuity-cost.json": "6173bcefdd0926adec70e207b88e713165a330d8c9a8ccf2785f2eb02607be51",
+    "precision-final-paired-comparison-v2/report.json": "5c33cbb1d17fe6e8ceb7c7687c851a5f464ec99dee663805b3dca8e827a96619",
+    "probe_precision_final_paired_v2.py": "dc77efcad2139cc9c3e5452608656bbf75f4e4b31dea9139240ec0a5010330cd",
+    "precision-final-paired-v2.log": "77bffbe055c30ab0a2c9fb76c5f1e18c3c8b4f0abfff5bed3f0914dc071b4370",
+    "implementation/precision-red.log": "48167f61044d9cb0740170628ff0b71360c9e4e73e87cd63d1cc5dd3f20be65b",
+    "implementation/precision-integration.log": "6277b4e5229a01c5bd48633af3855e81cdd68aadd077fa6372b5324e18c8c479",
+    "implementation/precision-mutations.json": "f2a2ece964166a79e883ab44fbcddea75cb7d7be2fbc810d6b67018b6a7e6eb3",
+    "guard-final-cuda/report.json": "5219b057805c75f5df4b7caad3b7130bd1aa569fe68b86d0cf317241bf79d4c3",
+    "probe_guard_final_cuda.py": "c97f4d56122035886b6cb2c9a1ad73fbeff6fabcfaf848c78ce7c26c912ebf51",
+    "guard-final-cuda.log": "816aa0d99af6fb25e85941cbd155b091088fe9774ec60cabf7add27b9b766f69",
+    "implementation/late-model-red.log": "b186fb9cc4284e4a52f5cd22b5edbd031636517533397e5b9c4aa135634abed5",
+    "implementation/late-model-green.log": "b44db6e69049cf2222a6c08ef484039ab0e029ec937ed884a1e381b21599fd0b",
+    "implementation/guard-integration.log": "ef8a96952163c7c744e078eab25526817a0bd1547a9c2571c5a4b2e2b134b67a",
+    "implementation/guard-mutations.json": "4bab1884337ed59862d473f15e62e6d77e7f6f609a5defd0440b095a0fc56699",
+    "implementation/guard-quality.json": "897efa6df55c3e275db453b0a0042af43affd987444f7b9f1ee217f67bbf7318"
+  },
+  "limitations": [
+    "Los lotes medidos no cubren todos los textos y gráficos del corpus.",
+    "El límite de224 MiB corresponde a lotes de8 fragmentos y2 imágenes, no a los tamaños predeterminados32 y 64.",
+    "La memoria del contexto CUDA queda fuera del asignador Torch. Otras aplicaciones permanecen activas.",
+    "La medida de latencia no incluye lectura y materialización por activo ni acredita aceleración del corpus.",
+    "No se midió energía. No se añadieron kernels ni dependencias.",
+    "Los originales y sus identidades permanecen intactos. No se ha materializado una edición con la opción nueva."
+  ],
+  "precision_mutations": {
+    "source_sha256": "a70da891d0386f1bdc93b6f4fba927042509f53008c59fdb7fd4d3bc8a9a4d6e",
+    "mutations": [
+      {
+        "mutation": "dtype",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "9c2f049d219963f324db47cb524da7c96a14dd6968c6fb23045cdc86026189e3"
+      },
+      {
+        "mutation": "autocast",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "9322804b56bc1a4bda2ff3a69e6efb6f57fddc79131cffbb1246b7d3b85f91d9"
+      },
+      {
+        "mutation": "matmul",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "9b58aefa2491b7d8ad29d3a8497974d5df8ccc9197dea2e63978c85194894c12"
+      },
+      {
+        "mutation": "cudnn",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "326dc10ccf941616ae949d79347672940b1efca5debc13d70bd817742ba91e8b"
+      },
+      {
+        "mutation": "loaded_dtype",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "156c17e1ad84e10ec227ec0bac89e004fc79e57578cf4a85296e8b7f9835b024"
+      }
+    ]
+  },
+  "static_checks": {
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "repository_check": "passed"
+  },
+  "model_guard_mutations": {
+    "source_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "mutations": [
+      {
+        "mutation": "child_eval",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "f890687db13a2fdbcb2670d43fd28a2bbf3eb40473277992f9f259d4510dd6ee"
+      },
+      {
+        "mutation": "trainable",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "222efdaf158b33f3428f7fbe3270c0cf4fd4e6bfa56c589caf5de3ffe49d467a"
+      },
+      {
+        "mutation": "text_guard",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "f00c2422f61226f42f4b38bbaabef87a507d6caa5f7328ab331d44e2a7963166"
+      },
+      {
+        "mutation": "image_guard",
+        "returncode": 1,
+        "detected": true,
+        "test_log_sha256": "2e4d6ae1edcb3dac17022036099905f1a62982cf93fdf16c7c6084651d7d7a6b"
+      }
+    ]
+  },
+  "guard_quality": {
+    "tool": "CPython sys.settrace, dis y ast",
+    "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+    "convention": "Líneas asociadas a instrucciones distintas de RESUME, incluidas definiciones. CCN=1+if/for/while/ifexp/except+operandos booleanos adicionales. CRAP=CCN²*(1-cobertura de líneas)³+CCN.",
+    "scope": "Guardas de precisión y congelación. No se mide cobertura de arcos ni de terceros.",
+    "source": "src/mars_titan/data/embeddings.py",
+    "source_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "functions": [
+      {
+        "function": "_runtime_precision",
+        "line": 135,
+        "ccn": 3,
+        "executable_lines": 9,
+        "missing_lines": [],
+        "coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "function": "_check_frozen_model",
+        "line": 149,
+        "ccn": 5,
+        "executable_lines": 10,
+        "missing_lines": [],
+        "coverage": 1.0,
+        "crap": 5.0
+      },
+      {
+        "function": "_check_precision",
+        "line": 297,
+        "ccn": 2,
+        "executable_lines": 3,
+        "missing_lines": [],
+        "coverage": 1.0,
+        "crap": 2.0
+      }
+    ],
+    "limitations": [
+      "coverage.py y radon no están instalados en el entorno compartido. No se añaden dependencias.",
+      "Este diagnóstico local no es intercambiable con la convención de coverage.py y radon.",
+      "La cobertura no prueba ausencia de errores."
+    ]
+  },
+  "paired_measurement_before_late_model_guard": {
+    "protocol": {
+      "pairs": 4,
+      "orders": [
+        [
+          "cuda",
+          "cpu"
+        ],
+        [
+          "cpu",
+          "cuda"
+        ],
+        [
+          "cuda",
+          "cpu"
+        ],
+        [
+          "cpu",
+          "cuda"
+        ]
+      ],
+      "warmups_per_case": 1,
+      "measured_repetitions_per_case": 3,
+      "reference_limits_mib": [
+        640,
+        768
+      ],
+      "cpu_table_limits_mib": [
+        224,
+        320
+      ],
+      "rtol": 2e-05,
+      "atol": 2e-06
+    },
+    "placements": {
+      "cuda": {
+        "allocator_limit_bytes": 671088640,
+        "minimum_free_bytes": 805306368,
+        "peak_allocated_bytes": 549734400,
+        "peak_reserved_bytes": 578813952,
+        "synchronized_total_seconds": [
+          0.18595780301257037,
+          0.17518852501234505,
+          0.17459905598661862,
+          0.18491323699709028,
+          0.1752980790042784,
+          0.1706950940133538,
+          0.17182350499206223,
+          0.17360905298846774,
+          0.172626425002818,
+          0.17189193300146144,
+          0.1698992140009068,
+          0.17216109800210688
+        ],
+        "synchronized_text_seconds": [
+          0.17490337800700217,
+          0.16530399900511838,
+          0.16525582899339497,
+          0.1755793569900561,
+          0.16561717601143755,
+          0.16164965600182768,
+          0.16191643799538724,
+          0.16406603998620994,
+          0.1629548100027023,
+          0.16257153800688684,
+          0.16031100699910894,
+          0.1613402130024042
+        ],
+        "synchronized_image_seconds": [
+          0.011054425005568191,
+          0.009884526007226668,
+          0.009343226993223652,
+          0.009333880007034168,
+          0.009680902992840856,
+          0.00904543801152613,
+          0.009907066996674985,
+          0.009543013002257794,
+          0.009671615000115708,
+          0.009320394994574599,
+          0.009588207001797855,
+          0.010820884999702685
+        ],
+        "median_total_seconds": 0.17311773899564287,
+        "median_texts_per_second": 48.927108927480575,
+        "median_images_per_second": 519.2253360307565,
+        "text_exact": true,
+        "image_exact": true,
+        "max_abs_error": 0.0,
+        "index_d2h_bytes_per_pass": 0,
+        "extra_word_values_h2d_bytes_per_pass": 0,
+        "load_seconds": [
+          1.9123902749997796,
+          1.6441233020013897,
+          1.6469820409984095,
+          1.6706796700018458
+        ],
+        "precision_change_rejections": [
+          "matmul",
+          "cudnn",
+          "dtype",
+          "autocast"
+        ]
+      },
+      "cpu": {
+        "allocator_limit_bytes": 234881024,
+        "minimum_free_bytes": 335544320,
+        "peak_allocated_bytes": 165955584,
+        "peak_reserved_bytes": 192937984,
+        "synchronized_total_seconds": [
+          0.18151950799801853,
+          0.18718470899329986,
+          0.18288405299244914,
+          0.1957115110126324,
+          0.17915144500148017,
+          0.1761070899956394,
+          0.178762130002724,
+          0.17709508500411175,
+          0.17646789699210785,
+          0.19702240300830454,
+          0.1772550959867658,
+          0.17786437198810745
+        ],
+        "synchronized_text_seconds": [
+          0.17171483299171086,
+          0.17711862300348002,
+          0.17263392099994235,
+          0.1855868940037908,
+          0.1695532279991312,
+          0.16641659000015352,
+          0.1694850969943218,
+          0.16804508000495844,
+          0.16721127199707553,
+          0.18769798100402113,
+          0.1679907869984163,
+          0.16816221000044607
+        ],
+        "synchronized_image_seconds": [
+          0.009804675006307662,
+          0.01006608598981984,
+          0.010250131992506795,
+          0.010124617008841597,
+          0.009598217002348974,
+          0.00969049999548588,
+          0.009277033008402213,
+          0.009050004999153316,
+          0.009256624995032325,
+          0.009324422004283406,
+          0.009264308988349512,
+          0.009702161987661384
+        ],
+        "median_total_seconds": 0.1789567875021021,
+        "median_texts_per_second": 47.19230678840573,
+        "median_images_per_second": 518.4496667948144,
+        "text_exact": true,
+        "image_exact": true,
+        "max_abs_error": 0.0,
+        "index_d2h_bytes_per_pass": 0,
+        "extra_word_values_h2d_bytes_per_pass": 25327104,
+        "load_seconds": [
+          1.805221314993105,
+          1.693702859003679,
+          1.60150913700636,
+          1.5752441170043312
+        ],
+        "precision_change_rejections": [
+          "matmul",
+          "cudnn",
+          "dtype",
+          "autocast"
+        ]
+      }
+    },
+    "pairs": [
+      {
+        "pair": 0,
+        "cuda_seconds": 0.17518852501234505,
+        "cpu_seconds": 0.18288405299244914,
+        "cpu_over_cuda": 1.0439271235348422,
+        "allocated_reduction_bytes": 383778816
+      },
+      {
+        "pair": 1,
+        "cuda_seconds": 0.1752980790042784,
+        "cpu_seconds": 0.17915144500148017,
+        "cpu_over_cuda": 1.0219817924936172,
+        "allocated_reduction_bytes": 383778816
+      },
+      {
+        "pair": 2,
+        "cuda_seconds": 0.172626425002818,
+        "cpu_seconds": 0.17709508500411175,
+        "cpu_over_cuda": 1.025886303335198,
+        "allocated_reduction_bytes": 383778816
+      },
+      {
+        "pair": 3,
+        "cuda_seconds": 0.17189193300146144,
+        "cpu_seconds": 0.17786437198810745,
+        "cpu_over_cuda": 1.0347453128390571,
+        "allocated_reduction_bytes": 383778816
+      }
+    ],
+    "allocated_reduction_bytes": 383778816,
+    "all_model_parameters_and_buffers_released": true,
+    "residual_allocator_bytes_after_models": 9175040,
+    "residual_allocator_attribution": "No atribuida.",
+    "state_hashes_equal_between_placements": true,
+    "state_hashes_unchanged": true,
+    "rng_unchanged": true,
+    "state_hashes": [
+      "e7cdbfa12ea1b3a0f305577aa3e4a0820e650109f72bc20c3936cae7175f07d5",
+      "83f828d6641059af3df3fc450f47029db556b11a20c341345a59b7286a910ec5"
+    ],
+    "total_process_seconds": 33.57,
+    "after_import_seconds": 28.49437061100616,
+    "peak_rss_inside_script_bytes": 2778431488,
+    "started_at": "2026-10-08T17:44:30.474595+00:00",
+    "finished_at": "2026-10-08T17:44:58.968952+00:00",
+    "embeddings_sha256": "a70da891d0386f1bdc93b6f4fba927042509f53008c59fdb7fd4d3bc8a9a4d6e"
+  },
+  "final_guard_check": {
+    "started_at": "2026-10-08T18:01:51.856886+00:00",
+    "finished_at": "2026-10-08T18:02:00.065455+00:00",
+    "module_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "protocol": {
+      "pairs": 1,
+      "orders": [
+        [
+          "cuda",
+          "cpu"
+        ]
+      ],
+      "warmups_per_case": 1,
+      "measured_repetitions_per_case": 3,
+      "reference_limits_mib": [
+        640,
+        768
+      ],
+      "cpu_table_limits_mib": [
+        224,
+        320
+      ],
+      "rtol": 2e-05,
+      "atol": 2e-06
+    },
+    "cases": [
+      {
+        "model_rejections": [
+          "dropout",
+          "parameter_dtype",
+          "requires_grad"
+        ],
+        "precision_rejections": [
+          "matmul",
+          "cudnn",
+          "dtype",
+          "autocast"
+        ],
+        "pair": 0,
+        "order": 0,
+        "placement": "cuda",
+        "allocator_limit_bytes": 671088640,
+        "minimum_free_bytes": 805306368,
+        "load_seconds": 1.8773100319958758,
+        "case_total_seconds": 3.8962643949926132,
+        "peak_allocated_bytes": 549734400,
+        "peak_reserved_bytes": 578813952,
+        "spec": {
+          "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+          "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+          "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+          "text_artifacts_sha256": {
+            "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+            "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+            "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+            "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+          },
+          "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+          "tokenizers_version": "0.23.2",
+          "tokenizer_class": "TokenizersBackend",
+          "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+          "image_model": "resnet18.IMAGENET1K_V1",
+          "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+          "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+          "image_policy": "224_rgb_imagenet_normalization_no_crop",
+          "code_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+          "torch": "2.14.0+cu130",
+          "torchvision": "0.29.0+cu130",
+          "transformers": "5.17.0",
+          "device": "cuda:0",
+          "precision": "float32",
+          "runtime_precision": {
+            "dtype": "float32",
+            "matmul_tf32": false,
+            "cudnn_tf32": true
+          },
+          "historical_simulation": false,
+          "word_embedding_placement": "cuda",
+          "batch_sizes": {
+            "text_chunks": 8,
+            "images": 2
+          }
+        },
+        "timings": [
+          {
+            "repetition": 0,
+            "warmup": true,
+            "text_seconds": 0.3156360190041596,
+            "image_seconds": 0.09250505900126882,
+            "total_seconds": 0.4081410780054284,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          },
+          {
+            "repetition": 1,
+            "warmup": false,
+            "text_seconds": 0.18449656400480308,
+            "image_seconds": 0.01121351400797721,
+            "total_seconds": 0.1957100780127803,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          },
+          {
+            "repetition": 2,
+            "warmup": false,
+            "text_seconds": 0.15744366600119974,
+            "image_seconds": 0.009894513001199812,
+            "total_seconds": 0.16733817900239956,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          },
+          {
+            "repetition": 3,
+            "warmup": false,
+            "text_seconds": 0.15803939499892294,
+            "image_seconds": 0.00997506600106135,
+            "total_seconds": 0.1680144609999843,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          }
+        ],
+        "lookup_transfer_counters": {
+          "calls": 76,
+          "index_d2h_bytes": 0,
+          "values_h2d_bytes": 0
+        },
+        "state_hashes_before": [
+          "e7cdbfa12ea1b3a0f305577aa3e4a0820e650109f72bc20c3936cae7175f07d5",
+          "83f828d6641059af3df3fc450f47029db556b11a20c341345a59b7286a910ec5"
+        ],
+        "state_hashes_after": [
+          "e7cdbfa12ea1b3a0f305577aa3e4a0820e650109f72bc20c3936cae7175f07d5",
+          "83f828d6641059af3df3fc450f47029db556b11a20c341345a59b7286a910ec5"
+        ],
+        "rng_unchanged": true,
+        "median_steady_seconds": 0.1680144609999843,
+        "pre_model_allocated_bytes": 0
+      },
+      {
+        "model_rejections": [
+          "dropout",
+          "parameter_dtype",
+          "requires_grad"
+        ],
+        "precision_rejections": [
+          "matmul",
+          "cudnn",
+          "dtype",
+          "autocast"
+        ],
+        "pair": 0,
+        "order": 1,
+        "placement": "cpu",
+        "allocator_limit_bytes": 234881024,
+        "minimum_free_bytes": 335544320,
+        "load_seconds": 1.6326374570053304,
+        "case_total_seconds": 3.377268185999128,
+        "peak_allocated_bytes": 165955584,
+        "peak_reserved_bytes": 192937984,
+        "spec": {
+          "text_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+          "text_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+          "text_weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+          "text_artifacts_sha256": {
+            "config.json": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e",
+            "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+            "tokenizer_config.json": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b",
+            "special_tokens_map.json": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+          },
+          "tokenizer_backend_sha256": "674dca942ded696896a24c8985270ee6b05b9caad54e841eecdf75f555c8e7d3",
+          "tokenizers_version": "0.23.2",
+          "tokenizer_class": "TokenizersBackend",
+          "text_policy": "all_126_token_chunks_weighted_mean_no_truncation",
+          "image_model": "resnet18.IMAGENET1K_V1",
+          "image_url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+          "image_weights_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+          "image_policy": "224_rgb_imagenet_normalization_no_crop",
+          "code_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+          "torch": "2.14.0+cu130",
+          "torchvision": "0.29.0+cu130",
+          "transformers": "5.17.0",
+          "device": "cuda:0",
+          "precision": "float32",
+          "runtime_precision": {
+            "dtype": "float32",
+            "matmul_tf32": false,
+            "cudnn_tf32": true
+          },
+          "historical_simulation": false,
+          "word_embedding_placement": "cpu",
+          "word_embedding_lookup": {
+            "policy": "cpu_word_inputs_embeds_fp32_v1",
+            "code_sha256": "f40183778f133ab1b6feb6ae3d1421716ec5ead6223199c1158a4f81f28e0f35"
+          },
+          "batch_sizes": {
+            "text_chunks": 8,
+            "images": 2
+          }
+        },
+        "timings": [
+          {
+            "repetition": 0,
+            "warmup": true,
+            "text_seconds": 0.22095017399988137,
+            "image_seconds": 0.012031783000566065,
+            "total_seconds": 0.23298195700044744,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          },
+          {
+            "repetition": 1,
+            "warmup": false,
+            "text_seconds": 0.18353955099883024,
+            "image_seconds": 0.009743506001541391,
+            "total_seconds": 0.19328305700037163,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          },
+          {
+            "repetition": 2,
+            "warmup": false,
+            "text_seconds": 0.17130560499208514,
+            "image_seconds": 0.010358020997955464,
+            "total_seconds": 0.1816636259900406,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          },
+          {
+            "repetition": 3,
+            "warmup": false,
+            "text_seconds": 0.17034540200256743,
+            "image_seconds": 0.009768051997525617,
+            "total_seconds": 0.18011345400009304,
+            "text_exact": true,
+            "image_exact": true,
+            "text_max_abs_error": 0.0,
+            "image_max_abs_error": 0.0,
+            "text_sha256": "b1b973f1d1a6de1bdae451c5d1e198d2c9c8c52fdbbbd6e8a48b012fbc50b5a2",
+            "image_sha256": "f507111e899d06a13d62f54bf9906d96d81017c02b042d9e03b2a150a15fef03"
+          }
+        ],
+        "lookup_transfer_counters": {
+          "calls": 76,
+          "index_d2h_bytes": 0,
+          "values_h2d_bytes": 101308416
+        },
+        "state_hashes_before": [
+          "e7cdbfa12ea1b3a0f305577aa3e4a0820e650109f72bc20c3936cae7175f07d5",
+          "83f828d6641059af3df3fc450f47029db556b11a20c341345a59b7286a910ec5"
+        ],
+        "state_hashes_after": [
+          "e7cdbfa12ea1b3a0f305577aa3e4a0820e650109f72bc20c3936cae7175f07d5",
+          "83f828d6641059af3df3fc450f47029db556b11a20c341345a59b7286a910ec5"
+        ],
+        "rng_unchanged": true,
+        "median_steady_seconds": 0.1816636259900406,
+        "pre_model_allocated_bytes": 9175040
+      }
+    ],
+    "post_models_allocated_bytes": 9175040,
+    "pairs": [
+      {
+        "pair": 0,
+        "cuda_seconds": 0.1680144609999843,
+        "cpu_seconds": 0.1816636259900406,
+        "cpu_over_cuda": 1.0812380369452697,
+        "allocated_reduction_bytes": 383778816
+      }
+    ],
+    "peak_rss_bytes": 2767523840,
+    "training_hold_unchanged": true,
+    "total_process_seconds": 12.96,
+    "scope": "Paridad, cambios tardíos rechazados y coste focal del camino válido, una pareja con la guarda final."
+  },
+  "reproduced_model_boundary": {
+    "affected_embeddings_sha256": "a70da891d0386f1bdc93b6f4fba927042509f53008c59fdb7fd4d3bc8a9a4d6e",
+    "behaviors": [
+      "Dropout hijo en train aceptado por las dos rutas de texto.",
+      "Modelo FP64 aceptado en la ruta de IDs y salida convertida después a FP32."
+    ],
+    "corrected_embeddings_sha256": "43d4d7af085512f9f2cf1012504d6988925a158dc3cf09f58d859d1bd43745b7",
+    "regression_cases": 9,
+    "independent_red_log_sha256": "7bceb071e9db9f201d6abee6897a11e3094ba062a9aaf0c681ae19e1641d9cac"
+  }
+}

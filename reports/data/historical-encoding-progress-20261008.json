@@ -201,6 +201,36 @@
     "text-batch-benchmark.json": "6c87da6c229231e3402cae5876543a24ffdeccfb88bbdc02e6dd6376d16f50b7"
   },
   "verified_batch8_prefix": {
+    "checked_at_utc": "2026-10-08T16:13:50.664722+00:00",
+    "encoded_runtime_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+    "validator_commit": "bf407235698769b30eace042c7f5ffa36863de11",
+    "verifier_sha256": "c142c026f3a4a4326aec151b7b8e23befc07d1189e38881bbf99e55732009254",
+    "validation_source_sha256": {
+      "mars_titan.data.corpus_preparation": "1322da2ec00f052aed9b82e8d8290767bd03d3b0fef0437cc49e27b3d0618d7a",
+      "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+      "mars_titan.data.storage": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+      "mars_titan.data.temporal": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41"
+    },
+    "numpy_version": "2.5.3",
+    "progress_sha256": "8a4bba924495057b6eb2ce061d32a4ce156dc311216ecf3c9ae933b2fa28e1b1",
+    "candidate_count": 5676,
+    "reviewed_prefix_candidates": 530,
+    "verified_encoded_assets": 480,
+    "samples": 1673363,
+    "cache_news_entries": 246211,
+    "chart_cache_entries": 0,
+    "samples_bytes": 5704577747,
+    "elapsed_seconds": 70.91817072300182,
+    "peak_rss_bytes": 280645632,
+    "corpus_complete": false,
+    "training_ready": false,
+    "final_test_opened": false,
+    "scope": "Verificación de un prefijo confirmado. Sin objetivos, modelos ni aprendizaje.",
+    "verification_sha256": "7dc71e75e9fabe0e73e53f6d8fdd899b1c3ff93f5627dc0e5944fdad77e8387d",
+    "input_edition": "prepared-accounting-v1",
+    "input_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
+  },
+  "previous_verified_batch8_prefix": {
     "checked_at_utc": "2026-10-08T15:38:52.359003+00:00",
     "encoded_runtime_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
     "validator_commit": "4c575ff1825ebf92edf8a3a3606222f1267f516c",
@@ -227,36 +257,6 @@
     "final_test_opened": false,
     "scope": "Verificación de un prefijo confirmado. Sin objetivos, modelos ni aprendizaje.",
     "verification_sha256": "74730a1ee78798b7de1bdeb2050a6428c827440dc1f82102a54704e1b4dea1e4",
-    "input_edition": "prepared-accounting-v1",
-    "input_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
-  },
-  "previous_verified_batch8_prefix": {
-    "checked_at_utc": "2026-10-08T14:35:35.528565+00:00",
-    "encoded_runtime_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
-    "validator_commit": "6d32c9acf25e8c1bb63e3dc2fdccc1f150a52f0c",
-    "verifier_sha256": "c142c026f3a4a4326aec151b7b8e23befc07d1189e38881bbf99e55732009254",
-    "validation_source_sha256": {
-      "mars_titan.data.corpus_preparation": "1322da2ec00f052aed9b82e8d8290767bd03d3b0fef0437cc49e27b3d0618d7a",
-      "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
-      "mars_titan.data.storage": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
-      "mars_titan.data.temporal": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41"
-    },
-    "numpy_version": "2.5.3",
-    "progress_sha256": "ea6b8f0a025094f9dbee94f0ffa7425c97e0a94bdb77a6d61e61e16ae3b2b9f7",
-    "candidate_count": 5676,
-    "reviewed_prefix_candidates": 323,
-    "verified_encoded_assets": 288,
-    "samples": 990866,
-    "cache_news_entries": 190504,
-    "chart_cache_entries": 0,
-    "samples_bytes": 3430135570,
-    "elapsed_seconds": 41.09947207699588,
-    "peak_rss_bytes": 279937024,
-    "corpus_complete": false,
-    "training_ready": false,
-    "final_test_opened": false,
-    "scope": "Verificación de un prefijo confirmado. Sin objetivos, modelos ni aprendizaje.",
-    "verification_sha256": "6230412afddee2ddd7c6ab144aea1c4f90d58f37b573544767996283d09de166",
     "input_edition": "prepared-accounting-v1",
     "input_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
   },
@@ -304,6 +304,36 @@
       "verification_sha256": "f91bd8191c62289a83c5628a1182cf99d3e826f48b86659a7b82b6a86bd19c28",
       "input_edition": "prepared-accounting-v1",
       "input_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
+    },
+    {
+      "checked_at_utc": "2026-10-08T14:35:35.528565+00:00",
+      "encoded_runtime_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+      "validator_commit": "6d32c9acf25e8c1bb63e3dc2fdccc1f150a52f0c",
+      "verifier_sha256": "c142c026f3a4a4326aec151b7b8e23befc07d1189e38881bbf99e55732009254",
+      "validation_source_sha256": {
+        "mars_titan.data.corpus_preparation": "1322da2ec00f052aed9b82e8d8290767bd03d3b0fef0437cc49e27b3d0618d7a",
+        "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+        "mars_titan.data.storage": "344482735cb05f7fb8d2103153947c9193869a314e97eea87b0056bb362f2dfd",
+        "mars_titan.data.temporal": "ef881201cd3f53367b36733e3350e6ed4e143b46da42fb129668823707512e41"
+      },
+      "numpy_version": "2.5.3",
+      "progress_sha256": "ea6b8f0a025094f9dbee94f0ffa7425c97e0a94bdb77a6d61e61e16ae3b2b9f7",
+      "candidate_count": 5676,
+      "reviewed_prefix_candidates": 323,
+      "verified_encoded_assets": 288,
+      "samples": 990866,
+      "cache_news_entries": 190504,
+      "chart_cache_entries": 0,
+      "samples_bytes": 3430135570,
+      "elapsed_seconds": 41.09947207699588,
+      "peak_rss_bytes": 279937024,
+      "corpus_complete": false,
+      "training_ready": false,
+      "final_test_opened": false,
+      "scope": "Verificación de un prefijo confirmado. Sin objetivos, modelos ni aprendizaje.",
+      "verification_sha256": "6230412afddee2ddd7c6ab144aea1c4f90d58f37b573544767996283d09de166",
+      "input_edition": "prepared-accounting-v1",
+      "input_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
     }
   ],
   "current_execution_budget": {
@@ -316,7 +346,19 @@
     "cgroup_swap_max_bytes": 0,
     "numerical_identity_changed": false,
     "reason": "El bloque hasta 224 activos usó 513,8 MiB de swap con límite de 3 GiB. El bloque hasta 288 usó un límite de 4 GiB y no utilizó swap. Las cargas y activos son distintos, sin comparación de velocidad.",
-    "parity_evidence_sha256": "1fe4b9b43ed53dd9860629281fb07e87b78c9f6a3462f16383e6b9908199489b"
+    "parity_evidence_sha256": "1fe4b9b43ed53dd9860629281fb07e87b78c9f6a3462f16383e6b9908199489b",
+    "edition_id": "encoded-history-v2-batch8",
+    "status": "Prefijo conservado. Sin ejecución activa de esta edición."
   },
-  "expected_price_windows": 17076024
+  "expected_price_windows": 17076024,
+  "next_encoding_edition": {
+    "edition_id": "encoded-history-v3-cpu-words",
+    "runtime_commit": "4d88b243bf6d11bea2628473fd25e63224f3d26d",
+    "word_embedding_placement": "cpu",
+    "uniform_representation": true,
+    "existing_prefix_reused": false,
+    "scientific_learning_allowed": false,
+    "verification_report": "reports/data/frozen-embedding-placement-20261008.json",
+    "scope": "Preparación de una edición independiente. El estado de este recibo no acredita filas materializadas con ella."
+  }
 }
