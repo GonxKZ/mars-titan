@@ -1,0 +1,899 @@
+{
+  "date": "2026-10-08",
+  "scope": "Banco y ciclo temporal con inputs sintéticos y callbacks escalares. El predictor financiero real y su refinamiento posterior a MAC permanecen pendientes.",
+  "tests": {
+    "python": 80,
+    "native_release": 3,
+    "native_asan_ubsan": 3,
+    "mutations_detected": 6,
+    "mutations_total": 6,
+    "classic_identical_files": 8
+  },
+  "toolchain": {
+    "cpp_standard": 20,
+    "clang": "21.1.8",
+    "clang_tidy": "21.1.6",
+    "warnings_as_errors": true,
+    "lifetime": "experimental",
+    "static_analyzer": "Sin diagnósticos propios en las tres unidades modificadas"
+  },
+  "python_quality": {
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1",
+    "convention": "Sentencias ejecutables de coverage.py por rango de función de radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Ramas por separado.",
+    "files": {
+      "src/mars_titan/memory/__init__.py": {
+        "sha256": "3c0deba9ad510582788cb74e222fce0a9ac36a2fdeccb4388cb58742ef5eca92",
+        "covered_lines": 0,
+        "num_statements": 0,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0,
+        "excluded_lines": 0,
+        "percent_statements_covered": 100.0,
+        "percent_statements_covered_display": "100",
+        "num_branches": 0,
+        "num_partial_branches": 0,
+        "covered_branches": 0,
+        "missing_branches": 0,
+        "percent_branches_covered": 100.0,
+        "percent_branches_covered_display": "100"
+      },
+      "src/mars_titan/memory/episodic_codec.py": {
+        "sha256": "e5eda818831617124e49743e50786e5f589d109d0228512c52c95ce2b57f9ea0",
+        "covered_lines": 164,
+        "num_statements": 167,
+        "percent_covered": 97.07317073170732,
+        "percent_covered_display": "97",
+        "missing_lines": 3,
+        "excluded_lines": 0,
+        "percent_statements_covered": 98.20359281437126,
+        "percent_statements_covered_display": "98",
+        "num_branches": 38,
+        "num_partial_branches": 3,
+        "covered_branches": 35,
+        "missing_branches": 3,
+        "percent_branches_covered": 92.10526315789474,
+        "percent_branches_covered_display": "92"
+      },
+      "src/mars_titan/memory/episodic_session.py": {
+        "sha256": "9db912a0aaae80afd08e113b8f2814034ce65aef4c7c69177175cde753f4025d",
+        "covered_lines": 319,
+        "num_statements": 353,
+        "percent_covered": 85.50106609808103,
+        "percent_covered_display": "86",
+        "missing_lines": 34,
+        "excluded_lines": 0,
+        "percent_statements_covered": 90.36827195467423,
+        "percent_statements_covered_display": "90",
+        "num_branches": 116,
+        "num_partial_branches": 34,
+        "covered_branches": 82,
+        "missing_branches": 34,
+        "percent_branches_covered": 70.6896551724138,
+        "percent_branches_covered_display": "71"
+      },
+      "src/mars_titan/memory/native_backend.py": {
+        "sha256": "55bf9a4506987fbb4d5ad06c2520a461bf9136557b929bcc345b83ebb1399c54",
+        "covered_lines": 27,
+        "num_statements": 31,
+        "percent_covered": 80.48780487804878,
+        "percent_covered_display": "80",
+        "missing_lines": 4,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.09677419354838,
+        "percent_statements_covered_display": "87",
+        "num_branches": 10,
+        "num_partial_branches": 4,
+        "covered_branches": 6,
+        "missing_branches": 4,
+        "percent_branches_covered": 60.0,
+        "percent_branches_covered_display": "60"
+      },
+      "src/mars_titan/memory/retention_bank.py": {
+        "sha256": "a8dfce4e12d7cf90e15a620f4be6281c9d192cfc80140cfe99df12b97d5baffe",
+        "covered_lines": 139,
+        "num_statements": 150,
+        "percent_covered": 89.60396039603961,
+        "percent_covered_display": "90",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 92.66666666666667,
+        "percent_statements_covered_display": "93",
+        "num_branches": 52,
+        "num_partial_branches": 10,
+        "covered_branches": 42,
+        "missing_branches": 10,
+        "percent_branches_covered": 80.76923076923077,
+        "percent_branches_covered_display": "81"
+      },
+      "src/mars_titan/memory/session_artifacts.py": {
+        "sha256": "7fd96ab22fadf03bee2f367f7db586b366f70388e378ca865b1f124631d16502",
+        "covered_lines": 109,
+        "num_statements": 124,
+        "percent_covered": 84.26966292134831,
+        "percent_covered_display": "84",
+        "missing_lines": 15,
+        "excluded_lines": 0,
+        "percent_statements_covered": 87.90322580645162,
+        "percent_statements_covered_display": "88",
+        "num_branches": 54,
+        "num_partial_branches": 13,
+        "covered_branches": 41,
+        "missing_branches": 13,
+        "percent_branches_covered": 75.92592592592592,
+        "percent_branches_covered_display": "76"
+      }
+    },
+    "functions": [
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_canonical",
+        "line": 19,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_positive",
+        "line": 23,
+        "ccn": 5,
+        "covered_fraction": 1.0,
+        "crap": 5.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_immutable",
+        "line": 34,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_norm",
+        "line": 38,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_arrays",
+        "line": 63,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_content_digest",
+        "line": 73,
+        "ccn": 2,
+        "covered_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "verify",
+        "line": 91,
+        "ccn": 6,
+        "covered_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "__init__",
+        "line": 119,
+        "ccn": 16,
+        "covered_fraction": 0.9459459459459459,
+        "crap": 16.040431958620417
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "identity",
+        "line": 203,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "fingerprint",
+        "line": 206,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "from_identity",
+        "line": 210,
+        "ccn": 4,
+        "covered_fraction": 1.0,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "_verify_projection",
+        "line": 229,
+        "ccn": 6,
+        "covered_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_codec.py",
+        "function": "encode",
+        "line": 240,
+        "ccn": 11,
+        "covered_fraction": 0.9791666666666666,
+        "crap": 11.001094111689815
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_canonical",
+        "line": 40,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_digest",
+        "line": 44,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_empty_pending",
+        "line": 97,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_row_key",
+        "line": 105,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_check_metadata",
+        "line": 109,
+        "ccn": 24,
+        "covered_fraction": 0.9,
+        "crap": 24.576
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_check_pending",
+        "line": 153,
+        "ccn": 12,
+        "covered_fraction": 0.7142857142857143,
+        "crap": 15.358600583090379
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "metadata",
+        "line": 60,
+        "ccn": 2,
+        "covered_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "__init__",
+        "line": 80,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "query",
+        "line": 83,
+        "ccn": 4,
+        "covered_fraction": 0.9,
+        "crap": 4.016
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "__init__",
+        "line": 181,
+        "ccn": 8,
+        "covered_fraction": 0.9411764705882353,
+        "crap": 8.013026663952779
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_state",
+        "line": 285,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_check_state",
+        "line": 290,
+        "ccn": 11,
+        "covered_fraction": 0.6666666666666666,
+        "crap": 15.481481481481483
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_read",
+        "line": 304,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_stage",
+        "line": 307,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_bank",
+        "line": 310,
+        "ccn": 18,
+        "covered_fraction": 0.8235294117647058,
+        "crap": 19.780582129045392
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_bundle",
+        "line": 339,
+        "ccn": 8,
+        "covered_fraction": 0.875,
+        "crap": 8.125
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_rows",
+        "line": 355,
+        "ccn": 15,
+        "covered_fraction": 0.7916666666666666,
+        "crap": 17.034505208333336
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_stage_inputs",
+        "line": 403,
+        "ccn": 6,
+        "covered_fraction": 1.0,
+        "crap": 6.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_input_rows",
+        "line": 418,
+        "ccn": 17,
+        "covered_fraction": 0.8333333333333334,
+        "crap": 18.337962962962962
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_check_sources",
+        "line": 450,
+        "ccn": 14,
+        "covered_fraction": 0.84,
+        "crap": 14.802816
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "step",
+        "line": 483,
+        "ccn": 7,
+        "covered_fraction": 0.9411764705882353,
+        "crap": 7.009973539588846
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_prepare",
+        "line": 517,
+        "ccn": 32,
+        "covered_fraction": 0.875,
+        "crap": 34.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_update",
+        "line": 585,
+        "ccn": 12,
+        "covered_fraction": 0.9705882352941176,
+        "crap": 12.003663749236718
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_verify_confirmed",
+        "line": 656,
+        "ccn": 6,
+        "covered_fraction": 0.875,
+        "crap": 6.0703125
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "_prune",
+        "line": 675,
+        "ccn": 6,
+        "covered_fraction": 0.9090909090909091,
+        "crap": 6.027047332832457
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "snapshot",
+        "line": 705,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "retained_episodes",
+        "line": 708,
+        "ccn": 3,
+        "covered_fraction": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "diagnostics",
+        "line": 713,
+        "ccn": 2,
+        "covered_fraction": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "close",
+        "line": 723,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "__enter__",
+        "line": 726,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/episodic_session.py",
+        "function": "__exit__",
+        "line": 729,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/native_backend.py",
+        "function": "_signature",
+        "line": 14,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/native_backend.py",
+        "function": "load_native",
+        "line": 19,
+        "ccn": 11,
+        "covered_fraction": 0.8181818181818182,
+        "crap": 11.727272727272727
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "_canonical",
+        "line": 22,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "_copy",
+        "line": 26,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "_check_receipt",
+        "line": 30,
+        "ccn": 23,
+        "covered_fraction": 0.8823529411764706,
+        "crap": 23.861388153877467
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "__post_init__",
+        "line": 84,
+        "ccn": 5,
+        "covered_fraction": 0.6666666666666666,
+        "crap": 5.9259259259259265
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "__init__",
+        "line": 103,
+        "ccn": 6,
+        "covered_fraction": 0.9285714285714286,
+        "crap": 6.013119533527696
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "identity",
+        "line": 142,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "fingerprint",
+        "line": 145,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "seen",
+        "line": 149,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "receipt",
+        "line": 153,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "records",
+        "line": 156,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "_new",
+        "line": 159,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "snapshot",
+        "line": 162,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "restore",
+        "line": 170,
+        "ccn": 8,
+        "covered_fraction": 0.8666666666666667,
+        "crap": 8.151703703703703
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "query",
+        "line": 192,
+        "ccn": 7,
+        "covered_fraction": 0.75,
+        "crap": 7.765625
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "_centers",
+        "line": 204,
+        "ccn": 8,
+        "covered_fraction": 1.0,
+        "crap": 8.0
+      },
+      {
+        "file": "src/mars_titan/memory/retention_bank.py",
+        "function": "propose",
+        "line": 223,
+        "ccn": 22,
+        "covered_fraction": 0.925,
+        "crap": 22.2041875
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "_canonical",
+        "line": 16,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "_payload",
+        "line": 20,
+        "ccn": 28,
+        "covered_fraction": 0.8518518518518519,
+        "crap": 30.549204897627394
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "__init__",
+        "line": 67,
+        "ccn": 1,
+        "covered_fraction": 1.0,
+        "crap": 1.0
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "write",
+        "line": 71,
+        "ccn": 2,
+        "covered_fraction": 0.75,
+        "crap": 2.0625
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "__init__",
+        "line": 80,
+        "ccn": 7,
+        "covered_fraction": 0.8333333333333334,
+        "crap": 7.226851851851852
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "_header",
+        "line": 103,
+        "ccn": 5,
+        "covered_fraction": 0.75,
+        "crap": 5.390625
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "_inventory",
+        "line": 119,
+        "ccn": 7,
+        "covered_fraction": 0.8461538461538461,
+        "crap": 7.178425125170687
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "stage",
+        "line": 135,
+        "ccn": 6,
+        "covered_fraction": 0.9230769230769231,
+        "crap": 6.0163859808830225
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "_bytes",
+        "line": 151,
+        "ccn": 13,
+        "covered_fraction": 1.0,
+        "crap": 13.0
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "read",
+        "line": 175,
+        "ccn": 8,
+        "covered_fraction": 0.6923076923076923,
+        "crap": 9.864360491579427
+      },
+      {
+        "file": "src/mars_titan/memory/session_artifacts.py",
+        "function": "prune_unreferenced",
+        "line": 193,
+        "ccn": 7,
+        "covered_fraction": 0.9333333333333333,
+        "crap": 7.014518518518519
+      }
+    ],
+    "scope": "Pruebas técnicas CPU de datos. Sin predictor real, aprendizaje, CUDA ni resultados científicos."
+  },
+  "retention_measurements": [
+    {
+      "policy": "reservoir",
+      "incoming": 128,
+      "clients": 1152,
+      "median_seconds": 0.07795269299822394,
+      "repetitions": [
+        0.07795269299822394,
+        0.07907600400358206,
+        0.07780431299761403
+      ],
+      "traced_peak_bytes": 2957384,
+      "estimated_peak_bytes": 17838720
+    },
+    {
+      "policy": "reservoir",
+      "incoming": 512,
+      "clients": 1536,
+      "median_seconds": 0.27383802399708657,
+      "repetitions": [
+        0.2732898429967463,
+        0.27383802399708657,
+        0.27612040399981197
+      ],
+      "traced_peak_bytes": 3945896,
+      "estimated_peak_bytes": 19918336
+    },
+    {
+      "policy": "uniform",
+      "incoming": 128,
+      "clients": 1152,
+      "median_seconds": 0.07864724800310796,
+      "repetitions": [
+        0.07864724800310796,
+        0.08043708100012736,
+        0.07851237400609534
+      ],
+      "traced_peak_bytes": 2957384,
+      "estimated_peak_bytes": 17838720
+    },
+    {
+      "policy": "uniform",
+      "incoming": 512,
+      "clients": 1536,
+      "median_seconds": 0.27810946200042963,
+      "repetitions": [
+        0.2820538449959713,
+        0.27810946200042963,
+        0.2756049039962818
+      ],
+      "traced_peak_bytes": 3945896,
+      "estimated_peak_bytes": 19918336
+    },
+    {
+      "policy": "recent",
+      "incoming": 128,
+      "clients": 1152,
+      "median_seconds": 0.07702841499849455,
+      "repetitions": [
+        0.077482748994953,
+        0.07701738399919122,
+        0.07702841499849455
+      ],
+      "traced_peak_bytes": 2957384,
+      "estimated_peak_bytes": 17838720
+    },
+    {
+      "policy": "recent",
+      "incoming": 512,
+      "clients": 1536,
+      "median_seconds": 0.2735417790026986,
+      "repetitions": [
+        0.32421488200634485,
+        0.2735417790026986,
+        0.27351733300019987
+      ],
+      "traced_peak_bytes": 3945896,
+      "estimated_peak_bytes": 19918336
+    },
+    {
+      "policy": "anchored",
+      "incoming": 128,
+      "clients": 1152,
+      "median_seconds": 0.10449944399442757,
+      "repetitions": [
+        0.10439206199953333,
+        0.10495970900228713,
+        0.10449944399442757
+      ],
+      "traced_peak_bytes": 2957384,
+      "estimated_peak_bytes": 17849448
+    },
+    {
+      "policy": "anchored",
+      "incoming": 512,
+      "clients": 1536,
+      "median_seconds": 0.3622383730034926,
+      "repetitions": [
+        0.36358007499802625,
+        0.3622383730034926,
+        0.36125005599751603
+      ],
+      "traced_peak_bytes": 3946787,
+      "estimated_peak_bytes": 19929064
+    }
+  ],
+  "largest_retention": {
+    "clients": 9216,
+    "incoming": 8192,
+    "retained": 1024,
+    "seconds": 5.531272581996745,
+    "estimated_peak_bytes": 61685224,
+    "distance_pairs": 9971200,
+    "status": "one_swap_local_restricted"
+  },
+  "full_session": {
+    "rows_per_session": 5676,
+    "physical_input_blocks": 23,
+    "steps_seconds": [
+      2.637362061002932,
+      6.426139154005796
+    ],
+    "recovery_seconds": 2.0872866829959094,
+    "diagnostics": {
+      "cursor": 2,
+      "admitted": 5676,
+      "retained": 1024,
+      "pending": 5676
+    },
+    "callbacks": [
+      {
+        "rows": 5676,
+        "batch_rows": 256,
+        "neighbors_first": 0,
+        "context": "9f4835cb82a15bd7a935ac35d73e8ad77b65ebe2cc4cb134af39f88e5e43c699"
+      },
+      {
+        "rows": 5676,
+        "batch_rows": 64,
+        "neighbors_first": 0,
+        "context": "2d9c28fa0b4ec3288466e467bf99535e0feeb2cfb65175cdad5a87f154c7adb4"
+      }
+    ],
+    "files": 61,
+    "file_bytes": 32722231,
+    "artifacts": 54,
+    "process_peak_rss_bytes": 754388992,
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2",
+      "CUDA_VISIBLE_DEVICES": "-1"
+    },
+    "limits": [
+      "Dos sesiones de datos sintéticos, sin modelo, aprendizaje ni GPU.",
+      "Incluye codec, inputs completos, consultas de control, maduración, retención, escritura, verificación y poda.",
+      "Medición única para comprobar el censo y la recuperación. No es una comparación científica ni una distribución de latencias."
+    ]
+  },
+  "process": {
+    "elapsed_seconds": 13.18,
+    "peak_rss_kib": 824528
+  },
+  "limits": [
+    "Los presupuestos de buffers propios no equivalen al RSS del proceso.",
+    "La medición de sesión es una sola ejecución, no una distribución de latencias.",
+    "ASan/UBSan no instrumentan Python ni las bibliotecas precompiladas de terceros.",
+    "Sin CUDA, aprendizaje, modelos ejecutados ni evaluación científica."
+  ],
+  "runtime": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "CUDA_VISIBLE_DEVICES": "-1"
+    },
+    "native_sha256": "6eb09141c5f427c877038c6a93bb825886a5c27f7cf6498d4d803ab0e69d2bb6"
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "mem_total_kib": 31556028
+  }
+}

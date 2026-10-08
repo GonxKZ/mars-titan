@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T11:16:09.878731+00:00",
+  "reviewed_commit": "322fc7ab1e10f9f9d225a074c846ae4904d26720",
+  "scope": "Verificación técnica CPU del ciclo episódico con inputs sintéticos y callbacks escalares. La integración del predictor financiero real permanece pendiente.",
+  "review_status": "Sin hallazgos reproducidos abiertos en el alcance de la revisión independiente.",
+  "source_sha256": {
+    "native/CMakeLists.txt": "ef1526ac55840cb2fd5767f2e4bf864fb5c57ae0bfa2ffafde72f164d2a2e536",
+    "native/cmake/EpisodicPython.cmake": "0aed10e818606704761330a0b6b63182132a51fdc9bc4265f96fd98941683a82",
+    "native/cmake/TorchDependencies.cmake": "8db9bf1f9612b97ee9bce77895bae5e0760cdc0fc58d8353a46b41f937b4053e",
+    "native/include/mars_titan/cohort_execution.hpp": "918c761663912f1266651d2fa0748df1a1d6f06ea2f7e4f87563abdc2f36dab9",
+    "native/include/mars_titan/episodic_memory.hpp": "71483abd8e7146aa4e4473d591f29271126c4bda2861a2f872ff90c78bd83ed8",
+    "native/src/cohort_execution.cpp": "057044903bc6ce86730a798f45558315248ff741dc89b503e45fef5363cf7a4b",
+    "native/src/episodic_memory.cpp": "9ef3b16da51e83b08b9d87f334a8a526382af4511395fd9c703286d5c2f65c6d",
+    "native/src/episodic_python.cpp": "df2db006cab86396f1452c5e2e311115e1e40e5dd3561ee5a995597692ea1fe6",
+    "native/tests/cohort_execution_tests.cpp": "b18be2dfbec4fb38fd2ecaa9f22a7d635b16d9346ad7493a837d96a460c78eb7",
+    "native/tests/episodic_memory_tests.cpp": "60b8bac8900ba17a896fc31f9b37c067d5104d21aa598eda5c61d762fa262bc8",
+    "native/tests/episodic_python_environment.cmake": "0d975661530dadc70db38eeebf281858315eacea29e0189e662cb46b7c5d5468",
+    "src/mars_titan/memory/episodic_session.py": "3c900c953e79c3651b8d02529bba897f79996aae3ad084959cbfaefd00761de9",
+    "src/mars_titan/memory/native_backend.py": "55bf9a4506987fbb4d5ad06c2520a461bf9136557b929bcc345b83ebb1399c54",
+    "src/mars_titan/memory/retention_bank.py": "70f849c95549a1126184cf13d75ec2b8544e3e08b84ae8235f5118a0887cdc5a",
+    "src/mars_titan/memory/session_artifacts.py": "f852b0b8b60ece6104714827cf5022d050522cda513993350f5d047395f8551c",
+    "tests/memory/test_episodic_session.py": "10c6509ac67718a662827261ba20cbedc8c3b9eaa420ba347767b3f8cea8fb8c",
+    "tests/memory/test_native_episode_backend.py": "d9a643fb4051224450cb9bb5f89702f0275d26b5fbde87888666db85d0823ee9",
+    "tests/memory/test_retention_bank.py": "90fabfaf562f9ee016d3ba23c8d361404971e8f43a8c9219867dee329520a86c",
+    "tests/memory/test_session_artifacts.py": "2e7a8e3e41a262f3b0cf15d685e6eee3820212246bade160f7f236a1a5a42da7"
+  },
+  "original_measurements": {
+    "path": "reports/engineering/episodic-session-20261008.json",
+    "sha256": "bddbf2738f27ba4746f79700d9351cab4d3e2b5bdf428dc3f604b8fac92bf40f",
+    "implementation_commit": "9ea25025553b2eb7ee48fb19ad08f41261e23a03",
+    "interpretation": "Conserva las medidas originales de retención, sesión y recuperación, sus 80 pruebas Python, tres CTest Release y tres CTest ASan/UBSan. Los benchmarks no se repitieron después de las correcciones."
+  },
+  "corrections": [
+    {
+      "title": "Dispositivo CPU explícito",
+      "commit": "6101766c4f76ad88cda5f54317c37a9b25f64371",
+      "outcome": "Los tensores de sesión usan device=cpu. Dos sesiones con maduración y recuperación bajo dispositivo predeterminado meta coinciden exactamente con el control CPU.",
+      "receipt_sha256": "517b4a0dcf38bac0fc8552c638ec6f33fb51aa04c7c2485809dfe3b306450066"
+    },
+    {
+      "title": "Entorno Python del SDK",
+      "commit": "02250fdcd41b0b486a98547c29645eaa823373e9",
+      "outcome": "CMake consulta el intérprete del mismo entorno uv seleccionado para PyTorch. La regresión usa dos entornos de Python 3.12.14 y verifica la selección, sin afirmar una incompatibilidad ABI observada.",
+      "receipt_sha256": "df93df2aa55d3ba0f69e069d31f06c37e38b835d6066740c6ae8ccefd19e5d03"
+    },
+    {
+      "title": "Vida del ejecutor durante callbacks",
+      "commit": "4e1a3cbeb7f6739e2965b9e0a7ee751d8509c7ce",
+      "outcome": "close y step anidados se rechazan mientras el paso exterior está activo. La marca se restaura tras retorno o excepción. ASan reprodujo un acceso a memoria ya liberada en la versión anterior.",
+      "receipt_sha256": "330dd070374fd3224c809a6bc4079c285245b394dff91b9d6cd59cf349e139db"
+    },
+    {
+      "title": "Recibo de retención recuperado",
+      "commit": "3338b761c9550d3f6376d873c567a1d8c102f22c",
+      "outcome": "La recuperación exige esquema y tipos, estados de selección completos, coherencia de E, centros y representantes, capacidad y presupuestos. No recalcula la geometría descartada.",
+      "receipt_sha256": "dd08ba464cf96fd7a80d4d614d3bf1ab8eb60c664c2daadd38a03ac9b1fd8e57"
+    },
+    {
+      "title": "Identidad exacta de muestra",
+      "commit": "7e3117488fb75d9a6e7c0427ae6d02d7c512a452",
+      "outcome": "sample_id debe ser exactamente flow_id/prediction_at, con el instante entero en microsegundos y su representación decimal canónica.",
+      "receipt_sha256": "0fb9e879b0d9845fa0deacc8201ce590bf8c717f631312b55871b7057a4848cc"
+    },
+    {
+      "title": "Archivos compartidos entre generaciones",
+      "commit": "322fc7ab1e10f9f9d225a074c846ae4904d26720",
+      "outcome": "La poda recorre hasta 2 * max_files referencias y admite como máximo max_files nombres únicos. Comprueba también los duplicados antes de retirar archivos.",
+      "receipt_sha256": "30e4a5d67549fcde5b70fdb994afd3f88fcee80a86aaedf2d8b8b53e26f5e174"
+    }
+  ],
+  "final_verification": {
+    "public_tests": 145,
+    "independent_tests": 14,
+    "total_tests": 159,
+    "independent_test_seconds": 3.9,
+    "retention_transitions": 108,
+    "exact_snapshot_roundtrip": true,
+    "exact_continuation": true,
+    "policies": [
+      "reservoir",
+      "uniform",
+      "recent",
+      "anchored"
+    ],
+    "capacities": [
+      1,
+      2,
+      3,
+      4,
+      8
+    ],
+    "fault_boundaries": [
+      "before_predictions",
+      "predictions_ready",
+      "record_written",
+      "feedback_applied",
+      "checkpoint_written",
+      "before_commit",
+      "committed"
+    ],
+    "causal_controls": [
+      "Todas las predicciones consultan el banco anterior a la maduración de esa sesión.",
+      "El orden de admisión sigue la ordenación canónica del feedback, aunque la lista recibida tenga otro orden.",
+      "El feedback futuro falla antes del callback y deja latest.json intacto.",
+      "La repetición de una sesión confirmada no duplica admisiones."
+    ],
+    "independent_review_sha256": "1ef8bd0e6f95de764761bc0531c226fd45bb33d32489abb9643841fe996b0dc1",
+    "independent_tests_sha256": "0ee90c2d675ced73036cbc7dcd9cea2f9a342494368c83ac3b5e2cc6c9616e81",
+    "final_test_log_sha256": "3a343987f47af09690e6761cfe6927772c59c355d6d70886dd0aa250eada3c74",
+    "retention_transitions_sha256": "eba605a4bcbdd5d48ea430d19a5b90bf2a376b229e43bcb98b6fb90504f18d32",
+    "rerun_scope": "La revisión final ejecutó las pruebas Python y la matriz de retención. No repitió CTest ni sanitizadores."
+  },
+  "native_verification": {
+    "cpp_standard": 20,
+    "compiler": "Clang 21.1.8",
+    "release_binary_sha256": "2cb228df9b1f781a18fceded684821db3992f747ce78dbaa120670a8c05d849a",
+    "asan_ubsan_binary_sha256": "4e36cffb2660e1f31e3299687a37b5eca986e122f3f040fdb23da7b0c32003cc",
+    "warnings_as_errors": true,
+    "lifetime_analysis": "Experimental",
+    "clang_tidy": "Sin diagnósticos propios en el enlace corregido.",
+    "static_analyzer": "Sin diagnósticos en el enlace corregido.",
+    "clang_format": "23.1.3, comprobación mediante uvx offline.",
+    "original_use_after_free": {
+      "reproduced": true,
+      "access": "native/src/cohort_execution.cpp:570",
+      "release_before_fix": "native/src/episodic_python.cpp:225",
+      "diagnostic_sha256": "31f6c6f7098a4777e23e1b5eb54921c91ffe4ad41cb759ceda25c4ede1e8cf70"
+    },
+    "corrected_callbacks": {
+      "assertions_passed": 10,
+      "invalid_access_reported": false,
+      "process_exit_code": 1,
+      "leak_bytes": 4065503,
+      "leak_allocations": 45687,
+      "diagnostic_sha256": "291e0ae2becf726517f305d00d10c0635c869dc689b20b242de67cf5a0dd6e3e"
+    },
+    "import_control": {
+      "assertions_passed": 1,
+      "process_exit_code": 1,
+      "leak_bytes": 3998889,
+      "leak_allocations": 45595,
+      "initial_timeout_seconds": 90,
+      "completed_timeout_seconds": 240,
+      "completed_seconds": 97.9567636790016,
+      "diagnostic_sha256": "99f6e66e3c4236b5d9b067a68be6c6c3d324daf65eb8445f0d1e106e971d01c7"
+    },
+    "lsan_clean": false,
+    "pytest_difference": {
+      "bytes": 66614,
+      "allocations": 92,
+      "attribution": "Sin atribución precisa. Las dos cargas de pytest no son idénticas."
+    },
+    "sanitizer_limit": "Python y las bibliotecas precompiladas no quedan instrumentados como el enlace. La ausencia de accesos inválidos notificados no equivale a una ejecución limpia de LSan."
+  },
+  "lsan_lifecycle": {
+    "probe": "Mismas importaciones y script. Cada instancia ejecuta un paso escalar, se cierra y sale de alcance. Recolección Python al terminar el cuerpo.",
+    "counts": [
+      0,
+      1,
+      32,
+      32,
+      1,
+      0
+    ],
+    "repetitions_per_count": 2,
+    "leak_bytes_each": 4006281,
+    "leak_allocations_each": 45557,
+    "process_exit_codes": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "process_seconds": [
+      5.727784151000378,
+      5.677527346000716,
+      6.277560500995605,
+      6.177626699995017,
+      5.676606143002573,
+      6.382245098000567
+    ],
+    "invalid_access_reported": false,
+    "detector_options": {
+      "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1:strict_string_checks=1",
+      "LSAN_OPTIONS": "max_leaks=8",
+      "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+      "DEBUGINFOD_URLS": "",
+      "LLVM_SYMBOLIZER_OPTS": "--no-debuginfod"
+    },
+    "receipt_sha256": "7866b7c851c2c2d4924d2b23561add447673a870b89d5e01fa935116ecfef2b0",
+    "raw_results_sha256": "60325c88670552f787f46a4ea7a0bcba094583344fabcad8a2ed52b90591466e",
+    "conclusion": "No se observó crecimiento del recuento de fugas entre 0, 1 y 32 instancias en esta sonda. El mismo recuento aparece sin construir Executor. No identifica al propietario de todas las reservas ni explica la diferencia anterior de pytest.",
+    "symbolizer": "Las ejecuciones finales usan solo símbolos locales. max_leaks=8 limita los grupos de pilas impresos, sin desactivar detección ni suprimir fugas."
+  },
+  "quality": {
+    "retention": {
+      "coverage_version": "7.16.2",
+      "radon_version": "6.0.1",
+      "sha256": "70f849c95549a1126184cf13d75ec2b8544e3e08b84ae8235f5118a0887cdc5a",
+      "convention": "Sentencias ejecutables de coverage.py dentro del rango de función de radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Ramas medidas por separado.",
+      "summary": {
+        "covered_lines": 161,
+        "num_statements": 172,
+        "percent_covered": 91.02564102564102,
+        "percent_covered_display": "91",
+        "missing_lines": 11,
+        "excluded_lines": 0,
+        "percent_statements_covered": 93.6046511627907,
+        "percent_statements_covered_display": "94",
+        "num_branches": 62,
+        "num_partial_branches": 10,
+        "covered_branches": 52,
+        "missing_branches": 10,
+        "percent_branches_covered": 83.87096774193549,
+        "percent_branches_covered_display": "84"
+      },
+      "functions": [
+        {
+          "name": "_check_receipt_selection",
+          "line": 30,
+          "ccn": 26,
+          "statement_fraction": 1.0,
+          "missing_statements": [],
+          "crap": 26.0
+        },
+        {
+          "name": "_check_receipt",
+          "line": 73,
+          "ccn": 35,
+          "statement_fraction": 0.9259259259259259,
+          "missing_statements": [
+            76,
+            79
+          ],
+          "crap": 35.49789158156785
+        }
+      ]
+    },
+    "pruning": {
+      "coverage_version": "7.16.2",
+      "radon_version": "6.0.1",
+      "convention": "Sentencias ejecutables de coverage.py dentro del rango de función de radon. CRAP = CCN² × (1 − cobertura de sentencias)³ + CCN. Ramas por separado.",
+      "sha256": "f852b0b8b60ece6104714827cf5022d050522cda513993350f5d047395f8551c",
+      "summary": {
+        "covered_lines": 112,
+        "num_statements": 126,
+        "percent_covered": 85.71428571428571,
+        "percent_covered_display": "86",
+        "missing_lines": 14,
+        "excluded_lines": 0,
+        "percent_statements_covered": 88.88888888888889,
+        "percent_statements_covered_display": "89",
+        "num_branches": 56,
+        "num_partial_branches": 12,
+        "covered_branches": 44,
+        "missing_branches": 12,
+        "percent_branches_covered": 78.57142857142857,
+        "percent_branches_covered_display": "79"
+      },
+      "function": {
+        "name": "prune_unreferenced",
+        "ccn": 8,
+        "statement_fraction": 1.0,
+        "missing": [],
+        "crap": 8.0
+      }
+    },
+    "directed_mutations": {
+      "cpu_storage": 8,
+      "receipt_validation": 7,
+      "pruning": 2
+    },
+    "interpretation": "Son comprobaciones focales sobre revisiones identificadas por sus hashes. No se suman sus coberturas ni se presentan como una campaña única de mutación."
+  },
+  "pending_integration": [
+    "Callback real de FinancialPredictor y refinamiento de working_state posterior a MAC.",
+    "Reunión de estados rápidos por flujo y publicación, verificación y poda de referencias anidadas de la generación vigente y anterior.",
+    "Contrato de censura para objetivos que no llegarán a madurar al cierre del periodo.",
+    "Admisión y ejecución de las particiones calibration y evaluation. El banco nativo actual admite train y validation."
+  ],
+  "limits": [
+    "No se ejecutaron modelos, aprendizaje, pilotos, evaluación científica ni GPU en esta verificación del ciclo.",
+    "La matriz de 108 transiciones y los controles de maduración usan fixtures. No acreditan integridad del censo real ni resultados financieros.",
+    "El recibo de retención comprueba estructura y relaciones. No reconstruye las coordenadas descartadas ni vuelve a calcular su objetivo anterior.",
+    "LSan permanece no limpio. La sonda acotada no descarta crecimiento en ejecuciones largas, otros callbacks o memoria todavía alcanzable.",
+    "Los presupuestos de buffers propios no equivalen al RSS del proceso ni certifican un máximo del runtime ante cualquier archivo hostil."
+  ]
+}
