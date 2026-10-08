@@ -1,0 +1,97 @@
+{
+  "checked_at_utc": "2026-10-07T23:47:34.213949+00:00",
+  "papers": [
+    {
+      "title": "Titans: Learning to Memorize at Test Time",
+      "authors": [
+        "Ali Behrouz",
+        "Peilin Zhong",
+        "Vahab Mirrokni"
+      ],
+      "version": "arXiv:2501.00663v1",
+      "submitted": "2024-12-31",
+      "url": "https://arxiv.org/abs/2501.00663v1",
+      "pdf_url": "https://arxiv.org/pdf/2501.00663v1",
+      "doi": "10.48550/arXiv.2501.00663",
+      "pages": 27,
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "captured_file": {
+        "bytes": 3657065,
+        "sha256": "a65e4a7d02784df1a040b487127e6dd09fff4474e5caf94d93263af3d50cfbc2"
+      }
+    },
+    {
+      "title": "Titans: Learning to Memorize at Test Time",
+      "authors": [
+        "Ali Behrouz",
+        "Peilin Zhong",
+        "Vahab Mirrokni"
+      ],
+      "version": "NeurIPS 2025, Advances in Neural Information Processing Systems 38",
+      "year": 2025,
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/a4ca07aa108036f80cbb5b82285fd4b1-Abstract-Conference.html",
+      "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2025/file/a4ca07aa108036f80cbb5b82285fd4b1-Paper-Conference.pdf",
+      "doi": "10.52202/085713-3786",
+      "pages": 38,
+      "license_independently_verified": false,
+      "captured_file": {
+        "bytes": 3486606,
+        "sha256": "9b0f0c4a0163abab6bc2f8acb105ae3c95f3fff25573aa71a252b0b9c040bf78"
+      }
+    }
+  ],
+  "equation_mapping": {
+    "surprise_momentum": {
+      "neurips": "(1), p.3",
+      "arxiv_v1": "(9–10), p.5"
+    },
+    "associative_loss": {
+      "neurips": "(2), p.4",
+      "arxiv_v1": "(11–12), p.6"
+    },
+    "forgetting_update": {
+      "neurips": "(3), p.4",
+      "arxiv_v1": "(13–14), p.6"
+    },
+    "persistent_tokens": {
+      "neurips": "(6), p.5",
+      "arxiv_v1": "(19), p.8"
+    },
+    "mac": {
+      "neurips": "(7–10), p.6",
+      "arxiv_v1": "(21–25), p.9"
+    }
+  },
+  "confirmed_differences": [
+    "NeurIPS (7) imprime [P;S;h], pero la figura 4a, p.30, describe P y h como prefijos. ArXiv (22) imprime [P;h;S].",
+    "ArXiv expresa alpha escalar. NeurIPS lo declara vector de dimensión de entrada.",
+    "NeurIPS 3.3 describe profundidad predeterminada 2, expansión 4 y GELU, con residual y LayerNorm. ArXiv 4.4 expone SiLU en las proyecciones y una convolución sin ese mismo detalle de memoria."
+  ],
+  "official_code_search": {
+    "result": "No se localizó un enlace a implementación oficial en las fuentes primarias consultadas.",
+    "consulted": [
+      "https://arxiv.org/abs/2501.00663",
+      "https://research.google/pubs/titans-learning-to-memorize-at-test-time/",
+      "https://www.research.google/blog/titans-miras-helping-ai-have-long-term-memory/"
+    ],
+    "paper_statement": "NeurIPS p.22 anuncia publicación futura de código por GitHub, sin URL.",
+    "limit": "La búsqueda no demuestra que no exista otro repositorio."
+  },
+  "unofficial_implementation": {
+    "url": "https://github.com/lucidrains/titans-pytorch",
+    "declares_unofficial": true,
+    "license": "MIT",
+    "license_url": "https://github.com/lucidrains/titans-pytorch/blob/main/LICENSE",
+    "copyright": "2025 Phil Wang",
+    "imported_or_executed": false
+  },
+  "visual_checks": [
+    "NeurIPS p.6, ecuaciones MAC",
+    "NeurIPS p.30, Figura4a",
+    "arXiv v1 p.9, ecuaciones MAC y figura"
+  ],
+  "model_executions": 0,
+  "training_runs": 0,
+  "gpu_workloads": 0
+}
