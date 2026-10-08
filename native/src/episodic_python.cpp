@@ -2,6 +2,7 @@
 #include "mars_titan/episodic_memory.hpp"
 #include "mars_titan/simulation_files.hpp"
 
+#include <c10/util/ScopeExit.h>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -51,7 +52,14 @@ struct BoundExecutor {
         }
         return *executor;
     }
+    void close() {
+        if (step_active) {
+            throw std::runtime_error("No se puede cerrar el ejecutor mientras step está activo");
+        }
+        executor.reset();
+    }
     std::unique_ptr<cohorts::Executor> executor;
+    bool step_active = false;
 };
 
 void bind_memory(py::module_& module) {
@@ -212,6 +220,10 @@ void bind_cohorts(py::module_& module) {
             [](BoundExecutor& owner, const cohorts::Cohort& cohort,
                const std::vector<cohorts::Feedback>& feedback, std::size_t batch_rows,
                const py::object& fault) {
+                if (std::exchange(owner.step_active, true)) {
+                    throw std::runtime_error("El ejecutor ya está procesando un step");
+                }
+                const auto reset = c10::make_scope_exit([&owner] { owner.step_active = false; });
                 std::function<void(cohorts::Boundary)> hook;
                 if (!fault.is_none()) {
                     hook = [callback = fault.cast<py::function>()](cohorts::Boundary point) {
@@ -222,7 +234,7 @@ void bind_cohorts(py::module_& module) {
             },
             py::arg("cohort"), py::arg("feedback"),
             py::arg("batch_rows") = cohorts::default_batch_rows, py::arg("fault") = py::none())
-        .def("close", [](BoundExecutor& owner) { owner.executor.reset(); })
+        .def("close", &BoundExecutor::close)
         .def("snapshot_json", [](BoundExecutor& owner) { return owner.get().snapshot().dump(); })
         .def("record_json",
              [](BoundExecutor& owner, std::size_t generation) {

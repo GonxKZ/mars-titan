@@ -158,3 +158,70 @@ def test_python_callback_failure_recovers_only_the_confirmed_generation(native, 
     assert restored.cursor == 1
     assert json.loads(restored.snapshot_json())["state"] == dict(fast=1, labels=0)
     restored.close()
+
+
+@pytest.mark.parametrize("callback", ["prepare", "update", "fault"])
+@pytest.mark.parametrize("caught", [False, True])
+def test_close_during_step_is_rejected_and_can_close_afterwards(native, tmp_path, callback, caught):
+    prepare, update = callbacks()
+    owner = []
+    calls = []
+
+    def close_attempt():
+        calls.append(callback)
+        if caught:
+            with pytest.raises(RuntimeError, match="step"):
+                owner[0].close()
+        else:
+            owner[0].close()
+
+    def preparing(*args):
+        if callback == "prepare":
+            close_attempt()
+        return prepare(*args)
+
+    def updating(*args):
+        if callback == "update":
+            close_attempt()
+        return update(*args)
+
+    def fault(point):
+        if callback == "fault" and point == native.Boundary.before_commit:
+            close_attempt()
+
+    output = str(tmp_path / "run")
+    run = native.Executor(output, definition(native), preparing, updating, False)
+    owner.append(run)
+    if caught:
+        run.step(cohort(native, 0), [], 1, fault)
+        assert run.cursor == 1
+    else:
+        with pytest.raises(RuntimeError, match="step"):
+            run.step(cohort(native, 0), [], 1, fault)
+    assert calls == [callback]
+    run.close()
+    run.close()
+    restored = native.Executor(output, definition(native), prepare, update, True)
+    assert restored.cursor == (1 if caught else 0)
+    if not caught:
+        restored.step(cohort(native, 0), [], 1)
+    assert json.loads(restored.snapshot_json())["state"] == dict(fast=1, labels=0)
+    restored.close()
+
+
+def test_nested_step_does_not_clear_the_outer_lifetime_guard(native, tmp_path):
+    prepare, update = callbacks()
+    owner = []
+
+    def nested(*args):
+        with pytest.raises(RuntimeError, match="step"):
+            owner[0].step(cohort(native, 0), [], 1)
+        with pytest.raises(RuntimeError, match="step"):
+            owner[0].close()
+        return prepare(*args)
+
+    run = native.Executor(str(tmp_path / "run"), definition(native), nested, update, False)
+    owner.append(run)
+    run.step(cohort(native, 0), [], 1)
+    assert run.cursor == 1
+    run.close()

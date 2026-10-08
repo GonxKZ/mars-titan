@@ -101,6 +101,12 @@ los artefactos propios que ninguna de esas generaciones referencia. El callback
 puede repetirse tras un intento no confirmado. Una generación confirmada no
 vuelve a emitir sus decisiones ni a admitir sus etiquetas.
 
+El enlace rechaza `close()` durante un `step` activo, también desde los callbacks
+de preparación, actualización o interrupción. La marca de actividad se restaura
+al retornar o propagar una excepción. Después del fallo se puede cerrar la
+instancia y recuperar la última generación confirmada. Un `step` anidado también
+se rechaza sin desactivar la protección del paso exterior.
+
 El modo preparado admite hasta 8.192 flujos y conserva un límite de 64 MiB para
 las modalidades del grupo lógico. El modo clásico mantiene 4.096 activos. La
 cola permite 32.768 decisiones pendientes y cada maduración hasta 8.192 registros.
