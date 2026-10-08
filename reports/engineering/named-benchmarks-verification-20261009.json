@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T23:13:34.667176+00:00",
+  "scope": "Preparación y verificación de escenarios sintéticos, sin modelos ni ajustes.",
+  "base_commit": "b79ab99cab308f424e2ef811ccd3ede6ed6ac93e",
+  "sources": {
+    "src/mars_titan/simulation/benchmark_catalog.py": "2638bf5b9237783917bd6f9b915a78382a73de6575f2c81404d50f50e099ba01",
+    "scripts/prepare_named_benchmarks.py": "cb5b6fa1aba8788490479fe521dcbdf9ea30146e0ac592abbe8dc7eeb553e020",
+    "configs/benchmarks/scenarios.json": "786e384132a0bb3e1e4df05d34e1603e7ef00b4015430b7ae6634f103d9de261",
+    "tests/simulation/test_benchmark_catalog.py": "8935542706c009fb612087031423c57741381a7c75e3bc9babfbf854bbda9742"
+  },
+  "tests": {
+    "passed": 56,
+    "deselected": 5,
+    "reason": "Se excluyen las cinco pruebas HMM, incluida la que ajusta parámetros.",
+    "pytest_seconds": 2.6,
+    "process_seconds": 3.31,
+    "process_peak_rss_bytes": 150736896,
+    "command": "uv run --with coverage==7.16.2 coverage run --branch --source=src/mars_titan/simulation -m pytest tests/simulation/test_benchmark_catalog.py tests/simulation/test_adaptation_scenarios.py -k 'not hmm' -q"
+  },
+  "mutations": [
+    {
+      "name": "seed_overlap",
+      "target": "duplicate_names",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.3293633979919832,
+      "log_sha256": "0f351eabbcde4e72e836cfdea8eaa823379f763e093339ea6d7a8a0eb3f5afa6"
+    },
+    {
+      "name": "volume_unbounded",
+      "target": "identity_tracks_recipe",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.3411832389974734,
+      "log_sha256": "0c0a5720fe97f6966ac0cd27e3254b9549dd3ad1b473a00448dbcc3211c5fb04"
+    },
+    {
+      "name": "final_test_open",
+      "target": "unknown_learning_switches",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.5824971249967348,
+      "log_sha256": "1c9f14f7698f27cd0f940bdbe47624ad44bf35f3fe28d83f27f8aa94feba276e"
+    },
+    {
+      "name": "duplicate_identity",
+      "target": "duplicate_names",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.3142035240016412,
+      "log_sha256": "233fbcdb57fbfcb5d23efabbeb2ac460c7624f70c1f7703b23675dc24bf6903c"
+    },
+    {
+      "name": "fit_hmm",
+      "target": "preparation_reuses_exact_generator_without_fitting",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.5914092849998269,
+      "log_sha256": "ec4e664154b85c22d5c84446321c8224880de2d76fe85aa28464a4446d43ba13"
+    },
+    {
+      "name": "unsafe_identity",
+      "target": "invalid_benchmark_fields",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.3139483340055449,
+      "log_sha256": "9c44dde1565ddbca77096160bac00695f6ba99128cec83ff79b19417a434ec25"
+    },
+    {
+      "name": "wrong_source_index",
+      "target": "preparation_reuses_exact_generator_without_fitting",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.585004635999212,
+      "log_sha256": "783234249759491c826b8825d5936af8414b2ce04d66ffaf11601422dabf2d1e"
+    },
+    {
+      "name": "wrong_name_mapping",
+      "target": "preparation_reuses_exact_generator_without_fitting",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.5962748140009353,
+      "log_sha256": "0f75a3f3b3a5470730aea99407c2d08cec50f3ea0b611a03fedf00ac1c888347"
+    },
+    {
+      "name": "untracked_source",
+      "target": "runtime_and_generator_source",
+      "detected": true,
+      "returncode": 1,
+      "seconds": 0.314735173000372,
+      "log_sha256": "9594cd1dacc727d49f3f293a9d21eccf8da4ec32dfaae9a35d9202b934e42564"
+    }
+  ],
+  "quality": {
+    "tools": {
+      "coverage.py": "7.16.2",
+      "radon": "6.0.1"
+    },
+    "convention": "Líneas y ramas de coverage.py. CCN de funciones según Radon. CRAP=C²(1−cobertura de líneas)³+C. La CLI se comprueba en subprocesos y no entra en la cobertura focal.",
+    "coverage": {
+      "covered_lines": 86,
+      "num_statements": 86,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 36,
+      "num_partial_branches": 0,
+      "covered_branches": 36,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "functions": [
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "_benchmark_entries",
+        "ccn": 14,
+        "line_coverage": 1.0,
+        "crap": 14.0
+      },
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "_planned_cases",
+        "ccn": 9,
+        "line_coverage": 1.0,
+        "crap": 9.0
+      },
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "benchmark_catalog",
+        "ccn": 5,
+        "line_coverage": 1.0,
+        "crap": 5.0
+      },
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "prepare_benchmark_profile",
+        "ccn": 4,
+        "line_coverage": 1.0,
+        "crap": 4.0
+      },
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "_fields",
+        "ccn": 3,
+        "line_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "_identifier",
+        "ccn": 3,
+        "line_coverage": 1.0,
+        "crap": 3.0
+      },
+      {
+        "file": "src/mars_titan/simulation/benchmark_catalog.py",
+        "function": "_profile_settings",
+        "ccn": 2,
+        "line_coverage": 1.0,
+        "crap": 2.0
+      },
+      {
+        "file": "scripts/prepare_named_benchmarks.py",
+        "function": "main",
+        "ccn": 7,
+        "line_coverage": null,
+        "crap": null
+      }
+    ]
+  },
+  "preparation": {
+    "at_utc": "2026-10-08T23:10:26.854070+00:00",
+    "catalog_identity": "02da17fc49c00667e6820eb563d36dd8f81c8cfd5b381b7ce5d7035d39ebdd09",
+    "runtime": {
+      "numpy": "2.5.3",
+      "pyarrow": "25.0.1",
+      "python": "3.12.14"
+    },
+    "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+    "CPUQuota": "200%",
+    "MemoryMax": "2 GiB",
+    "MemorySwapMax": 0,
+    "threads": 2,
+    "profiles": [
+      {
+        "profile": "basic",
+        "worlds": 120,
+        "price_rows": 61440,
+        "generation_seconds": 1.8842016529961256,
+        "total_with_verification_seconds": 2.038545477000298,
+        "preparation_rows_per_second": 32607.974789907657,
+        "artifact_files": 722,
+        "artifact_bytes": 5781241,
+        "manifest_sha256": "f236ec866464ca017ef93e0ea9bc9089c5d480d493937a76e672aa3072823c66",
+        "source_index_sha256": "59c2b55fb85b7f9164ff4346c11d49a4cd9ca16edc1c59596175e839f3559788"
+      },
+      {
+        "profile": "extended",
+        "worlds": 120,
+        "price_rows": 245760,
+        "generation_seconds": 3.2519327030022396,
+        "total_with_verification_seconds": 3.503408860997297,
+        "preparation_rows_per_second": 75573.51964052337,
+        "artifact_files": 722,
+        "artifact_bytes": 18839448,
+        "manifest_sha256": "fa7139290ef6a1fcc5a62bdbb1f1168a1ad0563566f5428bab8d96d3ab7b95dc",
+        "source_index_sha256": "252cce1793bdbb0a0c8d86fe3286259e63022e737aef452787547005ff94ae93"
+      }
+    ],
+    "total_seconds": 5.545644097990589,
+    "peak_rss_bytes": 145076224,
+    "torch_imported": false,
+    "learning_executed": false,
+    "scientific_evaluation_executed": false,
+    "final_test_opened": false
+  },
+  "measurement": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "generation_process_seconds": 5.72,
+    "generation_process_peak_rss_bytes": 147402752,
+    "repetitions": 1,
+    "warmup_runs": 0,
+    "concurrent_workloads": "Codificación histórica con encoders congelados y un servidor local ajeno. Los procesos medidos tienen cuota de dos CPU y 2 GiB sin swap.",
+    "interpretation": "Medidas de una preparación local. Sin comparación de velocidad, latencias de modelos, energía ni distribución p50/p95/p99."
+  },
+  "failed_harness_attempts": [
+    "La primera prueba arrancó fuera del worktree y no encontró el archivo. Se corrigió el directorio de systemd-run.",
+    "El entorno base no tenía coverage. Se usó coverage==7.16.2 con uv sin modificar ese entorno."
+  ],
+  "evidence_sha256": {
+    "checks-reviewed.log": "61fca3a1c61c77af724b7ba415b244dd9b674e0ce748e6e33ef36556eac7653a",
+    "coverage.json": "ffb18713cdaa6135c4c89c89dedf40460181dfbe6b08ca14f4f1e66bd251dba6",
+    "complexity.json": "798f3cc5948f6d532bc311d25947a9938be8eeba6c82251a709c76a41e8356c6",
+    "mutations.json": "252b4127c44ec0d03792f29746b1eb991069577bd29653f09c3c5a00ce1a9861",
+    "preparation.json": "419edd351d982534940ff20cc516dc6dc67c8f04b07deec179714decc581117f",
+    "preparation.log": "aec3fc7d0d304c2c204ec307357c1b56458bd3dd6de9a5a17ed88fa2371880d7"
+  },
+  "limits": [
+    "La dificultad empírica y la utilidad de cada algoritmo no se han medido.",
+    "Los escenarios usan contexto técnico, no las cuatro modalidades reales.",
+    "La campaña anterior de 896 escenarios no admite directamente este catálogo.",
+    "La preparación no implementa reanudación. Rechaza destinos existentes."
+  ],
+  "scientific_evaluation_executed": false,
+  "optimizer_steps": 0,
+  "final_test_opened": false
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T23:23:12.385509+00:00",
+  "revision": "658b1722eb3cf4a3bc16e0b6878ecb20270593b7",
+  "status": "sin_hallazgos_materiales_observados",
+  "findings": [],
+  "source_sha256": {
+    "README.md": "41984524ccac8340b1e3c3290c30759abda26f4e996952a22540e1ef493cf90d",
+    "configs/benchmarks/scenarios.json": "786e384132a0bb3e1e4df05d34e1603e7ef00b4015430b7ae6634f103d9de261",
+    "docs/engineering/named-benchmarks.md": "4a5259e01163d88b3f83fcf53038e17039191987cfad4e5d243183e0e73c319c",
+    "docs/research/task-board.md": "b7ee626619fa2c67e91d86827c463d004a1351863252cad1d81ec81bb83c59f4",
+    "reports/engineering/named-benchmarks-verification-20261009.json": "5529e133c320f41924413c58ec0c3acca1abe6dbe5910af19326577f225422c2",
+    "scripts/prepare_named_benchmarks.py": "cb5b6fa1aba8788490479fe521dcbdf9ea30146e0ac592abbe8dc7eeb553e020",
+    "src/mars_titan/simulation/benchmark_catalog.py": "2638bf5b9237783917bd6f9b915a78382a73de6575f2c81404d50f50e099ba01",
+    "tests/simulation/test_benchmark_catalog.py": "8935542706c009fb612087031423c57741381a7c75e3bc9babfbf854bbda9742"
+  },
+  "checks": {
+    "public_selected": 56,
+    "private": 8,
+    "total_passed": 64,
+    "deselected_hmm": 5,
+    "pytest_seconds": 2.64,
+    "process_seconds": 2.99,
+    "process_peak_rss_bytes": 142581760,
+    "CPUQuota": "100%",
+    "MemoryMax": "1 GiB",
+    "MemorySwapMax": 0,
+    "threads": 1,
+    "private_cases": [
+      "Límite exacto de 1048576 filas admitido y caso adicional rechazado antes de escribir",
+      "Última semilla uint32 admitida y siguiente rechazada",
+      "Cuatro dimensiones rechazan booleanos",
+      "Las ocho familias conservan precios, scores, relojes, acciones, contexto, eventos y verdad del evaluador frente al generador original",
+      "Preparación conserva el RNG global, no importa Torch/HMM y bloquea fit_hmm",
+      "Mutar el diccionario del llamante durante la generación no cambia la receta o etiquetas confirmadas"
+    ]
+  },
+  "artifacts": {
+    "test_review.py": "f08c2984cb7d018037fa0bd12bb3609db791cadc47a0c9f6ee0860245b1119f4",
+    "tests.log": "97940deec165596c8d0c609d7aab5fadaaa57e5e8b52213ea199e1a0dc1a48f4"
+  },
+  "scope": "Catálogo y CLI nuevos, selección de pruebas existente y fixtures NumPy/Parquet. Sin editar producción ni repetir las mediciones de generación declaradas por el autor.",
+  "limits": [
+    "No se mide dificultad ni superioridad de algoritmos.",
+    "No se ejecutan GPU, fit, HMM, optimizadores, rollouts de aprendizaje ni datos científicos.",
+    "La preparación conserva el contrato de destino nuevo y no ofrece reanudación.",
+    "La salida usa contexto técnico. No acredita las cuatro modalidades ni compatibilidad directa con la campaña anterior de 896 escenarios."
+  ]
+}
