@@ -46,6 +46,8 @@ El límite predeterminado de 50 millones de pares es compartido por fondo y sele
 
 ## Comprobaciones
 
+La [revisión independiente](../../../reports/research/anchored-retention-verification-20261008.json) pasa 128 pruebas, incluidas siete sondas privadas y 60 instancias contrastadas con enumeración del objetivo completo. La discrepancia discreta entre backends queda identificada como un límite del modo exploratorio. La conexión con el banco sigue pendiente.
+
 La suite de mecanismos suma 121 pruebas CPU. Incluye objetivo completo frente a enumeración independiente, clientes fuera de F, fondo cero, centros fijos, capacidades, permutaciones, duplicados, extremos FP32, rango general FP64, tipos incompatibles, presupuestos, memoria de IDs Unicode y el contraejemplo de divergencia entre backends. Ocho mutaciones dirigidas fueron detectadas. En 48 casos, todos los campos de salida del selector anterior coincidieron exactamente con la revisión integrada previa.
 
 Coverage.py 7.16.2 y Radon 6.0.1 registraron 99,26 % de sentencias y 98,15 % de ramas del módulo nuevo. Su mayor complejidad ciclomática es 28, con CRAP 28 al quedar cubiertas sus sentencias. La convención es `CCN² (1 - cobertura_sentencias)³ + CCN`. Estas medidas son diagnósticos y no demuestran ausencia de defectos.
