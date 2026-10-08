@@ -125,6 +125,9 @@ conjunto de 2 GiB. El estado rápido debe separarse en bloques cuando no quepa e
 un artefacto. Esta versión rechaza el exceso y no trocea pesos de forma implícita.
 Los dos checkpoints confirmados y los intentos preparados cuentan para esos
 presupuestos. El registro de decisiones conserva sus límites nativos de disco.
+La poda recorre hasta 1.024 referencias de esas dos generaciones y cuenta como
+uno cada archivo compartido. Verifica también las referencias repetidas antes
+de retirar archivos, con un máximo de 512 archivos vivos únicos.
 
 ## Enlace nativo
 

@@ -71,3 +71,34 @@ def test_another_valid_archive_cannot_replace_the_referenced_bytes(store):
     (store.directory / first["name"]).write_bytes((store.directory / other["name"]).read_bytes())
     with pytest.raises(ValueError, match="cambiado"):
         store.read(first, identity="a" * 64, kind="fast")
+
+
+def test_pruning_counts_unique_files_shared_by_two_generations(store):
+    store.max_files = 4
+    refs = [store.stage(dict(value=i), identity="a" * 64, kind="fixture") for i in range(4)]
+    store.prune_unreferenced([*refs[:3], *refs[:3]])
+    assert sorted(p.name for p in store.directory.iterdir()) == sorted(r["name"] for r in refs[:3])
+
+
+def test_pruning_bounds_reference_traversal_before_removing_any_file(store):
+    store.max_files = 4
+    refs = [store.stage(dict(value=i), identity="a" * 64, kind="fixture") for i in range(2)]
+    with pytest.raises(ValueError):
+        store.prune_unreferenced([refs[0]] * 9)
+    assert all((store.directory / ref["name"]).exists() for ref in refs)
+
+
+def test_pruning_rejects_more_unique_live_files_than_its_budget(store):
+    refs = [store.stage(dict(value=i), identity="a" * 64, kind="fixture") for i in range(5)]
+    limited = SessionArtifacts(store.native, store.directory, max_files=4)
+    with pytest.raises(ValueError):
+        limited.prune_unreferenced(refs)
+    assert all((store.directory / ref["name"]).exists() for ref in refs)
+
+
+def test_pruning_checks_duplicate_reference_types_before_deleting(store):
+    refs = [store.stage(dict(value=i), identity="a" * 64, kind="fixture") for i in range(2)]
+    invalid = dict(refs[0], schema_version=True)
+    with pytest.raises(ValueError):
+        store.prune_unreferenced([refs[0], invalid])
+    assert all((store.directory / ref["name"]).exists() for ref in refs)

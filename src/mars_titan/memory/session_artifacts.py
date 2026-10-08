@@ -191,12 +191,18 @@ class SessionArtifacts:
         return _payload(value["data"], [self.max_bytes - 65536, 1_000_000])
 
     def prune_unreferenced(self, live_references):
-        if not isinstance(live_references, (tuple, list)) or len(live_references) > self.max_files:
-            raise ValueError("El conjunto de artefactos vivos supera el presupuesto")
+        # Las dos generaciones pueden compartir los mismos archivos.
+        if (
+            not isinstance(live_references, (tuple, list))
+            or len(live_references) > 2 * self.max_files
+        ):
+            raise ValueError("Las referencias de las dos generaciones superan el presupuesto")
         names = set()
         for reference in live_references:
             self._bytes(reference, identity=reference["identity"], kind=reference["kind"])
             names.add(reference["name"])
+            if len(names) > self.max_files:
+                raise ValueError("Los archivos vivos únicos superan el presupuesto")
         for path in self._inventory():
             if path.name not in names:
                 path.unlink()
