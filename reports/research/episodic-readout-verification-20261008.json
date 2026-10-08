@@ -952,5 +952,35 @@
     "current_fixture": "16 episodios con top-8, K1/2/4 y banco vacío K1 por precisión",
     "quality_duplicates": 0,
     "quality_values_unchanged": true
+  },
+  "independent_review": {
+    "reviewed_head": "60b4eef9852c49cb823b87fe11e1285cdecfb840",
+    "production_commit": "3fb0bad43057102aca879feb4b17d7dc7629546f",
+    "source_sha256": {
+      "src/mars_titan/models/titans/episodic_readout.py": "6c17db86ec885b26d898c394d62d8646a9b91287c32d47834bf67a1ebc5da4ea",
+      "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda"
+    },
+    "closed_at_utc": "2026-10-08T15:06:36.016324+00:00",
+    "cpu_cases": 10,
+    "findings": [],
+    "verdict": "Sin hallazgos materiales reproducidos en el componente revisado. Consumidor cronológico pendiente.",
+    "cases": [
+      "Igualdad de lecturas, estado y gradientes entre un lote lógico y bloques desiguales.",
+      "Invariancia a la permutación de activos con K1/K2/K4, FP32/FP64.",
+      "Salida y gradientes finitos con amplitudes 0, 1e-100, 1e100 y 1e300.",
+      "RNG y episodios conservados, sin pasos de optimizador."
+    ],
+    "cuda": "Ocho casos ejecutados, contrastados mediante recibos y registros sin repetir la carga GPU.",
+    "limits": [
+      "La revisión no acredita el consumidor financiero cronológico todavía pendiente.",
+      "Los casi empates de vecinos no se interpretan como invariancia universal entre backends.",
+      "La máscara de presencia se comprueba en las pruebas públicas y lectura de código. No se admite NaN como valor ausente."
+    ],
+    "quality": "14 funciones o métodos únicos en el lector y 16 en el snapshot, sin duplicados.",
+    "receipt_sha256": "c020342463d0645e5bf99605aa8d0bc7da9bab53f0b13a7ed7b6888c159d8319",
+    "evidence_sha256": {
+      "test_review.py": "883de6f2b85d130bfa9bf12522501b0a40b2f77ab444da1d3fdcbbe9ef3ea205",
+      "tests.log": "a834ff6caef5c463be343ed0fa2b10391920183be00d2a9c105262de12cd1d6d"
+    }
   }
 }
