@@ -1,0 +1,178 @@
+{
+  "created_at_utc": "2026-10-08T08:59:39.897115+00:00",
+  "api": {
+    "function": "mars_titan.training.corpus_targets.prepare_corpus_targets",
+    "keyword": "target_factors: Path | None = None",
+    "also_exposed_by": "mars_titan.training.corpus_inputs.prepare_corpus_targets",
+    "descriptor": "Mapa JSON completo de los factores de los mercados del censo. Conserva todos los metadatos económicos y cambia únicamente prices_path y prices_sha256.",
+    "identity": "configuration.target_factor_revision, schema_version=1",
+    "encoded_manifest": "Se conserva source_manifest_sha256 del manifiesto codificado original.",
+    "reader": "Verifica descriptor, precios de factores, padre y recibos de muestras al abrir. Recomprueba las fuentes fijadas al iniciar cada recorrido."
+  },
+  "fixes": [
+    {
+      "id": "linked_destination",
+      "behavior": "Se rechazan enlaces en la salida y en las rutas de etiquetas y recibos, incluidos sus directorios intermedios, antes de consumir o escribir esos artefactos."
+    },
+    {
+      "id": "contract_digest",
+      "behavior": "El lector exige igualdad JSON canónica de toda la identidad reconstruida, incluida la huella del módulo que valida el factor."
+    },
+    {
+      "id": "empty_receipt",
+      "behavior": "Un recibo existente vacío o de tipo distinto de objeto JSON se rechaza sin reconstruirlo, en preparación parcial y recuperación final."
+    },
+    {
+      "id": "final_asset_sources",
+      "behavior": "Se conservan las huellas de ambos Parquet y manifiestos de cada activo en la confirmación final. setdefault evita sustituir huellas ya fijadas. Un cambio impide publicar o devolver una recuperación confirmada."
+    },
+    {
+      "id": "encoded_candidate_without_rows",
+      "behavior": "El censo fija samples_sha256 y tamaño de cada samples.parquet codificado, incluidos candidatos con cero filas que no aparecen en assets. Se comprueba al preparar, reutilizar, abrir el lector y confirmar al final."
+    }
+  ],
+  "verification": {
+    "integrated_tests": 298,
+    "public_focal_tests": 44,
+    "independent_reproductions": 6,
+    "focal_total": 50,
+    "focal_seconds": 12.77,
+    "pytest_seconds": 103.89,
+    "process_wall_seconds": 105.00999999999999,
+    "process_peak_rss_kib": 929412,
+    "cpu_quota_percent": 200,
+    "memory_limit_bytes": 1073741824,
+    "mutations_detected": 1,
+    "mutations_total": 1,
+    "mutation_control_tests": 44,
+    "mutation_import_origin_verified": true,
+    "ruff": true,
+    "format": true,
+    "repository_check": true
+  },
+  "quality": {
+    "module_statement_coverage": {
+      "src/mars_titan/training/target_factors.py": 88.59649122807018,
+      "src/mars_titan/training/corpus_targets.py": 93.08755760368663,
+      "src/mars_titan/training/corpus_inputs.py": 91.7960088691796
+    },
+    "max_modified_ccn": 98,
+    "max_modified_crap": 98.88176118967779,
+    "convention": "Sentencias ejecutables de coverage.py dentro del intervalo inclusivo de cada función o método. CCN de Radon. CRAP = CCN² × (1 - cobertura_de_sentencias)³ + CCN. Solo funciones modificadas en el máximo.",
+    "coverage_version": "7.16.2",
+    "radon_version": "6.0.1"
+  },
+  "source_sha256": {
+    "src/mars_titan/training/target_factors.py": "c96d70495a72a0344271e48a90954151a887cb173e7b9707ed8d6c20c043863f",
+    "src/mars_titan/training/corpus_targets.py": "96d887a286335d34c8353f96c0680b7531a8325d5c76dadc95b8e2e99fb4df95",
+    "src/mars_titan/training/corpus_inputs.py": "e0706fe7b0ec9a632d3812d7da00a0076b36b6be265329716fb53c1ef1e288e4",
+    "tests/training/test_target_factor_revision.py": "09e8d834196e6312a1503b16a4d9a9ba436a8eebe066d63d363c64f394ebbdaf"
+  },
+  "gpu_used": false,
+  "models_run": false,
+  "optimizers_run": false,
+  "real_targets_generated": false,
+  "real_inputs_modified": false,
+  "previous_editions_modified": false,
+  "final_test_opened": false,
+  "schema_version": 1,
+  "source_commit": "de6ecfc62672e50b2bcfd28b789e98dc8ef21bc7",
+  "independent_review": {
+    "sha256": "d1a0faa69017149e93994a201cc0d1b0bf2ae4197f81fd8fb95e22499a7af14b",
+    "tests": {
+      "original_public_passed": 29,
+      "original_private_failed": 6,
+      "intermediate_044_private_passed": 5,
+      "intermediate_044_private_failed": 1,
+      "final_public_passed": 44,
+      "final_private_passed": 6,
+      "final_total_passed": 50,
+      "final_seconds": 13.28,
+      "device": "cpu",
+      "cuda_visible_devices": "-1",
+      "threads": 2
+    },
+    "resolved_findings": [
+      {
+        "id": "FACT-REV-1",
+        "severity": "high",
+        "file": "src/mars_titan/training/corpus_targets.py",
+        "original_line": 308,
+        "finding": "Un enlace intermedio bajo labels redirigía la escritura al Parquet de un factor externo. La confirmación fallaba después del daño.",
+        "probe": "test_nested_output_link_cannot_replace_new_factor_source",
+        "fix": "safe_destination antes de usar salida, etiquetas y recibos, incluidos ancestros.",
+        "resolved_in": "044300c75aacba46aa93ca14f1216d8347fdb49a"
+      },
+      {
+        "id": "FACT-REV-2",
+        "severity": "medium",
+        "file": "src/mars_titan/training/target_factors.py",
+        "original_line": 200,
+        "finding": "El lector aceptaba contract_sha256 alterado porque solo contrastaba el descriptor y los factores.",
+        "probe": "test_reader_rejects_a_forged_revision_contract_digest",
+        "fix": "Comparación canónica de toda la identidad reconstruida.",
+        "resolved_in": "044300c75aacba46aa93ca14f1216d8347fdb49a"
+      },
+      {
+        "id": "FACT-REV-3",
+        "severity": "medium",
+        "file": "src/mars_titan/training/corpus_targets.py",
+        "original_line": 311,
+        "finding": "Un recibo confirmado igual a {} se trataba como ausencia y se reparaba silenciosamente.",
+        "probe": "test_confirmed_empty_receipt_is_rejected_without_silent_repair",
+        "fix": "Rechazo de recibos existentes vacíos o de tipo incompatible antes de escribir.",
+        "resolved_in": "044300c75aacba46aa93ca14f1216d8347fdb49a"
+      },
+      {
+        "id": "FACT-REV-4",
+        "severity": "medium",
+        "file": "src/mars_titan/training/corpus_targets.py",
+        "original_line": 410,
+        "finding": "La comprobación final no fijaba los Parquet y manifiestos de activos. Una modificación anterior a confirmar podía devolver éxito o publicar un manifiesto con fuentes ya cambiadas.",
+        "probe": "test_final_sources_are_rechecked_before_confirming_or_returning_recovery",
+        "fix": "Incorporación de las fuentes por activo conservando las huellas previas mediante setdefault.",
+        "resolved_in": "044300c75aacba46aa93ca14f1216d8347fdb49a"
+      },
+      {
+        "id": "FACT-REV-5",
+        "severity": "medium",
+        "file": "src/mars_titan/training/target_factors.py",
+        "original_line": 104,
+        "finding": "Los candidatos encoded con cero filas no pertenecen a assets. Su Parquet se contrastaba por recuento, pero podía cambiar respecto a samples_sha256 sin rechazo.",
+        "probe": "test_zero_row_encoded_candidate_keeps_its_parquet_identity",
+        "fix": "Fijación y confirmación de cada samples.parquet desde la cobertura, incluidos los vacíos.",
+        "resolved_in": "de6ecfc62672e50b2bcfd28b789e98dc8ef21bc7"
+      }
+    ],
+    "limits": [
+      "Solo fixtures técnicos, sin objetivos reales, modelos, optimizadores, GPU ni edición de producción.",
+      "No se repitió la batería integrada de 298 pruebas declarada por el autor. Se ejecutaron 50 casos focales de forma independiente.",
+      "La revisión no acredita publicación atómica frente a cualquier modificación simultánea del sistema de archivos después de la última comprobación.",
+      "No se ha medido rendimiento con el corpus real ni memoria adversarial ilimitada.",
+      "El primer intento de la sonda de cero filas tenía una ruta de fixture incompleta. Se conserva como probe-zero-invalid-fixture.log y no se usa como evidencia. El caso final prepara primero el padre sano."
+    ]
+  },
+  "evidence_sha256": {
+    "quality-v5/metrics.json": "dbffc4b136ca6334c83dda6df68f4662de0ccfb47d134c67da9c798eede21d39",
+    "quality-v5/coverage.json": "84324a93bcf894f3e2e33f62973aae5b702451e83c082e2f7ba48e06db781c2b",
+    "quality-v5/pytest.log": "21face1d199b29093908a680dad091d3a2443aa449c8e949834908c0cc1d306d",
+    "quality-v5/resources.txt": "f25a2c307c7ea5ff2ed3d864d6f4d22f9495b889d8680f7720ca026f155c3318",
+    "quality-v5/mutations/result.json": "3904cb8d8a32ee5753006b11a6543cbdd49b22b0d4b0ecd21885684b13f26936",
+    "quality-v5/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "quality-v5/format.log": "a5c7eb0c2b6f08e647cca8660ef560cd7f6922f23a5df73b1cf34702968e380b",
+    "quality-v5/repository.log": "2302308464d82fb12224121a149047bc74adca845383d4f3d50bba4634b6c43a",
+    "zero-row-fix/red-independent.log": "f731f6b29d1c29eaa274bd7f7041d55b8c38139efd52355dac60ce2fc90dc4f9",
+    "zero-row-fix/red-regressions.log": "cd716d09014c1d381e60657869fc9565985d6fdc030f124527ee52c95ae4858d",
+    "zero-row-fix/green-focused.log": "be67d8a3009dfec9f2191b4cdb2f19f674cf944c6cb0a269422478f3df0319fb",
+    "zero-row-fix/red-zero-row-parquet.json": "87bd3315fee7c927a888dd4437537bb7b0bb995b3505453e5db8dd212e699b1b",
+    "zero-row-fix/zero-row-parquet.json": "4de960b73179cfc52256e8510f2c71c3bec290277fead3c78ae7a9a4297f9c61"
+  },
+  "limits": [
+    "Solo fixtures CPU. No se generaron objetivos reales, ni se recodificaron entradas o modificaron ediciones existentes.",
+    "La comprobación y revalidación incluyen ahora los Parquet de todo el censo codificado. Su coste de lectura sobre el corpus real no se ha medido en esta entrega.",
+    "Los controles de rutas rechazan enlaces existentes. No constituyen un bloqueo del sistema de archivos frente a sustituciones concurrentes después de comprobarlos.",
+    "La complejidad máxima y CRAP siguen en 98 y 98,8818. No se ha reducido código para mejorar estas puntuaciones.",
+    "Una mutación dirigida comprobó este cambio. Las cuatro de quality-v4 y las ocho de quality-v2 permanecen como ejecuciones separadas de las versiones anteriores."
+  ],
+  "status": "Implementación comprobada con fixtures y revisión independiente. Sin objetivos reales."
+}
