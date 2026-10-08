@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "window_census": {
+    "recorded_at_utc": "2026-10-08T15:13:44.823318+00:00",
+    "parent_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407",
+    "script_sha256": "2871dcbd10c182ec0de84f54845f7262f7cff80086c7a1b7657d87bc6cfd3b1c",
+    "runtime_commit": "4c575ff1825ebf92edf8a3a3606222f1267f516c",
+    "totals": {
+      "candidates": 5676,
+      "prices": 18982446,
+      "valid_input_windows": 17076024,
+      "windows_without_next_price": 16162,
+      "windows_at_cutoff": 4962,
+      "prepared_assets": 5023,
+      "without_prices": 653
+    },
+    "missing_next_price_by_year": {
+      "US": {
+        "1990": 0,
+        "1991": 0,
+        "1992": 0,
+        "1993": 0,
+        "1994": 0,
+        "1995": 0,
+        "1996": 0,
+        "1997": 0,
+        "1998": 0,
+        "1999": 0,
+        "2000": 444,
+        "2001": 584,
+        "2002": 552,
+        "2003": 613,
+        "2004": 632,
+        "2005": 543,
+        "2006": 558,
+        "2007": 630,
+        "2008": 762,
+        "2009": 667,
+        "2010": 657,
+        "2011": 655,
+        "2012": 709,
+        "2013": 753,
+        "2014": 625,
+        "2015": 567,
+        "2016": 600,
+        "2017": 608,
+        "2018": 554,
+        "2019": 588,
+        "2020": 543,
+        "2021": 405,
+        "2022": 259,
+        "2023": 210
+      },
+      "CN": {
+        "1990": 0,
+        "1991": 0,
+        "1992": 0,
+        "1993": 0,
+        "1994": 0,
+        "1995": 0,
+        "1996": 0,
+        "1997": 0,
+        "1998": 0,
+        "1999": 0,
+        "2000": 0,
+        "2001": 0,
+        "2002": 0,
+        "2003": 0,
+        "2004": 0,
+        "2005": 0,
+        "2006": 73,
+        "2007": 118,
+        "2008": 141,
+        "2009": 113,
+        "2010": 112,
+        "2011": 120,
+        "2012": 101,
+        "2013": 85,
+        "2014": 99,
+        "2015": 144,
+        "2016": 71,
+        "2017": 53,
+        "2018": 60,
+        "2019": 990,
+        "2020": 112,
+        "2021": 30,
+        "2022": 15,
+        "2023": 7
+      }
+    },
+    "elapsed_seconds": 37.627194151005824,
+    "peak_rss_bytes": 161271808,
+    "training_executed": false,
+    "scientific_evaluation_executed": false,
+    "final_test_opened": false,
+    "scope": "Censo de geometría de entradas y ausencia de precio siguiente en la copia. No calcula objetivos ni acredita un instante histórico de conocimiento de la ausencia.",
+    "limits": [
+      "No se comprueban aquí la elegibilidad residual ni los 126 pares pasados del ajuste. Estos recuentos no son estados pendientes de un predictor ejecutado.",
+      "El cierre del censo 2023 se cuenta aparte. No se consultan precios posteriores.",
+      "La ventana de 64 sesiones coincide con la condición de precios del codificador. No acredita todavía su codificación ni completitud multimodal."
+    ]
+  },
+  "prefix_conditions": {
+    "recorded_at_utc": "2026-10-08T15:38:13.922865+00:00",
+    "parent_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407",
+    "gap_census_sha256": "2cf6e3c808f6d07a098f277b69d43b360acdb8e38489e61abcc5b11391dc4d0d",
+    "cn_descriptor_sha256": "d8c2c358d68bd5fa06ef73478d73cf49b13d7a082d7ed49235ec0cfeecf4e6e8",
+    "spy_manifest_sha256": "5fc8b1d9ad9ba40d9d02a8a75f1e5943502a0bc0a292467a4ecb4c8fb975d3fc",
+    "calendars": {
+      "US": {
+        "start": "1990-01-01",
+        "end": "2023-12-31",
+        "sessions": 8565
+      },
+      "CN": {
+        "start": "1990-12-19",
+        "end": "2023-12-31",
+        "sessions": 8070
+      }
+    },
+    "totals": {
+      "assets": 5023,
+      "valid_windows": 17076024,
+      "insufficient_past_pairs": 266297,
+      "zero_past_market_variance": 0,
+      "direct_variance_windows": 0,
+      "direct_reference_checks": 40064
+    },
+    "late_entry_after_2000": {
+      "assets": 3725,
+      "insufficient_past_pairs": 201492
+    },
+    "excluded_prefix_by_year": {
+      "US": {
+        "2000": 64297,
+        "2018": 14359,
+        "2019": 14275,
+        "2008": 5673,
+        "2010": 6545,
+        "2011": 6131,
+        "2005": 5199,
+        "2006": 5377,
+        "2013": 6845,
+        "2014": 10728,
+        "2002": 2681,
+        "2009": 4336,
+        "2020": 13136,
+        "2004": 5276,
+        "2007": 9995,
+        "2016": 8117,
+        "2015": 11432,
+        "2017": 10434,
+        "2001": 2683,
+        "2012": 7004,
+        "2021": 699,
+        "2022": 772,
+        "2003": 3337,
+        "2023": 675
+      },
+      "CN": {
+        "2006": 25518,
+        "2013": 100,
+        "2014": 533,
+        "2007": 2346,
+        "2022": 466,
+        "2018": 1110,
+        "2008": 1796,
+        "2009": 235,
+        "2010": 3153,
+        "2011": 2323,
+        "2012": 1674,
+        "2015": 1418,
+        "2016": 651,
+        "2017": 1745,
+        "2019": 984,
+        "2020": 1370,
+        "2021": 803,
+        "2023": 66
+      }
+    },
+    "maximum_same_session": {
+      "US": 1016,
+      "CN": 409
+    },
+    "script_sha256": "4d1a2b5783c31c9f9058122ad358500be1e85d57b55d9573904f3c7e98fdc179",
+    "prefix_code_sha256": "bb9cd78bbd87cd921a1e0c1201e2b5dcce30d5444256d05f0486b8a02b405ba0",
+    "runtime_commit": "a1be4adfa1f4374d4d3d8cdd91fece0391424958",
+    "elapsed_seconds": 127.08930666800006,
+    "peak_rss_bytes": 224313344,
+    "alpha_beta_computed": false,
+    "targets_computed": false,
+    "training_executed": false,
+    "final_test_opened": false,
+    "scope": "Condiciones del prefijo para el residual original, sin leer la sesión siguiente ni utilizar reason. Fuentes US SPY preparado y CN v16, sin afirmar identidad con el descriptor anterior.",
+    "limits": [
+      "No es una trayectoria de pendientes de un predictor ni aplica cortes de folds concretos.",
+      "La disponibilidad se contrasta con los timestamps declarados de las fuentes verificadas, no acredita ausencia de revisiones retrospectivas.",
+      "La revisión efectiva del factor US debe fijarse y contrastarse antes de generar etiquetas definitivas.",
+      "El cribado por rango solo evita calcular varianzas alejadas del umbral. Cerca de cero se usa np.var sobre el vector observado original."
+    ],
+    "conditional_factors": {
+      "US": {
+        "prices_sha256": "322d066eef284e9970a9d34ed5240b6528c0c46a59718ec531bc43365c2e41a0",
+        "edition": "prepared-accounting-v1/US/SPY"
+      },
+      "CN": {
+        "market": "CN",
+        "symbol": "000300",
+        "unit": "index_points",
+        "prices_sha256": "b96cd9729f0d3fc9dc0144c9d676d4da6b91898ad8f482b32db3364afe2b3cbc",
+        "return_convention": "close_over_open_minus_one",
+        "point_in_time_verified": false,
+        "edition": "CSI300-v16"
+      }
+    }
+  },
+  "evidence_sha256": {
+    "window_census": "2cf6e3c808f6d07a098f277b69d43b360acdb8e38489e61abcc5b11391dc4d0d",
+    "prefix_conditions": "9ea33788c51f403b01a3b0fc7f28a5197a0d2b57e5901668e295cc2afe91b99f"
+  },
+  "input_histories_equivalent_to_old_factor_descriptor": false,
+  "label_counts_confirmed": false,
+  "pending_population_verified": false
+}

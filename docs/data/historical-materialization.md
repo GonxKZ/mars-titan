@@ -6,7 +6,17 @@ Estas salidas son tablas normalizadas y paneles macro. Todavía faltan su codifi
 
 La [codificación acotada](historical-encoding-budgets.md) permite pausar por activo y omitir la copia secundaria de gráficos en caché. Conserva los vectores en Parquet y registra los límites de disco, CUDA y lotes antes de completar el recorrido.
 
-La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos tiene 96 activos y 341.883 muestras verificadas. Sus Parquet ocupan 1.188.112.864 bytes y la caché conserva 85.043 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos tiene 416 activos y 1.452.871 muestras verificadas. Sus Parquet ocupan 4.964.579.911 bytes y la caché conserva 228.512 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+
+## Ventanas de entrada y condiciones del objetivo
+
+El [censo de ventanas](../../reports/data/historical-window-census-20261008.json) concilia los 5.023 activos y sus 18.982.446 precios. Contiene 17.076.024 ventanas de 64 sesiones consecutivas. Este es el denominador de la geometría de entradas, no un recuento de objetivos residuales válidos ni de muestras ya codificadas.
+
+Hay 16.162 ventanas sin precio en la sesión siguiente dentro del periodo y 4.962 en el corte final. Otra auditoría del prefijo encuentra 266.297 ventanas sin los 126 pares pasados observables que exige el residual. De ellas, 201.492 pertenecen a activos cuya primera ventana de esta copia es posterior a 2000. Esa fecha no se interpreta como fecha de salida a bolsa. Los grupos de exclusión no se suman como si fueran disjuntos.
+
+El segundo recuento usa SPY de la preparación verificada y el factor CN v16, ambos limitados a 2023. Todavía debe fijarse la revisión efectiva del factor US para las etiquetas. No se afirma que sea idéntico al descriptor anterior. Se conserva la ventana de 252 sesiones, la disponibilidad anterior a la decisión y el umbral de varianza vigente. Se contrastaron 40.064 posiciones con el cálculo directo y 16 fixtures de umbral y sufijo futuro. No se calcularon alpha, beta ni etiquetas. La ausencia de revisiones históricas tampoco queda acreditada por estos controles.
+
+Estas condiciones necesitan resoluciones distintas. La falta de historia puede comprobarse desde el prefijo. La ausencia retrospectiva del precio siguiente no acredita que se conociese al emitir. El consumidor debe avanzar con todos los inputs admitidos y resolver los casos sin fabricar etiquetas o utilizar ese motivo como entrada. Los recuentos son acumulados, no un pico medido de pendientes. La suficiencia de la cola y los cortes de cada fase siguen pendientes de conciliación.
 
 ## Tablas preparadas
 
@@ -17,7 +27,7 @@ La primera edición codificada y verificada reúne 11.436 muestras de dos activo
 
 Los precios US comienzan el 3 de enero de 2000 y los CN el 4 de enero de 2006. Ambos terminan el 29 de diciembre de 2023. Cada activo conserva su propio comienzo y sus huecos. La ausencia de noticias o cuentas no elimina el activo. Entre los activos US preparados, 1.537 carecen de fuente contable y 90 de fuente de noticias.
 
-Los archivos contables CN contienen 202.767 registros sin publicación acreditada. Esta pasada los identifica y no los convierte en entradas conocidas en el pasado. La incorporación separada de comunicados oficiales revisados sigue pendiente de materialización sobre este padre. Los archivos originales permanecen intactos. Los hechos US repetidos se deduplican según el contrato existente. Se excluyen 9.224 registros cuyo periodo termina después de su presentación, conservando su procedencia y el resto válido de cada empresa.
+Los archivos contables CN contienen 202.767 registros sin publicación acreditada. Esta pasada los identifica y no los convierte en entradas conocidas en el pasado. El enriquecimiento separado descrito más abajo incorpora comunicados oficiales revisados sobre este padre. Los archivos originales permanecen intactos. Los hechos US repetidos se deduplican según el contrato existente. Se excluyen 9.224 registros cuyo periodo termina después de su presentación, conservando su procedencia y el resto válido de cada empresa.
 
 Se han verificado 25.115 artefactos, con 4.017.049.727 bytes en total, mediante SHA-256 y recuentos Parquet. La lectura de fechas y valores contables utiliza lotes de 512 filas. Comprueba que no entren disponibilidades de 2024, valores contables no finitos ni periodos posteriores a la presentación. El lote decodificado de mayor tamaño durante esa comprobación ocupó 94.056 bytes. Esta cifra corresponde a las columnas verificadas, no al tamaño de una muestra multimodal completa.
 
@@ -60,4 +70,4 @@ La preparación tuvo una cuota de dos CPU, dos hilos por biblioteca y un límite
 
 El recorrido completo ejecutó `mars_titan.data.corpus_preparation` con `original_audited`, ambos mercados, `historical_masked_2000_v1` y el estado de precios auditados. El recálculo usó `recalculate_macro` con `start=2000-01-01`, `history_start=2000-01-01` y `end=2023-12-31`. La composición utilizó `compose_macro_edition` y `compose_stress_history`. `assess_macro_completeness` produjo el diagnóstico separado de completitud. Los recibos conservan versiones, configuraciones, hashes de componentes y tiempos medidos. Los datos voluminosos quedan fuera de Git.
 
-La edición histórica de aprendizaje sigue pendiente de unir las cuentas revisadas, codificar todas las ventanas válidas y comprobar objetivos, máscaras, exclusiones y cortes comunes. Estos resultados no miden mejoras predictivas ni habilitan el entrenamiento.
+La edición histórica de aprendizaje ya incorpora las cuentas revisadas y sigue pendiente de codificar todas las ventanas válidas y comprobar objetivos, máscaras, exclusiones y cortes comunes. Estos resultados no miden mejoras predictivas ni habilitan el entrenamiento.
