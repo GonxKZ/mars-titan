@@ -77,9 +77,12 @@ inicialización del dispositivo y falló antes del objetivo. Se conservó ese
 fallo y se corrigió el arnés sin cambiar producción. No se midió rendimiento
 ni se ejecutó ninguna actualización de parámetros.
 
-## Integración todavía pendiente
+## Integración y comprobaciones pendientes
 
-La pérdida pura no completa ninguna variante nueva de PPO. Se mantienen el
+La pérdida pura no completa por sí sola una variante de PPO. La
+[integración explícita](ppo-objective-variants.md) añade captura, controlador y
+recuperación, con las comprobaciones de optimización todavía pendientes.
+Se mantienen el
 [PPO nativo](native-ppo.md) y los
 [controles KLPO predictivos](../references/klpo-quadratic.md) como problemas
 distintos. El recorte de PPO no impone una cota dura de KL. La penalización
@@ -87,21 +90,21 @@ adaptativa y la parada por KL son alternativas conocidas, con reglas que deben
 quedar identificadas. [PPO, secciones 3–5](https://arxiv.org/pdf/1707.06347v2),
 [Spinning Up](https://spinningup.openai.com/en/latest/algorithms/ppo.html).
 
-| Variante por integrar | Cambio mínimo | Estado adicional que debe recuperarse |
+| Variante | Cambio del objetivo | Estado adicional que debe recuperarse |
 | --- | --- | --- |
 | PPO-Clip con diagnóstico completo | Conservar el objetivo actual y medir la KL de las seis acciones. | Distribución histórica completa, versión del muestreador, máscara de filas válidas e identidad de observaciones. |
 | PPO con penalización KL adaptativa | Sustituir el término del actor por `-mean(r*A - beta*KL)`, conservando crítico y entropía declarados. | Beta vigente y sus límites, KL objetivo, regla de adaptación, contador de actualizaciones y medición pendiente. |
 | PPO-Clip con parada por KL | Medir el desplazamiento real de la política y detener las épocas restantes según una regla previa. | Última KL, épocas completadas y omitidas, umbral superado y resumen del rollout confirmado. |
 
-Cada variante necesita un identificador distinto de objetivo y controlador,
-además del contrato de esta función. Los campos anteriores son requisitos para
-la integración, no opciones que el ejecutor acepte ya. Deben añadirse al
-checkpoint existente y a su validación, sin introducir un segundo escritor.
+Cada variante tiene un identificador distinto de objetivo y controlador,
+además del contrato de esta función. Los campos se conservan en el checkpoint
+existente y su validación, sin introducir un segundo escritor. El bloque
+`policy_objective` activa las identidades y su ausencia conserva el camino anterior.
 
-`PpoAction` ya expone probabilidades completas, pero el rollout actual guarda
-solo el logaritmo de la acción elegida. Una extensión debe conservar las seis
-probabilidades del muestreador real, su normalización y versión. No se reconstruyen
-con los pesos nuevos. La integración prevista conserva los seis pesos FP32
+`PpoAction` expone probabilidades completas. El rollout legacy guarda solo el
+logaritmo de la acción elegida. La extensión conserva las seis probabilidades
+del muestreador real, su normalización y versión. No se reconstruyen
+con los pesos nuevos. La integración conserva los seis pesos FP32
 originales y los normaliza en FP64 al calcular la KL. Para 1.024 decisiones
 son 24.576 bytes de contenido, aparte de metadatos y temporales. Las filas sin
 recompensa válida se excluyen según la máscara existente.
@@ -124,7 +127,7 @@ Si se permiten paradas independientes, se registrará la diferencia efectiva.
 Las variantes de [#137](https://github.com/GonxKZ/mars-titan/issues/137)
 compartirán observaciones, acciones, costes, particiones y límites de recursos.
 Se conservarán por separado transiciones, exposiciones y actualizaciones.
-Siguen pendientes la integración del controlador, su comprobación CUDA y los
+Siguen pendientes las pruebas de actualización y recuperación efectiva y los
 experimentos. El aprendizaje permanece bloqueado hasta preparar y verificar
 la edición histórica desde 2000, y la simulación financiera conserva sus
 requisitos de OHLC y acciones corporativas. El test final sigue cerrado.

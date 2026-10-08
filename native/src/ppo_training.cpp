@@ -1,4 +1,5 @@
 #include "mars_titan/ppo_training.hpp"
+#include "mars_titan/ppo_objectives.hpp"
 #include "accurate_sum.hpp"
 
 #include <ATen/ATen.h>
@@ -31,6 +32,7 @@ struct RolloutShape {
     std::size_t environments;
     std::size_t width;
     bool recurrent = false;
+    bool full_distribution = false;
 };
 
 template<class Rollout> auto fields(Rollout& r) {
@@ -79,7 +81,9 @@ void validate_config(const PpoTrainingConfig& config, RolloutShape shape,
     constexpr std::size_t scalar_bytes = sizeof(int64_t) + 4 * sizeof(double) + 3 * sizeof(bool);
     // GRU puede conservar el rollback del reset a la vez que la copia de actualización.
     const auto rollout_copies = shape.recurrent ? std::size_t{3} : std::size_t{2};
-    const auto row_bytes = rollout_copies * (shape.width * sizeof(float) + scalar_bytes);
+    const auto distribution_bytes = shape.full_distribution
+        ? static_cast<std::size_t>(ppo_action_count) * (rollout_copies * sizeof(float) + 16 * sizeof(double)) : 0;
+    const auto row_bytes = rollout_copies * (shape.width * sizeof(float) + scalar_bytes) + distribution_bytes;
     require(config.rollout_transitions <= config.rollout_bytes / row_bytes,
             "El recorrido PPO supera su presupuesto de memoria");
     if (shape.recurrent) {
@@ -115,6 +119,7 @@ PpoRollout allocate_rollout(RolloutShape shape) {
     result.reward_valid = at::zeros({time, lanes}, at::kBool);
     result.terminated = at::zeros({time, lanes}, at::kBool);
     result.truncated = at::zeros({time, lanes}, at::kBool);
+    if (shape.full_distribution) { result.old_action_weights = at::zeros({time, lanes, ppo_action_count}, at::kFloat); }
     return result;
 }
 
@@ -132,6 +137,10 @@ PpoRollout rollout_prefix(const PpoRollout& source, std::size_t ticks, bool clon
         result.prefix_observations = clone ? source.prefix_observations.clone() : source.prefix_observations;
         result.prefix_lengths = clone ? source.prefix_lengths.clone() : source.prefix_lengths;
     }
+    if (source.old_action_weights.defined()) {
+        const auto weights = source.old_action_weights.narrow(0, 0, static_cast<int64_t>(ticks));
+        result.old_action_weights = clone ? weights.detach().clone() : weights;
+    }
     return result;
 }
 
@@ -145,6 +154,7 @@ PpoRollout move_rollout(PpoRollout source, const at::Device& device) {
         source.prefix_observations = source.prefix_observations.to(device);
         source.prefix_lengths = source.prefix_lengths.to(device);
     }
+    if (source.old_action_weights.defined()) { source.old_action_weights = source.old_action_weights.to(device); }
     return source;
 }
 
@@ -177,6 +187,20 @@ void validate_partial(const PpoRollout& rollout, RolloutShape dimensions) {
     }
     require(((rollout.actions >= 0) & (rollout.actions < ppo_action_count)).all().item<bool>(),
             "El recorrido guardado contiene acciones no admitidas");
+    require(rollout.old_action_weights.defined() == dimensions.full_distribution,
+            "El recorrido parcial no corresponde al objetivo PPO");
+    if (dimensions.full_distribution) {
+        const auto& weights = rollout.old_action_weights;
+        require(weights.device().is_cpu() && weights.layout() == at::kStrided &&
+                    weights.scalar_type() == at::kFloat && weights.sizes() ==
+                        at::IntArrayRef({static_cast<int64_t>(dimensions.ticks),
+                                        static_cast<int64_t>(dimensions.environments), ppo_action_count}),
+                "Los pesos históricos guardados no tienen forma o tipo válidos");
+        if (dimensions.ticks > 0) {
+            validate_ppo_behavior(weights.flatten(0, 1), rollout.actions.flatten(),
+                                  rollout.old_log_probabilities.flatten(), rollout.reward_valid.flatten());
+        }
+    }
 }
 
 PpoArchitecture architecture_for(const PpoLearningOptions& learning, std::size_t width) {
@@ -298,9 +322,10 @@ AdaptiveState read_adaptive(std::string_view bytes) {
 
 PpoTrainer::PpoTrainer(std::vector<simulation::BatchInput> inputs, PpoTrainingConfig config,
                        PpoHyperparameters hyperparameters, std::string device, bool diagnostic,
-                       PpoLearningOptions learning)
+                       PpoLearningOptions learning, PpoObjectiveConfig objective)
     : inputs_(std::move(inputs)), config_(config), hyperparameters_(hyperparameters),
-      device_(std::move(device)), diagnostic_(diagnostic), learning_(std::move(learning)) {
+      device_(std::move(device)), diagnostic_(diagnostic), learning_(std::move(learning)), objective_(objective) {
+    objective_.validate();
     validate_sources(inputs_, "train");
     hyperparameters_.validate();
     const auto lanes = learning_.enabled ? learning_.environments : inputs_.size();
@@ -339,13 +364,13 @@ PpoTrainer::PpoTrainer(std::vector<simulation::BatchInput> inputs, PpoTrainingCo
         width = context_->observation_width();
     }
     const RolloutShape shape{config_.rollout_transitions / lanes, lanes, width,
-                            learning_.enabled && learning_.variant == "ppo_gru"};
+                            learning_.enabled && learning_.variant == "ppo_gru", objective_.enabled()};
     validate_config(config_, shape, device_, diagnostic_);
     buffers_ = allocate_rollout(shape);
     actions_.resize(batch_->size());
     reset_lanes_.reserve(batch_->size());
     policy_ = std::make_unique<PpoPolicy>(width, hyperparameters_, config_.seed, device_,
-                                         default_ppo_memory_bytes, architecture_for(learning_, width));
+                                         default_ppo_memory_bytes, architecture_for(learning_, width), objective_);
     hidden_ = policy_->initial_state(lanes);
     history_ = at::empty({0}, at::kFloat);
     history_lengths_ = at::empty({0}, at::kLong);
@@ -462,6 +487,9 @@ bool PpoTrainer::advance(const PpoDecisionObserver& observer) {
                             1. + fraction * (minimum_epsilon - 1.)) :
             policy_->act_recurrent(observation.to(at::Device(device_)), hidden_, starts.to(at::Device(device_)));
         const auto packed = chosen.packed.to(at::kCPU).contiguous();
+        if (objective_.enabled()) {
+            buffers_.old_action_weights[static_cast<int64_t>(ticks_)].copy_(chosen.probabilities.to(at::kCPU));
+        }
         const auto probabilities = observer ? chosen.probabilities.to(at::kCPU, at::kFloat).contiguous() : at::Tensor{};
         const std::span values(packed.const_data_ptr<double>(), lanes * packed_fields);
         require(std::all_of(values.begin(), values.end(), [](double value) { return std::isfinite(value); }),
@@ -651,6 +679,8 @@ PpoTrainingState PpoTrainer::snapshot() const {
     result.rollout = rollout_prefix(buffers_, ticks_, true);
     result.policy_archive = std::move(policy).str();
     result.learning = learning_;
+    result.objective = objective_;
+    result.controller = policy_->controller_state();
     result.source_indices = source_indices_;
     result.next_source = next_source_;
     result.observed_transitions = observed_transitions_;
@@ -668,6 +698,7 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
     constexpr auto maximum_observed = maximum_transitions * static_cast<std::size_t>(ppo_maximum_history);
     require(state.config == config_ && state.hyperparameters == hyperparameters_ &&
                 state.device == device_ && state.diagnostic == diagnostic_ && state.learning == learning_ &&
+                state.objective == objective_ &&
                 state.transitions <= config_.total_transitions && (learning_.enabled || state.transitions % lanes == 0) &&
                 observed >= state.transitions && observed <= maximum_observed &&
                 state.invalid_transitions <= state.transitions && state.episodes <= observed &&
@@ -720,6 +751,14 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
     } else {
         adaptive.ticks = state.transitions / lanes;
     }
+    if (objective_.enabled()) {
+        const auto rollout_ticks = config_.rollout_transitions / lanes;
+        const auto completed = adaptive.ticks / rollout_ticks + static_cast<std::size_t>(
+            state.transitions == config_.total_transitions && adaptive.ticks % rollout_ticks != 0);
+        require(state.controller.completed_rollouts >= 0 &&
+                    static_cast<std::size_t>(state.controller.completed_rollouts) == completed,
+                "El controlador no conserva los rollouts realmente observados");
+    }
     require(state.rollout.observations.defined() && state.rollout.observations.dim() == 3,
             "Falta la forma temporal del recorrido guardado");
     const auto ticks = static_cast<std::size_t>(state.rollout.observations.size(0));
@@ -727,7 +766,7 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
         ? 0 : adaptive.ticks % (config_.rollout_transitions / lanes);
     require(ticks == expected_ticks, "El recorrido parcial no corresponde al cursor confirmado");
     const auto width = context ? context->observation_width() : batch_->observation_width();
-    validate_partial(state.rollout, {ticks, lanes, width});
+    validate_partial(state.rollout, {ticks, lanes, width, false, objective_.enabled()});
     std::vector<uint8_t> expected_reset(lanes, 0);
     for (const auto lane : state.reset_lanes) {
         require(lane < lanes && expected_reset[lane] == 0, "Los reinicios guardados no son válidos");
@@ -747,6 +786,8 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
     require(candidate_policy->observation_width() == width &&
                 candidate_policy->hyperparameters() == hyperparameters_ &&
                 candidate_policy->architecture() == policy_->architecture() &&
+                candidate_policy->objective() == objective_ &&
+                (!objective_.enabled() || candidate_policy->controller_state() == state.controller) &&
                 candidate_policy->seed() == config_.seed &&
                 candidate_policy->optimizer_steps() == state.optimizer_steps,
             "El checkpoint neural usa otra arquitectura o hiperparámetros");
@@ -765,11 +806,15 @@ void PpoTrainer::restore(const PpoTrainingState& state) {
     } else {
         require(adaptive.replay.empty(), "Una política sin replay contiene experiencias ajenas");
     }
-    auto candidate_buffers = allocate_rollout({config_.rollout_transitions / lanes, lanes, width});
+    auto candidate_buffers = allocate_rollout({config_.rollout_transitions / lanes, lanes, width,
+                                              false, objective_.enabled()});
     auto target = fields(candidate_buffers);
     const auto source = fields(state.rollout);
     for (std::size_t index = 0; index < target.size(); ++index) {
         target.at(index).second->narrow(0, 0, static_cast<int64_t>(ticks)).copy_(*source.at(index).second);
+    }
+    if (objective_.enabled()) {
+        candidate_buffers.old_action_weights.narrow(0, 0, static_cast<int64_t>(ticks)).copy_(state.rollout.old_action_weights);
     }
     auto candidate_hidden = candidate_policy->initial_state(lanes);
     auto candidate_history = at::empty({0}, at::kFloat);
@@ -1036,7 +1081,15 @@ PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::B
 
 std::string serialize_rollout(const PpoRollout& rollout) {
     torch::serialize::OutputArchive archive;
-    archive.write("schema_version", at::tensor(int64_t{1}), true);
+    const bool distribution = rollout.old_action_weights.defined();
+    if (distribution) {
+        require(rollout.observations.defined() && rollout.observations.dim() == 3,
+                "El recorrido necesita observaciones antes de escribir sus probabilidades");
+        validate_partial(rollout, {static_cast<std::size_t>(rollout.observations.size(0)),
+            static_cast<std::size_t>(rollout.observations.size(1)), static_cast<std::size_t>(rollout.observations.size(2)),
+            false, true});
+    }
+    archive.write("schema_version", at::tensor(int64_t{distribution ? 2 : 1}), true);
     for (const auto [name, tensor] : fields(rollout)) {
         archive.write(name, tensor->detach().to(at::kCPU).clone(), true);
     }
@@ -1045,6 +1098,10 @@ std::string serialize_rollout(const PpoRollout& rollout) {
         archive.write("episode_starts", rollout.episode_starts.to(at::kCPU), true);
         archive.write("prefix_observations", rollout.prefix_observations.to(at::kCPU), true);
         archive.write("prefix_lengths", rollout.prefix_lengths.to(at::kCPU), true);
+    }
+    if (distribution) {
+        archive.write("sampler", c10::IValue(std::string(ppo_sampler_contract)));
+        archive.write("old_action_weights", rollout.old_action_weights.detach().to(at::kCPU).clone(), true);
     }
     std::ostringstream output;
     archive.save_to(output);
@@ -1061,7 +1118,7 @@ PpoRollout deserialize_rollout(std::string_view bytes) {
     at::Tensor version;
     archive.read("schema_version", version, true);
     require(version.scalar_type() == at::kLong && version.numel() == 1 &&
-                version.item<int64_t>() == 1, "La versión del recorrido no está admitida");
+                (version.item<int64_t>() == 1 || version.item<int64_t>() == 2), "La versión del recorrido no está admitida");
     PpoRollout result;
     for (auto [name, tensor] : fields(result)) {
         archive.read(name, *tensor, true);
@@ -1071,6 +1128,22 @@ PpoRollout deserialize_rollout(std::string_view bytes) {
         archive.read("episode_starts", result.episode_starts, true);
         archive.read("prefix_observations", result.prefix_observations, true);
         archive.read("prefix_lengths", result.prefix_lengths, true);
+    }
+    if (version.item<int64_t>() == 2) {
+        c10::IValue sampler;
+        archive.read("sampler", sampler);
+        require(sampler.isString() && sampler.toStringRef() == ppo_sampler_contract,
+                "El recorrido declara otra normalización del muestreador");
+        archive.read("old_action_weights", result.old_action_weights, true);
+        require(result.observations.defined() && result.observations.dim() == 3,
+                "Faltan observaciones para comprobar el muestreador guardado");
+        validate_partial(result, {static_cast<std::size_t>(result.observations.size(0)),
+            static_cast<std::size_t>(result.observations.size(1)), static_cast<std::size_t>(result.observations.size(2)),
+            false, true});
+    } else {
+        at::Tensor unexpected;
+        require(!archive.try_read("old_action_weights", unexpected, true),
+                "El recorrido antiguo contiene datos de otro esquema");
     }
     return result;
 }

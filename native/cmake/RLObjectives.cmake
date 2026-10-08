@@ -1,5 +1,5 @@
 option(MARS_TITAN_BUILD_RL_OBJECTIVES "Compilar controles puros de objetivos RL, sin entrenador" OFF)
-if(NOT MARS_TITAN_BUILD_RL_OBJECTIVES)
+if(NOT MARS_TITAN_BUILD_RL_OBJECTIVES AND NOT MARS_TITAN_BUILD_PPO)
     return()
 endif()
 
@@ -9,7 +9,7 @@ endif()
 include(CTest)
 include(cmake/TorchDependencies.cmake)
 mars_titan_find_torch()
-add_library(mars_titan_rl_objectives STATIC src/ppo_objectives.cpp)
+add_library(mars_titan_rl_objectives STATIC src/ppo_objectives.cpp src/ppo_controller.cpp)
 target_include_directories(mars_titan_rl_objectives PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(mars_titan_rl_objectives PUBLIC mars_titan::torch)
 mars_titan_configure_target(mars_titan_rl_objectives)
@@ -22,6 +22,14 @@ if(BUILD_TESTING)
     mars_titan_sanitizer_test_environment(ppo_objectives)
     set_property(TEST ppo_objectives APPEND PROPERTY ENVIRONMENT
         "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+    add_executable(ppo_controller_tests tests/ppo_controller_tests.cpp)
+    target_link_libraries(ppo_controller_tests PRIVATE mars_titan_rl_objectives)
+    mars_titan_configure_target(ppo_controller_tests)
+    add_test(NAME ppo_controller COMMAND ppo_controller_tests)
+    set_tests_properties(ppo_controller PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+    mars_titan_sanitizer_test_environment(ppo_controller)
+    set_property(TEST ppo_controller APPEND PROPERTY ENVIRONMENT
+        "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
 endif()
 
 if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -29,6 +37,9 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
             --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_objectives.cpp"
+        COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
+            --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_controller.cpp"
         COMMENT "Analizar el objetivo categórico puro de PPO"
         VERBATIM)
 endif()
