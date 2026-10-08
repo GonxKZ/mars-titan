@@ -31,7 +31,7 @@ class NeuralMemory(nn.Module):
             raise ValueError("La memoria admite float32 y float64")
         self.config = config
         # Inicializar en CPU aísla la semilla de los flujos científicos existentes.
-        with torch.random.fork_rng(devices=[]):
+        with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(config.parameter_seed)
             self.initial_weights = nn.ParameterList(
                 nn.Parameter(torch.empty(config.dim, config.dim, dtype=dtype))

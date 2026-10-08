@@ -25,7 +25,7 @@ class TitansMAC(nn.Module):
         self.config = config
         self.memory = NeuralMemory(config.memory, dtype=dtype)
         dim = config.memory.dim
-        with torch.random.fork_rng(devices=[]):
+        with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(config.parameter_seed)
             self.query_projection = nn.Linear(dim, dim, bias=False, dtype=dtype)
             self.attention = nn.MultiheadAttention(
