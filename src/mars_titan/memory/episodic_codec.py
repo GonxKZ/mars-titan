@@ -250,7 +250,7 @@ class FrozenEpisodeCodec:
         temporary = 3 * size * max(self._input_widths) * 8
         peak = (
             self._projection.nbytes
-            + sys.getsizeof(self._identity_json)
+            + 2 * sys.getsizeof(self._identity_json)
             + temporary
             + size * (4 * WIDTH * 8 + 512)
             + 65536
@@ -281,6 +281,8 @@ class FrozenEpisodeCodec:
             key_contributions[:, index] = _norm(contribution[:, : WIDTH - 1])
             value_contributions[:, index] = _norm(contribution[:, WIDTH - 1 :])
             start = end
+            # Evitar que se solapen las salidas de dos proyecciones en bloques estrechos.
+            del contribution
         try:
             with np.errstate(over="raise", invalid="raise"):
                 keys = np.empty((size, WIDTH), dtype=np.float32)
@@ -289,6 +291,7 @@ class FrozenEpisodeCodec:
                 values = summed[:, WIDTH - 1 :].astype(np.float32)
         except FloatingPointError as error:
             raise ValueError("La codificación no cabe en FP32") from error
+        del summed, block, norms
         arrays = tuple(
             _immutable(value)
             for value in (

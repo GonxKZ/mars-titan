@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import pytest
 
-from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
+from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
 
@@ -306,3 +306,67 @@ def test_oversized_projected_values_fail_explicitly():
     codec = FrozenEpisodeCodec(specification(), modality_weights=(1e40,) * 5)
     with pytest.raises(ValueError, match="FP32"):
         codec.encode(validated_cpu_batch(raw_batch(), specification()))
+
+
+@pytest.mark.parametrize("context,long_ids", [(2, False), (2, True), (3, False), (8, False)])
+def test_narrow_strict_blocks_fit_the_declared_working_memory(context, long_ids):
+    import tracemalloc
+
+    base = specification()
+    representation = base.representation
+    representation.pop("input_policy")
+    representation.pop("mask_contract")
+    representation["context_sessions"] = context
+    spec = FinancialInputSpec(
+        source_sha256=base.source_sha256,
+        view_sha256=base.view_sha256,
+        representation=representation,
+        dimensions=base.dimensions,
+        input_policy=STRICT_INPUTS,
+    )
+    raw = raw_batch(256, absent=False)
+    raw["inputs"]["prices"] = raw["inputs"]["prices"][:, :context].copy()
+    raw.pop("presence")
+    if long_ids:
+        at = int(raw["prediction_at"][0].astype("int64"))
+        raw["sample_ids"] = [f"US/{index:064d}/{at}" for index in range(256)]
+    view = validated_cpu_batch(raw, spec)
+    codec = FrozenEpisodeCodec(spec, max_buffer_bytes=900_000 if context == 2 else 2 * 1024**2)
+    tracemalloc.start()
+    try:
+        result = codec.encode(view)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    observed = peak + codec._projection.nbytes
+    assert observed <= result.estimated_peak_bytes <= codec.max_buffer_bytes
+
+
+def test_budget_below_estimate_fails_before_numeric_buffers(monkeypatch):
+    import mars_titan.memory.episodic_codec as module
+
+    base = specification()
+    representation = base.representation
+    representation.pop("input_policy")
+    representation.pop("mask_contract")
+    representation["context_sessions"] = 2
+    spec = FinancialInputSpec(
+        source_sha256=base.source_sha256,
+        view_sha256=base.view_sha256,
+        representation=representation,
+        dimensions=base.dimensions,
+        input_policy=STRICT_INPUTS,
+    )
+    raw = raw_batch(256, absent=False)
+    raw["inputs"]["prices"] = raw["inputs"]["prices"][:, :2].copy()
+    raw.pop("presence")
+    view = validated_cpu_batch(raw, spec)
+    result = FrozenEpisodeCodec(spec, max_buffer_bytes=900_000).encode(view)
+    limited = FrozenEpisodeCodec(spec, max_buffer_bytes=result.estimated_peak_bytes - 1)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("El cálculo empezó antes de comprobar el presupuesto")
+
+    monkeypatch.setattr(module.np, "einsum", forbidden)
+    with pytest.raises(ValueError, match="presupuesto"):
+        limited.encode(view)

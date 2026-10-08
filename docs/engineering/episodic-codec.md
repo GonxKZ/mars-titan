@@ -44,11 +44,20 @@ los buffers propios, con un máximo de 64 MiB. Un exceso se rechaza antes del
 cálculo. No es un límite del RSS del proceso ni incluye los datos del llamante
 o las bibliotecas cargadas.
 
-Las comprobaciones focales usan 33 casos CPU, incluida una referencia escalar
+Las comprobaciones focales iniciales usaron 33 casos CPU, incluida una referencia escalar
 independiente, extremos FP32, máscaras, permutaciones, reconstrucción, cambios
 de contenido y presupuesto. Ocho mutaciones dirigidas se detectaron. Con
 coverage.py 7.16.2 se ejecutaron 162 de 165 sentencias y 35 de 38 ramas. El CCN
 máximo de radon 6.0.1 fue 16. Estas medidas describen las pruebas ejecutadas.
+
+La revisión añadió cinco regresiones para bloques estrechos e IDs largos y
+amplió la batería a 38 casos. Se liberan las contribuciones ya sumadas antes de
+la proyección siguiente y los acumuladores antes de copiar las salidas. La
+estimación cuenta también la copia de la identidad al calcular su huella. Para
+256 filas con contexto 2 y dimensiones `5/4/6/3/3`, el pico rastreado más la
+proyección residente pasó de 986.952 a 625.992 bytes. La nueva estimación fue de
+816.540 bytes y el límite de 900.000. Los valores conservan la misma huella.
+Un límite inferior a la estimación se rechaza antes del cálculo numérico.
 
 Una medición con fixtures de dimensiones `64×5`, `384`, `512`, `78` y `420`,
 NumPy 2.5.3 y dos hilos obtuvo una mediana de 27,58 ms para 256 observaciones,
