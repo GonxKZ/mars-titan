@@ -111,13 +111,15 @@ y la recuperación de estados por bloques están implementados y comprobados.
 Su conexión con el predictor financiero sigue pendiente. No hay una mejora
 predictiva medida de estas variantes.
 
-La comparación de refuerzo conserva PPO y Double DQN y prepara tres controles
-PPO: recorte con diagnóstico KL, penalización KL adaptativa y parada por KL.
-KLPO tiene prioridad como candidato separado. El ajuste de una predicción y
-la política financiera secuencial necesitan objetivos distintos. La KL completa
-y la descomposición cuadrática predictiva tienen comprobaciones algebraicas
-CPU/CUDA. Las nuevas variantes y la comparación científica siguen pendientes,
-sin un algoritmo ganador seleccionado.
+La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
+controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
+parada por KL. Sus comprobaciones CPU/CUDA no ejecutan pasos de optimizador.
+La recuperación posterior a una actualización real sigue pendiente. KLPO tiene
+prioridad como candidato separado. Su objetivo terminal y gradientes están
+comprobados, con el recolector completo y el consumidor financiero aún pendientes.
+El ajuste de una predicción y la política financiera secuencial necesitan
+objetivos distintos. La comparación científica sigue bloqueada y no hay un
+algoritmo ganador seleccionado.
 
 Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
 retornos de activos y un registro de operaciones con costes de apertura y cierre.
