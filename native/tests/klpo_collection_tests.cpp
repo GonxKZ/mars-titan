@@ -324,6 +324,33 @@ void a_complete_forced_wave_never_samples_or_updates() {
                 run.policy().optimizer_steps() == 0,
             "El calentamiento alteró el sampler o el optimizador");
 }
+
+void operator_precision_is_identified_without_changing_caller_flags() {
+    auto& runtime = at::globalContext();
+    const auto generic = runtime.float32Precision(at::Float32Backend::GENERIC, at::Float32Op::ALL);
+    const auto conv = runtime.float32Precision(at::Float32Backend::CUDA, at::Float32Op::CONV);
+    const auto rnn = runtime.float32Precision(at::Float32Backend::CUDA, at::Float32Op::RNN);
+    runtime.setFloat32Precision(at::Float32Backend::GENERIC, at::Float32Op::ALL,
+                                at::Float32Precision::IEEE);
+    runtime.setFloat32Precision(at::Float32Backend::CUDA, at::Float32Op::CONV,
+                                at::Float32Precision::TF32);
+    runtime.setFloat32Precision(at::Float32Backend::CUDA, at::Float32Op::RNN,
+                                at::Float32Precision::IEEE);
+    const std::vector sources{input('a', 1), input('b', 2)};
+    KlpoTerminalCollector run(sources, options(PpoNetworkKind::gru));
+    const auto precision = run.identity().at("precision");
+    require(precision.at("cudnn_conv_tf32") == true && precision.at("cudnn_rnn_tf32") == false &&
+                runtime.allowTF32CuDNN(at::Float32Op::CONV) &&
+                !runtime.allowTF32CuDNN(at::Float32Op::RNN),
+            "No se conservó la precisión efectiva por operador");
+    runtime.setFloat32Precision(at::Float32Backend::CUDA, at::Float32Op::RNN,
+                                at::Float32Precision::TF32);
+    rejected([&] { static_cast<void>(run.collect_tick()); },
+             "Se cambió la precisión RNN durante la oleada");
+    runtime.setFloat32Precision(at::Float32Backend::GENERIC, at::Float32Op::ALL, generic);
+    runtime.setFloat32Precision(at::Float32Backend::CUDA, at::Float32Op::CONV, conv);
+    runtime.setFloat32Precision(at::Float32Backend::CUDA, at::Float32Op::RNN, rnn);
+}
 } // namespace
 
 int main() {
@@ -340,6 +367,7 @@ int main() {
         another_store_identity_is_rejected_before_publication();
         coherent_shapes_do_not_hide_changed_probabilities_or_hidden_state();
         a_complete_forced_wave_never_samples_or_updates();
+        operator_precision_is_identified_without_changing_caller_flags();
         std::cout << "Consumidor terminal contrastado sin optimización\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

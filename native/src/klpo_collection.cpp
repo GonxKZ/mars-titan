@@ -143,7 +143,8 @@ constexpr std::size_t collection_metadata_fields = 8;
 
 Json precision_identity() {
     return {{"matmul_tf32", at::globalContext().allowTF32CuBLAS()},
-            {"cudnn_tf32", at::globalContext().allowTF32CuDNN()},
+            {"cudnn_conv_tf32", at::globalContext().allowTF32CuDNN(at::Float32Op::CONV)},
+            {"cudnn_rnn_tf32", at::globalContext().allowTF32CuDNN(at::Float32Op::RNN)},
             {"cudnn_benchmark", at::globalContext().benchmarkCuDNN()},
             {"cudnn_deterministic", at::globalContext().deterministicCuDNN()},
             {"deterministic_algorithms", at::globalContext().deterministicAlgorithms()}};
