@@ -8,13 +8,16 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace mars_titan::learning {
 inline constexpr std::size_t episodic_memory_width = 64;
 inline constexpr std::size_t episodic_memory_capacity = 1024;
 inline constexpr std::size_t episodic_memory_neighbors = 4;
+inline constexpr std::size_t maximum_retention_batch = 8192;
 inline constexpr std::size_t maximum_episodic_archive_bytes = std::size_t{2} * 1024 * 1024;
 using MemoryVector = std::array<float, episodic_memory_width>;
 
@@ -104,6 +107,12 @@ class EpisodicMemory {
                    std::optional<uint64_t> exclude_id = std::nullopt) const;
     [[nodiscard]] MemorySnapshot snapshot() const;
     void restore(const MemorySnapshot& snapshot);
+    // Selecciona solo IDs de los registros actuales y del lote maduro. Sustitución atómica.
+    void retain_batch(std::span<const MemoryRecord> incoming,
+                      std::span<const uint64_t> retained_ids, int64_t confirmed_at);
+    [[nodiscard]] std::vector<MemoryRecord> validate_batch(std::span<const MemoryRecord> incoming,
+                                                           int64_t confirmed_at) const;
+    [[nodiscard]] std::vector<MemoryRecord> retained_records() const;
     [[nodiscard]] const MemoryScope& scope() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
     [[nodiscard]] uint64_t seen() const noexcept;
@@ -115,5 +124,6 @@ class EpisodicMemory {
 
 [[nodiscard]] std::string serialize_memory(const MemorySnapshot& snapshot);
 [[nodiscard]] MemorySnapshot deserialize_memory(std::string_view archive);
+[[nodiscard]] MemoryVector normalize_memory_key(const MemoryVector& key);
 } // namespace mars_titan::learning
 #endif

@@ -503,6 +503,25 @@ void invalid_prepared_outputs_and_mixed_contracts_are_rejected() {
         },
         "Prepare recupera una identidad clásica");
 }
+void prepared_mode_accepts_the_full_candidate_group_without_relaxing_classic_limits() {
+    TemporaryDirectory directory;
+    auto classic = definition();
+    classic.limits.max_assets = 8192;
+    rejected([&] { Executor invalid(directory.path / "classic", classic, callbacks()); },
+             "El modo clásico amplió su límite sin otra identidad");
+    auto prepared = prepared_definition();
+    prepared.limits.max_assets = 8192;
+    Executor run(directory.path / "prepared", prepared, prepared_callbacks());
+    Cohort group{0, tick, {}};
+    constexpr std::size_t candidates = 5676;
+    for (std::size_t index = 0; index < candidates; ++index) {
+        group.observations.push_back({"US/A" + std::to_string(index), 1, {1.0}});
+    }
+    const auto committed = run.step(group, {}, 256);
+    require(committed.predictions.size() == 2 * candidates &&
+                run.snapshot().at("state").at("fast_steps") == 1,
+            "La cohorte completa perdió flujos o repitió la preparación");
+}
 } // namespace
 
 int main() {
@@ -519,6 +538,7 @@ int main() {
         prepared_state_is_advanced_once_and_feedback_follows_all_predictions();
         prepared_state_recovers_at_every_boundary();
         invalid_prepared_outputs_and_mixed_contracts_are_rejected();
+        prepared_mode_accepts_the_full_candidate_group_without_relaxing_classic_limits();
         std::cout << "Comprobaciones de cohortes completadas\n";
         return 0;
     } catch (const std::exception& error) {
