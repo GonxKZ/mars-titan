@@ -181,6 +181,36 @@ def test_m0_requires_an_explicitly_disabled_bank_read(native, tmp_path):
         session(native, tmp_path / "run", data, admission="m0")
 
 
+@pytest.mark.parametrize("partition", ["train", "validation", "calibration", "evaluation"])
+def test_each_financial_phase_recovers_its_separate_v2_bank(native, tmp_path, partition):
+    api = importlib.import_module("mars_titan.memory.financial_session")
+    data = resources(tmp_path)
+    phase = api.FinancialPhase(partition, moment(63), moment(64), moment(200), moment(201))
+    options = dict(
+        native=native,
+        consumer=data[3],
+        codec=data[2],
+        prefixes=data[4],
+        retention=RetentionConfig(capacity=4, frontier=2, new_candidates=4),
+        phase=phase,
+        admission="m1",
+        world="fixture",
+        fold="0",
+    )
+    with api.FinancialSession(tmp_path / "run", **options) as run:
+        emitted = run.step(inputs(data, 125), [])
+        run.step(
+            [],
+            [native.Feedback(emitted.predictions[0].id, 0, moment(126), 0.5)],
+            kind="settlement",
+            cutoff=moment(126),
+        )
+        expected = run.snapshot()
+        assert run.diagnostics()["admitted"] == 1
+    with api.FinancialSession(tmp_path / "run", resume=True, **options) as restored:
+        assert restored.snapshot() == expected
+
+
 def test_pending_inputs_compact_across_dates_without_inventing_expiry(native, tmp_path):
     data = resources(tmp_path)
     with session(native, tmp_path / "run", data, max_input_blocks=2) as run:

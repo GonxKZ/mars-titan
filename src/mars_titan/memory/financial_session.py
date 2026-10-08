@@ -224,6 +224,7 @@ class FinancialSession(EpisodicSession):
             world=_digest([world, self.task, self.horizon]),
             partition=phase.partition,
             fold=fold,
+            memory_contract="causal_v2",
         )
         self.artifacts = SessionArtifacts(
             native, self.output / "artifacts", max_files=1024, max_total_bytes=2 * 1024**3

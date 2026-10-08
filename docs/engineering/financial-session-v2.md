@@ -27,6 +27,24 @@ la predicción del núcleo. `no_bank` ejecuta el mismo refinador con lectura cer
 M1 admite los resultados maduros y aplica la retención configurada. M2 y M3 se
 rechazan. El factor de retención M permanece separado de estas reglas.
 
+La sesión utiliza `memory_contract="causal_v2"`. El reservorio inicializa
+`mt19937_64` mediante `seed_seq` con las dos palabras de 32 bits de la semilla
+explícita. Las identidades de corpus, codec, brazo, partición y fold se guardan
+para comprobar la recuperación, pero no intervienen en el RNG. Con la misma
+semilla, política, capacidad y secuencia de episodios, los controles emparejados
+realizan los mismos sorteos. La retención uniforme conserva su `PCG64` propio y
+la política anclada ordena sus candidatos por semilla, contador e ID numérico.
+Los IDs numéricos siguen el orden de admisión madura y los desempates usan esos
+IDs, sin derivarlos de un hash del corpus.
+
+El contrato nativo v1 conserva su inicialización histórica, que mezcla el ámbito
+y la representación con la semilla. Esa representación puede incluir hashes de
+datos futuros. Por tanto, las comprobaciones anteriores de v1 no acreditan
+invariancia frente a cambios del sufijo del corpus. V1 y v2 tienen archivos
+incompatibles entre sí. Recuperar una sesión Python histórica exige su runtime
+fijado, incluidas las fuentes y el binario originales. No se ha medido una mejora
+predictiva ni se han ejecutado experimentos científicos con este cambio.
+
 ## Observaciones y resoluciones
 
 `FinancialPhase` declara calentamiento, intervalo de decisiones, partición y

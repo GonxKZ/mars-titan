@@ -67,6 +67,7 @@ struct MemorySnapshot {
     at::Tensor metadata;
     at::Tensor outcomes;
     std::string reservoir_rng;
+    std::uint32_t schema_version = 1;
 };
 
 class PreparedMemoryWrite {
@@ -89,6 +90,8 @@ class EpisodicMemory {
   public:
     explicit EpisodicMemory(MemoryScope scope, uint64_t seed,
                             std::size_t capacity = episodic_memory_capacity);
+    EpisodicMemory(MemoryScope scope, uint64_t seed, std::size_t capacity,
+                   std::uint32_t schema_version);
     EpisodicMemory(const EpisodicMemory&) = delete;
     EpisodicMemory& operator=(const EpisodicMemory&) = delete;
     EpisodicMemory(EpisodicMemory&&) = delete;

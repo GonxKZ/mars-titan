@@ -115,6 +115,7 @@ void bind_memory(py::module_& module) {
     module.def("normalize_key", &memory::normalize_memory_key);
     py::class_<memory::EpisodicMemory>(module, "EpisodicMemory")
         .def(py::init<memory::MemoryScope, uint64_t, std::size_t>())
+        .def(py::init<memory::MemoryScope, uint64_t, std::size_t, std::uint32_t>())
         .def("write",
              [](memory::EpisodicMemory& bank, const memory::MemoryRecord& record,
                 int64_t confirmed_at) {

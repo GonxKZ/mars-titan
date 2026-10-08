@@ -176,16 +176,21 @@ class RetentionConfig:
 class RetentionBank:
     """Proponer una copia del banco. El coordinador publica la transición completa."""
 
-    def __init__(self, native, config, *, codec_id, world, partition, fold):
+    def __init__(
+        self, native, config, *, codec_id, world, partition, fold, memory_contract="legacy_v1"
+    ):
         if (
             not isinstance(config, RetentionConfig)
             or not isinstance(codec_id, str)
             or len(codec_id) != 64
             or any(value not in "0123456789abcdef" for value in codec_id)
+            or not isinstance(memory_contract, str)
+            or memory_contract not in {"legacy_v1", "causal_v2"}
         ):
             raise ValueError("Falta la identidad de la retención o del codec")
         self.config = config
         self._native, self._codec_id = native, codec_id
+        self._memory_contract = memory_contract
         self._scope = dict(world=world, partition=partition, fold=fold)
         identity = dict(
             schema_version=1,
@@ -207,11 +212,23 @@ class RetentionBank:
             anchored_candidates="old_frontier_plus_seeded_hash_rank_of_remaining_new",
             partial_selection="reject",
         )
+        if memory_contract == "causal_v2":
+            identity.update(
+                schema_version=2,
+                recipe="native_episodic_retention_v2",
+                memory_contract=memory_contract,
+                reservoir_rng="mt19937_64_seed_seq_uint64_low_high_only",
+                scope_in_rng=False,
+            )
         self._identity_json = _canonical(identity)
         scope = native.MemoryScope()
         scope.world, scope.partition, scope.fold = world, partition, fold
         scope.representation = self.fingerprint()
-        self._memory = native.EpisodicMemory(scope, config.seed, config.capacity)
+        self._memory = (
+            native.EpisodicMemory(scope, config.seed, config.capacity, 2)
+            if memory_contract == "causal_v2"
+            else native.EpisodicMemory(scope, config.seed, config.capacity)
+        )
         self._rng = np.random.Generator(np.random.PCG64(config.seed))
         self._receipt = None
 
@@ -233,7 +250,13 @@ class RetentionBank:
         return self._memory.retained_records()
 
     def _new(self):
-        return type(self)(self._native, self.config, codec_id=self._codec_id, **self._scope)
+        return type(self)(
+            self._native,
+            self.config,
+            codec_id=self._codec_id,
+            memory_contract=self._memory_contract,
+            **self._scope,
+        )
 
     def snapshot(self):
         return dict(
