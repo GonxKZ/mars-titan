@@ -1,5 +1,7 @@
 #include "mars_titan/ppo_policy.hpp"
 #include "mars_titan/ppo_objectives.hpp"
+#include "mars_titan/klpo_terminal.hpp"
+#include "mars_titan/simulation_files.hpp"
 
 #include <ATen/ATen.h>
 #include <ATen/CPUGeneratorImpl.h>
@@ -19,6 +21,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <istream>
 #include <limits>
 #include <mutex>
@@ -1290,6 +1293,41 @@ PpoInference PpoPolicy::infer(const at::Tensor& observations, const at::Tensor& 
     return impl_->network.infer(observations, current);
 }
 
+PpoForward PpoPolicy::terminal_forward(const at::Tensor& history,
+                                      const at::Tensor& lengths) const {
+    require(!impl_->architecture.double_dqn && !impl_->architecture.auxiliary &&
+                history.defined() && history.layout() == at::kStrided && history.dim() == 3 &&
+                history.scalar_type() == at::kFloat && history.device() == impl_->tensor_device &&
+                history.size(0) > 0 && history.size(0) <= maximum_klpo_terminal_length &&
+                history.size(1) > 0 && history.size(1) <= maximum_klpo_terminal_batch &&
+                history.size(2) == static_cast<int64_t>(impl_->width),
+            "La historia terminal no conserva arquitectura, dimensiones o precisión");
+    const auto time = history.size(0);
+    const auto lanes = history.size(1);
+    require_resources(impl_->width, time * lanes, impl_->budget, impl_->architecture);
+    require(lengths.defined() && lengths.layout() == at::kStrided &&
+                lengths.scalar_type() == at::kLong && lengths.device() == impl_->tensor_device &&
+                lengths.sizes() == at::IntArrayRef({lanes}) &&
+                ((lengths > 0) & (lengths <= time)).all().item<bool>(),
+            "Las longitudes no corresponden a historias completas");
+    require_finite(history);
+    const auto present = at::arange(time, lengths.options()).unsqueeze(1) < lengths;
+    const auto observations = at::where(present.unsqueeze(2), history, 0.);
+    PpoForward result;
+    if (impl_->architecture.kind == PpoNetworkKind::gru) {
+        const auto state = initial_state(static_cast<std::size_t>(lanes));
+        const auto sequence = impl_->network.sequence(observations, state);
+        result = {sequence.logits, sequence.values};
+    } else {
+        const auto output = impl_->network.forward(observations.flatten(0, 1));
+        result = {output.logits.reshape({time, lanes, ppo_action_count}),
+                  output.values.reshape({time, lanes})};
+    }
+    require_finite(result.logits);
+    return {at::where(present.unsqueeze(2), result.logits, 0.),
+            at::where(present, result.values, 0.)};
+}
+
 PpoAction PpoPolicy::act_recurrent(const at::Tensor& observations, const at::Tensor& state,
                                    const at::Tensor& episode_starts, bool deterministic) {
     require(!impl_->architecture.double_dqn, "Double DQN debe usar su selector epsilon-greedy");
@@ -1308,6 +1346,31 @@ const PpoArchitecture& PpoPolicy::architecture() const noexcept {
 const PpoObjectiveConfig& PpoPolicy::objective() const noexcept { return impl_->objective; }
 const PpoControllerState& PpoPolicy::controller_state() const noexcept { return impl_->controller; }
 std::size_t PpoPolicy::parameter_count() const noexcept { return model_parameters(impl_->width, impl_->architecture); }
+std::string PpoPolicy::parameter_fingerprint() const {
+    const at::NoGradGuard no_grad;
+    impl_->network.validate(static_cast<int64_t>(impl_->width), impl_->tensor_device);
+    std::string material = "policy_parameters_fp32_v1\n";
+    material += std::to_string(impl_->width) + ":" +
+                std::to_string(static_cast<unsigned>(impl_->architecture.kind)) + ":" +
+                std::to_string(impl_->architecture.hidden_width) + ":" +
+                std::to_string(impl_->architecture.auxiliary) + ":" +
+                std::to_string(impl_->architecture.double_dqn) + "\n";
+    material.reserve(parameter_count() * sizeof(float) + simulation::bytes_per_kibibyte);
+    for (const auto& item : impl_->network.named_parameters()) {
+        const auto value = item.value().detach().to(at::kCPU).contiguous();
+        material.append(item.key()).push_back('\0');
+        for (const auto extent : value.sizes()) {
+            material.append(std::to_string(extent)).push_back(',');
+        }
+        material.push_back('\0');
+        const auto bytes = static_cast<std::size_t>(value.numel()) * sizeof(float);
+        const auto offset = material.size();
+        material.resize(offset + bytes);
+        const std::span destination(material);
+        std::memcpy(destination.subspan(offset, bytes).data(), value.const_data_ptr<float>(), bytes);
+    }
+    return simulation::content_sha256(material);
+}
 PpoAuxiliaryStats PpoPolicy::consolidate(const at::Tensor& observations,
                                        const at::Tensor& matured_rewards, int64_t steps) {
     require(impl_->architecture.auxiliary && steps > 0 && steps <= maximum_auxiliary_updates,

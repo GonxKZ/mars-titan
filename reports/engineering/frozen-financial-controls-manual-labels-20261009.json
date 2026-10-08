@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T23:29:32.085433+00:00",
+  "supersedes_scope_of": {
+    "path": "reports/engineering/frozen-financial-controls-20261009.json",
+    "sha256": "3bfca53da2e60d1cd4d87584fe5146a5d2b7ef046217e240efc34f50e3083d3b",
+    "original_preserved": true,
+    "original_commit": "90af2f544361dba559d18c0deac3bbe4e4fc862e"
+  },
+  "correction": {
+    "previous_preparation": "prepare_corpus_targets -> residual_targets_array -> estimación OLS de alpha y beta",
+    "source_locations": [
+      "src/mars_titan/training/corpus_targets.py:375",
+      "src/mars_titan/data/residual_arrays.py:67"
+    ],
+    "ols_rows_per_four_asset_fixture": 2508,
+    "original_recorded_fixture_count": 7,
+    "original_recorded_ols_rows": 17556,
+    "baseline_legacy_test_also_estimated": true,
+    "baseline_count_included_in_total": false,
+    "limitation": "La ejecución anterior no estuvo libre de ajustes. La estimación se realizó al preparar etiquetas del fixture, aunque el consumidor recibió después feedback manual y no utilizó esas etiquetas calculadas.",
+    "shared_predictor_optimizer_steps": 0
+  },
+  "current_label_preparation": {
+    "recipe": "manual_fixture_no_estimation",
+    "accepted_value": 0.125,
+    "provenance_declared_in_manifest": true,
+    "blocked_functions": [
+      "prepare_corpus_targets",
+      "residual_targets",
+      "residual_targets_array"
+    ],
+    "residual_ols_estimates": 0,
+    "prefix_validation": "Pares disponibles y varianza de mercado, sin estimar alpha o beta."
+  },
+  "source_sha256": {
+    "tests/memory/test_financial_session_controls.py": "7cff0ce1645d86369fc5cafe992644755ea283d0f6af7a5815fd1b58f9a30c42",
+    "src/mars_titan/memory/financial_session.py": "654394ff6f39cb390d00a4dad28aca2fddf86f0caf1e86cbea13074067ed29e6",
+    "src/mars_titan/memory/retention_bank.py": "a43153020cac4d71312b594812a861bc332139174cb1a8683e3c50831efed98a",
+    "src/mars_titan/models/titans/local_control.py": "60db5f09e0fdc1693977afa811cc33cae1c2bc09a61388e6bd5b26d465855d19",
+    "src/mars_titan/models/titans/frozen_financial.py": "9a5238a66cd23333b0e4ff8e24719a954b11d8c95efef196f121b6c7dade7a31",
+    "src/mars_titan/models/titans/financial.py": "6516f537337b033268f5edf20b2ca825fa17eb4e314ababae04536433bec7e40",
+    "src/mars_titan/models/titans/episodic_readout.py": "6c17db86ec885b26d898c394d62d8646a9b91287c32d47834bf67a1ebc5da4ea"
+  },
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "configuration": {
+    "flows": 4,
+    "context_sessions": 64,
+    "hidden_size": 32,
+    "B_mem": 4,
+    "admission": "m1",
+    "K": 1,
+    "sdpa_backend": "math",
+    "mha_fastpath": false,
+    "control_present_in_both_modes": true,
+    "control_rank": 1,
+    "control_grid": 4,
+    "control_frequency": 1,
+    "control_max_flows": 2,
+    "model_seed": 42,
+    "control_seed": 91,
+    "retention_seed": 73,
+    "physical_batches": [
+      1,
+      4
+    ]
+  },
+  "input_contract_id": "67d5584826832f80928f60e2f627cae795227cb63aabf3f9f0617be06bfe2fba",
+  "paired_parameters_sha256": "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d",
+  "paired_readout_parameters_sha256": "900a48167bc81975c729fb1f0f0bd0b0d3647c7a08e5c2c7ecfa3d3b27a1017a",
+  "current_checks": {
+    "pytest_cases": 3,
+    "crossed_paths": 4,
+    "total_trajectories": 12,
+    "confirmed_predictions_per_trajectory": 20,
+    "mature_labels_per_trajectory": 16,
+    "diagnostic_predictions_and_fast_state_exact": true,
+    "physical_partition_rtol": 1e-12,
+    "physical_partition_atol": 1e-12,
+    "recovery_exact": true,
+    "failure_boundary": "before_commit",
+    "label_producer_regression_failed_before_estimation": true,
+    "mutations_detected": 2,
+    "optimizer_steps": 0,
+    "cuda_initialized": false
+  },
+  "measured": {
+    "pytest_seconds": 33.59,
+    "process_seconds": 34.86,
+    "peak_rss_kib": 771748,
+    "swaps": 0,
+    "cpu_quota_percent": 200,
+    "memory_max_bytes": 3221225472,
+    "memory_swap_max_bytes": 0,
+    "openmp_blas_threads": 2
+  },
+  "mutations": [
+    {
+      "name": "skip_diagnostic",
+      "source": "mars_titan/models/titans/local_control.py",
+      "detected": true,
+      "exit_code": 1,
+      "elapsed_seconds": 12.494170955993468,
+      "original_sha256": "60db5f09e0fdc1693977afa811cc33cae1c2bc09a61388e6bd5b26d465855d19",
+      "mutant_sha256": "e027bef2e00160e242121a5e545d8546d87859cd368983a743175aca06c95668",
+      "test_sha256": "7cff0ce1645d86369fc5cafe992644755ea283d0f6af7a5815fd1b58f9a30c42",
+      "log_sha256": "68c4d3f86b0e532cf013b521d07adc90e87b62fb459b29a026f1a9d68eb5d480"
+    },
+    {
+      "name": "replace_anchored_with_recent",
+      "source": "mars_titan/memory/retention_bank.py",
+      "detected": true,
+      "exit_code": 1,
+      "elapsed_seconds": 5.22682377199817,
+      "original_sha256": "a43153020cac4d71312b594812a861bc332139174cb1a8683e3c50831efed98a",
+      "mutant_sha256": "e54dca555609b8f37b4f9a20a2c1041399f29a03d0f44072146d58f5a1ff2c34",
+      "test_sha256": "7cff0ce1645d86369fc5cafe992644755ea283d0f6af7a5815fd1b58f9a30c42",
+      "log_sha256": "6d735eadd51e77e660661d6624df8c904e077dada1a8707dc9751143a3361b9b"
+    }
+  ],
+  "previous_diagnostics": {
+    "coverage_and_crap_preserved": true,
+    "rerun": false,
+    "scope": "El diagnóstico anterior incluía la preparación OLS del fixture. No se atribuye a la nueva ejecución guardada."
+  },
+  "evidence_sha256": {
+    "red.log": "9424dc14b6163e727691d3bdf9cd1fe0ebc5bcc491b4db2086bcf0b096946fba",
+    "green.log": "0cec2942a6936bc3b5f485558922ee6078c157e84caa750d004590687a900785",
+    "mutations.json": "94117a34399ad29465b4f2590e82d2b8bc5999caff9edfa46418c6eb9930a454",
+    "original-fitting-scope.json": "6e760569f38d45fb3fb9fa7e4fc11c62b96ed0b077d03c5448bc671a02bb5539"
+  },
+  "limits": [
+    "Comprobación técnica CPU del consumidor congelado. No acredita el factorial científico ni CUDA de los cuatro cruces.",
+    "No se ajustaron parámetros compartidos del predictor. La transición rápida MAC autorizada se ejecuta una vez por observación.",
+    "No se han ejecutado modelos sobre datos históricos reales, optimizadores ni evaluación de calidad predictiva.",
+    "Los importes de tiempo y RAM incluyen los fixtures y la recuperación. No son medidas aisladas del predictor."
+  ]
+}
