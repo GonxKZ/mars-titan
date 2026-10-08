@@ -251,6 +251,9 @@ class CorpusDataset:
             or not meta["assets"]
         ):
             raise ValueError("El manifiesto supervisado no cumple su contrato")
+        from .target_factors import revision_sources
+
+        self._target_factor_sources = revision_sources(meta, input_policy=input_policy)
         self.context = meta["context_sessions"]
         self.roots = {key: Path(value).resolve() for key, value in meta["roots"].items()}
         self.assets = meta["assets"]
@@ -609,6 +612,9 @@ class CorpusDataset:
             raise ValueError("El recorrido no visita exactamente la población declarada")
 
     def batches(self, *, partition, batch_size, epoch, seed, cursor=None):
+        from .target_factors import confirm_sources
+
+        confirm_sources(self._target_factor_sources)
         if (
             partition not in self.partitions
             or type(batch_size) is not int
@@ -742,9 +748,16 @@ def supervised_batches(
 
 
 def prepare_corpus_targets(
-    manifest: Path, prepared: Path, output: Path, *, input_policy: str = STRICT_INPUTS
+    manifest: Path,
+    prepared: Path,
+    output: Path,
+    *,
+    input_policy: str = STRICT_INPUTS,
+    target_factors: Path | None = None,
 ) -> dict:
     """Preparar las etiquetas mediante el mismo contrato que consume este lector."""
     from .corpus_targets import prepare_corpus_targets as prepare
 
-    return prepare(manifest, prepared, output, input_policy=input_policy)
+    return prepare(
+        manifest, prepared, output, input_policy=input_policy, target_factors=target_factors
+    )

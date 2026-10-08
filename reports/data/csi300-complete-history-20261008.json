@@ -1,0 +1,4387 @@
+{
+  "schema_version": 1,
+  "kind": "reviewed_retrospective_csi300_complete_calendar",
+  "checked_at_utc": "2026-10-08T05:50:13.558152+00:00",
+  "market": "CN",
+  "symbol": "000300",
+  "unit": "index_points",
+  "decimal_places": 2,
+  "source": "Boletines mensuales oficiales de SSE. La revisión comprende las tablas y páginas identificadas.",
+  "previous_public_edition": {
+    "rows": 991,
+    "report": "reports/data/csi300-earlier-history-20261007.json"
+  },
+  "added_rows": 3383,
+  "added_months": 167,
+  "added_ohlc_cells": 13532,
+  "total_rows": 4374,
+  "first_session": "2006-01-04",
+  "last_session": "2023-12-29",
+  "sessions_by_year": {
+    "2006": 241,
+    "2007": 242,
+    "2008": 246,
+    "2009": 244,
+    "2010": 242,
+    "2011": 244,
+    "2012": 243,
+    "2013": 238,
+    "2014": 245,
+    "2015": 244,
+    "2016": 244,
+    "2017": 244,
+    "2018": 243,
+    "2019": 244,
+    "2020": 243,
+    "2021": 243,
+    "2022": 242,
+    "2023": 242
+  },
+  "calendar_complete": true,
+  "missing_sessions_count": 0,
+  "coverage_before_2006_verified": false,
+  "latest_parent_rows_unchanged": 4332,
+  "source_chain": [
+    {
+      "checked_at_utc": "2026-10-07T22:25:55.598808+00:00",
+      "added_rows": 242,
+      "added_ohlc_cells": 968,
+      "base_rows_exact": 991,
+      "total_rows": 1233,
+      "missing_sessions_count": 3141,
+      "output": "price-factor-2006-2023-v2",
+      "source_receipt_sha256": "7dcff95e3b23300cc4dcc16661cd986d0ffece2af7bd8d6e61e5645956e0ccd0",
+      "artifacts_sha256": {
+        "prices.parquet": "9f224c4d0f4911ef2f887bff7c375c0e8e403ae93447464423a164733eaf33ef",
+        "market-factors.json": "61799f3e41a5095f2d2117096d49a5d578d06e572476c5d639e795256d57b553",
+        "report.json": "c94797bd29fb38622ac31f90f8545666be181077f627c111594749f41e92b86a"
+      },
+      "requests": {
+        "count": 12,
+        "failures": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 26016238,
+        "minimum_gap_after_previous_finish_seconds": 5.000144,
+        "concurrency": 1,
+        "summed_transfer_seconds": 192.5709388139985,
+        "first_started_at_utc": "2026-10-07T22:02:24.093629+00:00",
+        "last_finished_at_utc": "2026-10-07T22:06:31.752924+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.11913338199883583,
+        "reuse_seconds": 0.10878826700172795,
+        "process_peak_rss_bytes": 148807680,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-07T22:42:24.190696+00:00",
+      "added_rows": 246,
+      "added_ohlc_cells": 984,
+      "base_rows_exact": 1233,
+      "total_rows": 1479,
+      "missing_sessions_count": 2895,
+      "output": "price-factor-2006-2023-v3",
+      "source_receipt_sha256": "fe70bb233439c0e807d0c4736cb71ebaeb1a3f42ba3fb043ba16536a5d67b173",
+      "artifacts_sha256": {
+        "prices.parquet": "a05f7cae7968f406dfcbef13d45fbbe99657d0dca4ab55a63a9104ab4df348ba",
+        "market-factors.json": "1f3f47eadc48c7a517a6e14839fac2557846e3efc93289214ad8873e220735a0",
+        "report.json": "592084935a730b249cfeeaedffb357251ca75635e47f9fa3d085e016d405c3e2"
+      },
+      "requests": {
+        "count": 12,
+        "failures": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 18284987,
+        "minimum_gap_after_previous_finish_seconds": 5.000189,
+        "concurrency": 1,
+        "summed_transfer_seconds": 195.19952986099997,
+        "first_started_at_utc": "2026-10-07T22:28:27.769623+00:00",
+        "last_finished_at_utc": "2026-10-07T22:32:38.009090+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.11092469899813295,
+        "reuse_seconds": 0.09484315199733828,
+        "process_peak_rss_bytes": 151240704,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-07T22:58:57.111670+00:00",
+      "added_rows": 244,
+      "added_ohlc_cells": 976,
+      "base_rows_exact": 1479,
+      "total_rows": 1723,
+      "missing_sessions_count": 2651,
+      "output": "price-factor-2006-2023-v4",
+      "source_receipt_sha256": "c11af2aab7d8d0a8ee4749242e17f79bb60b0de7aace5c78a9e35b804c1e4516",
+      "artifacts_sha256": {
+        "prices.parquet": "43df682f3a580a9a9295ecbca201fde0cb133aa4bad48f1862dd978c7e841325",
+        "market-factors.json": "e0650f6b348297d0cabd434a7237fa81b835295fd2357e90d30dcb81c85007c4",
+        "report.json": "e49c74212bd54f813d03ebfca65cb74ae675efd12b12c84006323c8d9a315683"
+      },
+      "requests": {
+        "count": 13,
+        "failures": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 18787891,
+        "total_catalogue_bytes": 4646,
+        "total_response_bytes": 18792537,
+        "minimum_gap_after_previous_finish_seconds": 5.000188,
+        "concurrency": 1,
+        "summed_transfer_seconds": 219.56784304799294,
+        "first_started_at_utc": "2026-10-07T22:47:55.196319+00:00",
+        "last_finished_at_utc": "2026-10-07T22:53:30.836094+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.11638890799804358,
+        "reuse_seconds": 0.10666457699699095,
+        "process_peak_rss_bytes": 152805376,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-07T23:13:15.142974+00:00",
+      "added_rows": 242,
+      "added_ohlc_cells": 968,
+      "base_rows_exact": 1723,
+      "total_rows": 1965,
+      "missing_sessions_count": 2409,
+      "output": "price-factor-2006-2023-v5",
+      "source_receipt_sha256": "815c9843cb4ce6f9401758c52c2c58c1fb5651f4bfa2258d76fe6d0d2dc87fa8",
+      "artifacts_sha256": {
+        "prices.parquet": "5caccfa62a5d315b4c55419ec561ca9cfbfc789f1b77c153ff7410e7370bb406",
+        "market-factors.json": "09ae9d17f04c0ba23e980f6f210d6143cbddb2dfe18215398bff1a430756ebe5",
+        "report.json": "18352e7f8234d3efd317881451faee5c1f3a1b35624ba844536f03f9421ba21b"
+      },
+      "requests": {
+        "count": 13,
+        "failures": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 15047150,
+        "total_catalogue_bytes": 4645,
+        "total_response_bytes": 15051795,
+        "minimum_gap_after_previous_finish_seconds": 5.000229,
+        "concurrency": 1,
+        "summed_transfer_seconds": 195.62629816200206,
+        "first_started_at_utc": "2026-10-07T23:00:46.559842+00:00",
+        "last_finished_at_utc": "2026-10-07T23:06:28.905367+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.10982202800005325,
+        "reuse_seconds": 0.09721234899916453,
+        "process_peak_rss_bytes": 153243648,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-07T23:21:21.028890+00:00",
+      "added_rows": 244,
+      "added_ohlc_cells": 976,
+      "base_rows_exact": 1965,
+      "total_rows": 2209,
+      "missing_sessions_count": 2165,
+      "output": "price-factor-2006-2023-v6",
+      "source_receipt_sha256": "30c137d8fcc420e3a600a734e80b587e1e2321dc999727c1b8a2c2ab469cfe4c",
+      "artifacts_sha256": {
+        "prices.parquet": "269de8c68f749dae14af5042621305c11d0a538d7c5b16127fb94b97723324cd",
+        "market-factors.json": "be2e4b0c0ac966ad69733d52d08da5687cde09097092d0d8a8393e7e47733633",
+        "report.json": "5503e066b569d71070f6c5ebe63d5644b76ac05fa58461a7ae2b910de1e4221e"
+      },
+      "requests": {
+        "count": 12,
+        "failures": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 19119400,
+        "total_catalogue_bytes": 0,
+        "total_response_bytes": 19119400,
+        "minimum_gap_after_previous_finish_seconds": 5.000188,
+        "concurrency": 1,
+        "summed_transfer_seconds": 170.61276793500292,
+        "first_started_at_utc": "2026-10-07T23:14:11.981528+00:00",
+        "last_finished_at_utc": "2026-10-07T23:17:57.698601+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.15811790799853043,
+        "reuse_seconds": 0.13742465399991488,
+        "process_peak_rss_bytes": 155353088,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-07T23:29:56.466277+00:00",
+      "added_rows": 243,
+      "added_ohlc_cells": 972,
+      "base_rows_exact": 2209,
+      "total_rows": 2452,
+      "missing_sessions_count": 1922,
+      "output": "price-factor-2006-2023-v7",
+      "source_receipt_sha256": "178ece989472de2f962be844527c62bdf0063e586b914e1fa8286f6ba77c0805",
+      "artifacts_sha256": {
+        "prices.parquet": "3931484f877841b1a3cb73e87df7bc52e0c36e5082c78a4f53d231a17bb65461",
+        "market-factors.json": "20b14701a6990480d948437173fe333d24a545fda62944e98e3b16eb66d879bb",
+        "report.json": "2374e68348caa69440f2d4b0e27a06aa199e34703541f06d36349b23c77bbc27"
+      },
+      "requests": {
+        "count": 13,
+        "failures": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 17023726,
+        "total_catalogue_bytes": 4639,
+        "total_response_bytes": 17028365,
+        "minimum_gap_after_previous_finish_seconds": 5.000189,
+        "concurrency": 1,
+        "summed_transfer_seconds": 179.42626943600408,
+        "first_started_at_utc": "2026-10-07T23:23:23.601023+00:00",
+        "last_finished_at_utc": "2026-10-07T23:28:02.417536+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.11634824399880017,
+        "reuse_seconds": 0.10702038399904268,
+        "process_peak_rss_bytes": 164724736,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T01:36:23.865186+00:00",
+      "added_rows": 219,
+      "added_ohlc_cells": 876,
+      "base_rows_exact": 2452,
+      "total_rows": 2671,
+      "missing_sessions_count": 1703,
+      "output": "price-factor-2006-2023-v8",
+      "source_receipt_sha256": "498dcc59054938e706bdb27e8bc70161c3334e62eb319afd2e8592fa6a9d4119",
+      "artifacts_sha256": {
+        "prices.parquet": "88f84e6ac9c8b952510517b37ce15b62cb787306c7ef0ccfd61425641afdd6a3",
+        "market-factors.json": "328aa63d23bb8c1701bc8faa0d74cde918493757a62981d6b2109c10999caa87",
+        "report.json": "fd953ad6d1fcdcda835311eb57222824fdaacf30abd1bded83d53837067a0bb1"
+      },
+      "requests": {
+        "count": 16,
+        "failed_attempts": 4,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 30771666,
+        "total_catalogue_bytes": 4621,
+        "total_response_bytes": 30776287,
+        "minimum_gap_after_previous_finish_seconds": 5.000185,
+        "concurrency": 1,
+        "summed_transfer_seconds": 348.60496949998924,
+        "first_started_at_utc": "2026-10-08T00:58:11.686711+00:00",
+        "last_finished_at_utc": "2026-10-08T01:24:59.615360+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.2744564989989158,
+        "reuse_seconds": 0.2164344179982436,
+        "process_peak_rss_bytes": 166649856,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T02:58:16.218046+00:00",
+      "added_rows": 245,
+      "added_ohlc_cells": 980,
+      "base_rows_exact": 2671,
+      "total_rows": 2916,
+      "missing_sessions_count": 1458,
+      "output": "price-factor-2006-2023-v9",
+      "source_receipt_sha256": "fdf1e73965e471e53ae97e2cbdbf6b35cec3d1466909b7ee56cf4a0d098b70e7",
+      "artifacts_sha256": {
+        "prices.parquet": "431457e3174680dc35c63c0e910e97cf90b1552d9d477edb4a7595cc2e5ee9f7",
+        "market-factors.json": "e463db9d2f251d2b79e288b35c2c205e471a69ab732294934cb0c6f69c46e369",
+        "report.json": "0b22c3cc5c7d2d865090a68fd1d0c173b73ab86b29dd90b6e9558ca7830570b2"
+      },
+      "requests": {
+        "count": 16,
+        "failed_attempts": 3,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 12286441,
+        "total_catalogue_bytes": 4735,
+        "total_response_bytes": 12291176,
+        "minimum_gap_after_previous_finish_seconds": 5.00018,
+        "concurrency": 1,
+        "summed_transfer_seconds": 270.0598027849992,
+        "first_started_at_utc": "2026-10-08T02:25:05.760477+00:00",
+        "last_finished_at_utc": "2026-10-08T02:45:22.615948+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.13024604699967313,
+        "reuse_seconds": 0.11135298400040483,
+        "process_peak_rss_bytes": 169127936,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T04:16:54.659632+00:00",
+      "added_rows": 221,
+      "added_ohlc_cells": 884,
+      "base_rows_exact": 2916,
+      "total_rows": 3137,
+      "missing_sessions_count": 1237,
+      "output": "price-factor-2006-2023-v10",
+      "source_receipt_sha256": "9e7ab7f95f16ff84f8d58664ab22da7eea944fd76e67bb905c04e6bedaa29cbf",
+      "artifacts_sha256": {
+        "prices.parquet": "62e02217a0c9c109e3b6c1fee8e9b67c3021c2cbce90eea473afb2e982338a5a",
+        "market-factors.json": "a52ec6b03b00bee281f16557d59b0d9238d056220220d23c1369833c7483106b",
+        "report.json": "5901b46ec7970d118e559243fbeb80fcbaed6ce8d905996675d941933e9761f8"
+      },
+      "requests": {
+        "count": 16,
+        "failed_attempts": 4,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 18556377,
+        "total_catalogue_bytes": 4765,
+        "total_response_bytes": 18561142,
+        "minimum_gap_after_previous_finish_seconds": 5.000141,
+        "concurrency": 1,
+        "summed_transfer_seconds": 287.4579142370203,
+        "first_started_at_utc": "2026-10-08T03:32:08.632868+00:00",
+        "last_finished_at_utc": "2026-10-08T03:46:03.376916+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.1792340370011516,
+        "reuse_seconds": 0.15705007900396595,
+        "process_peak_rss_bytes": 170078208,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T04:37:37.280137+00:00",
+      "added_rows": 244,
+      "added_ohlc_cells": 976,
+      "base_rows_exact": 3137,
+      "total_rows": 3381,
+      "missing_sessions_count": 993,
+      "output": "price-factor-2006-2023-v11",
+      "source_receipt_sha256": "5afed84ecf5ca45c9bad3e58153aae89d2034eb6b1c5f85980c7aaf201282c51",
+      "artifacts_sha256": {
+        "prices.parquet": "1bb8051fe509c0afe6f3324b56d16b39ce2f2a4e5cbb38a79cd9781f3353b677",
+        "market-factors.json": "e80cb0e56bb047506990d144855d4c9a347ec6201052e8c5f490c22bee0c4c70",
+        "report.json": "ec90b3cd251c98f395c47c5b5bf1766234970969fddd690a1bcaf15058eee87f"
+      },
+      "requests": {
+        "count": 15,
+        "failed_attempts": 3,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 18708861,
+        "total_catalogue_bytes": 0,
+        "total_response_bytes": 18708861,
+        "minimum_gap_after_previous_finish_seconds": 5.00016,
+        "concurrency": 1,
+        "summed_transfer_seconds": 319.2602964819889,
+        "first_started_at_utc": "2026-10-08T04:22:57.587160+00:00",
+        "last_finished_at_utc": "2026-10-08T04:32:17.292375+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.22111756300000707,
+        "reuse_seconds": 0.19014216000505257,
+        "process_peak_rss_bytes": 168628224,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T04:55:03.622473+00:00",
+      "added_rows": 244,
+      "added_ohlc_cells": 976,
+      "base_rows_exact": 3381,
+      "total_rows": 3625,
+      "missing_sessions_count": 749,
+      "output": "price-factor-2006-2023-v12",
+      "source_receipt_sha256": "7de750f16dff7e90520742f0ebcc409a3b52e144d0b1f650fd9953eb5d5d7f0d",
+      "artifacts_sha256": {
+        "prices.parquet": "0ca232745d2d4773fa479e4da8a0160c8b8bb55030c7585207da2739533e788c",
+        "market-factors.json": "5fc63a275411bfb714d699e5f747f6b2fed2009ce52cd8daa79a93d9fe74694f",
+        "report.json": "2652c1db51c8d670d26093c0836253e71b6995666f4c78c2faf9b3805ebc589f"
+      },
+      "requests": {
+        "count": 15,
+        "failed_attempts": 2,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 31382466,
+        "total_catalogue_bytes": 4765,
+        "total_response_bytes": 31387231,
+        "minimum_gap_after_previous_finish_seconds": 5.000178,
+        "concurrency": 1,
+        "summed_transfer_seconds": 348.558745728973,
+        "first_started_at_utc": "2026-10-08T04:40:42.039222+00:00",
+        "last_finished_at_utc": "2026-10-08T04:49:13.118127+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.19461088300158735,
+        "reuse_seconds": 0.17737571200268576,
+        "process_peak_rss_bytes": 175259648,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T05:11:24.298513+00:00",
+      "added_rows": 243,
+      "added_ohlc_cells": 972,
+      "base_rows_exact": 3625,
+      "total_rows": 3868,
+      "missing_sessions_count": 506,
+      "output": "price-factor-2006-2023-v13",
+      "source_receipt_sha256": "e9e2058d78eb1478648a814472ddab5f6b913329e33ea29883b0b069134588ee",
+      "artifacts_sha256": {
+        "prices.parquet": "b9244addee09a72663cc473be15e75ff1581117211d1668b2e30fec980647120",
+        "market-factors.json": "994afdcf32a00802026f66678124375289184b61602eb2c75e77a6eecd183a56",
+        "report.json": "149975cfd8e894fc7c4254fc6387e0f6d791c61637996585f35b419477794713"
+      },
+      "requests": {
+        "count": 16,
+        "failed_attempts": 3,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 34725118,
+        "total_catalogue_bytes": 4765,
+        "total_response_bytes": 34729883,
+        "minimum_gap_after_previous_finish_seconds": 5.000191,
+        "concurrency": 1,
+        "summed_transfer_seconds": 387.63502317800885,
+        "first_started_at_utc": "2026-10-08T04:57:30.755153+00:00",
+        "last_finished_at_utc": "2026-10-08T05:08:45.203106+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.3046197919975384,
+        "reuse_seconds": 0.2260035599974799,
+        "process_peak_rss_bytes": 169713664,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T05:25:11.695667+00:00",
+      "added_rows": 244,
+      "added_ohlc_cells": 976,
+      "base_rows_exact": 3868,
+      "total_rows": 4112,
+      "missing_sessions_count": 262,
+      "output": "price-factor-2006-2023-v14",
+      "source_receipt_sha256": "8698ec522e768f5fa2b98f2a06414323744227277edfe732c9079de9e9225c80",
+      "artifacts_sha256": {
+        "prices.parquet": "a693a1bc72bec15125164f753a98e99f519d9413822da9a2b8fbf431ee6c0ac0",
+        "market-factors.json": "a72fc86b13c7fd37936bd74752d028cdaf797ccb1638d7b5577f381c29886a4d",
+        "report.json": "ea5ada31156db09dbf47be7c29d9519be7ce1704b56ac7a510c9cdb5a4a2a73e"
+      },
+      "requests": {
+        "count": 15,
+        "failed_attempts": 2,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 35021717,
+        "total_catalogue_bytes": 4747,
+        "total_response_bytes": 35026464,
+        "minimum_gap_after_previous_finish_seconds": 5.000169,
+        "concurrency": 1,
+        "summed_transfer_seconds": 237.18395396399865,
+        "first_started_at_utc": "2026-10-08T05:14:59.051195+00:00",
+        "last_finished_at_utc": "2026-10-08T05:22:24.293683+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.21442294299777132,
+        "reuse_seconds": 0.1965612810017774,
+        "process_peak_rss_bytes": 161275904,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T05:40:37.064899+00:00",
+      "added_rows": 220,
+      "added_ohlc_cells": 880,
+      "base_rows_exact": 4112,
+      "total_rows": 4332,
+      "missing_sessions_count": 42,
+      "output": "price-factor-2006-2023-v15",
+      "source_receipt_sha256": "1fceaea32da83cb28775163b20ee7a088f8a9535be95926f7ddf9d06fdf9b261",
+      "artifacts_sha256": {
+        "prices.parquet": "822a75df099ec462ea6047ca77a66adac7be349cb42f3e87df138360816b6ad5",
+        "market-factors.json": "fd7145b043d90d670b753e0c4b91414af1b7cb2adb807f9b718cdb5f2652fc2b",
+        "report.json": "510a6ff5a0b312181f72bae77deb2a8e77799c34d913567e9168d846e98fc55b"
+      },
+      "requests": {
+        "count": 12,
+        "failed_attempts": 1,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 25628711,
+        "total_catalogue_bytes": 0,
+        "total_response_bytes": 25628711,
+        "minimum_gap_after_previous_finish_seconds": 5.00019,
+        "concurrency": 1,
+        "summed_transfer_seconds": 303.25753579699085,
+        "first_started_at_utc": "2026-10-08T05:29:01.859999+00:00",
+        "last_finished_at_utc": "2026-10-08T05:35:49.226807+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.21109053600230254,
+        "reuse_seconds": 0.18394392699701712,
+        "process_peak_rss_bytes": 165625856,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    },
+    {
+      "checked_at_utc": "2026-10-08T05:50:13.558152+00:00",
+      "added_rows": 42,
+      "added_ohlc_cells": 168,
+      "base_rows_exact": 4332,
+      "total_rows": 4374,
+      "missing_sessions_count": 0,
+      "output": "price-factor-2006-2023-v16",
+      "source_receipt_sha256": "82ce4ee93d39fbb7a9d607357c79b1e4580a2d33144ae55b494898958f1b096c",
+      "artifacts_sha256": {
+        "prices.parquet": "b96cd9729f0d3fc9dc0144c9d676d4da6b91898ad8f482b32db3364afe2b3cbc",
+        "market-factors.json": "d8c2c358d68bd5fa06ef73478d73cf49b13d7a082d7ed49235ec0cfeecf4e6e8",
+        "report.json": "74adf65d3f1bb50a468a545f6968ff91fbcbf1eca5faaa55470f89e9b53d3272"
+      },
+      "requests": {
+        "count": 2,
+        "failed_attempts": 0,
+        "responses_403_or_429": 0,
+        "total_pdf_bytes": 4811167,
+        "total_catalogue_bytes": 0,
+        "total_response_bytes": 4811167,
+        "minimum_gap_after_previous_finish_seconds": 5.000255,
+        "concurrency": 1,
+        "summed_transfer_seconds": 59.85299968099571,
+        "first_started_at_utc": "2026-10-08T05:46:11.668498+00:00",
+        "last_finished_at_utc": "2026-10-08T05:47:16.528247+00:00"
+      },
+      "import_measurements": {
+        "create_seconds": 0.14439590300025884,
+        "reuse_seconds": 0.12521929100330453,
+        "process_peak_rss_bytes": 164233216,
+        "repetitions": 1,
+        "warmup": 0,
+        "energy_measured": false
+      }
+    }
+  ],
+  "month_checks": [
+    {
+      "month": "200701",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 91,
+      "printed_page": 87,
+      "visual_review": true,
+      "automatic_dual": false,
+      "manual_second": true,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061307/files/2a5fc56c3fb2413095f80b7067ff7cb0.pdf",
+      "pdf_sha256": "9be99c5e92d6684a8025dc5c7bc60a24f41d93688908e736a5930f9e75c016bc",
+      "csv_sha256": "99b1097427d39bb5381eeeab5c986cd879c51430dadf71f9c58aa478b57695d1",
+      "review_sha256": "f3834effd489f0d8f8d1609ac6dee1aa0e2a7d312b063a28a129fd7186be325f",
+      "markers": [
+        {
+          "day": "05",
+          "column": "Low",
+          "raw": "L2030.76",
+          "numeric": "2030.76"
+        },
+        {
+          "day": "30",
+          "column": "High",
+          "raw": "H2599.45",
+          "numeric": "2599.45"
+        }
+      ]
+    },
+    {
+      "month": "200702",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 91,
+      "printed_page": 87,
+      "visual_review": true,
+      "automatic_dual": false,
+      "manual_second": true,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061308/files/0b99d4a9958b468588dd485e6fc48dec.pdf",
+      "pdf_sha256": "03afdf7ad16ac6a3bb21e397e21c5d1c64fce85bb581a722aeb236b99835d3d7",
+      "csv_sha256": "efd4cf62472e5b9d3b290ec09c4c19926b14217cc12c5bbe6fc28a34184595d8",
+      "review_sha256": "bb0687da58ad288b357cddd60c59687b2882ea190155473181de376d062c06f1",
+      "markers": [
+        {
+          "day": "06",
+          "column": "Low",
+          "raw": "L2198.90",
+          "numeric": "2198.90"
+        },
+        {
+          "day": "27",
+          "column": "High",
+          "raw": "H2719.52",
+          "numeric": "2719.52"
+        }
+      ]
+    },
+    {
+      "month": "200703",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 91,
+      "printed_page": 87,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061309/files/5b0f4c9683e5404091a015812820bcd6.pdf",
+      "pdf_sha256": "7083a08980f639a8cfe8ef1b29ee55080f10cedd307ffe2cfbcf528f28b34751",
+      "csv_sha256": "e6a99d339d09c27e87521e2fed79a1afa2d82c68a27157ad6e771634d1f22cd1",
+      "review_sha256": "65afca89efc74c4ee65eee047edde7eaed17feb2be8f154412aeda8388e2dac0",
+      "markers": [
+        {
+          "day": "05",
+          "column": "Low",
+          "raw": "L2409.72",
+          "numeric": "2409.72"
+        },
+        {
+          "day": "29",
+          "column": "High",
+          "raw": "H2830.08",
+          "numeric": "2830.08"
+        }
+      ]
+    },
+    {
+      "month": "200704",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 91,
+      "printed_page": 87,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061245/files/6acb64220a184a828aca32eab0a02cc5.pdf",
+      "pdf_sha256": "fea4987f074b736276c2b02826fe1e00138c340690bc6172af4943b91bfb74fc",
+      "csv_sha256": "6f8d9286ac0ddd48ea39db23e86c1cae7570bac74cdee097e9bd9b61993b6561",
+      "review_sha256": "783c91f8a517e42d0bbd79bd858c5ebf8ad62bd377bd0e07b02cef986bb027fc",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L2793.96",
+          "numeric": "2793.96"
+        },
+        {
+          "day": "30",
+          "column": "High",
+          "raw": "H3568.68",
+          "numeric": "3568.68"
+        }
+      ]
+    },
+    {
+      "month": "200705",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 93,
+      "printed_page": 89,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061246/files/ec706b3ec2414df3990c2bd22934e59a.pdf",
+      "pdf_sha256": "4954e56f8d8c528e054feee483294d800e3389950cc7fd7a23d841db8efb9d34",
+      "csv_sha256": "ecd19cf64b42f895f5e0051a3c3b87ae69dd150d078c579a8c8d1e2178e33363",
+      "review_sha256": "36001968bf7d71c356c5504ec15b9271f307b19dc68a99e297ff54775eff9eda",
+      "markers": [
+        {
+          "day": "09",
+          "column": "Low",
+          "raw": "L3556.62",
+          "numeric": "3556.62"
+        },
+        {
+          "day": "29",
+          "column": "High",
+          "raw": "H4168.53",
+          "numeric": "4168.53"
+        }
+      ]
+    },
+    {
+      "month": "200706",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 95,
+      "printed_page": 91,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061247/files/45a8de345df943faa52c9825ab18137c.pdf",
+      "pdf_sha256": "8bb2e9d205bcd461d89c512e4014bcbee32b3238dc505d5b5c04819ab0831df0",
+      "csv_sha256": "10099569c1c5e56d85412c2f008d097fabbaaf47443e730c6f7d17e6ecf5a985",
+      "review_sha256": "87c79e4517c51d3aea8a4563d4c219690b9238eb7ba77bceea9da9dec22b442b",
+      "markers": [
+        {
+          "day": "05",
+          "column": "Low",
+          "raw": "L3246.73",
+          "numeric": "3246.73"
+        },
+        {
+          "day": "20",
+          "column": "High",
+          "raw": "H4292.20",
+          "numeric": "4292.20"
+        }
+      ]
+    },
+    {
+      "month": "200707",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 93,
+      "printed_page": 89,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061248/files/2cc85f2ee10c4f248b63c22d08cdf614.pdf",
+      "pdf_sha256": "241fe91c678802cbb082db22c38f9e3ed5a5509e64df0a1a1aec3d5def82fa5b",
+      "csv_sha256": "ae30a7790c0d610491d39ac815b17f6576a9f9bb1730abf00b9f2ad540607172",
+      "review_sha256": "c737ef2e2256ccacff5ed1a12b4d2b5b8c0fed0a124695aa6bf1cc564bd698d1",
+      "markers": [
+        {
+          "day": "06",
+          "column": "Low",
+          "raw": "L3475.27",
+          "numeric": "3475.27"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H4467.65",
+          "numeric": "4467.65"
+        }
+      ]
+    },
+    {
+      "month": "200708",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 91,
+      "printed_page": 87,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061249/files/078e961eea834419b0bd53a425c51052.pdf",
+      "pdf_sha256": "3a588ae677cf59f6029536eccf4d0ff34e4456935b4d7bda34fa439a3f5d4c8b",
+      "csv_sha256": "32151672876334d538bdfd2f6fee63f795dce4ee39afc93c4ccf5095db5d2e71",
+      "review_sha256": "7075ba77785743ec2dca57a1b6d057adb8c346e2d7404f97f44c909b847597fc",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L4271.06",
+          "numeric": "4271.06"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H5307.42",
+          "numeric": "5307.42"
+        }
+      ]
+    },
+    {
+      "month": "200709",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 91,
+      "printed_page": 87,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061250/files/89d6cef6a91e4237b6be7b4639cede4f.pdf",
+      "pdf_sha256": "1b3dd9a1542f5de53e5870c4d018899c8393ea4925bc383d298fd527398af0d1",
+      "csv_sha256": "b42110b784b838f9904e275e67288465f24f352ac3d272de2c81728738c9e920",
+      "review_sha256": "fdbe4f0598c38e5a1f43ed77631792bb710ce4e46e6177f55fda3635bb4ce658",
+      "markers": [
+        {
+          "day": "12",
+          "column": "Low",
+          "raw": "L5059.46",
+          "numeric": "5059.46"
+        },
+        {
+          "day": "28",
+          "column": "High",
+          "raw": "H5590.85",
+          "numeric": "5590.85"
+        }
+      ]
+    },
+    {
+      "month": "200710",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 96,
+      "printed_page": 92,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061251/files/1f5a342d370b45b79badb5cb28c56101.pdf",
+      "pdf_sha256": "17c4a7f116cd5e85b3ed3cf8c42a2e8b41fe48145718a7fa0b420036ab8b48e4",
+      "csv_sha256": "27d65bd8435ce14a84d3df626c65420d489f9c639c474a74ec520245939a7179",
+      "review_sha256": "366c611e6b7db0918aec91ad90c25010649ad52fca6e4fe8500370c4550a00ee",
+      "markers": [
+        {
+          "day": "17",
+          "column": "High",
+          "raw": "H5891.72",
+          "numeric": "5891.72"
+        },
+        {
+          "day": "26",
+          "column": "Low",
+          "raw": "L5266.37",
+          "numeric": "5266.37"
+        }
+      ]
+    },
+    {
+      "month": "200711",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 96,
+      "printed_page": 92,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061252/files/77d7f2b8ad8542beafb3445aea79742f.pdf",
+      "pdf_sha256": "7a86db2006a0d8ebf6bd3bb7594777a071640b5cec55f313d7b1dc1b14e690e6",
+      "csv_sha256": "6fe42c3d5e4fcbf3bfdc6b29d0519500d702ebcc42124974e5c484efe8ba5293",
+      "review_sha256": "64ca41825c5e41796d3929cfc0cb3bc2593125dbecfbcfea67b88f96b9f15af1",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H5702.21",
+          "numeric": "5702.21"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L4619.51",
+          "numeric": "4619.51"
+        }
+      ]
+    },
+    {
+      "month": "200712",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 96,
+      "printed_page": 92,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061253/files/d7f7550374c94198b9699673a5e69dfa.pdf",
+      "pdf_sha256": "4b08efe109b0ed7ae1515ab4b05de1d406f2bb30c31ec9f815a45d3e21d61889",
+      "csv_sha256": "601c1962d56ccefd6cc2b91cec74ca7e3288c5bc29d07efd97882b76503dab01",
+      "review_sha256": "63c04df340aba5d8d31f3cee15e08cea144693d4d9710b212619049134f95e66",
+      "markers": [
+        {
+          "day": "03",
+          "column": "Low",
+          "raw": "L4689.52",
+          "numeric": "4689.52"
+        },
+        {
+          "day": "28",
+          "column": "High",
+          "raw": "H5391.67",
+          "numeric": "5391.67"
+        }
+      ]
+    },
+    {
+      "month": "200801",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 95,
+      "printed_page": 91,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061254/files/2a1268fb502b4ea3b8d2c0df64c7c437.pdf",
+      "pdf_sha256": "181ef4293ac132de7e8b8bf6bb2386a4c7b081550482c531d65b843fe1bdef78",
+      "csv_sha256": "cebb822ff61129a50dddac57990a5fdaed666001125307f94a33cdf5f71542c5",
+      "review_sha256": "852e8867c34a94465dc8c53ea537df55e9ede2e5876218769830f07ae900910b",
+      "markers": [
+        {
+          "day": "14",
+          "column": "High",
+          "raw": "H5756.92",
+          "numeric": "5756.92"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L4606.14",
+          "numeric": "4606.14"
+        }
+      ]
+    },
+    {
+      "month": "200802",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 95,
+      "printed_page": 91,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061255/files/3b1f880c0eb941389e6388e5fd70bd9a.pdf",
+      "pdf_sha256": "127b16c910f20cd7c1f0baba2464db45c9a3bce0a79811f69732a7396edba5be",
+      "csv_sha256": "f979a68277077b63cc9108c59a60bebe7432fbe8e70b6122af9d8dfe2409fe4a",
+      "review_sha256": "d2c2ad331d31c489e4cf987401cf402a1b35c7b49812646240d4df3391a3ddb2",
+      "markers": [
+        {
+          "day": "20",
+          "column": "High",
+          "raw": "H5062.26",
+          "numeric": "5062.26"
+        },
+        {
+          "day": "26",
+          "column": "Low",
+          "raw": "L4394.59",
+          "numeric": "4394.59"
+        }
+      ]
+    },
+    {
+      "month": "200803",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061256/files/1699da22276e4b73a86fea8d121d561c.pdf",
+      "pdf_sha256": "73620321bd16024e2a1668da4ee2cbef6ee4e4a58a20dad5a8207b9fb138e823",
+      "csv_sha256": "e061e34cc256eb530f7f7864593543d54c85b4554a680fd708402fb62b2b3424",
+      "review_sha256": "17bab2ebe37ff613633060b93c5ba73b2ba8e5b1e61b428931219c15156b86f1",
+      "markers": [
+        {
+          "day": "04",
+          "column": "High",
+          "raw": "H4836.66",
+          "numeric": "4836.66"
+        },
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L3658.04",
+          "numeric": "3658.04"
+        }
+      ]
+    },
+    {
+      "month": "200804",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 96,
+      "printed_page": 92,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061257/files/5233ca175b6246a6b6601992150e7ff3.pdf",
+      "pdf_sha256": "a90cfb41226ccd9e7577b9f7ed270accb66446f5cda6146a2ce0206804766ca1",
+      "csv_sha256": "8e9589a0a9f1e94069842a51b3113fb468b50b528a2819b88334ac948f03a7f0",
+      "review_sha256": "47f88d3fc704188ce69705bac0cc32a7fb3aa114d5f79b45df07d77d83fa08f1",
+      "markers": [
+        {
+          "day": "22",
+          "column": "Low",
+          "raw": "L3122.39",
+          "numeric": "3122.39"
+        },
+        {
+          "day": "30",
+          "column": "High",
+          "raw": "H3970.58",
+          "numeric": "3970.58"
+        }
+      ]
+    },
+    {
+      "month": "200805",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 99,
+      "printed_page": 95,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061258/files/175d0a6b875040c4b43c9388b37e9785.pdf",
+      "pdf_sha256": "8db3e3ca499f3f784527d8c7d2c50259e7980fcef716be2a247e9207f7465988",
+      "csv_sha256": "9fcb25a821faf1fb51cb2258626ff78ff39b81fe009f2f3ac5d619b5b6d2f2b0",
+      "review_sha256": "21010a0987a449a97eb67b98773725ae0dbf9a473bb7fe7af080d58bd6677160",
+      "markers": [
+        {
+          "day": "06",
+          "column": "High",
+          "raw": "H4075.58",
+          "numeric": "4075.58"
+        },
+        {
+          "day": "27",
+          "column": "Low",
+          "raw": "L3533.47",
+          "numeric": "3533.47"
+        }
+      ]
+    },
+    {
+      "month": "200806",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 98,
+      "printed_page": 94,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061259/files/e5b7bc2ee184410a8105f9350aedf534.pdf",
+      "pdf_sha256": "3f5a1a698f8e2f55bcd5edc675cda2ae5645c11fa84d14371fe4f4c6db8527a7",
+      "csv_sha256": "448b085eaa84ce6327ff4411367587f23f89c8219856fca61dd7091126d6a3a1",
+      "review_sha256": "9ed1d972812a9f4f12a2bc8cacacfbef47acc974cf21522c84e10431c8371553",
+      "markers": [
+        {
+          "day": "02",
+          "column": "High",
+          "raw": "H3650.48",
+          "numeric": "3650.48"
+        },
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L2691.87",
+          "numeric": "2691.87"
+        }
+      ]
+    },
+    {
+      "month": "200807",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 96,
+      "printed_page": 92,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061260/files/e4d87daad0684524ab4c719c7aabab4d.pdf",
+      "pdf_sha256": "5e9664347d75a2dc752ef2b2189c6948ec38ba0c64de2f3b33b660d4a48df9ae",
+      "csv_sha256": "3a90a73428474d89ed0d08ef70878961bf08c9b71d23783a14bfbf73ee5cef12",
+      "review_sha256": "f6c6cf19bafa2035080d57a4385545c4e063f531632dca66c3e1c266b8124707",
+      "markers": [
+        {
+          "day": "03",
+          "column": "Low",
+          "raw": "L2617.26",
+          "numeric": "2617.26"
+        },
+        {
+          "day": "10",
+          "column": "High",
+          "raw": "H3056.91",
+          "numeric": "3056.91"
+        }
+      ]
+    },
+    {
+      "month": "200808",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061261/files/007f685468a442cf8e3b8321fdd6f943.pdf",
+      "pdf_sha256": "9264664d8e2ca4fb4b7166387762fa0a12a3cf2f42c75283be88df269dde2fe5",
+      "csv_sha256": "e2998dcbd23178924889c8bfc3159db926ae9d4451a4fedabbb6d166fcac687d",
+      "review_sha256": "91b8722b6ad0375df0de8a88bc05524911526130cab799b01b7513590159e630",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2868.68",
+          "numeric": "2868.68"
+        },
+        {
+          "day": "19",
+          "column": "Low",
+          "raw": "L2273.89",
+          "numeric": "2273.89"
+        }
+      ]
+    },
+    {
+      "month": "200809",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061262/files/85ff8a2b2ad64088b3ce4e8b33e0252a.pdf",
+      "pdf_sha256": "fb07d24cbe3e2d573b9b6fdc9b2654bac0a687ef111b1180de2127a6d8cef7d3",
+      "csv_sha256": "e7e023eeacf7d9fed9359cbc709d90a05d85b948466bf692d8294479c46359f9",
+      "review_sha256": "5acfb4fd88e350d129c632ff3163d459ef569170a2912814c8ae3eab86f4d265",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2372.64",
+          "numeric": "2372.64"
+        },
+        {
+          "day": "18",
+          "column": "Low",
+          "raw": "L1804.77",
+          "numeric": "1804.77"
+        }
+      ]
+    },
+    {
+      "month": "200810",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061263/files/edb16585668e4158b25da459e748bb93.pdf",
+      "pdf_sha256": "ce71b8c2c66483b48b6b10427436013d43ca8c131c70612d75f6d401a745162d",
+      "csv_sha256": "bd2a5856f04e6c2997c0ae7959b7b9365fded7813a7653c0e04aa56d3e37e469",
+      "review_sha256": "88d492fdafcfaf4c925122730967c18a66a534d746c4ed76fa0dc454c11b4511",
+      "markers": [
+        {
+          "day": "06",
+          "column": "High",
+          "raw": "H2206.56",
+          "numeric": "2206.56"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L1607.67",
+          "numeric": "1607.67"
+        }
+      ]
+    },
+    {
+      "month": "200811",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061264/files/61d768180b8c454b9b0a3baee20885d2.pdf",
+      "pdf_sha256": "5f35afbbfba9852957faeabc1985f3670818f671af2aadbfe46bfb63bf834879",
+      "csv_sha256": "fc70a19aeee414ceaa55467899b5eee7fb1ed8b3c72a989d554971801c34a945",
+      "review_sha256": "41672cab8523d080b3a7a952c0bbb6e17f84ad303224c2196b95263d5170ee88",
+      "markers": [
+        {
+          "day": "04",
+          "column": "Low",
+          "raw": "L1606.73",
+          "numeric": "1606.73"
+        },
+        {
+          "day": "18",
+          "column": "High",
+          "raw": "H1994.82",
+          "numeric": "1994.82"
+        }
+      ]
+    },
+    {
+      "month": "200812",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061265/files/a965f1ed225a4c76bda4321b46e3f226.pdf",
+      "pdf_sha256": "d86e9a304f032a53aa1cfab4052b87ee74a38b9ff6ad903a7a1604f1f147562f",
+      "csv_sha256": "9a524e7d88e6c8976ce58d7ce52207a3e9ec798f86c7bb8e5e195fb7b5b5e2bd",
+      "review_sha256": "2eebc9e7f4671c4a9f18d13984c1c24cee82b7c8484cdf50cb88d1151c589213",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L1799.84",
+          "numeric": "1799.84"
+        },
+        {
+          "day": "09",
+          "column": "High",
+          "raw": "H2107.60",
+          "numeric": "2107.60"
+        }
+      ]
+    },
+    {
+      "month": "200901",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 102,
+      "printed_page": 98,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061266/files/e2c80f37de6a4ade8cce198efade0bc5.pdf",
+      "pdf_sha256": "c00b415fcab1ddf46a18f40608b4a98688a435195204b00cbda6678bb200e47c",
+      "csv_sha256": "89b691a74b2dcd6f1d23756a28fa5c47d15b3ef78d00e9d775a198d627129602",
+      "review_sha256": "89f1bd0e25721fbc40a7b645d442afabdbce5f0dfee7a394c526b99faea73efa",
+      "markers": [
+        {
+          "day": "05",
+          "column": "Low",
+          "raw": "L1837.84",
+          "numeric": "1837.84"
+        },
+        {
+          "day": "23",
+          "column": "High",
+          "raw": "H2054.33",
+          "numeric": "2054.33"
+        }
+      ]
+    },
+    {
+      "month": "200902",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 102,
+      "printed_page": 98,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061267/files/b02913be77744a20afdbc0c7b81ba20f.pdf",
+      "pdf_sha256": "1dbfaa4e2e1350bc30e4f46f1d2fbd4e42f1f700e8543bb42677adec74a4152e",
+      "csv_sha256": "50fff4eafb859ee6ef0bd8256e80a042d10ae5823e50cb8712a4e55ca8109459",
+      "review_sha256": "22d2f1dd7efc2d652925c1cd1e6851add337bc2444cac9b356fb240c2455777a",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L2029.72",
+          "numeric": "2029.72"
+        },
+        {
+          "day": "17",
+          "column": "High",
+          "raw": "H2470.62",
+          "numeric": "2470.62"
+        }
+      ]
+    },
+    {
+      "month": "200903",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 96,
+      "printed_page": 92,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061268/files/5d5da1b53dda41e1b1ae92fe7226f183.pdf",
+      "pdf_sha256": "b6afe70d72c4f68e44a6bdc17b41c781f3f9805b0786824147a745ee2f3731c9",
+      "csv_sha256": "2aad2d372f7cac37112cda84f8fadc209aa497e5417e5d3961c65d15f6547ab6",
+      "review_sha256": "8fbb7c3b43d5b790882809c0f1cc7e78a93428b74cf48f9a41066ea053ac1b16",
+      "markers": [
+        {
+          "day": "03",
+          "column": "Low",
+          "raw": "L2100.64",
+          "numeric": "2100.64"
+        },
+        {
+          "day": "27",
+          "column": "High",
+          "raw": "H2516.38",
+          "numeric": "2516.38"
+        }
+      ]
+    },
+    {
+      "month": "200904",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 97,
+      "printed_page": 93,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061269/files/19be633157ea4b3db1b2209eeada8157.pdf",
+      "pdf_sha256": "db8aaf2b09b2dfe91e3898273d721d29dadfc77ccf1bdd80a85b6030e30402fc",
+      "csv_sha256": "054eefabe1f3f5377de0e68fe4e493d13a6ad018e7c3bec8e06a196960c62696",
+      "review_sha256": "4e4bd9d7fd18efebc194101d3b645f208766416f87769750b427ff45b2ab125f",
+      "markers": [
+        {
+          "day": "09",
+          "column": "Low",
+          "raw": "L2457.42",
+          "numeric": "2457.42"
+        },
+        {
+          "day": "22",
+          "column": "High",
+          "raw": "H2713.31",
+          "numeric": "2713.31"
+        }
+      ]
+    },
+    {
+      "month": "200905",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 102,
+      "printed_page": 98,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061270/files/7b0c5d0b6ace497ea4d4b53a095f5f07.pdf",
+      "pdf_sha256": "261a7814e67d9016d2a6bc5f815c53743753661025751ae494b4c3c80947d74b",
+      "csv_sha256": "4fcdc6fb0b79624fb1d450f049a4969f66120955fda76cf3b5b702bd074657a7",
+      "review_sha256": "6ed7d68c33cba8d5d7c496971184720a5f780045fe519080891e880c85d13dbd",
+      "markers": [
+        {
+          "day": "04",
+          "column": "Low",
+          "raw": "L2632.30",
+          "numeric": "2632.30"
+        },
+        {
+          "day": "20",
+          "column": "High",
+          "raw": "H2849.64",
+          "numeric": "2849.64"
+        }
+      ]
+    },
+    {
+      "month": "200906",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 99,
+      "printed_page": 95,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061271/files/53db7c43f36b47abaeb5edfdddf123f7.pdf",
+      "pdf_sha256": "d955969be5f267cd490aba26dbaaadc09eba46e19f53aa5e33a699cb5609f58a",
+      "csv_sha256": "033348f49d3a0463c38f89eedd802bb6046769500ebd6ab9400b220817ffcb0f",
+      "review_sha256": "c1518206002f9ba60abb948c05ddaec0296e204952ecec4606299f999eacbc19",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L2798.93",
+          "numeric": "2798.93"
+        },
+        {
+          "day": "30",
+          "column": "High",
+          "raw": "H3195.72",
+          "numeric": "3195.72"
+        }
+      ]
+    },
+    {
+      "month": "200907",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 104,
+      "printed_page": 100,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061272/files/b54cdaaf42dc4bc6a2a5a29fc56c2b58.pdf",
+      "pdf_sha256": "7a15900690253e5fadc834065b586ef5f7a3b88d310b1053f589098a167d8c58",
+      "csv_sha256": "d967f172ed8e471e4001eb47d73f8d916404268afc6b47e515761fc771a3bdbd",
+      "review_sha256": "067be57eb184fb66fa3560f6ef71f0c186c0b4c3e7a49e46c3c3ee7fec0db359",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L3150.65",
+          "numeric": "3150.65"
+        },
+        {
+          "day": "29",
+          "column": "High",
+          "raw": "H3765.59",
+          "numeric": "3765.59"
+        }
+      ]
+    },
+    {
+      "month": "200908",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 104,
+      "printed_page": 100,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061273/files/051acb1498704d99a0f3e42a6aa25dcc.pdf",
+      "pdf_sha256": "ad93294980a5a58e2a1935d21da462a3df0e08f4e0c066783ca40948d7fe7d22",
+      "csv_sha256": "77ffb3a84dde83b9c0cc8f532c1c98f5ba5e2fbe823bed5e536140a8bfb8fb07",
+      "review_sha256": "30c4ea27c2fef653dfe1f8eeffd07c6cf7074139f170f1fc1e97589a2374088d",
+      "markers": [
+        {
+          "day": "04",
+          "column": "High",
+          "raw": "H3803.06",
+          "numeric": "3803.06"
+        },
+        {
+          "day": "31",
+          "column": "Low",
+          "raw": "L2825.77",
+          "numeric": "2825.77"
+        }
+      ]
+    },
+    {
+      "month": "200909",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 104,
+      "printed_page": 100,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061274/files/18b2d4b4863047b5b586adf2019a201f.pdf",
+      "pdf_sha256": "f4fc9fe5e35f308450d9981c090b67e967fd3f5362f5e4e402ad0e44985f8e92",
+      "csv_sha256": "f1accca9c6734e396acaf91a227461b38c4dc2b046c210d68410f76a3675ab67",
+      "review_sha256": "b097412599234df7b6f6b7a241fb3e284188827019b07deeaca09fc37672f65c",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L2795.49",
+          "numeric": "2795.49"
+        },
+        {
+          "day": "18",
+          "column": "High",
+          "raw": "H3330.43",
+          "numeric": "3330.43"
+        }
+      ]
+    },
+    {
+      "month": "200910",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 106,
+      "printed_page": 102,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061275/files/998ab8f6be954b4e9cf68ade0556b9bd.pdf",
+      "pdf_sha256": "f33e931ccb55ee1a6c2c243195d42ab85ff498d6be147eec36e9b4b30e7ad34c",
+      "csv_sha256": "7b9cfe988f99c6f822b84014e4180039e325f183b126f295008ce7e537ccb0f6",
+      "review_sha256": "61c9988af78a9150d5637ef725d3f80c14f0f4f7e9aa8b1e59aee7f4b2f13b1c",
+      "markers": [
+        {
+          "day": "09",
+          "column": "Low",
+          "raw": "L3071.27",
+          "numeric": "3071.27"
+        },
+        {
+          "day": "23",
+          "column": "High",
+          "raw": "H3436.39",
+          "numeric": "3436.39"
+        }
+      ]
+    },
+    {
+      "month": "200911",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 106,
+      "printed_page": 102,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061276/files/21f946698b574900a4a9f7c1d5fbeabe.pdf",
+      "pdf_sha256": "f6e7a87a5517d8e956dbe235eced0a87040aaae561a4af2d2e43465f73de255d",
+      "csv_sha256": "9ba59cb6dbcb69007e82a5afcc1760a635847dfc520da8656faede4d4bebc0d0",
+      "review_sha256": "313e8f17133f5d08ca1be393b021e77e522efc506a031f2fa30bea35fb992dad",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L3198.31",
+          "numeric": "3198.31"
+        },
+        {
+          "day": "24",
+          "column": "High",
+          "raw": "H3698.13",
+          "numeric": "3698.13"
+        }
+      ]
+    },
+    {
+      "month": "200912",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 106,
+      "printed_page": 102,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061277/files/3017d72887aa4837bf841a108caeb7d0.pdf",
+      "pdf_sha256": "4c73aef5d6c9a75a3ead7ec3e7e4353543d8f3516f21affcca174fedf54e8f63",
+      "csv_sha256": "f4e4bc7a6a45e15a2cfa9b807b2414db75bd69bec6ac99b9e5c5b929cd5b42e2",
+      "review_sha256": "f7fe804473a88f8573683e3eceaa5f60fec0160c09b290ea862df7b603b0969d",
+      "markers": [
+        {
+          "day": "07",
+          "column": "High",
+          "raw": "H3672.80",
+          "numeric": "3672.80"
+        },
+        {
+          "day": "23",
+          "column": "Low",
+          "raw": "L3296.29",
+          "numeric": "3296.29"
+        }
+      ]
+    },
+    {
+      "month": "201001",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 102,
+      "printed_page": 98,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061278/files/54913514b33a42b2aefc2dfd8199717e.pdf",
+      "pdf_sha256": "02ecff057482ca5425d1ae8e45e04530def16ecbbd28d31f1385d280ec70c165",
+      "csv_sha256": "8f0824e17d6dd9102540ad949b7a78bd45bc1313350451fc6a1dcfa29be3a913",
+      "review_sha256": "888fc7003ab63a236161dff41cb53916dca421d9f22a7baa467f504225d98309",
+      "markers": [
+        {
+          "day": "04",
+          "column": "High",
+          "raw": "H3597.75",
+          "numeric": "3597.75"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L3168.46",
+          "numeric": "3168.46"
+        }
+      ]
+    },
+    {
+      "month": "201002",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 103,
+      "printed_page": 99,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061279/files/660c326503ec4bc1a2756eab2a763984.pdf",
+      "pdf_sha256": "cb2281ab5279a3e9858e8f43239ce971a0347261fc5155db487e0fbac5ca3853",
+      "csv_sha256": "345b3662701838a8c3da448f0375a9fe4fa3b3d475a441d640125f01a5726c33",
+      "review_sha256": "642caf1a773d0045b6eeb2664be5cbc3433deb48da2206d84018d46c007bc603",
+      "markers": [
+        {
+          "day": "03",
+          "column": "Low",
+          "raw": "L3094.57",
+          "numeric": "3094.57"
+        },
+        {
+          "day": "26",
+          "column": "High",
+          "raw": "H3301.15",
+          "numeric": "3301.15"
+        }
+      ]
+    },
+    {
+      "month": "201003",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 103,
+      "printed_page": 99,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061280/files/324870bec41340fba7948c5faca0e61e.pdf",
+      "pdf_sha256": "8f897cb833a56483c92ec64746887d27030dcc7605523ce6f5b4ef9a147e20ab",
+      "csv_sha256": "28106124a97bb1f7a77e1b3d4127d8a13b9edd1ceeff817403275a40b43c02ae",
+      "review_sha256": "c26e7a9d67d4fddc4d5bef9243b8695d9ab6f9d298f1285c6a9392e1fdea9b1d",
+      "markers": [
+        {
+          "day": "16",
+          "column": "Low",
+          "raw": "L3169.10",
+          "numeric": "3169.10"
+        },
+        {
+          "day": "30",
+          "column": "High",
+          "raw": "H3372.27",
+          "numeric": "3372.27"
+        }
+      ]
+    },
+    {
+      "month": "201004",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 104,
+      "printed_page": 100,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061281/files/0184dd25044c416988c7e9358b24df89.pdf",
+      "pdf_sha256": "8764b362c361395ffeff5d3281a28b88aa089b599808226efb09fd9470bcae34",
+      "csv_sha256": "641deb3eaf8dfe4466272f92780efc06a14a5346417b15986e0e3ec693583448",
+      "review_sha256": "2fb5dc22462842dee54befdff319619ccc1b8519cd13eaa6815c70cf7bacad4b",
+      "markers": [
+        {
+          "day": "06",
+          "column": "High",
+          "raw": "H3436.29",
+          "numeric": "3436.29"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L3014.07",
+          "numeric": "3014.07"
+        }
+      ]
+    },
+    {
+      "month": "201005",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 106,
+      "printed_page": 102,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061282/files/d992e6d6e84b45ce85265b1e7e9540c2.pdf",
+      "pdf_sha256": "22d78ffec763a1ad5bceb1800e69bd93cdc680861168e1b80c5987288b457bbc",
+      "csv_sha256": "a25c0eef0f8578bbffe277239d28bfba3c2c31d1477af36eb4f8dd79975c7158",
+      "review_sha256": "e11c7691438eabacfd43da3bfb3a46281b11407072fedebd8592a4b718262f5f",
+      "markers": [
+        {
+          "day": "04",
+          "column": "High",
+          "raw": "H3056.08",
+          "numeric": "3056.08"
+        },
+        {
+          "day": "21",
+          "column": "Low",
+          "raw": "L2647.60",
+          "numeric": "2647.60"
+        }
+      ]
+    },
+    {
+      "month": "201006",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 108,
+      "printed_page": 104,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061283/files/305a6799cd0c4388a02b830828974449.pdf",
+      "pdf_sha256": "4275070eea094f5542882b2c18de07befe0d2374e882cde44e5104a61f743b8d",
+      "csv_sha256": "7b1d4a29ce5344398d30ac3de35c8c7644ea3c8dc7c412c60700cf1df3a06002",
+      "review_sha256": "547010331231c685b33cde430bcb42d24ab3f501dee3498462056a2e4e9b9a24",
+      "markers": [
+        {
+          "day": "22",
+          "column": "High",
+          "raw": "H2795.32",
+          "numeric": "2795.32"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L2546.84",
+          "numeric": "2546.84"
+        }
+      ]
+    },
+    {
+      "month": "201007",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 108,
+      "printed_page": 104,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061284/files/6d651776af9143dd806ddeb962aae348.pdf",
+      "pdf_sha256": "aabf5498a15e16b547fea1171d4a408b1ba61cec8d5f043d996375b176fab874",
+      "csv_sha256": "729de83b5bbc490628fee090d12b778e35158cb1e249b8e2dd103cb1151f6008",
+      "review_sha256": "154bae44a05ddd68920f53c987399ab653d77012dc849b22c0c7c962031e9adb",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L2462.20",
+          "numeric": "2462.20"
+        },
+        {
+          "day": "29",
+          "column": "High",
+          "raw": "H2888.60",
+          "numeric": "2888.60"
+        }
+      ]
+    },
+    {
+      "month": "201008",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 110,
+      "printed_page": 106,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061285/files/e7c72300e9ce4dcdac0338233a462e57.pdf",
+      "pdf_sha256": "c7ad986f47f6e5336c579287e05a3ea70fab04dca9795cf3232055c3b91b59c4",
+      "csv_sha256": "86f99b7fe4719ca1aa0405b13bbf813275211812de3abaffeddde9bcd96fab81",
+      "review_sha256": "e824ad1b2398dc604047f5f1b02e6bcf2b86052a44af55edb99e58af9967b61e",
+      "markers": [
+        {
+          "day": "13",
+          "column": "Low",
+          "raw": "L2799.22",
+          "numeric": "2799.22"
+        },
+        {
+          "day": "19",
+          "column": "High",
+          "raw": "H2975.19",
+          "numeric": "2975.19"
+        }
+      ]
+    },
+    {
+      "month": "201009",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 112,
+      "printed_page": 108,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061286/files/ea81fb3918b84115bf85d49ffbe8f50e.pdf",
+      "pdf_sha256": "351fa14d554004bcc67066458c02d3575226759f647388431b96d40d6930c196",
+      "csv_sha256": "862c325d5bd02774d2e6f1d83d85a9730079d7136eb0e59e6a4a34c73b09df3a",
+      "review_sha256": "b6fe492004ca3aeab231178c8ead99af8c90572e3fec9d0dec7b1a3099b32c08",
+      "markers": [
+        {
+          "day": "07",
+          "column": "High",
+          "raw": "H2991.44",
+          "numeric": "2991.44"
+        },
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L2829.76",
+          "numeric": "2829.76"
+        }
+      ]
+    },
+    {
+      "month": "201010",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 112,
+      "printed_page": 108,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061287/files/08cc57b79c17433b86d67d4a065ac0bd.pdf",
+      "pdf_sha256": "b0cb0c6a2b43ddfe3af06ecb6f7f01dc67fed70030154bc0a5a542eb3036d753",
+      "csv_sha256": "9aecda9e536277d4f0174f1a3a992a11f3b6212f45442e3335055026bef62493",
+      "review_sha256": "ad3550b0ad57bd2d8ae4eba01364d728a6400fa08ff6f37e6019e408e0e6606e",
+      "markers": [
+        {
+          "day": "08",
+          "column": "Low",
+          "raw": "L2963.24",
+          "numeric": "2963.24"
+        },
+        {
+          "day": "26",
+          "column": "High",
+          "raw": "H3499.82",
+          "numeric": "3499.82"
+        }
+      ]
+    },
+    {
+      "month": "201011",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 111,
+      "printed_page": 107,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061288/files/9b757625f46644648a750c3cc653fbdb.pdf",
+      "pdf_sha256": "45a1f98395d5811eeefc6bc95e77bd7bcaeb6a1b3e1d5bd0c64809d422d796cd",
+      "csv_sha256": "0838ab9628e1c121915920155f4d0bea1ea255743fdd78d7c5d1b4e0a14ab832",
+      "review_sha256": "848a925906321713af4499d6a685780ecda37ff80ec56835658429f4fc5e1b7d",
+      "markers": [
+        {
+          "day": "11",
+          "column": "High",
+          "raw": "H3557.99",
+          "numeric": "3557.99"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L3060.44",
+          "numeric": "3060.44"
+        }
+      ]
+    },
+    {
+      "month": "201012",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 112,
+      "printed_page": 108,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061289/files/fdaf223b41f242d6884a715406975b3c.pdf",
+      "pdf_sha256": "1a77e7f019327f8f360260671131e70eaf396b15ebd46a4c80d5de97444ea459",
+      "csv_sha256": "427acf8bc8f66c22c42ec3b382887db9d91ed8e2f83e6a7b0cba7d38cd324f63",
+      "review_sha256": "1bc80ad6398be21c86e15d8d4bca6e2db630fb43d5dba1eefcfb7076ccb7f3d6",
+      "markers": [
+        {
+          "day": "15",
+          "column": "High",
+          "raw": "H3282.77",
+          "numeric": "3282.77"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L3025.22",
+          "numeric": "3025.22"
+        }
+      ]
+    },
+    {
+      "month": "201101",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 110,
+      "printed_page": 106,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061290/files/1d2ab34838324ac58430c388e87f1169.pdf",
+      "pdf_sha256": "52d93806e0dce4dd4baf5ac35fbef7ae52d4bae1a07497acdb9b6300e7019f36",
+      "csv_sha256": "7d43287b8c1fdbaee4c2b3a72c2b6e273dcccff063a175bd0dbc6fcb663fbdc6",
+      "review_sha256": "9607aa4cb9ea2c834d40d4fa8855a5e00a62671f8fad2413cc0b3278a62b7129",
+      "markers": [
+        {
+          "day": "07",
+          "column": "High",
+          "raw": "H3209.90",
+          "numeric": "3209.90"
+        },
+        {
+          "day": "25",
+          "column": "Low",
+          "raw": "L2919.16",
+          "numeric": "2919.16"
+        }
+      ]
+    },
+    {
+      "month": "201102",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 110,
+      "printed_page": 106,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061294/files/95ddcc0a4bd542f485c43ab5dd835484.pdf",
+      "pdf_sha256": "842011c0c434a0b254f1a4420f9a0ad4021d03c4b59e98ae53b1a3373a3e0d98",
+      "csv_sha256": "b50b6b7a992c4ec69eddae17e591299f9bc4978da44935cd8ab13d5305eac391",
+      "review_sha256": "ef7bfe33f12d54617afceecc0dbec8e13f6aad17bb1c1a73a0663781f3d659dd",
+      "markers": [
+        {
+          "day": "10",
+          "column": "Low",
+          "raw": "L3024.35",
+          "numeric": "3024.35"
+        },
+        {
+          "day": "22",
+          "column": "High",
+          "raw": "H3269.05",
+          "numeric": "3269.05"
+        }
+      ]
+    },
+    {
+      "month": "201103",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 106,
+      "printed_page": 102,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061293/files/03c8f76023b648d1b0e8c6d9b3bff31a.pdf",
+      "pdf_sha256": "639da4feef16bbae556a1086901305676e58e4e1b736aba59281c8a9de28b3f0",
+      "csv_sha256": "65f4f6c4eab3832989231e2afaab4c62bbf3c05e21b31549f05474e1b4f758c0",
+      "review_sha256": "3c220f2f01ffc358136d5fa0b790fa733956f6849f0d93eaeb3024ec08268970",
+      "markers": [
+        {
+          "day": "09",
+          "column": "High",
+          "raw": "H3355.49",
+          "numeric": "3355.49"
+        },
+        {
+          "day": "15",
+          "column": "Low",
+          "raw": "L3147.96",
+          "numeric": "3147.96"
+        }
+      ]
+    },
+    {
+      "month": "201104",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 108,
+      "printed_page": 104,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061292/files/5b249189123d46b9b21df774ecd9e7ee.pdf",
+      "pdf_sha256": "d23e303d587515ab8f8420a80c53211e9fbe291dfa074277d700dd3d001408e8",
+      "csv_sha256": "2e7eb19daed8a2cc9ccff3dabe30bec7aec64862035c7f05f2bd7889fb63f647",
+      "review_sha256": "38789715a6074756fc9e93fd60c265379d34833eb010a2a6787c07d0e4c8f5a5",
+      "markers": [
+        {
+          "day": "11",
+          "column": "High",
+          "raw": "H3380.53",
+          "numeric": "3380.53"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L3147.14",
+          "numeric": "3147.14"
+        }
+      ]
+    },
+    {
+      "month": "201105",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 110,
+      "printed_page": 106,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061291/files/422d9b99532e41309fffbddd11fa93b4.pdf",
+      "pdf_sha256": "5502a9e03db3ba4c48057fbfde113a2c30e604c278e4f786ae43154eab563845",
+      "csv_sha256": "cf65843d69324ac143d0ea320d5d9c09bc17f1c0da9b900fdf4c4de761be34e3",
+      "review_sha256": "d36dffdeb5563aed034308eb318ad0a779fd8005305573795ec404b851a23ad4",
+      "markers": [
+        {
+          "day": "03",
+          "column": "High",
+          "raw": "H3212.06",
+          "numeric": "3212.06"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L2942.36",
+          "numeric": "2942.36"
+        }
+      ]
+    },
+    {
+      "month": "201106",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 114,
+      "printed_page": 110,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061244/files/7f6183a4065c4c53ad1bf82d0a547ed1.pdf",
+      "pdf_sha256": "49995b34bbd78d56db58ec5fc8bcd71a9c604fc9c32e3af6d1878a702478447a",
+      "csv_sha256": "aca7de46c4e5edcadf60db6b63a2d8b1fbefb949ff0c0a290ef13a5fc2d3bf05",
+      "review_sha256": "7c11eb6fbd437ecb27604fd56bf68eba925938f63e2941b2a5e3a7678917eb2e",
+      "markers": [
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L2862.41",
+          "numeric": "2862.41"
+        },
+        {
+          "day": "30",
+          "column": "High",
+          "raw": "H3058.63",
+          "numeric": "3058.63"
+        }
+      ]
+    },
+    {
+      "month": "201107",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 112,
+      "printed_page": 108,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061243/files/77924cd0438e4e0587cf4f594fc8955d.pdf",
+      "pdf_sha256": "6bac6073270da984e2913a0648ead10df910be1357e5ea4cbbdfeda8181355b3",
+      "csv_sha256": "8005fdf3368d5f7dfc9f3dfde707bef6a54b4a7175e24d808cf563e15ac74cbd",
+      "review_sha256": "6fd0697acd78df9382018c55c9b7f4ad23933254a07e7ab3b8c4b3d97ff6b6b1",
+      "markers": [
+        {
+          "day": "07",
+          "column": "High",
+          "raw": "H3140.10",
+          "numeric": "3140.10"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2948.08",
+          "numeric": "2948.08"
+        }
+      ]
+    },
+    {
+      "month": "201108",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 113,
+      "printed_page": 109,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061242/files/211629e8e8824be0923e9d7d201088ab.pdf",
+      "pdf_sha256": "ce131d70a572f9e24800362d2919312d9d821821c82a9f5d57dd849f00ae41cf",
+      "csv_sha256": "0c6153a7a52c86c6ecccd1e54a47d1a0c3cd560a02ec73ecd5ab29e23e4e0862",
+      "review_sha256": "e8517ec1870b91d7862af5ed8c62160f1f50269a297b6e1ea0d1ad932f2ee866",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2991.05",
+          "numeric": "2991.05"
+        },
+        {
+          "day": "09",
+          "column": "Low",
+          "raw": "L2697.06",
+          "numeric": "2697.06"
+        }
+      ]
+    },
+    {
+      "month": "201109",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 115,
+      "printed_page": 111,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061241/files/c2573a7dcc8841e5afa975fd9f5ff053.pdf",
+      "pdf_sha256": "2063aba24e9980d088ce12d04921c403bcc6b0c84f9e21a5c468ceb471a522df",
+      "csv_sha256": "fe4dc2fb5d62c55f3a64971f42eb3732d69ac65115fc6fe4b1dcba7171f03faf",
+      "review_sha256": "850b1d7baa0a424e47823118ea94888a092fbbb2c1454315d47eaa52aa666f88",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2869.25",
+          "numeric": "2869.25"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L2572.19",
+          "numeric": "2572.19"
+        }
+      ]
+    },
+    {
+      "month": "201110",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 115,
+      "printed_page": 111,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061240/files/448bae21144b44729a8184c8b4c01637.pdf",
+      "pdf_sha256": "054ab6c90ae66df005ed59354392adfdbd50cb10e50df5d5e76b49bb16dfb1ff",
+      "csv_sha256": "4be335ed9ee04fa69be45cd49b716bd09052c90a2354e74a4b37d7c093c2e019",
+      "review_sha256": "b1c52b3732ef0ccd5b4374009c0f362976a2cbdabb571c60f5ccf464003e17aa",
+      "markers": [
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L2500.49",
+          "numeric": "2500.49"
+        },
+        {
+          "day": "28",
+          "column": "High",
+          "raw": "H2729.14",
+          "numeric": "2729.14"
+        }
+      ]
+    },
+    {
+      "month": "201111",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 115,
+      "printed_page": 111,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061239/files/0860c84a73744a2fbb48f15595e05870.pdf",
+      "pdf_sha256": "d92c53b5d1cdfba059521bcfa8e826f7829a21d2fe6f212dc63bb9adc2c9dfee",
+      "csv_sha256": "bc57aa18690364c6a80fe381586675db008ab59187bfe88a5dd435dbff99817e",
+      "review_sha256": "efd927ff0a8aca9f4b37a67834ecddd29024fcd2a0c21c14ad8baa871c3efcee",
+      "markers": [
+        {
+          "day": "04",
+          "column": "High",
+          "raw": "H2781.99",
+          "numeric": "2781.99"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L2507.18",
+          "numeric": "2507.18"
+        }
+      ]
+    },
+    {
+      "month": "201112",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 118,
+      "printed_page": 114,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061238/files/876c8dee004e4277b4a62f68251ad52d.pdf",
+      "pdf_sha256": "d927a5adfe90a65bac48b731bd4226fe5cf30d5bb2f2f200bded733067ce2c4c",
+      "csv_sha256": "fa8fdabf0304e0a2e87e683f619f7471bdd4a4be8068abe5ba96aa571c53d784",
+      "review_sha256": "fb66346b481b70ac3f7068ea39f74bcfae0e5afd5853ba051f9cf1e197bd1b6c",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2630.66",
+          "numeric": "2630.66"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L2267.11",
+          "numeric": "2267.11"
+        }
+      ]
+    },
+    {
+      "month": "201201",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 116,
+      "printed_page": 112,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061236/files/43c8bc18e83d4eec8a0928d53273b023.pdf",
+      "pdf_sha256": "24def963e2a03dc76cfacd9e7ea4355830384cdeea1bd6e54c15c8b38197cd8a",
+      "csv_sha256": "9d3d833b0c12272997e0bb1b1a77ad451cd5e8747cde109c70a47dec45e6333e",
+      "review_sha256": "1a7b3373be2d7bb48dc0f3b2359c20d1762a1d4cc0955aa8030dcae0a938af6f",
+      "markers": [
+        {
+          "day": "06",
+          "column": "Low",
+          "raw": "L2254.57",
+          "numeric": "2254.57"
+        },
+        {
+          "day": "20",
+          "column": "High",
+          "raw": "H2510.34",
+          "numeric": "2510.34"
+        }
+      ]
+    },
+    {
+      "month": "201202",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 118,
+      "printed_page": 114,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061235/files/1474925ff7ca408880f23ffa3b66f8fe.pdf",
+      "pdf_sha256": "3c3d693cfb2645f89be05e8263afadf34fe3cf31ed0ddb9c6247aa54314a22fa",
+      "csv_sha256": "07b26f7ae36ea518065f7a2cae4549177d1e1bbe3eaec0bb83269f1c540871b1",
+      "review_sha256": "f843e0221fb6a084d600adf19c88da62d06ed3aa8ddc9a7a2ed99c586edd209e",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L2423.45",
+          "numeric": "2423.45"
+        },
+        {
+          "day": "27",
+          "column": "High",
+          "raw": "H2693.84",
+          "numeric": "2693.84"
+        }
+      ]
+    },
+    {
+      "month": "201203",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 118,
+      "printed_page": 114,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061234/files/6027e9d26bef4d83928a38ed5d41b201.pdf",
+      "pdf_sha256": "c31b8f0fb95af2caaf89fd97bf2bbeaf40f26a241fc4f7fb3a6030dee3648a3d",
+      "csv_sha256": "db5904709e2def7056f70caf59ceaeef1294c1f4a1a7ff6a3194294f42909f7a",
+      "review_sha256": "aa1dac1f03c70b9c34b58479a93cad686743a847abf5d874b8f8181454ea4912",
+      "markers": [
+        {
+          "day": "14",
+          "column": "High",
+          "raw": "H2705.75",
+          "numeric": "2705.75"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2429.73",
+          "numeric": "2429.73"
+        }
+      ]
+    },
+    {
+      "month": "201204",
+      "rows": 17,
+      "ohlc_cells": 68,
+      "pdf_page_1_based": 120,
+      "printed_page": 116,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061233/files/b2225783d80d4e8cae8601246727d690.pdf",
+      "pdf_sha256": "beba9705b8d8c609497d25c4e314711a2655b3effa78df81dab6970d1389871e",
+      "csv_sha256": "e08cd34b63682658e3ef870aa599fa5db068e87198d6179e3dfff4222eaab72c",
+      "review_sha256": "0177e571654ee5abb2cf503cc432da2aae775af26608076afaeada688d95e459",
+      "markers": [
+        {
+          "day": "05",
+          "column": "Low",
+          "raw": "L2441.27",
+          "numeric": "2441.27"
+        },
+        {
+          "day": "26",
+          "column": "High",
+          "raw": "H2643.77",
+          "numeric": "2643.77"
+        }
+      ]
+    },
+    {
+      "month": "201205",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 122,
+      "printed_page": 118,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061237/files/9d7718c3e2564df7ad9672758c848863.pdf",
+      "pdf_sha256": "edd734a61a1275f268f3f862cf58cb79e186005d61d8b864c78c4959d8508365",
+      "csv_sha256": "3473079bad2fb2295b05ed3c79ac7991aaea6b3697b6cbf3f380516794c568dc",
+      "review_sha256": "58ace6a343745db99593e2037a71620ecf6d1ac1834f0613cd0b0114bd347e29",
+      "markers": [
+        {
+          "day": "08",
+          "column": "High",
+          "raw": "H2717.83",
+          "numeric": "2717.83"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L2545.34",
+          "numeric": "2545.34"
+        }
+      ]
+    },
+    {
+      "month": "201206",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 126,
+      "printed_page": 122,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061232/files/49c44d1ac2f943708bfa244b238f77b2.pdf",
+      "pdf_sha256": "3f328cc5631880d022c709fc81e7ffdfd437c5f4eb01f7fecdf73f2845020bf9",
+      "csv_sha256": "39a6debfb9fb6e4c44bc935cf9b62f12ae15b45712cef68a593f16277ed5a408",
+      "review_sha256": "07848041d181b98d2705a1ac8cbc98b60dabb88b715aafb9d4bf72aab42d58e8",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2653.86",
+          "numeric": "2653.86"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2417.49",
+          "numeric": "2417.49"
+        }
+      ]
+    },
+    {
+      "month": "201207",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 128,
+      "printed_page": 124,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061231/files/ce241a7ee7234811b165299369f7c7e2.pdf",
+      "pdf_sha256": "462a822f01581dc189f4f9593d9b7f54f8ac8a1adbb6c059ad144f94da38248b",
+      "csv_sha256": "1d46685cc06735f21bf39d68a11653914550937ae418840ef2d1e126a6023e1e",
+      "review_sha256": "b214cd1cf04b3d5907f45319bb3d09f0febeb14656838d057e23b58b360965a5",
+      "markers": [
+        {
+          "day": "03",
+          "column": "High",
+          "raw": "H2490.55",
+          "numeric": "2490.55"
+        },
+        {
+          "day": "31",
+          "column": "Low",
+          "raw": "L2329.51",
+          "numeric": "2329.51"
+        }
+      ]
+    },
+    {
+      "month": "201208",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 130,
+      "printed_page": 126,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061230/files/27eab4883a334c11913fa4502df75f69.pdf",
+      "pdf_sha256": "d00381ee31e1b85f22191ab5ca5c76dd84fac16bedeffc4570eff01a66c7888a",
+      "csv_sha256": "4a18ce17e91adb24db5dd4b818385134d2d470fdd2688792e8173c75e51e26a2",
+      "review_sha256": "e592632b17e6520ce6513081550a6633441fbdb215c6658ad20a24180b875dd0",
+      "markers": [
+        {
+          "day": "10",
+          "column": "High",
+          "raw": "H2413.42",
+          "numeric": "2413.42"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L2188.72",
+          "numeric": "2188.72"
+        }
+      ]
+    },
+    {
+      "month": "201209",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 134,
+      "printed_page": 130,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061229/files/cba7151cc565411aa2514be4937c407a.pdf",
+      "pdf_sha256": "6fcda2deeb06e1434bf3a32eaedf1b2408f23b05dad5cf6c74acbc1469a59443",
+      "csv_sha256": "bdc50fd9e155b965428c7af4c125f0fe88ab0793a07a822dfa5416ed8074fe8c",
+      "review_sha256": "4d8413c1259a631c4d8ae5fc2c3b6ca5c7555621668efddb2b93609c071dc784",
+      "markers": [
+        {
+          "day": "07",
+          "column": "High",
+          "raw": "H2341.52",
+          "numeric": "2341.52"
+        },
+        {
+          "day": "24",
+          "column": "Low",
+          "raw": "L2172.88",
+          "numeric": "2172.88"
+        }
+      ]
+    },
+    {
+      "month": "201210",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 136,
+      "printed_page": 132,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061227/files/652b64af465b4816b9af4957dcc97a18.pdf",
+      "pdf_sha256": "0e29c2b79b309bb36339627cc48d6c1f469f00a01b8c6cddf1adda84f23a871b",
+      "csv_sha256": "cdf1cf8937533d058ad3597781f7324b522c49d79bad7a91ac615a0db64d20f2",
+      "review_sha256": "20ee53f4f89fd7705464ef38e04aa572ae58efa0e98d46ca0bbbdcf44622a34a",
+      "markers": [
+        {
+          "day": "22",
+          "column": "High",
+          "raw": "H2347.90",
+          "numeric": "2347.90"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2227.65",
+          "numeric": "2227.65"
+        }
+      ]
+    },
+    {
+      "month": "201211",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 138,
+      "printed_page": 134,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061228/files/7f8c66371b5e4558aa16107f470c8e1f.pdf",
+      "pdf_sha256": "7650fb1c364f3c508f93840012df2de045f38dc9f027358d934edc8e8a25d9f7",
+      "csv_sha256": "0c3253a36b990393ca0bdc0df593693ff9f330fda8aa036af43a8df2ee26d605",
+      "review_sha256": "21b15312d6df79dfda0bc3bc7d26ff361d9d5882170cc2398f6865c7547ccdf6",
+      "markers": [
+        {
+          "day": "05",
+          "column": "High",
+          "raw": "H2318.23",
+          "numeric": "2318.23"
+        },
+        {
+          "day": "30",
+          "column": "Low",
+          "raw": "L2109.96",
+          "numeric": "2109.96"
+        }
+      ]
+    },
+    {
+      "month": "201212",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 142,
+      "printed_page": 138,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061224/files/aad7a6d0e1d84fffbf2efc7b5d700be3.pdf",
+      "pdf_sha256": "062165d971f3de9cd8666f691b15559b6c2981886645c4d3f637cc4f003de843",
+      "csv_sha256": "85fa1d012a11c93e337018e379162219131ae02a2d7c24339f8f121636ed66bf",
+      "review_sha256": "d3d5df302c38404f5ec55ac9224d0f68dce4b6fcd768cb0ececb5e4f15f0a51b",
+      "markers": [
+        {
+          "day": "04",
+          "column": "Low",
+          "raw": "L2102.14",
+          "numeric": "2102.14"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H2522.95",
+          "numeric": "2522.95"
+        }
+      ]
+    },
+    {
+      "month": "201301",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061226/files/dbbf88475c5a4240a72611e6c2c3bebd.pdf",
+      "pdf_sha256": "fb7a3b1c1cb60f927fb120e7e3b044312a0a9ca7d284c1c17b98a7f5cf43c29c",
+      "csv_sha256": "b8b9b20fcb43f01415f8084f1be08b944706b56ada4b5787db4ef2a7dead7ad8",
+      "review_sha256": "ec8e88131bcbf13c41388350a4023c667803ade9b5b2a44dda6d67bda11124d7",
+      "markers": [
+        {
+          "day": "11",
+          "column": "Low",
+          "raw": "L2473.70",
+          "numeric": "2473.70"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H2696.88",
+          "numeric": "2696.88"
+        }
+      ]
+    },
+    {
+      "month": "201302",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061196/files/89e249d298284b17b21e07820a482591.pdf",
+      "pdf_sha256": "16327d64c48b56e0591353a09af0cde5c83a517dc2406b67fe8275d84446f1b0",
+      "csv_sha256": "59a665b0c1ab67352d4821f4e354368cf622df9ff940034353759f7e54284989",
+      "review_sha256": "ca2dae778e4ba9da4ec0ac09bf5d2e8f7545989a8be8ffa86e81f395f65c81b1",
+      "markers": [
+        {
+          "day": "08",
+          "column": "High",
+          "raw": "H2791.30",
+          "numeric": "2791.30"
+        },
+        {
+          "day": "26",
+          "column": "Low",
+          "raw": "L2564.67",
+          "numeric": "2564.67"
+        }
+      ]
+    },
+    {
+      "month": "201303",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061195/files/fb5cd6b101ca4a05a58717a4cab9b46e.pdf",
+      "pdf_sha256": "782f2a5c5f4d5851fbc31ff5540015746a8b3f0531d8499277d5d5c7ac571466",
+      "csv_sha256": "2c15cd75c718e413692b3735cda6c4f2b9472fd5c77007de9dca288bdff806cd",
+      "review_sha256": "50161e736bd410b39978106f0545924266ea6690ae2a4f66e19121376571c90a",
+      "markers": [
+        {
+          "day": "01",
+          "column": "High",
+          "raw": "H2680.85",
+          "numeric": "2680.85"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2482.49",
+          "numeric": "2482.49"
+        }
+      ]
+    },
+    {
+      "month": "201304",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061198/files/cddaf57f390d43fdb3e420188078bd9f.pdf",
+      "pdf_sha256": "cb8b4bdf3164d6c2fa55914104ae75a17eb3930584d4d828470e606312b1e863",
+      "csv_sha256": "adaf929f5966cdd1e9811800142afd8d8fedd3d1e2d6ae386786495d3e6b1daf",
+      "review_sha256": "408c0dc347b23b89909b1809ad7189e8e8544e8f1d475412ed8476dc95cd677e",
+      "markers": [
+        {
+          "day": "16",
+          "column": "Low",
+          "raw": "L2416.62",
+          "numeric": "2416.62"
+        },
+        {
+          "day": "19",
+          "column": "High",
+          "raw": "H2542.45",
+          "numeric": "2542.45"
+        }
+      ]
+    },
+    {
+      "month": "201305",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061197/files/99a95b3ba62c4923b72e402a5e43d8b7.pdf",
+      "pdf_sha256": "5ce9ad6e948f84e7733d9c4ac829d2947e9c991320676422391c8a0310c07531",
+      "csv_sha256": "a5dc316eee50adfcf4c27f78dc43e3499f9592d56023be76554bcfcaa82875b0",
+      "review_sha256": "bd4be5d0ce78908b039ab2c209be9d1898398ed2d3f074229206ec2e835d78f7",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L2423.08",
+          "numeric": "2423.08"
+        },
+        {
+          "day": "29",
+          "column": "High",
+          "raw": "H2661.23",
+          "numeric": "2661.23"
+        }
+      ]
+    },
+    {
+      "month": "201306",
+      "rows": 17,
+      "ohlc_cells": 68,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061204/files/02807dbfb821414f9a2a78e62082e756.pdf",
+      "pdf_sha256": "345cf3331682e44319ccf36ffd0c122564cb64602aef09867a3d6b494d5b3be4",
+      "csv_sha256": "056c24a88759d87aea2059c611f702b4eb388549ee82dce615829081ab13ebfa",
+      "review_sha256": "ab6433ac0b0651c8809e95c261ec4d4fd6c8cfd5755470421deb463c160cabc6",
+      "markers": [
+        {
+          "day": "03",
+          "column": "High",
+          "raw": "H2625.94",
+          "numeric": "2625.94"
+        },
+        {
+          "day": "25",
+          "column": "Low",
+          "raw": "L2023.17",
+          "numeric": "2023.17"
+        }
+      ]
+    },
+    {
+      "month": "201307",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061203/files/a92859cfb4a341258f028cdb1f4c49c9.pdf",
+      "pdf_sha256": "5835ffb402b6d5cc280f1f916ce4d0b8959624c897024284e7dfc7e82a43c115",
+      "csv_sha256": "5292329c6317b2c1e0f735a6283270170b73db59b39d9f8fac872567dafc3072",
+      "review_sha256": "079178bcedf824d442580bb4bd22736c8a7654f943bb062d03f155b56f44be01",
+      "markers": [
+        {
+          "day": "09",
+          "column": "Low",
+          "raw": "L2149.79",
+          "numeric": "2149.79"
+        },
+        {
+          "day": "11",
+          "column": "High",
+          "raw": "H2351.22",
+          "numeric": "2351.22"
+        }
+      ]
+    },
+    {
+      "month": "201308",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061202/files/0bb72c3d05dd4f8c9e4f0c04fe471536.pdf",
+      "pdf_sha256": "ee31471f09f17bb318c1af415a60c1cbc3cb32b5b987cfb28ca0d2da079cd86b",
+      "csv_sha256": "2a6da13b1f83413dfbef884f79031d967a61a6c7a793b6987246fc2f7b446f89",
+      "review_sha256": "b3ddc1deb7735e8b6bfe35c60648318a33398caf5754dda0e49ea78f27e50b47",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L2200.63",
+          "numeric": "2200.63"
+        },
+        {
+          "day": "16",
+          "column": "High",
+          "raw": "H2423.08",
+          "numeric": "2423.08"
+        }
+      ]
+    },
+    {
+      "month": "201310",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061200/files/bf8ec868a0244c8692f40fd111425553.pdf",
+      "pdf_sha256": "a6a31291acf497899b14b21c647a74efd458417d74e12d9cb29c243148ea483d",
+      "csv_sha256": "514dc97bc388a145fdfc296c48ea91885a22735c07caec32fc42dac14cff1f7b",
+      "review_sha256": "0172b0b8e88dd9cd0f16cb0639968e849fb4723e75f2047562d43ceb4f0d6c19",
+      "markers": [
+        {
+          "day": "14",
+          "column": "High",
+          "raw": "H2483.13",
+          "numeric": "2483.13"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2327.90",
+          "numeric": "2327.90"
+        }
+      ]
+    },
+    {
+      "month": "201311",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061199/files/e6b54452d5dd475f95d55c75c97a2485.pdf",
+      "pdf_sha256": "9064f2965fe72c8978556e34fe6aacd10b3388cd3cc7c54282e82e17667e834c",
+      "csv_sha256": "2f5680836d08623bcd187d24741332fefefba5d5c6d24f71d4bbe30f26f2fd41",
+      "review_sha256": "c97b261d11cac1bce089cfcbb670a07dd08eeaf2c84dd594c7755cb66e683992",
+      "markers": [
+        {
+          "day": "14",
+          "column": "Low",
+          "raw": "L2279.01",
+          "numeric": "2279.01"
+        },
+        {
+          "day": "28",
+          "column": "High",
+          "raw": "H2460.56",
+          "numeric": "2460.56"
+        }
+      ]
+    },
+    {
+      "month": "201312",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061225/files/c16d3159c05844a5bc6bb31be62d8c4b.pdf",
+      "pdf_sha256": "0f6a5d704a26652c31c539db66858643d076ff1e3db5d1dcc0db23a323040692",
+      "csv_sha256": "1dd4debaea11542faae2adc315bea4a3927e705ffe2dd6dced90413ddc4b6784",
+      "review_sha256": "d6806731a290f1a8b8ba5efcfa007e36955b800d402314b83688eced64b674ee",
+      "markers": [
+        {
+          "day": "04",
+          "column": "High",
+          "raw": "H2486.64",
+          "numeric": "2486.64"
+        },
+        {
+          "day": "23",
+          "column": "Low",
+          "raw": "L2259.58",
+          "numeric": "2259.58"
+        }
+      ]
+    },
+    {
+      "month": "201401",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061222/files/5f6e71b1525844fba615a63188cc1fbf.pdf",
+      "pdf_sha256": "57f5aa3026e5a51248f8a5d0dbdd75b54336c3e0aaa87a447c06759890aeeab3",
+      "csv_sha256": "30733c1fdf513e1d9c8f441a0b177299b3418ae7a48a46d4c99d65f25c476d93",
+      "review_sha256": "6fc4613b474a515f1ab177d2b15c0855fcb8e6bea123ff5726706e6e685ddaed",
+      "markers": [
+        {
+          "day": "02",
+          "column": "High",
+          "raw": "H2325.99",
+          "numeric": "2325.99"
+        },
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L2156.46",
+          "numeric": "2156.46"
+        }
+      ]
+    },
+    {
+      "month": "201402",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061221/files/e56a3aedc9e74d24aacffcafdaad91f6.pdf",
+      "pdf_sha256": "58f5b28ed30b69afec28a20b4e1cfc8b280014d41a9b8ebc7b5bd49216fd62af",
+      "csv_sha256": "784338a875c38df105b5cec909a9935362a2ab88911977e73499ab8cee9f8119",
+      "review_sha256": "cf7794b59b79f6978b48ecf95df193ad4cd8a702a81f83b0202f2907de7e71b9",
+      "markers": [
+        {
+          "day": "20",
+          "column": "High",
+          "raw": "H2331.70",
+          "numeric": "2331.70"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L2133.55",
+          "numeric": "2133.55"
+        }
+      ]
+    },
+    {
+      "month": "201403",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061220/files/2104b15c7d784b8e8f29332f67373528.pdf",
+      "pdf_sha256": "27db8919335d7a40c2ed140fad6922f2075759b2579d06c174d4d7140bcca96c",
+      "csv_sha256": "0b79fa0bc37f374e0250e909574cfc285ba9d2eb08a593433810ca3d0d0158b0",
+      "review_sha256": "a27ac3023570e7f0be8ab67f7586ed10d20c02eb19094e3e00b9283d211f4337",
+      "markers": [
+        {
+          "day": "03",
+          "column": "High",
+          "raw": "H2194.22",
+          "numeric": "2194.22"
+        },
+        {
+          "day": "21",
+          "column": "Low",
+          "raw": "L2077.76",
+          "numeric": "2077.76"
+        }
+      ]
+    },
+    {
+      "month": "201404",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061219/files/c7c84548db874d78946d3ea5ad192587.pdf",
+      "pdf_sha256": "41af8a664df23f26cbcdcf7a8a4e87b1ff7dd4807ad7f7d37022f6e69e9a7a5e",
+      "csv_sha256": "02f2c4f321fbb5b1bf548b6f5485749af25a8241b3998ad015241408891cf4df",
+      "review_sha256": "2256dd2b0cde04a5b6838916a901c732988e54a2e30cb63554acd383841bf1ea",
+      "markers": [
+        {
+          "day": "10",
+          "column": "High",
+          "raw": "H2290.74",
+          "numeric": "2290.74"
+        },
+        {
+          "day": "29",
+          "column": "Low",
+          "raw": "L2131.78",
+          "numeric": "2131.78"
+        }
+      ]
+    },
+    {
+      "month": "201405",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061218/files/1a0198ebb2a64e4ba9424e4ba6e86460.pdf",
+      "pdf_sha256": "a85f5ec02c921d02c113ece11296fb611d2674d0713062ebdab817df4f575577",
+      "csv_sha256": "6d2230c7e8c373ac16e9138ca55dd84f3f2ec4d4836bc77493a34c9bf3a11b6f",
+      "review_sha256": "1ee97b1b20a0edbc7964f99a3ef7b1e3bd5c3045a8c711ff93512bc4f6bf1bb8",
+      "markers": [
+        {
+          "day": "13",
+          "column": "High",
+          "raw": "H2185.05",
+          "numeric": "2185.05"
+        },
+        {
+          "day": "21",
+          "column": "Low",
+          "raw": "L2096.51",
+          "numeric": "2096.51"
+        }
+      ]
+    },
+    {
+      "month": "201406",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061217/files/2794539692454ad0adbba80763cbf3e9.pdf",
+      "pdf_sha256": "ea0ed9b9103b4f90fe9e4e471fd7f210721f508f712f492df2ab33bc69b69a49",
+      "csv_sha256": "7a54c80e8efd7848c4ab94010afafed0203cfa5eada24097577056eef033effb",
+      "review_sha256": "cbd9527fe04f224d272e139815d24a0a03337cfa894fd0ce2aae0571d525bb53",
+      "markers": [
+        {
+          "day": "04",
+          "column": "Low",
+          "raw": "L2117.31",
+          "numeric": "2117.31"
+        },
+        {
+          "day": "16",
+          "column": "High",
+          "raw": "H2196.34",
+          "numeric": "2196.34"
+        }
+      ]
+    },
+    {
+      "month": "201407",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061216/files/12996e4bb693457b99a680b2ddf77882.pdf",
+      "pdf_sha256": "bf142bf2730881fc880d840c04641a6c4a082f1acb1802cc8d837f3f83b3c5c3",
+      "csv_sha256": "143805ba7d23f60497baa139397a31e05bad44fbbb7a0d404b43e8ff2f4bb209",
+      "review_sha256": "95ceee77a83d607a40c15bbf4015fdf586ef84fcc26cc0a356d944ae9de826f0",
+      "markers": [
+        {
+          "day": "11",
+          "column": "Low",
+          "raw": "L2134.80",
+          "numeric": "2134.80"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H2350.55",
+          "numeric": "2350.55"
+        }
+      ]
+    },
+    {
+      "month": "201408",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061215/files/3aa5f6cdbcfb4c08a0c08eaa61bb9834.pdf",
+      "pdf_sha256": "74d54039e0f50f04da6d91fad15eae1ba4c1f5acf6b13ec9a672a124327f929d",
+      "csv_sha256": "102c8ca4a7d4c51298ddcfdebd7d2437b74089302892ef1ed3f331a24219dd94",
+      "review_sha256": "d9b1130b21302d1490f6aa14c723e584d51bd64768b95acef4318ffd8e4083da",
+      "markers": [
+        {
+          "day": "05",
+          "column": "High",
+          "raw": "H2380.77",
+          "numeric": "2380.77"
+        },
+        {
+          "day": "28",
+          "column": "Low",
+          "raw": "L2309.64",
+          "numeric": "2309.64"
+        }
+      ]
+    },
+    {
+      "month": "201409",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061214/files/4f9216d9b09a4e72be58d2f2759aa18c.pdf",
+      "pdf_sha256": "cbb5b9d7cafd01155d8b1f5fd0d6aafc2f496a712096069a7dd830ca4dfe1f2a",
+      "csv_sha256": "98bfa08bff0fc9f3612af74faf7f2d3ec09193ba1f5e01592480ebbcc9e99881",
+      "review_sha256": "3000151bfae6f2e03f8b852d79f00e76df60775e7bd509200e6fb83cd2c56784",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L2338.53",
+          "numeric": "2338.53"
+        },
+        {
+          "day": "25",
+          "column": "High",
+          "raw": "H2462.67",
+          "numeric": "2462.67"
+        }
+      ]
+    },
+    {
+      "month": "201410",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061213/files/ba65e662ae004507952fb35d80e3dfa3.pdf",
+      "pdf_sha256": "4e2a93e5cf6e38cd486c1960d0884189ab86cb44ecbbe0a216f386205c698eee",
+      "csv_sha256": "f80afd6c585a8740ffcaa3de8eec53aaea0a5cc5bd3028e1f5478d75dfaa9e7c",
+      "review_sha256": "8b05c015ff788151e53e8a2a22c607ac2d79a4b3b84d92b66afe2a26814b1072",
+      "markers": [
+        {
+          "day": "27",
+          "column": "Low",
+          "raw": "L2361.68",
+          "numeric": "2361.68"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H2512.19",
+          "numeric": "2512.19"
+        }
+      ]
+    },
+    {
+      "month": "201411",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061212/files/74f71142a931437a8399117972b5ba56.pdf",
+      "pdf_sha256": "b87294e699b5f0d4963a11f9433625c80932f1133a2010dc026dd72787c271bd",
+      "csv_sha256": "16a4487f84ffa1503a36e99354ad7ba2b175a5fbb90b6119aa71a2bc3ae3cd76",
+      "review_sha256": "4f8694af3ae72ad2658c94100bf4a5cd85e2d476eee49e714a28f40f458fe1c8",
+      "markers": [
+        {
+          "day": "06",
+          "column": "Low",
+          "raw": "L2482.98",
+          "numeric": "2482.98"
+        },
+        {
+          "day": "28",
+          "column": "High",
+          "raw": "H2809.54",
+          "numeric": "2809.54"
+        }
+      ]
+    },
+    {
+      "month": "201412",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061211/files/92139f0427344f6681dfe06c7ca44483.pdf",
+      "pdf_sha256": "07bf4fd9081198ebc131ed6fdf2143ee53c4af37cd80f103f76a1237a34aef0b",
+      "csv_sha256": "dc26825c02faca634d70bb1f574421c6f34df78446b766c99aac9aabd7ed3277",
+      "review_sha256": "37a0dcd51644aa002eb1cb7a087dcbb56f5417ef4046d42cc8d0c636a429730e",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L2804.29",
+          "numeric": "2804.29"
+        },
+        {
+          "day": "31",
+          "column": "High",
+          "raw": "H3542.34",
+          "numeric": "3542.34"
+        }
+      ]
+    },
+    {
+      "month": "201501",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061210/files/132217a8668a4924b3b5752fff31768a.pdf",
+      "pdf_sha256": "a518f5653e8b46873e101e11e00fd8c41af481be6b7e975fb6053117673e6c29",
+      "csv_sha256": "b2dd3949be37eeddbb9046f44f35c7a7dfa62274fed8aa0d4772e941d410004c",
+      "review_sha256": "36887fb1471a5b1a1e6cf06bbda3eaa897b47548b1d40574f5024e5fd18a8366",
+      "markers": [
+        {
+          "day": "09",
+          "column": "High",
+          "raw": "H3689.75",
+          "numeric": "3689.75"
+        },
+        {
+          "day": "20",
+          "column": "Low",
+          "raw": "L3325.68",
+          "numeric": "3325.68"
+        }
+      ]
+    },
+    {
+      "month": "201502",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061209/files/2527a91e2a73486dabcca3a531d98a7b.pdf",
+      "pdf_sha256": "86addedb38854fa24f52f70be76b5d24ed0b7c4a85102b779cd4162aa1a5b25e",
+      "csv_sha256": "655e1b9880dab5b67c12e4554259d16d5d63d282c424220f9517c1c841a4137a",
+      "review_sha256": "c22544d336fc613371ee20f156fb4ee9181ae29a72fcdf82707efdbf0072f4ca",
+      "markers": [
+        {
+          "day": "06",
+          "column": "Low",
+          "raw": "L3285.94",
+          "numeric": "3285.94"
+        },
+        {
+          "day": "27",
+          "column": "High",
+          "raw": "H3594.81",
+          "numeric": "3594.81"
+        }
+      ]
+    },
+    {
+      "month": "201503",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061208/files/5fa23d035910412688f59d7a8bfce158.pdf",
+      "pdf_sha256": "9456ef3d1bf42758bb21b760352750186e3df395933ee7b0dbaa7827a06faeed",
+      "csv_sha256": "aa16b38bfa6d558eb49dc9d89f832d1586837e732b2d2f62ef171d72d2645678",
+      "review_sha256": "314fed61cbc2d234af07666b87703f7f08cf82fc8c6597a030ff9fb161990812",
+      "markers": []
+    },
+    {
+      "month": "201504",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061207/files/4a09cfbf50b5410da72fc7e61e031590.pdf",
+      "pdf_sha256": "11ba3d86c808064ca4fadaa7b39658bc0296eeaa0cd74adbd865e7316da0b05f",
+      "csv_sha256": "dd099cee470e92d5b419bfeb924ac0ac4d897ad373a1a1002a5f3d5c82a78f28",
+      "review_sha256": "21e4f41b589fd06e3a87a90c3b6f3af90de2eabba1f3124221df42f383c868ce",
+      "markers": [
+        {
+          "day": "01",
+          "column": "Low",
+          "raw": "L4046.94",
+          "numeric": "4046.94"
+        },
+        {
+          "day": "28",
+          "column": "High",
+          "raw": "H4839.08",
+          "numeric": "4839.08"
+        }
+      ]
+    },
+    {
+      "month": "201505",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061206/files/b50287fdf296441eb836988530c429dd.pdf",
+      "pdf_sha256": "3890f5f81ef56e7f7ce385016bc1cb832fedbe5f83f4881c959e79f9c7616999",
+      "csv_sha256": "6c7634053eb399665256359d7e01fbefbce985f669034dfbdc9ab57bd3a965cd",
+      "review_sha256": "213af7d1aa2ede294f83aa1acdebe75f24d5af4c4ef66dc56553af0905a18283",
+      "markers": []
+    },
+    {
+      "month": "201506",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061205/files/6ee9a0bdcc1b4f6d9551aef1d676a41c.pdf",
+      "pdf_sha256": "8aebffc65266f2824a87b297ef98b5b233b9adfec9e3dcae429a2eb06e4280d5",
+      "csv_sha256": "198f29916b03fda9d84b1a92e0da38895aa8507bdc4acfc38ec736ba4788e800",
+      "review_sha256": "34e1e6681602c67c1a3aa8d4c55a51d026191b4f64c1bdae74ab5ae1830f5bdd",
+      "markers": []
+    },
+    {
+      "month": "201507",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061223/files/c8014135ed1249eba24248bb2c5d04e9.pdf",
+      "pdf_sha256": "3716b28db0e8b2a8b1ba35beba6acaa6cc359d338ab5a20d2c91f60d4ac6d8fd",
+      "csv_sha256": "9a605be80f8ca020e785e91a70a2e8f3fd782a4c28540e1a1b698a1eacb04153",
+      "review_sha256": "b946af0085a2fc674d820d327e1dbad5aa86128dfb2e2c1ade48961662be8439",
+      "markers": []
+    },
+    {
+      "month": "201508",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061194/files/16ba60a028324ea989070ba6f9e30a92.pdf",
+      "pdf_sha256": "762d46091c63587fa4e9a4b591b7f8db5afe02b0368a49017e15ea841600a327",
+      "csv_sha256": "58f251493709188ebaf275691522de9822a2404622bae058f5541d77a7aa30f7",
+      "review_sha256": "df2523c28821740f32395ffe5dcffdaf3f80445663b8a5dc0dd30ec4829a7c02",
+      "markers": []
+    },
+    {
+      "month": "201509",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061193/files/f0b4fc5e9ced4f2bb8648976992f8094.pdf",
+      "pdf_sha256": "55c7973970ca15b8217969ebe007213deede82aa39a10ec740c40b666bf2ad19",
+      "csv_sha256": "9ab30257f4febb6605f7c2f9f75d9372087b754ccd1e8236e22cdeb272452a32",
+      "review_sha256": "991a8d076c8e9b8bc77a4fab73ab763e0fccfa129cd6eac61c57c637c3d02d52",
+      "markers": []
+    },
+    {
+      "month": "201510",
+      "rows": 17,
+      "ohlc_cells": 68,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061192/files/1f3d659a497b4e13a25b69b1b7a5f64c.pdf",
+      "pdf_sha256": "18d3b8feb9ef44e421dd1de29037b98ea10540c9c5f3adb79f1f0ab852a0c986",
+      "csv_sha256": "a47ae9c8ce8af0e9a17427b8974046582e22a7883eab15ab945cf92603d6d9af",
+      "review_sha256": "c4faba4140c46e13ffd162ccf83094623a8254f3c5e753870cfbaca5e3de8b07",
+      "markers": []
+    },
+    {
+      "month": "201511",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061191/files/c9b181ed4d144ee19f05e0ced1a498c2.pdf",
+      "pdf_sha256": "0af605940b58e82e65c14c346d6eb258d9ebc8cdad7f45563cf32a411df62a52",
+      "csv_sha256": "a7984a421cb5e0ed53b0b76d19296be0ce81f6bb3fb000a531fc9d56bd0a569c",
+      "review_sha256": "7ada81fb5f0034b1a2e757d9083590e089d94f7eda5c92c520de43ddb8a508ce",
+      "markers": []
+    },
+    {
+      "month": "201601",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061189/files/a56335a83315452da19758f127742a84.pdf",
+      "pdf_sha256": "9cceb739fe8b81996d9505b3a6f494887860345688c341d5cab7cf27910c02e4",
+      "csv_sha256": "69055e1ebfcce8ca2862b15e73ea365714c251af5b59a370244cd26f1c57a35f",
+      "review_sha256": "9d1f23119abdae19e8c03e96efe7bdea563a312d040caa1a30563d78d983819c",
+      "markers": []
+    },
+    {
+      "month": "201602",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061188/files/c7d85141f02c4d3594307ef9a37d5a3b.pdf",
+      "pdf_sha256": "cbc56d947a1654c4f77ff0d27a8625003366becc93556647a45dd8ce3ea01963",
+      "csv_sha256": "6b642f41254e5d24b54ada5fcfb1c0ae97d912d519f66a4ca835f64525ab7aba",
+      "review_sha256": "0d83df7d116eded3cab45f4cbfc0793eccca77278e72b691df6d8e9140b3d919",
+      "markers": []
+    },
+    {
+      "month": "201603",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061187/files/5afa5457b89a44aa8169595d58422dcd.pdf",
+      "pdf_sha256": "afe9509afab0f813795ea7980dc91d77cbe2945f214daee557164e1659ad864b",
+      "csv_sha256": "f7a2b35a70f671fa07da4816a786920169b31b7575e8304671dbe498da72657f",
+      "review_sha256": "c02a0078ffa4cd4b24d00fadf74b45105615587338fa13f339ac4dffacb981cf",
+      "markers": []
+    },
+    {
+      "month": "201604",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061186/files/d8fc9663596441ff9d5df376c178c5b5.pdf",
+      "pdf_sha256": "09be25f80b002d1c8c0bd16885eca4e55362fe8780272e87e0a5b9704febb296",
+      "csv_sha256": "307e2e92982034344d0c0181a52d6a17eed35eda8d5b65183b5c5736e8379a48",
+      "review_sha256": "b9003db0e4ce1f15b9f49be1950979c1ea257b659b661cc807cc310e0222e4e8",
+      "markers": []
+    },
+    {
+      "month": "201605",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061185/files/c915ea652dd64640847293f287f77e0b.pdf",
+      "pdf_sha256": "bfb26d9112fe2a1bf9c8ebb2ed6b571c1306a0422504d6a4cccab5c93c2bdd7e",
+      "csv_sha256": "9599c86540bc93f227943e9bd1351f4644256ac180c395ae9097f8e5f3f31811",
+      "review_sha256": "4975a6e9d6b81b2ac5d819ee559fc877b3988b2012823f626b658bef17d51c78",
+      "markers": []
+    },
+    {
+      "month": "201606",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061184/files/24daacbfe0414671af220f5018672f98.pdf",
+      "pdf_sha256": "813084860c67cc4d8a655b7ffa58e1a64a20bcadf6985a5847cacfa8c14ef83b",
+      "csv_sha256": "df8c0dd8c500ccf2934269174566c7397ab7d56799a71ec38b26910f83b66136",
+      "review_sha256": "f73ed3fef9898276261044a47c5de1ecc83bbcc84289e9fda99f3c7b9ce81233",
+      "markers": []
+    },
+    {
+      "month": "201607",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061183/files/04b924f97d074cd78cf6f91d815947c0.pdf",
+      "pdf_sha256": "796522c505e9d6908a32ed41d68039edbe63a97dfc2b1a4f81cfab379da5699c",
+      "csv_sha256": "421938cd8243739fdc1ad8e162ca12d04e5d5891a5e0c2fbc1db82ddacab1fc1",
+      "review_sha256": "538fefddf226e83a438bfeaa29351865f40cf653965b9416d7b7e59db6305706",
+      "markers": []
+    },
+    {
+      "month": "201608",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061182/files/583a323729df4583a68d0df596fd1e21.pdf",
+      "pdf_sha256": "034e9826f806f58e9a9ee1f7bd5dabd65cb0f9c5a803535e366746fb6baa64c0",
+      "csv_sha256": "cb4f483769d73233758add766bb4529ceada92682384a06e55c731f9679be33d",
+      "review_sha256": "513f26eeceb1395c7ba9d40600fe7c6e6249ff7fa91a9028fa6bfe0dccce6acd",
+      "markers": []
+    },
+    {
+      "month": "201609",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061181/files/ad10b07a164940abb7c368dfd7996b11.pdf",
+      "pdf_sha256": "fe8f89cf5adc819a16ea4fa99a9dabc82efe57c65ec26a22631319a16e5b034c",
+      "csv_sha256": "187b7e3bfe54356bd2666c56b2fd9815f1245e7c7e64a950680b59581ff46ab7",
+      "review_sha256": "760c9a14bfed0023c1e386ac540c614a542491fcc172967715cca999bd30c5ac",
+      "markers": []
+    },
+    {
+      "month": "201610",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061180/files/725e4345fbb1453daa4f1d9dd5310ac6.pdf",
+      "pdf_sha256": "1d7549774c96941ff5228be5fdb67554a7d8452ea5145af50119535523b1dfb1",
+      "csv_sha256": "2fa9ffebdfc6ea9c49e0ef31b7f1f1dec3524f96d7f43284b3606ea70da0e459",
+      "review_sha256": "e8c51f2c0a86b3d82b19acafcba641f041c1d2b7d922d5ef708c5740f1b8dceb",
+      "markers": []
+    },
+    {
+      "month": "201611",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061179/files/b7a1bd18920c487488649d3ad1122cf8.pdf",
+      "pdf_sha256": "fddf8d5668b20cc5d911fcf1808da19166902fc5307bd8561a10c967b018b396",
+      "csv_sha256": "892ce64e9659d42ef64580e53aee7600fa566a6cd2dda957bbf5150596fde7f7",
+      "review_sha256": "ca1cbe3b92795e52e8f3a2894cf1eac706ba8551d860285e40ae3066ddbd8655",
+      "markers": []
+    },
+    {
+      "month": "201612",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061178/files/6c6c2a79954f4ed8bf3e86e6ee940d53.pdf",
+      "pdf_sha256": "570dcb2547321abc66b5eeaae7457670a435a6eb9336147f9270579df5c9f72f",
+      "csv_sha256": "9669fed3bb435b83c03dafdb720c63a87197f24ba5cfd112af995d7854dfb2e4",
+      "review_sha256": "da0176727b6133f1cc8892bf67272c0c8bb810d58ece9cc98d4e2f8bc701d565",
+      "markers": []
+    },
+    {
+      "month": "201701",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061177/files/6d6a7620fc4b4ec089faf5da99d25344.pdf",
+      "pdf_sha256": "e252a47b5ece3a18c0a9b801f97ae8b0e9d7d25aef041bba3d7cca4f49fa2744",
+      "csv_sha256": "432bb4384f2797d51538b41fd2f8c71183fcd8e139095fba517c0e99030ef807",
+      "review_sha256": "94dcb44eccbbe56dcc3e2c80664883768b28f6dbc2332a6564a122423d72bb2e",
+      "markers": []
+    },
+    {
+      "month": "201702",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061176/files/703fe53b456844bb9888c10f7ed42c73.pdf",
+      "pdf_sha256": "990a28aaf542d9f5c71cce30464bae1eab029a37c667f8e135b25a785b7bab5a",
+      "csv_sha256": "9d9b720ac1a86d01e67a98636c72bd94caed614326a71f689fa0e99334f8d4ce",
+      "review_sha256": "9f2a8d1bc3c9acd18c82778f36b60ed0c8c704b2d5ddbf8c81f8726c1619c26e",
+      "markers": []
+    },
+    {
+      "month": "201703",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061175/files/b78c9f6f47394cd2a42517abf048065b.pdf",
+      "pdf_sha256": "64b796ce5dfeeda7af9a5e1816e0756ae3666ded91b80317e6bf8160672b8922",
+      "csv_sha256": "0673fe1ff981d1cd958310867bedf94ec999c39a399d0d6e3855d8844bd53f63",
+      "review_sha256": "e53b5a875c6b13d1815f681ebb70d6be9622e715fbb546a6b0197792ce847690",
+      "markers": []
+    },
+    {
+      "month": "201704",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061174/files/c1889702776d4b3bac3bae19d15dc6f6.pdf",
+      "pdf_sha256": "b959826c48e7f6a0f82e5338e33f501fb05daae34cc278159ee7bcd16ef12c6a",
+      "csv_sha256": "a6f7a16f4c586758bf7b5ac468162032a273b14dc092c312e2f842441b448350",
+      "review_sha256": "da689eb487e89eed8f425c9f55975ff602604fc5fb70f05f5bf49c2b72e8d3ae",
+      "markers": []
+    },
+    {
+      "month": "201705",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061173/files/4eda5c6153344815ae45d939ed14a51f.pdf",
+      "pdf_sha256": "e6723ccb25f0ab9268037a647d5a39a9ab3100e36ce3ea43a8fe429128df115e",
+      "csv_sha256": "a9025b02998704cc990179b97e1b4a9ca4567ceec294406ffc1aefc89fd8fbac",
+      "review_sha256": "af1876010f563fa82e66545209c82f59ed2b74dcd92edcf81385e9e0998aa30c",
+      "markers": []
+    },
+    {
+      "month": "201706",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061172/files/d974169f1712453cba15d5ec4089dd5a.pdf",
+      "pdf_sha256": "9a9a2086c02cb2e6a7163a4f0a04dc51f19a41b964a2ca615e4a7f8cacff3955",
+      "csv_sha256": "d45d9d00879821586dfd02e40069ab775445c28e8334a08ce92da2ae657c5aeb",
+      "review_sha256": "4cc07a3c2ffa66c1e7c126e617fa7a4c2b7022064c55d50aa037952ce4d651df",
+      "markers": []
+    },
+    {
+      "month": "201707",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061171/files/20e5ecc78e3b48e58a0fb3ccc97d4947.pdf",
+      "pdf_sha256": "198a8b40ad34b791cc059947e7500e69da7ef90d4b671fada125247348b06b4e",
+      "csv_sha256": "7e714955cea5240c0e4692d6195c6777b6a34de5aac523bc4ba0250ca62bf64f",
+      "review_sha256": "2e07484156913e034b0491dc2840a0f8ba4d5b9924a0e5abc1cdb76ff1a603fa",
+      "markers": []
+    },
+    {
+      "month": "201708",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061170/files/94ee21e39663489b89607c4e3ed4ded4.pdf",
+      "pdf_sha256": "23f51d2e35e821427b1726d8d7f384395a1399cff076ca23c4403a56fe8e0e5e",
+      "csv_sha256": "e4e7b2d6fe2838a1b8b9982c89272844d79637dffabc1ba436e3b6fb96e5fe1a",
+      "review_sha256": "5d0f2747a4b5e7aad9bf40bff380978c73cdd05c8522a8c5d287a6bc5a6d51ee",
+      "markers": []
+    },
+    {
+      "month": "201709",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061169/files/c2b0c3968d0240fa86e38b90d0a5eb4c.pdf",
+      "pdf_sha256": "543c4a21371bd14640d8e1fdf1b566f06fc35e65200e509d3a785fdd9c1e8f85",
+      "csv_sha256": "da9187c83faf507cd00bec0313c3044088f8f029158f5aa6b110fecf6645750f",
+      "review_sha256": "662facedfc354cc78031f4fa13579e6ee0d43915f2f63c5a520e7e661ebfe1c9",
+      "markers": []
+    },
+    {
+      "month": "201710",
+      "rows": 17,
+      "ohlc_cells": 68,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061168/files/4b996a8f6edd4512bedfb9e51fe1a0b7.pdf",
+      "pdf_sha256": "a7120b756ea37380aef4e14c0ecfd00acd192ee83233e2106a6fcd19b5ae5e1b",
+      "csv_sha256": "58a50b93427892148765eda621f6f498708dbe444bdb13c302944692754f2f31",
+      "review_sha256": "5870d4b06a905c349a8200292931448b470c69fa2c5819cfa0efc9758ad59158",
+      "markers": []
+    },
+    {
+      "month": "201711",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061167/files/c2c5ad5a99c84b29abc64b9362ab7b7c.pdf",
+      "pdf_sha256": "45cbdcbcf13d6fc487aa8ec35df7780082ba62b1daedc30f99c35bf05725f3ac",
+      "csv_sha256": "359b01cf1a558b251396773e9c25a619bc1610072bb5816a8ac28601cfa1c906",
+      "review_sha256": "37a3441088256b4e136fe5799bdf72af2609dbc4533f3c5920ca7ad6b19e5271",
+      "markers": []
+    },
+    {
+      "month": "201712",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061166/files/b4202ceebeca40c882a409bb2646b980.pdf",
+      "pdf_sha256": "6d04a683538fdcb36c37c08eda9f2a60945b158f64302254fa7db299551cfec3",
+      "csv_sha256": "ccd1e894e5671303b8ae4f2173d6bc3b8f45387b546cc2acd9617280a24ccd21",
+      "review_sha256": "f68641a87ca4347f20b4b141ae5df64a431e7d60d1d0df80cc3d03d90266bf32",
+      "markers": []
+    },
+    {
+      "month": "201801",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061165/files/8c4abf8a638347ed92f123c86278dcea.pdf",
+      "pdf_sha256": "c977add5076e0621a7ce4ec3403b01ec678f63598712e8263f7c3ebbe23a9a39",
+      "csv_sha256": "c10cc6e1d2406f951aa440dc03ff25f225233238c60c29851763ac7bd5967360",
+      "review_sha256": "e95de63f743812acb5516a524755736a9c6f90697f5f90e95bb2d7ca3eb671d2",
+      "markers": []
+    },
+    {
+      "month": "201802",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061164/files/3ec2b9bfc3a44e52a421e6195cb05c89.pdf",
+      "pdf_sha256": "9d09bdb0a0450f07ead051daef1c3ec309fca9a0dfa846ff7d9dd4bfd65a17fd",
+      "csv_sha256": "eb177da270c29aa9995f660b65397162aa7605f48bc68de83700f2c3eb799faf",
+      "review_sha256": "62e1b2359bc67a2b296b39e318bacd4effc219d3b2765bab97694f0b029395b4",
+      "markers": []
+    },
+    {
+      "month": "201803",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061163/files/9415d58bc57c4e4ea5631e2136e0091c.pdf",
+      "pdf_sha256": "7dd09cd56fa5d797db60abfcdea959f55a7680ed6216d01e4e8ce574079d0e5c",
+      "csv_sha256": "27b77a997dd289bf05bfb6dc509e0b45df5cf76d98ce32ba3b57e03642db4c1c",
+      "review_sha256": "ae96d4f44931ad10d9c88e40d6af4177dc0ffd20f1cb876bfc6c15e162102699",
+      "markers": []
+    },
+    {
+      "month": "201804",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061162/files/76e98f34620b47b5bb5c671287380175.pdf",
+      "pdf_sha256": "b9945af17e803e0d496bcd3a5e8803a6e6f58b302e05dc8322670ea83b346606",
+      "csv_sha256": "a7314e793afe8dbe471c078098834793f7371b79a8797c40a21cce0ba8aad46a",
+      "review_sha256": "73a38bcfc6d97041c5d1686e8e2e77f79887d5efb08037a3cb85227b391102f4",
+      "markers": []
+    },
+    {
+      "month": "201805",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061161/files/bf965df33bd44045b46d1ae6a55983d6.pdf",
+      "pdf_sha256": "4212ecf286b89999aa33fe15023c5c05783b313ba9ad74cc681a9a04660ed653",
+      "csv_sha256": "9ee08d598e340c3eee6b04f9005a0c023f562c5042d4240fa66aa1ba43186aac",
+      "review_sha256": "ccf976994257c7df991481c202d437cc36995684c12a7a378b665aa789678cce",
+      "markers": []
+    },
+    {
+      "month": "201806",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061160/files/26507e46cdce42fcb5f9347be555e99a.pdf",
+      "pdf_sha256": "1a18dc9db2f47abfaed2f5f4036e898d9c0e49565b3f8eb5615475e10f017931",
+      "csv_sha256": "dcb91c3043af6e3f8d381594054e5440e1971f4ff0e3ff9f229d73091b7108e3",
+      "review_sha256": "dd1ccb974c5b09c12e821891cbf8bc412380238f31a8227762749f766b7f9934",
+      "markers": []
+    },
+    {
+      "month": "201807",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061159/files/71fe750cb9ae4d49a0a1c59a45a7d69f.pdf",
+      "pdf_sha256": "38fcd44450d406ec8a441ed064ba77a1132886dcee28f0643646aab06efcab8b",
+      "csv_sha256": "d6f402472705716856409671236ca6c9b21ba1e11f40c2bfa064fec25737742a",
+      "review_sha256": "c6cf225e5be051ed59ad8705f64a5774d586a69f487dd9a3c881d28b83c1844c",
+      "markers": []
+    },
+    {
+      "month": "201808",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061158/files/0a2e13e69abe4a96b3e4979c2d59bfc7.pdf",
+      "pdf_sha256": "bf1cae41b9b67f29cdeb95e69d75359885d4c3dce4db215e7b863d623f9e2a70",
+      "csv_sha256": "787123f3aeb4e741234c6f92b2ea757f5721c068e258638e77ee43ebb00b4e23",
+      "review_sha256": "9a79e86b99132d33d7e92ceacb6dd6aa8a5b1e2188fe0e270bc50ab1e3355535",
+      "markers": []
+    },
+    {
+      "month": "201809",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061157/files/b2f30a5dea9d4b89873da5b92cdbff2d.pdf",
+      "pdf_sha256": "40aa937d2a830f524a3936cb60555b747bf7d2f2223f780365084421deaa08d7",
+      "csv_sha256": "a357cf15925e7a978aa95e33c3250aab1934f74a0c181c5af896c1a465025e45",
+      "review_sha256": "c913d49a9af573a8a3199af141c2f9027087df6dbae4b49441c4bbb38458d566",
+      "markers": []
+    },
+    {
+      "month": "201810",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061156/files/1108d8f758934e20ada68292e06b6fc3.pdf",
+      "pdf_sha256": "24e1fa57f2dfb637a7a53047719cc94fa09e216eb04c7bf0340869a4fad8c6f5",
+      "csv_sha256": "96aae30041044d2d3a2098738326561f24a2be46c2b3cc92f622fbc49dbc1ca5",
+      "review_sha256": "fc5c05fb27d57a813ccfbee8b80ff4e2377b96eed406cd5397f2cd0d51a11c02",
+      "markers": []
+    },
+    {
+      "month": "201811",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061155/files/294e956491fb4f00a1533ec8cfda60d4.pdf",
+      "pdf_sha256": "8909c4d5d6d238a5e02b19d6eb47c9a047bec1d59ebf4b6f86ed0cde23f54cae",
+      "csv_sha256": "4d64d7e08edab78d71d591969b2abb330ff210e9dd5d63eb62448d517b04515c",
+      "review_sha256": "5399b52f3dadfe13d45de069daa5bcfee4d530cddece203b4bf7a8400046f075",
+      "markers": []
+    },
+    {
+      "month": "201812",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061154/files/2526a1e2366d4ca5854cb3125a3a6584.pdf",
+      "pdf_sha256": "c0330a93706c58727b3e4130dcff5236d89efd8b19ede2106316bc047871d37b",
+      "csv_sha256": "b2f2692cd7f8c4db8fc35dd619c02c811f0261718989ec3de9238eeac140235c",
+      "review_sha256": "ae5458623f7af3a2e6f9184e51a83e5e733a084612ac7c7fd03e82722e177f6e",
+      "markers": []
+    },
+    {
+      "month": "201901",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061153/files/38c557e7d9804df89e6d53c270e78b59.pdf",
+      "pdf_sha256": "b6d40628bc3fdca3ba142808a97f308e7e03e060a7874cf29af05f4fcf09b274",
+      "csv_sha256": "bbee2457fbd40d53a46a70b2a9b7cc78d20a619bdbec80738486153bec3eec67",
+      "review_sha256": "80429152171e1b526bb368b951e75eace388dddc7a98d587d0e4e88a59f60b33",
+      "markers": []
+    },
+    {
+      "month": "201902",
+      "rows": 15,
+      "ohlc_cells": 60,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061152/files/39ebf548af5743a387fa862f93cdca89.pdf",
+      "pdf_sha256": "a0544e4b91a77006447bae73c1a08e780a238d432670074e9566645a72beeb33",
+      "csv_sha256": "a21d8f986402ff30dd9758cf21fc0829aeec393054fa237b58706a6527252f70",
+      "review_sha256": "47ca9f140122be5c712a151a120b2186f319f7490d335c3b2aef17b70e163be5",
+      "markers": []
+    },
+    {
+      "month": "201903",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061151/files/72336d2763f7472cbf93ac62f55a1621.pdf",
+      "pdf_sha256": "e870f1e92db48f7754e3034ed375bf90f8417a4bfe30cddd1ce9d7c359b9e231",
+      "csv_sha256": "0ed873635a94b2114dabaa2c171652fb4d797fbecba455afcf5d6d6cd9488801",
+      "review_sha256": "dd926e04edc4b15702f76a8dec94010a08e754a8c3af4a3d166ef76f0107983b",
+      "markers": []
+    },
+    {
+      "month": "201904",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 17,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061150/files/c58fdbd6302a44139349dfbe6b4e210c.pdf",
+      "pdf_sha256": "40730368f66e9c1d2e6fc55da28f209755cdb446ed8bdebd5d93756d5b75d9dd",
+      "csv_sha256": "eafec55da70ad28a6244146792cf80086a15aac2a90d360d9cb8697bf5d8ba21",
+      "review_sha256": "5110c46365e39bad5a86b42893fcde179d7f379e0b823f7d1c9eef1e51346162",
+      "markers": []
+    },
+    {
+      "month": "201905",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 17,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061149/files/a1973393676146ee81b84336895e5599.pdf",
+      "pdf_sha256": "34214d9d3f25f9bffe53551242fdddbde0b8fbee1458439d0c12de077f11095f",
+      "csv_sha256": "1b6f8e93e75af9ee4784ae473afbb436eab31be5d0b72853070b5623d964e0f8",
+      "review_sha256": "bdd1468e3652561bd90b8382934db6b5830717d84a85ddb9a1b1a159097459fb",
+      "markers": []
+    },
+    {
+      "month": "201906",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061148/files/c730a702da22462f9891f90272c9a938.pdf",
+      "pdf_sha256": "0cb91252aca66929280713624c8de762e87c85fae2d737933eeaadd50b325eed",
+      "csv_sha256": "ef4353b5dd3f7fea68dd1d11294272bd0ce32de87869a7ce32cfd18d9d5078cd",
+      "review_sha256": "b852db5c47dc725fc0005d3b9fb5785415bb4110cfae6d6b5f54cb586307c865",
+      "markers": []
+    },
+    {
+      "month": "201907",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061147/files/3ddbe5c31bb74eaeba221bf9fff57364.pdf",
+      "pdf_sha256": "65c777edf043c9eee89e65a4b3449a69e579d73b539f19b21868081bd6ea1cd2",
+      "csv_sha256": "e8d782eff6c4a1b53bdc7cf4023f94e3f713c27ba45c3d0e73e17915ae707cad",
+      "review_sha256": "27c22beae6e5d25bb5d7576fceb8292d8df3634b8f7a16a99e117cf9cd236fc8",
+      "markers": []
+    },
+    {
+      "month": "201908",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 17,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061146/files/39c719e6faaf44c18f26080b8fd78a02.pdf",
+      "pdf_sha256": "5542f92bd20ff853de6d43a6242313e9274c53ae52f86fd21b1dba951b211ee6",
+      "csv_sha256": "1dda83181eb4a0f8c00ff2e830f6760ec39b82a3a41feee457ae8c9f65426c89",
+      "review_sha256": "9b78fdeca3702d98192329345b841d7aee82f4876a3b666f0a203d4c5ac45b31",
+      "markers": []
+    },
+    {
+      "month": "201909",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061145/files/d966caf8020e4e1482eba071b5c5b58e.pdf",
+      "pdf_sha256": "1ed3b0a21206c45b2a744439de9d807c39df241211cf76409c5692599f5a98ae",
+      "csv_sha256": "0b95a2279fd9d5590b3f5636f85d60ba7475bfca80c24dc86c01a720337d33e8",
+      "review_sha256": "d41672ea62442fe643326330658dcce406f748f02b69a64517be57ab84ef32a1",
+      "markers": []
+    },
+    {
+      "month": "201910",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061144/files/7ea699bd80b54f8ebda030f1745c5f9c.pdf",
+      "pdf_sha256": "becd553f2556e56273dc5bc7752cba014e644707ab7ebbca6710f913631e404a",
+      "csv_sha256": "da76f473ac4bebc4a7011688e1f1084ebd604434c66b3942851ca072e3f0124e",
+      "review_sha256": "f5ca4883858289822f0818dda6fa3d4d7039633910ddbc931b36186ebefb9dfa",
+      "markers": []
+    },
+    {
+      "month": "201911",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061143/files/187714101224486d9c58bc7970ac3fde.pdf",
+      "pdf_sha256": "686b232524f3110631ff34a3c8a14e03dc80a035902b3c157b1e40981eae2db8",
+      "csv_sha256": "ecde2f1b52b2f54a24508a99975659e6acaa48b0c59eea5b327faf55f0cf9355",
+      "review_sha256": "cb92387ea21ef35be2db48c522749ef779493357508889d98d242985a407988a",
+      "markers": []
+    },
+    {
+      "month": "201912",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 18,
+      "printed_page": 14,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061142/files/78cb779eb2414f5981b3296dd24c857a.pdf",
+      "pdf_sha256": "dadabb3baf292d2c03548f01d8f6a034805eabcca88a40dd112f18e19069b5b7",
+      "csv_sha256": "893f598502a727936fb214f2602b47307a48dc26d34bb0cafefe73ca61c97f96",
+      "review_sha256": "9ec07f15dc5043ab269965994721c50edd578e8afad7ae3e239390ba524dc9bc",
+      "markers": []
+    },
+    {
+      "month": "202001",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061141/files/27889806dc9f4abb9b8d6e72f5d4978d.pdf",
+      "pdf_sha256": "42298ac1583c663282ab2022dcebbb04f81af0ac4c2f52eac302be631a0288bd",
+      "csv_sha256": "de94af4c9cdcce5e2cdfe06254f1de4745132fdc808f7424da23bd92bae60cf9",
+      "review_sha256": "df7c357659d468be71c2cdc3c5f4a60d5cca1f18145c185b594ef54eed38c0a1",
+      "markers": []
+    },
+    {
+      "month": "202002",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 18,
+      "printed_page": 14,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061140/files/7e242d6725e14c109322b9fcb4f2bccd.pdf",
+      "pdf_sha256": "e25b8cf339c3c000c9bc10fe11ee4c3c3a65da01c7602f888f60ec07a94866f4",
+      "csv_sha256": "2e2cca00cce13db48406bf6a49afc8645e738d05ada2956a1b2a14ddfe8e8604",
+      "review_sha256": "5acc2d7f656c9dee5f35e26d30065ef28cc83e8aa69971eadf5f63440f06e74d",
+      "markers": []
+    },
+    {
+      "month": "202003",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 18,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061139/files/074a9585b0ba4e7e909c1fda1119e6ce.pdf",
+      "pdf_sha256": "3eedfc0b883778bb28137347d4ccb78250e3f0056fe23e320b1abe1714b1b19a",
+      "csv_sha256": "59fbf5da622be04ba3b9e80f96cf53357baec8a661f5f7cf66c1a9a9d66c0d3d",
+      "review_sha256": "ed7e6496a64956eb67b3ff143c6d9a92d6a499829785fb958b8b080ffaf6d30f",
+      "markers": []
+    },
+    {
+      "month": "202004",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 18,
+      "printed_page": 14,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061138/files/7ff730e51aa34bafa86809c16666d75a.pdf",
+      "pdf_sha256": "b70a2d2ad8954a149ef998b531334b47eaa169803857e1745b26944c3d39913d",
+      "csv_sha256": "c7ec232f0ae7a33153527d0ea78b1dd628c1d35ccb0c805568467a7b8da4574d",
+      "review_sha256": "e758a7ce515c3896492391e4e8d94955ac8c51e686567ad2cee62cb6e69c26e6",
+      "markers": []
+    },
+    {
+      "month": "202005",
+      "rows": 18,
+      "ohlc_cells": 72,
+      "pdf_page_1_based": 18,
+      "printed_page": 14,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061137/files/9672d4fc614944ffbb5e9732f964223f.pdf",
+      "pdf_sha256": "4420c8fd342cb1f61bf8d99fd6b5f848ccba13320159dd54a0154c63ffc6c1d1",
+      "csv_sha256": "dfe78c65d383facf0ec94e24b2ccdc05b3343d9f9b48479699cae854cfd05108",
+      "review_sha256": "5c1933ddedd96fd802d428a2e450287bae78777bef7878063e19b49fbc379d34",
+      "markers": []
+    },
+    {
+      "month": "202006",
+      "rows": 20,
+      "ohlc_cells": 80,
+      "pdf_page_1_based": 18,
+      "printed_page": 14,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061136/files/756abb44b0574fc6af51403dcc5a7336.pdf",
+      "pdf_sha256": "f399fff1cb630161fcceb536dade2b4aef606b1388f5e5fe8906f26978d68657",
+      "csv_sha256": "3b6033ff57900b1f8ef719a18589e6ceb33d2ec247279642b936245ffed61a6e",
+      "review_sha256": "a24ed018088b349657441ac81a297cad3662ff0658d5caf5d3e259be7e5e46fe",
+      "markers": []
+    },
+    {
+      "month": "202007",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 19,
+      "printed_page": 15,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061135/files/949dcacc78cf4f79a1c6305d1672e452.pdf",
+      "pdf_sha256": "2df47717f84936e168753bbd61e33d41dfd3e4b132b05ec089c18dedd6a8fabe",
+      "csv_sha256": "ddde307282d34f84192ed3aca7720b3ba598fd30bfd8b5db7b8400bc6e8039be",
+      "review_sha256": "7f5b415ba00b3de7b8e49999ff31e5873c7990c7fede6858783126a542675793",
+      "markers": []
+    },
+    {
+      "month": "202008",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 19,
+      "printed_page": 15,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061134/files/b06588df7afd4b83bf50cfe375b80be5.pdf",
+      "pdf_sha256": "b5211188b9a2b83b76e710d821c930cdd85f6102739c531293c610051ce3a721",
+      "csv_sha256": "bc37dffa17421f0c771a0c3cc772e08d554e50c541613efdfc4ef42fc4f5369d",
+      "review_sha256": "4b2fe815c493ca4d7d5374d2d7b9e2601950a669a8f5078266596c1cca761ace",
+      "markers": []
+    },
+    {
+      "month": "202009",
+      "rows": 22,
+      "ohlc_cells": 88,
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061133/files/5377450881204526a0be76ed1586aabe.pdf",
+      "pdf_sha256": "77b089acf33b42662a1d971a87c5e6fb5416f88a231121aab1a66f9843fbb37d",
+      "csv_sha256": "3401910333bd2c8550a8fade3a3802f5059b6af2c5d3c062f5dd0a36be7305ed",
+      "review_sha256": "77b3eb36d123e3379ab1c580134d451d46ea1a460203f253d9faa73a2856d916",
+      "markers": []
+    },
+    {
+      "month": "202010",
+      "rows": 16,
+      "ohlc_cells": 64,
+      "pdf_page_1_based": 19,
+      "printed_page": 13,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061132/files/4fe562b90ffe4e0fb7f73fceff74c273.pdf",
+      "pdf_sha256": "c2ff16cacc8e96f94edeaeaa15051f0235a76d1909a87866a2a8e05139641bd2",
+      "csv_sha256": "35d540389f84f5e141528b6973e0a48f3032ac900ae215d44c3199530386e6de",
+      "review_sha256": "a5d636c615a3bdb385e75af2816e09736ae2d8cb1a37fd299d09062b06e2c53d",
+      "markers": []
+    },
+    {
+      "month": "202011",
+      "rows": 21,
+      "ohlc_cells": 84,
+      "pdf_page_1_based": 19,
+      "printed_page": 16,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061131/files/2e47c10f673548b28b11e7c93851eb00.pdf",
+      "pdf_sha256": "99e164499c55e3ba9ceb8bf6173ca17c04f16f07bf8aa72993da06c9c9038a28",
+      "csv_sha256": "99365ea61e8d861b384811e9a2aff7693842e6515afb74d6510babc9bf674698",
+      "review_sha256": "f6813b87735a159befab6a2151ade244fd20019d56fd27b288779f82e0560570",
+      "markers": []
+    },
+    {
+      "month": "201309",
+      "rows": 19,
+      "ohlc_cells": 76,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061201/files/6939540a914f4beaaa2766b646fe5609.pdf",
+      "pdf_sha256": "3a50421b51e390044194640f5008f76b760a214b7f45b684def53b65b0b180b9",
+      "csv_sha256": "c9b60db7eb3855f25596d8fc518152be2a0cbe870b1d8fb686926c2b670a4c7e",
+      "review_sha256": "af8df368ffe63e17cbff739d6a7b224d1490a0af7faf6cb73252d17cf4f7aae9",
+      "markers": [
+        {
+          "day": "02",
+          "column": "Low",
+          "raw": "L2297.45",
+          "numeric": "2297.45"
+        },
+        {
+          "day": "12",
+          "column": "High",
+          "raw": "H2527.38",
+          "numeric": "2527.38"
+        }
+      ]
+    },
+    {
+      "month": "201512",
+      "rows": 23,
+      "ohlc_cells": 92,
+      "pdf_page_1_based": 16,
+      "printed_page": 12,
+      "visual_review": true,
+      "automatic_dual": true,
+      "manual_second": false,
+      "source_url": "https://www.sse.com.cn/aboutus/publication/monthly/documents/c/10061190/files/2744e0a2aaf24a83af19c4ccb15daf88.pdf",
+      "pdf_sha256": "be94daad7d883ad4005fe280b502ab08c46f7e704a1d571389a323fa29d0a8e6",
+      "csv_sha256": "0f540bdbe47f66ee3d5f96a6394b6528ec74c8d752cd5f8258c949fc9ccde986",
+      "review_sha256": "3ef4b5fc83fa01b737f47a7e97360edcc870fc69cdd4fb3028d1a2373fa3ee8f",
+      "markers": []
+    }
+  ],
+  "point_in_time_verified": false,
+  "financial_simulation_ready": false,
+  "training_ready": false,
+  "targets_recomputed": false,
+  "final_test_opened": false,
+  "limits": [
+    "La cobertura completa corresponde al calendario 2006–2023 del factor, no al corpus multimodal ni a la historia anterior a 2006.",
+    "Las tablas mensuales retrospectivas no acreditan las versiones diarias originales.",
+    "La ampliación del factor requiere una nueva identidad de supervisión. No se han preparado objetivos reales con esta revisión.",
+    "Cada medición de importación comprende una creación y una recuperación, sin benchmark comparativo ni medidas de energía."
+  ]
+}

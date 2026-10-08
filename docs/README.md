@@ -4,6 +4,8 @@ La documentación reúne el diseño de investigación, las decisiones de ingenie
 
 La [dirección arquitectónica vigente](research/titans-mac-architecture.md) distingue GRU con banco episódico, Transformer compacto, Titans-MAC y MARS-TITAN con ampliaciones desactivables. La [preparación histórica](data/historical-materialization.md) conserva los datos utilizables desde 2000 y sus ausencias. Estas tareas no levantan el bloqueo de aprendizaje.
 
+La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](engineering/titans-financial-adapter.md) y su [control local C](experiments/mars_titan_cm_v1/mac_local_control.md) tienen comprobaciones CPU/CUDA en los alcances documentados. El [codec episódico](engineering/episodic-codec.md) está comprobado en CPU. La conexión del banco y la recuperación conjunta siguen pendientes.
+
 | Para qué | Documento |
 | --- | --- |
 | Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [cobertura histórica de 2000 a 2023](data/historical-coverage.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |
