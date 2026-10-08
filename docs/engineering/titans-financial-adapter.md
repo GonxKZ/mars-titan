@@ -1,0 +1,65 @@
+# Adaptador financiero con estado por flujo
+
+`models.titans.financial` compone el Transformer de precios, las proyecciones multimodales, la fusión, la cabeza escalar y el núcleo MAC existentes. Prepara una decisión por activo y devuelve una propuesta de estado. No confirma una sesión ni recorre el corpus. Es la primera pieza de integración financiera y no representa todavía MARS-TITAN con sus ampliaciones completas.
+
+## Token y controles
+
+La ventana cercana de precios pertenece al Transformer común y conserva el contexto declarado por el corpus. En la edición histórica son 64 sesiones. La fusión produce un token por nueva decisión y MAC recibe `C=1`. Recodificar ventanas solapadas no vuelve a escribir sus 64 observaciones en la memoria neuronal.
+
+| `variant` | Cálculo después de la fusión | Escrituras asociativas |
+| --- | --- | --- |
+| `transformer_direct` | Cabeza escalar existente | Ninguna |
+| `mac_disabled` | Atención MAC sin prefijos ni gate, seguida de la misma cabeza | Ninguna |
+| `mac_frozen` | MAC con P, lectura y gate, seguido de la misma cabeza | Ninguna |
+| `mac_online` | MAC completo seguido de la misma cabeza | Una por decisión y flujo |
+
+La atención del control desactivado recibe un único token. Ese control mide el bloque añadido, sin constituir otro codificador temporal de 64 posiciones. La construcción utiliza `MultimodalReference` para obtener los componentes comunes. Sus rutas originales no se modifican. Todos los controles nuevos usan dropout cero.
+
+`copy_paired_parameters(source, target)` copia explícitamente los parámetros compatibles y devuelve un recibo con sus nombres, formas y huellas de origen y destino. La fuente `mac_online` permite emparejar los cuatro controles. El recibo distingue parámetros copiados de los que solo se inicializan. No transfiere cursores, momentum ni pesos rápidos de un flujo. Las cargas ordinarias siguen rechazando contratos diferentes. Esta copia se realiza antes del recorrido y no reanuda un grafo diferenciable existente.
+
+## Frontera de entrada
+
+`FinancialInputSpec` conserva huellas de fuente y vista, representación, catálogos ordenados, dimensiones y política de entradas. Se construye a partir de la identidad que ya valida el lector. No acredita por sí sola la admisión de una edición. La política predeterminada sigue siendo `strict_inputs_v1` y la edición histórica exige `historical_masked_2000_v1` explícita.
+
+`DecisionBatch.from_corpus(batch, specification, device=..., dtype=...)` recibe un lote NumPy del corpus. Valida los tipos originales float32, formas, finitud, presencias y rellenos antes de convertir a tensores. El lector y esta frontera CPU utilizan `validate_historical_vectors`, en `data.input_policy`. La validación Arrow de presencia y el contraste con `news_count` permanecen en el lector.
+
+La función `validated_cpu_batch` expone la misma copia verificada como `CPUDecisionBatch`, con matrices NumPy de solo lectura y una huella de contenido. Un codec separado puede consumirla antes de llamar a `DecisionBatch.from_validated` para trasladar los tensores al dispositivo. `from_corpus` compone esas dos operaciones. No se duplican las reglas ni se añaden campos de supervisión a esa vista.
+
+Las modalidades ausentes se anulan después de sus proyecciones con bias. Las cinco presencias se añaden a la fusión en orden precios, noticias, gráficos, fundamentales y macro. El primer bloque de fusión histórico tiene `5H+5` entradas. Los triples contables y macro conservan valores, máscaras por concepto y edades. Un cero observado conserva su máscara y no equivale a una ausencia. La ruta estricta conserva la fusión de `5H` entradas.
+
+El lote de decisión contiene únicamente entradas, presencias, IDs de muestra y flujo, corte, disponibilidad e identidad. No copia ni consulta `target` o `target_available_at`. Requiere un único corte por lote, flujos únicos y disponibilidad no posterior a ese corte. La reserva desde 2024 se rechaza. Los tensores del lote se consideran de solo lectura. El control de versiones detecta modificaciones ordinarias posteriores a la adaptación, pero no es un certificado criptográfico frente a escrituras externas mediante `.data` o almacenamiento compartido manipulado.
+
+`CorpusDataset.batches` puede mezclar activos, grupos y filas. No debe usarse como si ya fuese un flujo cronológico. El futuro coordinador tendrá que reutilizar sus validaciones, separar observaciones sin objetivo y agrupar las decisiones por corte. No se ha añadido otro lector ni un materializador de objetivos.
+
+## Preparación y estado
+
+```python
+from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+
+config = FinancialConfig(input_spec, variant="mac_online")
+predictor = FinancialPredictor(config, device="cpu")
+state = predictor.initial_state(decisions.flow_ids)
+prepared = predictor.prepare(decisions, state)
+```
+
+`input_spec` y `decisions` corresponden a la especificación y al lote verificados en la frontera anterior. `PreparedDecisions` contiene `point_predictions`, `detached_tokens`, `next_state`, `representation_id` e `input_digest`. El token está desacoplado del grafo y su identidad incluye configuración y parámetros. No es una clave episódica estable frente a cambios de los pesos de fusión. Una selección de filas deriva su digest del lote verificado y de los índices elegidos, sin leer de vuelta los tensores desde GPU.
+
+`FinancialState` enlaza configuración, parámetros, flujos, último ID y corte, contador de observaciones y `MACState` cuando corresponde. Entradas y estado deben tener los mismos flujos en el mismo orden. `DecisionBatch.select` y `select_state` permiten aplicar una selección explícita a ambos. El predictor rechaza repeticiones, orden inverso y cambios de identidad. Los controles sin escritura también avanzan el cursor de observaciones. El estado recibido permanece intacto.
+
+`prepare(..., differentiable=True)` conserva el camino del objetivo externo por la actualización asociativa. El modo predeterminado devuelve predicción y estado sin grafo persistente. `torch.no_grad()` es compatible con la actualización interna. `torch.inference_mode()` se rechaza en esta interfaz. No se ejecuta un optimizador ni se utiliza un error financiero para calcular la sorpresa asociativa.
+
+Los parámetros deben permanecer estables durante el flujo, salvo mediante la carga o copia identificada. Dentro de `prepare` se comprueban versiones de tensores, sin convertir parámetros o entradas CUDA a NumPy/CPU. Ese control barato no detecta cualquier modificación posible. `verify_parameter_identity`, la creación de estado y las fronteras de exportación y recuperación contrastan además las huellas de bytes. Debe confirmarse esa comprobación antes de publicar una propuesta de sesión. Una modificación no autorizada mediante `.data` puede eludir el contador y se rechaza en esa frontera fuerte.
+
+## Recuperación y presupuestos
+
+La recuperación exige guardar tanto `predictor.state_dict()` como `predictor.export_state(state)`. Primero se restauran los parámetros y después el estado rápido. El formato conserva configuración, contratos internos, precisión y modo train/eval. Guardar solo pesos o solo memoria no reconstruye la siguiente decisión. La recuperación no reconstruye un grafo de autograd pendiente.
+
+Los contadores de observaciones son int64 en CPU. Los pesos rápidos, momentum y contadores internos de MAC usan el dispositivo del módulo. Al trasladar un archivo entre dispositivos, debe conservarse esa separación. La API recibe diccionarios ya cargados y no incorpora un cargador de archivos arbitrarios ni publicación atómica propia.
+
+`max_batch` admite hasta 256 flujos por llamada. `max_state_bytes`, predeterminado a 64 MiB y limitado a 256 MiB, acota el almacenamiento retenido por los tensores y los metadatos canónicos del estado. `state_usage` informa del coste lógico de tensores por flujo, del almacenamiento real retenido, los metadatos y el total. Con anchura 32 y float64, un control MAC necesita 32.784 bytes de tensores por flujo. La cuenta incluye dos matrices rápidas, dos de momentum y ambos contadores. Las vistas que retienen un almacenamiento mayor se contabilizan por ese almacenamiento.
+
+Estas cantidades no son el RSS ni el tamaño de un archivo de PyTorch. El presupuesto agregado de miles de activos y la retención de archivos pertenecen al coordinador. Superar un límite causa error, sin truncar la población ni reiniciar memorias silenciosamente.
+
+El banco permanece desactivado y K debe ser 1. Su conexión posterior necesita un codec con representación congelada o versionada, snapshot único por sesión y un solo responsable de publicar predicciones, estados, pendientes y banco. K podrá repetir lecturas y refinamientos, pero no multiplicar las escrituras de MAC. C/M conserva una identidad separada y no se incorpora en esta pieza.
+
+Las comprobaciones de esta entrega utilizan fixtures CPU. La revisión CUDA del adaptador y la ejecución sobre un corpus cronológico real quedan pendientes. Las verificaciones previas de sus componentes no sustituyen esas comprobaciones.
