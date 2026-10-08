@@ -11,6 +11,10 @@ se ha ejercitado con callbacks escalares sintéticos. Falta reunir estados por
 flujo en bloques compatibles y consumir `working_state` después de MAC para el
 refinamiento episódico. Los tokens de fusión no son claves estables ni sustituyen
 a ese estado. La GRU y las cabezas del predictor no se implementan en este módulo.
+También quedan pendientes la publicación y poda de referencias anidadas a los
+bloques del estado rápido. El banco nativo admite las particiones `train` y
+`validation`. El uso de `calibration` y `evaluation`, y la censura de objetivos
+que no llegarán a madurar al cierre del periodo, necesitan un contrato posterior.
 
 ## Entradas y ciclo temporal
 
@@ -153,7 +157,21 @@ aprendizaje, evaluación científica ni CUDA en las pruebas de esta integración
 
 ## Comprobaciones y medidas
 
-El [recibo técnico](../../reports/engineering/episodic-session-20261008.json)
+La [revisión final](../../reports/engineering/episodic-session-review-20261008.json)
+vincula las fuentes de `322fc7ab` con 159 pruebas correctas (145 públicas y 14
+independientes) y 108 transiciones de retención con recuperación y continuación
+exactas. Incluye las correcciones del dispositivo CPU, la selección del entorno
+Python, el cierre reentrante, el recibo de retención, la identidad de muestra y
+el recuento de archivos compartidos. El callback comprobado sigue siendo escalar.
+
+ASan reprodujo un acceso al ejecutor ya liberado durante un callback. El
+enlace corregido supera diez pruebas de callbacks sin notificar accesos inválidos,
+pero LSan no está limpio. Con 0, 1 y 32 instancias, dos repeticiones por tamaño,
+notifica los mismos 4.006.281 bytes en 45.557 reservas. No se observó crecimiento
+en esa sonda. La diferencia de 66.614 bytes y 92 reservas entre la suite anterior
+y su control de importación continúa sin atribución precisa.
+
+El [recibo original](../../reports/engineering/episodic-session-20261008.json)
 recoge 80 pruebas Python, tres CTest en Release y los mismos tres con ASan/UBSan.
 Se detectaron seis mutaciones sobre retención, RNG, objetivo, consulta del banco,
 predicción original y huellas de artefactos. Ocho archivos del control clásico
@@ -161,6 +179,8 @@ coinciden byte a byte con la referencia anterior. Clang 21.1.8 compiló con avis
 estrictos y Lifetime Safety experimental. clang-tidy y el analizador de rutas
 no emitieron diagnósticos propios en las tres unidades de producción modificadas.
 Las bibliotecas precompiladas no quedan instrumentadas por esos sanitizadores.
+Ese recibo y las medidas siguientes corresponden a la implementación inicial.
+Los benchmarks del banco y de la sesión no se repitieron tras las correcciones.
 
 Con 1.024 registros previos y 512 admisiones sintéticas, la mediana de tres
 propuestas fue de 0,274 s para el reservorio, 0,278 s para sustitución uniforme,
