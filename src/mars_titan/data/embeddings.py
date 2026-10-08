@@ -132,6 +132,34 @@ def require_cuda(*, max_bytes=6 * 1024**3, min_free_bytes=0):
     return torch.device("cuda:0")
 
 
+def _runtime_precision():
+    import torch
+
+    if torch.get_default_dtype() != torch.float32 or any(
+        torch.is_autocast_enabled(device) for device in ("cpu", "cuda")
+    ):
+        raise ValueError("La precisión del codificador requiere FP32 global y autocast desactivado")
+    return dict(
+        dtype="float32",
+        matmul_tf32=torch.backends.cuda.matmul.allow_tf32,
+        cudnn_tf32=torch.backends.cudnn.allow_tf32,
+    )
+
+
+def _check_frozen_model(model):
+    import torch
+
+    if any(module.training for module in model.modules()):
+        raise ValueError("Todos los módulos del codificador deben permanecer en evaluación")
+    if any(parameter.requires_grad for parameter in model.parameters()):
+        raise ValueError("Los parámetros del codificador deben permanecer congelados")
+    if any(
+        value.is_floating_point() and value.dtype != torch.float32
+        for value in (*model.parameters(), *model.buffers())
+    ):
+        raise ValueError("Los pesos y buffers del codificador deben conservar FP32")
+
+
 class FrozenEncoders:
     """MiniLM por fragmentos completos y ResNet18 sin recortar los extremos del gráfico."""
 
@@ -142,7 +170,13 @@ class FrozenEncoders:
         min_free_cuda_bytes=0,
         text_batch_size=32,
         image_batch_size=64,
+        word_embedding_placement="cuda",
     ):
+        if type(word_embedding_placement) is not str or word_embedding_placement not in (
+            "cuda",
+            "cpu",
+        ):
+            raise ValueError("La ubicación de la tabla de palabras debe ser cuda o cpu")
         if (
             type(cuda_memory_bytes) is not int
             or cuda_memory_bytes <= 0
@@ -156,6 +190,7 @@ class FrozenEncoders:
             raise ValueError("Los presupuestos del codificador no son válidos")
         self.text_batch_size = text_batch_size
         self.image_batch_size = image_batch_size
+        self.word_embedding_placement = word_embedding_placement
         import tokenizers
         import torch
         import torchvision
@@ -164,6 +199,7 @@ class FrozenEncoders:
         from torchvision.models import ResNet18_Weights, resnet18
         from transformers import AutoModel, AutoTokenizer
 
+        precision = _runtime_precision()
         self.device = require_cuda(max_bytes=cuda_memory_bytes, min_free_bytes=min_free_cuda_bytes)
         self.tokenizer = AutoTokenizer.from_pretrained(
             TEXT_MODEL, revision=TEXT_REVISION, trust_remote_code=False, token=False
@@ -184,8 +220,15 @@ class FrozenEncoders:
             )
             .eval()
             .requires_grad_(False)
-            .to(self.device)
         )
+        if word_embedding_placement == "cpu":
+            from . import embedding_placement
+
+            self.text_model = embedding_placement.place_cpu_word_embeddings(
+                self.text_model, self.device
+            )
+        else:
+            self.text_model = self.text_model.to(self.device)
         text_weights = Path(
             hf_hub_download(
                 TEXT_MODEL,
@@ -202,8 +245,14 @@ class FrozenEncoders:
         )
         self.image_model.fc = torch.nn.Identity()
         self.image_model = self.image_model.eval().requires_grad_(False).to(self.device)
-        self.mean = torch.tensor([0.485, 0.456, 0.406], device=self.device)[None, :, None, None]
-        self.std = torch.tensor([0.229, 0.224, 0.225], device=self.device)[None, :, None, None]
+        self.mean = torch.tensor([0.485, 0.456, 0.406], device=self.device, dtype=torch.float32)[
+            None, :, None, None
+        ]
+        self.std = torch.tensor([0.229, 0.224, 0.225], device=self.device, dtype=torch.float32)[
+            None, :, None, None
+        ]
+        _check_frozen_model(self.text_model)
+        _check_frozen_model(self.image_model)
         weight_path = Path(torch.hub.get_dir()) / "checkpoints" / weights.url.rsplit("/", 1)[-1]
         self.spec = {
             "text_model": TEXT_MODEL,
@@ -226,8 +275,15 @@ class FrozenEncoders:
             "transformers": transformers.__version__,
             "device": "cuda:0",
             "precision": "float32",
+            "runtime_precision": precision,
             "historical_simulation": False,
+            "word_embedding_placement": word_embedding_placement,
         }
+        if word_embedding_placement == "cpu":
+            self.spec["word_embedding_lookup"] = {
+                "policy": "cpu_word_inputs_embeds_fp32_v1",
+                "code_sha256": sha256(Path(embedding_placement.__file__)),
+            }
         if text_batch_size != 32 or image_batch_size != 64:
             self.spec["batch_sizes"] = dict(text_chunks=text_batch_size, images=image_batch_size)
         self.execution_budget = dict(
@@ -236,10 +292,17 @@ class FrozenEncoders:
             text_chunks=text_batch_size,
             images=image_batch_size,
         )
+        self._check_precision()
+
+    def _check_precision(self):
+        if self.spec["runtime_precision"] != _runtime_precision():
+            raise ValueError("La precisión efectiva cambió respecto a la identidad del codificador")
 
     def text(self, text: str) -> np.ndarray:
         import torch
 
+        self._check_precision()
+        _check_frozen_model(self.text_model)
         if not text.strip():
             raise ValueError("No se puede codificar un texto ausente")
         tokens = self.tokenizer(
@@ -266,6 +329,12 @@ class FrozenEncoders:
                     for c in group
                 ]
                 batch = self.tokenizer.pad(examples, padding=True, return_tensors="pt")
+                if self.word_embedding_placement == "cpu":
+                    from .embedding_placement import cpu_word_values
+
+                    batch["inputs_embeds"] = cpu_word_values(
+                        self.text_model.get_input_embeddings(), batch.pop("input_ids"), self.device
+                    )
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 mask = batch["attention_mask"].unsqueeze(-1)
                 output = self.text_model(**batch).last_hidden_state
@@ -278,6 +347,8 @@ class FrozenEncoders:
     def images(self, pngs: list[bytes]) -> np.ndarray:
         import torch
 
+        self._check_precision()
+        _check_frozen_model(self.image_model)
         if not pngs or len(pngs) > 64:
             raise ValueError("El lote de imágenes debe contener entre 1 y 64 gráficos")
         outputs = []
