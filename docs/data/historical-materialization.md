@@ -19,6 +19,8 @@ Se han verificado 25.115 artefactos, con 4.017.049.727 bytes en total, mediante 
 
 El [recibo de preparación](../../reports/data/historical-preparation-20261008.json) identifica el manifiesto, el commit del runtime, la auditoría de precios y las comprobaciones. La pasada anterior interrumpida se conserva con su [recibo propio](../../reports/data/historical-preparation-progress-20261007.json).
 
+El [enriquecimiento posterior](historical-accounting-context.md) añade 287 hechos contables revisados a 49 activos CN. Conserva los 5.676 candidatos, todos los precios y noticias y los 4.974 preparados restantes idénticos al padre. Su recibo separa esta derivación de los recuentos iniciales de la tabla y mantiene pendientes la codificación y los objetivos.
+
 ## Paneles macro con ausencias
 
 Cada sesión conserva las 140 posiciones del catálogo. Un valor ausente sigue siendo nulo y conserva su causa. No se reduce la población histórica a la intersección de sesiones completas.

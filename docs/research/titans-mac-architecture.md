@@ -11,10 +11,10 @@ El [recibo de fuentes](../../reports/research/titans-mac-source-audit-20261008.j
 | Referencia | Función | Estado del 8 de octubre de 2026 |
 | --- | --- | --- |
 | GRU con banco episódico | Conservar el candidato previo y sus controles de escritura | Componente C++20 en [#296](https://github.com/GonxKZ/mars-titan/pull/296), con pruebas CPU. Pendientes comprobación CUDA e integración cronológica completa. No entrenado. |
-| Transformer compacto | Aislar el cambio de codificador con proyecciones, fusión y cabeza comunes | Implementación en curso. No hay resultados predictivos propios. |
-| Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | Núcleo en implementación y pruebas técnicas. Pendientes revisión, CUDA e integración financiera. |
+| Transformer compacto | Aislar el cambio de codificador con proyecciones, fusión y cabeza comunes | [Referencia integrada](../engineering/compact-transformer-reference.md), con pruebas CPU/CUDA y paridad de los modos anteriores. Sin resultados predictivos propios. |
+| Titans-MAC adaptado | Atención cercana, memoria neuronal actualizable y memoria persistente aprendida | [Núcleo técnico integrado](../engineering/titans-memory-core.md), con pruebas CPU/CUDA. Integración financiera en curso. |
 | MARS-TITAN sobre Titans-MAC | Incorporar las modificaciones acordadas mediante componentes desactivables | Integración pendiente del núcleo y de sus contratos de estado. |
-| CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | Variante independiente pendiente de implementación y evaluación. Desactivada por defecto. |
+| CM-v1 | Contrastar C y M sobre una referencia concreta, sin sustituirla | [Mecanismos C/M implementados](../experiments/mars_titan_cm_v1/specification.md). Pendientes operador, ciclo episódico y comparación integrada. Desactivada por defecto. |
 
 Estos nombres describen brazos del estudio. No renombran checkpoints ni convierten una referencia anterior en Titans. El valor de `baseline_id` de cada contraste debe señalar una configuración ejecutable y fijada. La elección de una nueva arquitectura para B crea otro contraste B, B+C, B+M y B+C+M, conservando los manifiestos anteriores.
 
@@ -78,6 +78,6 @@ M selecciona representantes de episodios elegibles del banco externo. No comprim
 
 Cada modificación propia debe declarar una hipótesis, un mecanismo, sus supuestos, un coste medible y un control que permita descartarla. La revisión adversarial buscará fuga temporal, dependencia del orden, pérdida de episodios raros, olvido por contracción, incompatibilidad de representaciones y ventajas debidas a más datos o ajuste. Una derivación propia se identifica como tal y no se convierte en un resultado del artículo.
 
-Las pruebas técnicas deben cubrir ecuaciones, gradientes, inmutabilidad del estado de entrada, aislamiento entre recorridos, perturbación del futuro, recuperación de la siguiente predicción y paridad al desactivar ampliaciones. Las comprobaciones CUDA que correspondan siguen pendientes hasta ejecutarlas en el hardware real. No se atribuye aceleración a C++ o CUDA sin una comparación medida.
+Las pruebas técnicas deben cubrir ecuaciones, gradientes, inmutabilidad del estado de entrada, aislamiento entre recorridos, perturbación del futuro, recuperación de la siguiente predicción y paridad al desactivar ampliaciones. El núcleo MAC, el Transformer y el estimador C ya tienen comprobaciones CUDA acotadas y documentadas. Los caminos de integración nuevos necesitan sus propias verificaciones. No se atribuye aceleración a C++ o CUDA sin una comparación medida.
 
 Continúa la preparación de todos los datos utilizables desde 2000, con [ausencias explícitas](../data/historical-input-masks.md), y la comparación estricta permanece separada. El bloqueo vigente impide entrenamientos, postentrenamientos, pilotos y evaluaciones científicas. La implementación y las pruebas técnicas no levantan ese bloqueo ni acreditan una mejora predictiva.
