@@ -4,8 +4,11 @@ import itertools
 import json
 import math
 import shutil
+from types import SimpleNamespace
 
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 import torch
 from test_financial_session import moment
@@ -13,6 +16,8 @@ from test_frozen_financial import frozen_backend as frozen_backend
 from test_native_episode_backend import native as native
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.data.storage import sha256
+from mars_titan.data.temporal import MarketClock
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_session import FinancialPhase, FinancialSession
 from mars_titan.memory.retention_bank import RetentionConfig
@@ -29,13 +34,109 @@ from mars_titan.models.titans.financial import (
 from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.models.titans.local_control import MACProjectionConfig
+from mars_titan.training import corpus_targets
+from mars_titan.training.cohort_contract import representation_hash, representation_identity
 from mars_titan.training.corpus_inputs import CorpusDataset, _price_contexts
-from mars_titan.training.corpus_targets import prepare_corpus_targets
 from mars_titan.training.prefix_eligibility import PrefixTargetVerifier
 from tests.training.test_historical_corpus_inputs import historical_edition
 
 FLOWS = tuple(f"US/T{index:04d}" for index in range(4))
 DECISIONS = (125, 126, 127, 128, 130)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def no_target_estimation():
+    def forbidden(*args, **kwargs):
+        pytest.fail("La prueba técnica no puede estimar etiquetas residuales")
+
+    with pytest.MonkeyPatch.context() as guard:
+        for name in ("prepare_corpus_targets", "residual_targets", "residual_targets_array"):
+            guard.setattr(corpus_targets, name, forbidden)
+        yield
+
+
+def test_fixture_construction_does_not_estimate_residuals(monkeypatch, tmp_path):
+    def forbidden(*args, **kwargs):
+        pytest.fail("El fixture de composición no puede ajustar etiquetas residuales")
+
+    monkeypatch.setitem(globals(), "prepare_corpus_targets", forbidden)
+    factory = SimpleNamespace(mktemp=lambda _: tmp_path)
+    source = four_flow_source.__wrapped__(factory)
+    assert set(source["batches"]) == set(DECISIONS)
+    assert source["label_origin"] == "manual_fixture_no_estimation"
+
+
+def manual_supervision(manifest, prepared, output):
+    metadata = json.loads(manifest.read_text())
+    clock = MarketClock("US", "2021-01-01", "2023-12-31")
+    positions = {at: index for index, at in enumerate(clock.decisions)}
+    assets, representation = [], None
+    for asset in metadata["assets"]:
+        relative = f"{asset['market']}/{asset['symbol']}"
+        encoded = prepared.parent / "samples" / relative
+        specification = representation_identity(
+            json.loads((encoded / "manifest.json").read_text()), input_policy=HISTORICAL_MASKED
+        )
+        assert representation is None or representation == specification
+        representation = specification
+        dates = pq.read_table(
+            encoded / "samples.parquet", columns=["prediction_at"], use_threads=False
+        )["prediction_at"].to_pylist()
+        labels = []
+        for index, at in enumerate(dates):
+            accepted = index in (0, 2)
+            labels.append(
+                dict(
+                    sample_row=index,
+                    prediction_at=at,
+                    target_available_at=clock.decisions[positions[at] + 1] if accepted else None,
+                    target=0.125 if accepted else None,
+                    partition=("train" if index == 0 else "validation") if accepted else None,
+                    reason="accepted"
+                    if accepted
+                    else "target_crosses_partition_boundary"
+                    if index == 1
+                    else "target_after_cutoff",
+                    cohort_id=metadata["cohort_id"],
+                )
+            )
+        destination = output / "labels" / relative
+        destination.mkdir(parents=True)
+        schema = corpus_targets.LABEL_SCHEMA.append(pa.field("cohort_id", pa.string()))
+        path = destination / "labels.parquet"
+        pq.write_table(pa.Table.from_pylist(labels, schema=schema), path)
+        assets.append(
+            dict(
+                **asset,
+                fingerprint="manual_fixture_no_estimation",
+                samples=len(labels),
+                prices_sha256=sha256(prepared / relative / "prices.parquet"),
+                samples_sha256=sha256(encoded / "samples.parquet"),
+                labels_sha256=sha256(path),
+                representation_sha256=representation_hash(
+                    specification, input_policy=HISTORICAL_MASKED
+                ),
+                counts=dict(train=1, validation=1),
+            )
+        )
+    result = dict(
+        metadata,
+        kind="corpus_supervision",
+        assets=assets,
+        representation=representation,
+        roots=dict(
+            prepared=str(prepared),
+            samples=str(prepared.parent / "samples"),
+            labels=str(output / "labels"),
+        ),
+        counts=dict(train=len(assets), validation=len(assets)),
+        configuration=dict(
+            backend="manual_fixture_no_estimation", source_manifest_sha256=sha256(manifest)
+        ),
+    )
+    path = output / "manifest.json"
+    path.write_text(json.dumps(result))
+    return path
 
 
 @pytest.fixture(scope="module")
@@ -58,8 +159,9 @@ def four_flow_source(tmp_path_factory):
     metadata.update(assets=assets, coverage=rows, candidate_count=4, samples=16)
     manifest.write_text(json.dumps(metadata))
     output = root / "supervised"
-    prepare_corpus_targets(manifest, prepared, output, input_policy=HISTORICAL_MASKED)
-    dataset = CorpusDataset(output / "manifest.json", input_policy=HISTORICAL_MASKED)
+    dataset = CorpusDataset(
+        manual_supervision(manifest, prepared, output), input_policy=HISTORICAL_MASKED
+    )
     spec = FinancialInputSpec(
         source_sha256=dataset.identity,
         view_sha256="b" * 64,
@@ -99,6 +201,7 @@ def four_flow_source(tmp_path_factory):
         prefixes=PrefixTargetVerifier(dataset, source_manifest=manifest),
         batches=batches,
         encoded=encoded,
+        label_origin=dataset.manifest["configuration"]["backend"],
     )
 
 
@@ -399,6 +502,8 @@ def test_frozen_control_and_retention_paths_overflow_recover_and_preserve_pairin
                 "K": 1,
                 "admission": "m1",
                 "optimizer_steps": 0,
+                "label_origin": four_flow_source["label_origin"],
+                "residual_estimation_calls": 0,
                 "cuda_initialized_before": cuda_initialized,
                 "cuda_state_unchanged": True,
                 "retained_ids_by_event": results["disabled"]["retained"],
