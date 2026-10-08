@@ -27,6 +27,49 @@ def _copy(value):
     return json.loads(_canonical(value))
 
 
+def _check_receipt_selection(receipt, config):
+    clients, fixed, candidates, retained = (
+        set(receipt[key]) for key in ("client_ids", "fixed_ids", "candidate_ids", "retained_ids")
+    )
+    variable_count = len(retained) - len(fixed)
+    restricted = config.policy == "anchored" and len(clients) > config.capacity
+    fixed_count = config.capacity - config.frontier if restricted else len(retained)
+    if (
+        not fixed <= retained <= clients
+        or not candidates <= clients
+        or fixed & candidates
+        or not retained <= fixed | candidates
+        or len(fixed) != fixed_count
+        or (not restricted and candidates)
+        or (
+            restricted
+            and not config.frontier <= len(candidates) <= config.frontier + config.new_candidates
+        )
+    ):
+        raise ValueError("Los centros del recibo no concuerdan con E y la capacidad")
+    expected_status = (
+        "fixed_only"
+        if not candidates
+        else "all_candidates"
+        if variable_count == len(candidates)
+        else "one_swap_local_restricted"
+    )
+    if receipt["status"] != expected_status:
+        raise ValueError("El estado del selector no corresponde a una retención completa")
+    if (
+        receipt["background_pairs"] != (len(clients) - len(fixed)) * len(fixed)
+        or receipt["distance_pairs"] != receipt["background_pairs"] + receipt["variable_pairs"]
+        or receipt["distance_pairs"] > config.max_distance_pairs
+        or (not candidates and receipt["variable_pairs"] != 0)
+        or (candidates and receipt["variable_pairs"] == 0)
+        or not 4096 * len(clients) + 8 * 1024**2
+        <= receipt["estimated_peak_bytes"]
+        <= config.max_working_bytes
+        or (len(clients) == len(retained) and receipt["objective"] != 0.0)
+    ):
+        raise ValueError("El coste del recibo no concuerda con la selección y sus presupuestos")
+
+
 def _check_receipt(receipt, bank, config):
     if receipt is None:
         if bank.seen != 0:
@@ -43,29 +86,62 @@ def _check_receipt(receipt, bank, config):
         "variable_pairs",
         "estimated_peak_bytes",
     )
+    id_fields = ("client_ids", "fixed_ids", "candidate_ids", "retained_ids")
+    fields = {
+        *counters,
+        *id_fields,
+        "policy",
+        "objective",
+        "status",
+        "coordinate_dtype",
+        "distance_dtype",
+        "background_backend",
+        "client_geometry_sha256",
+    }
+    if set(receipt) != fields:
+        raise ValueError(
+            "El esquema del recibo de retención está incompleto o contiene campos ajenos"
+        )
     if any(type(receipt.get(key)) is not int or receipt[key] < 0 for key in counters):
         raise ValueError("El recibo necesita contadores enteros no negativos")
-    for key in ("client_ids", "fixed_ids", "candidate_ids", "retained_ids"):
+    for key in id_fields:
         ids = receipt.get(key)
         if (
             not isinstance(ids, list)
+            or len(ids) > config.capacity + 8192
             or any(type(i) is not int or not 0 < i < 2**63 for i in ids)
             or ids != sorted(set(ids))
         ):
             raise ValueError("El recibo contiene IDs inválidos o desordenados")
     state = bank.snapshot_metadata()
+    admitted = receipt["after_seen"] - receipt["before_seen"]
+    expected_clients = min(receipt["before_seen"], config.capacity) + admitted
     if (
         receipt["after_seen"] != state["seen"]
         or receipt["confirmed_at"] != state["confirmed_at"]
-        or receipt["before_seen"] >= state["seen"]
+        or not 1 <= admitted <= 8192
+        or len(receipt["client_ids"]) != expected_clients
+        or not receipt["client_ids"]
+        or receipt["client_ids"][-1] != state["last_id"]
         or receipt["retained_ids"] != sorted(r.id for r in bank.retained_records())
+        or len(receipt["retained_ids"]) != min(state["seen"], config.capacity)
         or receipt.get("policy") != config.policy
         or type(receipt.get("objective")) is not float
         or not math.isfinite(receipt["objective"])
         or receipt["objective"] < 0
-        or receipt["estimated_peak_bytes"] > config.max_working_bytes
     ):
         raise ValueError("El recibo no concuerda con el banco retenido")
+    geometry = receipt["client_geometry_sha256"]
+    if (
+        receipt["coordinate_dtype"] != "float32"
+        or receipt["distance_dtype"] != "float64"
+        or receipt["background_backend"] != "numpy"
+        or not isinstance(geometry, str)
+        or len(geometry) != 64
+        or any(value not in "0123456789abcdef" for value in geometry)
+    ):
+        raise ValueError("La representación o la huella del recibo no pertenece al contrato")
+    _check_receipt_selection(receipt, config)
 
 
 @dataclass(frozen=True)

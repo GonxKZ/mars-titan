@@ -84,6 +84,12 @@ trabajo de distancias. E puede tener hasta 9.216 filas con 8.192 admisiones,
 aunque solo se retengan 1.024. Entre políticas, E puede divergir tras varias
 sesiones, por lo que sus objetivos locales no son una evaluación común externa.
 
+Al recuperar se exige el esquema completo del recibo, sus tipos, los estados de
+selección admitidos y los presupuestos. Los IDs de centros y representantes deben
+concordar con E, la capacidad y el banco nativo. La huella de E debe tener formato
+SHA-256, pero el snapshot no conserva las coordenadas de los clientes descartados.
+La recuperación no puede recalcular esa huella ni su objetivo anterior.
+
 ## Artefactos y recuperación
 
 El estado JSON contiene metadatos y referencias de contenido a estado rápido,

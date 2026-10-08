@@ -144,3 +144,103 @@ def test_receipt_types_and_counts_cannot_reinterpret_a_restored_bank(native, fie
     payload["receipt"][field] = value
     with pytest.raises(ValueError):
         bank.restore(payload)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "policy",
+        "before_seen",
+        "after_seen",
+        "confirmed_at",
+        "client_ids",
+        "fixed_ids",
+        "candidate_ids",
+        "retained_ids",
+        "objective",
+        "status",
+        "distance_pairs",
+        "background_pairs",
+        "variable_pairs",
+        "estimated_peak_bytes",
+        "coordinate_dtype",
+        "distance_dtype",
+        "background_backend",
+        "client_geometry_sha256",
+    ],
+)
+def test_receipt_requires_every_declared_field(native, field):
+    bank = make_bank(native, "recent").propose(
+        [record(native, i) for i in range(1, 9)], confirmed_at=20
+    )
+    payload = bank.snapshot()
+    payload["receipt"].pop(field)
+    with pytest.raises(ValueError):
+        bank.restore(payload)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"extra": "campo desconocido"},
+        {"client_ids": []},
+        {"client_ids": [1, 2, 3, 4, 5, 6, 7, 9]},
+        {"client_ids": [1, 2, 3, 4, 5, 6, 8]},
+        {"client_ids": [1, 2, 3, 4, 5, 6, 7, True]},
+        {"fixed_ids": [1, 5, 6, 7]},
+        {"candidate_ids": [9]},
+        {"candidate_ids": [5]},
+        {"candidate_ids": [1]},
+        {"status": "swap_limit"},
+        {"status": "empty_clients"},
+        {"status": "enumerated_restricted"},
+        {"status": True},
+        {"before_seen": False},
+        {"confirmed_at": 20.0},
+        {"before_seen": 5},
+        {"background_pairs": 0, "distance_pairs": 0},
+        {"variable_pairs": 1, "distance_pairs": 17},
+        {"distance_pairs": 17},
+        {"background_pairs": True},
+        {"estimated_peak_bytes": 1},
+        {"estimated_peak_bytes": 64 * 1024**2 + 1},
+        {"coordinate_dtype": "float64"},
+        {"distance_dtype": "float32"},
+        {"background_backend": "scipy_cdist_fp32_exploratory"},
+        {"client_geometry_sha256": "g" * 64},
+        {"client_geometry_sha256": "a" * 63},
+        {"client_geometry_sha256": True},
+    ],
+)
+def test_receipt_rejects_incoherent_schema_geometry_and_selection(native, changes):
+    bank = make_bank(native, "recent").propose(
+        [record(native, i) for i in range(1, 9)], confirmed_at=20
+    )
+    before = bank.snapshot()
+    payload = copy.deepcopy(before)
+    payload["receipt"].update(changes)
+    with pytest.raises(ValueError):
+        bank.restore(payload)
+    assert bank.snapshot() == before
+
+
+@pytest.mark.parametrize("status", ["fixed_only", "all_candidates", "swap_limit"])
+def test_anchored_receipt_status_matches_its_variable_selection(native, status):
+    bank = make_bank(native, "anchored").propose(
+        [record(native, i) for i in range(1, 9)], confirmed_at=20
+    )
+    assert bank.receipt["status"] == "one_swap_local_restricted"
+    payload = bank.snapshot()
+    payload["receipt"]["status"] = status
+    with pytest.raises(ValueError):
+        bank.restore(payload)
+
+
+def test_anchored_all_candidates_receipt_remains_recoverable(native):
+    config = RetentionConfig(policy="anchored", capacity=4, frontier=2, new_candidates=2)
+    bank = RetentionBank(
+        native, config, codec_id="c" * 64, world="fixture", partition="train", fold="0"
+    ).propose([record(native, i) for i in range(1, 7)], confirmed_at=20)
+    assert bank.receipt["status"] == "all_candidates"
+    restored = bank.restore(bank.snapshot())
+    assert restored.snapshot() == bank.snapshot()
