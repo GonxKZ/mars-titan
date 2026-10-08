@@ -442,5 +442,33 @@
     "optimizer_steps": 0,
     "gpu_used": false,
     "scope": "Ocho sondas CPU, tres ejecutables nuevos y repetición del colector tras el delta. No repite ni se atribuye los perfiles CUDA o sanitizadores de la implementación."
+  },
+  "develop_integration": {
+    "integrated_develop": "b79ab99cab308f424e2ef811ccd3ede6ed6ac93e",
+    "merge_commit": "a63f8eb24e33452eb0d087481673403c8c942e81",
+    "tests": {
+      "passed": 7,
+      "failed": 0,
+      "seconds": 1.98,
+      "regex": "^(klpo_episodes|klpo_collection|klpo_policy|ppo_variant_state|ppo_variant_objective|ppo_checkpoint|klpo_terminal)$"
+    },
+    "test_log_sha256": "724b4eba10a61b32067e00a9b98a65a3e9614aed6b5a34c025e9597a182b5cdc",
+    "build_log_sha256": "98c191775ed4462b8613bf8cc1b95f9c0bcc09c2e656d2d1f90ea1f3484c264f",
+    "cuda_repeated": false,
+    "cuda_reason": "Las rutas de cálculo GPU permanecen idénticas. Solo cambia la huella global de fuentes por la dependencia anfitriona v2 y se recompila todo el perfil seguro.",
+    "receipt_sha256": "375b930a369f84bc281f3647886ccf9708387e52e3dbf43cd89b7fe6c4c5aa34",
+    "unchanged_calculation_dependencies": {
+      "native/src/ppo_policy.cpp": "fd73fce93d8c16f88c0b9c9117f3ffd2d867e76901822b58ec0ca326c8505c12",
+      "native/src/ppo_training.cpp": "f45ce508fa49d46c8ddc67fb00366d110264f79c5d80d2586c5204d7f0d8585e",
+      "native/src/ppo_objectives.cpp": "b0e746a53b7fc898fca7863b611e862e55155481a93cdd0a2bf4b603aca8a513",
+      "native/src/ppo_controller.cpp": "62f8e0c99e861dc3ae7fe6821f26382d69fff9d196ddc305507c047eb01d7d0f",
+      "native/src/klpo_terminal.cpp": "09d2e77dd85bf125303594cc18985e97bc76a6a7b4df2665d28a9db632a2d89e",
+      "native/src/policy_context.cpp": "818d2f008c40e26c812ead78e7edccb1e46148ed47a3eaa6211dd03374ab0bfb",
+      "native/src/financial_batch.cpp": "9433a2088f0d1bfa70c23352416401a92c7bc7e2f8bfc15f17d41cae35f34bfe",
+      "native/src/financial_session.cpp": "fc3c382e75dd3e781e6f387daa8796210e60434601026f69bc505a9232143cb5",
+      "native/src/ppo_checkpoints.cpp": "38cc09e4fceed610b663c393c2f5aa3ccba7978a91dd61691553a6b30d6a6213",
+      "native/src/simulation_files.cpp": "256ad5162f88fb74a61d7e565ddf7437feca7add2a258488a128aef62b35ac4b"
+    },
+    "inspection": "EpisodicMemory conserva el constructor previo y delega en schema_version=1. Esa versión usa las mismas palabras de seed_seq y rechaza particiones distintas de train/validation. KLPO admite solo ppo/ppo_gru, por lo que no crea un banco episódico. PolicyContext solo realiza su comprobación de ámbito v1. El ejecutor de sesiones v2 y pybind no están activados en este perfil."
   }
 }

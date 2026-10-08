@@ -201,3 +201,9 @@ Ocho sondas CPU contrastan horizontes mixtos, q e historia alteradas, RNG
 falsificado, gradiente GRU y fila del crítico, valoración inválida en un episodio
 forzado, interrupción tardía, presupuesto y ruina del motor. Su recibo distingue
 esas ejecuciones de las comprobaciones CUDA y sanitizadores anteriores.
+
+La conciliación con `develop` `b79ab99c` recompila el perfil y pasa los mismos
+siete ejecutables CPU en 1,98 segundos. El contrato episódico anterior sigue en
+v1. Los archivos de cálculo de política, objetivo y motor financiero permanecen
+idénticos, por lo que no se repite CUDA. El recibo separa esta compatibilidad de
+la revisión y de las comprobaciones anteriores.
