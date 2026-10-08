@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-08T16:35:09.345534+00:00",
+  "scope": "Ciclo nativo financiero v2 con callbacks escalares técnicos, sin predictor ni aprendizaje.",
+  "tests": {
+    "python": 64,
+    "ctest_release": 2,
+    "ctest_asan_ubsan": 2,
+    "mutation_cases": [
+      {
+        "name": "keep_excluded_pending",
+        "detected": true,
+        "returncode": 1,
+        "stderr": "La exclusión del prefijo eliminó una emisión o no liberó su pendiente\n",
+        "seconds": 0.18811173300491646
+      },
+      {
+        "name": "keep_administratively_closed",
+        "detected": true,
+        "returncode": 1,
+        "stderr": "El cierre administrativo volvió a predecir o fabricó feedback\n",
+        "seconds": 0.19532808900112286
+      },
+      {
+        "name": "allow_early_phase_close",
+        "detected": true,
+        "returncode": 1,
+        "stderr": "Se adelantó el cierre administrativo\n",
+        "seconds": 0.18858246901072562
+      },
+      {
+        "name": "allow_crossing_label",
+        "detected": true,
+        "returncode": 1,
+        "stderr": "El label cruza el corte de la fase\n",
+        "seconds": 0.18696667499898467
+      },
+      {
+        "name": "skip_warmup_preparation",
+        "detected": true,
+        "returncode": 1,
+        "stderr": "El calentamiento no avanzó el estado rápido\n",
+        "seconds": 0.19826028100214899
+      },
+      {
+        "name": "drop_new_prefix_exclusions",
+        "detected": true,
+        "returncode": 1,
+        "stderr": "La cohorte supera la cola sin una resolución válida\n",
+        "seconds": 0.18575500999577343
+      }
+    ]
+  },
+  "legacy_prepared_exact_files": 8,
+  "tools": {
+    "compiler": "Clang 21.1.8, C++20",
+    "diagnostics": "Avisos estrictos, errores ante avisos propios y Lifetime Safety experimental",
+    "clang_tidy": "21.1.8, sin diagnósticos propios en producción y pruebas revisadas",
+    "analyzer": "Clang 21.1.8, sin diagnósticos en las dos unidades de producción",
+    "coverage": {
+      "coverage": "LLVM 21 LCOV export",
+      "complexity": "lizard 1.24.0"
+    }
+  },
+  "coverage": [
+    {
+      "path": "native/include/mars_titan/cohort_execution.hpp",
+      "source_sha256": "c5517c6f7979a1eca5caa00472ba472583565f6061750a6aa51f823575b993af",
+      "lines": 1,
+      "covered_lines": 1,
+      "branches": 0,
+      "covered_branches": 0
+    },
+    {
+      "path": "native/src/cohort_execution.cpp",
+      "source_sha256": "6f0bfb4a724e81b661b5645a4f2dea790d07b650c8849160ebe47d59e23e278a",
+      "lines": 1020,
+      "covered_lines": 901,
+      "branches": 790,
+      "covered_branches": 499
+    }
+  ],
+  "complexity": {
+    "convention": "CCN² × (1 − cobertura de líneas de la función)³ + CCN.",
+    "maximum": {
+      "path": "native/src/cohort_execution.cpp",
+      "function": "mars_titan::cohorts::Executor::Impl::check_financial_transition( const Stored & before , const Json & record , const Stored & after , std :: map<std::string,Prediction> & expected) const",
+      "start_line": 574,
+      "end_line": 629,
+      "cyclomatic_complexity": 34,
+      "executable_lines": 55,
+      "covered_lines": 41,
+      "coverage_fraction": 0.7454545454545455,
+      "crap": 53.06574906085649
+    }
+  },
+  "production_sha256": {
+    "native/include/mars_titan/cohort_execution.hpp": "c5517c6f7979a1eca5caa00472ba472583565f6061750a6aa51f823575b993af",
+    "native/src/cohort_execution.cpp": "6f0bfb4a724e81b661b5645a4f2dea790d07b650c8849160ebe47d59e23e278a",
+    "native/src/episodic_python.cpp": "f6eecb7e74d9f0bf50795b5643c26c307f7f09867a5ecc72b0122f6407f5ff86"
+  },
+  "limits": [
+    "La cobertura nativa corresponde a los CTest y no incluye las pruebas Python del enlace.",
+    "ASan/UBSan se ejecutó sobre el binario C++ sin Python. Las bibliotecas de terceros precompiladas no están instrumentadas.",
+    "El nativo exige evidencia estructural. El consumidor debe acreditar su correspondencia con el prefijo y sus fuentes.",
+    "No se ha ejecutado el consumidor financiero completo ni una edición real.",
+    "No se ha usado GPU ni ejecutado entrenamiento, optimizadores o evaluación científica."
+  ]
+}

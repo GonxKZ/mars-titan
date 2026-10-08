@@ -108,7 +108,52 @@ líneas ejecutables cubiertas, CCN 5 y CRAP 5 según la misma convención LCOV.
 Estas comprobaciones usan estados escalares sintéticos. La validación y
 recuperación de artefactos de tensores externos corresponde al consumidor.
 
-## Coste observado
+## Ciclo financiero v2
+
+`PredictionMode.financial` identifica un contrato distinto mediante
+`financial_cohort_v2`. `PhaseContract` declara partición, inicio del calentamiento,
+intervalo de decisiones `[decision_start, decision_end)`, fecha de cierre y huella
+de la política del prefijo. El calentamiento avanza las observaciones sin emitir.
+Una decisión emite para todas las observaciones. Un `settlement` no tiene entradas
+ni llama al preparador. Puede seguir a una decisión en el mismo instante.
+
+El callback `prepare_event` recibe el tipo de evento y los inputs. No recibe
+labels ni motivos de exclusión. Después de completar las emisiones, `resolve`
+recibe por separado labels maduros, exclusiones acreditadas por el prefijo y
+finalizaciones administrativas. Los labels que maduran en `decision_end` o
+después quedan fuera de esa fase. El cierre requiere `close_phase=True` en
+`close_at` y finaliza todos los pendientes restantes sin fabricar labels,
+errores financieros ni fechas de conocimiento.
+
+La exclusión del prefijo conserva el activo, la tarea, la fecha de decisión,
+el número de pares, la varianza cuando corresponde y la huella de la evidencia.
+Solo admite menos de 126 pares de las últimas 252 sesiones o varianza de mercado
+menor o igual que epsilon FP64 con al menos 126 pares. El nativo valida esta
+estructura y la enlaza con la predicción emitida. El consumidor debe acreditar
+los registros y las fuentes del prefijo. Una huella con formato correcto no
+demuestra por sí sola la condición. El motivo retrospectivo de las etiquetas
+no sustituye esa verificación.
+
+Los contadores cumplen
+`issued = applied + excluded + finalized + pending`. `observed` cuenta también
+el calentamiento. La capacidad se comprueba sobre la cola resultante de las
+resoluciones válidas, antes de preparar. Recuperación y registro concilian las
+resoluciones con los valores originales emitidos. Los límites de archivos,
+bytes y número de eventos siguen siendo explícitos.
+
+Los modos `stateless` y `prepared` conservan sus formatos e identidades nativos.
+La sesión Python histórica identifica también su código y binario, por lo que
+su recuperación requiere el runtime original. No se sustituyen sus huellas por
+las del nuevo enlace.
+
+Las pruebas técnicas de esta ampliación incluyen calentamiento, falta de label,
+exclusión tras emitir, cierre administrativo, presión de cola y siete fronteras
+de interrupción. La evidencia de este tramo se registra en
+[la comprobación del ciclo v2](../../reports/engineering/financial-lifecycle-native-20261008.json).
+Todavía no acredita la integración del consumidor financiero ni la suficiencia
+de pendientes de una edición real.
+
+## Coste observado del control anterior
 
 Se ejecutaron tres procesos Release por carga, sin descartar pasos de calentamiento y con cinco reaperturas completas por proceso. El lote físico fue de 32 activos y `seed=42`. El equipo tenía un AMD Ryzen 9 8945HS y 31.556.064 KiB de RAM visible, con Linux 7.0, Clang 21.1.8, OpenSSL 3.5.5 y el SDK C++ de Arrow 25.0.1. No se detuvieron otras aplicaciones.
 
