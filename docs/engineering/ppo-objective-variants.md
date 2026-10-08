@@ -107,3 +107,20 @@ parada independiente puede producir menos updates, por lo que no demuestra
 igualdad de ese presupuesto. El test final permanece cerrado. KLPO terminal
 secuencial tiene un contrato de trayectorias distinto y no se activa mediante
 esta opción PPO.
+
+El [recibo de verificación](../../reports/engineering/ppo-objective-variants-verification-20261008.json)
+recoge 13 pruebas de configuración, cinco ejecutables técnicos, perfiles
+Clang/ASan/UBSan y 12 mutaciones detectadas. Seis casos CUDA contrastan MLP y
+GRU en los tres modos. Una comprobación posterior verifica la corrección del
+soporte subnormal. La revisión independiente detectó y comprobó también la
+corrección del límite de filas del controlador.
+
+Los tensores iniciales, salidas y RNG del camino anterior coinciden exactamente
+con su referencia. Los archivos de política completos no son idénticos por las
+direcciones serializadas de parámetros Adam y `serialization_id`. La comparación
+semántica conserva los demás metadatos y buffers, sin modificar los archivos.
+
+La cobertura deja visible la parte que no se ejecuta bajo el bloqueo. La función
+modificada `advance` tiene CCN 63 y CRAP 4032 con cobertura cero en esas pruebas.
+No se atribuye a las pruebas algebraicas la validación de una actualización real
+ni de su recuperación posterior.
