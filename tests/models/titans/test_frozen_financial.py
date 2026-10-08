@@ -10,6 +10,14 @@ from test_financial_adapter import setup
 from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
 
 
+@pytest.fixture(autouse=True)
+def frozen_backend():
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    yield
+    torch.backends.mha.set_fastpath_enabled(previous)
+
+
 def consumer(model, readout=None):
     api = importlib.import_module("mars_titan.models.titans.frozen_financial")
     return api.FrozenFinancialConsumer(model, readout=readout)
@@ -88,6 +96,24 @@ def test_unfrozen_parameters_are_rejected_before_execution():
     model.eval()
     with pytest.raises(ValueError):
         consumer(model)
+
+
+def test_fused_transformer_backend_is_rejected_without_changing_the_global_flag():
+    model, _ = setup()
+    model.eval().requires_grad_(False)
+    torch.backends.mha.set_fastpath_enabled(True)
+    with pytest.raises(ValueError, match="fastpath"):
+        consumer(model)
+    assert torch.backends.mha.get_fastpath_enabled()
+
+
+def test_backend_change_after_construction_cannot_keep_the_execution_identity():
+    engine, batch = frozen()
+    assert engine.identity()["numerics"]["mha_fastpath"] is False
+    torch.backends.mha.set_fastpath_enabled(True)
+    with pytest.raises(ValueError):
+        engine.prepare(batch, engine.predictor.initial_state(batch.flow_ids), context_id=CONTEXT)
+    assert torch.backends.mha.get_fastpath_enabled()
 
 
 def test_numeric_flags_are_part_of_recovery_identity():

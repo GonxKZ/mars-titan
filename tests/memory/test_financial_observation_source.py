@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import test_native_episode_backend as backend_fixtures
 import torch
+from test_frozen_financial import frozen_backend as frozen_backend
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.memory.financial_session import FinancialPhase

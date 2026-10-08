@@ -7,6 +7,7 @@ import pytest
 import test_native_episode_backend as backend_fixtures
 import torch
 from test_financial_adapter import setup
+from test_frozen_financial import frozen_backend as frozen_backend
 
 from mars_titan.memory.session_artifacts import SessionArtifacts
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer

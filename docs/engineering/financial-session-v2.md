@@ -14,6 +14,21 @@ recuperación. Dentro de cada bloque se revisan versiones, formas y modos sin
 copiar los parámetros a CPU. El contador de versiones no detecta cualquier
 cambio mediante `.data`, por lo que no sustituye la verificación de bytes.
 
+Antes de construir este consumidor se declara
+`torch.backends.mha.set_fastpath_enabled(False)`. El ajuste debe permanecer
+durante toda la ejecución y se registra en la identidad recuperable. El
+constructor rechaza `True` y no modifica el flag. Los controles, incluido el
+baseline de cualquier factorial nuevo, usan el mismo ajuste. La ruta del
+Transformer independiente conserva su API y configuración anteriores.
+
+En PyTorch 2.14.0+cu130 se observó una diferencia CPU/CUDA de 2,50e-6 en la
+primera emisión FP64 con la ruta fusionada activa. Las entradas y los pesos
+eran iguales. La diferencia apareció en el bloque fusionado, mientras que las
+etapas manuales de atención y FFN coincidieron hasta 1,11e-15. Con la ruta
+desactivada la emisión difirió 1,25e-16. Los recibos del fallo se conservan y las
+tolerancias no se ampliaron. Este ajuste no obliga a usar Math para toda la
+atención. C mantiene su requisito específico sobre SDPA de MAC.
+
 Cada nueva observación produce un token multimodal y una preparación del núcleo.
 El lector utiliza `working_state` después de MAC y la cabeza existente. K = 1, 2
 y 4 modifica las lecturas, no el número de escrituras asociativas. La instantánea

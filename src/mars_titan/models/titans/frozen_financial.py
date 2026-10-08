@@ -71,6 +71,8 @@ def _numerics():
 def _execution_signature(models):
     from torch.nn.modules import module as torch_module
 
+    if torch.backends.mha.get_fastpath_enabled():
+        raise ValueError("El consumidor exige fastpath=False declarado antes de construirlo")
     if torch.is_inference_mode_enabled() or any(
         torch.is_autocast_enabled(device) for device in ("cpu", "cuda")
     ):
