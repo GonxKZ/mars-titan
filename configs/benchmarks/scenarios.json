@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "suite_id": "mars_benchmarks_v1",
+  "benchmarks": [
+    {"id": "mars_silencio_v1", "name": "Silencio", "family": "no_signal"},
+    {"id": "mars_faro_v1", "name": "Faro", "family": "known_signal"},
+    {"id": "mars_eco_v1", "name": "Eco", "family": "delayed_cue"},
+    {"id": "mars_giro_v1", "name": "Giro", "family": "signal_reversal"},
+    {"id": "mars_retorno_v1", "name": "Retorno", "family": "regime_recurrence"},
+    {"id": "mars_contraste_v1", "name": "Contraste", "family": "source_conflict"},
+    {"id": "mars_tormenta_v1", "name": "Tormenta", "family": "volatility_shift"},
+    {"id": "mars_umbral_v1", "name": "Umbral", "family": "execution_friction"}
+  ],
+  "profiles": {
+    "basic": {
+      "generator": {"assets": 8, "sessions": 64, "warmup_sessions": 16, "regime_sessions": 16},
+      "worlds": {"train": 5, "validation": 5, "audit": 5},
+      "seed_base": 20261009
+    },
+    "extended": {
+      "generator": {"assets": 8, "sessions": 256, "warmup_sessions": 64, "regime_sessions": 64},
+      "worlds": {"train": 5, "validation": 5, "audit": 5},
+      "seed_base": 30261009
+    }
+  },
+  "final_test_opened": false
+}

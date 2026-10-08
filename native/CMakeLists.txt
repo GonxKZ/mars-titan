@@ -190,7 +190,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         add_library(mars_titan_ppo STATIC src/ppo_policy.cpp src/ppo_training.cpp
             src/episodic_memory.cpp src/policy_context.cpp src/learning_replay.cpp)
         target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-        target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch mars_titan_rl_objectives)
+        target_link_libraries(mars_titan_ppo PUBLIC mars_titan_financial mars_titan::torch
+            mars_titan_rl_objectives mars_titan_simulation_files)
         mars_titan_configure_target(mars_titan_ppo)
         add_executable(mars-titan-memory-benchmark benchmarks/episodic_query.cpp)
         target_link_libraries(mars-titan-memory-benchmark PRIVATE mars_titan_ppo)
@@ -199,10 +200,15 @@ if(MARS_TITAN_BUILD_SIMULATION)
         target_include_directories(mars_titan_ppo_files PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_link_libraries(mars_titan_ppo_files PUBLIC mars_titan_simulation_files)
         mars_titan_configure_target(mars_titan_ppo_files)
+        add_library(mars_titan_klpo_collection STATIC src/klpo_collection.cpp)
+        target_include_directories(mars_titan_klpo_collection PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_link_libraries(mars_titan_klpo_collection PUBLIC mars_titan_ppo mars_titan_ppo_files)
+        mars_titan_configure_target(mars_titan_klpo_collection)
         add_executable(mars-titan-ppo src/ppo_main.cpp src/ppo_experiment.cpp)
         target_link_libraries(mars-titan-ppo PRIVATE mars_titan_ppo mars_titan_ppo_files)
         mars_titan_configure_target(mars-titan-ppo)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_training.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/episodic_memory.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/policy_context.cpp"
@@ -213,6 +219,22 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_main.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp")
         if(BUILD_TESTING)
+            add_executable(klpo_collection_tests tests/klpo_collection_tests.cpp)
+            target_link_libraries(klpo_collection_tests PRIVATE mars_titan_klpo_collection)
+            mars_titan_configure_target(klpo_collection_tests)
+            add_test(NAME klpo_collection COMMAND klpo_collection_tests)
+            set_tests_properties(klpo_collection PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_sanitizer_test_environment(klpo_collection)
+            set_property(TEST klpo_collection APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            add_executable(klpo_policy_tests tests/klpo_policy_tests.cpp)
+            target_link_libraries(klpo_policy_tests PRIVATE mars_titan_ppo)
+            mars_titan_configure_target(klpo_policy_tests)
+            add_test(NAME klpo_policy COMMAND klpo_policy_tests)
+            set_tests_properties(klpo_policy PROPERTIES TIMEOUT 120 LABELS "unit;rl-objectives")
+            mars_titan_sanitizer_test_environment(klpo_policy)
+            set_property(TEST klpo_policy APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             add_executable(ppo_policy_tests tests/ppo_policy_tests.cpp)
             target_link_libraries(ppo_policy_tests PRIVATE mars_titan_ppo)
             mars_titan_configure_target(ppo_policy_tests)
@@ -301,6 +323,11 @@ if(MARS_TITAN_BUILD_SIMULATION)
         endif()
         if(MARS_TITAN_BUILD_PPO)
             list(APPEND identity_files "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_policy.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/klpo_collection.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/klpo_episodes.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_episodes.cpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/klpo_terminal.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_terminal.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_controller.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_controller.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_objectives.hpp"

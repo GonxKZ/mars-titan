@@ -449,6 +449,8 @@ Json PpoCheckpointStore::save(const Json& metadata, std::string_view policy_arch
     return impl_->save(metadata, policy_archive, rollout_archive, select_best);
 }
 
+std::string PpoCheckpointStore::identity_sha256() const { return impl_->identity_digest; }
+
 PpoCheckpointBundle PpoCheckpointStore::load_latest() {
     impl_->require_unchanged();
     Json discarded = Json::array();

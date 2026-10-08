@@ -72,6 +72,9 @@ function(mars_titan_build_identity source_hash)
         if(TARGET mars_titan_ppo)
             list(APPEND targets mars_titan_ppo mars_titan_ppo_files mars-titan-ppo mars_titan::torch)
         endif()
+        if(TARGET mars_titan_klpo_collection)
+            list(APPEND targets mars_titan_klpo_collection)
+        endif()
         foreach(target IN LISTS targets)
             foreach(property TYPE COMPILE_FEATURES COMPILE_FLAGS COMPILE_OPTIONS COMPILE_DEFINITIONS
                     "COMPILE_DEFINITIONS_${configuration_upper}"
