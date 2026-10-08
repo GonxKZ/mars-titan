@@ -29,6 +29,7 @@ from .cohort_contract import (
     validate_cohort_rows,
 )
 from .corpus_inputs import _unique
+from .target_factors import bind_target_factors, confirm_sources, same_json
 
 LABEL_SCHEMA = pa.schema(
     [
@@ -173,6 +174,7 @@ def prepare_corpus_targets(
     *,
     backend: str = "numpy",
     input_policy: str = STRICT_INPUTS,
+    target_factors: Path | None = None,
 ) -> dict:
     """Confirmar etiquetas por activo. Una interrupción no publica un corpus parcial."""
     implementations = {"reference": residual_targets, "numpy": residual_targets_array}
@@ -203,9 +205,19 @@ def prepare_corpus_targets(
         outside_source(output, source)
     if len({(a["market"], a["symbol"]) for a in meta["assets"]}) != len(meta["assets"]):
         raise ValueError("Hay activos duplicados en el corpus")
+    effective_factors = meta["market_factors"]
+    revision, factor_sources = None, {}
+    if target_factors is not None:
+        if meta.get("configuration", {}).get("prepared_root") != str(prepared):
+            raise ValueError("La revisión del factor debe conservar el origen preparado")
+        effective_factors, revision, factor_sources = bind_target_factors(
+            manifest, meta, manifest_hash, target_factors, input_policy=input_policy
+        )
+        for source in factor_sources:
+            outside_source(output, source)
     factors = {}
     for market in {a["market"] for a in meta["assets"]}:
-        specification = meta["market_factors"].get(market)
+        specification = effective_factors.get(market)
         if not specification or specification.get("market") != market:
             raise ValueError("Falta un factor del mercado correspondiente")
         path = Path(specification["prices_path"])
@@ -217,6 +229,7 @@ def prepare_corpus_targets(
         ):
             raise ValueError("El factor de mercado ha cambiado o no tiene una fuente regular")
         factors[market] = read_bounded_table(path, max_rows=200_000).to_pandas()
+    confirm_sources(factor_sources)
     configuration = {
         **policy_identity(input_policy),
         "backend": backend,
@@ -235,11 +248,32 @@ def prepare_corpus_targets(
         "cohort_contract_sha256": sha256(Path(__file__).with_name("cohort_contract.py")),
         "cohort_files_sha256": sha256(Path(__file__).parents[1] / "data/cohort_files.py"),
     }
+    if revision is not None:
+        configuration["target_factor_revision"] = revision
+        factor_sources[Path(__file__).with_name("target_factors.py")] = (
+            revision["contract_sha256"],
+            1024**2,
+        )
+        declared_code = {
+            "code_sha256": Path(__file__),
+            "target_reference_sha256": Path(__file__).parents[1] / "data/budget_targets.py",
+            "target_implementation_sha256": Path(__file__).parents[1] / "data/residual_arrays.py",
+            "temporal_reference_sha256": Path(__file__).parents[1] / "data/temporal.py",
+            "cohort_contract_sha256": Path(__file__).with_name("cohort_contract.py"),
+            "cohort_files_sha256": Path(__file__).parents[1] / "data/cohort_files.py",
+        }
+        factor_sources.update(
+            {path: (configuration[key], 1024**2) for key, path in declared_code.items()}
+        )
     identity_path = output / "configuration.json"
     if output.exists() and not identity_path.exists() and next(output.iterdir(), None) is not None:
         raise ValueError("El directorio de salida contiene datos de otra ejecución")
-    if identity_path.exists() and _json(identity_path) != configuration:
+    if identity_path.exists() and not same_json(_json(identity_path), configuration):
         raise ValueError("La configuración pertenece a otra edición de datos o código")
+    manifest_path = output / "manifest.json"
+    confirmed, confirmed_hash = None, None
+    if revision is not None and manifest_path.exists():
+        confirmed, confirmed_hash = read_manifest(manifest_path, 8 * 1024**2)
     output.mkdir(parents=True, exist_ok=True)
     if not identity_path.exists():
         atomic_json(identity_path, configuration)
@@ -274,18 +308,46 @@ def prepare_corpus_targets(
         destination = output / "labels" / market / symbol
         label_path, receipt_path = destination / "labels.parquet", destination / "receipt.json"
         receipt = _json(receipt_path) if receipt_path.exists() else None
+        if confirmed_hash is not None and receipt is None:
+            raise ValueError("Falta un recibo de la supervisión ya confirmada")
         if receipt and receipt["fingerprint"] != fingerprint:
             raise ValueError("Han cambiado los artefactos de la edición ya iniciada")
         if receipt and any(receipt.get(k) != v for k, v in expected_receipt.items()):
             raise ValueError("El recibo no corresponde a la identidad y cohorte esperadas")
+        if (
+            revision is not None
+            and receipt
+            and (
+                label_path.is_symlink()
+                or not label_path.is_file()
+                or sha256(label_path) != receipt["labels_sha256"]
+            )
+        ):
+            raise ValueError("Las etiquetas confirmadas cambiaron respecto de su recibo")
         if receipt and label_path.is_file() and sha256(label_path) == receipt["labels_sha256"]:
             observed = read_bounded_table(label_path, max_rows=1_000_000)
             validate_cohort_rows(observed, cohort)
             partitions = Counter(observed["partition"].to_pylist())
-            if receipt.get("samples") != len(observed) or receipt.get("counts") != {
-                p: partitions[p] for p in ("train", "validation")
-            }:
+            if (
+                receipt.get("samples") != len(observed)
+                or (revision is not None and type(receipt.get("samples")) is not int)
+                or not same_json(
+                    receipt.get("counts"), {p: partitions[p] for p in ("train", "validation")}
+                )
+            ):
                 raise ValueError("Los recuentos del recibo no coinciden con las etiquetas")
+            if revision is not None:
+                reasons = Counter(
+                    reason
+                    for reason, partition in zip(
+                        observed["reason"].to_pylist(),
+                        observed["partition"].to_pylist(),
+                        strict=True,
+                    )
+                    if partition is None
+                )
+                if not same_json(receipt.get("excluded_reasons"), dict(reasons)):
+                    raise ValueError("Las exclusiones del recibo no coinciden con las etiquetas")
             reused += 1
         else:
             price_frame = read_bounded_table(prices, max_rows=200_000).to_pandas()
@@ -333,7 +395,7 @@ def prepare_corpus_targets(
         "assets": assets,
         "counts": dict(counts),
         "configuration": configuration,
-        "market_factors": meta["market_factors"],
+        "market_factors": effective_factors,
         "final_test_opened": False,
     }
     if cohort:
@@ -345,11 +407,19 @@ def prepare_corpus_targets(
             if key in meta:
                 result[key] = meta[key]
         cohort_identity(result, input_policy=input_policy)
-    manifest_path = output / "manifest.json"
+    confirm_sources(factor_sources)
+    if revision is not None and not same_json(_json(identity_path), configuration):
+        raise ValueError("La configuración de la revisión del factor cambió durante el cálculo")
+    if confirmed_hash is not None:
+        if sha256(manifest_path) != confirmed_hash or not same_json(confirmed, result):
+            raise ValueError("El manifiesto confirmado no coincide con las etiquetas verificadas")
+        return {**result, "reused_assets": reused}
+    if revision is not None and manifest_path.exists():
+        raise ValueError("Ha aparecido un manifiesto ajeno durante la confirmación")
     try:
         previous = _json(manifest_path, 8 * 1024**2) if manifest_path.exists() else None
     except json.JSONDecodeError:
         previous = None
-    if previous != result:
+    if not same_json(previous, result):
         atomic_json(manifest_path, result)
     return {**result, "reused_assets": reused}
