@@ -105,5 +105,22 @@
     "El nativo exige evidencia estructural. El consumidor debe acreditar su correspondencia con el prefijo y sus fuentes.",
     "No se ha ejecutado el consumidor financiero completo ni una edición real.",
     "No se ha usado GPU ni ejecutado entrenamiento, optimizadores o evaluación científica."
-  ]
+  ],
+  "terminal_close_fix": {
+    "checked_at": "2026-10-08T17:27:57.319589+00:00",
+    "behavior": "Rechaza un evento en close_at sin close_phase antes de preparar o publicar. El cierre explícito posterior sigue disponible.",
+    "red_on": "aae494cd623777ed1d4f49cba510e278d5f0f624",
+    "native_python_tests": 36,
+    "ctest_release": 2,
+    "ctest_asan_ubsan": 2,
+    "independent_review": {
+      "public_tests": 50,
+      "independent_probes": 11,
+      "total": 61,
+      "remaining_material_findings": 0,
+      "scope": "Solo ciclo nativo, sin certificación del consumidor Python."
+    },
+    "source_sha256": "b2809bf7e5d09d65e19f7bbd7dc05c303d0b5e872fa85f81c1fb37b9c874e558",
+    "module_sha256": "6ab1b3dba6a9d0f73a574237ab1d564ea12b18a43418d8d4302bae546e291eb8"
+  }
 }

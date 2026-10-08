@@ -124,6 +124,8 @@ finalizaciones administrativas. Los labels que maduran en `decision_end` o
 después quedan fuera de esa fase. El cierre requiere `close_phase=True` en
 `close_at` y finaliza todos los pendientes restantes sin fabricar labels,
 errores financieros ni fechas de conocimiento.
+Un evento en `close_at` sin cierre explícito se rechaza antes de publicar,
+porque no quedaría un instante posterior admitido para finalizar la fase.
 
 La exclusión del prefijo conserva el activo, la tarea, la fecha de decisión,
 el número de pares, la varianza cuando corresponde y la huella de la evidencia.

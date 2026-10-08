@@ -110,6 +110,7 @@ void check_event(const Cohort& cohort, const Definition& definition, std::int64_
     if (closed || cohort.cutoff < previous_at ||
         (cohort.cutoff == previous_at && (!settlement || previous_kind == EventKind::settlement)) ||
         cohort.cutoff < phase.warmup_start || cohort.cutoff > phase.close_at ||
+        (cohort.cutoff == phase.close_at && !cohort.close_phase) ||
         (cohort.kind == EventKind::warmup && cohort.cutoff >= phase.decision_start) ||
         (cohort.kind == EventKind::decision &&
          (cohort.cutoff < phase.decision_start || cohort.cutoff >= phase.decision_end)) ||

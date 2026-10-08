@@ -624,6 +624,12 @@ void financial_warmup_and_phase_boundaries_are_explicit() {
     rejected([&] { run.step(settlement, crossing); }, "El label cruza el corte de la fase");
     settlement.close_phase = true;
     rejected([&] { run.step(settlement, {}); }, "Se adelantó el cierre administrativo");
+    settlement.cutoff = phase_close;
+    settlement.close_phase = false;
+    rejected([&] { run.step(settlement, {}); },
+             "El settlement terminal dejó la fase sin cierre posible");
+    settlement.close_phase = true;
+    require(run.step(settlement, {}).finalized.size() == 2, "El rechazo impidió cerrar la fase");
 }
 void financial_recovery_preserves_exclusions_and_finalizations() {
     TemporaryDirectory directory;

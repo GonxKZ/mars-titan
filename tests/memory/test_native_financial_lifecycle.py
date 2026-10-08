@@ -274,6 +274,20 @@ def test_same_cutoff_settlement_runs_after_emission_without_another_prepare(nati
     run.close()
 
 
+def test_terminal_settlement_requires_explicit_closure_before_publication(native, tmp_path):
+    run = native.Executor(str(tmp_path / "run"), contract(native), *callbacks(native, []), False)
+    try:
+        run.step(event(native, 0, 10), [])
+        before = run.snapshot_json()
+        with pytest.raises(ValueError):
+            run.step(event(native, 1, 40, "settlement"), [])
+        assert run.snapshot_json() == before
+        closed = run.step(event(native, 1, 40, "settlement", close=True), [])
+        assert len(closed.finalized) == 2 and not run.pending()
+    finally:
+        run.close()
+
+
 @pytest.mark.parametrize(
     "point",
     [
