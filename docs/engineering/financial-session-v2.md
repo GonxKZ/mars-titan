@@ -139,6 +139,11 @@ una edición histórica completa.
 
 La [suite CPU](../../reports/engineering/financial-session-quality-20261008.json)
 comprende 492 casos con cobertura de ramas y ocho mutaciones Python detectadas.
+Parte de esa batería prepara etiquetas de fixtures mediante `prepare_corpus_targets`,
+que estima coeficientes residuales. No ejecuta pasos del optimizador del predictor,
+pero tampoco se describe como ausencia de todo ajuste auxiliar. Las nuevas
+[pruebas de composición](../../reports/engineering/frozen-financial-controls-manual-labels-20261009.json)
+usan etiquetas manuales y bloquean llamadas al residualizador.
 El [recibo del RNG](../../reports/engineering/financial-session-rng-20261008.json)
 separa la recuperación de v1 de los contrafactuales de v2. La
 [matriz CUDA](../../reports/engineering/financial-session-cuda-20261008.json)
