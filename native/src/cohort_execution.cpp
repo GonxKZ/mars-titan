@@ -129,7 +129,7 @@ Json configuration(Definition& definition) {
         tasks.push_back(Json{{"name", task.name}, {"horizon", task.horizon}});
     }
     const auto& limits = definition.limits;
-    return Json{{"schema_version", 1},
+    Json result{{"schema_version", 1},
                 {"kind", "cohort_execution"},
                 {"source_sha256", id.source_sha256},
                 {"view_sha256", id.view_sha256},
@@ -146,6 +146,13 @@ Json configuration(Definition& definition) {
                                 {"max_record_bytes", limits.max_record_bytes},
                                 {"max_log_bytes", limits.max_log_bytes},
                                 {"max_cohorts", limits.max_cohorts}}}};
+    if (definition.prediction_mode == PredictionMode::prepared) {
+        result["schema_version"] = 2;
+        result["prediction_mode"] = "prepared_cohort_v1";
+    } else if (definition.prediction_mode != PredictionMode::stateless) {
+        throw std::invalid_argument("El modo de preparación de la cohorte no es válido");
+    }
+    return result;
 }
 std::vector<Observation> canonical_observations(const Cohort& cohort, const Limits& limits) {
     if (cohort.cutoff <= 0 || cohort.observations.empty() ||
@@ -311,8 +318,10 @@ struct Executor::Impl {
         : output(directory), definition(std::move(requested)), callbacks(std::move(operators)) {
         const auto config = configuration(definition);
         identity = content_sha256(config.dump());
-        if (!callbacks.predict || !callbacks.update) {
-            throw std::invalid_argument("Falta una función de predicción o actualización");
+        const auto prepared = definition.prediction_mode == PredictionMode::prepared;
+        if (!callbacks.update || static_cast<bool>(callbacks.prepare) != prepared ||
+            static_cast<bool>(callbacks.predict) == prepared) {
+            throw std::invalid_argument("Los callbacks no corresponden al modo de la cohorte");
         }
         lock = std::make_unique<simulation::OutputLock>(output, resume);
         const auto identity_file = output / "identity.json";
@@ -549,6 +558,33 @@ struct Executor::Impl {
         });
         return result;
     }
+    std::vector<Prediction> prepare(const Cohort& cohort, std::span<const Observation> observations,
+                                    std::size_t batch_rows, Json& proposed_state) const {
+        auto prepared = callbacks.prepare(observations, definition.tasks, cohort.cutoff,
+                                          stored.state, batch_rows);
+        if (prepared.values.size() != observations.size() * definition.tasks.size() ||
+            !std::ranges::all_of(prepared.values,
+                                 [](double value) { return std::isfinite(value); })) {
+            throw std::invalid_argument("Prepare necesita una salida finita por activo y tarea");
+        }
+        check_state(prepared.proposed_state, definition.limits);
+        std::vector<Prediction> result;
+        result.reserve(prepared.values.size());
+        for (const auto& row : observations) {
+            for (const auto& task : definition.tasks) {
+                Prediction prediction{"",
+                                      row.asset,
+                                      task,
+                                      stored.cursor + 1,
+                                      cohort.cutoff,
+                                      prepared.values.at(result.size())};
+                prediction.id = prediction_id(identity, prediction);
+                result.push_back(std::move(prediction));
+            }
+        }
+        proposed_state = std::move(prepared.proposed_state);
+        return result;
+    }
     Commit step(const Cohort& cohort, std::span<const Feedback> labels, std::size_t batch_rows,
                 const std::function<void(Boundary)>& fault) {
         healthy();
@@ -571,7 +607,10 @@ struct Executor::Impl {
         busy = true;
         try {
             notify(fault, Boundary::before_predictions);
-            auto predictions = predict(cohort, observations, batch_rows);
+            Json proposed_state;
+            auto predictions = callbacks.prepare
+                                   ? prepare(cohort, observations, batch_rows, proposed_state)
+                                   : predict(cohort, observations, batch_rows);
             notify(fault, Boundary::predictions_ready);
             Json forecast_rows = Json::array();
             Json feedback_rows = Json::array();
@@ -602,7 +641,8 @@ struct Executor::Impl {
                                          limits.max_record_bytes);
             notify(fault, Boundary::record_written);
             auto next = stored;
-            next.state = callbacks.update(stored.state, applied);
+            next.state =
+                callbacks.update(callbacks.prepare ? proposed_state : stored.state, applied);
             check_state(next.state, limits);
             for (const auto& outcome : applied) {
                 next.pending.erase(outcome.prediction.id);

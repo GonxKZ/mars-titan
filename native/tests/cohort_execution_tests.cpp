@@ -365,6 +365,144 @@ void invalid_callback_outputs_do_not_become_confirmed_state() {
     advance(update);
     require(update.cursor() == 1, "No se puede retomar el registro preparado antes del fallo");
 }
+
+Definition prepared_definition() {
+    auto result = definition();
+    result.prediction_mode = PredictionMode::prepared;
+    result.initial_state["fast_steps"] = 0;
+    return result;
+}
+Callbacks prepared_callbacks() {
+    auto result = callbacks();
+    result.predict = {};
+    result.prepare = [](std::span<const Observation> rows, std::span<const Task> tasks,
+                        std::int64_t cutoff, const Json& before, std::size_t batch_rows) {
+        require(batch_rows > 0 && rows.front().available_at <= cutoff,
+                "Falta el corte o el tamaño físico en prepare");
+        PreparedCohort proposal{{}, before};
+        const auto steps = before.at("fast_steps").get<std::size_t>();
+        for (const auto& row : rows) {
+            for (const auto& task : tasks) {
+                require(task.horizon > 0, "Falta una tarea de la cohorte");
+                proposal.values.push_back(row.features.front() + before.at("bias").get<double>() +
+                                          static_cast<double>(steps));
+            }
+        }
+        proposal.proposed_state["fast_steps"] = steps + 1;
+        return proposal;
+    };
+    return result;
+}
+
+void prepared_state_is_advanced_once_and_feedback_follows_all_predictions() {
+    TemporaryDirectory directory;
+    std::size_t preparations = 0;
+    auto operators = prepared_callbacks();
+    const auto prepare = operators.prepare;
+    operators.prepare = [&](auto rows, auto tasks, auto cutoff, const Json& before, auto batch) {
+        ++preparations;
+        return prepare(rows, tasks, cutoff, before, batch);
+    };
+    Executor run(directory.path / "prepared", prepared_definition(), operators);
+    advance(run);
+    const auto second = advance(run);
+    require(preparations == 2 && run.snapshot().at("state").at("fast_steps") == 2,
+            "El estado rápido se escribió por tarea o por lote");
+    for (const auto& prediction : second.predictions) {
+        require(prediction.value == (prediction.asset == "US/A" ? 2 : 3),
+                "Una predicción ve feedback o la propuesta de otra fila");
+    }
+    require(run.snapshot().at("state").at("bias") == second_bias,
+            "El feedback ha perdido la predicción emitida original");
+    Executor permuted(directory.path / "permuted", prepared_definition(), prepared_callbacks());
+    advance(permuted, 2, true);
+    advance(permuted, 2, true);
+    require(run.snapshot() == permuted.snapshot(), "La propuesta depende del lote físico");
+}
+
+void prepared_state_recovers_at_every_boundary() {
+    TemporaryDirectory directory;
+    Executor reference(directory.path / "reference", prepared_definition(), prepared_callbacks());
+    advance(reference);
+    advance(reference);
+    const std::array boundaries{Boundary::before_predictions, Boundary::predictions_ready,
+                                Boundary::record_written,     Boundary::feedback_applied,
+                                Boundary::checkpoint_written, Boundary::before_commit,
+                                Boundary::committed};
+    for (const auto boundary : boundaries) {
+        const auto output = directory.path / std::to_string(static_cast<unsigned int>(boundary));
+        {
+            Executor interrupted(output, prepared_definition(), prepared_callbacks());
+            advance(interrupted);
+            rejected(
+                [&] {
+                    advance(interrupted, 1, false, [boundary](Boundary point) {
+                        if (point == boundary) {
+                            throw std::runtime_error("Interrupción con propuesta de estado");
+                        }
+                    });
+                },
+                "La frontera no interrumpió la sesión");
+        }
+        Executor resumed(output, prepared_definition(), prepared_callbacks(), true);
+        require(resumed.cursor() == (boundary == Boundary::committed ? 2 : 1),
+                "Se recuperó una propuesta no confirmada");
+        if (resumed.cursor() == 1) {
+            advance(resumed, 2, true);
+        }
+        require(resumed.snapshot() == reference.snapshot(),
+                "La propuesta no se recupera exactamente");
+    }
+}
+
+void invalid_prepared_outputs_and_mixed_contracts_are_rejected() {
+    TemporaryDirectory directory;
+    for (std::size_t variant = 0; variant < 4; ++variant) {
+        auto operators = prepared_callbacks();
+        const auto prepare = operators.prepare;
+        operators.prepare = [prepare, variant](auto rows, auto tasks, auto cutoff,
+                                               const Json& before, auto batch) {
+            auto result = prepare(rows, tasks, cutoff, before, batch);
+            if (variant == 0) {
+                result.values.pop_back();
+            } else if (variant == 1) {
+                result.values.front() = std::numeric_limits<double>::quiet_NaN();
+            } else if (variant == 2) {
+                result.proposed_state["fast_steps"] = std::numeric_limits<double>::infinity();
+            } else {
+                result.proposed_state["oversized"] = std::string(2 * mebibyte, 'x');
+            }
+            return result;
+        };
+        const auto output = directory.path / std::to_string(variant);
+        {
+            Executor run(output, prepared_definition(), operators);
+            rejected([&] { advance(run); }, "Se aceptó una propuesta inválida");
+            require(!std::filesystem::exists(output / "record-1.json"),
+                    "La propuesta inválida dejó predicciones selladas");
+        }
+        Executor recovered(output, prepared_definition(), prepared_callbacks(), true);
+        require(recovered.cursor() == 0, "Una propuesta inválida llegó a latest");
+    }
+    rejected([&] { Executor run(directory.path / "missing", prepared_definition(), callbacks()); },
+             "Prepare es obligatorio en su modo");
+    auto both = prepared_callbacks();
+    both.predict = callbacks().predict;
+    rejected([&] { Executor run(directory.path / "both", prepared_definition(), both); },
+             "Dos predictores comparten una misma identidad");
+    {
+        auto classic = prepared_definition();
+        classic.prediction_mode = PredictionMode::stateless;
+        Executor run(directory.path / "identity", classic, callbacks());
+        advance(run);
+    }
+    rejected(
+        [&] {
+            Executor run(directory.path / "identity", prepared_definition(), prepared_callbacks(),
+                         true);
+        },
+        "Prepare recupera una identidad clásica");
+}
 } // namespace
 
 int main() {
@@ -378,6 +516,9 @@ int main() {
         spliced_counters_are_rejected_even_if_checkpoint_checksums_are_recomputed();
         process_death_recovers_the_correct_generation();
         invalid_callback_outputs_do_not_become_confirmed_state();
+        prepared_state_is_advanced_once_and_feedback_follows_all_predictions();
+        prepared_state_recovers_at_every_boundary();
+        invalid_prepared_outputs_and_mixed_contracts_are_rejected();
         std::cout << "Comprobaciones de cohortes completadas\n";
         return 0;
     } catch (const std::exception& error) {
