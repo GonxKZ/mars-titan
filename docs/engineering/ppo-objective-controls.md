@@ -64,8 +64,18 @@ de 0,044, 0,078 y 14,235 ms en FP32 para 1, 256 y 65.536 filas. En FP64 fueron
 0,039, 0,073 y 9,778 ms. La mayor dispersión correspondió al caso grande FP32,
 entre 9,124 y 18,084 ms. El proceso alcanzó 149.296 KiB de RSS, con bibliotecas e
 inputs incluidos. Son costes del cálculo puro en una máquina no aislada, no
-una comparación de algoritmos ni una medida del entrenador. CUDA queda
-pendiente de una ventana coordinada antes de integrar esa ruta.
+una comparación de algoritmos ni una medida del entrenador.
+
+Una compilación separada con backend CUDA comprobó dos fixtures `[1,6]` en
+FP32 y FP64 sobre la RTX 4070 Laptop. El mayor error absoluto frente a CPU
+fue 6,94×10⁻¹⁸ en el valor y 7,45×10⁻⁹ en el gradiente. También pasaron el
+soporte degenerado, seis rechazos de tipo o dispositivo y la conservación de
+entradas y RNG. Se usó PyTorch 2.14.0+cu130, con una fracción máxima de allocator
+de 0,008, menor que 64 MiB en ese dispositivo. El pico fue 8.192 bytes asignados
+y 2 MiB reservados, sin incluir el contexto. El primer arnés omitía la
+inicialización del dispositivo y falló antes del objetivo. Se conservó ese
+fallo y se corrigió el arnés sin cambiar producción. No se midió rendimiento
+ni se ejecutó ninguna actualización de parámetros.
 
 ## Integración todavía pendiente
 

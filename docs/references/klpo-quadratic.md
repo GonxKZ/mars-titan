@@ -42,6 +42,12 @@ no garantizan rango completo del sistema asociado a un adaptador lineal ni
 convexidad de un backbone entrenable. Resolver y aplicar los coeficientes
 constituiría un ajuste distinto de estas comprobaciones algebraicas.
 
+La Hessiana respecto al centro es `beta * Var_q(a) / scale**4`. Se contrasta
+con la varianza de `token_loss(..., mode="klpo_exact")`, cuyo h conserva el
+grafo. No es una comprobación de segundas derivadas de los sustitutos Full-KL
+o MC, que desacoplan h. La igualdad del gradiente en esperanza no implica
+igualdad de las derivadas superiores de esos grafos.
+
 La referencia conserva el
 [commit 30c0ae8c de KLPO](https://github.com/yifanzhang-pro/KLPO/tree/30c0ae8c3fa8f56213d6b57bc88b18ebee8ed696)
 documentado en la [revisión original](klpo-review.md). La publicación posterior
@@ -72,5 +78,41 @@ de 0,153, 0,296 y 2,582 ms para 1, 256 y 4.096 filas de 21 acciones. El caso
 numérico de 4.096×64 elementos tardó 9,946 ms. No cambia la rejilla del modelo.
 Se usaron dos hilos y PyTorch 2.14.0. El pico de RSS del proceso fue 538.100 KiB,
 incluidas importación y entradas. No es memoria incremental ni una comparación
-de velocidad entre algoritmos. La comprobación CUDA queda pendiente de una
-ventana coordinada y deberá completarse antes de integrar la ruta.
+de velocidad entre algoritmos.
+
+La comprobación CUDA posterior usó dos fixtures `[3,21]`, uno FP32 y otro FP64,
+en una RTX 4070 Laptop con PyTorch 2.14.0+cu130. Se compararon coeficientes,
+valores, gradientes y Hessianas cuadráticas con CPU, y valor y gradiente con
+la varianza exacta en CUDA. El mayor error absoluto de los coeficientes y
+Hessianas fue 1,14×10⁻¹³. Cinco combinaciones incompatibles de tipo o dispositivo
+se rechazaron. El pico Torch fue 13.312 bytes asignados y 2 MiB reservados, con
+límite de allocator de 64 MiB. Esos contadores excluyen el contexto CUDA.
+Las entradas y los RNG quedaron iguales. No se midió rendimiento CUDA.
+
+## El objetivo y el error predictivo no son equivalentes
+
+Un caso algebraico de tres acciones `[-1,0,1]` permite comprobar ese límite.
+Sea q la gaussiana discreta simétrica de centro 0 y anchura 1, mezclada con
+masa uniforme de 10⁻⁶. Para `y=0.2`, `R(a)=-abs(a-y)` y `beta=0.1`,
+`Cov_q(R,a)/Var_q(a)=0.2`. Los términos pares de b no aportan covarianza con a,
+por lo que el centro estacionario es 2. Las funciones reales `quadratic_terms`
+y `token_loss` confirman `F(2)<F(0)`, mientras el error absoluto del centro
+pasa de 0,2 a 1,8. Solo se evalúan esas constantes. No se resuelve ni aplica
+un ajuste.
+
+Ese ejemplo usa tres acciones, no cambia la rejilla de 21 del adaptador. La
+[salida del adaptador](../../src/mars_titan/models/predictive_adaptation.py)
+es el centro continuo, pero la
+[evaluación vigente](../../src/mars_titan/posttraining/evaluation.py)
+publica la mediana discreta como `prediction`. Otra prueba con 21 acciones
+equiespaciadas en `[-1,1]`, anchura 1 y centros fijos 0 y 2 obtiene medianas
+0 y 0,6. El objetivo exacto también baja y los errores de las medianas frente
+a 0,2 pasan de 0,2 a 0,4. Esa segunda comprobación no afirma que 2 sea el centro
+estacionario para la rejilla de 21 acciones.
+
+El ejemplo no refuta el objetivo del artículo. La familia gaussiana con
+anchura fija no representa libremente la distribución de Gibbs. Minimizar
+esta varianza dentro de esa familia no garantiza mejorar el MAE del centro
+ni el de la salida discreta. No se extrapola el caso a datos financieros.
+Las dos regresiones añadidas pasan junto a las 37 pruebas anteriores, sin
+ejecutar el caso antiguo que ajusta parámetros.

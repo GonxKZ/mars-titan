@@ -113,6 +113,59 @@ def test_row_order_partition_and_reward_shift_preserve_terms():
             torch.testing.assert_close(actual, expected[indices], rtol=0, atol=0)
 
 
+def test_smaller_exact_objective_can_increase_center_absolute_error():
+    values = torch.tensor([-1.0, 0.0, 1.0], dtype=torch.float64)
+    epsilon, beta = 1e-6, 0.1
+    # Tres acciones para la identidad escalar, sin cambiar la rejilla vigente de 21.
+    logq = torch.logaddexp(
+        torch.log_softmax(-values.square() / 2, 0) + math.log1p(-epsilon),
+        torch.full_like(values, math.log(epsilon / 3)),
+    )[None, :]
+    rewards = -(values - 0.2).abs()[None, :]
+    terms = engine().quadratic_terms(logq, rewards, values, 1.0, beta)
+    q = logq.exp()
+    variance = (q * values.square()).sum()
+    covariance = (q * values * rewards).sum()
+    torch.testing.assert_close(
+        covariance / variance, torch.tensor(0.2, dtype=torch.float64), rtol=1e-12, atol=1e-12
+    )
+    centers = torch.tensor([0.0, 2.0], dtype=torch.float64, requires_grad=True)
+    logp = torch.log_softmax(centers[:, None] * values - values.square() / 2, 1)
+    exact = token_loss(logp, logq.expand(2, -1), rewards.expand(2, -1), beta, "klpo_exact")[0]
+    torch.testing.assert_close(evaluate(terms, centers), exact, rtol=1e-12, atol=1e-12)
+    gradient = torch.autograd.grad(exact.sum(), centers)[0]
+    assert gradient[1].abs() < 1e-14
+    assert terms.curvature.item() > 0 and exact[1] < exact[0]
+    torch.testing.assert_close((centers - 0.2).abs(), torch.tensor([0.2, 1.8], dtype=torch.float64))
+
+
+def test_emitted_discrete_median_is_separate_from_adapter_center():
+    from mars_titan.environments.actions import ActionGrid
+    from mars_titan.models.predictive_adaptation import LinearResidualPolicy
+
+    # Construcción técnica con corrección nula, sin fit ni cambios de parámetros.
+    with torch.random.fork_rng(devices=[]):
+        adapter = LinearResidualPolicy([0.0], [1.0], target_scale=1.0)
+    before = {name: value.clone() for name, value in adapter.state_dict().items()}
+    parent = torch.tensor([0.0, 2.0], dtype=torch.float64)
+    centers = adapter(torch.zeros(2, 1), parent)
+    torch.testing.assert_close(centers, parent, rtol=0, atol=0)
+    values = torch.arange(-10, 11, dtype=torch.float64) / 10
+    grid = ActionGrid(values.numpy(), 1.0, "0" * 64, 1)
+    probabilities = gaussian_log_probabilities(centers, values, 1.0).exp().detach().numpy()
+    medians = torch.from_numpy(grid.median(probabilities))
+    torch.testing.assert_close(medians, torch.tensor([0.0, 0.6], dtype=torch.float64))
+    assert (medians[1] - 0.2).abs() > (medians[0] - 0.2).abs()
+    logq = behavior_log_probabilities(torch.zeros(2), values, 1.0, 1e-6)
+    rewards = -(values - 0.2).abs()[None, :].expand(2, -1)
+    loss = token_loss(
+        gaussian_log_probabilities(centers, values, 1.0), logq, rewards, 0.1, "klpo_exact"
+    )[0]
+    assert loss[1] < loss[0]
+    for name, value in adapter.state_dict().items():
+        assert torch.equal(value, before[name])
+
+
 @pytest.mark.parametrize(
     "invalid",
     [
