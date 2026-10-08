@@ -1,4 +1,5 @@
 #include "mars_titan/ppo_policy.hpp"
+#include "mars_titan/ppo_objectives.hpp"
 
 #include <ATen/ATen.h>
 #include <ATen/CPUGeneratorImpl.h>
@@ -31,6 +32,7 @@
 namespace mars_titan::learning {
 namespace {
 constexpr int64_t maximum_samples = 1 << 20;
+constexpr int64_t maximum_controlled_rollout = 16384;
 constexpr int64_t maximum_epochs = 64;
 constexpr int64_t maximum_optimizer_steps = maximum_samples * maximum_epochs;
 constexpr int64_t maximum_minibatch = 65536;
@@ -49,6 +51,7 @@ constexpr uint64_t auxiliary_seed_offset = 0xd1b54a32d192ed03ULL;
 constexpr int64_t maximum_auxiliary_samples = 8192;
 constexpr int64_t maximum_auxiliary_updates = 64;
 constexpr int64_t checkpoint_version = 2;
+constexpr int64_t controller_checkpoint_version = 3;
 constexpr int64_t metric_count = 6;
 
 struct RecurrentSequence {
@@ -69,6 +72,7 @@ struct LossBatch {
     at::Tensor old_log_probabilities;
     at::Tensor advantages;
     at::Tensor returns;
+    at::Tensor old_action_weights = {};
 };
 
 at::Tensor long_tensor(std::span<const int64_t> values, const at::Device& device) {
@@ -362,6 +366,72 @@ PpoHyperparameters read_hyperparameters(torch::serialize::InputArchive& archive)
     return parameters;
 }
 
+constexpr std::array objective_fields{
+    std::pair{"target_kl", &PpoObjectiveConfig::target_kl},
+    std::pair{"beta_initial", &PpoObjectiveConfig::beta_initial},
+    std::pair{"beta_min", &PpoObjectiveConfig::beta_min},
+    std::pair{"beta_max", &PpoObjectiveConfig::beta_max}};
+constexpr std::array controller_integers{
+    std::pair{"completed_rollouts", &PpoControllerState::completed_rollouts},
+    std::pair{"optimizer_steps", &PpoControllerState::optimizer_steps},
+    std::pair{"valid_rows", &PpoControllerState::valid_rows},
+    std::pair{"completed_epochs", &PpoControllerState::completed_epochs},
+    std::pair{"skipped_epochs", &PpoControllerState::skipped_epochs}};
+
+double read_double(torch::serialize::InputArchive& archive, const char* key) {
+    c10::IValue value;
+    archive.read(key, value);
+    require(value.isDouble(), "El controlador contiene un campo real de otro tipo");
+    return value.toDouble();
+}
+
+PpoObjectiveConfig read_objective(torch::serialize::InputArchive& archive) {
+    c10::IValue id, sampler, kl;
+    archive.read("id", id);
+    archive.read("sampler", sampler);
+    archive.read("kl", kl);
+    require(id.isString() && sampler.isString() && sampler.toStringRef() == ppo_sampler_contract &&
+                kl.isString() && kl.toStringRef() == ppo_kl_contract,
+            "El checkpoint no conserva los contratos de objetivo y muestreo");
+    PpoObjectiveConfig result;
+    result.kind = objective_kind(id.toStringRef());
+    for (const auto& [name, field] : objective_fields) { result.*field = read_double(archive, name); }
+    result.validate();
+    require(result.enabled(), "La versión nueva necesita un objetivo explícito");
+    return result;
+}
+
+PpoControllerState read_controller(torch::serialize::InputArchive& archive) {
+    PpoControllerState result;
+    result.beta = read_double(archive, "beta");
+    result.last_beta = read_double(archive, "last_beta");
+    for (const auto& [name, field] : controller_integers) { result.*field = read_integer(archive, name); }
+    c10::IValue kl, exceeded;
+    archive.read("full_kl", kl);
+    archive.read("threshold_exceeded", exceeded);
+    require((kl.isNone() || kl.isDouble()) && exceeded.isBool(),
+            "La medición guardada del controlador tiene tipos incompatibles");
+    if (kl.isDouble()) { result.full_kl = kl.toDouble(); }
+    result.threshold_exceeded = exceeded.toBool();
+    return result;
+}
+
+void write_controller(torch::serialize::OutputArchive& archive,
+                      const PpoObjectiveConfig& config, const PpoControllerState& state) {
+    torch::serialize::OutputArchive objective, controller;
+    objective.write("id", c10::IValue(std::string(objective_id(config.kind))));
+    objective.write("sampler", c10::IValue(std::string(ppo_sampler_contract)));
+    objective.write("kl", c10::IValue(std::string(ppo_kl_contract)));
+    for (const auto& [name, field] : objective_fields) { objective.write(name, c10::IValue(config.*field)); }
+    controller.write("beta", c10::IValue(state.beta));
+    controller.write("last_beta", c10::IValue(state.last_beta));
+    for (const auto& [name, field] : controller_integers) { controller.write(name, c10::IValue(state.*field)); }
+    controller.write("full_kl", state.full_kl ? c10::IValue(*state.full_kl) : c10::IValue{});
+    controller.write("threshold_exceeded", c10::IValue(state.threshold_exceeded));
+    archive.write("objective", objective);
+    archive.write("controller", controller);
+}
+
 void validate_stream(std::istream& source) {
     const auto position = source.tellg();
     require(position >= 0, "El checkpoint PPO requiere un flujo binario con posición consultable");
@@ -467,6 +537,8 @@ struct PpoPolicy::Impl {
     at::Device tensor_device;
     std::size_t budget;
     PpoArchitecture architecture;
+    PpoObjectiveConfig objective;
+    PpoControllerState controller;
     PolicyNetwork network;
     std::unique_ptr<PolicyNetwork> target;
     std::size_t dqn_environment_step = 0;
@@ -479,13 +551,17 @@ struct PpoPolicy::Impl {
     at::Generator auxiliary_rng;
 
     Impl(std::size_t observation_width, PpoHyperparameters hyperparameters, uint64_t seed,
-         std::string_view device, std::size_t memory_budget, PpoArchitecture selected_architecture)
+         std::string_view device, std::size_t memory_budget, PpoArchitecture selected_architecture,
+         PpoObjectiveConfig selected_objective)
         : width(observation_width), parameters(hyperparameters), device_name(device),
           tensor_device(device_name), budget(memory_budget), architecture(selected_architecture),
+          objective(selected_objective),
           network(static_cast<int64_t>(width), architecture, at::detail::createCPUGenerator(seed)),
           sampler(make_sampler(tensor_device, seed)),
           shuffler(at::detail::createCPUGenerator(seed ^ shuffle_seed_offset)) {
         network.to(tensor_device, at::kFloat);
+        controller.beta = objective.beta_initial;
+        controller.last_beta = objective.beta_initial;
         network.pack_recurrent_weights();
         optimizer = std::make_unique<torch::optim::Adam>(
             network.policy_parameters(), torch::optim::AdamOptions(parameters.learning_rate));
@@ -514,6 +590,19 @@ struct PpoPolicy::Impl {
         require_float(observations, observations.sizes(), expected_device);
     }
 
+    [[nodiscard]] std::size_t update_budget(const PpoRollout& rollout) const {
+        if (!objective.enabled()) { return budget; }
+        require(rollout.rewards.defined() && rollout.rewards.numel() > 0 &&
+                    rollout.rewards.numel() <= maximum_controlled_rollout,
+                "El controlador admite hasta 16384 transiciones por rollout");
+        constexpr auto row_bytes = static_cast<std::size_t>(ppo_action_count) *
+                                   (2 * sizeof(float) + 16 * sizeof(double));
+        const auto rows = static_cast<std::size_t>(rollout.rewards.numel());
+        require(rows <= budget / row_bytes && rows * row_bytes < budget,
+                "Los pesos y temporales del controlador superan el presupuesto");
+        return budget - rows * row_bytes;
+    }
+
     void validate_rollout(const PpoRollout& rollout, const at::Device& expected_device) const {
         require(rollout.rewards.defined() && rollout.rewards.device() == expected_device,
                 "El rollout PPO no pertenece al dispositivo de entrada acordado");
@@ -525,7 +614,7 @@ struct PpoPolicy::Impl {
                     rollout.observations.size(2) == static_cast<int64_t>(width) &&
                     rollout.observations.device() == expected_device,
                 "Las observaciones PPO no corresponden a los pasos y carriles del rollout");
-        require_resources(width, rollout.rewards.numel(), budget, architecture);
+        require_resources(width, rollout.rewards.numel(), update_budget(rollout), architecture);
         validate_observations(rollout.observations.flatten(0, 1), expected_device.is_cpu());
         require_float(rollout.old_log_probabilities, shape, expected_device);
         require(rollout.rewards.device() == expected_device && rollout.actions.defined() &&
@@ -536,6 +625,14 @@ struct PpoPolicy::Impl {
                 "La acción PPO está fuera del intervalo de seis acciones");
         require((rollout.old_log_probabilities <= maximum_log_probability).all().item<bool>(),
                 "Las probabilidades anteriores PPO exceden el intervalo numérico admitido");
+        require(rollout.old_action_weights.defined() == objective.enabled(),
+                "El rollout no conserva la distribución exigida por el objetivo PPO");
+        if (objective.enabled()) {
+            require(rollout.old_action_weights.sizes() == at::IntArrayRef({shape[0], shape[1], ppo_action_count}),
+                    "Los pesos históricos no corresponden al rollout");
+            validate_ppo_behavior(rollout.old_action_weights.flatten(0, 1), rollout.actions.flatten(),
+                                  rollout.old_log_probabilities.flatten(), rollout.reward_valid.flatten());
+        }
         if (architecture.kind == PpoNetworkKind::gru) {
             require_mask(rollout.episode_starts, shape, expected_device);
             require(shape[0] <= ppo_maximum_history && rollout.prefix_observations.defined() &&
@@ -546,7 +643,7 @@ struct PpoPolicy::Impl {
                         rollout.prefix_observations.scalar_type() == at::kFloat,
                     "La GRU necesita un rollout y un prefijo FP32 de hasta 256 pasos por carril");
             require_resources(width, rollout.rewards.numel() +
-                rollout.prefix_observations.size(0) * shape[1], budget, architecture);
+                rollout.prefix_observations.size(0) * shape[1], update_budget(rollout), architecture);
             require_float(rollout.prefix_observations, rollout.prefix_observations.sizes(), expected_device);
             require(rollout.prefix_lengths.defined() && rollout.prefix_lengths.layout() == at::kStrided &&
                         rollout.prefix_lengths.sizes() == at::IntArrayRef({shape[1]}) &&
@@ -563,7 +660,10 @@ struct PpoPolicy::Impl {
         const auto& returns = batch.returns;
         const auto log_probabilities = output.logits.log_softmax(-1);
         const auto selected = log_probabilities.gather(1, actions.unsqueeze(1)).squeeze(1);
-        const auto policy_loss = -ppo_clipped_objective(selected, previous, advantages, parameters.clip).mean();
+        const auto policy_loss = objective.kind == PpoObjectiveKind::kl_penalty_adaptive
+            ? ppo_penalized_objective(log_probabilities, batch.old_action_weights, actions, previous,
+                                      advantages, controller.beta).mean()
+            : -ppo_clipped_objective(selected, previous, advantages, parameters.clip).mean();
         const auto value_loss = (output.values - returns).square().mean();
         const auto entropy = -(log_probabilities.exp() * log_probabilities).sum(-1).mean();
         const auto loss = policy_loss + parameters.value_weight * value_loss - parameters.entropy * entropy;
@@ -610,9 +710,8 @@ struct PpoPolicy::Impl {
         return network.prefix_state({prefix, long_tensor(lengths, tensor_device)});
     }
 
-    [[nodiscard]] at::Tensor recurrent_minibatch(const PpoRollout& rollout,
-        std::span<const RecurrentSequence> sequences, const at::Tensor& normalized,
-        const at::Tensor& returns) {
+    [[nodiscard]] std::pair<PpoForward, at::Tensor> recurrent_output(const PpoRollout& rollout,
+        std::span<const RecurrentSequence> sequences) const {
         std::vector<int64_t> starts;
         std::vector<int64_t> lanes;
         std::vector<int64_t> lengths;
@@ -637,9 +736,86 @@ struct PpoPolicy::Impl {
         const PpoForward output{sequence_output.logits.flatten(0, 1).index_select(0, chosen),
                                 sequence_output.values.flatten().index_select(0, chosen)};
         const auto indices = positions.index_select(0, chosen);
+        return {output, indices};
+    }
+
+    [[nodiscard]] at::Tensor recurrent_minibatch(const PpoRollout& rollout,
+        std::span<const RecurrentSequence> sequences, const at::Tensor& normalized,
+        const at::Tensor& returns) {
+        const auto [output, indices] = recurrent_output(rollout, sequences);
         return optimize(output, {rollout.actions.flatten().index_select(0, indices),
             rollout.old_log_probabilities.detach().flatten().index_select(0, indices).to(at::kDouble),
-            normalized.index_select(0, indices), returns.index_select(0, indices)});
+            normalized.index_select(0, indices), returns.index_select(0, indices),
+            objective.enabled() ? rollout.old_action_weights.flatten(0, 1).index_select(0, indices) : at::Tensor{}});
+    }
+
+    [[nodiscard]] std::optional<double> measure_kl(const PpoRollout& rollout) const {
+        const at::NoGradGuard no_grad;
+        const auto indices = rollout.reward_valid.flatten().nonzero().squeeze(1);
+        if (indices.numel() == 0) { return std::nullopt; }
+        auto total = at::zeros({}, at::TensorOptions().dtype(at::kDouble).device(tensor_device));
+        int64_t measured = 0;
+        const auto accumulate = [&](const at::Tensor& logits, const at::Tensor& rows) {
+            const auto historical = rollout.old_action_weights.flatten(0, 1).index_select(0, rows).to(tensor_device);
+            const auto current = ppo_behavior_log_probabilities(logits.log_softmax(1).exp());
+            const auto previous = ppo_behavior_log_probabilities(historical);
+            total.add_(ppo_categorical_kl(current, previous).sum());
+            measured += rows.numel();
+        };
+        if (architecture.kind == PpoNetworkKind::gru) {
+            const auto sequences = recurrent_sequences(rollout);
+            const auto per_minibatch = static_cast<std::size_t>(parameters.minibatch_size / ppo_sequence_length);
+            const auto view = std::span(sequences);
+            for (std::size_t offset = 0; offset < sequences.size(); offset += per_minibatch) {
+                const auto count = std::min(per_minibatch, sequences.size() - offset);
+                int64_t longest = 0;
+                for (const auto& sequence : view.subspan(offset, count)) {
+                    longest = std::max(longest, sequence.external_length + sequence.start - sequence.history_start);
+                }
+                require_resources(width, rollout.rewards.numel() +
+                    rollout.prefix_observations.size(0) * rollout.rewards.size(1) +
+                    (longest + ppo_sequence_length) * static_cast<int64_t>(count), update_budget(rollout), architecture);
+                const auto [output, rows] = recurrent_output(rollout, view.subspan(offset, count));
+                accumulate(output.logits, rows);
+            }
+        } else {
+            for (int64_t offset = 0; offset < indices.numel(); offset += parameters.minibatch_size) {
+                const auto rows = indices.narrow(0, offset, std::min(parameters.minibatch_size, indices.numel() - offset));
+                const auto observations = rollout.observations.flatten(0, 1).index_select(0, rows).to(tensor_device);
+                accumulate(network.forward(observations).logits, rows);
+            }
+        }
+        require(measured == indices.numel(), "La medición KL perdió filas válidas");
+        const auto mean = total.item<double>() / static_cast<double>(measured);
+        static_cast<void>(epoch_decision(objective, 1, parameters.epochs, measured, mean));
+        return mean;
+    }
+
+    [[nodiscard]] bool measured_epoch(const PpoRollout& rollout, int64_t epoch, PpoUpdateStats& result) const {
+        result.completed_epochs = epoch + 1;
+        result.full_kl = measure_kl(rollout);
+        const auto decision = epoch_decision(objective, result.completed_epochs, parameters.epochs,
+                                             result.valid_transitions, result.full_kl);
+        result.threshold_exceeded = decision.threshold_exceeded;
+        result.skipped_epochs = decision.stop_remaining_epochs ? parameters.epochs - result.completed_epochs : 0;
+        return decision.stop_remaining_epochs;
+    }
+
+    void confirm_controller(const PpoUpdateStats& result) {
+        auto next = controller;
+        next.last_beta = controller.beta;
+        ++next.completed_rollouts;
+        next.optimizer_steps = static_cast<int64_t>(optimizer_step_count());
+        next.valid_rows = result.valid_transitions;
+        next.completed_epochs = result.completed_epochs;
+        next.skipped_epochs = result.skipped_epochs;
+        next.full_kl = result.full_kl;
+        next.threshold_exceeded = result.threshold_exceeded;
+        if (objective.kind == PpoObjectiveKind::kl_penalty_adaptive) {
+            next.beta = next_beta(objective, controller.beta, result.full_kl, result.valid_transitions);
+        }
+        next.validate(objective, next.optimizer_steps, parameters.epochs);
+        controller = next;
     }
 
     [[nodiscard]] PpoUpdateStats update_feedforward(const PpoRollout& rollout,
@@ -654,6 +830,8 @@ struct PpoPolicy::Impl {
         const auto actions = rollout.actions.flatten().index_select(0, indices).to(tensor_device);
         const auto old_log_probabilities = rollout.old_log_probabilities.detach().flatten()
                                               .index_select(0, indices).to(tensor_device).to(at::kDouble);
+        const auto old_weights = objective.enabled()
+            ? rollout.old_action_weights.detach().flatten(0, 1).index_select(0, indices).to(tensor_device) : at::Tensor{};
         const auto advantages = gae.advantages.flatten().index_select(0, indices).to(tensor_device).to(at::kFloat);
         require_float(advantages, actions.sizes(), tensor_device);
         const auto normalized = ((advantages - advantages.mean()) /
@@ -672,11 +850,13 @@ struct PpoPolicy::Impl {
                 const auto output = network.forward(observations.index_select(0, minibatch));
                 totals.add_(optimize(output, {actions.index_select(0, minibatch),
                     old_log_probabilities.index_select(0, minibatch), normalized.index_select(0, minibatch),
-                    returns.index_select(0, minibatch)}));
+                    returns.index_select(0, minibatch), objective.enabled()
+                        ? old_weights.index_select(0, minibatch) : at::Tensor{}}));
                 ++result.minibatches;
             }
+            if (objective.enabled() && measured_epoch(rollout, epoch, result)) { break; }
         }
-        return update_statistics(totals, result, parameters.epochs);
+        return update_statistics(totals, result, objective.enabled() ? result.completed_epochs : parameters.epochs);
     }
 
     [[nodiscard]] PpoUpdateStats update_recurrent(const PpoRollout& rollout) {
@@ -698,7 +878,7 @@ struct PpoPolicy::Impl {
                                        std::min(per_minibatch, sequence_count);
         require_resources(width, rollout.rewards.numel() +
             rollout.prefix_observations.size(0) * rollout.rewards.size(1) + minibatch_samples,
-            budget, architecture);
+            update_budget(rollout), architecture);
         const auto expected_steps = ((sequence_count + per_minibatch - 1) / per_minibatch) * parameters.epochs;
         require(optimizer_step_count() <= static_cast<std::size_t>(maximum_optimizer_steps - expected_steps),
                 "La actualización GRU excedería el límite de pasos de Adam");
@@ -729,8 +909,9 @@ struct PpoPolicy::Impl {
                 totals.add_(recurrent_minibatch(rollout, selected, normalized, returns));
                 ++result.minibatches;
             }
+            if (objective.enabled() && measured_epoch(rollout, epoch, result)) { break; }
         }
-        return update_statistics(totals, result, parameters.epochs);
+        return update_statistics(totals, result, objective.enabled() ? result.completed_epochs : parameters.epochs);
     }
 
     void validate_optimizer(torch::optim::Adam& selected_optimizer) {
@@ -822,15 +1003,19 @@ PpoAdvantages ppo_gae(const PpoRollout& rollout, const PpoHyperparameters& param
     return {advantages, at::where(rollout.reward_valid, advantages + old_values, 0.)};
 }
 PpoPolicy::PpoPolicy(std::size_t width, const PpoHyperparameters& parameters, uint64_t seed,
-                     std::string_view device_name, std::size_t memory_budget, PpoArchitecture architecture) {
+                     std::string_view device_name, std::size_t memory_budget, PpoArchitecture architecture,
+                     PpoObjectiveConfig objective) {
     parameters.validate();
     architecture.validate();
+    objective.validate();
+    require(!objective.enabled() || (!architecture.auxiliary && !architecture.double_dqn),
+            "El controlador PPO no admite optimizador auxiliar ni Double DQN");
     require(architecture.kind != PpoNetworkKind::gru ||
                 parameters.minibatch_size % ppo_sequence_length == 0,
             "La GRU necesita minibatches de un múltiplo de 16 transiciones");
     require(device_name == "cpu" || device_name == "cuda:0", "El dispositivo PPO debe ser cpu o cuda:0");
     require_resources(width, 1, memory_budget, architecture);
-    impl_ = std::make_unique<Impl>(width, parameters, seed, device_name, memory_budget, architecture);
+    impl_ = std::make_unique<Impl>(width, parameters, seed, device_name, memory_budget, architecture, objective);
 }
 PpoPolicy::PpoPolicy(PpoPolicy&&) noexcept = default;
 PpoPolicy& PpoPolicy::operator=(PpoPolicy&&) noexcept = default;
@@ -858,13 +1043,18 @@ PpoUpdateStats PpoPolicy::update(const PpoRollout& rollout) {
     require(!impl_->architecture.double_dqn, "Double DQN debe usar su actualización con red objetivo");
     impl_->validate_rollout(rollout, impl_->tensor_device);
     if (impl_->architecture.kind == PpoNetworkKind::gru) {
-        return impl_->update_recurrent(rollout);
+        const auto result = impl_->update_recurrent(rollout);
+        if (impl_->objective.enabled()) { impl_->confirm_controller(result); }
+        return result;
     }
     const auto indices = rollout.reward_valid.flatten().nonzero().squeeze(1);
     if (indices.numel() == 0) {
+        if (impl_->objective.enabled()) { impl_->confirm_controller({}); }
         return {};
     }
-    return impl_->update_feedforward(rollout, ppo_gae(rollout, impl_->parameters), indices);
+    const auto result = impl_->update_feedforward(rollout, ppo_gae(rollout, impl_->parameters), indices);
+    if (impl_->objective.enabled()) { impl_->confirm_controller(result); }
+    return result;
 }
 PpoUpdateStats PpoPolicy::update_from_cpu(const PpoRollout& rollout) {
     require(impl_->architecture.kind == PpoNetworkKind::mlp && !impl_->architecture.double_dqn,
@@ -872,14 +1062,26 @@ PpoUpdateStats PpoPolicy::update_from_cpu(const PpoRollout& rollout) {
     impl_->validate_rollout(rollout, at::Device(at::kCPU));
     const auto indices = rollout.reward_valid.flatten().nonzero().squeeze(1);
     if (indices.numel() == 0) {
+        if (impl_->objective.enabled()) { impl_->confirm_controller({}); }
         return {};
     }
-    return impl_->update_feedforward(rollout, ppo_gae(rollout, impl_->parameters), indices);
+    const auto result = impl_->update_feedforward(rollout, ppo_gae(rollout, impl_->parameters), indices);
+    if (impl_->objective.enabled()) { impl_->confirm_controller(result); }
+    return result;
+}
+
+std::optional<double> PpoPolicy::full_kl(const PpoRollout& rollout) const {
+    require(impl_->objective.enabled(), "La KL completa requiere un objetivo explícito");
+    require(rollout.observations.defined(), "Faltan observaciones para medir KL");
+    const auto source_device = impl_->architecture.kind == PpoNetworkKind::mlp && rollout.observations.device().is_cpu()
+        ? at::Device(at::kCPU) : impl_->tensor_device;
+    impl_->validate_rollout(rollout, source_device);
+    return impl_->measure_kl(rollout);
 }
 
 void PpoPolicy::save(std::ostream& destination) const {
     torch::serialize::OutputArchive archive;
-    archive.write("schema_version", c10::IValue(checkpoint_version));
+    archive.write("schema_version", c10::IValue(impl_->objective.enabled() ? controller_checkpoint_version : checkpoint_version));
     archive.write("observation_width", c10::IValue(static_cast<int64_t>(impl_->width)));
     archive.write("memory_budget", c10::IValue(static_cast<int64_t>(impl_->budget)));
     archive.write("device", c10::IValue(impl_->device_name));
@@ -887,6 +1089,10 @@ void PpoPolicy::save(std::ostream& destination) const {
     archive.write("hidden_width", c10::IValue(impl_->architecture.hidden_width));
     archive.write("auxiliary_enabled", c10::IValue(impl_->architecture.auxiliary));
     archive.write("double_dqn", c10::IValue(impl_->architecture.double_dqn));
+    if (impl_->objective.enabled()) {
+        impl_->controller.validate(impl_->objective, static_cast<int64_t>(optimizer_steps()), impl_->parameters.epochs);
+        write_controller(archive, impl_->objective, impl_->controller);
+    }
     torch::serialize::OutputArchive hyperparameters;
     for (const auto& [name, field] : hyperparameter_fields) {
         hyperparameters.write(name, c10::IValue(impl_->parameters.*field));
@@ -926,10 +1132,10 @@ PpoPolicy PpoPolicy::load(std::istream& source, std::string_view device_name) {
     torch::serialize::InputArchive archive;
     archive.load_from(source, at::Device(at::kCPU));
     const auto version = read_integer(archive, "schema_version");
-    require(version == 1 || version == checkpoint_version,
+    require(version == 1 || version == checkpoint_version || version == controller_checkpoint_version,
             "La versión del checkpoint PPO no está admitida");
     PpoArchitecture architecture;
-    if (version == checkpoint_version) {
+    if (version >= checkpoint_version) {
         const auto kind = read_integer(archive, "architecture_kind");
         require(kind == static_cast<int64_t>(PpoNetworkKind::mlp) ||
                     kind == static_cast<int64_t>(PpoNetworkKind::gru),
@@ -957,8 +1163,20 @@ PpoPolicy PpoPolicy::load(std::istream& source, std::string_view device_name) {
     torch::serialize::InputArchive hyperparameters;
     archive.read("hyperparameters", hyperparameters);
     const auto parameters = read_hyperparameters(hyperparameters);
+    PpoObjectiveConfig objective;
+    PpoControllerState controller;
+    torch::serialize::InputArchive objective_archive, controller_archive;
+    if (version == controller_checkpoint_version) {
+        archive.read("objective", objective_archive);
+        archive.read("controller", controller_archive);
+        objective = read_objective(objective_archive);
+        controller = read_controller(controller_archive);
+    } else {
+        require(!archive.try_read("objective", objective_archive) && !archive.try_read("controller", controller_archive),
+                "Un checkpoint anterior contiene un controlador de otra versión");
+    }
     PpoPolicy result(static_cast<std::size_t>(width), parameters, 0, device_name,
-                     static_cast<std::size_t>(budget), architecture);
+                     static_cast<std::size_t>(budget), architecture, objective);
     torch::serialize::InputArchive network;
     archive.read("network", network);
     result.impl_->network.load(network);
@@ -969,6 +1187,10 @@ PpoPolicy PpoPolicy::load(std::istream& source, std::string_view device_name) {
     archive.read("optimizer", optimizer);
     result.impl_->optimizer->load(optimizer);
     result.impl_->validate_optimizer(*result.impl_->optimizer);
+    if (objective.enabled()) {
+        controller.validate(objective, static_cast<int64_t>(result.optimizer_steps()), parameters.epochs);
+        result.impl_->controller = controller;
+    }
     at::Tensor sampling_state;
     at::Tensor shuffle_state;
     archive.read("sampling_rng", sampling_state, true);
@@ -1083,6 +1305,8 @@ PpoAction PpoPolicy::act_recurrent(const at::Tensor& observations, const at::Ten
 const PpoArchitecture& PpoPolicy::architecture() const noexcept {
     return impl_->architecture;
 }
+const PpoObjectiveConfig& PpoPolicy::objective() const noexcept { return impl_->objective; }
+const PpoControllerState& PpoPolicy::controller_state() const noexcept { return impl_->controller; }
 std::size_t PpoPolicy::parameter_count() const noexcept { return model_parameters(impl_->width, impl_->architecture); }
 PpoAuxiliaryStats PpoPolicy::consolidate(const at::Tensor& observations,
                                        const at::Tensor& matured_rewards, int64_t steps) {

@@ -187,18 +187,20 @@ def test_recovery_rejects_integer_replacing_boolean_cache_policy(tmp_path, filen
 
 def test_image_subbatches_keep_order_tail_and_no_gradient():
     encoder = embeddings.FrozenEncoders.__new__(embeddings.FrozenEncoders)
+    encoder.spec = {"runtime_precision": embeddings._runtime_precision()}
     encoder.device = torch.device("cpu")
     encoder.image_batch_size = 2
     encoder.mean = torch.zeros(1, 3, 1, 1)
     encoder.std = torch.ones(1, 3, 1, 1)
     batches = []
 
-    def model(value):
-        assert not torch.is_grad_enabled()
-        batches.append(len(value))
-        return value[:, 0, 0, 0][:, None].expand(-1, 512)
+    class Model(torch.nn.Module):
+        def forward(self, value):
+            assert not torch.is_grad_enabled()
+            batches.append(len(value))
+            return value[:, 0, 0, 0][:, None].expand(-1, 512)
 
-    encoder.image_model = model
+    encoder.image_model = Model().eval()
     pngs = []
     for value in (0, 25, 50, 100, 255):
         buffer = BytesIO()
@@ -212,7 +214,9 @@ def test_image_subbatches_keep_order_tail_and_no_gradient():
 
 def test_text_subbatches_keep_all_tokens_and_weighted_mean():
     encoder = embeddings.FrozenEncoders.__new__(embeddings.FrozenEncoders)
+    encoder.spec = {"runtime_precision": embeddings._runtime_precision()}
     encoder.device = torch.device("cpu")
+    encoder.word_embedding_placement = "cuda"
     tokens = list(range(1, 884))
     batches = []
 
@@ -228,12 +232,15 @@ def test_text_subbatches_keep_all_tokens_and_weighted_mean():
             array = torch.tensor(ids)
             return {"input_ids": array, "attention_mask": array != 0}
 
-    def model(input_ids, attention_mask):
-        assert not torch.is_grad_enabled()
-        batches.append(len(input_ids))
-        return SimpleNamespace(last_hidden_state=input_ids.float()[..., None].expand(-1, -1, 384))
+    class Model(torch.nn.Module):
+        def forward(self, input_ids, attention_mask):
+            assert not torch.is_grad_enabled()
+            batches.append(len(input_ids))
+            return SimpleNamespace(
+                last_hidden_state=input_ids.float()[..., None].expand(-1, -1, 384)
+            )
 
-    encoder.tokenizer, encoder.text_model = Tokenizer(), model
+    encoder.tokenizer, encoder.text_model = Tokenizer(), Model().eval()
     encoder.text_batch_size = 32
     reference = encoder.text("texto técnico de prueba")
     batches.clear()

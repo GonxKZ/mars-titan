@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T16:55:33.978605+00:00",
+  "reviewed_commit": "835a354eba3a4a9da9cc9aa108b550a6a06f22f7",
+  "base_commit": "4ed665b044b8aa0f56c2c1a45751a041ccd17595",
+  "source_sha256": {
+    "docs/engineering/ppo-objective-controls.md": "2c9db883f6853df3e75d24399a46e38c40391ce34cc413f6aca1334e21fd8acd",
+    "docs/engineering/ppo-objective-variants.md": "d1aa50e3f10385f46926268033c841c9b1c59b0a83fd0bbde491ea860826b41c",
+    "native/CMakeLists.txt": "5c78f404c148923f08433d6e70dd947d736fd1d6c1c76b22abe1239c81431d25",
+    "native/cmake/RLObjectives.cmake": "a31c614ca3d8d9cc52031851ae590fd46e3343fa8fc2b85075985a12bd732af5",
+    "native/include/mars_titan/ppo_controller.hpp": "0f3fccf304ebf2f98e324f67c5c0a6a99b1433c87605d4a01387b37a4486c690",
+    "native/include/mars_titan/ppo_objectives.hpp": "8ca95df2e5214938a7b788520e44c134990fb0b22240f6cc0117c0aff1d0decb",
+    "native/include/mars_titan/ppo_policy.hpp": "91ccf1a8b936401bee4dd052e25bee9865ce3c128f5266987213abb9cf7f897a",
+    "native/include/mars_titan/ppo_training.hpp": "f4ab851e3f4cb7e5b947a0cbfe87936478865ef1e103fd5b25897d6f900b365a",
+    "native/src/ppo_controller.cpp": "62f8e0c99e861dc3ae7fe6821f26382d69fff9d196ddc305507c047eb01d7d0f",
+    "native/src/ppo_experiment.cpp": "6dd2df0c27e4034daa0f28bdae7eb620fb27b3ef801d33bbcddb2dcab6229ece",
+    "native/src/ppo_objectives.cpp": "b0e746a53b7fc898fca7863b611e862e55155481a93cdd0a2bf4b603aca8a513",
+    "native/src/ppo_policy.cpp": "fd73fce93d8c16f88c0b9c9117f3ffd2d867e76901822b58ec0ca326c8505c12",
+    "native/src/ppo_training.cpp": "f45ce508fa49d46c8ddc67fb00366d110264f79c5d80d2586c5204d7f0d8585e",
+    "native/tests/ppo_controller_tests.cpp": "62e082de902c1e3ff3112ea8a52b808277a211dd9d4b16f962327136b6030991",
+    "native/tests/ppo_variant_objective_tests.cpp": "df7832d2555cf6ed2e608dc0bf9ab5c9aa93e9708a6e4a7be1511e14b10db459",
+    "native/tests/ppo_variant_state_tests.cpp": "5488dfb3e42c757e83d9b91f1ca37af43e8b3e50672a12c5bb62955acadfc4e8",
+    "tests/simulation/test_ppo_objective_config.py": "ee1767e272ab317783a257aa5c543e64872450df9a764f56728234e74dd256b4"
+  },
+  "implemented": [
+    "Tres identidades opt-in: diagnóstico Clip, penalización KL adaptativa y Clip con parada tras época",
+    "Captura FP32 de las seis masas históricas, normalización FP64 y conciliación de soporte/acción para filas válidas",
+    "Medición completa después de época y reconstrucción de prefijos GRU con parámetros actuales",
+    "Beta fija por rollout y adaptación única para el siguiente, estadísticas por épocas efectivas",
+    "Política3/rollout2 y metadatos conciliados, con escritor/checkpoints/retención existentes",
+    "Recuperación en frontera advance, guardas de presupuesto y contadores incluida observación de warmup"
+  ],
+  "checks": {
+    "python": {
+      "passed": 13,
+      "path": "tests/simulation/test_ppo_objective_config.py",
+      "source_files_opened": false
+    },
+    "native": {
+      "safe_ctest_executables": [
+        "ppo_objectives",
+        "ppo_controller",
+        "ppo_variant_state",
+        "ppo_variant_objective",
+        "ppo_checkpoint"
+      ],
+      "profiles": [
+        {
+          "profile": "static",
+          "stage": "configure",
+          "exit_code": 0,
+          "seconds": 2.819991789001506
+        },
+        {
+          "profile": "static",
+          "stage": "build",
+          "exit_code": 0,
+          "seconds": 819.868941089997
+        },
+        {
+          "profile": "static",
+          "stage": "test",
+          "exit_code": 0,
+          "seconds": 2.72294513900124
+        },
+        {
+          "profile": "static",
+          "stage": "analyze-objectives",
+          "exit_code": 0,
+          "seconds": 9.695183930001804
+        },
+        {
+          "profile": "static",
+          "stage": "analyze-ppo_policy.cpp",
+          "exit_code": 0,
+          "seconds": 50.42469116699067
+        },
+        {
+          "profile": "static",
+          "stage": "analyze-ppo_training.cpp",
+          "exit_code": 0,
+          "seconds": 26.945452833009767
+        },
+        {
+          "profile": "static",
+          "stage": "analyze-ppo_experiment.cpp",
+          "exit_code": 0,
+          "seconds": 10.59902135800803
+        },
+        {
+          "profile": "asan",
+          "stage": "configure",
+          "exit_code": 0,
+          "seconds": 2.1183573130110744
+        },
+        {
+          "profile": "asan",
+          "stage": "build",
+          "exit_code": 0,
+          "seconds": 136.18796893200488
+        },
+        {
+          "profile": "asan",
+          "stage": "test",
+          "exit_code": 0,
+          "seconds": 6.585060269004316
+        },
+        {
+          "profile": "coverage",
+          "stage": "configure",
+          "exit_code": 0,
+          "seconds": 2.2183146290044533
+        },
+        {
+          "profile": "coverage",
+          "stage": "build",
+          "exit_code": 0,
+          "seconds": 142.3900729349989
+        },
+        {
+          "profile": "coverage",
+          "stage": "test",
+          "exit_code": 0,
+          "seconds": 2.8701520379981957
+        }
+      ],
+      "compiler": "Clang 21.1.8",
+      "standard": "C++20",
+      "clang_tidy": "21.1.6",
+      "lifetime_analysis": "Experimental Lifetime Safety detectado y activado",
+      "libtorch": "2.14.0+cu130"
+    },
+    "independent": {
+      "receipt_sha256": "f3f1ccc0a107bb7aca1d12d261c6ded320534719468eb16b3ded8b392c96689b",
+      "verdict": "Sin defectos materiales reproducidos abiertos en el alcance técnico sin pasos de optimizador.",
+      "checks": {
+        "initial_public_ctest_executables": 5,
+        "initial_config_pytest": 13,
+        "after_fix_public_ctest_executables": 4,
+        "after_fix_config_pytest": 13,
+        "after_fix_private_probes": 3,
+        "controller_boundaries": "nextafter a ambos lados, límites beta, vacío, negativo por redondeo, última época y estados incompatibles",
+        "gradient": "Oráculo escalar para q no uniforme, q y ventajas sin gradiente",
+        "recovery": "Serialización de política y rollout, coherencia de controlador/contador, alias, tipos y cursor inicial. El almacén conserva integridad y publicaciones fallidas.",
+        "optimizer_steps_executed": 0,
+        "environment_advances_executed": 0,
+        "gpu_executed_by_review": false
+      }
+    },
+    "mutations": {
+      "detected": 12,
+      "total": 12,
+      "receipt": "mutations-835a354e/results.json"
+    },
+    "coverage": {
+      "receipt": "metrics-835a354e.json",
+      "max_ccn": 63,
+      "max_crap": 4032.0,
+      "convention": "CCN Lizard por función cuyo rango contiene una línea modificada. Cobertura de regiones LLVM kind=0 dentro del rango, incluidas lambdas. CRAP=CCN²*(1-c)^3+CCN. No equivale a sentencias ni acredita ramas que ejecutan optimización.",
+      "unmapped_inline_getter": "_ZNK10mars_titan8learning18PpoObjectiveConfig7enabledEv: LLVM informa hash0 sin registro. Getter inline del header, fuera de los cinco archivos CPP resumidos."
+    },
+    "cuda_first": {
+      "commit": "821cde094c9c8f2ba2b4ce2ac736807ced8f9cff",
+      "sources": {
+        "native/src/ppo_policy.cpp": "fd73fce93d8c16f88c0b9c9117f3ffd2d867e76901822b58ec0ca326c8505c12",
+        "native/src/ppo_objectives.cpp": "36959ab3c23417254d9f8f20500f923ec3f3f377c002b582d762e207a370deaf",
+        "native/src/ppo_controller.cpp": "fb294a209b06a878057a2e50219fc53da32436483c8c5d29988eef916a8a4643",
+        "native/include/mars_titan/ppo_policy.hpp": "91ccf1a8b936401bee4dd052e25bee9865ce3c128f5266987213abb9cf7f897a",
+        "native/include/mars_titan/ppo_controller.hpp": "38110497e0c94115d40ebf4865c05575677652351e8bc0adfe1851352449b99e",
+        "native/include/mars_titan/ppo_objectives.hpp": "8ca95df2e5214938a7b788520e44c134990fb0b22240f6cc0117c0aff1d0decb"
+      },
+      "probe_sha256": "3e9f0cce1fdd1522b100262ad5bd33a5dd6a95b0aeb6e0c8b055dd59914f7464",
+      "binary_sha256": "4cc998080da9cd40cd2abe5f60f4e294073b573307dbd4dcc78cde8bd33cd3cc",
+      "result": {
+        "status": "passed",
+        "cases": 6,
+        "device": "cuda:0",
+        "max_loss_error": 1.0329426203270486e-09,
+        "max_gradient_error": 2.9802322387695312e-08,
+        "max_kl_error": 4.94479798773817e-09,
+        "peak_allocated_bytes": 17156096,
+        "peak_reserved_bytes": 23068672,
+        "recovery_exact": true,
+        "global_rng_unchanged": true,
+        "parameter_updates": 0,
+        "dtype_device_rejections": 3
+      },
+      "allocator_cap_bytes": 134217728,
+      "allocator_fraction": 0.016,
+      "device": "cuda:0",
+      "torch": "2.14.0+cu130",
+      "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "free_preflight_mib": 1119,
+      "context_excluded_from_torch_counters": true,
+      "process_exited": true,
+      "gpu_released": true,
+      "production_changed_during_cuda": false
+    },
+    "cuda_support_delta": {
+      "source_sha256": "b0e746a53b7fc898fca7863b611e862e55155481a93cdd0a2bf4b603aca8a513",
+      "probe_sha256": "d3c8fddb8578cb2df40df0d30d00758bba58626177c319389a314afa097c23e1",
+      "result": {
+        "status": "passed",
+        "cpu_cuda_checks": 6,
+        "valid_subnormal_preserved": true,
+        "invalid_log_rejected": true,
+        "forced_row_preserved": true,
+        "parameter_updates": 0,
+        "peak_allocated_bytes": 9216,
+        "peak_reserved_bytes": 2097152
+      },
+      "torch": "2.14.0+cu130",
+      "device": "cuda:0",
+      "gpu": "NVIDIA GeForce RTX4070 Laptop",
+      "allocator_cap_bytes": 134217728,
+      "allocator_fraction": 0.016,
+      "free_preflight_mib": 805,
+      "process_exited": true,
+      "gpu_released": true,
+      "previous_six_cases_not_repeated": true
+    },
+    "ruff": true,
+    "format": true,
+    "repository_check": true
+  },
+  "legacy": {
+    "base": "4ed665b044b8aa0f56c2c1a45751a041ccd17595",
+    "default_configuration_files_unchanged": true,
+    "outputs_rng_initial_tensors_byte_equal": true,
+    "raw_policy_archives_byte_equal": false,
+    "policy_metadata_equal_except_parameter_addresses": true,
+    "address_normalization": "Comparación solo en memoria de params/i. Archivos originales sin modificar. También cambia serialization_id.",
+    "clip_values_and_gradients_fp32_fp64_exact": true,
+    "post_update_parity_executed": false,
+    "receipts": [
+      "legacy-parity.json",
+      "legacy-semantic-parity.json",
+      "legacy-gradient-parity.json"
+    ]
+  },
+  "benchmark": {
+    "cases": [
+      {
+        "rows": 1,
+        "median_ms": 0.201068,
+        "min_ms": 0.171492,
+        "max_ms": 0.311285,
+        "input_bytes": 68,
+        "checksum": -0.5347790463771979
+      },
+      {
+        "rows": 1024,
+        "median_ms": 0.673706,
+        "min_ms": 0.650482,
+        "max_ms": 0.692621,
+        "input_bytes": 69632,
+        "checksum": -799.2260948641979
+      },
+      {
+        "rows": 16384,
+        "median_ms": 10.226206,
+        "min_ms": 9.872882,
+        "max_ms": 11.373403,
+        "input_bytes": 1114112,
+        "checksum": -12805.322517814866
+      },
+      {
+        "peak_rss_kib": 130592,
+        "threads": 1,
+        "warmup": 1,
+        "repetitions": 5,
+        "optimizer_steps": 0
+      }
+    ],
+    "scope": "Objetivo penalizado puro, entradas fijas, sin backward ni optimizador. Un calentamiento y cinco repeticiones. Máquina no aislada, RSS de proceso con bibliotecas.",
+    "energy_measured": false,
+    "speedup_claimed": false
+  },
+  "fixes": {
+    "independent": [
+      "PPO-R1 soporte subnormal",
+      "PPO-R2 límite de filas por rollout y presupuesto configurado"
+    ],
+    "author_derived": "Tope acumulado separado para observaciones de calentamiento",
+    "original_evidence": "verification-821cde09"
+  },
+  "evidence_sha256": {
+    "handoff": "b2a0dc0d201bfc64fa03355d2d13e0eeb41d46a7e565607faf2fe9313d87aeb3",
+    "independent_review": "f3f1ccc0a107bb7aca1d12d261c6ded320534719468eb16b3ded8b392c96689b"
+  },
+  "limits": [
+    "No se ejecutó optimizer.step, aprendizaje, ajuste de señales, piloto o evaluación científica.",
+    "Las pruebas de política construyen Adam sin usarlo. update_from_cpu se prueba únicamente con cero filas válidas y regresa antes del optimizador.",
+    "No se ejecutó PpoTrainer::advance. La captura y las fases de actualizaciones completas están implementadas y revisadas por código, no verificadas con actualizaciones reales.",
+    "La continuidad de la siguiente actualización, los fallos posteriores a un paso y el rendimiento de aprendizaje siguen pendientes por el bloqueo histórico.",
+    "No se abrió el test2024 ni se cambiaron fuentes, ediciones científicas, servicios o el entorno compartido.",
+    "Los perfiles instrumentan código propio. LibTorch precompilado no está instrumentado. No se ejecutaron TSan/MSan.",
+    "LLVM informa un getter inline sin perfil compatible. La cobertura por regiones es diagnóstica y no prueba ejecución de todas las instrucciones tras una excepción.",
+    "El máximo CCN63/CRAP4032 corresponde a la función modificada advance, que no se ejecuta bajo este bloqueo. No se ha ocultado esa cobertura ni añadido aprendizaje para elevarla.",
+    "Los contadores Torch de CUDA excluyen el contexto. La GPU se liberó tras cada ventana. No se midió rendimiento CUDA.",
+    "No se modificaron PPO legacy, KLPO predictivo o campañas mediante configuración. El binario nuevo tiene otra huella y no sustituye el runtime anterior."
+  ],
+  "scientific_runs_executed": false,
+  "optimizer_steps_executed": 0,
+  "post_update_recovery_executed": false
+}
