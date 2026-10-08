@@ -59,7 +59,7 @@ proyección residente pasó de 986.952 a 625.992 bytes. La nueva estimación fue
 816.540 bytes y el límite de 900.000. Los valores conservan la misma huella.
 Un límite inferior a la estimación se rechaza antes del cálculo numérico.
 
-Una medición con fixtures de dimensiones `64×5`, `384`, `512`, `78` y `420`,
+Una medición anterior al arreglo, sobre `66e2d93b`, con fixtures de dimensiones `64×5`, `384`, `512`, `78` y `420`,
 NumPy 2.5.3 y dos hilos obtuvo una mediana de 27,58 ms para 256 observaciones,
 tras un calentamiento y cinco repeticiones. La proyección ocupaba 1.746.504
 bytes y el pico rastreado adicional fue de 2.403.720 bytes, frente a una
@@ -72,3 +72,5 @@ de 64 coordenadas y capacidad máxima de 1.024 episodios. Tiene identidad propia
 y no sustituye al candidato de claves 128 y rasgos 256. Siguen pendientes la
 admisión temporal, la lectura posterior a MAC y la publicación conjunta del
 banco con el estado rápido y las predicciones pendientes.
+
+La [revisión del arreglo](../../reports/research/episodic-codec-verification-20261008.json) ejecutó las 38 pruebas públicas y 29 sondas independientes. El comando `uv run pytest tests/memory/test_episodic_codec.py` comprueba el módulo en CPU. No requiere CUDA porque el codec opera sobre la vista CPU inmutable.
