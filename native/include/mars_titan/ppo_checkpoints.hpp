@@ -42,6 +42,7 @@ class PpoCheckpointStore {
                                       std::string_view rollout_archive, bool select_best = false);
     [[nodiscard]] PpoCheckpointBundle load_latest();
     [[nodiscard]] PpoCheckpointBundle load_best();
+    [[nodiscard]] std::string identity_sha256() const;
 
   private:
     struct Impl;

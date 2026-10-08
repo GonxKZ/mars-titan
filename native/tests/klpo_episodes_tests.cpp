@@ -11,11 +11,16 @@
 namespace {
 using namespace mars_titan::learning;
 void require(bool condition, const char* message) {
-    if (!condition) { throw std::runtime_error(message); }
+    if (!condition) {
+        throw std::runtime_error(message);
+    }
 }
-template<class F> void rejected(F&& operation, const char* message) {
-    try { operation(); }
-    catch (const std::invalid_argument&) { return; }
+template <class F> void rejected(F&& operation, const char* message) {
+    try {
+        operation();
+    } catch (const std::invalid_argument&) {
+        return;
+    }
     throw std::runtime_error(message);
 }
 
@@ -27,7 +32,9 @@ KlpoEpisodeStep step(std::size_t cursor, bool sampled, double reward, bool final
     result.observation = {.25F, -.5F};
     result.action = sampled ? uint8_t{2} : uint8_t{1};
     result.sampled = sampled;
-    if (sampled) { result.behavior.fill(1.F / 6); }
+    if (sampled) {
+        result.behavior.fill(1.F / 6);
+    }
     result.reward = reward;
     result.valuation_valid = true;
     result.truncated = final;
@@ -56,7 +63,8 @@ void forced_steps_keep_real_reward_and_clock() {
     const auto original = batch();
     validate_klpo_batch(original, true);
     const auto returns = klpo_terminal_returns(original);
-    require(returns.size() == 1 && returns[0] == 4., "Se perdió el retorno del paso forzado o su reloj");
+    require(returns.size() == 1 && returns[0] == 4.,
+            "Se perdió el retorno del paso forzado o su reloj");
     require(klpo_episode_status(original.episodes[0]) == KlpoEpisodeStatus::horizon,
             "Un calentamiento valorado se confundió con falta de valoración");
     auto forced = original;
@@ -70,14 +78,16 @@ void incomplete_and_unvalued_batches_are_not_objectives() {
     auto partial = batch();
     partial.episodes[0].steps.pop_back();
     validate_klpo_batch(partial, false);
-    rejected([&] { static_cast<void>(klpo_terminal_returns(partial)); }, "Se consumió un episodio parcial");
+    rejected([&] { static_cast<void>(klpo_terminal_returns(partial)); },
+             "Se consumió un episodio parcial");
     auto invalid = batch();
     invalid.episodes[0].steps.back().valuation_valid = false;
     invalid.episodes[0].steps.back().reward = 0.;
     validate_klpo_batch(invalid, false);
     require(klpo_episode_status(invalid.episodes[0]) == KlpoEpisodeStatus::missing_valuation,
             "Falta la causa de valoración inválida");
-    rejected([&] { static_cast<void>(klpo_terminal_returns(invalid)); }, "Se convirtió la falta de valoración en retorno");
+    rejected([&] { static_cast<void>(klpo_terminal_returns(invalid)); },
+             "Se convirtió la falta de valoración en retorno");
     auto ruined = batch();
     ruined.episodes[0].steps.back().terminated = true;
     ruined.episodes[0].steps.back().truncated = false;
@@ -90,22 +100,42 @@ void invalid_records_and_budgets_fail() {
         auto invalid = batch();
         auto& last = invalid.episodes[0].steps.back();
         switch (mutation) {
-        case 0: last.behavior[3] = 0; break;
-        case 1: last.outcome_at += 1; break;
-        case 2: last.cursor = 0; break;
-        case 3: last.reward = std::numeric_limits<double>::quiet_NaN(); break;
-        case 4: last.action = 6; break;
-        case 5: last.truncated = false; break;
-        case 6: invalid.episodes.push_back(invalid.episodes.front()); break;
-        case 7: invalid.episodes[0].steps.front().behavior[0] = 1; break;
+        case 0:
+            last.behavior.fill(.2F);
+            last.behavior[3] = 0;
+            break;
+        case 1:
+            last.outcome_at += 1;
+            break;
+        case 2:
+            last.cursor = 0;
+            break;
+        case 3:
+            last.reward = std::numeric_limits<double>::quiet_NaN();
+            break;
+        case 4:
+            last.action = 6;
+            break;
+        case 5:
+            last.truncated = false;
+            break;
+        case 6:
+            invalid.episodes.push_back(invalid.episodes.front());
+            break;
+        case 7:
+            invalid.episodes[0].steps.front().behavior[0] = 1;
+            break;
         case 8:
-            for (auto& value : invalid.episodes[0].spec.close_times) { value += 1'704'067'200'000'000; }
+            for (auto& value : invalid.episodes[0].spec.close_times) {
+                value += 1'704'067'200'000'000;
+            }
             for (auto& value : invalid.episodes[0].steps) {
                 value.decision_at += 1'704'067'200'000'000;
                 value.outcome_at += 1'704'067'200'000'000;
             }
             break;
-        default: break;
+        default:
+            break;
         }
         rejected([&] { validate_klpo_batch(invalid, true); }, "Se aceptó un registro corrupto");
     }
@@ -119,13 +149,49 @@ void codec_roundtrips_exactly_and_rejects_damage() {
     const auto bytes = serialize_klpo_batch(value);
     const auto recovered = deserialize_klpo_batch(bytes);
     require(serialize_klpo_batch(recovered) == bytes, "El registro no conserva sus bytes");
-    require(klpo_terminal_returns(recovered) == klpo_terminal_returns(value), "La recuperación altera el retorno");
-    rejected([&] { static_cast<void>(deserialize_klpo_batch(bytes.substr(0, bytes.size()-1))); },
+    require(klpo_terminal_returns(recovered) == klpo_terminal_returns(value),
+            "La recuperación altera el retorno");
+    rejected([&] { static_cast<void>(deserialize_klpo_batch(bytes.substr(0, bytes.size() - 1))); },
              "Se aceptó un cuerpo incompleto");
-    rejected([&] { static_cast<void>(deserialize_klpo_batch(bytes + "x")); }, "Se aceptaron bytes ajenos");
-    rejected([&] { static_cast<void>(deserialize_klpo_batch(bytes, 1)); }, "Se leyó antes de aplicar el límite");
+    rejected([&] { static_cast<void>(deserialize_klpo_batch(bytes + "x")); },
+             "Se aceptaron bytes ajenos");
+    rejected([&] { static_cast<void>(deserialize_klpo_batch(bytes, 1)); },
+             "Se leyó antes de aplicar el límite");
 }
+
+void maximum_population_and_history_are_checked_before_payload() {
+    auto value = batch();
+    value.observation_width = 1;
+    auto episode = value.episodes.front();
+    episode.steps.clear();
+    episode.spec.close_times.clear();
+    for (std::size_t time = 0; time <= maximum_klpo_steps; ++time) {
+        episode.spec.close_times.push_back(static_cast<int64_t>(time + 1));
+    }
+    value.episodes.clear();
+    for (std::size_t index = 0; index < maximum_klpo_episodes; ++index) {
+        episode.spec.id = "episode-" + std::to_string(index);
+        value.episodes.push_back(episode);
+    }
+    validate_klpo_batch(value, false);
+    const auto bytes = serialize_klpo_batch(value);
+    require(deserialize_klpo_batch(bytes).episodes.size() == maximum_klpo_episodes,
+            "El límite admitido no se puede recuperar");
+    auto enlarged = bytes;
+    // El ancho sigue a la firma de ocho bytes y al presupuesto uint64.
+    for (std::size_t byte = 0; byte < 8; ++byte) {
+        enlarged[16 + byte] = static_cast<char>((uint64_t{32768} >> (byte * 8)) & 0xffU);
+    }
+    rejected([&] { static_cast<void>(deserialize_klpo_batch(enlarged)); },
+             "Se materializó una geometría mayor que el presupuesto");
+    value.episodes.push_back(episode);
+    rejected([&] { validate_klpo_batch(value, false); }, "Se admitieron más de 128 episodios");
+    value.episodes.pop_back();
+    value.episodes[0].spec.close_times.push_back(9999);
+    rejected([&] { validate_klpo_batch(value, false); },
+             "Se cortó o admitió una historia demasiado larga");
 }
+} // namespace
 
 int main() {
     try {
@@ -133,6 +199,7 @@ int main() {
         incomplete_and_unvalued_batches_are_not_objectives();
         invalid_records_and_budgets_fail();
         codec_roundtrips_exactly_and_rejects_damage();
+        maximum_population_and_history_are_checked_before_payload();
         std::cout << "Registro terminal contrastado sin aprendizaje\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

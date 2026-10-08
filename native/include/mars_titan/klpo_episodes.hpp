@@ -61,7 +61,7 @@ void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete = 
 [[nodiscard]] KlpoEpisodeStatus klpo_episode_status(const KlpoEpisodeRecord& episode);
 [[nodiscard]] std::vector<double> klpo_terminal_returns(const KlpoEpisodeBatch& batch);
 [[nodiscard]] std::string serialize_klpo_batch(const KlpoEpisodeBatch& batch);
-[[nodiscard]] KlpoEpisodeBatch deserialize_klpo_batch(
-    std::string_view bytes, std::size_t max_bytes = maximum_klpo_record_bytes);
-}
+[[nodiscard]] KlpoEpisodeBatch
+deserialize_klpo_batch(std::string_view bytes, std::size_t max_bytes = maximum_klpo_record_bytes);
+} // namespace mars_titan::learning
 #endif

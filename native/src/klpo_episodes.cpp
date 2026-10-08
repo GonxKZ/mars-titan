@@ -26,21 +26,23 @@ static_assert(sizeof(float) == sizeof(uint32_t) && sizeof(double) == sizeof(uint
 static_assert(std::numeric_limits<float>::is_iec559 && std::numeric_limits<double>::is_iec559);
 
 void require(bool condition, const char* message) {
-    if (!condition) { throw std::invalid_argument(message); }
+    if (!condition) {
+        throw std::invalid_argument(message);
+    }
 }
 
 bool identifier(std::string_view value) {
     return !value.empty() && value.size() <= maximum_identifier &&
-        std::ranges::all_of(value, [](char c) {
-            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == ':' || c == '/';
-        });
+           std::ranges::all_of(value, [](char c) {
+               return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+                      c == '-' || c == '_' || c == '.' || c == ':' || c == '/';
+           });
 }
 
 bool digest(std::string_view value) {
     return value.size() == digest_size && std::ranges::all_of(value, [](char c) {
-        return (c >= 'a' && c <= 'f') || (c >= '0' && c <= '9');
-    });
+               return (c >= 'a' && c <= 'f') || (c >= '0' && c <= '9');
+           });
 }
 
 void account(std::size_t count, std::size_t width, std::size_t limit, std::size_t& used) {
@@ -50,12 +52,12 @@ void account(std::size_t count, std::size_t width, std::size_t limit, std::size_
 }
 
 void validate_header(const KlpoEpisodeBatch& batch) {
-    require(identifier(batch.fold) && digest(batch.reference_sha256) &&
-                std::isfinite(batch.beta) && batch.beta > 0 &&
-                std::isfinite(batch.gamma) && batch.gamma > 0 && batch.gamma <= 1 &&
-                batch.observation_width > 0 && batch.observation_width <= maximum_width &&
-                batch.max_bytes > 0 && batch.max_bytes <= maximum_klpo_record_bytes &&
-                !batch.episodes.empty() && batch.episodes.size() <= maximum_klpo_episodes,
+    require(identifier(batch.fold) && digest(batch.reference_sha256) && std::isfinite(batch.beta) &&
+                batch.beta > 0 && std::isfinite(batch.gamma) && batch.gamma > 0 &&
+                batch.gamma <= 1 && batch.observation_width > 0 &&
+                batch.observation_width <= maximum_width && batch.max_bytes > 0 &&
+                batch.max_bytes <= maximum_klpo_record_bytes && !batch.episodes.empty() &&
+                batch.episodes.size() <= maximum_klpo_episodes,
             "La identidad, geometría o configuración terminal no es válida");
 }
 
@@ -99,7 +101,8 @@ void validate_step(const KlpoEpisodeBatch& batch, const KlpoEpisodeRecord& episo
                 "El cierre no corresponde al horizonte o a la ruina");
     }
     if (step.terminated || step.truncated) {
-        require(cursor + 1 == episode.steps.size(), "El episodio contiene pasos después de su cierre");
+        require(cursor + 1 == episode.steps.size(),
+                "El episodio contiene pasos después de su cierre");
     }
 }
 
@@ -122,7 +125,7 @@ void put_float(std::string& out, float value) {
 }
 
 class Reader {
-public:
+  public:
     explicit Reader(std::string_view bytes) : bytes_(bytes) {}
     uint64_t integer() {
         require(bytes_.size() - cursor_ >= sizeof(uint64_t), "El registro está incompleto");
@@ -164,17 +167,24 @@ public:
         return value != 0;
     }
     [[nodiscard]] bool done() const { return cursor_ == bytes_.size(); }
-private:
+
+  private:
     std::string_view bytes_;
     std::size_t cursor_ = 0;
 };
-}
+} // namespace
 
 KlpoEpisodeStatus klpo_episode_status(const KlpoEpisodeRecord& episode) {
-    if (episode.steps.empty()) { return KlpoEpisodeStatus::open; }
+    if (episode.steps.empty()) {
+        return KlpoEpisodeStatus::open;
+    }
     const auto& last = episode.steps.back();
-    if (!last.valuation_valid) { return KlpoEpisodeStatus::missing_valuation; }
-    if (last.terminated) { return KlpoEpisodeStatus::ruin; }
+    if (!last.valuation_valid) {
+        return KlpoEpisodeStatus::missing_valuation;
+    }
+    if (last.terminated) {
+        return KlpoEpisodeStatus::ruin;
+    }
     return last.truncated ? KlpoEpisodeStatus::horizon : KlpoEpisodeStatus::open;
 }
 
@@ -188,8 +198,10 @@ void validate_klpo_batch(const KlpoEpisodeBatch& batch, bool require_complete) {
         validate_spec(episode.spec);
         require(identities.insert(episode.spec.id).second, "El registro duplica un episodio");
         const auto planned = episode.spec.close_times.size() - 1;
-        account(1, sizeof(KlpoEpisodeRecord) + episode.spec.id.size() + digest_size * 2 +
-                    episode.spec.partition.size(), batch.max_bytes, used);
+        account(1,
+                sizeof(KlpoEpisodeRecord) + episode.spec.id.size() + digest_size * 2 +
+                    episode.spec.partition.size(),
+                batch.max_bytes, used);
         account(episode.spec.close_times.size(), sizeof(int64_t), batch.max_bytes, used);
         account(planned, sizeof(KlpoEpisodeStep) + batch.observation_width * sizeof(float),
                 batch.max_bytes, used);
@@ -239,7 +251,9 @@ std::string serialize_klpo_batch(const KlpoEpisodeBatch& batch) {
         put_string(out, spec.partition);
         put_uint(out, spec.forced_prefix);
         put_uint(out, spec.close_times.size());
-        for (const auto moment : spec.close_times) { put_uint(out, static_cast<uint64_t>(moment)); }
+        for (const auto moment : spec.close_times) {
+            put_uint(out, static_cast<uint64_t>(moment));
+        }
         put_uint(out, episode.steps.size());
     }
     for (const auto& episode : batch.episodes) {
@@ -253,8 +267,12 @@ std::string serialize_klpo_batch(const KlpoEpisodeBatch& batch) {
             put_uint(out, step.terminated);
             put_uint(out, step.truncated);
             put_uint(out, std::bit_cast<uint64_t>(step.reward));
-            for (const auto value : step.behavior) { put_float(out, value); }
-            for (const auto value : step.observation) { put_float(out, value); }
+            for (const auto value : step.behavior) {
+                put_float(out, value);
+            }
+            for (const auto value : step.observation) {
+                put_float(out, value);
+            }
         }
     }
     require(out.size() <= batch.max_bytes, "El registro serializado supera el presupuesto");
@@ -263,7 +281,8 @@ std::string serialize_klpo_batch(const KlpoEpisodeBatch& batch) {
 
 KlpoEpisodeBatch deserialize_klpo_batch(std::string_view bytes, std::size_t max_bytes) {
     require(max_bytes > 0 && max_bytes <= maximum_klpo_record_bytes && bytes.size() <= max_bytes &&
-                bytes.starts_with(magic), "El registro no conserva versión o presupuesto");
+                bytes.starts_with(magic),
+            "El registro no conserva versión o presupuesto");
     Reader reader(bytes.substr(magic.size()));
     KlpoEpisodeBatch batch;
     batch.max_bytes = reader.size(max_bytes);
@@ -285,14 +304,17 @@ KlpoEpisodeBatch deserialize_klpo_batch(std::string_view bytes, std::size_t max_
         spec.forced_prefix = reader.size(maximum_klpo_steps);
         const auto times = reader.size(maximum_klpo_steps + 1);
         spec.close_times.reserve(times);
-        for (std::size_t index = 0; index < times; ++index) { spec.close_times.push_back(reader.time()); }
+        for (std::size_t index = 0; index < times; ++index) {
+            spec.close_times.push_back(reader.time());
+        }
         lengths.push_back(reader.size(maximum_klpo_steps));
     }
     // La cabecera completa limita las reservas antes de leer observaciones.
     validate_klpo_batch(batch, false);
     for (std::size_t index = 0; index < count; ++index) {
         auto& episode = batch.episodes[index];
-        require(lengths[index] < episode.spec.close_times.size(), "El número de pasos no corresponde a la cinta");
+        require(lengths[index] < episode.spec.close_times.size(),
+                "El número de pasos no corresponde a la cinta");
         episode.steps.reserve(episode.spec.close_times.size() - 1);
         for (std::size_t cursor = 0; cursor < lengths[index]; ++cursor) {
             KlpoEpisodeStep step;
@@ -305,9 +327,13 @@ KlpoEpisodeBatch deserialize_klpo_batch(std::string_view bytes, std::size_t max_
             step.terminated = reader.flag();
             step.truncated = reader.flag();
             step.reward = std::bit_cast<double>(reader.integer());
-            for (auto& value : step.behavior) { value = reader.number(); }
+            for (auto& value : step.behavior) {
+                value = reader.number();
+            }
             step.observation.resize(batch.observation_width);
-            for (auto& value : step.observation) { value = reader.number(); }
+            for (auto& value : step.observation) {
+                value = reader.number();
+            }
             episode.steps.push_back(std::move(step));
         }
     }
@@ -315,4 +341,4 @@ KlpoEpisodeBatch deserialize_klpo_batch(std::string_view bytes, std::size_t max_
     validate_klpo_batch(batch, false);
     return batch;
 }
-}
+} // namespace mars_titan::learning
