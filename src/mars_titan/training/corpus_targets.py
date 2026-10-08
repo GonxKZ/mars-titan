@@ -14,7 +14,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.batches import atomic_parquet_batches, read_bounded_table
 from mars_titan.data.budget_targets import residual_targets
-from mars_titan.data.cohort_files import read_manifest
+from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.cohort_news import COHORT_POLICIES
 from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.data.residual_arrays import residual_targets_array
@@ -180,8 +180,7 @@ def prepare_corpus_targets(
     implementations = {"reference": residual_targets, "numpy": residual_targets_array}
     if backend not in implementations:
         raise ValueError("El motor de etiquetas debe ser reference o numpy")
-    if output.is_symlink():
-        raise ValueError("El directorio de salida no puede ser un enlace")
+    safe_destination(output)
     meta, manifest_hash = read_manifest(manifest, 8 * 1024**2)
     masked = masked_inputs(input_policy)
     cohort = cohort_identity(meta, input_policy=input_policy)
@@ -285,6 +284,14 @@ def prepare_corpus_targets(
         prices, vectors, hashes, representation = _asset_sources(
             asset, prepared, samples, meta["context_sessions"], cohort, input_policy=input_policy
         )
+        if revision is not None:
+            for name, path in (
+                ("prices", prices),
+                ("samples", vectors),
+                ("prepared_manifest", prices.with_name("manifest.json")),
+                ("sample_manifest", vectors.with_name("manifest.json")),
+            ):
+                factor_sources.setdefault(path, (hashes[name], path.stat().st_size))
         if cohort:
             if common_representation is not None and common_representation != representation:
                 raise ValueError("No se pueden combinar representaciones con distinta semántica")
@@ -307,7 +314,15 @@ def prepare_corpus_targets(
         ).hexdigest()
         destination = output / "labels" / market / symbol
         label_path, receipt_path = destination / "labels.parquet", destination / "receipt.json"
+        safe_destination(label_path)
+        safe_destination(receipt_path)
         receipt = _json(receipt_path) if receipt_path.exists() else None
+        if (
+            revision is not None
+            and receipt_path.exists()
+            and (not isinstance(receipt, dict) or not receipt)
+        ):
+            raise ValueError("El recibo de etiquetas no conserva una identidad válida")
         if confirmed_hash is not None and receipt is None:
             raise ValueError("Falta un recibo de la supervisión ya confirmada")
         if receipt and receipt["fingerprint"] != fingerprint:

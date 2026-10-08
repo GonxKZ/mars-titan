@@ -197,9 +197,7 @@ def revision_sources(meta, *, input_policy):
     effective, observed, sources = bind_target_factors(
         path, parent, signature, _path(revision["descriptor_path"]), input_policy=input_policy
     )
-    if observed["descriptor_sha256"] != revision["descriptor_sha256"] or not same_json(
-        effective, meta.get("market_factors")
-    ):
+    if not same_json(observed, revision) or not same_json(effective, meta.get("market_factors")):
         raise ValueError("Ha cambiado el descriptor efectivo de factores de las etiquetas")
     if (
         meta.get("context_sessions") != parent.get("context_sessions")

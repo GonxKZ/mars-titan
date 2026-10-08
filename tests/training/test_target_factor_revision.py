@@ -532,3 +532,97 @@ def test_recovery_destination_cannot_overwrite_a_previous_factor(revision, tmp_p
 
     assert previous_factor.read_bytes() == before
     assert not (output / "manifest.json").exists()
+
+
+@pytest.mark.parametrize("linked", ["labels", "labels/US", "labels/US/AAA"])
+def test_recovery_rejects_nested_links_before_writing_a_factor(revision, tmp_path, linked):
+    protected_root = tmp_path / "protected-factor"
+    relative = Path("labels/US/AAA/labels.parquet").relative_to(linked)
+    protected = protected_root / relative
+    protected.parent.mkdir(parents=True)
+    shutil.copyfile(tmp_path / "expanded-market.parquet", protected)
+    description = json.loads(revision[2].read_text())
+    description["US"].update(prices_path=str(protected), prices_sha256=sha256(protected))
+    dump(revision[2], description)
+    reference = tmp_path / "reference-labels"
+    prepare(revision, reference)
+    output = tmp_path / "revision-labels"
+    output.mkdir()
+    shutil.copyfile(reference / "configuration.json", output / "configuration.json")
+    link = output / linked
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(protected_root, target_is_directory=True)
+    before = protected.read_bytes(), protected.stat().st_mtime_ns
+
+    with pytest.raises(ValueError):
+        prepare(revision, output)
+
+    assert (protected.read_bytes(), protected.stat().st_mtime_ns) == before
+    assert not (protected.parent / "receipt.json").exists()
+    assert not (output / "manifest.json").exists()
+
+
+def test_reader_rejects_an_unconfirmed_factor_contract_hash(revision, tmp_path):
+    output = tmp_path / "labels"
+    prepare(revision, output)
+    manifest = output / "manifest.json"
+    meta = json.loads(manifest.read_text())
+    meta["configuration"]["target_factor_revision"]["contract_sha256"] = "0" * 64
+    dump(manifest, meta)
+
+    with pytest.raises(ValueError):
+        CorpusDataset(manifest, input_policy=HISTORICAL_MASKED)
+
+
+@pytest.mark.parametrize("completed", [False, True])
+def test_empty_receipt_is_rejected_without_repair(revision, tmp_path, completed):
+    output = tmp_path / "labels"
+    prepare(revision, output)
+    manifest = output / "manifest.json"
+    if not completed:
+        manifest.unlink()
+    receipt = output / "labels/US/AAA/receipt.json"
+    labels = receipt.with_name("labels.parquet")
+    dump(receipt, {})
+    before = receipt.read_bytes(), labels.read_bytes(), labels.stat().st_mtime_ns
+
+    with pytest.raises(ValueError):
+        prepare(revision, output)
+
+    assert (receipt.read_bytes(), labels.read_bytes(), labels.stat().st_mtime_ns) == before
+    assert manifest.exists() is completed
+
+
+@pytest.mark.parametrize("artifact", ["prices", "samples"])
+@pytest.mark.parametrize("reuse", [False, True])
+def test_final_confirmation_rechecks_asset_parquets(
+    revision, tmp_path, monkeypatch, artifact, reuse
+):
+    import mars_titan.training.corpus_targets as module
+
+    output = tmp_path / "labels"
+    if reuse:
+        prepare(revision, output)
+    manifest = output / "manifest.json"
+    previous = manifest.read_bytes() if reuse else None
+    source = (
+        revision[1] / "US/AAA/prices.parquet"
+        if artifact == "prices"
+        else tmp_path / "samples/US/AAA/samples.parquet"
+    )
+    original = module.cohort_identity
+
+    def changed(meta, **kwargs):
+        result = original(meta, **kwargs)
+        if meta.get("kind") == "corpus_supervision":
+            with source.open("ab") as stream:
+                stream.write(b"changed-before-final-confirmation")
+        return result
+
+    monkeypatch.setattr(module, "cohort_identity", changed)
+    with pytest.raises(ValueError):
+        prepare(revision, output)
+    if reuse:
+        assert manifest.read_bytes() == previous
+    else:
+        assert not manifest.exists()
