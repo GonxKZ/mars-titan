@@ -6,6 +6,8 @@ Estas salidas son tablas normalizadas y paneles macro. Todavía faltan su codifi
 
 La [codificación acotada](historical-encoding-budgets.md) permite pausar por activo y omitir la copia secundaria de gráficos en caché. Conserva los vectores en Parquet y registra los límites de disco, CUDA y lotes antes de completar el recorrido.
 
+La primera edición codificada y verificada reúne 11.436 muestras de dos activos. La edición posterior con lotes de ocho textos tiene 64 activos y 230.957 muestras verificadas. Sus Parquet ocupan 807.222.843 bytes y la caché conserva 65.288 vectores de noticias. Los gráficos permanecen en los Parquet sin otra copia en caché. Se han conciliado todas las ventanas válidas de ese prefijo, las máscaras, la disponibilidad y las huellas. Este recuento parcial no acredita los 5.023 activos. El [recibo](../../reports/data/historical-encoding-progress-20261008.json) conserva ambas ediciones y el contraste de tamaños de lote que precede a la ampliación.
+
 ## Tablas preparadas
 
 | Mercado | Candidatos | Activos preparados | Sin precios | Filas de precios | Noticias admitidas | Hechos contables admitidos |
