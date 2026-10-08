@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T10:01:10.102727+00:00",
+  "base_commit": "3242909612e5b47accfb1b8f1a7f741cf8f19723",
+  "related_issue": 23,
+  "scope": "Puente de estados por bloques con fixtures CPU. Sin datos reales, optimizador ni evaluación científica.",
+  "sources": {
+    "src/mars_titan/models/titans/financial.py": "6516f537337b033268f5edf20b2ca825fa17eb4e314ababae04536433bec7e40",
+    "src/mars_titan/models/titans/financial_blocks.py": "d41b751da8a1b62d4272db5b15105950df87700a2c52f1483a971118325e72c7",
+    "src/mars_titan/models/titans/neural_memory.py": "8cec09c5af21f6d05b36dde24fadd4eafc812e7ec3c65034dcfdacab6ae5ddb4",
+    "tests/models/titans/test_financial_blocks.py": "c8db854e7bfc06b0fc39c1cf543f80f621730d4e5d88c4f427f35c0184de4cc5",
+    "tests/models/titans/cuda_financial_blocks_check.py": "0ff816dd713d784b6d24f9522011e16bb11324155f1586cacf4229581781174f"
+  },
+  "cpu_tests": {
+    "distinct_passed": 373,
+    "new_bridge_cases": 54,
+    "runs": [
+      {
+        "passed": 373,
+        "seconds": 7.57
+      },
+      {
+        "passed": 373,
+        "seconds": 7.8
+      }
+    ],
+    "initial_red": 20,
+    "additional_cursor_alias_red": 1,
+    "unbounded_iterable_red": 1
+  },
+  "legacy_parity": {
+    "base": "3242909612e5b47accfb1b8f1a7f741cf8f19723",
+    "exact_pairs": 32,
+    "dtype": [
+      "float32",
+      "float64"
+    ],
+    "modes": [
+      "train",
+      "eval"
+    ],
+    "new_arguments_used": false
+  },
+  "mutations": {
+    "detected": 13,
+    "total": 13,
+    "scope": "Mutaciones dirigidas sobre presupuesto, identidad, filas, grafo, momentum, copia, índice e iterables sin límite. Baseline de 54 casos del puente correcto."
+  },
+  "quality": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1"
+    },
+    "convention": "Cobertura de ramas instrumentada. CRAP = CC^2*(1-c)^3+CC, con c la fracción de sentencias ejecutadas en el intervalo inclusivo de cada función. Incluye funciones locales. Diagnóstico, no garantía.",
+    "files": {
+      "src/mars_titan/models/titans/financial_blocks.py": {
+        "coverage": {
+          "covered_lines": 153,
+          "num_statements": 154,
+          "percent_covered": 99.08256880733946,
+          "percent_covered_display": "99",
+          "missing_lines": 1,
+          "excluded_lines": 0,
+          "percent_statements_covered": 99.35064935064935,
+          "percent_statements_covered_display": "99",
+          "num_branches": 64,
+          "num_partial_branches": 1,
+          "covered_branches": 63,
+          "missing_branches": 1,
+          "percent_branches_covered": 98.4375,
+          "percent_branches_covered_display": "98"
+        },
+        "maximum_crap": 22.00702253304508
+      },
+      "src/mars_titan/models/titans/financial.py": {
+        "coverage": {
+          "covered_lines": 304,
+          "num_statements": 327,
+          "percent_covered": 89.57871396895787,
+          "percent_covered_display": "90",
+          "missing_lines": 23,
+          "excluded_lines": 0,
+          "percent_statements_covered": 92.96636085626912,
+          "percent_statements_covered_display": "93",
+          "num_branches": 124,
+          "num_partial_branches": 24,
+          "covered_branches": 100,
+          "missing_branches": 24,
+          "percent_branches_covered": 80.64516129032258,
+          "percent_branches_covered_display": "81"
+        },
+        "maximum_crap": 23.59791847511574
+      },
+      "src/mars_titan/models/titans/neural_memory.py": {
+        "coverage": {
+          "covered_lines": 146,
+          "num_statements": 151,
+          "percent_covered": 95.07389162561576,
+          "percent_covered_display": "95",
+          "missing_lines": 5,
+          "excluded_lines": 0,
+          "percent_statements_covered": 96.6887417218543,
+          "percent_statements_covered_display": "97",
+          "num_branches": 52,
+          "num_partial_branches": 5,
+          "covered_branches": 47,
+          "missing_branches": 5,
+          "percent_branches_covered": 90.38461538461539,
+          "percent_branches_covered_display": "90"
+        },
+        "maximum_crap": 23.017757040716994
+      }
+    }
+  },
+  "benchmark": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "threads": 2,
+    "warmup": 1,
+    "repetitions": 5,
+    "reference": "API ordinaria restore_state de ambos bloques completos, select_state una vez por bloque, concatenación y permutación.",
+    "scope": "Validación y reunión CPU, sin I/O de artefactos, entradas, forward ni CUDA. Carga del sistema no aislada. RSS incluye importaciones. Sin medida de energía.",
+    "peak_rss_bytes": 884441088,
+    "elapsed_seconds": 3.4003532840069965,
+    "records": [
+      {
+        "dim": 32,
+        "dtype": "torch.float32",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 2,
+        "source_bytes": 8416120,
+        "result_bytes": 37634,
+        "restore_select_p50_ms": 10.556203000305686,
+        "gather_p50_ms": 4.954689000442158,
+        "gather_flows_per_second": 403.6580297616095,
+        "exact_parity": true
+      },
+      {
+        "dim": 32,
+        "dtype": "torch.float32",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 64,
+        "source_bytes": 8416120,
+        "result_bytes": 1055612,
+        "restore_select_p50_ms": 8.830156999465544,
+        "gather_p50_ms": 5.804877000628039,
+        "gather_flows_per_second": 11025.21207479086,
+        "exact_parity": true
+      },
+      {
+        "dim": 32,
+        "dtype": "torch.float32",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 256,
+        "source_bytes": 8416120,
+        "result_bytes": 4208060,
+        "restore_select_p50_ms": 10.655449004843831,
+        "gather_p50_ms": 8.518040005583316,
+        "gather_flows_per_second": 30053.86213638346,
+        "exact_parity": true
+      },
+      {
+        "dim": 32,
+        "dtype": "torch.float64",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 2,
+        "source_bytes": 16804728,
+        "result_bytes": 70402,
+        "restore_select_p50_ms": 12.80879999831086,
+        "gather_p50_ms": 5.489433999173343,
+        "gather_flows_per_second": 364.33628681958487,
+        "exact_parity": true
+      },
+      {
+        "dim": 32,
+        "dtype": "torch.float64",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 64,
+        "source_bytes": 16804728,
+        "result_bytes": 2104188,
+        "restore_select_p50_ms": 13.477567001245916,
+        "gather_p50_ms": 6.557813998369966,
+        "gather_flows_per_second": 9759.349688159511,
+        "exact_parity": true
+      },
+      {
+        "dim": 32,
+        "dtype": "torch.float64",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 256,
+        "source_bytes": 16804728,
+        "result_bytes": 8402364,
+        "restore_select_p50_ms": 12.921271998493467,
+        "gather_p50_ms": 9.636172995669767,
+        "gather_flows_per_second": 26566.563314610416,
+        "exact_parity": true
+      },
+      {
+        "dim": 64,
+        "dtype": "torch.float32",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 2,
+        "source_bytes": 33581944,
+        "result_bytes": 135938,
+        "restore_select_p50_ms": 25.93880399945192,
+        "gather_p50_ms": 11.788740994234104,
+        "gather_flows_per_second": 169.65340073025644,
+        "exact_parity": true
+      },
+      {
+        "dim": 64,
+        "dtype": "torch.float32",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 64,
+        "source_bytes": 33581944,
+        "result_bytes": 4201340,
+        "restore_select_p50_ms": 25.797638001677115,
+        "gather_p50_ms": 14.16554200113751,
+        "gather_flows_per_second": 4518.005734963104,
+        "exact_parity": true
+      },
+      {
+        "dim": 64,
+        "dtype": "torch.float32",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 256,
+        "source_bytes": 33581944,
+        "result_bytes": 16790972,
+        "restore_select_p50_ms": 30.360309006937314,
+        "gather_p50_ms": 20.073522995517123,
+        "gather_flows_per_second": 12753.117629484901,
+        "exact_parity": true
+      },
+      {
+        "dim": 64,
+        "dtype": "torch.float64",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 2,
+        "source_bytes": 67136376,
+        "result_bytes": 267010,
+        "restore_select_p50_ms": 40.62653700384544,
+        "gather_p50_ms": 14.3196019998868,
+        "gather_flows_per_second": 139.66868632353123,
+        "exact_parity": true
+      },
+      {
+        "dim": 64,
+        "dtype": "torch.float64",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 64,
+        "source_bytes": 67136376,
+        "result_bytes": 8395644,
+        "restore_select_p50_ms": 39.964603005500976,
+        "gather_p50_ms": 16.669700999045745,
+        "gather_flows_per_second": 3839.3010170766515,
+        "exact_parity": true
+      },
+      {
+        "dim": 64,
+        "dtype": "torch.float64",
+        "source_blocks": 2,
+        "source_flows": 512,
+        "selected_flows": 256,
+        "source_bytes": 67136376,
+        "result_bytes": 33568188,
+        "restore_select_p50_ms": 39.7629639992374,
+        "gather_p50_ms": 25.099534999753814,
+        "gather_flows_per_second": 10199.392140233313,
+        "exact_parity": true
+      }
+    ],
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "cuda": {
+    "executed": true,
+    "status": "Ocho casos técnicos correctos",
+    "script": "tests/models/titans/cuda_financial_blocks_check.py",
+    "torch": "2.14.0+cu130",
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 962 MiB",
+    "records": [
+      {
+        "variant": "transformer_direct",
+        "dtype": "torch.float32",
+        "cpu_to_cuda_shapes": [],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "mac_disabled",
+        "dtype": "torch.float32",
+        "cpu_to_cuda_shapes": [
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1
+          ]
+        ],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "mac_frozen",
+        "dtype": "torch.float32",
+        "cpu_to_cuda_shapes": [
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1
+          ]
+        ],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "mac_online",
+        "dtype": "torch.float32",
+        "cpu_to_cuda_shapes": [
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1
+          ]
+        ],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "transformer_direct",
+        "dtype": "torch.float64",
+        "cpu_to_cuda_shapes": [],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "mac_disabled",
+        "dtype": "torch.float64",
+        "cpu_to_cuda_shapes": [
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1
+          ]
+        ],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "mac_frozen",
+        "dtype": "torch.float64",
+        "cpu_to_cuda_shapes": [
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1
+          ]
+        ],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      },
+      {
+        "variant": "mac_online",
+        "dtype": "torch.float64",
+        "cpu_to_cuda_shapes": [
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1,
+            32,
+            32
+          ],
+          [
+            1
+          ]
+        ],
+        "recovery_exact": true,
+        "next_prediction_exact": true,
+        "head_gradient_exact": true
+      }
+    ],
+    "cap_torch_bytes": 134217728,
+    "peak_torch_bytes": 20402176,
+    "peak_torch_reserved_bytes": 25165824,
+    "elapsed_seconds": 2.042120647005504,
+    "peak_rss_bytes": 1476431872,
+    "cpu_rng_unchanged": true,
+    "cuda_rng_unchanged": true,
+    "tf32": false,
+    "scope": "Transporte y recuperación técnicos, sin datos reales ni optimizador.",
+    "warning": "cuBLAS creó el contexto primario durante backward, sin error de la prueba."
+  },
+  "limits": [
+    "La cuenta de bytes no acota el RSS de PyTorch ni las fuentes ya cargadas.",
+    "La carga de archivos, el ID de contenido y la poda de referencias vivas corresponden al consumidor.",
+    "No se ha conectado el índice con la publicación de sesiones del banco.",
+    "La cobertura y las mutaciones no garantizan ausencia de otros defectos."
+  ],
+  "verification_format_equivalence": {
+    "before_sha256": "beb98d78808d7a6508178d6c9efad9814d93ab0b8d3d6c22d981e75ed038833d",
+    "after_sha256": "d41b751da8a1b62d4272db5b15105950df87700a2c52f1483a971118325e72c7",
+    "ast_identical": true
+  }
+}
