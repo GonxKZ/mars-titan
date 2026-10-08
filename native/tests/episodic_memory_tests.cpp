@@ -355,14 +355,13 @@ void queries_bound_temporary_storage_to_scores() {
     for (uint64_t id = 1; id <= episodic_memory_capacity; ++id) {
         write(memory, record(id));
     }
-    auto candidate = memory.prepare_write(record(episodic_memory_capacity + 1, key(0, 1)),
-                                           final_time);
+    auto candidate =
+        memory.prepare_write(record(episodic_memory_capacity + 1, key(0, 1)), final_time);
     const auto committed = allocations([&] { static_cast<void>(memory.query(key(), final_time)); });
-    const auto prepared = allocations([&] {
-        static_cast<void>(memory.query_prepared(key(), final_time, candidate));
-    });
-    std::cout << "Asignaciones por consulta (confirmada/provisional): " << committed.bytes
-              << '/' << prepared.bytes << " bytes\n";
+    const auto prepared = allocations(
+        [&] { static_cast<void>(memory.query_prepared(key(), final_time, candidate)); });
+    std::cout << "Asignaciones por consulta (confirmada/provisional): " << committed.bytes << '/'
+              << prepared.bytes << " bytes\n";
     constexpr std::size_t score_bytes = episodic_memory_capacity * sizeof(double);
     for (const auto& measured : {committed, prepared}) {
         require(measured.bytes > 0 && measured.largest <= score_bytes &&
@@ -383,7 +382,9 @@ void abandoned_queries_leave_committed_keys_and_rng_unchanged() {
             auto candidate = memory.prepare_write(record(id, key(0, 1)), final_time);
             static_cast<void>(memory.query_prepared(key(), final_time, candidate));
             static_cast<void>(memory.query_prepared(key(0, 1), final_time, candidate, id));
-            rejected([&] { static_cast<void>(memory.query_prepared(MemoryVector{}, final_time, candidate)); });
+            rejected([&] {
+                static_cast<void>(memory.query_prepared(MemoryVector{}, final_time, candidate));
+            });
             same_query(expected, memory.query(key(), final_time));
         }
         const auto after = memory.snapshot();
@@ -401,7 +402,8 @@ void failed_provisional_query_restores_the_committed_row() {
         auto candidate = memory.prepare_write(record(id, key(0, 1)), final_time);
         const auto provisional = memory.query_prepared(key(), final_time, candidate);
         if (provisional.neighbors[0].record.id != id) {
-            require(memory.commit(std::move(candidate)), "No avanzó el RNG tras descartar el registro");
+            require(memory.commit(std::move(candidate)),
+                    "No avanzó el RNG tras descartar el registro");
             continue;
         }
         bool failed = false;
@@ -419,11 +421,72 @@ void failed_provisional_query_restores_the_committed_row() {
         require(failed, "No se ejercitó el fallo al asignar las puntuaciones");
         same_query(before, memory.query(key(), final_time));
         same_query(provisional, memory.query_prepared(key(), final_time, candidate));
-        require(memory.commit(std::move(candidate)), "El fallo invalidó una escritura todavía coherente");
+        require(memory.commit(std::move(candidate)),
+                "El fallo invalidó una escritura todavía coherente");
         same_query(provisional, memory.query(key(), final_time));
         return;
     }
     throw std::runtime_error("La prueba no encontró una sustitución del reservorio");
+}
+void external_retention_changes_only_the_selected_records() {
+    EpisodicMemory memory(scope(), seed, 2);
+    write(memory, record(1, key(3, 4)));
+    write(memory, record(2));
+    const auto before = memory.retained_records();
+    auto stale = memory.prepare_write(record(3), final_time);
+    const std::array incoming{record(3, key(4, 3)), record(4, key(0, 2))};
+    const std::array<uint64_t, 2> retained{1, 4};
+    memory.retain_batch(incoming, retained, final_time);
+    const auto after = memory.retained_records();
+    require(after.size() == 2 && memory.seen() == 4 && after.front() == before.front(),
+            "La retención alteró un centro fijo o perdió admisiones");
+    auto expected = incoming.back();
+    expected.key = normalize_memory_key(expected.key);
+    require(after.back() == expected, "La retención modificó el episodio seleccionado");
+    require(!memory.commit(std::move(stale)), "Una escritura anterior sobrevive a la sustitución");
+    auto detached = memory.retained_records();
+    detached.front().value.fill(0);
+    require(memory.retained_records().front() == before.front(), "La copia comparte registros");
+    EpisodicMemory resumed(scope(), seed, 2);
+    resumed.restore(deserialize_memory(serialize_memory(memory.snapshot())));
+    require(resumed.retained_records() == after && resumed.seen() == 4,
+            "El archivo no recupera la retención y sus contadores");
+    same_query(memory.query(key(), final_time), resumed.query(key(), final_time));
+}
+
+void external_retention_rejects_invalid_batches_without_changing_the_bank() {
+    EpisodicMemory memory(scope(), seed, 2);
+    write(memory, record(1));
+    const auto before = memory.retained_records();
+    const auto rng = memory.snapshot().reservoir_rng;
+    const auto reject = [&](std::vector<MemoryRecord> records, std::vector<uint64_t> retained,
+                            int64_t confirmed_at = final_time) {
+        rejected([&] { memory.retain_batch(records, retained, confirmed_at); });
+        require(memory.retained_records() == before && memory.seen() == 1 &&
+                    memory.snapshot().reservoir_rng == rng,
+                "El rechazo dejó una sustitución o avanzó el contador");
+    };
+    reject({}, {1});
+    reject({record(2)}, {2});
+    reject({record(2)}, {1, 3});
+    reject({record(2)}, {1, 1});
+    reject({record(2)}, {2, 1});
+    reject({record(2), record(2)}, {1, 2});
+    reject({record(3), record(2)}, {1, 2});
+    reject({record(1)}, {1, 2});
+    reject({record(2)}, {1, 2}, 2);
+    auto future = record(2);
+    future.maturity_at = final_time + 1;
+    reject({future}, {1, 2});
+    auto invalid = record(2);
+    invalid.value.front() = std::numeric_limits<float>::quiet_NaN();
+    reject({invalid}, {1, 2});
+    reject(std::vector<MemoryRecord>(maximum_retention_batch + 1, record(2)), {1, 2});
+    const std::array incoming{record(2)};
+    const std::array<uint64_t, 2> retained{1, 2};
+    memory.retain_batch(incoming, retained, final_time);
+    require(memory.size() == 2 && memory.seen() == 2 && memory.snapshot().reservoir_rng == rng,
+            "La retención externa consumió el RNG del reservorio");
 }
 } // namespace
 
@@ -441,6 +504,8 @@ int main() {
         abandoned_queries_leave_committed_keys_and_rng_unchanged();
         failed_provisional_query_restores_the_committed_row();
         queries_bound_temporary_storage_to_scores();
+        external_retention_changes_only_the_selected_records();
+        external_retention_rejects_invalid_batches_without_changing_the_bank();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

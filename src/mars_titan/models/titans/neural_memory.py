@@ -76,7 +76,7 @@ class NeuralMemory(nn.Module):
         self.validate_state(state)
         return state
 
-    def validate_state(self, state: NeuralMemoryState) -> None:
+    def validate_state(self, state: NeuralMemoryState, *, device=None) -> None:
         if not isinstance(state, NeuralMemoryState) or state.config_id != self.config.fingerprint():
             raise ValueError("El estado pertenece a otro contrato de configuración")
         if (
@@ -91,6 +91,7 @@ class NeuralMemory(nn.Module):
         batch = state.steps.shape[0]
         self._check_size(batch)
         reference = self._reference()
+        expected_device = reference.device if device is None else torch.device(device)
         expected = (batch, self.config.dim, self.config.dim)
         storage_ids: set[tuple[torch.device, int]] = set()
         storage_bytes = 0
@@ -104,7 +105,7 @@ class NeuralMemory(nn.Module):
                 or value.layout != torch.strided
                 or value.shape != shape
                 or value.dtype != dtype
-                or value.device != reference.device
+                or value.device != expected_device
                 or not value.is_contiguous()
             ):
                 raise ValueError(

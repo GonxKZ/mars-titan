@@ -12,6 +12,30 @@ Los activos y tareas se ordenan antes de invocar `predict`. Cada lote físico re
 
 La identidad de una predicción combina ejecución, corte, activo, tarea y horizonte. El feedback añade su revisión a esa identidad. Esta versión admite únicamente la revisión fija cero. Una revisión posterior requiere otro contrato, no una corrección silenciosa. `Task.horizon` identifica el objetivo, pero no calcula calendarios de mercado ni acredita la publicación de una etiqueta. El proveedor debe aportar su disponibilidad.
 
+`PredictionMode::prepared` admite consumidores cuyo estado también cambia al
+leer entradas. En ese modo, `prepare` sustituye a `predict` y se invoca una sola
+vez con todas las observaciones y tareas ordenadas, el corte, el estado anterior
+y el tamaño de lote físico. Devuelve un `PreparedCohort` con una salida por
+activo y tarea, en ese orden, y `proposed_state`. No recibe el feedback. El
+consumidor divide internamente el cálculo en lotes y conserva la misma
+instantánea del banco durante toda la preparación. Los presupuestos y la
+selección de flujos del grupo lógico deben fijarse antes de esa división.
+
+El ejecutor comprueba tamaño, finitud y presupuesto de la propuesta. Sella
+todas las predicciones y después llama a `update(proposed_state, feedback)`.
+El resultado se publica con el cursor y la cola bajo el mismo `latest.json`.
+La propuesta de un intento interrumpido no es estado confirmado. `prepare` y
+`update` pueden repetirse al recuperar un intento anterior a la publicación y
+no deben producir efectos externos. Una generación ya confirmada no se repite.
+
+El JSON de ese consumidor contiene metadatos y referencias verificables a
+artefactos sellados para los tensores, no listas de pesos densos. Su adaptador
+debe comprobar formato, tamaño e identidad de esos artefactos antes de
+utilizarlos. Esta API no interpreta ni valida tensores externos por su cuenta.
+No se debe publicar otra cabecera independiente para ellos. El modo preparado
+usa una identidad de configuración de versión 2. El modo clásico conserva su
+identidad y sigue pasando el estado anterior directamente a `update`.
+
 La cola guarda la salida original de cada predicción pendiente. `update` recibe esa salida y la etiqueta ya disponible, después de registrar todas las predicciones del corte actual. El error utiliza la salida conservada, aunque el estado haya cambiado desde que se emitió. Cada horizonte madura de forma independiente. Una etiqueta futura, repetida, desconocida o ya aplicada se rechaza sin volver a producir su efecto. El proveedor puede consultar `pending()` al recuperar para solicitar solo los resultados que faltan.
 
 `replay_id` crea identidades de exposición distintas de la identidad del feedback y de otras visitas. No vuelve a aplicar feedback ni introduce un calendario de entrenamiento. El ejecutor llama una vez a `update` por cohorte, incluso si el conjunto de etiquetas maduras está vacío.
@@ -67,6 +91,22 @@ El 5 de octubre de 2026 pasaron los ocho CTest del perfil Debug y los dos del ej
 Clang 21.1.8 compiló con avisos estrictos tratados como errores, endurecimiento de libstdc++ y Lifetime Safety experimental. clang-tidy 21.1.6 y el analizador de rutas Clang 21.1.8 no emitieron diagnósticos propios en las dos unidades de producción. Se detectaron siete mutaciones dirigidas sobre aplicación anticipada de feedback, salida original, duplicados, revisiones, capacidad, finitud del estado e identidad de replay. No se ejecutaron TSan ni MSan en este componente. La comprobación de memoria no instrumenta las bibliotecas precompiladas de terceros.
 
 LLVM 21.1.8 midió un 87,90 % de líneas y un 60,27 % de ramas en `cohort_execution.cpp`. En el CLI fueron un 92,74 % y un 77,91 %. La complejidad se calculó con Lizard 1.24.0. CRAP usa `CC² × (1 − cobertura_de_líneas_ejecutables)³ + CC`, con rangos de funciones de Lizard y líneas `DA` de LLVM LCOV. El mayor valor fue 29,28 en `check_transition`, con CC 24. Estos valores describen lo ejercitado por las pruebas y no certifican ausencia de errores.
+
+La ampliación del modo preparado se comprobó el 8 de octubre de 2026 con los
+dos CTest del componente en Debug, ASan/UBSan y cobertura. Incluye siete
+fronteras de interrupción, una preparación para varias tareas, orden y lote
+físico, propuestas inválidas e incompatibilidad de modos. Cinco mutaciones
+dirigidas se detectaron. Los ocho archivos de identidad, registros, checkpoints
+y cabecera de un control clásico de cuatro cohortes, cinco activos y siete
+variables coincidieron byte a byte antes y después del cambio.
+
+Clang 21.1.8 compiló con avisos estrictos y Lifetime Safety experimental.
+clang-tidy y el analizador de rutas no emitieron diagnósticos propios en la
+unidad de producción modificada. LLVM cubrió 616 de 693 líneas y 289 de 466
+ramas de `cohort_execution.cpp`. La función nueva `prepare` tuvo todas sus
+líneas ejecutables cubiertas, CCN 5 y CRAP 5 según la misma convención LCOV.
+Estas comprobaciones usan estados escalares sintéticos. La validación y
+recuperación de artefactos de tensores externos corresponde al consumidor.
 
 ## Coste observado
 

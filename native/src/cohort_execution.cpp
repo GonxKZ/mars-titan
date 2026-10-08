@@ -22,6 +22,7 @@ using simulation::read_json_int64;
 constexpr std::size_t digest_width = 64;
 constexpr std::size_t maximum_tasks = 16;
 constexpr std::size_t maximum_assets = 4096;
+constexpr std::size_t maximum_prepared_assets = 8192;
 constexpr std::size_t maximum_pending = 100000;
 constexpr std::size_t maximum_cohorts = 1000000;
 constexpr std::size_t maximum_json_depth = 32;
@@ -39,13 +40,14 @@ bool digest(std::string_view text) {
                return (value >= '0' && value <= '9') || (value >= 'a' && value <= 'f');
            });
 }
-bool token(std::string_view text) {
+bool token(std::string_view text, bool financial_symbols = false) {
     constexpr std::size_t maximum_token = 128;
     return !text.empty() && text.size() <= maximum_token &&
-           std::ranges::all_of(text, [](char value) {
+           std::ranges::all_of(text, [financial_symbols](char value) {
                return (value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') ||
                       (value >= '0' && value <= '9') || value == '/' || value == '_' ||
-                      value == '-' || value == '.' || value == ':';
+                      value == '-' || value == '.' || value == ':' ||
+                      (financial_symbols && (value == '^' || value == '='));
            });
 }
 std::size_t count(const Json& value, std::size_t maximum) {
@@ -90,13 +92,14 @@ void check_state(const Json& state, const Limits& limits) {
     }
     static_cast<void>(bounded_json(state, limits.max_state_bytes));
 }
-void check_limits(const Limits& limits) {
+void check_limits(const Limits& limits, PredictionMode mode) {
     const auto positive = [](std::size_t value, std::uint64_t maximum) {
         return value > 0 && value <= maximum;
     };
     constexpr std::uint64_t maximum_log = std::uint64_t{16} * 1024 * mebibyte;
     if (!positive(limits.feature_width, maximum_assets) ||
-        !positive(limits.max_assets, maximum_assets) ||
+        !positive(limits.max_assets,
+                  mode == PredictionMode::prepared ? maximum_prepared_assets : maximum_assets) ||
         !positive(limits.max_pending, maximum_pending) ||
         !positive(limits.max_state_bytes, maximum_state) ||
         !positive(limits.max_checkpoint_bytes, maximum_buffer) ||
@@ -108,7 +111,7 @@ void check_limits(const Limits& limits) {
     }
 }
 Json configuration(Definition& definition) {
-    check_limits(definition.limits);
+    check_limits(definition.limits, definition.prediction_mode);
     check_state(definition.initial_state, definition.limits);
     const auto& id = definition.identity;
     if (!digest(id.source_sha256) || !digest(id.view_sha256) || !digest(id.representation_sha256) ||
@@ -129,7 +132,7 @@ Json configuration(Definition& definition) {
         tasks.push_back(Json{{"name", task.name}, {"horizon", task.horizon}});
     }
     const auto& limits = definition.limits;
-    return Json{{"schema_version", 1},
+    Json result{{"schema_version", 1},
                 {"kind", "cohort_execution"},
                 {"source_sha256", id.source_sha256},
                 {"view_sha256", id.view_sha256},
@@ -146,15 +149,23 @@ Json configuration(Definition& definition) {
                                 {"max_record_bytes", limits.max_record_bytes},
                                 {"max_log_bytes", limits.max_log_bytes},
                                 {"max_cohorts", limits.max_cohorts}}}};
+    if (definition.prediction_mode == PredictionMode::prepared) {
+        result["schema_version"] = 2;
+        result["prediction_mode"] = "prepared_cohort_v1";
+    } else if (definition.prediction_mode != PredictionMode::stateless) {
+        throw std::invalid_argument("El modo de preparación de la cohorte no es válido");
+    }
+    return result;
 }
-std::vector<Observation> canonical_observations(const Cohort& cohort, const Limits& limits) {
+std::vector<Observation> canonical_observations(const Cohort& cohort, const Limits& limits,
+                                                PredictionMode mode) {
     if (cohort.cutoff <= 0 || cohort.observations.empty() ||
         cohort.observations.size() > limits.max_assets) {
         throw std::invalid_argument("El corte o el número de activos no es válido");
     }
     for (const auto& row : cohort.observations) {
-        if (!token(row.asset) || row.available_at < 0 || row.available_at > cohort.cutoff ||
-            row.features.size() != limits.feature_width ||
+        if (!token(row.asset, mode == PredictionMode::prepared) || row.available_at < 0 ||
+            row.available_at > cohort.cutoff || row.features.size() != limits.feature_width ||
             !std::ranges::all_of(row.features, [](double value) { return std::isfinite(value); })) {
             throw std::invalid_argument(
                 "La observación es futura, no finita o tiene otra dimensión");
@@ -210,7 +221,8 @@ Prediction read_prediction(const Json& value, const Definition& definition,
                       count(value.at("generation"), definition.limits.max_cohorts),
                       read_json_int64(value.at("decision_at")),
                       number(value.at("value"))};
-    if (!token(result.asset) || result.generation == 0 || result.decision_at <= 0 ||
+    if (!token(result.asset, definition.prediction_mode == PredictionMode::prepared) ||
+        result.generation == 0 || result.decision_at <= 0 ||
         std::ranges::find(definition.tasks, result.task) == definition.tasks.end() ||
         result.id != prediction_id(identity, result)) {
         throw std::invalid_argument("La predicción perdió su identidad o su tarea");
@@ -311,8 +323,10 @@ struct Executor::Impl {
         : output(directory), definition(std::move(requested)), callbacks(std::move(operators)) {
         const auto config = configuration(definition);
         identity = content_sha256(config.dump());
-        if (!callbacks.predict || !callbacks.update) {
-            throw std::invalid_argument("Falta una función de predicción o actualización");
+        const auto prepared = definition.prediction_mode == PredictionMode::prepared;
+        if (!callbacks.update || static_cast<bool>(callbacks.prepare) != prepared ||
+            static_cast<bool>(callbacks.predict) == prepared) {
+            throw std::invalid_argument("Los callbacks no corresponden al modo de la cohorte");
         }
         lock = std::make_unique<simulation::OutputLock>(output, resume);
         const auto identity_file = output / "identity.json";
@@ -549,6 +563,33 @@ struct Executor::Impl {
         });
         return result;
     }
+    std::vector<Prediction> prepare(const Cohort& cohort, std::span<const Observation> observations,
+                                    std::size_t batch_rows, Json& proposed_state) const {
+        auto prepared = callbacks.prepare(observations, definition.tasks, cohort.cutoff,
+                                          stored.state, batch_rows);
+        if (prepared.values.size() != observations.size() * definition.tasks.size() ||
+            !std::ranges::all_of(prepared.values,
+                                 [](double value) { return std::isfinite(value); })) {
+            throw std::invalid_argument("Prepare necesita una salida finita por activo y tarea");
+        }
+        check_state(prepared.proposed_state, definition.limits);
+        std::vector<Prediction> result;
+        result.reserve(prepared.values.size());
+        for (const auto& row : observations) {
+            for (const auto& task : definition.tasks) {
+                Prediction prediction{"",
+                                      row.asset,
+                                      task,
+                                      stored.cursor + 1,
+                                      cohort.cutoff,
+                                      prepared.values.at(result.size())};
+                prediction.id = prediction_id(identity, prediction);
+                result.push_back(std::move(prediction));
+            }
+        }
+        proposed_state = std::move(prepared.proposed_state);
+        return result;
+    }
     Commit step(const Cohort& cohort, std::span<const Feedback> labels, std::size_t batch_rows,
                 const std::function<void(Boundary)>& fault) {
         healthy();
@@ -559,7 +600,8 @@ struct Executor::Impl {
             throw std::invalid_argument(
                 "El cursor, el orden temporal o el lote físico no es válido");
         }
-        const auto observations = canonical_observations(cohort, limits);
+        const auto observations =
+            canonical_observations(cohort, limits, definition.prediction_mode);
         const auto emitted = observations.size() * definition.tasks.size();
         if (emitted > limits.max_pending - stored.pending.size() ||
             emitted > std::numeric_limits<std::size_t>::max() - stored.issued) {
@@ -571,7 +613,10 @@ struct Executor::Impl {
         busy = true;
         try {
             notify(fault, Boundary::before_predictions);
-            auto predictions = predict(cohort, observations, batch_rows);
+            Json proposed_state;
+            auto predictions = callbacks.prepare
+                                   ? prepare(cohort, observations, batch_rows, proposed_state)
+                                   : predict(cohort, observations, batch_rows);
             notify(fault, Boundary::predictions_ready);
             Json forecast_rows = Json::array();
             Json feedback_rows = Json::array();
@@ -602,7 +647,8 @@ struct Executor::Impl {
                                          limits.max_record_bytes);
             notify(fault, Boundary::record_written);
             auto next = stored;
-            next.state = callbacks.update(stored.state, applied);
+            next.state =
+                callbacks.update(callbacks.prepare ? proposed_state : stored.state, applied);
             check_state(next.state, limits);
             for (const auto& outcome : applied) {
                 next.pending.erase(outcome.prediction.id);
