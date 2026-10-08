@@ -45,6 +45,8 @@ El benchmark imprime las repeticiones, dispersión, versiones, formas, buffers y
 
 ## Comprobaciones pendientes
 
-Faltan la selección del operador completo de Titans-MAC, la integración temporal del banco, la recuperación de su estado y la paridad con C y M desactivados. También faltan comprobaciones CUDA y la comparación CPU/CUDA de los caminos que se integren. Las pruebas CPU no las sustituyen.
+La [comprobación CUDA de C](../../../reports/research/cm-mechanisms-verification-20261008.json) contrasta float32, float64, complex64 y complex128 sobre dos matrices 2×2, con 17 ángulos y bloques de tres. Se comprobaron valores y gradientes de las tres penalizaciones. La diferencia máxima observada de valores fue `6,67e-16` y la de gradientes inferior a `1e-15`. El producto alternante mantiene el autovalor 2,25. El pico fue de 17,34 MB asignados por Torch, con contexto CUDA adicional y una aplicación externa activa. Esto no certifica cotas ni mide velocidad de un modelo.
+
+Faltan la selección del operador completo de Titans-MAC, la integración temporal del banco, la recuperación de su estado y la paridad con C y M desactivados. La selección M conserva su backend CPU. Los caminos del predictor que se integren necesitarán sus propias comprobaciones CPU/CUDA.
 
 No se ha reproducido la prueba formal de los manuscritos auditados ni su algoritmo de aproximación k-median. No hay aprendizaje, evaluación financiera, resultado de validación ni evidencia de estabilidad de MARS-TITAN atribuible a estas funciones.
