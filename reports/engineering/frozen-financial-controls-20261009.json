@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T22:57:27.710747+00:00",
+  "base_commit": "8535d1edffff656908ee33e3f4bb5aee90b9ecf5",
+  "issues": [
+    23,
+    293
+  ],
+  "scope": "Comprobación técnica CPU de composición congelada. No es el factorial científico ni una evaluación de utilidad predictiva.",
+  "source_sha256": {
+    "tests/memory/test_financial_session_controls.py": "57f6d0258ce2dbb1c38933ba0d7cc1738141a4528d2b95fdd59f571a0386e660",
+    "src/mars_titan/memory/financial_session.py": "654394ff6f39cb390d00a4dad28aca2fddf86f0caf1e86cbea13074067ed29e6",
+    "src/mars_titan/memory/retention_bank.py": "a43153020cac4d71312b594812a861bc332139174cb1a8683e3c50831efed98a",
+    "src/mars_titan/models/titans/local_control.py": "60db5f09e0fdc1693977afa811cc33cae1c2bc09a61388e6bd5b26d465855d19",
+    "src/mars_titan/models/titans/frozen_financial.py": "9a5238a66cd23333b0e4ff8e24719a954b11d8c95efef196f121b6c7dade7a31",
+    "src/mars_titan/models/titans/financial.py": "6516f537337b033268f5edf20b2ca825fa17eb4e314ababae04536433bec7e40",
+    "src/mars_titan/models/titans/episodic_readout.py": "6c17db86ec885b26d898c394d62d8646a9b91287c32d47834bf67a1ebc5da4ea"
+  },
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "torch": "2.14.0+cu130",
+  "dtype": "float64",
+  "input_contract_id": "a59c03c4459f6ebe2851d919d562e36e8a54a31dd6d058888e23ead7c8b4361a",
+  "paired_parameters_sha256": "856357d07f80c45769412ad50098bcdf937b547930ac4039ef6d421c9728c11d",
+  "paired_readout_parameters_sha256": "900a48167bc81975c729fb1f0f0bd0b0d3647c7a08e5c2c7ecfa3d3b27a1017a",
+  "parameter_origin": "Inicialización técnica con semillas fijas y copia explícita, sin ajuste.",
+  "configuration": {
+    "flows": 4,
+    "context_sessions": 64,
+    "hidden_size": 32,
+    "B_mem": 4,
+    "admission": "m1",
+    "K": 1,
+    "sdpa_backend": "math",
+    "mha_fastpath": false,
+    "control_present_in_both_modes": true,
+    "control_rank": 1,
+    "control_grid": 4,
+    "control_frequency": 1,
+    "control_max_flows": 2,
+    "model_seed": 42,
+    "control_seed": 91,
+    "retention_seed": 73,
+    "physical_batches": [
+      1,
+      4
+    ]
+  },
+  "checks": {
+    "pytest_cases": 2,
+    "crossed_paths": 4,
+    "trajectories_per_path": 3,
+    "total_trajectories": 12,
+    "confirmed_predictions_per_trajectory": 20,
+    "mature_labels_per_trajectory": 16,
+    "pending_after_trajectory": 4,
+    "diagnostic_preserves_predictions_exactly": true,
+    "diagnostic_preserves_fast_state_exactly": true,
+    "diagnostic_preserves_retention_receipt_exactly": true,
+    "physical_partition_rtol": 1e-12,
+    "physical_partition_atol": 1e-12,
+    "canonical_order_and_eligible_ids": true,
+    "exact_recovery": true,
+    "failure_boundary": "before_commit",
+    "immutable_latest_on_failure": true,
+    "reservoir_oracle": "Banco nativo v2 independiente con el mismo cupo, semilla y candidatos.",
+    "anchored_oracle": "Enumeración de combinaciones del conjunto restringido y distancia euclídea FP64.",
+    "actual_retention_paths_differ": true,
+    "torch_rng_unchanged": true,
+    "optimizer_steps": 0,
+    "cuda_initialized": false
+  },
+  "measured_uninstrumented": {
+    "pytest_seconds": 23.58,
+    "process_seconds": 24.47,
+    "peak_rss_kib": 771200,
+    "swaps": 0,
+    "cpu_quota_percent": 200,
+    "memory_max_bytes": 3221225472,
+    "memory_swap_max_bytes": 0,
+    "openmp_blas_threads": 2
+  },
+  "measured_instrumented": {
+    "pytest_seconds": 55.78,
+    "process_seconds": 57.09,
+    "peak_rss_kib": 782372,
+    "swaps": 0,
+    "cpu_quota_percent": 200,
+    "memory_max_bytes": 3221225472,
+    "memory_swap_max_bytes": 0,
+    "openmp_blas_threads": 2
+  },
+  "mutations": [
+    {
+      "name": "skip_diagnostic",
+      "detected": true,
+      "log_sha256": "424dc20c5bb40d56f70cc8837a2cc2845c5004cb2212c4fe7d568aa0a892bbed",
+      "detection": "Aserción de reevaluaciones"
+    },
+    {
+      "name": "replace_anchored_with_recent",
+      "detected": true,
+      "log_sha256": "ec5d7441a6db48f19ae42f17922a49a5394aa4dee1a0a0378f1ceb6dd598f0d2",
+      "detection": "Validador existente del recibo de centros"
+    }
+  ],
+  "diagnostics": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1"
+    },
+    "convention": "Líneas y ramas de coverage.py. CCN de funciones, métodos y closures de Radon, sin agregados Class ni duplicados. CRAP=C²(1−cobertura de líneas)³+C. Los rangos de closures pueden solaparse con su función contenedora.",
+    "modules": [
+      {
+        "path": "src/mars_titan/memory/financial_session.py",
+        "coverage": {
+          "covered_lines": 321,
+          "num_statements": 387,
+          "percent_covered": 77.05544933078394,
+          "percent_covered_display": "77",
+          "missing_lines": 66,
+          "excluded_lines": 0,
+          "percent_statements_covered": 82.94573643410853,
+          "percent_statements_covered_display": "83",
+          "num_branches": 136,
+          "num_partial_branches": 42,
+          "covered_branches": 82,
+          "missing_branches": 54,
+          "percent_branches_covered": 60.294117647058826,
+          "percent_branches_covered_display": "60"
+        },
+        "functions": [
+          {
+            "name": "FinancialSession._prepare_event",
+            "line": 460,
+            "complexity": 40,
+            "line_coverage": 0.9545454545454546,
+            "crap": 40.150262960180314
+          },
+          {
+            "name": "FinancialSession._resolve",
+            "line": 614,
+            "complexity": 25,
+            "line_coverage": 0.7636363636363637,
+            "crap": 33.253193087903824
+          }
+        ]
+      },
+      {
+        "path": "src/mars_titan/memory/retention_bank.py",
+        "coverage": {
+          "covered_lines": 144,
+          "num_statements": 175,
+          "percent_covered": 74.89539748953975,
+          "percent_covered_display": "75",
+          "missing_lines": 31,
+          "excluded_lines": 0,
+          "percent_statements_covered": 82.28571428571429,
+          "percent_statements_covered_display": "82",
+          "num_branches": 64,
+          "num_partial_branches": 23,
+          "covered_branches": 35,
+          "missing_branches": 29,
+          "percent_branches_covered": 54.6875,
+          "percent_branches_covered_display": "55"
+        },
+        "functions": [
+          {
+            "name": "RetentionBank.propose",
+            "line": 322,
+            "complexity": 22,
+            "line_coverage": 0.75,
+            "crap": 29.5625
+          }
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/titans/frozen_financial.py",
+        "coverage": {
+          "covered_lines": 114,
+          "num_statements": 136,
+          "percent_covered": 78.7128712871287,
+          "percent_covered_display": "79",
+          "missing_lines": 22,
+          "excluded_lines": 0,
+          "percent_statements_covered": 83.82352941176471,
+          "percent_statements_covered_display": "84",
+          "num_branches": 66,
+          "num_partial_branches": 19,
+          "covered_branches": 45,
+          "missing_branches": 21,
+          "percent_branches_covered": 68.18181818181819,
+          "percent_branches_covered_display": "68"
+        },
+        "functions": [
+          {
+            "name": "FrozenFinancialConsumer.prepare",
+            "line": 282,
+            "complexity": 8,
+            "line_coverage": 0.6875,
+            "crap": 9.953125
+          }
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/titans/local_control.py",
+        "coverage": {
+          "covered_lines": 195,
+          "num_statements": 232,
+          "percent_covered": 78.2312925170068,
+          "percent_covered_display": "78",
+          "missing_lines": 37,
+          "excluded_lines": 0,
+          "percent_statements_covered": 84.05172413793103,
+          "percent_statements_covered_display": "84",
+          "num_branches": 62,
+          "num_partial_branches": 23,
+          "covered_branches": 35,
+          "missing_branches": 27,
+          "percent_branches_covered": 56.45161290322581,
+          "percent_branches_covered_display": "56"
+        },
+        "functions": [
+          {
+            "name": "MACProjectionControl.forward",
+            "line": 357,
+            "complexity": 18,
+            "line_coverage": 0.8055555555555556,
+            "crap": 20.381944444444443
+          }
+        ]
+      }
+    ]
+  },
+  "final_retained_ids": {
+    "anchored": [
+      4,
+      6,
+      9,
+      13
+    ],
+    "reservoir": [
+      3,
+      6,
+      8,
+      13
+    ]
+  },
+  "evidence_sha256": {
+    "baseline.log": "da2450991f6829eedb651480e556778c20810645b8186fff8543e2d2ac6130ed",
+    "attempt-1.log": "56432e4f65074c9a9dcdfd0533379f622b5cc2b6c5601bd0ba5306a8feb9910d",
+    "final-paths.log": "90d69c5e3a0c79957c3b2f8db488bed854d940966f7d2082dec3f8dc24705f4f",
+    "final-uninstrumented.log": "30296371e4acf743d8d85a55a37a7eb2507770a37fa0e3b0a44f27ea06b07bbe",
+    "mutations.json": "3cb585079bf8a66c9849b3cbb2985eb2c4944523ad6204a1a76d48ec23d90fcd",
+    "mutations-final.json": "82f50d3f1f141c9937c0b6ef95d84e673b6095ebcc41d273a78966f988d86cff",
+    "quality.json": "4a4e645d80e22faecd888501aea6985db5d47ab3f53c60d7e96bf10a1b4ae702",
+    "final-tests.log": "8b7ac9dedeffb737033561a4f42500c1f94cc50aefc32826b0adaf619f293da6",
+    "imports-plain.log": "5dc3559b136ceca1e4fe18fef5295f22f5581a0263d8ab94c4e93f0c5bee7a3f",
+    "imports-names.log": "32fea8e56a0181c546a0453e5a961607ba83d95a1a5396109fb49b3f93ea13bd",
+    "imports-paths.log": "dff9de5af281b4af74af88f0f594c98967b1a62ba7ba458158d37252f8340999"
+  },
+  "instrumentation_failure": {
+    "exit_code": 139,
+    "source_selection": "Nombres de módulos en --source",
+    "minimal_probe": "La importación simple y la selección por directorios pasan. La selección por módulos falla al importar torch._C y durante GC.",
+    "final_selection": "Directorios de código con ramas activadas, sin cambios de producción.",
+    "production_defect_demonstrated": false
+  },
+  "limits": [
+    "No se han ejecutado CUDA, optimizadores, aprendizaje, corpus real ni evaluación científica.",
+    "Las doce trayectorias son fixtures de mecanismos. No estiman precisión financiera ni costes del censo completo.",
+    "Cada trayectoria de recuperación incluye una sesión fallida que se vuelve a preparar. Los contadores de emisiones indicados son los confirmados y el tiempo incluye los intentos fallidos.",
+    "La cobertura es focal. No sustituye la suite previa de validaciones y errores del consumidor.",
+    "El coste instrumentado incluye serialización, comprobación, cobertura y reconstrucción de fixtures. No es latencia del predictor.",
+    "C se comprueba en modo diagnóstico, sin penalización ni actualización de parámetros compartidos."
+  ]
+}
