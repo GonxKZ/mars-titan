@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-08T19:22:46.045560+00:00",
+  "status": "checkpoint_for_independent_review",
+  "scope": "Consumidor congelado y eventos completos con fixtures técnicos. No es una ejecución científica.",
+  "tests": {
+    "cpu_passed": 341,
+    "pytest_seconds": 38.09,
+    "process_peak_rss_bytes": 839798784,
+    "peak_scope": "Proceso de pytest con todas las bibliotecas. No es el pico aislado del consumidor."
+  },
+  "tools": {
+    "pytest": "9.1.1",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "duckdb": "1.5.5"
+  },
+  "native_base": [
+    "aae494cd623777ed1d4f49cba510e278d5f0f624",
+    "920eb07f5a09cda67431b72961eb39ecc3bf9150"
+  ],
+  "native_module_sha256": "6ab1b3dba6a9d0f73a574237ab1d564ea12b18a43418d8d4302bae546e291eb8",
+  "source_sha256": {
+    "src/mars_titan/memory/financial_session.py": "444a507217ef5591c2946783c145054cec46339c164f5a8a21465a4c2a3f70c5",
+    "src/mars_titan/memory/financial_observations.py": "de1a72c3e30524b22c2b252690293091c3e9af647096d26bbd5a172e685967ab",
+    "src/mars_titan/memory/financial_state_artifacts.py": "231abc4d0a0d6db0835670a37386ef9c2e45607fa64dd8a08f320b819fa0fb2f",
+    "src/mars_titan/models/titans/frozen_financial.py": "78ea022390580cd463b3b50d68783f57c75168bea9887feae80f1bef355271fb",
+    "src/mars_titan/models/titans/financial_blocks.py": "2ef1ffe6770e13ea28cd28976399e47ccb6b655389473fcff6a04bdda5545df5",
+    "src/mars_titan/training/prefix_eligibility.py": "e07157a4f6dcd29bb135352524b8c7217dfaa323d64b12de5cfa8c5e27aa1601",
+    "src/mars_titan/training/corpus_inputs.py": "8d944bc72392b229076b05d503a165f30669e29ba05ce0b26af0652881e48c67",
+    "src/mars_titan/memory/episodic_session.py": "c702f28684774cfa2ad81791128697fce9f04dd37970294702d0d98c20a447cd",
+    "src/mars_titan/environments/corpus_source.py": "d240ada79d82db0d6e48045dd0ded7dc6aa8fb2d49a5fab68152c1215588fbad"
+  },
+  "verified": [
+    "Calentamiento sin emisión y decisiones sin label conservadas hasta resolución explícita.",
+    "Exclusiones por prefijo verificadas contra precios, factor y calendario del corpus.",
+    "Lecturas K1/2/4 posteriores a MAC y paridad de None.",
+    "Recuperación, referencias anidadas, compactación CPU y siguiente predicción exacta.",
+    "M0 sin admisión ni consulta, M1 con resultados maduros y rechazo de M2/M3.",
+    "Índice de posiciones, maduraciones sin observación y cierre administrativo en el mismo ejecutor.",
+    "Rechazo de cambios de parámetros mediante .data en frontera y de callbacks sustituidos."
+  ],
+  "pending": [
+    "Revisión independiente del consumidor Python.",
+    "Cobertura, complejidad, CRAP y mutaciones focales del conjunto Python.",
+    "Prueba CUDA del consumidor cuando exista una ventana coordinada.",
+    "Aceptación de población, pendientes, disco y coste para cada fase real."
+  ],
+  "limits": [
+    "No se han ejecutado modelos sobre el corpus real, optimizadores ni aprendizaje.",
+    "El censo previo no acredita por sí solo la suficiencia de la cola en todas las fases.",
+    "La identidad no promete detectar cualquier modificación arbitraria del proceso."
+  ]
+}

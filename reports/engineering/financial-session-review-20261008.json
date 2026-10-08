@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-08T21:23:26.860122+00:00",
+  "status": "Revisiones CPU cerradas sin hallazgos abiertos. La sonda CUDA focal posterior también está completada.",
+  "receipts": {
+    "lifecycle": "b340daae4aa52863a35921a219520dc633644fe5d89d8cb83493f5b365817331",
+    "consumer": "6da6f156c2fb112655f5fe356fc23b152005bc903ee3356b4aa99d9156e47092",
+    "numerics": "d728cfa82713150c375de6223dd8bd5615035d0988c4c0d3885c9ba8036622b8"
+  },
+  "native_lifecycle": {
+    "commit": "920eb07f5a09cda67431b72961eb39ecc3bf9150",
+    "checks": 61,
+    "closed_finding": "Rechazar settlement sin cierre en el último instante permitido."
+  },
+  "consumer": {
+    "commit": "5c39356710d87992e145695c662dd08c1e696286",
+    "checks": {
+      "public_cpu_tests": 202,
+      "public_cpu_seconds": 39.97,
+      "factor_fix_tests": 42,
+      "factor_fix_seconds": 8.59,
+      "causal_rng_combinations": 12,
+      "causal_rng_transitions": 384,
+      "legacy_control_transitions": 384,
+      "numeric_ids_consumer_tests": 1,
+      "numeric_ids_seconds": 2.5,
+      "numeric_ids_flows": 4,
+      "physical_blocks": [
+        1,
+        4
+      ],
+      "prediction_rtol": 1e-12,
+      "prediction_atol": 1e-12,
+      "issued_id_changes_are_provenance_only": true,
+      "numeric_ids_and_ties_stable": true,
+      "exact_recovery": true
+    },
+    "closed_findings": [
+      {
+        "id": "FS-R1",
+        "problem": "El verificador exigía volumen al factor y rechazaba el esquema legítimo de CSI300.",
+        "fix": "1e871e2e082c9bc2e4a86912047d60d92749cf7f"
+      },
+      {
+        "id": "FS-R2",
+        "problem": "El reservorio inicializaba RNG con una representación que incluye el hash supervisado completo. Un label o input futuro y un cambio de identidad de brazo alteraban el prefijo de retención.",
+        "fix": "5c39356710d87992e145695c662dd08c1e696286"
+      }
+    ]
+  },
+  "numerics": {
+    "commits": {
+      "fastpath": "46c5223933cef39479f9f14ef2a062fd2fcc41f2",
+      "attributes": "a0420ab0b473892b356f55bc648d52c2a05018b1"
+    },
+    "checks": {
+      "public_tests": 45,
+      "private_tests": 16,
+      "total": 61,
+      "public_pytest_seconds": 16.4,
+      "private_pytest_seconds": 4.87,
+      "private_process_seconds": 5.94,
+      "private_peak_rss_kib": 724760,
+      "cpu_quota_percent": 200,
+      "memory_max_bytes": 3221225472,
+      "memory_swap_max_bytes": 0,
+      "blas_openmp_threads": 2,
+      "cuda_executed": false,
+      "optimizer_steps": 0
+    },
+    "guards": {
+      "preconstruction_distinct_identity_cases": 7,
+      "undeclared_activation_rejections": 3,
+      "invalid_settings_rejections": 3,
+      "before_commit_mutations_rejected_with_exact_recovery": 3,
+      "global_flag_not_changed_by_consumer": true,
+      "serialized_identity_has_no_object_addresses": true
+    },
+    "torch": {
+      "version": "2.14.0+cu130",
+      "git_sha": "08187d9e0fba026dc8217405802ab5381dc88d90",
+      "python_source_exact_match": true,
+      "header_body_exact_match": true,
+      "header_wrapper_diff": "installed-header-wrapper.diff"
+    },
+    "vendor": {
+      "cublas": "13.1.1.3",
+      "cudart": "13.0.96",
+      "nvrtc": "13.0.88",
+      "documentation_release": "13.0.3",
+      "proprietary_kernel_source_inspected": false
+    },
+    "attribution": "Diferencia GELU en el recorrido fusionado compatible con el pin y los tensores. No se identifica la rama CUDA concreta."
+  },
+  "clarification": "EpisodicReadout utiliza proyecciones lineales y actualización residual tanh con compuerta escalar. La referencia GRU permanece separada.",
+  "limits": [
+    "Las revisiones independientes ejecutaron CPU. Contrastaron los recibos CUDA sin repetirlos.",
+    "La inspección de fuentes no determina qué rama concreta de CUDA ejecutó el fixture.",
+    "No se afirma resistencia a manipulación arbitraria del intérprete o del binario.",
+    "No se ha preparado ni verificado mediante este consumidor todo el corpus histórico. Sin aprendizaje ni resultados predictivos."
+  ],
+  "supplemented_at_utc": "2026-10-08T21:53:35.673276+00:00",
+  "subsequent_cuda_verification": {
+    "report": "reports/engineering/financial-session-completion-20261008.json",
+    "tested_head": "cc571c20ccb51c191b81be7bfbbc485689000ac7",
+    "result": "Paridad FP64, recuperación exacta y rechazo sin publicación.",
+    "independently_rerun": false,
+    "scope": "Posterior a la revisión CPU. El estado pendiente de los recibos anteriores describe su fecha original."
+  }
+}
