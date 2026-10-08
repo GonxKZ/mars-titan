@@ -32,6 +32,10 @@ Se conservan separados del [pin predictivo 30c0ae8c](klpo-review.md). No se
 migran beta, auxiliares ni resultados anteriores. El PDF arXiv y el PDF posterior
 del repositorio son versiones distintas.
 
+La equivalencia de gradientes utilizada admite transiciones estocásticas. La
+hipótesis de transiciones deterministas interviene en el telescopado muestra a
+muestra, que no se reivindica para la adaptación financiera.
+
 Full-KL enumera la corrección bajo las seis probabilidades históricas. No conoce
 el retorno de las acciones alternativas ni calcula una pérdida financiera
 exacta. Su gradiente terminal coincide en población con el objetivo por
@@ -50,8 +54,10 @@ a un entorno ni actualizan parámetros.
 
 El ajuste predictivo de una decisión conserva padre sin adaptación, MAE,
 pérdida esperada, REINFORCE y KLPO exacto/Full/MC. Al madurar la etiqueta se
-conocen los errores de las 21 acciones. La suma completa elimina el muestreo de
-esa expectativa, pero no garantiza generalización. El
+conocen los errores de las 21 acciones. Enumerar la pérdida esperada elimina el
+muestreo de esa expectativa. El modo KLPO Full-KL sigue muestreando su acción
+principal, aunque sume toda la corrección condicional. Ninguno garantiza
+generalización. El
 [contraejemplo con el decoder real](klpo-quadratic.md) muestra que bajar F puede
 empeorar el error de la mediana emitida.
 

@@ -117,3 +117,9 @@ Esos contadores excluyen el contexto CUDA. No se midió aceleración ni se ejecu
 un actor. El registro de una diferencia emitió un aviso de conversión a escalar
 con gradiente y el profiler CPU emitió una consulta fallida de dispositivos CUDA
 al estar desactivados. Ambos diagnósticos se conservan en el recibo.
+
+La revisión independiente de la implementación añadió nueve casos CPU. Una
+referencia escalar y el gradiente cerrado del score centrado contrastaron dos
+precisiones y tres valores de beta, con longitudes distintas. También rechazó
+soporte perdido, retornos no finitos y máscaras con huecos. El recibo técnico
+separa estas pruebas de los cuatro fixtures CUDA y de los perfiles nativos.

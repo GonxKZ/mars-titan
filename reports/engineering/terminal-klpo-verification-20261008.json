@@ -439,5 +439,26 @@
     "clang_format": true,
     "repository": "1294 archivos, 191 referencias y 64 tareas",
     "cuda_process_exited": true
+  },
+  "independent_implementation_review": {
+    "schema_version": 1,
+    "recorded_at": "2026-10-08T15:34:43.350750+00:00",
+    "reviewed_commit": "8baee393d224dc2ad19187caa395c1b4e0424688",
+    "verdict": "Sin hallazgos materiales reproducidos en el núcleo numérico revisado.",
+    "independent_cpu_tests": 9,
+    "method": "Suma escalar con math.fsum y gradiente cerrado del score centrado, distintos de la implementación ATen. Seis combinaciones de beta/precisión y tres rechazos de trayectoria.",
+    "checks": [
+      "Valores y gradientes FP32/FP64 con longitudes distintas.",
+      "Gradiente nulo en padding y ausencia de gradiente hacia q/retorno.",
+      "Rechazo de soporte perdido, retorno no finito y máscara con hueco."
+    ],
+    "parameter_updates": 0,
+    "cuda_scope": "Se contrastaron los recibos del autor, sin repetir CUDA en esta revisión.",
+    "limits": [
+      "La función no acredita trayectorias completas, que requieren un registro externo todavía pendiente.",
+      "La primera derivada del sustituto no acredita igualdad de su Hessiana con la del objetivo poblacional.",
+      "El presupuesto es una estimación de buffers propios, sin grafo anterior del actor ni cota del proceso."
+    ],
+    "receipt_sha256": "1636a851d9aa3511e02f5da2cd99d08337a9b4539c90c7cd620c8e0293afb093"
   }
 }
