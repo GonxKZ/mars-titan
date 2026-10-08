@@ -2,6 +2,7 @@
 
 import importlib
 import io
+import warnings
 from dataclasses import replace
 
 import numpy as np
@@ -441,3 +442,23 @@ def test_cpu_observation_digest_distinguishes_missing_from_observed_zero():
     raw["presence"][0, 1] = False
     missing = module.validated_cpu_batch(raw, spec)
     assert observed.input_digest != missing.input_digest
+
+
+def test_cpu_snapshot_cannot_reenable_writes_and_change_absent_inputs():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    for values in (*verified.inputs.values(), verified.presence):
+        with pytest.raises(ValueError):
+            values.setflags(write=True)
+
+
+def test_tensor_conversion_rejects_changed_interpretation_of_verified_cpu_bytes():
+    module = importlib.import_module("mars_titan.models.titans.financial_inputs")
+    verified = module.validated_cpu_batch(raw_batch(), specification())
+    # NumPy 2.5 avisa de esta mutación de metadatos, que la frontera debe rechazar.
+    with warnings.catch_warnings(record=True) as notices:
+        warnings.simplefilter("always")
+        verified.inputs["news"].dtype = np.int32
+    assert all(issubclass(notice.category, DeprecationWarning) for notice in notices)
+    with pytest.raises(ValueError, match="contrato|cambi|huella"):
+        api().DecisionBatch.from_validated(verified)

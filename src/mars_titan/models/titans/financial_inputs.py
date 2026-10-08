@@ -181,6 +181,36 @@ class CPUDecisionBatch:
     input_available_at: tuple[int, ...]
     input_contract_id: str
     input_digest: str
+    _array_contract: tuple
+
+    def _signature(self):
+        return tuple(
+            (name, value.shape, value.dtype.str, value.strides)
+            for name, value in (*self.inputs.items(), ("presence", self.presence))
+        )
+
+    def _digest(self):
+        identity = dict(
+            flow_ids=self.flow_ids,
+            sample_ids=self.sample_ids,
+            prediction_at=self.prediction_at,
+            input_available_at=self.input_available_at,
+            input_contract_id=self.input_contract_id,
+        )
+        digest = hashlib.sha256(canonical(identity).encode())
+        for name in MODALITIES:
+            digest.update(self.inputs[name].tobytes())
+        digest.update(self.presence.tobytes())
+        return digest.hexdigest()
+
+    def verify(self):
+        """Comprobar la vista antes de compartirla con un consumidor CPU."""
+        if self._signature() != self._array_contract or any(
+            value.flags.writeable for value in (*self.inputs.values(), self.presence)
+        ):
+            raise ValueError("El contrato de la vista CPU ha cambiado")
+        if self._digest() != self.input_digest:
+            raise ValueError("La huella de la vista CPU no coincide con sus datos")
 
 
 def validated_cpu_batch(batch, specification):
@@ -197,20 +227,19 @@ def validated_cpu_batch(batch, specification):
         input_available_at=available,
         input_contract_id=specification.fingerprint(),
     )
-    digest = hashlib.sha256(canonical(identity).encode())
     for name in MODALITIES:
-        inputs[name].setflags(write=False)
-        digest.update(inputs[name].tobytes())
-    presence.setflags(write=False)
-    digest.update(presence.tobytes())
+        value = inputs[name]
+        inputs[name] = np.frombuffer(value.tobytes(), dtype=value.dtype).reshape(value.shape)
+    presence = np.frombuffer(presence.tobytes(), dtype=presence.dtype).reshape(presence.shape)
     result = object.__new__(CPUDecisionBatch)
     for name, value in dict(
         inputs=MappingProxyType(inputs),
         presence=presence,
         **identity,
-        input_digest=digest.hexdigest(),
     ).items():
         object.__setattr__(result, name, value)
+    object.__setattr__(result, "_array_contract", result._signature())
+    object.__setattr__(result, "input_digest", result._digest())
     return result
 
 
@@ -271,6 +300,7 @@ class DecisionBatch:
     def from_validated(cls, batch, *, device="cpu", dtype=torch.float32):
         if not isinstance(batch, CPUDecisionBatch):
             raise ValueError("La conversión necesita un lote CPU verificado")
+        batch.verify()
         if dtype not in (torch.float32, torch.float64):
             raise ValueError("El cálculo requiere float32 o float64")
         tensors = {
