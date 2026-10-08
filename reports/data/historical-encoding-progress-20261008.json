@@ -201,6 +201,28 @@
     "text-batch-benchmark.json": "6c87da6c229231e3402cae5876543a24ffdeccfb88bbdc02e6dd6376d16f50b7"
   },
   "verified_batch8_prefix": {
+    "checked_at_utc": "2026-10-08T08:36:54.771946+00:00",
+    "encoded_runtime_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
+    "validator_commit": "511717124099d026f99d6821d92810ad5bba5005",
+    "progress_sha256": "6055ba9508ece2c57539fcee286fe898799eb22821f947ccd093b914e751c370",
+    "candidate_count": 5676,
+    "reviewed_prefix_candidates": 108,
+    "verified_encoded_assets": 96,
+    "samples": 341883,
+    "cache_news_entries": 85043,
+    "chart_cache_entries": 0,
+    "samples_bytes": 1188112864,
+    "elapsed_seconds": 14.367311292997329,
+    "peak_rss_bytes": 273666048,
+    "corpus_complete": false,
+    "training_ready": false,
+    "final_test_opened": false,
+    "scope": "Verificación de un prefijo confirmado. Sin objetivos, modelos ni aprendizaje.",
+    "verification_sha256": "f91bd8191c62289a83c5628a1182cf99d3e826f48b86659a7b82b6a86bd19c28",
+    "input_edition": "prepared-accounting-v1",
+    "input_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
+  },
+  "previous_verified_batch8_prefix": {
     "checked_at_utc": "2026-10-08T08:14:13.084005+00:00",
     "encoded_runtime_commit": "ab0df4f393039adfa2b6f47475dd044e9e1422b8",
     "validator_commit": "511717124099d026f99d6821d92810ad5bba5005",
