@@ -4,6 +4,7 @@
     {"name": "native-candidate", "hidden": true, "inherits": "native-clang", "environment": {"CUDA_VISIBLE_DEVICES": "-1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}, "cacheVariables": {"MARS_TITAN_BUILD_SIMULATION": "OFF", "MARS_TITAN_BUILD_RUNNER": "OFF", "MARS_TITAN_BUILD_CANDIDATE": "ON", "MARS_TITAN_LIBTORCH_ENABLE_CUDA": "OFF"}},
     {"name": "native-candidate-debug", "displayName": "Cálculo candidato debug", "inherits": "native-candidate", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug"}},
     {"name": "native-candidate-release", "displayName": "Cálculo candidato release", "inherits": "native-candidate", "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}},
+    {"name": "native-candidate-cuda", "displayName": "Referencia GRU en CUDA", "inherits": "native-candidate-release", "environment": {"CUDA_VISIBLE_DEVICES": "0"}, "cacheVariables": {"MARS_TITAN_LIBTORCH_ENABLE_CUDA": "ON"}},
     {"name": "native-candidate-asan-ubsan", "displayName": "Cálculo candidato asan-ubsan", "inherits": "native-candidate", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "MARS_TITAN_SANITIZER": "address-undefined"}},
     {"name": "native-candidate-static-analysis", "displayName": "Cálculo candidato static-analysis", "inherits": "native-candidate", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "MARS_TITAN_ENABLE_CLANG_TIDY": "ON", "MARS_TITAN_ENABLE_STATIC_ANALYZER": "ON"}},
     {"name": "native-candidate-coverage", "displayName": "Cálculo candidato coverage", "inherits": "native-candidate", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "MARS_TITAN_ENABLE_COVERAGE": "ON"}},
@@ -283,6 +284,7 @@
   "buildPresets": [
     {"name": "native-candidate-debug", "inherits": "native-build", "configurePreset": "native-candidate-debug"},
     {"name": "native-candidate-release", "inherits": "native-build", "configurePreset": "native-candidate-release"},
+    {"name": "native-candidate-cuda", "inherits": "native-build", "configurePreset": "native-candidate-cuda"},
     {"name": "native-candidate-asan-ubsan", "inherits": "native-build", "configurePreset": "native-candidate-asan-ubsan"},
     {"name": "native-candidate-static-analysis", "inherits": "native-build", "configurePreset": "native-candidate-static-analysis", "targets": ["all", "static-analysis"]},
     {"name": "native-candidate-coverage", "inherits": "native-build", "configurePreset": "native-candidate-coverage"},
@@ -318,6 +320,7 @@
   "testPresets": [
     {"name": "native-candidate-debug", "inherits": "native-test", "configurePreset": "native-candidate-debug"},
     {"name": "native-candidate-release", "inherits": "native-test", "configurePreset": "native-candidate-release"},
+    {"name": "native-candidate-cuda", "inherits": "native-test", "configurePreset": "native-candidate-cuda"},
     {"name": "native-candidate-asan-ubsan", "inherits": "native-test", "configurePreset": "native-candidate-asan-ubsan"},
     {"name": "native-candidate-static-analysis", "inherits": "native-test", "configurePreset": "native-candidate-static-analysis"},
     {"name": "native-candidate-coverage", "inherits": "native-test", "configurePreset": "native-candidate-coverage"},

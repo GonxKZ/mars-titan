@@ -61,6 +61,17 @@ if(BUILD_TESTING)
     mars_titan_sanitizer_test_environment(candidate)
     set_property(TEST candidate APPEND PROPERTY ENVIRONMENT
         "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+    if(MARS_TITAN_TORCH_HAS_CUDA)
+        add_executable(candidate_cuda_tests tests/candidate_cuda_tests.cpp)
+        target_link_libraries(candidate_cuda_tests PRIVATE mars_titan_candidate)
+        mars_titan_configure_target(candidate_cuda_tests)
+        add_test(NAME candidate_cuda COMMAND candidate_cuda_tests)
+        set_tests_properties(candidate_cuda PROPERTIES TIMEOUT 180 LABELS "unit;integration;candidate;cuda")
+        mars_titan_sanitizer_test_environment(candidate_cuda)
+        set_property(TEST candidate_cuda APPEND PROPERTY ENVIRONMENT
+            "CUDA_VISIBLE_DEVICES=0" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1"
+            "CUBLAS_WORKSPACE_CONFIG=:4096:8" "PYTORCH_ALLOC_CONF=per_process_memory_fraction:0.0625")
+    endif()
 endif()
 
 if(MARS_TITAN_BUILD_FUZZER)

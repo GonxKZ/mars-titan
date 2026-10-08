@@ -1,6 +1,6 @@
-# Núcleo de cálculo del candidato
+# Referencia GRU con lectura episódica
 
-`mars_titan::candidate::Candidate` implementa el cálculo puro de B. Recibe entradas ya normalizadas y una instantánea de episodios maduros. No admite, madura ni expulsa episodios. Tampoco entrena, selecciona checkpoints o recorre un corpus. La integración cronológica y la comparación científica siguen pendientes en #23.
+`mars_titan::candidate::Candidate` implementa la referencia GRU con lectura episódica. Recibe entradas ya normalizadas y una instantánea de episodios maduros. No admite, madura ni expulsa episodios. Tampoco entrena, selecciona checkpoints o recorre un corpus. La integración cronológica y la comparación científica siguen pendientes en #23. Esta identidad se conserva separada de Titans-MAC y de sus ampliaciones. Elegirla como B exige fijar el contraste correspondiente.
 
 Las entradas son precios `[N,64,Dp]`, noticias `[N,Dn]`, gráficos `[N,Dc]`, fundamentales `[N,Df]` y macro `[N,Dm]`. Las dimensiones y la identidad de normalización deben corresponder al manifiesto. `presence[N,5]` es booleana y debe ser verdadera en todas las posiciones. Una modalidad ausente se rechaza. La memoria vacía tiene otra máscara y sí está admitida.
 
@@ -28,9 +28,15 @@ La comprobación previa utiliza [miniz 3.1.0](https://github.com/richgel999/mini
 
 El objetivo es opcional mediante `MARS_TITAN_BUILD_CANDIDATE`. Los presets `native-candidate-debug`, `native-candidate-release`, `native-candidate-asan-ubsan`, `native-candidate-static-analysis`, `native-candidate-coverage` y `native-candidate-fuzz` usan CPU y conservan C++20. `MARS_TITAN_TORCH_ENVIRONMENT` permite indicar otro entorno uv existente. La opción vacía mantiene `.venv` como origen del SDK. Los perfiles PPO no cambian.
 
-El ejecutable `mars-titan-candidate cpu` hace un cálculo sintético y comprueba su recuperación exacta. Un segundo argumento permite guardar el archivo en una ruta nueva. `cuda:0` requiere compilar explícitamente con el backend CUDA y comprobar esa ruta en una ventana autorizada. No hay fallback a CPU. La comprobación sintética no ejecuta aprendizaje ni acredita utilidad predictiva.
+El preset `native-candidate-cuda` activa el backend CUDA de LibTorch y añade `candidate_cuda` a CTest. Mantiene los casos CPU y exige `cuda:0` para el caso GPU. El ejecutable `mars-titan-candidate cpu` hace un cálculo sintético y comprueba su recuperación exacta. Un segundo argumento permite guardar el archivo en una ruta nueva. No hay fallback a CPU. La comprobación sintética no ejecuta aprendizaje ni acredita utilidad predictiva.
 
 Las pruebas contrastan la GRU con sus ecuaciones explícitas, un caso analítico de atención, diferencias finitas de la consulta, orden y forma de cuantiles, entradas incompletas, empates, separación de memoria, independencia de semillas y recuperación de predicciones y gradientes.
+
+La [comprobación del 8 de octubre de 2026](../reports/research/gru-cuda-verification-20261008.json) utiliza dos filas con las dimensiones por defecto, memoria vacía con K=1 y ocho episodios con K=1, 2 y 4. Los ocho casos, repartidos entre FP32 y FP64, comparan salidas y gradientes CPU/CUDA y recuperan el módulo. El error máximo de cuantiles fue 2,3842e-7 en FP32 y 6,6614e-16 en FP64. El pico del asignador Torch fue 99.061.760 bytes. El caso de recuperación reconstruye la instantánea del fixture, no recupera un banco persistente ni un cursor cronológico.
+
+Pasaron seis casos CTest en Release y cinco CPU con ASan/UBSan y detección de fugas. Compute Sanitizer memcheck terminó sin errores en los ocho casos CUDA. Clang 21 no emitió diagnósticos propios en clang-tidy ni en el análisis de rutas ejecutado. La combinación ASan/UBSan con CUDA falló antes del modelo en `cudaGetDeviceCount`, con código 2 de memoria insuficiente. Un programa mínimo enlazado al mismo runtime reprodujo ese fallo y obtuvo un dispositivo al compilarse sin sanitizadores. Esa combinación queda sin verificar. No se han desactivado comprobaciones para hacerla pasar.
+
+cuDNN avisa de que los pesos GRU se compactan en cada llamada. El recorrido completo no se ha perfilado y no se atribuye aceleración a esta ruta. Las comprobaciones técnicas no levantan el bloqueo de aprendizaje de la edición histórica.
 
 ## Referencias de implementación
 
