@@ -1,0 +1,986 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T15:04:12.283753+00:00",
+  "base_commit": "92021268a6f29010b34db1af470e268b08090ba1",
+  "issue": 23,
+  "scope": "Lector episódico puro posterior a MAC, sin integración de sesión, optimizador ni aprendizaje.",
+  "sources": {
+    "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+    "src/mars_titan/models/titans/episodic_readout.py": "6c17db86ec885b26d898c394d62d8646a9b91287c32d47834bf67a1ebc5da4ea",
+    "tests/models/titans/test_episodic_readout.py": "d2954dea96be6ea4fae5c4e7f2840a8e859c33afa74df1ef703e0bd101381c7f",
+    "tests/models/titans/cuda_episodic_readout_check.py": "220f8e724e76a3d546d9e52bd1ec017720cf7f286876fc864ea1c64e7d142ccb"
+  },
+  "tests": {
+    "cpu_passed": 407,
+    "seconds": 7.94,
+    "readout_cases": 78,
+    "baseline_cases": 228,
+    "initial_red": 17,
+    "adversarial_red": 4,
+    "absent_fill_red": 1
+  },
+  "mutations": {
+    "detected": 12,
+    "total": 12,
+    "names": [
+      "detach_attention_query",
+      "reverse_tie_order",
+      "read_only_first_query",
+      "omit_residual",
+      "ignore_memory_presence",
+      "recompute_none_head",
+      "omit_snapshot_copy",
+      "accept_future_maturity",
+      "skip_readout_contract",
+      "omit_strong_digest",
+      "omit_absent_fill_check",
+      "zero_query_sqrt"
+    ],
+    "scope": "Mutaciones dirigidas en copias privadas, con baseline de 78 casos correcto."
+  },
+  "quality": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1"
+    },
+    "convention": "CRAP=CC^2*(1-c)^3+CC, c es la fracción de sentencias ejecutadas en el intervalo inclusivo de cada función, incluidas funciones locales. Cobertura de ramas instrumentada. No es garantía de corrección.",
+    "files": {
+      "src/mars_titan/models/titans/episodic_readout.py": {
+        "coverage": {
+          "covered_lines": 193,
+          "num_statements": 205,
+          "percent_covered": 91.07806691449814,
+          "percent_covered_display": "91",
+          "missing_lines": 12,
+          "excluded_lines": 0,
+          "percent_statements_covered": 94.14634146341463,
+          "percent_statements_covered_display": "94",
+          "num_branches": 64,
+          "num_partial_branches": 12,
+          "covered_branches": 52,
+          "missing_branches": 12,
+          "percent_branches_covered": 81.25,
+          "percent_branches_covered_display": "81"
+        },
+        "max_crap": 9.002253944402705
+      },
+      "src/mars_titan/models/titans/episodic_snapshot.py": {
+        "coverage": {
+          "covered_lines": 124,
+          "num_statements": 130,
+          "percent_covered": 93.52941176470588,
+          "percent_covered_display": "94",
+          "missing_lines": 6,
+          "excluded_lines": 0,
+          "percent_statements_covered": 95.38461538461539,
+          "percent_statements_covered_display": "95",
+          "num_branches": 40,
+          "num_partial_branches": 5,
+          "covered_branches": 35,
+          "missing_branches": 5,
+          "percent_branches_covered": 87.5,
+          "percent_branches_covered_display": "88"
+        },
+        "max_crap": 23.215007874815832
+      }
+    }
+  },
+  "measurement": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "threads": 2,
+    "warmup": 1,
+    "repetitions": 5,
+    "scope": "Operador puro y gradientes de fixture, sin MAC, cabeza, disco, modelos reales, GPU u optimizador. RSS incluye runtime. El sistema no está aislado y no se mide energía.",
+    "peak_rss_bytes": 628224000,
+    "internal_seconds": 1.092429128009826,
+    "process": {
+      "seconds": 2.7800332000042545,
+      "exit_code": 0
+    },
+    "graphs": [
+      {
+        "K": 1,
+        "batch": 64,
+        "episodes": 1024,
+        "seconds": 0.01873934800096322,
+        "unique_saved_storage_bytes": 1290320,
+        "estimated_working_bytes": 8273920
+      },
+      {
+        "K": 4,
+        "batch": 64,
+        "episodes": 1024,
+        "seconds": 0.00935542699880898,
+        "unique_saved_storage_bytes": 4602664,
+        "estimated_working_bytes": 26607616
+      }
+    ],
+    "records": [
+      {
+        "dtype": "torch.float32",
+        "episodes": 0,
+        "batch": 1,
+        "K": 1,
+        "p50_seconds": 0.00014298899623099715,
+        "flows_per_second": 6993.545142344457,
+        "estimated_working_bytes": 69120,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.0008577310072723776
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 0,
+        "batch": 1,
+        "K": 4,
+        "p50_seconds": 0.00045777899504173547,
+        "flows_per_second": 2184.460210781035,
+        "estimated_working_bytes": 79872,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.0008577310072723776
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 0,
+        "batch": 64,
+        "K": 1,
+        "p50_seconds": 0.0002270660042995587,
+        "flows_per_second": 281856.3712230893,
+        "estimated_working_bytes": 294912,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.0008577310072723776
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 0,
+        "batch": 64,
+        "K": 4,
+        "p50_seconds": 0.0008142000006046146,
+        "flows_per_second": 78604.76535553232,
+        "estimated_working_bytes": 983040,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.0008577310072723776
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 0,
+        "batch": 256,
+        "K": 1,
+        "p50_seconds": 0.00048780599900055677,
+        "flows_per_second": 524798.7940380123,
+        "estimated_working_bytes": 983040,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.0008577310072723776
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 0,
+        "batch": 256,
+        "K": 4,
+        "p50_seconds": 0.001719089996186085,
+        "flows_per_second": 148915.99658421197,
+        "estimated_working_bytes": 3735552,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.0008577310072723776
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 32,
+        "batch": 1,
+        "K": 1,
+        "p50_seconds": 0.00043465600174386054,
+        "flows_per_second": 2300.6699458605253,
+        "estimated_working_bytes": 80672,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 8192,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0004071950097568333
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 32,
+        "batch": 1,
+        "K": 4,
+        "p50_seconds": 0.001079036999726668,
+        "flows_per_second": 926.7522802770536,
+        "estimated_working_bytes": 123008,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 8192,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0004071950097568333
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 32,
+        "batch": 64,
+        "K": 1,
+        "p50_seconds": 0.000639773003058508,
+        "flows_per_second": 100035.48085655487,
+        "estimated_working_bytes": 1034240,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 8192,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0004071950097568333
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 32,
+        "batch": 64,
+        "K": 4,
+        "p50_seconds": 0.0024576370051363483,
+        "flows_per_second": 26041.274552036342,
+        "estimated_working_bytes": 3743744,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 8192,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0004071950097568333
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 32,
+        "batch": 256,
+        "K": 1,
+        "p50_seconds": 0.0020540190016618,
+        "flows_per_second": 124633.70581912034,
+        "estimated_working_bytes": 3940352,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 8192,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0004071950097568333
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 32,
+        "batch": 256,
+        "K": 4,
+        "p50_seconds": 0.007927904996904545,
+        "flows_per_second": 32291.00249056407,
+        "estimated_working_bytes": 14778368,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 8192,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0004071950097568333
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 1024,
+        "batch": 1,
+        "K": 1,
+        "p50_seconds": 0.00033324600371997803,
+        "flows_per_second": 3000.786172488616,
+        "estimated_working_bytes": 112416,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 262144,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.0012924379989271984
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 1024,
+        "batch": 1,
+        "K": 4,
+        "p50_seconds": 0.0012649559939745814,
+        "flows_per_second": 790.5413348474907,
+        "estimated_working_bytes": 154752,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 262144,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.0012924379989271984
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 1024,
+        "batch": 64,
+        "K": 1,
+        "p50_seconds": 0.0023255699925357476,
+        "flows_per_second": 27520.134936990602,
+        "estimated_working_bytes": 3065856,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 262144,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.0012924379989271984
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 1024,
+        "batch": 64,
+        "K": 4,
+        "p50_seconds": 0.009329838998382911,
+        "flows_per_second": 6859.711085163716,
+        "estimated_working_bytes": 5775360,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 262144,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.0012924379989271984
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 1024,
+        "batch": 256,
+        "K": 1,
+        "p50_seconds": 0.009281429011025466,
+        "flows_per_second": 27581.959598666977,
+        "estimated_working_bytes": 12066816,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 262144,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.0012924379989271984
+      },
+      {
+        "dtype": "torch.float32",
+        "episodes": 1024,
+        "batch": 256,
+        "K": 4,
+        "p50_seconds": 0.038220920992898755,
+        "flows_per_second": 6697.9024405917235,
+        "estimated_working_bytes": 22904832,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 262144,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.0012924379989271984
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 0,
+        "batch": 1,
+        "K": 1,
+        "p50_seconds": 0.00012761000834871083,
+        "flows_per_second": 7836.375946840869,
+        "estimated_working_bytes": 72704,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.00035626901080831885
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 0,
+        "batch": 1,
+        "K": 4,
+        "p50_seconds": 0.0004342460015323013,
+        "flows_per_second": 2302.8421596775834,
+        "estimated_working_bytes": 94208,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.00035626901080831885
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 0,
+        "batch": 64,
+        "K": 1,
+        "p50_seconds": 0.00025321599969174713,
+        "flows_per_second": 252748.641783736,
+        "estimated_working_bytes": 524288,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.00035626901080831885
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 0,
+        "batch": 64,
+        "K": 4,
+        "p50_seconds": 0.0009892579982988536,
+        "flows_per_second": 64694.953298386856,
+        "estimated_working_bytes": 1900544,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.00035626901080831885
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 0,
+        "batch": 256,
+        "K": 1,
+        "p50_seconds": 0.0006004989991197363,
+        "flows_per_second": 426312.11771421286,
+        "estimated_working_bytes": 1900544,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.00035626901080831885
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 0,
+        "batch": 256,
+        "K": 4,
+        "p50_seconds": 0.0020470860035857186,
+        "flows_per_second": 125055.81082161915,
+        "estimated_working_bytes": 7405568,
+        "snapshot_bytes": {
+          "keys": 0,
+          "values": 0,
+          "labels": 0,
+          "ids": 0,
+          "decision_at": 0,
+          "available_at": 0,
+          "maturity_at": 0
+        },
+        "snapshot_creation_seconds": 0.00035626901080831885
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 32,
+        "batch": 1,
+        "K": 1,
+        "p50_seconds": 0.0002722509962040931,
+        "flows_per_second": 3673.08114182381,
+        "estimated_working_bytes": 90432,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 16384,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0003700360102811828
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 32,
+        "batch": 1,
+        "K": 4,
+        "p50_seconds": 0.0009771960030775517,
+        "flows_per_second": 1023.3361545182646,
+        "estimated_working_bytes": 162048,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 16384,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0003700360102811828
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 32,
+        "batch": 64,
+        "K": 1,
+        "p50_seconds": 0.0007481159991584718,
+        "flows_per_second": 85548.23058455005,
+        "estimated_working_bytes": 1658880,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 16384,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0003700360102811828
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 32,
+        "batch": 64,
+        "K": 4,
+        "p50_seconds": 0.0028305779997026548,
+        "flows_per_second": 22610.22307342283,
+        "estimated_working_bytes": 6242304,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 16384,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0003700360102811828
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 32,
+        "batch": 256,
+        "K": 1,
+        "p50_seconds": 0.0024328110011992976,
+        "flows_per_second": 105228.06739767299,
+        "estimated_working_bytes": 6438912,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 16384,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0003700360102811828
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 32,
+        "batch": 256,
+        "K": 4,
+        "p50_seconds": 0.008026380004594103,
+        "flows_per_second": 31894.82679034283,
+        "estimated_working_bytes": 24772608,
+        "snapshot_bytes": {
+          "keys": 16384,
+          "values": 16384,
+          "labels": 256,
+          "ids": 256,
+          "decision_at": 256,
+          "available_at": 256,
+          "maturity_at": 256
+        },
+        "snapshot_creation_seconds": 0.0003700360102811828
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 1024,
+        "batch": 1,
+        "K": 1,
+        "p50_seconds": 0.00035825300437863916,
+        "flows_per_second": 2791.3234160713296,
+        "estimated_working_bytes": 122176,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 524288,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.00129056500736624
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 1024,
+        "batch": 1,
+        "K": 4,
+        "p50_seconds": 0.0013342370075406507,
+        "flows_per_second": 749.4920275395918,
+        "estimated_working_bytes": 193792,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 524288,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.00129056500736624
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 1024,
+        "batch": 64,
+        "K": 1,
+        "p50_seconds": 0.0025700080004753545,
+        "flows_per_second": 24902.64621283763,
+        "estimated_working_bytes": 3690496,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 524288,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.00129056500736624
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 1024,
+        "batch": 64,
+        "K": 4,
+        "p50_seconds": 0.009925197999109514,
+        "flows_per_second": 6448.23408114801,
+        "estimated_working_bytes": 8273920,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 524288,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.00129056500736624
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 1024,
+        "batch": 256,
+        "K": 1,
+        "p50_seconds": 0.010797688009915873,
+        "flows_per_second": 23708.77911687268,
+        "estimated_working_bytes": 14565376,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 524288,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.00129056500736624
+      },
+      {
+        "dtype": "torch.float64",
+        "episodes": 1024,
+        "batch": 256,
+        "K": 4,
+        "p50_seconds": 0.04514638299588114,
+        "flows_per_second": 5670.443189731407,
+        "estimated_working_bytes": 32899072,
+        "snapshot_bytes": {
+          "keys": 524288,
+          "values": 524288,
+          "labels": 8192,
+          "ids": 8192,
+          "decision_at": 8192,
+          "available_at": 8192,
+          "maturity_at": 8192
+        },
+        "snapshot_creation_seconds": 0.00129056500736624
+      }
+    ]
+  },
+  "cuda": {
+    "executed": true,
+    "status": "Ocho casos correctos",
+    "script": "tests/models/titans/cuda_episodic_readout_check.py",
+    "pytest_passed": 1,
+    "pytest_seconds": 2.53,
+    "records": [
+      {
+        "dtype": "torch.float32",
+        "K": 1,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 1.7881393432617188e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float32",
+        "K": 2,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 2.384185791015625e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float32",
+        "K": 4,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 4.76837158203125e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float32",
+        "K": 1,
+        "scenario": "empty",
+        "episodes": 0,
+        "selected_neighbors": 0,
+        "compared_gradients": 3,
+        "unused_query_and_value_gradients": true,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 1.1920928955078125e-07,
+        "rtol": 5e-05,
+        "atol": 3e-06
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 1,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 4.440892098500626e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 2,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 3.3306690738754696e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 4,
+        "scenario": "restricted_topk",
+        "episodes": 16,
+        "selected_neighbors": 8,
+        "compared_gradients": 5,
+        "unused_query_and_value_gradients": false,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 8.881784197001252e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      },
+      {
+        "dtype": "torch.float64",
+        "K": 1,
+        "scenario": "empty",
+        "episodes": 0,
+        "selected_neighbors": 0,
+        "compared_gradients": 3,
+        "unused_query_and_value_gradients": true,
+        "exact_ids": true,
+        "exact_recovery": true,
+        "max_gradient_error": 4.440892098500626e-16,
+        "rtol": 2e-09,
+        "atol": 2e-10
+      }
+    ],
+    "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 961 MiB",
+    "torch": "2.14.0+cu130",
+    "tf32": false,
+    "cpu_rng_unchanged": true,
+    "cuda_rng_unchanged": true,
+    "cap_torch_bytes": 134217728,
+    "peak_torch_bytes": 17402880,
+    "peak_torch_reserved_bytes": 23068672,
+    "process_seconds": 1.1287077039887663,
+    "scope": "Fixtures del lector puro, sin MAC, corpus real ni optimizador.",
+    "timing_scope": "process_seconds procede del cuerpo de la prueba tras las importaciones. No es el tiempo total del proceso ni un benchmark aislado."
+  },
+  "limits": [
+    "El snapshot verifica intervalos declarados. La procedencia y maduración real corresponden al consumidor.",
+    "Las versiones de tensores no detectan toda escritura mediante .data. verify/export/restore contrastan bytes.",
+    "Los presupuestos son estimaciones de tensores y temporales explícitos, no cotas de RSS ni buffers internos.",
+    "La selección discreta no tiene gradiente y los casi empates pueden depender del backend.",
+    "C conserva el operador MAC previo y no controla todo el refinamiento.",
+    "M2/M3, sesión real y entrenamiento externo siguen fuera de este componente."
+  ],
+  "fixture_update": {
+    "production_commit": "3fb0bad43057102aca879feb4b17d7dc7629546f",
+    "production_unchanged": true,
+    "cpu_preflight_cases": 8,
+    "previous_fixture": "8 episodios con 8 vecinos, sin selección restringida",
+    "current_fixture": "16 episodios con top-8, K1/2/4 y banco vacío K1 por precisión",
+    "quality_duplicates": 0,
+    "quality_values_unchanged": true
+  },
+  "independent_review": {
+    "reviewed_head": "60b4eef9852c49cb823b87fe11e1285cdecfb840",
+    "production_commit": "3fb0bad43057102aca879feb4b17d7dc7629546f",
+    "source_sha256": {
+      "src/mars_titan/models/titans/episodic_readout.py": "6c17db86ec885b26d898c394d62d8646a9b91287c32d47834bf67a1ebc5da4ea",
+      "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda"
+    },
+    "closed_at_utc": "2026-10-08T15:06:36.016324+00:00",
+    "cpu_cases": 10,
+    "findings": [],
+    "verdict": "Sin hallazgos materiales reproducidos en el componente revisado. Consumidor cronológico pendiente.",
+    "cases": [
+      "Igualdad de lecturas, estado y gradientes entre un lote lógico y bloques desiguales.",
+      "Invariancia a la permutación de activos con K1/K2/K4, FP32/FP64.",
+      "Salida y gradientes finitos con amplitudes 0, 1e-100, 1e100 y 1e300.",
+      "RNG y episodios conservados, sin pasos de optimizador."
+    ],
+    "cuda": "Ocho casos ejecutados, contrastados mediante recibos y registros sin repetir la carga GPU.",
+    "limits": [
+      "La revisión no acredita el consumidor financiero cronológico todavía pendiente.",
+      "Los casi empates de vecinos no se interpretan como invariancia universal entre backends.",
+      "La máscara de presencia se comprueba en las pruebas públicas y lectura de código. No se admite NaN como valor ausente."
+    ],
+    "quality": "14 funciones o métodos únicos en el lector y 16 en el snapshot, sin duplicados.",
+    "receipt_sha256": "c020342463d0645e5bf99605aa8d0bc7da9bab53f0b13a7ed7b6888c159d8319",
+    "evidence_sha256": {
+      "test_review.py": "883de6f2b85d130bfa9bf12522501b0a40b2f77ab444da1d3fdcbbe9ef3ea205",
+      "tests.log": "a834ff6caef5c463be343ed0fa2b10391920183be00d2a9c105262de12cd1d6d"
+    }
+  }
+}
