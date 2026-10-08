@@ -2,7 +2,7 @@
 
 Esta entrega contiene dos mecanismos matemáticos independientes. C estima el radio numérico de una matriz proporcionada y calcula una penalización. M selecciona representantes reales de un conjunto de candidatos. Las funciones están en [`numerical_radius.py`](../../../src/mars_titan/cm/numerical_radius.py) y [`medoids.py`](../../../src/mars_titan/cm/medoids.py). Sus pruebas están en [`tests/cm`](../../../tests/cm).
 
-No se ha conectado C al operador de Titans-MAC ni M al banco episódico. La GRU episódica conserva su papel de referencia separada. La identidad del control B y los puntos de integración deben fijarse antes del factorial descrito en el [protocolo](protocol.md).
+El [control local de MAC](mac_local_control.md) conecta C con una compresión del Jacobiano de su transición rápida completa, incluidos pesos y momentum. Admite diagnóstico y penalización heurística y tiene comprobaciones CPU/CUDA. M sigue pendiente de integración temporal con el banco episódico. La GRU episódica conserva su papel de referencia separada. El factorial descrito en el [protocolo](protocol.md) requiere fijar sus configuraciones y una nueva identidad de B que incluya el backend Math de MAC.
 
 ## Contrato de C
 
