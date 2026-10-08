@@ -92,3 +92,9 @@ registra 56 pruebas, nueve mutaciones detectadas y la preparación de los 240 mu
 La generación y verificación completa tardó 5,55 segundos dentro del proceso, en
 una única ejecución con otras cargas presentes. Esa medida no acredita una
 aceleración ni estima el coste de entrenar sobre los escenarios.
+
+La [revisión independiente](../../reports/engineering/named-benchmarks-review-20261009.json)
+añade ocho sondas y vuelve a comprobar las 56 pruebas seleccionadas. Contrasta las
+ocho familias completas con el generador original, los extremos de semillas y
+volumen, el RNG y la copia de configuración. No encontró defectos materiales en
+ese alcance y no ejecutó ajustes ni evaluaciones de modelos.
