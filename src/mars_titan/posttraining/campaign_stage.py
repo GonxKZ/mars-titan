@@ -22,6 +22,14 @@ coincidir con los de la campaña base en la misma ventana, y escribe el recibo
 walk-forward de cada mercado. El padre congelado no genera trabajos: sus predicciones
 son las de la campaña base. Los trabajos confirmados no se repiten y los pendientes se
 reanudan desde su punto de control.
+
+Con la matriz de versión 3, la etapa admite también los brazos con entrenador cronológico
+(Titans-MAC, MARS-TITAN, CM-v1 y la GRU candidata) cuya sección declara la campaña. Sus
+casos salen de `chronological_matrix` y se ajustan con los ejecutores de
+`chronological_windows` y `candidate_adapters`, que leen fases, receta y memoria de la
+ventana del padre. Un brazo declarado cuya sección aún no existe en la campaña queda en
+espera y no genera trabajos. Todos los casos ajustados de un mismo padre deben aplicar el
+mismo número de actualizaciones.
 """
 
 import argparse
@@ -30,6 +38,7 @@ import gc
 import hashlib
 import json
 import os
+import shutil
 from collections import Counter
 from contextlib import nullcontext
 from datetime import UTC, datetime
@@ -59,6 +68,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
 from . import adapter_matrix
+from . import chronological_matrix as cm
 from .matrix_runs import (
     MatrixParent,
     MatrixWindow,
@@ -145,8 +155,14 @@ def load_stage(path):
         "Los ámbitos siguen el orden de la campaña",
     )
     neural = campaign["neural"]["arms"]
-    arms = _names(config["arms"], neural, "Los brazos neuronales")
     declared = campaign["comparison_config"]["arms"]
+    # Brazos cronológicos de la comparación, con o sin sección en la campaña.
+    known = {name for name, arm in declared.items() if arm["family"] in cm.CAMPAIGN_DESIGNS}
+    arms = _names(config["arms"], {*neural, *known}, "Los brazos")
+    _require(
+        matrix["schema_version"] >= 3 or not set(arms) & known,
+        "Los brazos cronológicos necesitan la matriz de versión 3",
+    )
     _require(
         all(sorted(declared[arm]["seeds"]) == sorted(matrix["budget"]["seeds"]) for arm in arms),
         "Cada semilla de la matriz parte del padre elegido con esa semilla",
@@ -166,7 +182,7 @@ def load_stage(path):
         matrix=matrix,
         matrix_path=str(matrix_path),
         matrix_sha256=matrix_sha256,
-        families={arm: neural[arm] for arm in arms},
+        families={arm: neural[arm] for arm in arms if arm in neural},
     )
 
 
@@ -189,6 +205,41 @@ def _reading(value):
     return value
 
 
+def chronological_arms(campaign):
+    """Brazos cronológicos con sección en la campaña: familia, variante y banco."""
+    from mars_titan.training import campaign_plan as plan
+
+    result = {}
+    for arm, variant in (campaign.get(plan.TITANS) or {}).get("arms", {}).items():
+        result[arm] = dict(family=plan.TITANS, variant=variant, bank=True)
+    for arm, components in (campaign.get(plan.MARS) or {}).get("arms", {}).items():
+        bank = components["episodic_bank"] != plan.MARS_BANKS[0]
+        result[arm] = dict(family=plan.MARS, variant=None, bank=bank)
+    if campaign.get(plan.CM):
+        # Los cuatro brazos de CM-v1 leen con el banco M1 de su declaración.
+        result.update({arm: dict(family=plan.CM, variant=None, bank=True) for arm in plan.CM_ARMS})
+    for arm in (campaign.get(plan.EPISODIC) or {}).get("arms", {}):
+        result[arm] = dict(family=plan.EPISODIC, variant=None, bank=True)
+    return result
+
+
+def stage_arms(stage):
+    """Brazos activos de la etapa con su familia, y los que esperan su sección."""
+    campaign = stage["campaign"]
+    neural, chronological = campaign["neural"]["arms"], chronological_arms(campaign)
+    active, awaiting = {}, {}
+    for arm in stage["arms"]:
+        if arm in neural:
+            active[arm] = dict(family=neural[arm], design=None)
+        elif arm in chronological:
+            active[arm] = dict(
+                chronological[arm], design=cm.CAMPAIGN_DESIGNS[chronological[arm]["family"]]
+            )
+        else:
+            awaiting[arm] = campaign["comparison_config"]["arms"][arm]["family"]
+    return active, awaiting
+
+
 def arm_name(base_arm, point):
     """Nombre del brazo postentrenado, válido para la comparación walk-forward."""
     return f"{base_arm}__{point.replace('+', '_')}"
@@ -197,14 +248,25 @@ def arm_name(base_arm, point):
 def plan_stage(stage):
     """Enumerar ajustes y traslados por ámbito, ventana, brazo base, semilla y caso."""
     campaign, matrix = stage["campaign"], stage["matrix"]
+    active, _ = stage_arms(stage)
     jobs = []
     for scope in stage["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
         for row in schedule(folds, campaign["period"]):
-            for base_arm, family in stage["families"].items():
-                cases = adapter_matrix.cases(
-                    matrix, stage["matrix_sha256"], family, head=QUANTILE_HEAD
-                )
+            for base_arm, spec in active.items():
+                family = spec["family"]
+                if spec["design"] is None:
+                    cases = adapter_matrix.cases(
+                        matrix, stage["matrix_sha256"], family, head=QUANTILE_HEAD
+                    )
+                else:
+                    cases = cm.cases(
+                        matrix,
+                        stage["matrix_sha256"],
+                        family,
+                        variant=spec["variant"],
+                        bank=spec["bank"],
+                    )
                 for item in cases:
                     seed, point = item["case"]["seed"], item["id"].split("/", 1)[1]
                     arm = arm_name(base_arm, point)
@@ -276,9 +338,11 @@ def check_stage(path):
     """Validar, planificar y contar sin leer datos, reservar la GPU ni ajustar."""
     stage = load_stage(path)
     campaign = stage["campaign"]
+    _, awaiting = stage_arms(stage)
     return dict(
         status="checked",
         name=stage["name"],
+        awaiting_sections=awaiting,
         variant=campaign["variant"],
         stage_sha256=stage["sha256"],
         campaign_sha256=campaign["sha256"],
@@ -304,7 +368,12 @@ def _code():
         "posttraining/heldout.py",
         "posttraining/evaluation.py",
         "posttraining/inputs.py",
+        "environments/cohort_order.py",
         "posttraining/parents.py",
+        "posttraining/chronological_matrix.py",
+        "posttraining/chronological_windows.py",
+        "posttraining/readout_adapters.py",
+        "posttraining/candidate_adapters.py",
         "models/predictive_adaptation.py",
         "models/quantile_head.py",
         "training/masked_campaign.py",
@@ -321,9 +390,18 @@ def _digest(value):
 
 
 def _base_receipts(base, campaign, stage):
-    """Confirmar los trabajos base de los ámbitos y brazos de la etapa, en orden del plan."""
-    for job in plan_campaign(campaign):
-        if job["scope"] not in stage["scopes"] or job["arm"] not in stage["families"]:
+    """Confirmar los trabajos base de los ámbitos y brazos de la etapa, en orden del plan.
+
+    Un brazo que parte de otro predictor elegido (MARS-TITAN, CM-v1) necesita también los
+    recibos de sus padres, aunque la etapa no los adapte.
+    """
+    jobs = [job for job in plan_campaign(campaign) if job["scope"] in stage["scopes"]]
+    needed, size = set(stage_arms(stage)[0]), 0
+    while len(needed) != size:
+        size = len(needed)
+        needed |= {job["parent"] for job in jobs if job["arm"] in needed and job.get("parent")}
+    for job in jobs:
+        if job["arm"] not in needed:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -344,6 +422,35 @@ def _ordered_quantiles(table, label):
     )
 
 
+def _carry_attempt(folder, limit=16):
+    """Carpeta del traslado cronológico: el último intento completado o uno nuevo.
+
+    Los traslados escriben en un directorio nuevo. Un intento interrumpido se conserva y
+    el siguiente usa otra carpeta, como los intentos de la campaña base.
+    """
+    attempts = sorted(folder.glob("attempt-*"))
+    if attempts and (attempts[-1] / "carry.json").is_file():
+        receipt, _ = read_manifest(attempts[-1] / "carry.json", 16 * 1024**2)
+        if receipt.get("status") == "completed":
+            return attempts[-1], receipt
+    _require(len(attempts) < limit, f"{folder} alcanzó el límite de intentos de traslado")
+    return folder / f"attempt-{len(attempts) + 1:04d}", None
+
+
+def release_indices(folder):
+    """Borrar los índices de observaciones de un trabajo cronológico ya confirmado.
+
+    Solo los reconstruye una nueva ejecución del mismo trabajo, que ya no ocurre tras su
+    recibo. Devuelve los bytes liberados.
+    """
+    released = 0
+    for path in sorted(folder.rglob("indices"), reverse=True):
+        if path.is_dir() and not path.is_symlink():
+            released += sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+            shutil.rmtree(path)
+    return released
+
+
 class _Stage:
     """Estado confirmado de la etapa: ventanas, padres, recibos y recibos walk-forward."""
 
@@ -355,7 +462,7 @@ class _Stage:
         self.device, self.lease, self.stop = device, lease, stop
         self.policy = self.campaign["input_policy"]
         self.batch_size = stage["matrix"]["budget"]["batch_size"]
-        self.receipts, self.budgets, self.released = {}, {}, {}
+        self.receipts, self.budgets, self.released, self.released_indices = {}, {}, {}, {}
         self.window_key = self.parent_key = self.dataset_key = None
         self.window = self.parent = self.dataset = None
 
@@ -499,6 +606,8 @@ class _Stage:
 
     def fit(self, job, folder):
         """Ajustar o recuperar el caso con el padre de la ventana y predecir los tramos."""
+        if job["family"] in cm.CAMPAIGN_DESIGNS:
+            return self.fit_chronological(job, folder)
         parent = self.open_parent(job)
         rows = [row for row in parent.rows if row["id"] == f"seed-{job['seed']}/{job['point']}"]
         _require(
@@ -534,9 +643,56 @@ class _Stage:
             selection=report["selection"],
         )
 
-    def carry(self, job, folder):
-        """Aplicar sin ajuste el estado del ancla, con el padre del ancla, a otra ventana."""
+    def fit_chronological(self, job, folder):
+        """Postentrenar el caso cronológico desde la ventana del padre elegido."""
+        from mars_titan.training.titans_walk_forward import unfused_attention
+
+        from .candidate_adapters import run_candidate_posttraining
+        from .chronological_windows import run_readout_posttraining, run_titans_posttraining
+
         self.close_window()
+        _, _, report = self.base_parent(job["scope"], job["window"], job["base_arm"], job["seed"])
+        runner = {
+            cm.TITANS: run_titans_posttraining,
+            cm.READOUT: run_readout_posttraining,
+            cm.CANDIDATE: run_candidate_posttraining,
+        }[cm.CAMPAIGN_DESIGNS[job["family"]]]
+        output = folder / "run"
+        with unfused_attention():
+            result = runner(
+                report.parent,
+                Path(self.view(job["scope"], job["window"])["path"]),
+                output,
+                case=job["case"],
+                matrix=self.stage["matrix"],
+                digest=self.stage["matrix_sha256"],
+                device=self.device,
+                stop=self.stop,
+            )
+        if result["status"] != "completed":
+            raise Paused
+        fit = result.get("fit", result)
+        return dict(
+            run=output / ("run.json" if "fit" in result else "window.json"),
+            predictions=self._chronological_predictions(output, folder, result["predictions"]),
+            parent=dict(id=job["id"], sha256=result["checkpoint"]["sha256"]),
+            score=result["predictions"]["validation"]["metrics"]["session_mae"],
+            updates=fit["global_step"],
+            selection=fit["selection"],
+        )
+
+    @staticmethod
+    def _chronological_predictions(output, folder, records):
+        """Rutas de las predicciones del ejecutor, relativas a la carpeta del trabajo."""
+        return {
+            name: dict(
+                path=str((output / record["path"]).relative_to(folder)), sha256=record["sha256"]
+            )
+            for name, record in records.items()
+        }
+
+    def anchor_check(self, job):
+        """Recibos del ancla y comprobación de que la campaña base traslada su padre."""
         scope, anchor = job["scope"], job["anchor"]
         (dependency,) = job["depends"]
         fitted = self.receipts[dependency]
@@ -549,6 +705,51 @@ class _Stage:
             carried["parent"] == anchor_receipt["parent"],
             f"{job['id']}: la campaña base no traslada el padre del ancla",
         )
+        return fitted, anchor_report
+
+    def carry_chronological(self, job, folder):
+        """Variante B cronológica: el estado postentrenado del ancla, sin ajuste."""
+        from mars_titan.training.titans_walk_forward import unfused_attention
+
+        from .candidate_adapters import carry_candidate_posttraining
+        from .chronological_windows import carry_readout_posttraining, carry_titans_posttraining
+
+        fitted, _ = self.anchor_check(job)
+        runner = {
+            cm.TITANS: carry_titans_posttraining,
+            cm.READOUT: carry_readout_posttraining,
+            cm.CANDIDATE: carry_candidate_posttraining,
+        }[cm.CAMPAIGN_DESIGNS[job["family"]]]
+        output, result = _carry_attempt(folder)
+        anchor = (self.output / fitted["run"]["path"]).parent
+        if result is None:
+            with unfused_attention():
+                result = runner(
+                    anchor,
+                    Path(self.view(job["scope"], job["anchor"])["path"]),
+                    Path(self.view(job["scope"], job["window"])["path"]),
+                    output,
+                    device=self.device,
+                    stop=self.stop,
+                )
+        if result["status"] != "completed":
+            raise Paused
+        return dict(
+            run=output / "carry.json",
+            predictions=self._chronological_predictions(output, folder, result["predictions"]),
+            parent=dict(fitted["parent"]),
+            score=None,
+            updates=0,
+            selection=fitted["selection"],
+        )
+
+    def carry(self, job, folder):
+        """Aplicar sin ajuste el estado del ancla, con el padre del ancla, a otra ventana."""
+        self.close_window()
+        if job["family"] in cm.CAMPAIGN_DESIGNS:
+            return self.carry_chronological(job, folder)
+        scope, anchor = job["scope"], job["anchor"]
+        fitted, anchor_report = self.anchor_check(job)
         anchor_view, view = (
             read_manifest(Path(self.view(scope, name)["path"]), 8 * 1024**2)[0]
             for name in (anchor, job["window"])
@@ -694,6 +895,21 @@ class _Stage:
         if manifest.is_file():
             self.released[key] = release_ordered(manifest)
 
+    def equal_updates(self, job, receipt):
+        """Todos los casos ajustados de un padre aplican el mismo número de actualizaciones."""
+        if job["kind"] != FIT:
+            return
+        key = (job["scope"], job["window"], job["base_arm"], job["seed"])
+        for name, other in self.receipts.items():
+            identity = other["identity"]
+            same = (identity["scope"], identity["window"], identity["base_arm"], identity["seed"])
+            if identity["kind"] == FIT and same == key:
+                _require(
+                    other["updates"] == receipt["updates"],
+                    f"{job['id']} aplica {receipt['updates']} actualizaciones y {name} "
+                    f"{other['updates']} con el mismo padre",
+                )
+
     def execute(self, jobs):
         """Recorrer el plan en orden y confirmar cada trabajo."""
         for job in jobs:
@@ -711,7 +927,12 @@ class _Stage:
                 except InterruptedError as error:
                     raise Paused from error
                 receipt = self.confirm(job, identity, folder, result)
+            self.equal_updates(job, receipt)
             self.receipts[job["id"]] = receipt
+            if job["family"] in cm.CAMPAIGN_DESIGNS:
+                freed = release_indices(self.folder(job))
+                if freed:
+                    self.released_indices[job["id"]] = freed
             self.publish(job, receipt)
             if job["kind"] == FIT:
                 self.release(jobs, job)
@@ -750,6 +971,7 @@ def _summary(output, identity, jobs, state, status, **extra):
         updates={job_id: receipt["updates"] for job_id, receipt in state.receipts.items()},
         budgets=state.budgets,
         released_ordered_copies=state.released,
+        released_index_bytes=state.released_indices,
         jobs={job["id"]: job["id"] in state.receipts for job in jobs},
         final_test_opened=False,
         updated_at_utc=datetime.now(UTC).isoformat(),
