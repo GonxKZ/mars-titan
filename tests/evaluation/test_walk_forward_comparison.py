@@ -583,7 +583,37 @@ def test_session_table_keeps_window_market_and_metric_columns(joint):
     assert zero["coverage_0.8"].null_count == zero.num_rows
 
 
+ARCHITECTURAL_PAIRS = {
+    "episodic_gru": ("gru", ["gru_episodic"]),
+    "encoder_change": ("transformer_compact", ["titans_transformer_direct"]),
+    "episodic_reader": ("titans_mac_online", ["mars_titan_m0"]),
+    "cm_v1_base": ("mars_titan_m1", ["cm_v1_b"]),
+    "core_vs_episodic_gru": ("gru_episodic", ["titans_mac_online"]),
+}
 NEW_METRICS = ["up_precision", "down_precision", "sign_brier", "interval_score@0.8"]
+
+
+def test_version_four_declares_every_architectural_pair_and_the_new_metrics():
+    config = walk.load_config(CONFIG)
+    assert config["schema_version"] == 4 and "long_short" in config
+    families = config["comparison"]["families"]
+    for name, (base, variants) in ARCHITECTURAL_PAIRS.items():
+        assert families[name] == dict(kind="delta", base=base, variants=variants)
+    assert families["cm_v1_factorial"] == dict(
+        kind="factorial", base="cm_v1_b", first="cm_v1_bc", second="cm_v1_bm", joint="cm_v1_bcm"
+    )
+    assert config["comparison"]["metrics"] == [
+        "mae",
+        "mse",
+        "direction_accuracy",
+        "rank_ic",
+        "pinball",
+        "up_precision",
+        "down_precision",
+        "sign_brier",
+        "interval_score@0.8",
+        "interval_score@0.95",
+    ]
 
 
 def test_version_four_requires_the_portfolio_and_older_versions_reject_it(tmp_path):

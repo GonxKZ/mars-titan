@@ -252,7 +252,12 @@
       "mse",
       "direction_accuracy",
       "rank_ic",
-      "pinball"
+      "pinball",
+      "up_precision",
+      "down_precision",
+      "sign_brier",
+      "interval_score@0.8",
+      "interval_score@0.95"
     ],
     "block_length": 16,
     "sensitivity_block_lengths": [
@@ -309,6 +314,41 @@
         "first": "cm_v1_bc",
         "second": "cm_v1_bm",
         "joint": "cm_v1_bcm"
+      },
+      "episodic_gru": {
+        "kind": "delta",
+        "base": "gru",
+        "variants": [
+          "gru_episodic"
+        ]
+      },
+      "encoder_change": {
+        "kind": "delta",
+        "base": "transformer_compact",
+        "variants": [
+          "titans_transformer_direct"
+        ]
+      },
+      "episodic_reader": {
+        "kind": "delta",
+        "base": "titans_mac_online",
+        "variants": [
+          "mars_titan_m0"
+        ]
+      },
+      "cm_v1_base": {
+        "kind": "delta",
+        "base": "mars_titan_m1",
+        "variants": [
+          "cm_v1_b"
+        ]
+      },
+      "core_vs_episodic_gru": {
+        "kind": "delta",
+        "base": "gru_episodic",
+        "variants": [
+          "titans_mac_online"
+        ]
       },
       "levels": {
         "kind": "level",
