@@ -7,7 +7,7 @@
   "matrix": "adapter-matrix-v2.json",
   "scopes": ["US", "CN", "US+CN"],
   "arms": ["rnn", "lstm", "gru", "dlinear", "transformer_compact"],
-  "ordered_retention": "release_after_window_fits",
+  "cohort_reading": {"source": "view_blocks", "max_block_bytes": 3221225472},
   "limits": {
     "max_training_jobs": 3915,
     "max_prediction_jobs": 0

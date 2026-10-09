@@ -302,8 +302,9 @@ ADAPTER_SCENARIOS = {
 def adapter_estimate(path, reports, extras):
     """Etapa de adaptadores: tablas, estados, cachés de padres y corpus ordenado por ventana.
 
-    El corpus ordenado de una ventana se libera tras sus ajustes. Mientras se prepara
-    coexisten la entrada sin ordenar y el archivo ordenado de entrenamiento. Una disposición
+    Con la lectura por bloques de la vista no hay corpus ordenado. Con él, la copia de
+    una ventana se libera tras sus ajustes y, mientras se prepara, coexisten la entrada
+    sin ordenar y el archivo ordenado de entrenamiento. Una disposición
     distinta de la actual se aplica al confirmar, así que la tabla original de un ajuste
     existe mientras corre.
     """
@@ -328,8 +329,11 @@ def adapter_estimate(path, reports, extras):
         cumulative, peak, worst = 0, 0, None
         for (scope, window), members in windows:
             counts = reports[scope][window]["counts"]
-            ordered = (counts["train"] + counts["validation"]) * adapter["ordered_row_bytes"]
-            preparing = counts["train"] * adapter["input_row_bytes"]
+            ordered = preparing = 0
+            if stage["cohort_reading"]["source"] == "ordered_corpus":
+                rows = counts["train"] + counts["validation"]
+                ordered = rows * adapter["ordered_row_bytes"]
+                preparing = counts["train"] * adapter["input_row_bytes"]
             kept = sum(
                 counts[p] * (per_row if p in scenario["rows"] else aggregate) for p in HELD_OUT
             )

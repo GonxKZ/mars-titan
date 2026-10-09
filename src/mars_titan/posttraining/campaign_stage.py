@@ -11,6 +11,12 @@ Variante B: en una ventana intermedia no se ajusta nada. Cada caso aplica el est
 seleccionado en la ventana ancla, con el mismo padre del ancla que la campaña base
 traslada a esa ventana, a la calibración y la evaluación de la ventana trasladada.
 
+La declaración fija cómo se leen las cohortes de ajuste y validación de los brazos
+neuronales. `view_blocks` las lee desde la vista por bloques con un presupuesto de memoria
+y solo guarda el índice de cada ventana. `ordered_corpus` prepara la copia ordenada en
+Parquet y declara si se retira al confirmar los ajustes de la ventana. Las dos lecturas
+dan los mismos lotes.
+
 Cada trabajo confirma un recibo con su identidad, huellas, filas y objetivos, que deben
 coincidir con los de la campaña base en la misma ventana, y escribe el recibo
 walk-forward de cada mercado. El padre congelado no genera trabajos: sus predicciones
@@ -53,13 +59,22 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
 from . import adapter_matrix
-from .matrix_runs import MatrixParent, MatrixWindow, predict_heldout, release_ordered
+from .matrix_runs import (
+    MatrixParent,
+    MatrixWindow,
+    index_manifest,
+    predict_heldout,
+    release_ordered,
+)
 from .parents import load_parent
 
 STAGE_KIND = "historical_masked_posttraining_stage"
 RUN_KIND = "historical_masked_posttraining_stage_run"
 RECEIPT_KIND = "masked_posttraining_job"
 KEEP, RELEASE = "keep", "release_after_window_fits"
+ORDERED, BLOCKS = "ordered_corpus", "view_blocks"
+# Memoria de las filas de un bloque, sin el proceso, el modelo ni las cachés del lector.
+BLOCK_BYTES = (256 * 1024**2, 16 * 1024**3)
 _FIELDS = {
     "schema_version",
     "kind",
@@ -69,7 +84,7 @@ _FIELDS = {
     "matrix",
     "scopes",
     "arms",
-    "ordered_retention",
+    "cohort_reading",
     "limits",
     "final_test_opened",
 }
@@ -109,10 +124,10 @@ def load_stage(path):
         and config["status"] == DECLARED
         and config["final_test_opened"] is False
         and isinstance(config["name"], str)
-        and comparison._name(config["name"].replace("-", "_"))
-        and config["ordered_retention"] in (KEEP, RELEASE),
+        and comparison._name(config["name"].replace("-", "_")),
         "La etapa de postentrenamiento no cumple su contrato",
     )
+    _reading(config["cohort_reading"])
     base = path.parent
     campaign = load_campaign((base / config["campaign"]).resolve())
     matrix_path = (base / config["matrix"]).resolve()
@@ -153,6 +168,25 @@ def load_stage(path):
         matrix_sha256=matrix_sha256,
         families={arm: neural[arm] for arm in arms},
     )
+
+
+def _reading(value):
+    """Lectura de las cohortes: corpus ordenado con su retención o bloques de la vista."""
+    ordered = (
+        isinstance(value, dict)
+        and value.keys() == {"source", "retention"}
+        and value["source"] == ORDERED
+        and value["retention"] in (KEEP, RELEASE)
+    )
+    blocks = (
+        isinstance(value, dict)
+        and value.keys() == {"source", "max_block_bytes"}
+        and value["source"] == BLOCKS
+        and type(value["max_block_bytes"]) is int
+        and BLOCK_BYTES[0] <= value["max_block_bytes"] <= BLOCK_BYTES[1]
+    )
+    _require(ordered or blocks, "La lectura de cohortes de la etapa no es válida")
+    return value
 
 
 def arm_name(base_arm, point):
@@ -252,7 +286,7 @@ def check_stage(path):
         input_policy=campaign["input_policy"],
         objectives=adapter_matrix.objectives(stage["matrix"], QUANTILE_HEAD),
         excluded_controls=adapter_matrix.excluded_controls(stage["matrix"], QUANTILE_HEAD),
-        ordered_retention=stage["ordered_retention"],
+        cohort_reading=stage["cohort_reading"],
         counts=count_stage(stage),
         scientific_training_started=False,
         final_test_opened=False,
@@ -264,6 +298,7 @@ def _code():
     names = (
         "posttraining/campaign_stage.py",
         "posttraining/matrix_runs.py",
+        "environments/view_cohorts.py",
         "posttraining/adapter_matrix.py",
         "posttraining/run.py",
         "posttraining/heldout.py",
@@ -351,6 +386,7 @@ class _Stage:
         if self.window_key != (scope, window):
             self.close_window()
             view = self.view(scope, window)
+            reading = self.stage["cohort_reading"]
             self.window = MatrixWindow(
                 view["path"],
                 self.window_folder(scope, window),
@@ -358,6 +394,7 @@ class _Stage:
                 input_policy=self.policy,
                 batch_size=self.batch_size,
                 stop=self.stop,
+                max_block_bytes=reading.get("max_block_bytes"),
             )
             self.window_key = (scope, window)
             _require(
@@ -517,10 +554,15 @@ class _Stage:
             for name in (anchor, job["window"])
         )
         carried_window(anchor_view, view, input_policy=self.policy)
-        ordered = self.window_folder(scope, anchor) / "ordered" / "manifest.json"
+        data = self.window_folder(scope, anchor)
+        population = (
+            index_manifest(data)
+            if self.stage["cohort_reading"]["source"] == BLOCKS
+            else data / "ordered" / "manifest.json"
+        )
         diagnostic = self.device == "cpu"
         parent = load_parent(
-            ordered, anchor_report, device=self.device, diagnostic=diagnostic, lease=self.lease
+            population, anchor_report, device=self.device, diagnostic=diagnostic, lease=self.lease
         )
         run_path = self.output / fitted["run"]["path"]
         report, digest = read_manifest(run_path, 8 * 1024**2)
@@ -636,7 +678,7 @@ class _Stage:
     def release(self, jobs, job):
         """Retirar la copia ordenada de una ventana cuando todos sus ajustes están confirmados."""
         key = f"{job['scope']}/{job['window']}"
-        if self.stage["ordered_retention"] != RELEASE or key in self.released:
+        if self.stage["cohort_reading"].get("retention") != RELEASE or key in self.released:
             return
         pending = [
             item["id"]

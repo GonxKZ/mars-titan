@@ -15,6 +15,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+import torch
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
@@ -104,7 +105,14 @@ INVALID = {
     "duplicated_arm": lambda v: v.update(arms=["gru", "gru"]),
     "unordered_scopes": lambda v: v.update(scopes=["CN", "US"]),
     "unknown_scope": lambda v: v.update(scopes=["EU"]),
-    "retention": lambda v: v.update(ordered_retention="forever"),
+    "retention": lambda v: v.update(
+        cohort_reading=dict(source="ordered_corpus", retention="forever")
+    ),
+    "small_block": lambda v: v.update(
+        cohort_reading=dict(source="view_blocks", max_block_bytes=1024**2)
+    ),
+    "block_without_budget": lambda v: v.update(cohort_reading=dict(source="view_blocks")),
+    "mixed_reading": lambda v: v["cohort_reading"].update(retention="keep"),
     "test_opened": lambda v: v.update(final_test_opened=True),
     "limit": lambda v: v["limits"].update(max_training_jobs=3914),
     "status": lambda v: v.update(status="executed"),
@@ -137,9 +145,9 @@ def base_b(tmp_path_factory):
     return base_campaign(tmp_path_factory.mktemp("stage-b"), "B")
 
 
-def run(base, output, stop=None):
+def run(base, output, stop=None, stage=None):
     return campaign_stage.run_stage(
-        base.stage,
+        stage or base.stage,
         base.views,
         base.output,
         output,
@@ -226,12 +234,12 @@ def test_variant_a_fits_every_case_with_equal_updates_from_the_window_parent(
                 dict(parsed.predictions)["evaluation"][0]
                 == receipt["predictions"]["evaluation"]["rows"]
             )
-    # La copia ordenada de cada ventana se retira al confirmar sus ajustes.
+    # La lectura por bloques solo deja el índice de cada ventana, sin filas en disco.
     for window in ("fold-000", "fold-001"):
-        ordered = output / "windows-data/US" / window / "ordered"
-        assert (ordered / "manifest.json").is_file()
-        assert not list(ordered.glob("*.parquet"))
-        assert summary["released_ordered_copies"][f"US/{window}"]
+        folder = output / "windows-data/US" / window
+        assert (folder / "cohorts/manifest.json").is_file()
+        assert not (folder / "ordered").exists() and not list(folder.rglob("*.parquet"))
+    assert summary["released_ordered_copies"] == {}
     # Repetir verifica los recibos confirmados sin abrir ventanas ni crear optimizadores.
     created = len(recorder.optimizers)
     again = run(base_a, output)
@@ -266,8 +274,9 @@ def test_variant_b_carries_the_anchor_cases_without_fitting(base_b, tmp_path, re
             fits[anchor]["parent"]["id"],
             fits[anchor]["parent"]["sha256"],
         )
-    # El ancla retiró su copia ordenada antes de los traslados, que solo leen su manifiesto.
-    assert not list((output / "windows-data/US/fold-000/ordered").glob("*.parquet"))
+    # Los traslados cargan el padre del ancla desde su índice. No hay copias ordenadas.
+    assert (output / "windows-data/US/fold-000/cohorts/manifest.json").is_file()
+    assert not list((output / "windows-data").rglob("*.parquet"))
 
 
 def test_a_paused_case_resumes_its_cursor_without_repeating_updates(base_a, tmp_path, recorder):
@@ -418,3 +427,31 @@ def test_a_carry_requires_the_parent_that_the_base_campaign_carried(
     monkeypatch.setattr(campaign_stage._Stage, "base_parent", other)
     with pytest.raises(ValueError, match="padre del ancla"):
         run(base_b, tmp_path / "stage")
+
+
+def test_ordered_and_block_readings_apply_the_same_gradients(base_a, tmp_path, recorder):
+    """Con la copia ordenada o por bloques, cada paso recibe exactamente los mismos lotes."""
+    blocks = run(base_a, tmp_path / "blocks")
+    first = len(recorder.optimizers)
+    declared = json.loads(Path(base_a.stage).read_text())
+    declared["cohort_reading"] = dict(
+        source="ordered_corpus", retention="release_after_window_fits"
+    )
+    stage = Path(base_a.stage).with_name("stage-ordered.json")
+    atomic_json(stage, declared)
+    ordered = run(base_a, tmp_path / "ordered", stage=stage)
+    assert blocks["status"] == ordered["status"] == "completed"
+    assert blocks["updates"] == ordered["updates"]
+    pairs = zip(recorder.optimizers[:first], recorder.optimizers[first:], strict=True)
+    for left, right in pairs:
+        assert len(left.calls) == len(right.calls) > 0
+        for one, other in zip(left.calls, right.calls, strict=True):
+            assert all(
+                (a is None and b is None) or torch.equal(a, b)
+                for a, b in zip(one, other, strict=True)
+            )
+    found = receipts(tmp_path / "ordered")
+    for job_id, receipt in receipts(tmp_path / "blocks").items():
+        for partition, record in receipt["predictions"].items():
+            assert record["sha256"] == found[job_id]["predictions"][partition]["sha256"]
+    assert ordered["released_ordered_copies"]
