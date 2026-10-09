@@ -37,6 +37,60 @@ def _words(digest):
     return [int(digest[i : i + 8], 16) for i in range(0, 64, 8)]
 
 
+def bank_retention(admission, *, capacity, seed, policy="reservoir", **options):
+    """Retención de la admisión: M2 con sus tres índices y M0/M1 con la política declarada."""
+    if admission == "m2":
+        if policy != "reservoir" or options:
+            raise ValueError("M2 conserva sus tres índices y no admite otra retención")
+        return MatureErrorConfig(capacity=capacity, seed=seed)
+    if admission not in ("m0", "m1"):
+        raise ValueError("M3 no tiene definición acreditada. Se admiten M0, M1 y M2")
+    return RetentionConfig(policy=policy, capacity=capacity, seed=seed, **options)
+
+
+def episodic_bank(native, retention, admission, **scope):
+    """Banco nativo 64×64 de la admisión declarada, con el contrato causal v2 en M0/M1."""
+    if admission == "m2":
+        return MatureErrorBank(native, retention, **scope)
+    return RetentionBank(native, retention, memory_contract="causal_v2", **scope)
+
+
+def bank_snapshot(bank, *, codec_id, context_id, cutoff, dtype, device):
+    """Instantánea por ID de los episodios retenidos, común a todos los bloques del evento."""
+    records = sorted(bank.records(), key=lambda r: r.id)
+    size = len(records)
+    return EpisodeSnapshot.create(
+        keys=torch.tensor([r.key for r in records], dtype=torch.float32, device="cpu").reshape(
+            size, 64
+        ),
+        values=torch.tensor([r.value for r in records], dtype=torch.float32, device="cpu").reshape(
+            size, 64
+        ),
+        labels=torch.tensor([r.label for r in records], dtype=torch.float64, device="cpu"),
+        ids=torch.tensor([r.id for r in records], dtype=torch.int64, device="cpu"),
+        decision_at=torch.tensor([r.decision_at for r in records], dtype=torch.int64, device="cpu"),
+        available_at=torch.tensor(
+            [r.available_at for r in records], dtype=torch.int64, device="cpu"
+        ),
+        maturity_at=torch.tensor([r.maturity_at for r in records], dtype=torch.int64, device="cpu"),
+        cutoff=cutoff,
+        codec_id=codec_id,
+        context_id=context_id,
+        dtype=dtype,
+        device=device,
+    )
+
+
+def mature_record(native, *, identifier, decision_at, available_at, maturity_at, key, value, label):
+    """Episodio con etiqueta madura, la clave sin normalizar del codec y su valor fijo."""
+    record = native.MemoryRecord()
+    record.id, record.decision_at = identifier, decision_at
+    record.available_at, record.maturity_at = available_at, maturity_at
+    record.key, record.value = key, value
+    record.label, record.label_valid = label, True
+    return record
+
+
 class TitansBinding:
     """Predictor Titans-MAC, codec 64×64 y bancos nativos M0/M1/M2."""
 
@@ -75,9 +129,7 @@ class TitansBinding:
         return {"write_policy": _file_digest(write_policy)} if self.admission == "m2" else {}
 
     def bank(self, native, retention, **scope):
-        if self.admission == "m2":
-            return MatureErrorBank(native, retention, **scope)
-        return RetentionBank(native, retention, memory_contract="causal_v2", **scope)
+        return episodic_bank(native, retention, self.admission, **scope)
 
     def state_store(self, artifacts, identity):
         return FinancialStateArtifacts(self.consumer, artifacts, identity=identity)
@@ -99,29 +151,11 @@ class TitansBinding:
         extension = self.consumer.readout
         if extension is None or extension.config.mode == "no_bank":
             return None
-        records = sorted(bank.records(), key=lambda r: r.id)
-        size = len(records)
-        return EpisodeSnapshot.create(
-            keys=torch.tensor([r.key for r in records], dtype=torch.float32, device="cpu").reshape(
-                size, 64
-            ),
-            values=torch.tensor(
-                [r.value for r in records], dtype=torch.float32, device="cpu"
-            ).reshape(size, 64),
-            labels=torch.tensor([r.label for r in records], dtype=torch.float64, device="cpu"),
-            ids=torch.tensor([r.id for r in records], dtype=torch.int64, device="cpu"),
-            decision_at=torch.tensor(
-                [r.decision_at for r in records], dtype=torch.int64, device="cpu"
-            ),
-            available_at=torch.tensor(
-                [r.available_at for r in records], dtype=torch.int64, device="cpu"
-            ),
-            maturity_at=torch.tensor(
-                [r.maturity_at for r in records], dtype=torch.int64, device="cpu"
-            ),
-            cutoff=cutoff,
+        return bank_snapshot(
+            bank,
             codec_id=self.codec.fingerprint(),
             context_id=context_id,
+            cutoff=cutoff,
             dtype=self.dtype,
             device=self.device,
         )
@@ -186,21 +220,19 @@ class TitansBinding:
         return values, fast, control
 
     def propose(self, native, bank, pending, admitted, episodes, *, confirmed_at):
-        incoming = []
-        for identifier, index, item in admitted:
-            metadata = pending["rows"][index]
-            record = native.MemoryRecord()
-            record.id, record.decision_at = identifier, item.prediction.decision_at
-            record.available_at, record.maturity_at = (
-                metadata["input_available_at"],
-                item.label.available_at,
+        incoming = [
+            mature_record(
+                native,
+                identifier=identifier,
+                decision_at=item.prediction.decision_at,
+                available_at=pending["rows"][index]["input_available_at"],
+                maturity_at=item.label.available_at,
+                key=pending["key_inputs"][index].tolist(),
+                value=pending["values"][index].tolist(),
+                label=item.label.value,
             )
-            record.key, record.value = (
-                pending["key_inputs"][index].tolist(),
-                pending["values"][index].tolist(),
-            )
-            record.label, record.label_valid = item.label.value, True
-            incoming.append(record)
+            for identifier, index, item in admitted
+        ]
         options = dict(confirmed_at=confirmed_at)
         if self.admission == "m2":
             options["errors"] = {record.id: episodes[record.id]["error"] for record in incoming}
