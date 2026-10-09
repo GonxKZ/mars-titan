@@ -264,6 +264,15 @@ def _xgboost_fit(run):
     return report
 
 
+def _episodic_gru(run, **options):
+    from .candidate_walk_forward import run_job
+
+    report = run_job(run, **options)
+    if report["status"] == "paused":
+        raise Paused
+    return report
+
+
 def _carry(run):
     from .carried_predictions import carry_reference, carry_tabular
 
@@ -282,6 +291,12 @@ EXECUTORS = {
     ("neural", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
     ("ridge", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
     ("xgboost", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
+    ("episodic_gru", FIT): dict(
+        run=_episodic_gru, device="cuda", resumable=True, report="window.json"
+    ),
+    ("episodic_gru", CARRY): dict(
+        run=_episodic_gru, device="cuda", resumable=False, report="carry.json"
+    ),
 }
 
 
@@ -460,7 +475,7 @@ class _Campaign:
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         window = resolved["windows"][job["window"]]
         view = self.views[job["scope"]]["windows"][job["window"]]
-        quantile = job["family"] == NEURAL
+        quantile = self.campaign["comparison_config"]["arms"][job["arm"]]["output"] == QUANTILE_HEAD
         columns = comparison.COLUMNS + (comparison.QUANTILE_COLUMNS if quantile else ())
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
         predictions = {}
