@@ -34,4 +34,22 @@ uv run --no-sync python scripts/run_masked_campaign.py check \
   --campaign configs/baselines/historical-masked-campaign-a.json
 ```
 
+## Control de la cabeza de cuantiles
+
+`run_quantile_head_control.py` envuelve `mars_titan.training.quantile_head_control`. `check` cuenta los trabajos del [control declarado](../configs/baselines/quantile-head-control-us.json) sin leer datos, `run` ajusta o reanuda cada par del Transformer compacto con recibos y respeta el bloqueo de aprendizaje, y `decide` aplica la regla de retroceso de [#22](https://github.com/GonxKZ/mars-titan/issues/22) con las predicciones de validación confirmadas. La [guía de la cabeza](../docs/engineering/quantile-head.md#ejecutor-del-control) describe ventanas, contraste y coste estimado. Ninguna orden de ajuste se ha ejecutado.
+
+```bash
+uv run --no-sync python scripts/run_quantile_head_control.py check \
+  --plan configs/baselines/quantile-head-control-us.json
+```
+
+## Simulación de la parada temprana
+
+`simulate_early_stopping.py` aplica la selección de `mars_titan.training.selection` a los historiales de validación de ejecuciones ya confirmadas, sin modificarlas, con varias paciencias, mejoras mínimas y épocas mínimas, en modo individual y conjunto. Agrupa los ajustes por ventana, ámbito, etapa, semilla y caso, cuenta como censurado un ajuste que necesitaría épocas no registradas y escribe en la salida estándar épocas recorridas, pérdida relativa del estado elegido y huella de las fuentes. No entrena ni lee datos. Su resultado sobre las referencias de la edición ampliada anterior está en el [recibo de la simulación](../reports/engineering/early-stopping-history-20261009.json) y se discute en la [parada temprana opcional](../docs/research/walk-forward-2000.md#parada-temprana-opcional).
+
+```bash
+uv run --no-sync python scripts/simulate_early_stopping.py \
+  data/interim/real-expanded-references-20261006 > early-stopping.json
+```
+
 Las pruebas de `tests/tooling/` protegen estos comportamientos de mantenimiento sin realizar peticiones de red.
