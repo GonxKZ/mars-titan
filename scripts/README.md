@@ -27,7 +27,7 @@ Con `--execute` toma un cerrojo exclusivo en `.<destino>.lock`, junto al destino
 
 ## Campaña con máscaras desde 2000
 
-`run_masked_campaign.py` envuelve `mars_titan.training.masked_campaign` y `mars_titan.training.campaign_throughput`. `check` cuenta los trabajos de una variante sin leer datos, `prepare` crea las vistas por ámbito, `run` ejecuta y reanuda los trabajos con recibos, `sources` publica el manifiesto de fuentes de un ámbito y `throughput` mide el caudal neuronal sin pasos de optimizador. `run` respeta el bloqueo de aprendizaje antes de empezar y antes de cada trabajo. La [campaña](../docs/research/training-campaign-2000.md#ejecución-y-recuperación) describe sus órdenes. Ninguna orden se ha ejecutado sobre la edición real.
+`run_masked_campaign.py` envuelve `mars_titan.training.masked_campaign`, `mars_titan.training.campaign_throughput` y `mars_titan.training.campaign_extensions`. `check` cuenta los trabajos de una variante sin leer datos, `prepare` crea las vistas por ámbito, `run` ejecuta y reanuda los trabajos con recibos, `sources` publica el manifiesto de fuentes de un ámbito, `throughput` mide el caudal de cada familia sin pasos de optimizador y `extensions` comprueba los recuentos de la declaración preparada de la GRU candidata, MARS-TITAN y CM-v1 sin activarla. `run` respeta el bloqueo de aprendizaje antes de empezar y antes de cada trabajo. La [campaña](../docs/research/training-campaign-2000.md#ejecución-y-recuperación) describe sus órdenes. Ninguna orden se ha ejecutado sobre la edición real.
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py check \
