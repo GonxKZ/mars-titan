@@ -189,10 +189,22 @@ def misplace_price_end(manifest, symbol, row):
     rewrite_samples(manifest, symbol, change)
 
 
+def foreign_cohort(manifest, symbol, row):
+    """Marcar una fila con otra cohorte. Falla al validar las filas del grupo."""
+
+    def change(table):
+        values = table["cohort_id"].to_pylist()
+        values[row] = "otra_cohorte"
+        return _replace(table, "cohort_id", pa.array(values, type=table["cohort_id"].type))
+
+    rewrite_samples(manifest, symbol, change)
+
+
 CORRUPTIONS = [
     pytest.param(corrupt_vector, id="vector"),
     pytest.param(delay_availability, id="disponibilidad"),
     pytest.param(misplace_price_end, id="ventana"),
+    pytest.param(foreign_cohort, id="cohorte"),
 ]
 
 
@@ -239,6 +251,29 @@ def test_pipeline_decodes_at_most_its_lookahead_beyond_the_consumer(tmp_path, mo
     # Activos decodificados por adelantado, más el que retiene el productor.
     assert max(ahead) <= pipeline.decode_workers + 1 + 1
     assert len(started) == len(consumed)
+
+
+def test_group_units_decode_at_most_their_lookahead_beyond_the_consumer(tmp_path, monkeypatch):
+    manifest = corpus(tmp_path, assets=4, group_size=2)
+    pipeline = PipelineOptions(decode_workers=1, prefetch_batches=1)
+    # Con la caché de tablas la lectura sigue siendo grupo a grupo.
+    reader = CorpusDataset(
+        manifest, input_policy=HISTORICAL_MASKED, pipeline=pipeline, cache_sample_tables=True
+    )
+    started, original = [], reader._asset_blocks
+
+    def counted(item):
+        started.extend(tuple(work["cursor"]) for work in item[0])
+        return original(item)
+
+    monkeypatch.setattr(reader, "_asset_blocks", counted)
+    consumed, ahead = set(), []
+    for batch in reader.batches(partition="train", batch_size=1, epoch=0, seed=0):
+        consumed.add((batch["confirmed_cursor"]["asset"], batch["confirmed_cursor"]["group"]))
+        ahead.append(len(started) - len(consumed))
+    # Grupos decodificados por adelantado, más el que retiene el productor.
+    assert len(started) > pipeline.lookahead + 2
+    assert max(ahead) <= pipeline.lookahead + 1 + 1
 
 
 @pytest.mark.parametrize("options", [SEQUENTIAL, PipelineOptions(decode_workers=2)])
