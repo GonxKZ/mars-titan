@@ -69,3 +69,7 @@ chinas antes de ejecutar los brazos CN y mixto con cuatro modalidades.
 La [evidencia de verificación](../../reports/resources/reference-search-quality.json)
 registra el recorrido funcional, cobertura y mutaciones dirigidas, con esos
 límites de interpretación.
+
+## Edición histórica con máscaras
+
+La versión 4 de la configuración declara la política de entradas, la parada por presupuesto fijo y la retención de predicciones. También admite el Transformer compacto como quinta familia. [Las referencias con máscaras](masked-reference-runners.md) describen sus contratos, comprobaciones y tareas pendientes. Las versiones 1 a 3 conservan su comportamiento.
