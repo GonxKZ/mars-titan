@@ -782,3 +782,24 @@ def test_financial_state_checks_reject_a_foreign_query_window():
     for window in (torch.zeros(2, 2, 32), query[:1].clone(), query.double()):
         with pytest.raises(ValueError):
             model.state_usage(replace(state, mac=replace(state.mac, convolution=(window,))))
+
+
+def test_trainer_checkpoint_round_trip_keeps_the_windows_of_every_flow():
+    import io
+
+    from mars_titan.training.financial_run import _split, _stack
+
+    module, spec, model = paper_predictor()
+    state = model.initial_state(("US/AAA", "US/BBB"))
+    with torch.no_grad():
+        for batch in decisions(module, spec, 3):
+            state = model.prepare(batch, state).next_state
+    flows = dict(_split(state, detach=True))
+    # Mismo recorrido que el punto de control del entrenador, con torch.save y weights_only.
+    stream = io.BytesIO()
+    torch.save(model.export_state_cpu(_stack([flows[flow] for flow in state.flow_ids])), stream)
+    stream.seek(0)
+    payload = torch.load(stream, map_location="cpu", weights_only=True)
+    restored = dict(_split(model.restore_state(payload, device="cpu")))
+    for flow in state.flow_ids:
+        assert_bits(state_tensors(restored[flow].mac), state_tensors(flows[flow].mac))
