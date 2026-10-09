@@ -306,3 +306,47 @@ def test_campaign_case_must_keep_the_planned_recipe(tmp_path):
             SimpleNamespace(job=job, case=case | dict(recipe=str(changed)), policy=run.policy)
         )
     assert sha256(changed) != case["recipe_sha256"]
+
+
+def test_campaign_requires_the_quantiles_of_the_titans_arm(campaign_run, tmp_path):
+    # Los dobles escriben cuantiles solo para las referencias neuronales.
+    with pytest.raises(ValueError, match="Faltan columnas"):
+        engine.run_campaign(
+            campaign_run.campaign,
+            campaign_run.views,
+            tmp_path / "out",
+            executors=doubles(Recorder()),
+            lease=nullcontext,
+            stop=SimpleNamespace(requested=False),
+        )
+
+
+class RepeatFirstRow:
+    """Destino que entrega dos veces la primera fila resuelta."""
+
+    def __init__(self, rows):
+        self.rows, self.repeated = rows, False
+
+    def append(self, record):
+        if not self.repeated:
+            self.rows.append(record)
+            self.repeated = True
+        self.rows.append(record)
+
+
+def test_carry_reconciles_its_rows_before_writing(campaign_run, tmp_path, monkeypatch):
+    from mars_titan.training.financial_run import ChronologicalInference
+
+    predict = ChronologicalInference.predict
+    monkeypatch.setattr(
+        ChronologicalInference,
+        "predict",
+        lambda self, source, rows, **options: predict(
+            self, source, RepeatFirstRow(rows), **options
+        ),
+    )
+    anchor, anchor_view, view = carry_job(campaign_run)
+    output = tmp_path / "carry"
+    with pytest.raises(ValueError, match="no concilian"):
+        wf.carry_titans(anchor, anchor_view, view, output, device="cpu")
+    assert not list(output.glob("*.parquet")) and not (output / "carry.json").exists()
