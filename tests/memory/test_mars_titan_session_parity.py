@@ -4,7 +4,8 @@ Los seis eventos de cuatro flujos se entregan a `FinancialSession` y, como event
 observación equivalentes, a `MarsTitanInference`. Las predicciones dependen del banco
 retenido, porque llegan 16 etiquetas a un banco de capacidad 4 y el lector elige dos
 vecinos. Coincidir bit a bit acredita el mismo orden de evento, la misma admisión y los
-mismos IDs que la sesión, también con M2 y con K = 2 en sus dos modos de selección.
+mismos IDs que la sesión, también con M2, con K = 2 en sus dos modos de selección y con
+la retención con centros fijos que usa M en el factorial CM-v1.
 """
 
 import numpy as np
@@ -79,17 +80,23 @@ def models(source, refinements, episodes):
 
 
 @pytest.mark.parametrize(
-    ("admission", "refinements", "episodes"),
-    [("m1", 1, "per_step"), ("m2", 1, "per_step"), ("m1", 2, "first_read"), ("m1", 2, "per_step")],
+    ("admission", "refinements", "episodes", "policy"),
+    [
+        ("m1", 1, "per_step", "reservoir"),
+        ("m2", 1, "per_step", "reservoir"),
+        ("m1", 2, "first_read", "reservoir"),
+        ("m1", 2, "per_step", "reservoir"),
+        ("m1", 1, "per_step", "anchored"),
+    ],
 )
 def test_chronological_pass_emits_exactly_what_the_session_emits(
-    shared_native, four_flow_source, tmp_path, admission, refinements, episodes
+    shared_native, four_flow_source, tmp_path, admission, refinements, episodes, policy
 ):
     predictor, readout = models(four_flow_source, refinements, episodes)
     retention = (
         MatureErrorConfig(capacity=4)
         if admission == "m2"
-        else RetentionConfig(policy="reservoir", capacity=4, seed=73, frontier=1)
+        else RetentionConfig(policy=policy, capacity=4, seed=73, frontier=1)
     )
     settings = options(
         shared_native,

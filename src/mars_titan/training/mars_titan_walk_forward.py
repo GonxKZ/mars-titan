@@ -19,6 +19,10 @@ mismo calentamiento de entradas. Cada recorrido empieza con el banco vacío y la
 rápida inicial, así que una ventana trasladada aplica el mismo contrato que su ancla. Las
 variantes sin banco episódico son el propio Titans-MAC y no se ajustan aquí. La corrección
 asociativa B6 solo se emite en `FinancialSession`.
+
+`ReadoutFamily` reúne lo que distingue a una familia de lector sobre el núcleo congelado:
+MARS-TITAN con sus componentes y los brazos del factorial CM-v1 con su control C y su
+retención. El recorrido de la ventana y el traslado son comunes.
 """
 
 import hashlib
@@ -26,7 +30,8 @@ import importlib
 import math
 import os
 import time
-from dataclasses import asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -43,7 +48,11 @@ from mars_titan.memory.mars_titan_variant import (
 )
 from mars_titan.models.titans.config import canonical, require_identity
 from mars_titan.models.titans.episodic_readout import EpisodicReadout
-from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+from mars_titan.models.titans.financial import (
+    FinancialConfig,
+    FinancialPredictor,
+    copy_paired_parameters,
+)
 
 from .checkpoints import StopRequest, load_training_state
 from .corpus_inputs import CorpusDataset
@@ -63,6 +72,7 @@ from .titans_walk_forward import (
     _sources,
     _verify,
     checked_tables,
+    control_config,
     memory_policy,
     unfused_attention,
     view_protocol,
@@ -89,8 +99,30 @@ _CODE = (
 )
 
 
-def _code():
-    return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _CODE}
+@dataclass(frozen=True)
+class ReadoutFamily:
+    """Lo que distingue a una familia de lector sobre un núcleo Titans-MAC congelado.
+
+    `request` son los campos de la petición que identifican el brazo y `control` el control
+    C que debe declarar la petición del padre (None si no lo admite). `variant` construye
+    la variante sobre el padre elegido y `retention` la configuración de su banco.
+    """
+
+    label: str
+    kind: str
+    carry_kind: str
+    selected_kind: str
+    world: str
+    request: dict
+    control: dict | None
+    variant: Callable
+    retention: Callable
+    code: tuple = ()
+
+
+def _code(family=None):
+    names = _CODE + (family.code if family else ())
+    return {name: sha256(Path(importlib.import_module(name).__file__)) for name in names}
 
 
 def bank_memory_policy(warmup_months):
@@ -114,8 +146,11 @@ def _cuda(device):
         )
 
 
-def _parent(folder, view, seed):
-    """Ventana Titans-MAC `mac_online` completada sobre la misma vista y semilla."""
+def _parent(folder, view, seed, control=None):
+    """Ventana Titans-MAC `mac_online` completada sobre la misma vista y semilla.
+
+    La petición del padre declara exactamente el control C esperado, o ninguno.
+    """
     report, digest = read_manifest(folder / "run.json", 16 * 1024**2)
     request = report.get("request", {})
     _require(
@@ -128,18 +163,32 @@ def _parent(folder, view, seed):
         and request.get("view_sha256") == sha256(view),
         "El padre no es una ventana Titans-MAC mac_online completada en esta vista y semilla",
     )
+    _require(
+        request.get("local_control") == control,
+        "El control C del padre no es el que declara la familia del lector",
+    )
     _verify(folder, report)
     return report, digest
 
 
 def _frozen_parent(document, specification, seed, device, folder, report, *, carried=False):
-    """Mejor estado del padre, exacto en su vista o portable en una ventana trasladada."""
+    """Mejor estado del padre, exacto en su vista o portable en una ventana trasladada.
+
+    Un padre ajustado con la penalización C se copia a un gemelo en modo disabled con la
+    misma base. C no interviene al predecir con el núcleo congelado y su emisión no cambia.
+    """
     options = {key: value for key, value in document["predictor"].items() if key != "dtype"}
-    predictor = FinancialPredictor(
-        FinancialConfig(specification, variant="mac_online", seed=seed, **options),
-        device=device,
-        dtype=DTYPES[document["predictor"]["dtype"]],
-    )
+    control = control_config(report["request"].get("local_control"))
+
+    def build(local_control):
+        return FinancialPredictor(
+            FinancialConfig(specification, variant="mac_online", seed=seed, **options),
+            local_control=local_control,
+            device=device,
+            dtype=DTYPES[document["predictor"]["dtype"]],
+        )
+
+    predictor = build(control)
     fit, _ = read_manifest(folder / "fit/run.json", 16 * 1024**2)
     state = load_training_state(
         folder / "fit/checkpoints",
@@ -151,6 +200,10 @@ def _frozen_parent(document, specification, seed, device, folder, report, *, car
         _carried_parameters(state["model"], predictor)
     else:
         predictor.load_state_dict(state["model"])
+    if control is not None and control.mode != "disabled":
+        twin = build(replace(control, mode="disabled", weight=0.0))
+        copy_paired_parameters(predictor.eval(), twin.eval())
+        predictor = twin
     return predictor.eval().requires_grad_(False)
 
 
@@ -203,6 +256,22 @@ def _native(admission):
     return load_native()
 
 
+def _mars_family(components):
+    """Familia MARS-TITAN de una combinación con lector, sobre un padre sin control C."""
+    components = _components(components)
+    return ReadoutFamily(
+        label="MARS-TITAN",
+        kind=KIND,
+        carry_kind=CARRY_KIND,
+        selected_kind="mars_titan_selected_state",
+        world=WORLD,
+        request=dict(components=components),
+        control=None,
+        variant=lambda predictor, report: _variant(predictor, report, components),
+        retention=lambda recipe, variant: readout_retention(recipe, variant.admission),
+    )
+
+
 def run_mars_titan_window(
     view,
     parent,
@@ -225,10 +294,41 @@ def run_mars_titan_window(
     """
     require_learning_allowed("run_mars_titan_window de MARS-TITAN")
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
-    components = _components(components)
+    return run_readout_window(
+        _mars_family(components),
+        view,
+        parent,
+        recipe,
+        seed=seed,
+        output=output,
+        search_case=search_case,
+        device=device,
+        indices=indices,
+        stop=stop,
+        optimizer_factory=optimizer_factory,
+    )
+
+
+def run_readout_window(
+    family,
+    view,
+    parent,
+    recipe,
+    *,
+    seed,
+    output,
+    search_case,
+    device="cuda:0",
+    indices=None,
+    stop=None,
+    optimizer_factory=None,
+):
+    """Recorrido común de la ventana para cualquier familia de lector."""
+    require_learning_allowed(f"run_readout_window de {family.label}")
+    _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
     _cuda(device)
     view, parent, output = Path(view), Path(parent), Path(output)
-    parent_report, parent_sha = _parent(parent, view, seed)
+    parent_report, parent_sha = _parent(parent, view, seed, family.control)
     window = parent_report["request"]["window"]
     protocol, protocol_sha, rule, fold = _protocol(view_protocol(view), window, seed)
     document = load_recipe(recipe)
@@ -248,11 +348,11 @@ def run_mars_titan_window(
             checkpoint_sha256=parent_report["checkpoint"]["sha256"],
         ),
         recipe_sha256=sha256(Path(recipe)),
-        components=components,
+        **family.request,
         seed=seed,
         search_case=search_case,
         device=device,
-        code=_code(),
+        code=_code(family),
     )
     safe_destination(output)
     report_path = output / "run.json"
@@ -282,7 +382,7 @@ def run_mars_titan_window(
     sources = _sources(dataset, phases, Path(indices) if indices else output / "indices")
     specification = sources["train"].specification()
     predictor = _frozen_parent(titans, specification, seed, device, parent, parent_report)
-    variant = _variant(predictor, parent_report, components)
+    variant = family.variant(predictor, parent_report)
     codec = FrozenEpisodeCodec(specification)
     readout = _readout(variant, codec, predictor, readout_recipe, seed)
     trainer = ReadoutTrainer(
@@ -290,19 +390,19 @@ def run_mars_titan_window(
         readout,
         readout_recipe,
         admission=variant.admission,
-        retention=readout_retention(readout_recipe, variant.admission),
+        retention=family.retention(readout_recipe, variant),
         native=_native(variant.admission),
         codec=codec,
         train=sources["train"],
         validation=sources["validation"],
         output=output / "fit",
-        world=WORLD,
+        world=family.world,
         fold=fold["id"],
         optimizer_factory=optimizer_factory,
     )
     identity = dict(
         schema_version=1,
-        kind=KIND,
+        kind=family.kind,
         request=request,
         window=fold,
         stopping_rule=rule,
@@ -325,7 +425,7 @@ def run_mars_titan_window(
         output.mkdir(parents=True, exist_ok=True)
         report = dict(
             schema_version=1,
-            kind=KIND,
+            kind=family.kind,
             run_id=run_id,
             request=request,
             identity=identity,
@@ -360,7 +460,7 @@ def run_mars_titan_window(
             selected,
             dict(
                 schema_version=1,
-                kind="mars_titan_selected_state",
+                kind=family.selected_kind,
                 parent=request["parent"],
                 readout=best,
                 variant_sha256=variant.fingerprint(),
@@ -434,18 +534,34 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
     empieza con la memoria rápida inicial, el banco vacío y su propio calentamiento.
     """
     require_learning_allowed("la predicción trasladada de MARS-TITAN")
+    return carry_readout(
+        lambda report: _mars_family(report["request"].get("components")),
+        anchor,
+        anchor_view,
+        view,
+        output,
+        device=device,
+        stop=stop,
+    )
+
+
+def carry_readout(family_of, anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+    """Traslado común: `family_of` reconstruye la familia desde el informe del ancla."""
+    require_learning_allowed("la predicción trasladada de un lector episódico")
     from .carried_predictions import carried_window
 
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
     _cuda(device)
     report, report_sha = read_manifest(anchor / "run.json", 16 * 1024**2)
+    family = family_of(report) if isinstance(report.get("request"), dict) else None
     _require(
-        report.get("kind") == KIND
+        family is not None
+        and report.get("kind") == family.kind
         and report.get("status") == "completed"
         and report.get("final_test_opened") is False
         and isinstance(report.get("checkpoint"), dict),
-        "El ancla no es una ventana de MARS-TITAN completada",
+        "El ancla no es una ventana completada de la familia del lector",
     )
     _require(
         sha256(anchor_view) == report["request"]["view_sha256"],
@@ -461,7 +577,8 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
     parent_report, parent_sha = read_manifest(parent / "run.json", 16 * 1024**2)
     _require(
         parent_sha == request["parent"]["run_sha256"]
-        and parent_report["checkpoint"]["sha256"] == request["parent"]["checkpoint_sha256"],
+        and parent_report["checkpoint"]["sha256"] == request["parent"]["checkpoint_sha256"]
+        and parent_report["request"].get("local_control") == family.control,
         "El padre del ancla ha cambiado",
     )
     titans = parent_report["identity"]["recipe"]
@@ -481,7 +598,7 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
     predictor = _frozen_parent(
         titans, specification, seed, device, parent, parent_report, carried=True
     )
-    variant = _variant(predictor, parent_report, request["components"])
+    variant = family.variant(predictor, parent_report)
     codec = FrozenEpisodeCodec(specification)
     readout = _readout(variant, codec, predictor, readout_recipe, seed)
     fit, _ = read_manifest(anchor / "fit/run.json", 16 * 1024**2)
@@ -498,10 +615,10 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
         readout,
         readout_recipe,
         admission=variant.admission,
-        retention=readout_retention(readout_recipe, variant.admission),
+        retention=family.retention(readout_recipe, variant),
         native=_native(variant.admission),
         codec=codec,
-        world=WORLD,
+        world=family.world,
         fold=fold["id"],
     )
     predictions = {}
@@ -521,14 +638,14 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
         )
     receipt = dict(
         schema_version=1,
-        kind=CARRY_KIND,
+        kind=family.carry_kind,
         status="completed",
         anchor=dict(
             run_sha256=report_sha,
             checkpoint_sha256=report["checkpoint"]["sha256"],
             view_sha256=request["view_sha256"],
             fold=anchor_fold,
-            components=request["components"],
+            **family.request,
             seed=seed,
             search_case=request["search_case"],
             variant_sha256=identity["variant_sha256"],
@@ -544,7 +661,7 @@ def carry_mars_titan(anchor, anchor_view, view, output, *, device="cuda:0", stop
         phases={name: asdict(phases[name]) for name in CARRIED},
         indices={name: source.identity for name, source in sources.items()},
         device=device,
-        code=_code(),
+        code=_code(family),
         predictions=predictions,
         final_test_opened=False,
         scientific_training_started=False,

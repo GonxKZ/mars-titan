@@ -44,6 +44,7 @@ from .campaign_plan import (
     QUANTILE_HEAD,
     _arm_specs,
     _require,
+    arm_output,
     check_campaign,
     count_jobs,
     load_campaign,
@@ -204,7 +205,8 @@ class JobRun:
     """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla.
 
     `parent` solo existe en los ajustes que parten de otro predictor elegido en la misma
-    ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC.
+    ventana y semilla, como el lector de MARS-TITAN sobre Titans-MAC o un brazo de CM-v1
+    sobre su núcleo.
     """
 
     job: dict
@@ -312,6 +314,24 @@ def _mars_titan_carry(run):
     return mars_titan_carry(run)
 
 
+def _cm_v1_core_fit(run):
+    from .cm_v1_factorial import cm_v1_core_fit
+
+    return cm_v1_core_fit(run)
+
+
+def _cm_v1_fit(run):
+    from .cm_v1_factorial import cm_v1_fit
+
+    return cm_v1_fit(run)
+
+
+def _cm_v1_carry(run):
+    from .cm_v1_factorial import cm_v1_carry
+
+    return cm_v1_carry(run)
+
+
 # Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
 EXECUTORS = {
     ("neural", FIT): dict(run=_neural_fit, device="cuda", resumable=True, report="run.json"),
@@ -336,6 +356,11 @@ EXECUTORS = {
     ("mars_titan", CARRY): dict(
         run=_mars_titan_carry, device="cuda", resumable=False, report="carry.json"
     ),
+    ("cm_v1_core", FIT): dict(
+        run=_cm_v1_core_fit, device="cuda", resumable=True, report="run.json"
+    ),
+    ("cm_v1", FIT): dict(run=_cm_v1_fit, device="cuda", resumable=True, report="run.json"),
+    ("cm_v1", CARRY): dict(run=_cm_v1_carry, device="cuda", resumable=False, report="carry.json"),
 }
 
 
@@ -533,7 +558,7 @@ class _Campaign:
         resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
         window = resolved["windows"][job["window"]]
         view = self.views[job["scope"]]["windows"][job["window"]]
-        quantile = self.campaign["comparison_config"]["arms"][job["arm"]]["output"] == QUANTILE_HEAD
+        quantile = arm_output(self.campaign, job["arm"]) == QUANTILE_HEAD
         columns = comparison.COLUMNS + (comparison.QUANTILE_COLUMNS if quantile else ())
         _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
         predictions = {}
@@ -600,7 +625,9 @@ class _Campaign:
         """Guardar el recibo y, si completa su grupo, publicar los recibos de ventana."""
         self.receipts[job["id"]] = receipt
         group = _group(job)
-        if all(key in self.receipts for key in self.groups[group]):
+        # Los auxiliares, como los núcleos de CM-v1, no publican recibo de ventana.
+        compared = job["arm"] in self.campaign["comparison_config"]["arms"]
+        if compared and all(key in self.receipts for key in self.groups[group]):
             self.publish(*group)
 
     def publish(self, scope, window, arm, seed):

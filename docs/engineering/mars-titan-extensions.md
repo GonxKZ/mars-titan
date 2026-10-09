@@ -67,6 +67,8 @@ El checkpoint de recuperación guarda parámetros del lector, optimizador, RNG, 
 
 `carry_mars_titan` aplica en una ventana posterior el padre y el lector elegidos en el ancla, sin ajustar nada. Solo admite el cambio de huella de la vista en el padre y en el codec del lector. Cada tramo empieza con la memoria rápida inicial, el banco vacío y su calentamiento de entradas, el mismo contrato que en el ancla.
 
+La ventana y el traslado son comunes con el [factorial CM-v1](../experiments/mars_titan_cm_v1/factorial.md). `ReadoutFamily` reúne lo que distingue a cada familia: el control C que debe declarar el padre, la variante, la retención del banco y la identidad. MARS-TITAN exige un padre sin control C.
+
 ## Registro en la campaña
 
 `campaign_plan` acepta una sección opcional `mars_titan` con la receta del lector, la combinación de cada brazo, `pending_arms` con el motivo de los brazos sin definición, el brazo padre y la semilla de búsqueda. El padre debe ser el brazo `mac_online` de la sección `titans_mac`, con la misma semilla de búsqueda y semillas que cubran las de cada brazo. Cada búsqueda depende de las búsquedas del padre en su ventana y cada finalista, además de sus búsquedas, del finalista del padre con su semilla. `masked_campaign` resuelve ese padre y lo entrega al ejecutor en `JobRun.parent`, y la identidad del trabajo incluye su recibo. El finalista elige ganador solo entre sus propias búsquedas.

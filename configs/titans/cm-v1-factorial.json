@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "name": "mars_titan_cm_v1_factorial",
+  "status": "declared_not_executed",
+  "base": {
+    "core_recipe": "chronological-training-historical-masked.json",
+    "readout_recipe": "episodic-readout-historical-masked.json",
+    "variant": "mac_online",
+    "admission": "m1",
+    "refinements": 1,
+    "episode_selection": "per_step",
+    "retention": "reservoir",
+    "control_mode": "disabled"
+  },
+  "control": {
+    "rank": 4,
+    "frequency": 16,
+    "seed": 91,
+    "grid_size": 64,
+    "threshold": 1.0,
+    "weight": 0.1,
+    "max_flows": 2,
+    "max_estimated_bytes": 134217728
+  },
+  "consolidation": {
+    "policy": "anchored",
+    "frontier": 8,
+    "new_candidates": 8,
+    "max_swaps": 8,
+    "max_distance_pairs": 50000000,
+    "max_working_bytes": 67108864
+  },
+  "cores": {
+    "cm_v1_core_b": false,
+    "cm_v1_core_c": true
+  },
+  "arms": {
+    "cm_v1_b": {"control": false, "consolidation": false},
+    "cm_v1_bc": {"control": true, "consolidation": false},
+    "cm_v1_bm": {"control": false, "consolidation": true},
+    "cm_v1_bcm": {"control": true, "consolidation": true}
+  },
+  "pending": [
+    "Declaración sin ejecutar. El bloqueo de la edición histórica desde 2000 impide cualquier ajuste, piloto o evaluación.",
+    "B es Titans-MAC mac_online con la receta del núcleo de la campaña, C en modo disabled (SDPA Math y la misma base que B+C) y el lector M1 con K = 1 y retención reservoir. B y B+M comparten el núcleo cm_v1_core_b, y B+C y B+C+M el núcleo cm_v1_core_c.",
+    "C usa la penalización de la medida angular corregida sobre RᵀJR con umbral 1 y peso 0,1. Son valores declarados antes de ejecutar, sin ajuste con datos. Con dimensión 64 en FP32, dos flujos medidos por evento caben en el presupuesto de 128 MiB según la estimación del control.",
+    "M es la retención con centros fijos del banco M1 con la misma capacidad y semilla que B. Solo actúa cuando el banco supera su capacidad.",
+    "Memoria y caudal de la penalización C en cuda:0 sin medir. Un cambio de cualquier valor exige otra identidad de los cuatro brazos."
+  ]
+}
