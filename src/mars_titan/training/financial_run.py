@@ -21,6 +21,7 @@ from mars_titan.budget_training import validate_loss
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
@@ -73,7 +74,8 @@ class ChronologicalRecipe:
     checkpoint_seconds: float = 900.0
 
     def __post_init__(self):
-        validate_loss(self.loss, self.huber_delta)
+        # pinball solo corresponde a `quantile_head_v1`. huber_delta conserva su validación.
+        validate_loss("mae" if self.loss == PINBALL else self.loss, self.huber_delta)
         validate_selection(self.selection, epochs=self.epochs)
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
         if (
@@ -278,6 +280,9 @@ class ChronologicalTrainer:
             raise ValueError("El entrenador necesita el predictor financiero y su receta")
         if predictor.local_control is not None:
             raise ValueError("C pertenece al factorial CM-v1 y no a este entrenador")
+        self.quantiles = predictor.config.head == QUANTILE_HEAD
+        if self.quantiles != (recipe.loss == PINBALL):
+            raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -365,7 +370,10 @@ class ChronologicalTrainer:
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
 
     def _loss(self, prediction, target):
+        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5]."""
         functional = torch.nn.functional
+        if self.recipe.loss == PINBALL:
+            return pinball_loss(prediction, target)
         if self.recipe.loss == "mae":
             return functional.l1_loss(prediction, target)
         if self.recipe.loss == "mse":
@@ -398,10 +406,12 @@ class ChronologicalTrainer:
                 run.counters["warmup_observations"] += size
                 continue
             values = prepared.point_predictions.detach().cpu().tolist()
+            # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
+            graphs = prepared.quantiles if self.quantiles else prepared.point_predictions
             for row, (flow, at) in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
                 run.pending[flow, at] = values[row]
                 if grad:
-                    run.graphs[flow, at] = prepared.point_predictions[row]
+                    run.graphs[flow, at] = graphs[row]
                 if self.audit is not None:
                     self.audit.append(("prediction", source.phase.partition, flow, at, values[row]))
             run.counters["predictions"] += size
