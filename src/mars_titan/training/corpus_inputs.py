@@ -46,6 +46,15 @@ def _random(seed, epoch, key):
     return np.random.default_rng(number)
 
 
+def _populated_groups(file):
+    """Índices físicos de los grupos con filas.
+
+    Un grupo vacío no contiene muestras ni desplaza posiciones, así que se omite sin
+    renumerar los demás. Los vectores de un grupo con filas siguen validándose completos.
+    """
+    return [g for g in range(file.num_row_groups) if file.metadata.row_group(g).num_rows]
+
+
 def _historical_times(table):
     timestamps = _times(table["prediction_at"])
     if (timestamps < np.datetime64("2000-01-01", "us").astype(np.int64)).any() or (
@@ -542,21 +551,26 @@ class CorpusDataset:
                     asset, partition, file.metadata.num_rows
                 )
                 prices, available = self._prices(asset)
-                groups = _random(seed, epoch, key + "/groups").permutation(file.num_row_groups)
+                # El orden permuta solo los grupos con filas y usa su rango entre ellos.
+                # Sin grupos vacíos, rango e índice coinciden y el orden no cambia. Con ellos,
+                # el recorrido y el cursor son los del mismo archivo sin esos grupos.
+                populated = _populated_groups(file)
+                groups = _random(seed, epoch, key + "/groups").permutation(len(populated))
                 offsets = np.cumsum(
                     [0] + [file.metadata.row_group(g).num_rows for g in range(file.num_row_groups)]
                 )
                 start_group = cursor["group"] if asset_position == cursor["asset"] else 0
                 if not 0 <= start_group < max(1, len(groups)):
                     raise ValueError("El cursor señala un grupo inexistente")
-                for group_position, group in enumerate(groups):
+                for group_position, rank in enumerate(groups):
+                    group = populated[rank]
                     first, end = np.searchsorted(positions, [offsets[group], offsets[group + 1]])
                     if group_position < start_group:
                         consumed += end - first
                         continue
                     indexes = np.arange(first, end)
                     if partition == "train":
-                        indexes = _random(seed, epoch, key + f"/{group}").permutation(indexes)
+                        indexes = _random(seed, epoch, key + f"/{rank}").permutation(indexes)
                     start = (
                         cursor["offset"]
                         if (asset_position, group_position) == (cursor["asset"], cursor["group"])
@@ -640,7 +654,7 @@ class CorpusDataset:
             with pq.ParquetFile(path) as file:
                 if file.metadata.num_rows > 1_000_000:
                     raise ValueError("El activo supera el presupuesto de muestras")
-                for group in range(file.num_row_groups):
+                for group in _populated_groups(file):
                     table, moments, ends, vectors, presence, availability, valid = (
                         self._sample_group(asset, file, group)
                     )
