@@ -271,7 +271,7 @@ class MatureErrorBank:
         e, a, r, _ = write_scores.normalized(self.config.scalers, raw)
         return write_scores.score(self.config.weights, e, a, r)
 
-    def _check_features(self, by_role, unique):
+    def _check_features(self, unique):
         """M3: componentes de cada retenido y selectivo igual al mejor de los retenidos."""
         features = self._features
         if not isinstance(features, dict) or set(features) != set(unique):
@@ -290,9 +290,8 @@ class MatureErrorBank:
                 raise ValueError("Los componentes M3 de un episodio no son válidos")
         scores = {key: self._score(raw) for key, raw in features.items()}
         top = sorted(scores, key=lambda key: (-scores[key], key))[: self.config.quotas["selective"]]
-        if sorted(top) != sorted(row.id for row in by_role["selective"]) or self._scores != {
-            key: scores[key] for key in sorted(top)
-        }:
+        # `_verify` ya exige que las claves de `_scores` sean los IDs del selectivo.
+        if self._scores != {key: scores[key] for key in top}:
             raise ValueError("El índice selectivo M3 no conserva las mayores puntuaciones")
 
     def index_ids(self):
@@ -330,7 +329,7 @@ class MatureErrorBank:
         ):
             raise ValueError("Las puntuaciones o la recencia de M2 no son coherentes")
         if self._composite:
-            self._check_features(by_role, unique)
+            self._check_features(unique)
         elif self._features:
             raise ValueError("M2 no conserva componentes de M3")
         if not header["seen"]:
