@@ -55,7 +55,7 @@ Con un optimizador de `torch.optim`, `run` llama a `require_learning_allowed` an
 
 ## Inferencia de tramos posteriores
 
-`predict_partition` recorre validación, calibración o evaluación con la misma regla que la validación del ajuste: parámetros congelados, memoria rápida reiniciada, calentamiento de la fase sin etiquetas y predicciones emitidas antes de conocer su resultado. Exige un tramo del mismo corpus, posterior al ajuste y con la misma entrada. Cada etiqueta resuelta entrega a un destino de filas el flujo, la decisión, la predicción, el objetivo y, con la cabeza de cuantiles, los cinco niveles emitidos.
+`ChronologicalInference` reúne el recorrido por eventos que comparten el ajuste y la inferencia congelada, y `ChronologicalTrainer` lo amplía con el grafo, la pérdida y el paso. `predict` recorre validación, calibración o evaluación con la misma regla que la validación del ajuste: parámetros congelados, memoria rápida reiniciada, calentamiento de la fase sin etiquetas y predicciones emitidas antes de conocer su resultado. Exige un tramo con la misma entrada. `predict_partition` del entrenador exige además que sea del mismo corpus y posterior al ajuste. Cada etiqueta resuelta entrega a un destino de filas el flujo, la decisión, la predicción, el objetivo y, con la cabeza de cuantiles, los cinco niveles emitidos.
 
 ## Memoria del tramo y acumulación por bloques
 
@@ -94,12 +94,12 @@ Las recetas no declaran `accumulation_rows`. El valor para la campaña depende d
 El orden es fijo:
 
 1. `require_learning_allowed` se comprueba antes de leer ninguna fuente.
-2. El protocolo debe contener la ventana y la semilla. La receta debe declarar `epochs` igual a `max_epochs` y la misma selección que `stopping_rule(protocol)`, hoy presupuesto fijo de 30 épocas, mejor estado y `min_delta = 1e-5`.
+2. El protocolo se recibe como ruta o como documento, y su huella es la de su JSON canónico. Debe contener la ventana y la semilla. La receta debe declarar `epochs` igual a `max_epochs` y la misma selección que `stopping_rule(protocol)`, hoy presupuesto fijo de 30 épocas, mejor estado y `min_delta = 1e-5`.
 3. La petición reúne las huellas de vista, protocolo y receta, la variante, la semilla, el dispositivo y el código. Si la salida ya contiene esa ventana completa, se comprueban las huellas de sus predicciones y se devuelve sin abrir la vista. Otra petición sobre la misma salida se rechaza.
 4. En `cuda:0` se exige CUDA disponible y `CUBLAS_WORKSPACE_CONFIG` antes de construir el modelo.
 5. Los contratos temporales de la vista deben coincidir con el protocolo y la ventana, con filas en los cuatro tramos y la reserva final cerrada.
 6. El ajuste usa `ChronologicalTrainer` con parámetros iniciales copiados de `pairing_source`. Después se carga el mejor estado y `predict_partition` escribe `validation-predictions.parquet`, `calibration-predictions.parquet` y `evaluation-predictions.parquet` con el esquema común (`sample_id`, `asset_id`, `market`, `prediction_at`, `target`, `prediction` y `zero`) y los cinco cuantiles cuando la receta los declara. Las filas escritas deben coincidir con las etiquetas resueltas y con el recuento de la vista. En validación, el MAE por sesión recalculado debe reproducir la puntuación seleccionada.
-7. `run.json` guarda la petición, la identidad, el resumen del ajuste y la huella, filas, bytes y métricas de cada tramo. Se escribe tras cada tramo confirmado.
+7. `run.json` guarda la petición, la identidad con la receta completa, el resumen del ajuste, el estado elegido en `checkpoint` y la huella, filas, bytes y métricas de cada tramo. Cada Parquet se escribe solo después de conciliar sus filas, y `run.json` se actualiza tras cada tramo confirmado.
 
 Una pausa durante el ajuste se reanuda desde su último checkpoint coherente. Una pausa entre tramos conserva los ya escritos y continúa con el siguiente.
 
@@ -114,9 +114,30 @@ La política `reset_each_pass_then_input_warmup_v1` es la misma para los cuatro 
 
 Reiniciar en cada tramo hace que la predicción de evaluación no dependa de haber recorrido antes la calibración y que los cuatro controles vean exactamente las mismas entradas. Encadenar la memoria entre tramos también sería causal, pero mezclaría la longitud de la historia con la variante. El valor de 12 meses es una declaración previa, no un ajuste con datos. Las pruebas alteran entradas posteriores al corte de cada tramo y anteriores al calentamiento, y comprueban que ninguna predicción de otro tramo cambia.
 
+### Conexión con la campaña con máscaras
+
+`training/masked_campaign.py` registra los ejecutores `("titans_mac", "fit")` y `("titans_mac", "carry")` junto a los de la GRU candidata. Solo crean trabajos si la configuración de campaña declara la sección opcional `titans_mac`, con el mismo patrón que `episodic_gru`:
+
+```json
+"titans_mac": {
+  "recipe": "../titans/chronological-training-quantile.json",
+  "arms": {"titans_mac_online": "mac_online", "titans_mac_frozen": "mac_frozen"},
+  "search_seed": 42
+}
+```
+
+`campaign_plan` valida la receta sin importar PyTorch: política de entradas con máscaras, nombre, cabeza `quantile_head_v1`, pérdida pinball, épocas y selección iguales a `stopping_rule(protocol)` y sección `walk_forward`. Cada brazo Titans de la comparación necesita una variante distinta. El caso de cada trabajo contiene la ruta y la huella de la receta, la variante y la semilla. Al no haber búsqueda de hiperparámetros, la semilla de búsqueda tiene un único candidato y las demás semillas son finalistas con el mismo caso. La huella de la receta forma parte de la identidad de cada trabajo. Sin la sección, el plan y la identidad de la campaña no cambian y `check` sigue listando la familia como pendiente.
+
+- `titans_fit` recibe el `JobRun` del trabajo, comprueba que la receta conserva la huella planificada, toma el protocolo del contrato temporal de la vista y llama a `run_titans_window` sobre el intento del trabajo. Una pausa se traduce en la pausa de la campaña y el siguiente intento reanuda desde el checkpoint coherente. La campaña lee del informe las predicciones de calibración y evaluación, el MAE de validación y el estado elegido, y comprueba las mismas filas que los demás brazos.
+- `titans_carry` predice una ventana trasladada de la variante B con `carry_titans`. Comprueba que el ancla es una ventana de Titans completada sobre su vista, que dejó de aprender antes de la calibración trasladada (`carried_window`) y que el estado elegido conserva su huella. Carga ese estado en un predictor construido con la entrada de la nueva vista, y solo admite que cambien las huellas de la vista y del índice. Después predice calibración y evaluación con `ChronologicalInference`, sin ningún ajuste, y escribe `carry.json` con la huella del estado del ancla.
+- La política de memoria de un traslado es la misma de la ventana, `carried_memory_policy`: los parámetros son los elegidos en el ancla, la memoria rápida nunca se transfiere desde el ancla y cada tramo empieza en el estado inicial con su propio calentamiento de 12 meses de entradas.
+- El recibo de ventana de cada mercado lo escribe la campaña con el estado elegido como `parent`. En una ventana trasladada es el del ancla.
+
+[`test_titans_campaign.py`](../../tests/training/test_titans_campaign.py) ejecuta en CPU una campaña B sobre US con las vistas v2 del corpus técnico. `titans_mac_online` usa los ejecutores reales con un optimizador que solo registra gradientes y los demás brazos son los dobles de la campaña. Se comprueban los 7 ajustes y 12 traslados del plan, las mismas filas y objetivos que la GRU de referencia en cada ventana, los cuantiles y la ausencia de filas de 2024, que cada traslado parte del estado elegido en su ancla con la política declarada, los 19 recibos de ventana, el manifiesto de fuentes y la repetición bit a bit de un traslado. También se rechazan anclas incoherentes, recetas cambiadas después de planificar y estados de otra arquitectura.
+
 ### Comprobaciones de la ventana
 
-[`test_titans_walk_forward.py`](../../tests/training/test_titans_walk_forward.py) usa un protocolo técnico con una ventana y el corpus cronológico con máscaras. Comprueba las fases de todas las ventanas US, CN y conjuntas con calentamiento 0 y 12, que los tres Parquet de los cuatro controles coinciden en filas y objetivos con `CorpusDataset.batches` y que `walk_forward_comparison` los acepta en una evaluación completa, que no hay filas de 2024, la copia de parámetros emparejados, la invariancia ante perturbaciones futuras y anteriores al calentamiento, la reanudación con gradientes y salidas idénticos, el rechazo de peticiones o archivos alterados, el bloqueo antes de crear nada y el rechazo de recetas y protocolos incoherentes.
+[`test_titans_walk_forward.py`](../../tests/training/test_titans_walk_forward.py) usa un protocolo técnico con una ventana y el corpus cronológico con máscaras. Comprueba las fases de todas las ventanas US, CN y conjuntas con calentamiento 0, 12 y 60 meses (este último recortado en el origen), que los tres Parquet de los cuatro controles coinciden en filas y objetivos con `CorpusDataset.batches` y que `walk_forward_comparison` los acepta en una evaluación completa, que no hay filas de 2024, la copia de parámetros emparejados, la invariancia ante perturbaciones futuras y anteriores al calentamiento, la reanudación con gradientes y salidas idénticos, el rechazo de peticiones o archivos alterados, el bloqueo antes de crear nada, el rechazo de recetas y protocolos incoherentes, de vistas con la reserva abierta o un tramo vacío y de salidas con archivos ajenos, y que una conciliación fallida no deja Parquet sin confirmar.
 
 ## Identidades
 
