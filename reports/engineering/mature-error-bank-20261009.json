@@ -1,0 +1,97 @@
+{
+  "source_sha256": "57dae8d4f936789ba5954ba36bff5bb0086bcef4c70e0229b6cf886724d02bae",
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "initial_candidates": 1024,
+  "incoming_candidates": 8192,
+  "index_offers_per_proposal": 24576,
+  "results": [
+    {
+      "repetition": 0,
+      "proposed_seconds": 0.1777813039952889,
+      "snapshot_seconds": 0.02983739999763202,
+      "restore_seconds": 0.032465108000906184,
+      "cycle_seconds": 0.27241725199564826,
+      "traced_python_peak_bytes": 3313101,
+      "process_peak_rss_before_bytes": 551284736,
+      "process_peak_rss_after_bytes": 574386176,
+      "estimated_peak_bytes": 58720256,
+      "native_archives_bytes": 617985,
+      "slots": 1024,
+      "unique_episodes": 993,
+      "seen": 9216,
+      "exact_recovery": true
+    },
+    {
+      "repetition": 1,
+      "proposed_seconds": 0.17139101499924436,
+      "snapshot_seconds": 0.03003387901117094,
+      "restore_seconds": 0.03251510199334007,
+      "cycle_seconds": 0.2674125070043374,
+      "traced_python_peak_bytes": 3297729,
+      "process_peak_rss_before_bytes": 574386176,
+      "process_peak_rss_after_bytes": 576585728,
+      "estimated_peak_bytes": 58720256,
+      "native_archives_bytes": 617985,
+      "slots": 1024,
+      "unique_episodes": 993,
+      "seen": 9216,
+      "exact_recovery": true
+    },
+    {
+      "repetition": 2,
+      "proposed_seconds": 0.1726464850071352,
+      "snapshot_seconds": 0.0306199399929028,
+      "restore_seconds": 0.03196251300687436,
+      "cycle_seconds": 0.268532532005338,
+      "traced_python_peak_bytes": 3299368,
+      "process_peak_rss_before_bytes": 576585728,
+      "process_peak_rss_after_bytes": 576585728,
+      "estimated_peak_bytes": 58720256,
+      "native_archives_bytes": 617985,
+      "slots": 1024,
+      "unique_episodes": 993,
+      "seen": 9216,
+      "exact_recovery": true
+    }
+  ],
+  "cuda_initialized": false,
+  "model_executed": false,
+  "target_estimation_executed": false,
+  "limits": [
+    "El pico trazado omite asignaciones internas C++/ATen. El RSS es del proceso entero.",
+    "La estimación de trabajo es conservadora para registros y copias acotados, no una cota certificada del asignador.",
+    "La medición incluye propuestas, archivos en memoria y recuperación. No representa el corpus ni el predictor."
+  ],
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T00:19:44.050388+00:00",
+  "issues": [
+    19,
+    23
+  ],
+  "B_mem": 1024,
+  "tests": {
+    "passed": 34,
+    "quota_configurations": 1021
+  },
+  "sources": {
+    "src/mars_titan/memory/write_policy.py": "57dae8d4f936789ba5954ba36bff5bb0086bcef4c70e0229b6cf886724d02bae",
+    "tests/memory/test_write_policy.py": "4486f200060314fbdd398499c524fe56ffaa82591dc5275d6e9e78753602bc04"
+  },
+  "process_seconds": 2.19,
+  "process_peak_rss_kib": 623068,
+  "cpu_quota_percent": 200,
+  "memory_max_bytes": 3221225472,
+  "memory_swap_max_bytes": 0,
+  "blas_openmp_threads": 2,
+  "consumer_integration": false,
+  "cm_m_enabled": false,
+  "m3_implemented": false,
+  "evidence_sha256": {
+    "red-bank.log": "9b8f3fb34c5d56cc4e7a94df87cb6a85660cb1e6d97557dd7871a45c79482c67",
+    "bank-third.log": "b2b43f7f26205ba5dca7b422f046122610788657d72af72da4201442ed2a526b",
+    "receipt-red.log": "e993c980bd35758d1f30b1aea4379798ba203ad37644384fd626ec9b2191ff75",
+    "copy-red.log": "ab33d8b8cb7afcda7e9bb9fdd928cfdb61ceac2e32aee075682d57b875e91d5f",
+    "bank-cost.json": "b044a1c458a44d5eb888524045f3d0d2d9307d6551c4906eee5f98f8aa38f6d1",
+    "bank-cost.log": "704a2a978ec3835c4387aadc6f9576775000658818262e1f22f108cfddba3797"
+  }
+}
