@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 import torch
 from torch import nn
 
+from ..quantile_head import LEVELS, QuantileHead, median
 from .config import bounded_integer, require_identity
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .financial import PreparedDecisions
@@ -78,6 +79,8 @@ class ReadoutResult:
 class EpisodicPrediction:
     point_predictions: torch.Tensor
     readout: ReadoutResult | None
+    # Solo con `quantile_head_v1`: [flujos, 5]. La predicción puntual es su mediana.
+    quantiles: torch.Tensor | None = None
 
 
 def _normalize(value):
@@ -279,13 +282,20 @@ def apply_episodic_readout(
     cutoff=None,
     differentiable=False,
 ):
+    """Aplicar la cabeza del núcleo al estado refinado por la lectura episódica.
+
+    Una cabeza escalar debe devolver un valor por flujo. `QuantileHead` devuelve
+    [flujos, 5] cuantiles ordenados y la predicción puntual es su mediana.
+    """
     check_differentiable(differentiable)
     if not isinstance(prepared, PreparedDecisions):
         raise ValueError("Falta la preparación previa del núcleo")
+    if isinstance(head, QuantileHead) != (prepared.quantiles is not None):
+        raise ValueError("La cabeza no corresponde a la salida preparada por el núcleo")
     if extension is None:
         if snapshot is not None:
             raise ValueError("Una ampliación ausente no consume un banco")
-        return EpisodicPrediction(prepared.point_predictions, None)
+        return EpisodicPrediction(prepared.point_predictions, None, prepared.quantiles)
     if not isinstance(extension, EpisodicReadout):
         raise ValueError("La ampliación no es un lector identificado")
     result = extension(
@@ -295,12 +305,20 @@ def apply_episodic_readout(
         cutoff=cutoff,
         differentiable=differentiable,
     )
+    quantiles = None
     with torch.set_grad_enabled(differentiable):
-        predictions = head(result.state).squeeze(-1)
+        output = head(result.state)
+        if isinstance(head, QuantileHead):
+            if output.shape != (len(result.state), len(LEVELS)):
+                raise ValueError("La cabeza de cuantiles debe devolver cinco niveles por flujo")
+            check_finite(output, "Los cuantiles refinados")
+            quantiles, predictions = output, median(output)
+        else:
+            predictions = output.squeeze(-1)
     if predictions.shape != (len(result.state),):
         raise ValueError("La cabeza debe devolver una salida escalar por flujo")
     check_finite(predictions, "La predicción refinada")
-    return EpisodicPrediction(predictions, result)
+    return EpisodicPrediction(predictions, result, quantiles)
 
 
 def copy_readout_parameters(source, target):
