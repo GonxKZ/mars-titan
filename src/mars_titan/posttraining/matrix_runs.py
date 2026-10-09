@@ -1,6 +1,8 @@
 """Ejecutar los casos de la matriz de adaptadores sobre los padres de una ventana.
 
-La ventana prepara una vez su corpus ordenado de ajuste y validación. Cada padre abre
+La ventana prepara una vez su corpus ordenado de ajuste y validación o, con un
+presupuesto de bloque, solo el índice de cohortes de la vista, que después se lee por
+bloques sin copiar filas (`environments.view_cohorts`). Cada padre abre
 su caché de predicciones, ajusta el normalizador solo con el tramo de ajuste y fija el
 plan de la matriz, con las actualizaciones de cada caso, antes del primer ajuste. Cada
 caso se ajusta o se recupera con `run_case`, que aplica la selección común con el padre
@@ -18,7 +20,9 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
+from mars_titan.environments.view_cohorts import ViewCohortSource, prepare_cohort_index
 from mars_titan.episodes.parents import ParentCache
+from mars_titan.training.corpus_inputs import CorpusDataset
 
 from . import adapter_matrix
 from .heldout import PARTITIONS, _adjustment, evaluate_partition
@@ -32,32 +36,63 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-class MatrixWindow:
-    """Corpus ordenado de una vista con sus lectores de ajuste y validación."""
+def index_manifest(folder):
+    """Manifiesto del índice de cohortes de una ventana leída por bloques."""
+    return Path(folder) / "cohorts" / "manifest.json"
 
-    def __init__(self, view, folder, *, encoding, input_policy, batch_size, stop):
+
+class MatrixWindow:
+    """Lectores de ajuste y validación de una vista, ordenados o por bloques.
+
+    Sin `max_block_bytes`, la ventana prepara el corpus ordenado de siempre. Con él,
+    prepara solo el índice y lee cada tramo desde la vista con ese presupuesto de memoria.
+    Las cohortes, la rejilla y los lotes son los mismos en las dos lecturas.
+    """
+
+    def __init__(
+        self, view, folder, *, encoding, input_policy, batch_size, stop, max_block_bytes=None
+    ):
         self.view, self.folder = Path(view), Path(folder)
         self.encoding, self.input_policy, self.batch_size = encoding, input_policy, batch_size
-        ordered = self.folder / "ordered"
-        prepared = prepare_causal_corpus(
-            self.view,
-            ordered,
-            batch_size=batch_size,
-            resume=ordered.exists(),
-            stop=stop,
-            input_policy=input_policy,
-        )
-        if prepared["status"] != "completed":
-            raise InterruptedError("La preparación del corpus ordenado quedó pendiente")
-        self.manifest = ordered / "manifest.json"
+        if max_block_bytes is None:
+            ordered = self.folder / "ordered"
+            prepared = prepare_causal_corpus(
+                self.view,
+                ordered,
+                batch_size=batch_size,
+                resume=ordered.exists(),
+                stop=stop,
+                input_policy=input_policy,
+            )
+            if prepared["status"] != "completed":
+                raise InterruptedError("La preparación del corpus ordenado quedó pendiente")
+            self.manifest = ordered / "manifest.json"
+
+            def source(name):
+                return ParquetCohortSource(self.manifest, partition=name, input_policy=input_policy)
+
+        else:
+            dataset = CorpusDataset(self.view, input_policy=input_policy)
+            self.manifest = index_manifest(self.folder)
+            prepared = prepare_cohort_index(
+                dataset, self.manifest.parent, input_policy=input_policy, stop=stop
+            )
+
+            def source(name):
+                return ViewCohortSource(
+                    self.manifest,
+                    dataset,
+                    partition=name,
+                    max_block_bytes=max_block_bytes,
+                    input_policy=input_policy,
+                    stop=stop,
+                )
+
         self.source_sha256 = prepared["source_sha256"]
         self.grid = ActionGrid.from_dict(prepared["grid"])
         with contextlib.ExitStack() as sources:
             self.train, self.validation = (
-                sources.enter_context(
-                    ParquetCohortSource(self.manifest, partition=name, input_policy=input_policy)
-                )
-                for name in ("train", "validation")
+                sources.enter_context(source(name)) for name in ("train", "validation")
             )
             self.sources = sources.pop_all()
 

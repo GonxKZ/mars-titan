@@ -80,6 +80,16 @@ def _within(source, partition, raw):
     )
 
 
+def _cohorts(source, positions):
+    """Cohortes reales en el orden de las visitas.
+
+    Una fuente con `cohorts` las lee por bloques. Las demás se leen una a una.
+    """
+    if hasattr(source, "cohorts"):
+        return source.cohorts(positions)
+    return (source(position) for position in positions)
+
+
 class PairedInputs:
     """Compartir la fuente real y cargar un único episodio adicional cada vez."""
 
@@ -218,11 +228,15 @@ class PairedInputs:
             batch_size=batch_size,
         )
         point = _resume_point(cursor, identity, sizes, offsets, batch_size)
-        current_episode, view = None, None
+        current_episode, view, real = None, None, None
         for position in range(point["visit"], len(visits)):
             visit = visits[position]
             if visit.arm == "real":
-                raw = source(visit.cohort)
+                if real is None:
+                    real = _cohorts(
+                        source, [v.cohort for v in visits[position:] if v.arm == "real"]
+                    )
+                raw = next(real)
             else:
                 if current_episode != visit.episode:
                     view = self._episode(source, visit.episode, condition)
