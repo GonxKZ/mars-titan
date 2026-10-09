@@ -117,8 +117,8 @@ std::string board(std::string_view asset) {
     }
     constexpr std::size_t code_length = 6;
     require(asset.size() == code_length + 3 && asset[code_length] == '.' &&
-                std::all_of(asset.begin(), asset.begin() + code_length,
-                            [](char ch) { return ch >= '0' && ch <= '9'; }),
+                std::ranges::all_of(asset.substr(0, code_length),
+                                    [](char ch) { return ch >= '0' && ch <= '9'; }),
             "El activo no tiene un código de acción A reconocible");
     const auto exchange = asset.substr(code_length + 1);
     require(exchange == "SS" || exchange == "SH" || exchange == "SZ",
@@ -143,7 +143,7 @@ std::string board(std::string_view asset) {
 }
 
 // Una apertura ejecutable cae exactamente en la rejilla de su mercado y fecha.
-bool on_grid(std::string_view market, int64_t close_time, double value) {
+bool on_grid(std::string_view market, std::chrono::sys_days day, double value) {
     const auto exact = [value](double inverse) {
         return std::nearbyint(value * inverse) / inverse == value;
     };
@@ -151,8 +151,7 @@ bool on_grid(std::string_view market, int64_t close_time, double value) {
         return exact(cent_inverse);
     }
     using std::chrono::year_month_day;
-    const year_month_day date{std::chrono::floor<std::chrono::days>(
-        std::chrono::sys_time<std::chrono::microseconds>{std::chrono::microseconds{close_time}})};
+    const year_month_day date{day};
     const year_month_day pilot{std::chrono::year{2000} / 8 / 28};
     const year_month_day complete{std::chrono::year{2001} / 4 / 9};
     if (date < pilot) {
@@ -193,6 +192,9 @@ void check_sessions(const MarketTape& tape, const ReconstructedAudit& audit) {
 void check_prices(const MarketTape& tape, std::string_view market) {
     const auto count = tape.assets.size();
     for (std::size_t session = 0; session < tape.close_times.size(); ++session) {
+        const auto day = std::chrono::floor<std::chrono::days>(
+            std::chrono::sys_time<std::chrono::microseconds>{
+                std::chrono::microseconds{tape.close_times[session]}});
         for (std::size_t asset = 0; asset < count; ++asset) {
             const auto row = tape.frame(session).subspan(asset * price_width, price_width);
             const auto volume = row[volume_column];
@@ -206,7 +208,7 @@ void check_prices(const MarketTape& tape, std::string_view market) {
                         "Una sesión negociada no conserva su máximo y su mínimo");
             }
             require(std::isnan(row[open_column]) ||
-                        on_grid(market, tape.close_times[session], row[open_column]),
+                        on_grid(market, day, row[open_column]),
                     "Una apertura fuera de rejilla no puede ser ejecutable");
         }
     }
@@ -332,22 +334,30 @@ InstrumentRules china_a_share_rules(std::string_view asset) {
     result.odd_lot_exit = true;
     constexpr double main_band = 0.10;
     constexpr double wide_band = 0.20;
+    constexpr Day bands_from{2006, 7, 1};
+    constexpr Day chinext_wide_from{2020, 8, 24};
+    constexpr Day star_from{2019, 7, 22};
     if (kind == "main") {
-        result.price_limits = {band({2006, 7, 1}, verified_end, main_band)};
+        result.price_limits = {band(bands_from, verified_end, main_band)};
     } else if (kind == "chinext") {
-        result.price_limits = {band({2006, 7, 1}, {2020, 8, 24}, main_band),
-                               band({2020, 8, 24}, verified_end, wide_band)};
+        result.price_limits = {band(bands_from, chinext_wide_from, main_band),
+                               band(chinext_wide_from, verified_end, wide_band)};
     } else {
-        result.price_limits = {band({2019, 7, 22}, verified_end, wide_band)};
+        result.price_limits = {band(star_from, verified_end, wide_band)};
     }
     constexpr double low_duty = 0.001;
     constexpr double high_duty = 0.003;
     constexpr double halved_duty = 0.0005;
-    result.taxes = {duty({2005, 1, 24}, {2007, 5, 30}, low_duty, low_duty),
-                    duty({2007, 5, 30}, {2008, 4, 24}, high_duty, high_duty),
-                    duty({2008, 4, 24}, {2008, 9, 19}, low_duty, low_duty),
-                    duty({2008, 9, 19}, {2023, 8, 28}, 0, low_duty),
-                    duty({2023, 8, 28}, verified_end, 0, halved_duty)};
+    constexpr Day duty_from{2005, 1, 24};
+    constexpr Day duty_raised{2007, 5, 30};
+    constexpr Day duty_lowered{2008, 4, 24};
+    constexpr Day seller_only{2008, 9, 19};
+    constexpr Day duty_halved{2023, 8, 28};
+    result.taxes = {duty(duty_from, duty_raised, low_duty, low_duty),
+                    duty(duty_raised, duty_lowered, high_duty, high_duty),
+                    duty(duty_lowered, seller_only, low_duty, low_duty),
+                    duty(seller_only, duty_halved, 0, low_duty),
+                    duty(duty_halved, verified_end, 0, halved_duty)};
     return result;
 }
 

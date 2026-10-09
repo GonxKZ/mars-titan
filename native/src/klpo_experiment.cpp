@@ -200,9 +200,9 @@ std::string actor_archive(const PpoCheckpointBundle& bundle) {
     return bundle.policy_archive.substr(0, split);
 }
 
-PpoPolicy load_actor(const std::string& bytes, const std::string& device) {
+PpoPolicy load_actor(const std::string& bytes, const PpoExperimentOptions& options) {
     std::istringstream stream(bytes);
-    return PpoPolicy::load_terminal(stream, device);
+    return PpoPolicy::load_terminal(stream, options.device);
 }
 
 PpoLearningOptions evaluation_context(const KlpoExperimentConfig& config) {
@@ -219,6 +219,12 @@ class KlpoRun {
             const std::function<bool()>& stop)
         : options_(options), config_(std::move(config)), stop_(stop),
           started_(std::chrono::steady_clock::now()) {}
+    // Guarda referencias a las opciones y a la parada de la orden: no se copia ni se mueve.
+    KlpoRun(const KlpoRun&) = delete;
+    KlpoRun& operator=(const KlpoRun&) = delete;
+    KlpoRun(KlpoRun&&) = delete;
+    KlpoRun& operator=(KlpoRun&&) = delete;
+    ~KlpoRun() = default;
 
     Json run() {
         load_tapes();
@@ -258,6 +264,7 @@ class KlpoRun {
   private:
     void load_tapes() {
         std::vector<PolicyTape> tapes;
+        tapes.reserve(options_.train_tapes.size() + 1);
         for (const auto& path : options_.train_tapes) {
             tapes.push_back(load_policy_tape(path, PolicyTapeRole::train, config_.environment));
         }
@@ -399,7 +406,7 @@ class KlpoRun {
     // Evalúa el actor confirmado con argmax en validación. Devuelve falso si se pausa.
     bool evaluate(std::size_t wave) {
         const auto bytes = actor_archive(controller_->snapshot());
-        const auto actor = load_actor(bytes, options_.device);
+        const auto actor = load_actor(bytes, options_);
         const auto evaluation = evaluate_policy(actor, validation_, config_.learning.collection.workers,
                                                 stop_, evaluation_context(config_));
         if (evaluation.paused) {
@@ -559,9 +566,8 @@ class KlpoRun {
 };
 
 // Evaluación de la política KLPO elegida en cintas posteriores a su selección.
-Json run_evaluation(const PpoExperimentOptions& options, const KlpoExperimentConfig& config,
-                    const std::function<bool()>& stop) {
-    const auto& run = *options.audit_run;
+Json run_evaluation(const std::filesystem::path& run, const PpoExperimentOptions& options,
+                    const KlpoExperimentConfig& config, const std::function<bool()>& stop) {
     const auto selected = unseal(run / "experiment.json");
     require(selected.at("kind") == "native_klpo" &&
                 selected.at("configuration") == config.document &&
@@ -595,7 +601,7 @@ Json run_evaluation(const PpoExperimentOptions& options, const KlpoExperimentCon
     }
     require_policy_sequence(request.tapes);
     configure_policy_runtime(options);
-    const auto actor = load_actor(bytes, options.device);
+    const auto actor = load_actor(bytes, options);
     require(actor.parameter_fingerprint() == best.at("actor_fingerprint").get<std::string>() &&
                 actor.optimizer_steps() == count(best.at("optimizer_steps")),
             "El actor KLPO cargado no corresponde a la selección");
@@ -625,8 +631,8 @@ Json run_klpo_experiment(const PpoExperimentOptions& options, const std::functio
     // crear salidas si la protección local no lo permite.
     require_learning_allowed(options.audit_run ? "la evaluación KLPO nativa sobre cintas reales"
                                                : "el entrenamiento KLPO nativo");
-    if (options.audit_run) {
-        return run_evaluation(options, config, stop);
+    if (const auto& run = options.audit_run) {
+        return run_evaluation(*run, options, config, stop);
     }
     KlpoRun run(options, std::move(config), stop);
     return run.run();

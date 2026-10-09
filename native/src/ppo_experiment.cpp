@@ -731,6 +731,7 @@ struct ExperimentInputs {
 ExperimentInputs load_reconstructed_inputs(const PpoExperimentOptions& options,
                                            const ExperimentConfig& config) {
     std::vector<PolicyTape> tapes;
+    tapes.reserve(options.train_tapes.size() + options.validation_tapes.size());
     for (const auto& path : options.train_tapes) {
         tapes.push_back(load_policy_tape(path, PolicyTapeRole::train, config.environment));
     }
