@@ -239,6 +239,7 @@ La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_ca
 ## Pendiente
 
 - Registrar la etapa en `LATER_STAGES` de `training/campaign_plan.py` y en `scripts/run_masked_campaign.py`, junto con la expectativa de `tests/training/test_campaign_plan.py`.
+- Declarar antes de ver resultados una comparación con los brazos postentrenados y publicar su manifiesto de fuentes para `evaluation.walk_forward_comparison`. La etapa escribe sus predicciones con el esquema común y los recibos walk-forward, pero no publica ese manifiesto.
 - Recorrer la cola y la etapa en `cuda:0` con la reserva de la GPU y las comprobaciones CUDA anteriores.
 - Medir con la edición real el disco de las copias ordenadas, las cachés de padres, los normalizadores y los checkpoints de cada ventana antes de fijar la retención.
 - `training.predictive_run` registra `fit_cutoff_utc` fijo en 2023. Es exacto para las dos particiones históricas, no para las ventanas. No se ha cambiado para no alterar su identidad estricta.
