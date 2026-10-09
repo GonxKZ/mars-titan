@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
 from mars_titan.evaluation.splits import build_folds
 
 # Fuentes del contrato temporal estricto (versión 1). La admisión de recibos valida el
@@ -28,6 +29,45 @@ def strict_view(protocol):
     )
 
 
+def masked_protocol(market, first_validation_start="2023-10-01", **changes):
+    """Protocolo v2 de la edición desde 2000 con ventanas mensuales para los fixtures."""
+    protocol = dict(
+        schema_version=2,
+        market=market,
+        train_start="2000-01-01",
+        first_validation_start=first_validation_start,
+        validation_months=1,
+        calibration_months=1,
+        evaluation_months=1,
+        step_months=1,
+        minimum_train_months=240,
+        purge="label_interval",
+        final_test_start="2024-01-01",
+        final_test_end="2025-01-01",
+        primary_metric="session_mae",
+        selection=dict(
+            metric="session_mae", stopping="fixed_budget", patience=5, min_delta=1e-5, max_epochs=30
+        ),
+        seeds=[42, 43, 44],
+    )
+    protocol.update(changes)
+    return protocol
+
+
+def masked_view(protocol, fold=None):
+    """Vista histórica con máscaras (versión 2), como la escribe la preparación."""
+    return dict(
+        schema_version=2,
+        **policy_identity(HISTORICAL_MASKED),
+        protocol=protocol,
+        fold=build_folds(protocol)[0] if fold is None else fold,
+        selection_partition="validation",
+        recover_annual_boundaries=True,
+        parent_manifest="/unavailable/parent/manifest.json",
+        parent_sha256="e" * 64,
+    )
+
+
 def save(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     raw = (json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n").encode()
@@ -36,7 +76,9 @@ def save(path, value):
 
 
 class Campaign:
-    def __init__(self, root, *, materialize=False, matching=False, markets=("US",)):
+    def __init__(
+        self, root, *, materialize=False, matching=False, markets=("US",), policy=STRICT_INPUTS
+    ):
         self.materialize = materialize
         self.matching = matching
         self.markets = markets
@@ -64,6 +106,9 @@ class Campaign:
             primary_metric="session_mae",
             seeds=[42, 43, 44],
         )
+        masked = policy == HISTORICAL_MASKED
+        if masked:
+            protocol = masked_protocol(markets[0])
         self.manifest_path = self.reference / self.fold / "views" / f"{self.arm}.json"
         self.manifest = dict(
             kind="corpus_supervision",
@@ -74,7 +119,8 @@ class Campaign:
             counts=self.counts,
             selected_arm=self.arm,
             source_manifest_sha256="b" * 64,
-            temporal_view=strict_view(protocol),
+            temporal_view=masked_view(protocol) if masked else strict_view(protocol),
+            **policy_identity(policy),
         )
         if len(markets) == 2:
             contract = self.manifest.pop("temporal_view")
@@ -699,3 +745,68 @@ def test_evaluation_must_declare_its_frozen_temporal_contract(campaign):
     save(root, summary)
     with pytest.raises(ValueError, match="congelado"):
         sources(campaign)
+
+
+@pytest.mark.parametrize("markets", [("US",), ("US", "CN")])
+def test_masked_views_are_admitted_only_under_their_declared_policy(tmp_path, markets):
+    from mars_titan.evaluation.comparison_sources import predictive_sources
+
+    masked = Campaign(tmp_path / "masked", markets=markets, policy=HISTORICAL_MASKED)
+    strict = Campaign(tmp_path / "strict", markets=markets)
+    rows, provenance = predictive_sources(
+        masked.reference, masked.completion, input_policy=HISTORICAL_MASKED
+    )
+    strict_rows, strict_provenance = predictive_sources(strict.reference, strict.completion)
+    assert provenance["input_policy"] == HISTORICAL_MASKED
+    assert provenance["mask_contract"] == policy_identity(HISTORICAL_MASKED)["mask_contract"]
+    assert "input_policy" not in strict_provenance and "mask_contract" not in strict_provenance
+    # Mismas ventanas mensuales: solo cambian la política y las huellas de los recibos.
+    assert [(r["id"], r["partition"], r["bounds"]) for r in rows] == [
+        (r["id"], r["partition"], r["bounds"]) for r in strict_rows
+    ]
+    with pytest.raises(ValueError, match="política de entradas"):
+        predictive_sources(masked.reference, masked.completion)
+    with pytest.raises(ValueError, match="política de entradas"):
+        predictive_sources(strict.reference, strict.completion, input_policy=HISTORICAL_MASKED)
+
+
+def test_unknown_input_policy_is_rejected_before_opening_any_receipt(tmp_path):
+    from mars_titan.evaluation.comparison_sources import predictive_sources
+
+    with pytest.raises(ValueError, match="no está admitida"):
+        predictive_sources(tmp_path / "a", tmp_path / "b", input_policy="historical_masked")
+
+
+@pytest.mark.parametrize(
+    "defect,message",
+    [
+        ("strict_view", "no cumple su contrato"),
+        ("strict_protocol", "no conserva el inicio"),
+        ("missing_mask_contract", "adhesión y contrato exactos"),
+    ],
+)
+def test_masked_admission_rejects_views_that_mix_both_contracts(tmp_path, defect, message):
+    from mars_titan.evaluation.comparison_sources import predictive_sources
+
+    campaign = Campaign(tmp_path, policy=HISTORICAL_MASKED)
+    if defect == "strict_view":
+        campaign.manifest["temporal_view"] = strict_view(
+            campaign.manifest["temporal_view"]["protocol"]
+        )
+    elif defect == "strict_protocol":
+        view = campaign.manifest["temporal_view"]
+        view["protocol"] = dict(view["protocol"], train_start="2022-01-01", minimum_train_months=6)
+        view["fold"] = build_folds(view["protocol"])[0]
+    else:
+        campaign.manifest.pop("mask_contract")
+    campaign.manifest_hash = save(campaign.manifest_path, campaign.manifest)
+    for original in campaign.originals.values():
+        if "identity" in original:
+            original["identity"]["manifest_sha256"] = campaign.manifest_hash
+            if "grid" in original["identity"]:
+                original["identity"]["grid"]["source_sha256"] = campaign.manifest_hash
+        else:
+            original["manifest_sha256"] = campaign.manifest_hash
+    campaign.publish()
+    with pytest.raises(ValueError, match=message):
+        predictive_sources(campaign.reference, campaign.completion, input_policy=HISTORICAL_MASKED)
