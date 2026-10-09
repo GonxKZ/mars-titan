@@ -13,18 +13,15 @@ import torch
 
 from mars_titan.data.input_policy import MODALITIES
 from mars_titan.models.titans.config import bounded_integer
-from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
 from mars_titan.models.titans.financial_inputs import (
     FINAL_TEST_US,
     DecisionBatch,
     validated_cpu_batch,
 )
-from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.training import prefix_eligibility
 from mars_titan.training.prefix_eligibility import PrefixEvidence, PrefixTargetVerifier
 
-from . import episodic_session, financial_state_artifacts, write_policy
-from .episodic_codec import FrozenEpisodeCodec
+from . import episodic_session, financial_consumers, financial_state_artifacts
 from .episodic_session import (
     EpisodicSession,
     _canonical,
@@ -33,10 +30,8 @@ from .episodic_session import (
     _empty_pending,
     _row_key,
 )
-from .financial_state_artifacts import FinancialStateArtifacts
-from .retention_bank import RetentionBank, RetentionConfig
+from .financial_consumers import ADMISSION_ERROR, SOURCE_ERROR, bind_consumer
 from .session_artifacts import SessionArtifacts
-from .write_policy import MatureErrorBank, MatureErrorConfig
 
 
 def _callback_signature(instance):
@@ -51,8 +46,21 @@ def _callback_signature(instance):
     return tuple(result)
 
 
+def _binding_signature(binding):
+    kind = type(binding)
+    methods = inspect.getmembers(kind, inspect.isfunction)
+    if kind is not financial_consumers.TitansBinding or any(
+        name in vars(binding) for name, _ in methods
+    ):
+        raise ValueError("El enlace del consumidor no admite tipos o métodos sustituidos")
+    return kind, tuple((name, id(function.__code__)) for name, function in methods)
+
+
 def _check_callbacks(instance):
-    if _callback_signature(instance) != instance._callback_versions:
+    if (
+        _callback_signature(instance) != instance._callback_versions
+        or _binding_signature(instance._binding) != instance._binding_versions
+    ):
         raise ValueError("Los callbacks cambiaron respecto de la sesión identificada")
     current = (
         instance.contract_id,
@@ -106,9 +114,10 @@ class FinancialPhase:
 class FinancialSession(EpisodicSession):
     """Reutilizar almacenamiento, codec y banco. Executor publica la única generación.
 
-    La preparación queda fijada a FrozenFinancialConsumer. No se aceptan callbacks
-    predictivos arbitrarios ni reglas M3 incompletas. Los helpers heredados
-    conservan la validación de inputs y procedencia de la sesión v1.
+    La preparación queda fijada a FrozenFinancialConsumer mediante su enlace
+    cerrado. No se aceptan callbacks predictivos arbitrarios ni reglas M3
+    incompletas. Los helpers heredados conservan la validación de inputs
+    y procedencia de la sesión v1.
     """
 
     def __init__(
@@ -131,39 +140,21 @@ class FinancialSession(EpisodicSession):
     ):
         if (
             type(self) is not FinancialSession
-            or type(consumer) is not FrozenFinancialConsumer
-            or type(codec) is not FrozenEpisodeCodec
             or type(prefixes) is not PrefixTargetVerifier
             or type(phase) is not FinancialPhase
-            or not (
-                (admission in {"m0", "m1"} and type(retention) is RetentionConfig)
-                or (admission == "m2" and type(retention) is MatureErrorConfig)
-            )
             or type(resume) is not bool
         ):
-            raise ValueError(
-                "La admisión requiere M0/M1 con retención original o M2 con sus tres índices"
-            )
-        bounded_integer(block_rows, "lote físico", 1, consumer.predictor.config.max_batch)
+            raise ValueError(ADMISSION_ERROR)
+        binding = bind_consumer(consumer, codec, retention, admission)
+        bounded_integer(block_rows, "lote físico", 1, binding.max_batch)
         bounded_integer(max_input_blocks, "bloques de inputs pendientes", 1, 256)
         bounded_integer(max_log_bytes, "registro de la fase", 1, 16 * 1024**3)
-        if (
-            admission == "m0"
-            and consumer.readout is not None
-            and consumer.readout.config.mode != "no_bank"
-        ):
-            raise ValueError("M0 exige readout=None o el control explícito no_bank")
-        specification = consumer.predictor.config.inputs
-        if (
-            codec.identity()["input_specification"] != specification.identity()
-            or prefixes.source_id != specification.source_sha256
-            or (
-                consumer.readout is not None
-                and consumer.readout.config.codec_id != codec.fingerprint()
-            )
-        ):
-            raise ValueError("El predictor, codec y prefijo no comparten la fuente de inputs")
+        binding.check()
+        specification = binding.input_spec
+        if prefixes.source_id != specification.source_sha256:
+            raise ValueError(SOURCE_ERROR)
         consumer.verify()
+        self._binding, self._binding_versions = binding, _binding_signature(binding)
         self.output, self.native, self.codec = Path(output), native, codec
         self.consumer, self.prefixes, self.phase = consumer, prefixes, phase
         self.admission, self.block_rows, self.max_input_blocks = (
@@ -174,18 +165,15 @@ class FinancialSession(EpisodicSession):
         self.task, self.horizon, self._input_spec = "residual", 1, specification
         self._inflight, self._proposal = None, None
         code = {
-            "financial_session": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-            "financial_state_artifacts": hashlib.sha256(
-                Path(financial_state_artifacts.__file__).read_bytes()
-            ).hexdigest(),
-            "prefix_eligibility": hashlib.sha256(
-                Path(prefix_eligibility.__file__).read_bytes()
-            ).hexdigest(),
+            name: hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
+            for name, module in (
+                ("financial_session", inspect.getmodule(FinancialSession)),
+                ("financial_consumers", financial_consumers),
+                ("financial_state_artifacts", financial_state_artifacts),
+                ("prefix_eligibility", prefix_eligibility),
+            )
         }
-        if admission == "m2":
-            code["write_policy"] = hashlib.sha256(
-                Path(write_policy.__file__).read_bytes()
-            ).hexdigest()
+        code.update(binding.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -203,6 +191,10 @@ class FinancialSession(EpisodicSession):
             task=self.task,
             horizon=self.horizon,
             native_sha256=native.binary_sha256,
+            consumer_kind=binding.kind,
+            pending_widths=list(binding.widths),
+            pending_dtype=str(binding.pending_dtype),
+            feature_width=binding.feature_width,
             max_assets=8192,
             max_pending=32768,
             max_transient_pending=40960,
@@ -226,22 +218,18 @@ class FinancialSession(EpisodicSession):
             admission,
             max_input_blocks,
         )
-        bank_type = MatureErrorBank if admission == "m2" else RetentionBank
-        self._prototype = bank_type(
+        self._prototype = binding.bank(
             native,
             retention,
             codec_id=codec.fingerprint(),
             world=_digest([world, self.task, self.horizon]),
             partition=phase.partition,
             fold=fold,
-            **({} if admission == "m2" else {"memory_contract": "causal_v2"}),
         )
         self.artifacts = SessionArtifacts(
             native, self.output / "artifacts", max_files=1024, max_total_bytes=2 * 1024**3
         )
-        self._fast_store = FinancialStateArtifacts(
-            consumer, self.artifacts, identity=self.contract_id
-        )
+        self._fast_store = binding.state_store(self.artifacts, self.contract_id)
         definition = native.Definition()
         identity = native.Identity()
         identity.source_sha256, identity.view_sha256 = (
@@ -261,7 +249,7 @@ class FinancialSession(EpisodicSession):
         )
         definition.initial_state_json = _canonical(self._state(0, None))
         limits = native.Limits()
-        limits.feature_width, limits.max_assets = 136, 8192
+        limits.feature_width, limits.max_assets = binding.feature_width, 8192
         limits.max_record_bytes = limits.max_checkpoint_bytes = 64 * 1024**2
         limits.max_log_bytes = max_log_bytes
         definition.limits = limits
@@ -310,15 +298,20 @@ class FinancialSession(EpisodicSession):
     def _input_rows(self, reference, **_):
         return super()._input_rows(reference, allow_mixed_cutoffs=True)
 
+    def _empty_queue(self):
+        return _empty_pending(self._binding.widths, self._binding.pending_dtype)
+
+    def _check_queue(self, pending, *, maximum=32768):
+        _check_pending(
+            pending,
+            maximum=maximum,
+            widths=self._binding.widths,
+            dtype=self._binding.pending_dtype,
+        )
+
     def _bank(self, reference):
         bank, episodes = super()._bank(reference)
-        if self.admission == "m2":
-            scores = {key: abs(row["error"]) for key, row in episodes.items()}
-            selected = sorted(scores, key=lambda key: (-scores[key], key))[
-                : bank.config.quotas["selective"]
-            ]
-            if bank.selective_scores != {key: scores[key] for key in selected}:
-                raise ValueError("El índice selectivo M2 contradice los errores de las emisiones")
+        self._binding.check_bank(bank, episodes)
         return bank, episodes
 
     def diagnostics(self):
@@ -394,13 +387,7 @@ class FinancialSession(EpisodicSession):
         cohort.kind, cohort.close_phase = getattr(self.native.EventKind, kind), close_phase
         cohort.observations = [
             self.native.Observation(
-                row.flow_id,
-                row.input_available_at,
-                [
-                    *row.key_inputs.tolist(),
-                    *row.value.tolist(),
-                    *(int(row.input_sha256[i : i + 8], 16) for i in range(0, 64, 8)),
-                ],
+                row.flow_id, row.input_available_at, self._binding.features(row)
             )
             for row in rows
         ]
@@ -448,37 +435,6 @@ class FinancialSession(EpisodicSession):
         finally:
             self._inflight = self._proposal = None
 
-    def _snapshot(self, bank, context_id, cutoff):
-        extension = self.consumer.readout
-        if extension is None or extension.config.mode == "no_bank":
-            return None
-        records = sorted(bank.records(), key=lambda r: r.id)
-        size = len(records)
-        return EpisodeSnapshot.create(
-            keys=torch.tensor([r.key for r in records], dtype=torch.float32, device="cpu").reshape(
-                size, 64
-            ),
-            values=torch.tensor(
-                [r.value for r in records], dtype=torch.float32, device="cpu"
-            ).reshape(size, 64),
-            labels=torch.tensor([r.label for r in records], dtype=torch.float64, device="cpu"),
-            ids=torch.tensor([r.id for r in records], dtype=torch.int64, device="cpu"),
-            decision_at=torch.tensor(
-                [r.decision_at for r in records], dtype=torch.int64, device="cpu"
-            ),
-            available_at=torch.tensor(
-                [r.available_at for r in records], dtype=torch.int64, device="cpu"
-            ),
-            maturity_at=torch.tensor(
-                [r.maturity_at for r in records], dtype=torch.int64, device="cpu"
-            ),
-            cutoff=cutoff,
-            codec_id=self.codec.fingerprint(),
-            context_id=context_id,
-            dtype=self.consumer.predictor.head.weight.dtype,
-            device=self.consumer.predictor.head.weight.device,
-        )
-
     def _decision_batch(self, rows):
         raw = dict(
             inputs={name: np.stack([r.inputs[name] for r in rows]) for name in MODALITIES},
@@ -489,12 +445,12 @@ class FinancialSession(EpisodicSession):
                 [r.input_available_at for r in rows], dtype="datetime64[us]"
             ),
         )
-        if not self.consumer.predictor.masked:
+        if not self._binding.masked:
             raw.pop("presence")
         return DecisionBatch.from_validated(
             validated_cpu_batch(raw, self._input_spec),
-            device=self.consumer.predictor.head.weight.device,
-            dtype=self.consumer.predictor.head.weight.dtype,
+            device=self._binding.device,
+            dtype=self._binding.dtype,
         )
 
     def _prepare_event(self, kind, observations, tasks, cutoff, state_json, batch_rows):
@@ -525,68 +481,21 @@ class FinancialSession(EpisodicSession):
             )
         )
         warmup = kind == self.native.EventKind.warmup
-        snapshot = None if warmup else self._snapshot(bank, context_id, cutoff)
-        model = self.consumer.predictor
-        selection = None
-        if model.local_control is not None and model.local_control.config.mode != "disabled":
-            steps = torch.tensor(
-                [fast["references"].get(r.flow_id, {}).get("observed_steps", 0) for r in rows],
-                dtype=torch.int64,
-                device="cpu",
-            )
-            selection = model.local_control.select_flows(
-                tuple(r.flow_id for r in rows), steps, context_id=context_id
-            )
-        values, measurements = [], []
-        for start in range(0, len(rows), batch_rows):
-            block = rows[start : start + batch_rows]
-            batch = self._decision_batch(block)
-            unknown = tuple(flow for flow in batch.flow_ids if flow not in fast["references"])
-            initial = model.initial_state(unknown) if unknown else None
-            previous = self._fast_store.gather(fast, batch.flow_ids, initial_state=initial)
-            result = self.consumer.prepare(
-                batch,
-                previous,
-                context_id=context_id,
-                snapshot=snapshot,
-                warmup=warmup,
-                selection=selection,
-            )
-            fast = self._fast_store.replace(fast, previous, result.next_state)
-            if not warmup:
-                values.extend(result.point_predictions.detach().cpu().tolist())
-            if result.local_control is not None:
-                measured = result.local_control
-                measurements.append(
-                    dict(
-                        flow_ids=measured.flow_ids,
-                        reevaluations=measured.reevaluations,
-                        angular_corrected_estimate=measured.estimates.angular_corrected_estimate.detach().cpu(),
-                        penalty=measured.penalty.detach().cpu()
-                        if measured.penalty is not None
-                        else None,
-                    )
-                )
+        snapshot = None if warmup else self._binding.snapshot(bank, context_id, cutoff)
+        values, fast, control = self._binding.prepare_event(
+            self,
+            rows,
+            fast,
+            snapshot,
+            context_id=context_id,
+            warmup=warmup,
+            batch_rows=batch_rows,
+        )
         self.consumer.verify()
-        pending = self._read(bundle["pending"], "pending") if bundle else _empty_pending()
-        _check_pending(pending)
+        pending = self._read(bundle["pending"], "pending") if bundle else self._empty_queue()
+        self._check_queue(pending)
         if not warmup:
             pending = self._append_pending(pending, rows)
-        control = dict(
-            context_id=context_id,
-            selection=asdict(selection) if selection else None,
-            measurements=measurements,
-            observations=len(rows),
-            mac_updates=len(rows) if model.config.variant == "mac_online" else 0,
-            refinements=0
-            if warmup or self.consumer.readout is None
-            else self.consumer.readout.config.refinements,
-            snapshot_bytes=sum(t.numel() * t.element_size() for t in snapshot._values)
-            if snapshot
-            else 0,
-            reevaluations=sum(m["reevaluations"] for m in measurements),
-            group_estimated_bytes=selection.estimated_bytes if selection else 0,
-        )
         proposal = dict(
             generation=state["generation"] + 1,
             cutoff=cutoff,
@@ -601,8 +510,7 @@ class FinancialSession(EpisodicSession):
         self._proposal = proposal
         return values, _canonical(proposal)
 
-    @staticmethod
-    def _append_pending(pending, rows):
+    def _append_pending(self, pending, rows):
         metadata = [*pending["rows"], *(r.metadata() for r in rows)]
         keys = torch.cat(
             (
@@ -620,14 +528,14 @@ class FinancialSession(EpisodicSession):
             key_inputs=keys.index_select(0, positions),
             values=values.index_select(0, positions),
         )
-        _check_pending(result, maximum=40960)
+        self._check_queue(result, maximum=40960)
         return result
 
     def _settlement_proposal(self, state):
         bundle = self._bundle(state)
         if bundle is None:
             fast = self._stage(self._fast_store.empty(), "fast")
-            pending = self._stage(_empty_pending(), "pending")
+            pending = self._stage(self._empty_queue(), "pending")
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         return dict(
@@ -657,9 +565,9 @@ class FinancialSession(EpisodicSession):
             proposed = self._settlement_proposal(proposed)
         bank, episodes = self._bank(proposed["bank"])
         pending = self._read(proposed["pending"], "pending")
-        _check_pending(pending, maximum=40960)
+        self._check_queue(pending, maximum=40960)
         positions = {_row_key(row): i for i, row in enumerate(pending["rows"])}
-        incoming, removed = [], set()
+        admitted, removed = [], set()
         for item in outcomes:
             prediction = item.prediction
             key = prediction.asset, prediction.decision_at
@@ -668,22 +576,9 @@ class FinancialSession(EpisodicSession):
             index = positions[key]
             if self.admission in {"m1", "m2"}:
                 metadata = pending["rows"][index]
-                record = self.native.MemoryRecord()
-                record.id, record.decision_at = (
-                    bank.seen + len(incoming) + 1,
-                    prediction.decision_at,
-                )
-                record.available_at, record.maturity_at = (
-                    metadata["input_available_at"],
-                    item.label.available_at,
-                )
-                record.key, record.value = (
-                    pending["key_inputs"][index].tolist(),
-                    pending["values"][index].tolist(),
-                )
-                record.label, record.label_valid = item.label.value, True
-                incoming.append(record)
-                episodes[record.id] = dict(
+                identifier = bank.seen + len(admitted) + 1
+                admitted.append((identifier, index, item))
+                episodes[identifier] = dict(
                     metadata,
                     model_id=self.model_id,
                     task=self.task,
@@ -713,11 +608,10 @@ class FinancialSession(EpisodicSession):
             if key not in positions or key in removed or item.closed_at != self.phase.close_at:
                 raise ValueError("La finalización no corresponde al pendiente y cierre declarados")
             removed.add(key)
-        if incoming:
-            options = dict(confirmed_at=proposed["cutoff"])
-            if self.admission == "m2":
-                options["errors"] = {record.id: episodes[record.id]["error"] for record in incoming}
-            bank = bank.propose(incoming, **options)
+        if admitted:
+            bank = self._binding.propose(
+                self.native, bank, pending, admitted, episodes, confirmed_at=proposed["cutoff"]
+            )
         selected = {r.id for r in bank.records()}
         bank_ref = self._stage(
             dict(snapshot=bank.snapshot(), episodes={i: episodes[i] for i in sorted(selected)}),
@@ -730,7 +624,7 @@ class FinancialSession(EpisodicSession):
             key_inputs=pending["key_inputs"].index_select(0, indexes),
             values=pending["values"].index_select(0, indexes),
         )
-        _check_pending(pending)
+        self._check_queue(pending)
         sources = self._check_sources(proposed["inputs"], pending)
         if len(sources) > self.max_input_blocks:
             sources = self._compact_inputs(sources, pending)
@@ -776,7 +670,7 @@ class FinancialSession(EpisodicSession):
         ):
             raise ValueError("El estado rápido contiene flujos sin observar o información futura")
         pending = self._read(bundle["pending"], "pending")
-        _check_pending(pending)
+        self._check_queue(pending)
         if self._check_sources(bundle["inputs"], pending) != bundle["inputs"]:
             raise ValueError("La generación conserva inputs pendientes huérfanos")
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
