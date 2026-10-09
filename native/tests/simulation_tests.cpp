@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <limits>
 
@@ -35,12 +36,52 @@ constexpr mt_account_v1 sold_account{2277, 23, 2300, 0, 2277};
 constexpr mt_position_v1 pending_order{100, 120, 1000, 1};
 constexpr mt_position_v1 held_position{100, unknown, unknown, 0};
 constexpr std::array<double, assets> scores{0.01, 0.02};
+constexpr double limited_reference = 8;
+constexpr double free_reference = 20;
+constexpr double limit_band = 0.2;
 
 bool close(double left, double right) { return std::abs(left - right) <= tolerance; }
 
 int fail(const char *message) {
     std::cerr << message << '\n';
     return 1;
+}
+
+// Casos conocidos del redondeo decimal de Python y errores de la banda.
+int price_limits_round_half_up_to_the_cent() {
+    constexpr double band = 0.1;
+    struct Case {
+        double reference;
+        double upper;
+        double lower;
+    };
+    constexpr std::array cases{Case{10.15, 11.17, 9.14}, Case{10.05, 11.06, 9.05},
+                               Case{2.675, 2.94, 2.41}, Case{0.004, 0.0, 0.0}};
+    std::array<char, error_capacity> error{};
+    for (const auto &[reference, upper, lower] : cases) {
+        double high = 0;
+        double low = 0;
+        if (mt_simulation_price_limits_v1(reference, band, &high, &low, error.data(),
+                                          error.size()) != MT_SIM_OK ||
+            high != upper || low != lower) {
+            return fail("Los límites no conservan el redondeo decimal de la referencia");
+        }
+    }
+    double high = 0;
+    double low = 0;
+    if (mt_simulation_price_limits_v1(unknown, band, &high, &low, error.data(), error.size()) !=
+            MT_SIM_OK ||
+        !std::isnan(high) || !std::isnan(low) ||
+        mt_simulation_price_limits_v1(10, 0, &high, &low, error.data(), error.size()) !=
+            MT_SIM_OK ||
+        !std::isnan(high) ||
+        mt_simulation_price_limits_v1(10, 1, &high, &low, error.data(), error.size()) !=
+            MT_SIM_INVALID_ARGUMENT ||
+        mt_simulation_price_limits_v1(10, 1e-11, &high, &low, error.data(), error.size()) !=
+            MT_SIM_INVALID_ARGUMENT) {
+        return fail("Sin banda no hay límites y una banda no exacta se rechaza");
+    }
+    return 0;
 }
 } // namespace
 
@@ -136,6 +177,46 @@ int main() {
         observation[0] != 1 || observation[1] != expected_weight ||
         observation[assets * observation_fields] != expected_cash_fraction) {
         return fail("La observación no conserva señal y exposición");
+    }
+    if (mt_simulation_rules_size_v1() != sizeof(mt_rules_v1) ||
+        price_limits_round_half_up_to_the_cent() != 0) {
+        return fail("El contrato de reglas no coincide");
+    }
+    // Sin reglas, v2 reproduce v1 byte a byte.
+    currencies = {0, 1};
+    prices = first_prices;
+    positions = initial_positions;
+    accounts = initial_accounts;
+    if (step() != MT_SIM_OK) {
+        return fail(error.data());
+    }
+    const auto v1_positions = next_positions;
+    const auto v1_accounts = next_accounts;
+    const auto v1_trades = trades;
+    const auto step_rules = [&](const mt_rules_v1 *rules) {
+        return mt_simulation_step_v2(
+            assets, accounts_count, currencies.data(), lots.data(), rules, retired.data(),
+            prices.data(), positions.data(), accounts.data(), rate, participation, 1, 2, 3,
+            next_positions.data(), next_accounts.data(), trades.data(), error.data(),
+            error.size());
+    };
+    if (step_rules(nullptr) != MT_SIM_OK ||
+        std::memcmp(v1_positions.data(), next_positions.data(), sizeof(v1_positions)) != 0 ||
+        std::memcmp(v1_accounts.data(), next_accounts.data(), sizeof(v1_accounts)) != 0 ||
+        std::memcmp(v1_trades.data(), trades.data(), sizeof(v1_trades)) != 0) {
+        return fail("v2 sin reglas no reproduce v1");
+    }
+    // La apertura de 10 supera el límite de 9,60 sobre un cierre previo de 8. La de 20 no
+    // alcanza el de 24.
+    std::array<mt_rules_v1, assets> rules{{{0, limited_reference, limit_band, 0, 0, 0, 0},
+                                           {0, free_reference, limit_band, 0, 0, 0, 0}}};
+    if (step_rules(rules.data()) != MT_SIM_OK || trades[0].reason != MT_ORDER_LIMIT_UP ||
+        next_positions[0].quantity != 0 || trades[1].reason == MT_ORDER_LIMIT_UP) {
+        return fail("Una compra en el límite superior no debe ejecutarse");
+    }
+    rules[0].band = 1;
+    if (step_rules(rules.data()) != MT_SIM_INVALID_ARGUMENT) {
+        return fail("Una banda fuera de rango debe rechazarse");
     }
     std::cout << "Contabilidad, costes, monedas, datos ausentes y límites comprobados\n";
     return 0;

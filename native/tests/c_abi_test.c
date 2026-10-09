@@ -16,5 +16,12 @@ int main(void) {
         fputs("El consumidor C debe recibir un error para dimensiones vacías\n", stderr);
         return 1;
     }
+    if (mt_simulation_rules_size_v1() != sizeof(struct mt_rules_v1)
+        || mt_simulation_step_v2(0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0,
+                                 NULL, NULL, NULL, error, sizeof(error))
+               != MT_SIM_INVALID_ARGUMENT) {
+        fputs("El consumidor C no comparte el contrato de reglas\n", stderr);
+        return 1;
+    }
     return 0;
 }
