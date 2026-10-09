@@ -1,0 +1,463 @@
+"""Ejecución de la campaña con máscaras mediante dobles que registran trabajos sin ajustar.
+
+Las vistas se preparan sobre el corpus técnico con filas en todos los años. Los
+ejecutores sustitutos anotan trabajo, vista, ventana, semilla y caso, y escriben
+predicciones nulas con las filas exactas de la vista. Ningún modelo se ajusta, no se
+aplican pasos de optimizador y la GPU no se usa. Como los ejecutores son dobles, las
+pruebas admiten la campaña con una protección temporal permitida (`learning_doubles`) y
+las pruebas del bloqueo declaran la suya.
+"""
+
+import json
+import threading
+import time
+from contextlib import nullcontext
+from pathlib import Path
+from types import SimpleNamespace
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pytest
+
+from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.models.quantile_head import QUANTILE_COLUMNS
+from mars_titan.training import masked_campaign as engine
+from mars_titan.training.campaign_plan import load_campaign, plan_campaign
+from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.learning_hold import LearningHoldError
+from tests.training.test_walk_forward_v2_views import fixture
+
+pytestmark = pytest.mark.usefixtures("learning_doubles")
+
+CONFIGS = Path("configs")
+ARMS = ("gru", "ridge", "xgboost")
+
+
+def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes):
+    """Campaña reducida: tres brazos, un candidato tabular y protocolos versionados."""
+    folder.mkdir(parents=True, exist_ok=True)
+    declared = json.loads(
+        (CONFIGS / "evaluation/historical-masked-2000-comparison.json").read_text()
+    )
+    for scope in declared["scopes"].values():
+        scope["protocols"] = {
+            market: str((CONFIGS / "evaluation" / name).resolve())
+            for market, name in scope["protocols"].items()
+        }
+    declared["arms"] = {k: v for k, v in declared["arms"].items() if k in {"zero", *arms}}
+    declared["comparison"].update(
+        replicates=20,
+        families=dict(references_vs_zero=dict(kind="delta", base="zero", variants=list(arms))),
+    )
+    atomic_json(folder / "comparison.json", declared)
+    tabular = json.loads((CONFIGS / "baselines/tabular-historical-masked.json").read_text())
+    tabular.update(ridge_alphas=[1.0], depths=[3], bins=[64], rates=[0.1])
+    atomic_json(folder / "tabular.json", tabular)
+    value = json.loads(
+        (CONFIGS / f"baselines/historical-masked-campaign-{variant.lower()}.json").read_text()
+    )
+    value.update(comparison="comparison.json", scopes=list(scopes))
+    value["neural"]["arms"] = {arm: arm for arm in arms if arm not in {"ridge", "xgboost"}}
+    value["tabular"].update(
+        config="tabular.json", arms={arm: arm for arm in arms if arm in {"ridge", "xgboost"}}
+    )
+    value["limits"] = dict(max_training_jobs=10_000, max_prediction_jobs=10_000)
+    for key, item in changes.items():
+        value[key] = value[key] | item if isinstance(item, dict) else item
+    atomic_json(folder / "campaign.json", value)
+    return folder / "campaign.json"
+
+
+@pytest.fixture(scope="module")
+def prepared(tmp_path_factory):
+    root = tmp_path_factory.mktemp("masked-campaign")
+    data = fixture(root / "data", ("US", "CN"))
+    campaign = write_campaign(root / "config", scopes=("US", "CN", "US+CN"))
+    views = engine.prepare_views(campaign, data.parent, root / "views")
+    return SimpleNamespace(
+        root=root,
+        parent=data.parent,
+        views={scope: root / "views" / scope for scope in views},
+        checked=views,
+    )
+
+
+def scores(job):
+    """MAE de validación fijado para que el ganador no dependa del orden del plan."""
+    if job["stage"] != "search":
+        return 0.5
+    return {"gru-00": 0.02, "gru-10": 0.01}.get(job["candidate"], 0.03)
+
+
+class Recorder:
+    """Ejecutor sustituto: registra el trabajo y escribe filas nulas de la vista."""
+
+    def __init__(self, *, stop=None, interrupt_at=None, mutate=None, delay=0.0):
+        self.calls, self.cache = [], {}
+        self.stop, self.interrupt_at, self.mutate, self.delay = stop, interrupt_at, mutate, delay
+        self.active, self.peak, self.lock = 0, 0, threading.Lock()
+
+    def rows(self, view, partition):
+        key = (str(view), partition)
+        if key not in self.cache:
+            dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+            parts = dict(sample_id=[], market=[], prediction_at=[], target=[])
+            for batch in dataset.batches(partition=partition, batch_size=64, epoch=0, seed=0):
+                parts["sample_id"] += list(batch["sample_ids"])
+                parts["market"] += list(batch["market"])
+                parts["prediction_at"].append(np.asarray(batch["prediction_at"]))
+                parts["target"].append(np.asarray(batch["target"], dtype=np.float64))
+            for name in ("prediction_at", "target"):
+                parts[name] = np.concatenate(parts[name])
+            self.cache[key] = parts
+        return self.cache[key]
+
+    def table(self, run, partition):
+        rows = self.rows(run.view, partition)
+        count = len(rows["target"])
+        columns = dict(
+            sample_id=rows["sample_id"],
+            asset_id=["/".join(key.split("/")[:2]) for key in rows["sample_id"]],
+            market=rows["market"],
+            prediction_at=pa.array(rows["prediction_at"], type=pa.timestamp("us", tz="UTC")),
+            target=rows["target"],
+            prediction=np.zeros(count, dtype=np.float32),
+            zero=np.zeros(count, dtype=np.float64),
+        )
+        if run.job["family"] == "neural_reference":
+            columns.update({name: np.zeros(count, dtype=np.float32) for name in QUANTILE_COLUMNS})
+        table = pa.table(columns)
+        return self.mutate(run, partition, table) if self.mutate else table
+
+    def __call__(self, run):
+        with self.lock:
+            self.active += 1
+            self.peak = max(self.peak, self.active)
+            self.calls.append(
+                dict(
+                    id=run.job["id"],
+                    view=run.view,
+                    view_sha256=run.view_sha256,
+                    window=run.job["window"],
+                    seed=run.job["seed"],
+                    case=run.case,
+                    anchor=run.anchor,
+                    folder=run.folder,
+                    batch_size=run.batch_size,
+                )
+            )
+            position = len(self.calls)
+        try:
+            time.sleep(self.delay)
+            run.folder.mkdir(parents=True, exist_ok=True)
+            if position == self.interrupt_at:
+                (run.folder / "partial.bin").write_bytes(b"incompleto")
+                self.stop.requested = True
+                raise engine.Paused
+            predictions = {}
+            for partition in ("calibration", "evaluation"):
+                path = run.folder / f"{partition}-predictions.parquet"
+                pq.write_table(self.table(run, partition), path)
+                predictions[partition] = dict(path=path.name, sha256=sha256(path))
+            predictions["validation"] = dict(metrics=dict(session_mae=scores(run.job)))
+            report = dict(status="completed", final_test_opened=False, predictions=predictions)
+            name = "carry.json" if run.job["kind"] == "carry" else "run.json"
+            atomic_json(run.folder / name, report)
+            return report
+        finally:
+            with self.lock:
+                self.active -= 1
+
+
+def doubles(recorder, cpu=()):
+    return {
+        key: dict(entry, run=recorder, device="cpu" if key in cpu else entry["device"])
+        for key, entry in engine.EXECUTORS.items()
+    }
+
+
+def run(campaign, views, output, recorder, *, stop=None, cpu=()):
+    return engine.run_campaign(
+        campaign,
+        views,
+        output,
+        executors=doubles(recorder, cpu),
+        lease=nullcontext,
+        stop=stop or SimpleNamespace(requested=False),
+    )
+
+
+def test_run_launches_each_planned_job_once_with_its_view_window_and_seed(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    recorder = Recorder()
+    summary = run(campaign, views, tmp_path / "out", recorder)
+    assert summary["status"] == "completed"
+    # B sobre US: 7 ventanas reentrenadas con 4 + 1 + 3 ajustes y 12 trasladadas con 7 traslados.
+    assert summary["planned"] == dict(training_jobs=56, prediction_jobs=84)
+    assert summary["completed"] == summary["planned"]
+    jobs = {job["id"]: job for job in plan_campaign(load_campaign(campaign))}
+    assert [call["id"] for call in recorder.calls] == list(jobs)
+    windows = prepared.checked["US"]["windows"]
+    for call in recorder.calls:
+        job = jobs[call["id"]]
+        assert call["view"] == Path(windows[job["window"]]["path"])
+        assert call["view_sha256"] == windows[job["window"]]["sha256"]
+        assert call["seed"] == job["seed"] and call["window"] == job["window"]
+        assert call["batch_size"] == (256 if job["arm"] == "gru" else 1024)
+        if job["stage"] == "search":
+            assert call["case"] == job["case"] and call["anchor"] is None
+        elif job["stage"] == "finalist":
+            # El finalista repite el candidato ganador de su ventana con otra semilla.
+            assert call["case"]["seed"] == job["seed"]
+            winner = "gru-10" if job["arm"] == "gru" else None
+            if winner:
+                search = jobs[f"US/{job['window']}/gru/search-{winner}"]["case"]
+                assert call["case"] == search | dict(seed=job["seed"])
+        else:
+            assert call["case"] is None
+            assert call["anchor"]["view"] == Path(windows[job["anchor"]]["path"])
+            expected = (
+                f"US/{job['anchor']}/gru/search-gru-10"
+                if job["arm"] == "gru" and job["seed"] == 42
+                else f"US/{job['anchor']}/{job['arm']}/"
+                + ("finalist" if job["seed"] != 42 else "search")
+            )
+            assert call["anchor"]["job"].startswith(expected)
+            assert call["anchor"]["folder"].is_dir()
+    receipts = list((tmp_path / "out/jobs").rglob("receipt.json"))
+    assert len(receipts) == 140
+    for path in receipts:
+        receipt = json.loads(path.read_text())
+        assert receipt["final_test_opened"] is False
+        assert set(receipt["predictions"]) == {"calibration", "evaluation"}
+
+
+@pytest.mark.parametrize(("interrupt_at", "attempt"), [(1, "attempt-0001"), (5, "attempt-0002")])
+def test_resume_after_interruption_redoes_only_the_incomplete_job(
+    prepared, tmp_path, interrupt_at, attempt
+):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    stop = SimpleNamespace(requested=False)
+    first = Recorder(stop=stop, interrupt_at=interrupt_at)
+    summary = run(campaign, views, tmp_path / "out", first, stop=stop)
+    assert summary["status"] == "paused"
+    assert summary["completed"]["training_jobs"] == interrupt_at - 1
+    interrupted = first.calls[-1]
+    assert (interrupted["folder"] / "partial.bin").is_file()
+    second = Recorder()
+    summary = run(campaign, views, tmp_path / "out", second)
+    assert summary["status"] == "completed"
+    done = {call["id"] for call in first.calls[:-1]}
+    again = [call["id"] for call in second.calls]
+    assert again[0] == interrupted["id"] and not done & set(again)
+    assert len(again) == 140 - len(done)
+    # Neuronal y XGBoost reanudan su intento. Ridge y los traslados empiezan otro.
+    assert second.calls[0]["folder"].name == attempt
+    third = Recorder()
+    assert run(campaign, views, tmp_path / "out", third)["status"] == "completed"
+    assert third.calls == []
+
+
+def test_resume_rejects_changed_artifacts_and_another_campaign(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    output = tmp_path / "out"
+    run(campaign, views, output, Recorder())
+    receipt = next((output / "jobs").rglob("receipt.json"))
+    record = json.loads(receipt.read_text())["predictions"]["evaluation"]
+    target = output / record["path"]
+    table = pq.read_table(target)
+    pq.write_table(
+        table.set_column(5, "prediction", pa.array(np.ones(len(table), np.float32))), target
+    )
+    with pytest.raises(ValueError, match="artefacto confirmado"):
+        run(campaign, views, output, Recorder())
+    other = write_campaign(tmp_path / "other", tabular=dict(cpu_workers=2))
+    with pytest.raises(ValueError, match="otra campaña"):
+        run(other, views, output, Recorder())
+
+
+def test_active_hold_rejects_the_campaign_before_creating_outputs(
+    prepared, tmp_path, learning_hold
+):
+    learning_hold(False)
+    recorder = Recorder()
+    campaign = write_campaign(tmp_path / "config")
+    with pytest.raises(LearningHoldError, match="la campaña con máscaras"):
+        run(campaign, {"US": prepared.views["US"]}, tmp_path / "out", recorder)
+    assert not (tmp_path / "out").exists() and recorder.calls == []
+
+
+def test_hold_reinstated_during_the_campaign_stops_before_the_next_job(
+    prepared, tmp_path, learning_hold
+):
+    hold = learning_hold(True)
+
+    def reinstate(run, partition, table):
+        hold.write_text(json.dumps(dict(training_allowed=False)))
+        return table
+
+    recorder = Recorder(mutate=reinstate)
+    campaign = write_campaign(tmp_path / "config")
+    with pytest.raises(LearningHoldError, match="el trabajo US/fold-000"):
+        run(campaign, {"US": prepared.views["US"]}, tmp_path / "out", recorder)
+    assert len(recorder.calls) == 1
+    summary = json.loads((tmp_path / "out/summary.json").read_text())
+    assert summary["status"] == "blocked" and summary["completed"]["training_jobs"] == 1
+
+
+def test_mixed_views_scopes_and_policies_are_rejected(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    with pytest.raises(ValueError, match="ventanas del protocolo"):
+        run(campaign, {"US": prepared.views["CN"]}, tmp_path / "a", Recorder())
+    with pytest.raises(ValueError, match="vistas preparadas"):
+        run(campaign, {"US": prepared.views["US+CN"]}, tmp_path / "b", Recorder())
+    with pytest.raises(ValueError, match="exactamente los ámbitos"):
+        run(campaign, dict(prepared.views), tmp_path / "c", Recorder())
+    strict = tmp_path / "strict"
+    strict.mkdir()
+    report = json.loads((prepared.views["US"] / "report.json").read_text())
+    atomic_json(strict / "report.json", report | dict(input_policy="strict_inputs_v1"))
+    with pytest.raises(ValueError, match="política de la campaña"):
+        run(campaign, {"US": strict}, tmp_path / "d", Recorder())
+    assert not any((tmp_path / name).exists() for name in "abcd")
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda run, partition, table: table.slice(1), "filas frente a"),
+        (
+            lambda run, partition, table: table.set_column(
+                4,
+                "target",
+                pa.array(table["target"].to_numpy() + (run.job["arm"] == "xgboost")),
+            ),
+            "mismas filas",
+        ),
+        (
+            lambda run, partition, table: pa.concat_tables(
+                [
+                    table,
+                    table.slice(0, 1).set_column(
+                        3,
+                        "prediction_at",
+                        pa.array([1_704_200_000_000_000], type=pa.timestamp("us", tz="UTC")),
+                    ),
+                ]
+            ),
+            "reserva final",
+        ),
+    ],
+    ids=["missing_row", "other_target", "row_in_2024"],
+)
+def test_every_job_must_evaluate_the_same_rows_without_2024(prepared, tmp_path, mutate, message):
+    campaign = write_campaign(tmp_path / "config")
+    with pytest.raises(ValueError, match=message):
+        run(campaign, {"US": prepared.views["US"]}, tmp_path / "out", Recorder(mutate=mutate))
+
+
+def test_cpu_jobs_respect_the_declared_concurrency_and_gpu_jobs_run_alone(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config", tabular=dict(cpu_workers=2))
+    gpu = Recorder()
+    cpu = Recorder(delay=0.02)
+
+    def dispatch(run_):
+        return (cpu if run_.job["model"] == "ridge" else gpu)(run_)
+
+    executors = doubles(dispatch, cpu={("ridge", "fit"), ("ridge", "carry")})
+    summary = engine.run_campaign(
+        campaign,
+        {"US": prepared.views["US"]},
+        tmp_path / "out",
+        executors=executors,
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+    )
+    assert summary["status"] == "completed"
+    assert gpu.peak == 1 and 1 <= cpu.peak <= 2
+    assert len(cpu.calls) == 7 + 12 and len(gpu.calls) == 140 - 19
+
+
+def test_sources_feed_the_walk_forward_comparison_with_the_same_rows(prepared, tmp_path):
+    scopes = ("US", "US+CN")
+    campaign = write_campaign(tmp_path / "config", scopes=scopes)
+    views = {scope: prepared.views[scope] for scope in scopes}
+    output = tmp_path / "out"
+    assert run(campaign, views, output, Recorder())["status"] == "completed"
+    config = tmp_path / "config/comparison.json"
+    for scope in scopes:
+        path = engine.write_sources(campaign, views, output, scope)
+        sources = comparison.load_sources(path, comparison.load_config(config), scope)
+        assert set(sources["windows"]) == set(prepared.checked[scope]["windows"])
+        manifest = json.loads(path.read_text())
+        assert set(manifest["arms"]) == set(ARMS)
+        assert set(manifest["arms"]["gru"]["42"]["fold-001"]) == {
+            "input_policy",
+            "view_sha256",
+            "calibration",
+            "evaluation",
+        }
+        assert "calibration" not in manifest["arms"]["ridge"]["42"]["fold-001"]
+    report, sessions = comparison.evaluate_walk_forward(config, path, "US+CN")
+    assert report["status"] == "completed" and report["final_test_opened"] is False
+    assert set(report["arms"]) == {"zero", *ARMS}
+    assert sessions.num_rows > 0
+    years = pa.compute.year(sessions["prediction_at"]).to_numpy()
+    assert years.max() <= 2023
+
+
+def test_sources_list_the_arms_without_a_connected_trainer(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    run(campaign, views, tmp_path / "out", Recorder())
+    full = CONFIGS / "evaluation/historical-masked-2000-comparison.json"
+    with pytest.raises(ValueError, match="Faltan productores para .*titans_mac_online"):
+        engine.write_sources(campaign, views, tmp_path / "out", "US", comparison_path=full)
+    assert not (tmp_path / "out/sources/US.json").exists()
+
+
+def test_sources_require_every_job_confirmed(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    stop = SimpleNamespace(requested=False)
+    run(campaign, views, tmp_path / "out", Recorder(stop=stop, interrupt_at=3), stop=stop)
+    with pytest.raises(ValueError, match="sin confirmar|Falta confirmar"):
+        engine.write_sources(campaign, views, tmp_path / "out", "US")
+
+
+def test_prepared_views_cover_every_window_without_2024_rows(prepared):
+    for scope, record in prepared.checked.items():
+        assert len(record["windows"]) == (19 if scope == "US" else 13)
+        for window in record["windows"].values():
+            manifest = json.loads(Path(window["path"]).read_text())
+            assert manifest["final_test_opened"] is False
+            labels = Path(manifest["roots"]["labels"])
+            for path in labels.rglob("labels.parquet"):
+                table = pq.read_table(path, columns=["prediction_at", "partition"])
+                used = table.filter(pa.compute.is_valid(table["partition"]))
+                assert pa.compute.max(pa.compute.year(used["prediction_at"])).as_py() <= 2023
+    # Preparar otra vez reutiliza las vistas y la proyección confirmadas.
+    again = engine.prepare_views(
+        prepared.root / "config/campaign.json", prepared.parent, prepared.root / "views"
+    )
+    assert again == prepared.checked
+
+
+def test_row_digest_ignores_order_but_not_targets():
+    table = pa.table(
+        dict(
+            asset_id=["US/A", "US/B"],
+            market=["US", "US"],
+            prediction_at=pa.array([1, 2], type=pa.timestamp("us", tz="UTC")),
+            target=[0.1, 0.2],
+        )
+    )
+    assert engine._rows_digest(table) == engine._rows_digest(table.take([1, 0]))
+    changed = table.set_column(3, "target", pa.array([0.1, 0.3]))
+    assert engine._rows_digest(table) != engine._rows_digest(changed)

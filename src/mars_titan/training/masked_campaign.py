@@ -1,0 +1,745 @@
+"""Ejecutar la campaña con máscaras de la edición desde 2000 y publicar sus fuentes.
+
+La ejecución comprueba el bloqueo de aprendizaje antes de cada trabajo, confirma un
+recibo por trabajo con huellas, tramos y filas, no repite los trabajos confirmados con
+la misma identidad y rehace los incompletos. Los trabajos CUDA se ejecutan de uno en
+uno bajo una única reserva de la GPU y los trabajos CPU con la concurrencia declarada.
+Al final se escribe el manifiesto de fuentes de cada ámbito que consume
+``evaluation.walk_forward_comparison``. El plan y sus variantes están en
+``training.campaign_plan``.
+"""
+
+import argparse
+import fcntl
+import hashlib
+import json
+import math
+import os
+from collections import Counter
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from contextlib import nullcontext
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+
+import numpy as np
+import pyarrow as pa
+
+from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.evaluation.splits import PARTITIONS
+
+from .campaign_plan import (
+    CARRY,
+    FIT,
+    HELDOUT_RETENTION,
+    NEURAL,
+    QUANTILE_HEAD,
+    _arm_specs,
+    _require,
+    check_campaign,
+    count_jobs,
+    load_campaign,
+    plan_campaign,
+)
+from .learning_hold import LearningHoldError, require_learning_allowed
+
+RUN_KIND = "historical_masked_campaign_run"
+RECEIPT_KIND = "masked_campaign_job"
+# Tramos que lee la comparación: calibración común y evaluación.
+COMPARED = ("calibration", "evaluation")
+MAX_ATTEMPTS = 32
+
+
+class Paused(Exception):
+    """Parada solicitada en una barrera confirmada de un trabajo."""
+
+
+def _views_report(directory, scope, policy):
+    report, digest = read_manifest(directory / "report.json", 1024**2)
+    joint = len(comparison.SCOPES[scope]) > 1
+    _require(
+        isinstance(report, dict)
+        and report.get("input_policy") == policy
+        and report.get("status") == "temporal_views_prepared"
+        and report.get("final_test_opened") is False
+        and (report.get("kind") == "joint_temporal_views") == joint
+        and report.get("schema_version") == (3 if joint else 2)
+        and isinstance(report.get("folds"), list),
+        f"Las vistas de {scope} no son vistas preparadas con la política de la campaña",
+    )
+    return report, digest
+
+
+def scope_views(directory, scope, campaign):
+    """Validar las vistas de un ámbito frente a la comparación y devolver sus huellas."""
+    directory = Path(directory)
+    policy = campaign["input_policy"]
+    resolved = campaign["comparison_config"]["resolved_scopes"][scope]
+    report, digest = _views_report(directory, scope, policy)
+    _require(
+        [row.get("id") for row in report["folds"]] == list(resolved["windows"]),
+        f"Las vistas de {scope} no contienen exactamente las ventanas del protocolo",
+    )
+    windows, edition = {}, None
+    for row in report["folds"]:
+        _require(row.get("has_all_partitions") is True, f"{row['id']} tiene un tramo vacío")
+        record = dict(path=f"{row['id']}/manifest.json", sha256=row.get("manifest_sha256"))
+        view, current = comparison._view(
+            directory, record, resolved["windows"][row["id"]], resolved, policy
+        )
+        _require(edition is None or current == edition, "Las ventanas mezclan ediciones")
+        edition = current
+        manifest, _ = read_manifest(directory / record["path"], 8 * 1024**2)
+        counts = manifest.get("counts")
+        _require(
+            isinstance(counts, dict)
+            and set(counts) == set(PARTITIONS)
+            and all(type(v) is int and v > 0 for v in counts.values())
+            and counts == row.get("counts"),
+            f"{row['id']} no conserva sus recuentos declarados",
+        )
+        windows[row["id"]] = dict(
+            path=str((directory / record["path"]).resolve()), sha256=view, counts=counts
+        )
+    return dict(report_sha256=digest, edition=edition, windows=windows)
+
+
+def prepare_views(path, parent, output):
+    """Preparar las vistas de cada ámbito desde la supervisión histórica, sin ajustar nada."""
+    from .joint_temporal_corpus import prepare_joint_temporal_corpus
+    from .reference_campaign import campaign_views
+    from .temporal_corpus import prepare_temporal_corpus
+
+    campaign = load_campaign(path)
+    policy = campaign["input_policy"]
+    parent, output = Path(parent), Path(output)
+    declared = campaign["comparison_config"]
+    folder = Path(campaign["comparison_path"]).parent
+    prepared = {}
+    for scope in campaign["scopes"]:
+        destination = output / scope
+        protocols = {
+            market: (folder / name).resolve()
+            for market, name in declared["scopes"][scope]["protocols"].items()
+        }
+        if not destination.exists():
+            if len(protocols) > 1:
+                prepare_joint_temporal_corpus(
+                    parent,
+                    {market: dict(protocol=value) for market, value in protocols.items()},
+                    destination,
+                    input_policy=policy,
+                    recover_annual_boundaries=True,
+                )
+            else:
+                market = next(iter(protocols))
+                projection = output / "parents" / f"{market}.json"
+                view = campaign_views(parent, [market], input_policy=policy)[market]
+                if projection.exists():
+                    _require(
+                        read_manifest(projection, 8 * 1024**2)[0] == view,
+                        f"La proyección de {market} no corresponde a la supervisión indicada",
+                    )
+                else:
+                    atomic_json(projection, view)
+                prepare_temporal_corpus(
+                    projection,
+                    protocols[market],
+                    None,
+                    None,
+                    destination,
+                    input_policy=policy,
+                    recover_annual_boundaries=True,
+                )
+        prepared[scope] = scope_views(destination, scope, campaign)
+    return prepared
+
+
+def _rows_digest(table):
+    """Huella de las filas y objetivos, independiente del orden de lectura."""
+    market = table["market"].to_numpy(zero_copy_only=False).astype(str)
+    asset = table["asset_id"].to_numpy(zero_copy_only=False).astype(str)
+    moment = table["prediction_at"].cast(pa.int64()).to_numpy()
+    target = table["target"].to_numpy().astype("<f8")
+    order = np.lexsort((moment, asset, market))
+    digest = hashlib.sha256()
+    for values in (market[order], asset[order]):
+        digest.update("\n".join(values.tolist()).encode())
+        digest.update(b"\0")
+    digest.update(moment[order].astype("<i8").tobytes())
+    digest.update(target[order].tobytes())
+    return digest.hexdigest()
+
+
+@dataclass(frozen=True)
+class JobRun:
+    """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla."""
+
+    job: dict
+    case: dict | None
+    view: Path
+    view_sha256: str
+    folder: Path
+    policy: str
+    batch_size: int
+    checkpoint_seconds: float
+    stop: object
+    anchor: dict | None = None
+
+
+def _neural_fit(run):
+    from .reference_run import run_reference_case
+
+    report = run_reference_case(
+        run.view,
+        run.folder,
+        run.case,
+        batch_size=run.batch_size,
+        checkpoint_seconds=run.checkpoint_seconds,
+        resume=run.folder.exists(),
+        stop=run.stop,
+        input_policy=run.policy,
+        prediction_retention=HELDOUT_RETENTION,
+    )
+    if report["status"] == "paused":
+        raise Paused
+    _require(
+        report["status"] == "completed"
+        and report["identity"]["manifest_sha256"] == run.view_sha256
+        and report["identity"]["case"] == run.case,
+        "La referencia no confirma la vista y el caso del trabajo",
+    )
+    return report
+
+
+def _ridge_fit(run):
+    from .tabular_corpus import run_tabular_reference
+
+    return run_tabular_reference(
+        run.view, run.folder, kind="ridge", **run.case, prediction_retention=HELDOUT_RETENTION
+    )
+
+
+def _xgboost_fit(run):
+    from .external_corpus import run_external_reference
+
+    report = run_external_reference(
+        run.view,
+        run.folder,
+        resume=(run.folder / "run.json").is_file(),
+        stop=run.stop,
+        prediction_retention=HELDOUT_RETENTION,
+        **run.case,
+    )
+    if report["status"] == "paused":
+        raise Paused
+    return report
+
+
+def _carry(run):
+    from .carried_predictions import carry_reference, carry_tabular
+
+    options = dict(batch_size=run.batch_size, input_policy=run.policy)
+    sources = (run.anchor["folder"], run.anchor["view"], run.view, run.folder)
+    if run.job["model"] == "neural":
+        return carry_reference(*sources, stop=run.stop, **options)
+    return carry_tabular(*sources, kind=run.job["model"], **options)
+
+
+# Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
+EXECUTORS = {
+    ("neural", FIT): dict(run=_neural_fit, device="cuda", resumable=True, report="run.json"),
+    ("ridge", FIT): dict(run=_ridge_fit, device="cuda", resumable=False, report="run.json"),
+    ("xgboost", FIT): dict(run=_xgboost_fit, device="cuda", resumable=True, report="run.json"),
+    ("neural", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
+    ("ridge", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
+    ("xgboost", CARRY): dict(run=_carry, device="cuda", resumable=False, report="carry.json"),
+}
+
+
+def _code():
+    root = Path(__file__).parents[1]
+    names = (
+        "training/masked_campaign.py",
+        "training/campaign_plan.py",
+        "training/carried_predictions.py",
+        "training/reference_design.py",
+        "evaluation/walk_forward_comparison.py",
+        "evaluation/splits.py",
+    )
+    return {name: sha256(root / name) for name in names}
+
+
+def _identity(campaign, views):
+    return dict(
+        schema_version=1,
+        kind=RUN_KIND,
+        campaign_sha256=campaign["sha256"],
+        comparison_sha256=campaign["comparison_config"]["sha256"],
+        tabular_sha256=campaign["tabular"]["sha256"],
+        input_policy=campaign["input_policy"],
+        stopping_rule=campaign["rule"],
+        variant=campaign["variant"],
+        views={
+            scope: dict(
+                report_sha256=record["report_sha256"],
+                windows={w: v["sha256"] for w, v in record["windows"].items()},
+            )
+            for scope, record in views.items()
+        },
+        code=_code(),
+        final_test_opened=False,
+    )
+
+
+class _Campaign:
+    """Estado confirmado de la campaña y verificación de cada recibo."""
+
+    def __init__(self, campaign, views, output, identity, executors, stop):
+        self.campaign, self.views, self.output = campaign, views, output
+        self.identity, self.executors, self.stop = identity, executors, stop
+        self.identity_sha256 = hashlib.sha256(
+            json.dumps(identity, sort_keys=True).encode()
+        ).hexdigest()
+        self.receipts = {}
+        # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los brazos.
+        self.rows = {}
+
+    def same_rows(self, job, receipt):
+        """Exigir que cada trabajo de una ventana evalúe las mismas filas que el primero."""
+        for partition, record in receipt["predictions"].items():
+            key = (job["scope"], job["window"], partition)
+            expected = self.rows.setdefault(key, (job["id"], record["rows_sha256"]))
+            _require(
+                expected[1] == record["rows_sha256"],
+                f"{job['id']} no evalúa las mismas filas ni objetivos de {partition} "
+                f"que {expected[0]}",
+            )
+
+    def folder(self, job):
+        return self.output / "jobs" / job["id"]
+
+    def selected(self, scope, window, arm, seed):
+        """Recibo elegido para una semilla: ganador de búsqueda, finalista o traslado."""
+        prefix = f"{scope}/{window}/{arm}/"
+        found = {k: v for k, v in self.receipts.items() if k.startswith(prefix)}
+        carry = found.get(f"{prefix}carry-s{seed}")
+        if carry is not None:
+            return f"{prefix}carry-s{seed}", carry
+        finalist = found.get(f"{prefix}finalist-s{seed}")
+        if finalist is not None:
+            return f"{prefix}finalist-s{seed}", finalist
+        searches = [(k, v) for k, v in found.items() if k.startswith(prefix + "search-")]
+        _require(searches, f"Falta el ajuste seleccionado de {prefix}")
+        key, receipt = min(searches, key=lambda item: (item[1]["score"], item[0]))
+        _require(receipt["identity"]["seed"] == seed, f"{prefix} no tiene la semilla {seed}")
+        return key, receipt
+
+    def resolve(self, job):
+        """Caso y ancla del trabajo a partir de los recibos de sus dependencias."""
+        _require(
+            all(dep in self.receipts for dep in job["depends"]),
+            f"{job['id']} depende de trabajos sin confirmar",
+        )
+        if job["stage"] == "search":
+            return job["case"], None, {}
+        if job["stage"] == "finalist":
+            key, winner = min(
+                ((dep, self.receipts[dep]) for dep in job["depends"]),
+                key=lambda item: (item[1]["score"], item[0]),
+            )
+            case = winner["identity"]["case"] | dict(seed=job["seed"])
+            return case, None, dict(source=key, source_sha256=winner["sha256"])
+        key, receipt = self.selected(job["scope"], job["anchor"], job["arm"], job["seed"])
+        anchor = dict(
+            folder=self.output / receipt["attempt"],
+            view=Path(self.views[job["scope"]]["windows"][job["anchor"]]["path"]),
+            job=key,
+            sha256=receipt["sha256"],
+        )
+        return None, anchor, dict(source=key, source_sha256=receipt["sha256"])
+
+    def job_identity(self, job, case, sources):
+        view = self.views[job["scope"]]["windows"][job["window"]]
+        fields = ("id", "scope", "window", "arm", "family", "model", "stage", "kind", "seed")
+        return dict(
+            campaign_identity_sha256=self.identity_sha256,
+            **{key: job[key] for key in fields},
+            anchor=job["anchor"],
+            case=case,
+            view_sha256=view["sha256"],
+            sources=sources,
+        )
+
+    def confirmed(self, job, identity):
+        """Leer un recibo existente y comprobar identidad y artefactos."""
+        path = self.folder(job) / "receipt.json"
+        if not path.is_file():
+            return None
+        receipt, digest = read_manifest(path, 8 * 1024**2)
+        _require(
+            receipt.get("identity") == identity,
+            f"El trabajo confirmado {job['id']} cambió de identidad",
+        )
+        for record in [receipt["report"], *receipt["predictions"].values()]:
+            _require(
+                sha256(self.output / record["path"]) == record["sha256"],
+                f"Un artefacto confirmado de {job['id']} ha cambiado",
+            )
+        self.same_rows(job, receipt)
+        return dict(receipt, sha256=digest)
+
+    def attempt(self, job, resumable):
+        folder = self.folder(job)
+        safe_destination(folder)
+        attempts = sorted(p.name for p in folder.glob("attempt-*")) if folder.exists() else []
+        if resumable and attempts:
+            return folder / attempts[-1]
+        _require(len(attempts) < MAX_ATTEMPTS, f"{job['id']} alcanzó el límite de intentos")
+        return folder / f"attempt-{len(attempts) + 1:04d}"
+
+    def prepare(self, job):
+        """Resolver caso, identidad y destino antes de ejecutar un trabajo pendiente."""
+        case, anchor, sources = self.resolve(job)
+        identity = self.job_identity(job, case, sources)
+        receipt = self.confirmed(job, identity)
+        if receipt is not None:
+            return None, receipt
+        executor = self.executors[job["model"], job["kind"]]
+        section = self.campaign["neural" if job["family"] == NEURAL else "tabular"]
+        view = self.views[job["scope"]]["windows"][job["window"]]
+        run = JobRun(
+            job=job,
+            case=case,
+            view=Path(view["path"]),
+            view_sha256=view["sha256"],
+            folder=self.attempt(job, executor["resumable"]),
+            policy=self.campaign["input_policy"],
+            batch_size=section["batch_size"],
+            checkpoint_seconds=self.campaign["neural"]["checkpoint_seconds"],
+            stop=self.stop,
+            anchor=anchor,
+        )
+        return (run, identity), None
+
+    def confirm(self, job, run, identity, report):
+        """Comprobar predicciones, tramos, filas y puntuación, y escribir el recibo."""
+        executor = self.executors[job["model"], job["kind"]]
+        resolved = self.campaign["comparison_config"]["resolved_scopes"][job["scope"]]
+        window = resolved["windows"][job["window"]]
+        view = self.views[job["scope"]]["windows"][job["window"]]
+        quantile = job["family"] == NEURAL
+        columns = comparison.COLUMNS + (comparison.QUANTILE_COLUMNS if quantile else ())
+        _require(report.get("final_test_opened") is False, f"{job['id']} abre la reserva final")
+        predictions = {}
+        for partition in COMPARED:
+            record = report["predictions"][partition]
+            path = run.folder / record["path"]
+            safe_destination(path)
+            _require(sha256(path) == record["sha256"], f"{job['id']} cambió {partition}")
+            table = comparison._read_predictions(dict(path=path, sha256=record["sha256"]), columns)
+            label = f"{job['id']} ({partition})"
+            comparison._check_segment(table, window, partition, resolved["markets"], label)
+            _require(
+                table.num_rows == view["counts"][partition],
+                f"{label}: {table.num_rows} filas frente a {view['counts'][partition]} de la vista",
+            )
+            predictions[partition] = dict(
+                path=str(path.relative_to(self.output)),
+                sha256=record["sha256"],
+                rows=table.num_rows,
+                rows_sha256=_rows_digest(table),
+            )
+        score = None
+        if job["kind"] == FIT:
+            score = report["predictions"]["validation"]["metrics"]["session_mae"]
+            _require(
+                type(score) in (int, float) and math.isfinite(score) and score >= 0,
+                f"{job['id']} no tiene un MAE de validación finito",
+            )
+        report_path = run.folder / executor["report"]
+        receipt = dict(
+            schema_version=1,
+            kind=RECEIPT_KIND,
+            status="completed",
+            identity=identity,
+            attempt=str(run.folder.relative_to(self.output)),
+            report=dict(path=str(report_path.relative_to(self.output)), sha256=sha256(report_path)),
+            score=score,
+            predictions=predictions,
+            final_test_opened=False,
+            confirmed_at_utc=datetime.now(UTC).isoformat(),
+        )
+        self.same_rows(job, receipt)
+        path = self.folder(job) / "receipt.json"
+        atomic_json(path, receipt)
+        return dict(receipt, sha256=sha256(path))
+
+
+def _summary(output, identity, jobs, receipts, status, **extra):
+    planned = Counter(job["kind"] for job in jobs)
+    done = Counter(job["kind"] for job in jobs if job["id"] in receipts)
+    summary = dict(
+        schema_version=1,
+        kind=RUN_KIND,
+        status=status,
+        identity_sha256=hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest(),
+        planned=dict(training_jobs=planned[FIT], prediction_jobs=planned[CARRY]),
+        completed=dict(training_jobs=done[FIT], prediction_jobs=done[CARRY]),
+        jobs={job["id"]: job["id"] in receipts for job in jobs},
+        final_test_opened=False,
+        updated_at_utc=datetime.now(UTC).isoformat(),
+        **extra,
+    )
+    atomic_json(output / "summary.json", summary)
+    return summary
+
+
+def run_campaign(path, views, output, *, executors=None, lease=None, stop=None):
+    """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir."""
+    from .checkpoints import StopRequest
+
+    require_learning_allowed("la campaña con máscaras")
+    campaign = load_campaign(path)
+    jobs = plan_campaign(campaign)
+    count_jobs(campaign, jobs)
+    _require(
+        isinstance(views, dict) and set(views) == set(campaign["scopes"]),
+        "Se necesitan las vistas de exactamente los ámbitos de la campaña",
+    )
+    checked = {scope: scope_views(Path(views[scope]), scope, campaign) for scope in views}
+    output = Path(output)
+    safe_destination(output)
+    for directory in views.values():
+        outside_source(Path(directory), output)
+        outside_source(output, Path(directory))
+    outside_source(Path("dataset"), output)
+    executors = dict(EXECUTORS if executors is None else executors)
+    _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
+    identity = _identity(campaign, checked)
+    output.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        marker = output / "campaign.json"
+        if marker.exists():
+            _require(
+                read_manifest(marker, 8 * 1024**2)[0] == identity,
+                "La salida pertenece a otra campaña, vista o código",
+            )
+        else:
+            _require(
+                all(p.name in {".lock", "summary.json"} for p in output.iterdir()),
+                "La salida sin identidad contiene artefactos ajenos",
+            )
+            atomic_json(marker, identity)
+        state = _Campaign(campaign, checked, output, identity, executors, None)
+        uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
+        reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()
+        signals = StopRequest() if stop is None else nullcontext(stop)
+        workers = campaign["tabular"]["cpu_workers"]
+        _summary(output, identity, jobs, state.receipts, "running")
+        try:
+            with signals as state.stop, reservation, ThreadPoolExecutor(workers) as pool:
+                status = _execute(state, jobs, pool, workers)
+        except Paused:
+            status = "paused"
+        except LearningHoldError as error:
+            _summary(output, identity, jobs, state.receipts, "blocked", error=str(error))
+            raise
+        except BaseException as error:
+            _summary(output, identity, jobs, state.receipts, "failed", error=str(error))
+            raise
+        return _summary(output, identity, jobs, state.receipts, status)
+    finally:
+        os.close(descriptor)
+
+
+def _gpu_lease():
+    from .experiment_resources import GpuLease
+
+    return GpuLease()
+
+
+def _execute(state, jobs, pool, workers):
+    """Recorrer el plan en orden. CUDA de uno en uno y CPU con concurrencia acotada."""
+    running = {}
+
+    def collect(done):
+        for future in done:
+            job, run, identity = running.pop(future)
+            state.receipts[job["id"]] = state.confirm(job, run, identity, future.result())
+
+    for job in jobs:
+        while any(dep not in state.receipts for dep in job["depends"]) and running:
+            collect(wait(running, return_when=FIRST_COMPLETED).done)
+        if state.stop.requested:
+            raise Paused
+        prepared, receipt = state.prepare(job)
+        if receipt is not None:
+            state.receipts[job["id"]] = receipt
+            continue
+        require_learning_allowed(f"el trabajo {job['id']}")
+        run, identity = prepared
+        executor = state.executors[job["model"], job["kind"]]
+        if executor["device"] == "cpu":
+            while len(running) >= workers:
+                collect(wait(running, return_when=FIRST_COMPLETED).done)
+            running[pool.submit(executor["run"], run)] = (job, run, identity)
+            continue
+        state.receipts[job["id"]] = state.confirm(job, run, identity, executor["run"](run))
+    while running:
+        collect(wait(running, return_when=FIRST_COMPLETED).done)
+    _require(len(state.receipts) == len(jobs), "La campaña no confirmó todos sus trabajos")
+    return "completed"
+
+
+def _confirmed_state(path, views, output):
+    """Reconstruir los recibos confirmados de una campaña sin ejecutar ningún trabajo."""
+    campaign = load_campaign(path)
+    checked = {scope: scope_views(Path(views[scope]), scope, campaign) for scope in views}
+    identity = _identity(campaign, checked)
+    marker = Path(output) / "campaign.json"
+    _require(
+        marker.is_file() and read_manifest(marker, 8 * 1024**2)[0] == identity,
+        "La salida no corresponde a esta campaña, sus vistas o su código",
+    )
+    return campaign, _Campaign(campaign, checked, Path(output), identity, EXECUTORS, None)
+
+
+def write_sources(path, views, output, scope, *, comparison_path=None):
+    """Escribir el manifiesto de fuentes de un ámbito y validarlo con la comparación.
+
+    Sin `comparison_path` se valida con la comparación de la campaña, que incluye los
+    brazos de las familias sin entrenador conectado. Una comparación declarada con un
+    subconjunto de brazos permite evaluar los brazos ya producidos.
+    """
+    campaign, state = _confirmed_state(path, views, output)
+    _require(scope in campaign["scopes"], "El ámbito no pertenece a la campaña")
+    validation = comparison.load_config(
+        Path(comparison_path or campaign["comparison_path"]).resolve()
+    )
+    produced = {spec["arm"]: spec for spec in _arm_specs(campaign)}
+    wanted = {
+        name: arm for name, arm in validation["arms"].items() if arm["output"] != "zero_control"
+    }
+    missing = sorted(set(wanted) - set(produced))
+    _require(
+        not missing,
+        f"Faltan productores para {', '.join(missing)}. Declara una comparación con los "
+        "brazos disponibles o conecta su entrenador",
+    )
+    jobs = [job for job in plan_campaign(campaign) if job["scope"] == scope]
+    for job in jobs:
+        case, _, sources = state.resolve(job)
+        receipt = state.confirmed(job, state.job_identity(job, case, sources))
+        _require(receipt is not None, f"Falta confirmar {job['id']} antes de publicar fuentes")
+        state.receipts[job["id"]] = receipt
+    windows = state.views[scope]["windows"]
+    folder = Path(output) / "sources"
+    arms, rows = {}, {}
+    for name, arm in wanted.items():
+        _require(
+            sorted(arm["seeds"]) == sorted(produced[name]["seeds"]),
+            f"La comparación declara otras semillas para {name}",
+        )
+        arms[name] = {}
+        for seed in arm["seeds"]:
+            entries = arms[name][str(seed)] = {}
+            for window in windows:
+                key, receipt = state.selected(scope, window, name, seed)
+                entry = dict(
+                    input_policy=campaign["input_policy"], view_sha256=windows[window]["sha256"]
+                )
+                for partition, record in receipt["predictions"].items():
+                    rows.setdefault((window, partition), {})[key] = record["rows_sha256"]
+                    # Una salida puntual no tiene cuantiles que calibrar.
+                    if partition == "evaluation" or arm["output"] == QUANTILE_HEAD:
+                        entry[partition] = dict(
+                            path=os.path.relpath(Path(output) / record["path"], folder),
+                            sha256=record["sha256"],
+                        )
+                entries[window] = entry
+    for (window, partition), digests in rows.items():
+        _require(
+            len(set(digests.values())) == 1,
+            f"{len(set(digests.values()))} conjuntos de filas distintos en {window} ({partition})",
+        )
+    manifest = dict(
+        schema_version=1,
+        kind=comparison.SOURCES_KIND,
+        scope=scope,
+        input_policy=campaign["input_policy"],
+        windows={
+            w: dict(view=dict(path=v["path"], sha256=v["sha256"])) for w, v in windows.items()
+        },
+        arms=arms,
+    )
+    destination = folder / f"{scope}.json"
+    candidate = folder / f".{scope}.candidate.json"
+    safe_destination(destination)
+    atomic_json(candidate, manifest)
+    try:
+        comparison.load_sources(candidate, validation, scope)
+    except BaseException:
+        candidate.unlink()
+        raise
+    os.replace(candidate, destination)
+    return destination
+
+
+def _views_argument(values):
+    views = {}
+    for value in values or []:
+        scope, _, directory = value.partition("=")
+        _require(scope in comparison.SCOPES and directory, "Usa --views ÁMBITO=DIRECTORIO")
+        _require(scope not in views, f"El ámbito {scope} aparece dos veces")
+        views[scope] = Path(directory)
+    return views
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    commands = parser.add_subparsers(dest="command", required=True)
+    check = commands.add_parser("check", help="Validar y contar trabajos sin leer datos")
+    prepare = commands.add_parser("prepare", help="Preparar las vistas de cada ámbito")
+    execute = commands.add_parser("run", help="Ejecutar o reanudar la campaña")
+    sources = commands.add_parser("sources", help="Publicar el manifiesto de fuentes")
+    for command in (check, prepare, execute, sources):
+        command.add_argument("--campaign", type=Path, required=True)
+    prepare.add_argument("--parent", type=Path, required=True)
+    prepare.add_argument("--output", type=Path, required=True)
+    for command in (execute, sources):
+        command.add_argument("--views", action="append", required=True)
+        command.add_argument("--output", type=Path, required=True)
+    sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
+    sources.add_argument("--comparison", type=Path)
+    args = parser.parse_args(argv)
+    if args.command == "check":
+        result = check_campaign(args.campaign)
+    elif args.command == "prepare":
+        prepared = prepare_views(args.campaign, args.parent, args.output)
+        result = {
+            scope: dict(record, windows=len(record["windows"]))
+            for scope, record in prepared.items()
+        }
+    elif args.command == "run":
+        result = run_campaign(args.campaign, _views_argument(args.views), args.output)
+        result.pop("jobs")
+    else:
+        destination = write_sources(
+            args.campaign,
+            _views_argument(args.views),
+            args.output,
+            args.scope,
+            comparison_path=args.comparison,
+        )
+        result = dict(sources=str(destination), sha256=sha256(destination))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result.get("status", "completed") in {"completed", "checked"} else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
