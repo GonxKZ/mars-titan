@@ -326,3 +326,17 @@ def test_strict_preflight_keeps_its_identity_fields(tmp_path):
         "protocol_sha256",
     }
     assert len(records) == 4 and per_fold == 40
+
+
+def test_plan_and_protocol_rules_compare_mode_minimum_and_budget():
+    rule = json.loads(PROTOCOLS["US"].read_text())["selection"]
+    historical = json.loads(
+        Path("configs/baselines/historical-masked-reference-search-us.json").read_text()
+    )
+    assert temporal_search._stopping(historical) == temporal_search._stopping(rule)
+    plateau = dict(rule, stopping="validation_plateau", minimum_epochs=3)
+    convergence = dict(historical, schema_version=3, minimum_epochs=3)
+    convergence.pop("stopping")
+    assert temporal_search._stopping(convergence) == temporal_search._stopping(plateau)
+    for change in (dict(minimum_epochs=4), dict(minimum_epochs=0), dict(patience=6)):
+        assert temporal_search._stopping(convergence | change) != temporal_search._stopping(plateau)
