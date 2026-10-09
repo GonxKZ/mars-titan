@@ -298,13 +298,21 @@ Dentro de las cintas, una serie que termina en la evaluación deja la ventana si
 | Retornos de salida de activos dados de baja | Sin ellos, las bajas aparecen como cierres ausentes y las fuentes de ajuste se rechazan | Pendiente. La cinta reconstruida lo declara y excluye las series que terminan dentro de ella |
 | Calendario de aperturas | La ejecución depende de `open_times` reales | Cubierto en la tercera fase con las aperturas oficiales de XNYS y XSHG |
 | Predicciones fuera de muestra | La cinta real exige `prediction_fit_ends` | Contrato del recibo definido en la tercera fase. Desde la cuarta, el orquestador deriva `labels_used_until` de las etiquetas que leyó el predictor. Faltan los recibos reales, porque la campaña no se ha ejecutado |
-| Supervivencia | La población preparada apenas contiene bajas | Incorporar listas históricas de cotizadas y bajas con retornos de salida, o declarar los resultados como condicionados a sobrevivir hasta 2023 |
+| Supervivencia | La población preparada apenas contiene bajas | Los resultados se declaran condicionados a seguir cotizando en 2025 y la [cuarta fase](#supervivencia) mide el alcance. Corregirlo exige una población con bajas y retornos de salida |
 | Estado ST y salidas a bolsa | Cambian la banda diaria de un activo | Incorporar el historial de advertencias de riesgo y fechas de admisión con su fuente |
 | Codificadores congelados | Su preentrenamiento puede ser posterior a la decisión | Registrar la fecha de corte de cada codificador y contrastar con la modalidad enmascarada |
 
 ## Comprobaciones CUDA
 
-Ningún entorno se ejecuta en GPU y esta rama no modifica código CUDA ni políticas. Las pruebas CUDA existentes de las políticas ejecutan Adam y siguen bloqueadas. Queda pendiente, con la GPU libre y sin pasos de optimizador, comprobar que la evaluación `argmax` de una política congelada en `cuda:0` elige las mismas acciones que en CPU sobre las cintas de estas pruebas. Esa prueba no existe todavía y debe escribirse sin llamar a `optimizer.step()`.
+Ningún entorno se ejecuta en GPU y esta rama no modifica código CUDA ni políticas. Las pruebas CUDA existentes de las políticas ejecutan Adam y siguen bloqueadas. Queda pendiente, con la GPU libre y sin pasos de optimizador, comprobar que la evaluación `argmax` de una política congelada en `cuda:0` elige las mismas acciones que en CPU sobre las cintas de estas pruebas y publica el mismo patrimonio por sesión con los costes declarados. Esa prueba no existe todavía y debe escribirse sin llamar a `optimizer.step()`, con una política de pesos iniciales evaluada por `--audit-run` con `--device cpu` y con `--device cuda:0` sobre los binarios del preset `native-ppo-release`, que activa LibTorch CUDA:
+
+```bash
+cd native
+cmake --preset native-ppo-release
+cmake --build --preset native-ppo-release --target mars-titan-ppo mars-titan-klpo mars_titan_simulation
+```
+
+Las referencias, el informe y la cinta del índice no usan la GPU.
 
 ## Reproducción
 
@@ -332,3 +340,14 @@ CUDA_VISIBLE_DEVICES=-1 ctest -R '^(ppo_evaluation|ppo_inputs|financial_session|
 ```
 
 Ambos archivos usan fixtures sintéticos identificados como tales. No cargan pesos ni ejecutan optimizadores.
+
+Las pruebas de la cuarta fase usan la biblioteca y los binarios del mismo preset para la paridad nativa:
+
+```bash
+MARS_TITAN_NATIVE_LIBRARY=build/native/native-ppo-release/libmars_titan_simulation.so \
+MARS_TITAN_SIM_EXECUTABLE=build/native/native-ppo-release/mars-titan-sim \
+CUDA_VISIBLE_DEVICES=-1 uv run pytest tests/simulation/test_reconstructed_tape.py \
+  tests/simulation/test_reference_portfolios.py tests/simulation/test_stage_report.py \
+  tests/simulation/test_policy_plan.py tests/simulation/test_campaign_stage.py \
+  tests/evaluation/test_financial_metrics.py tests/training/test_masked_campaign.py
+```
