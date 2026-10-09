@@ -80,7 +80,7 @@ def target_window_counts(labels_root, protocol):
 
 
 def target_posttraining_rows(labels_root, protocol):
-    """Filas nuevas del posentrenamiento de cada ventana con padre, desde los objetivos.
+    """Cuenta en los objetivos las filas nuevas del posentrenamiento de cada ventana con padre.
 
     Cuentan las filas con objetivo, decisión en `campaign_chain.posttraining_rows` y etiqueta
     madura antes del final del tramo de ajuste, como el tramo `train` de la vista.
@@ -103,7 +103,7 @@ def target_posttraining_rows(labels_root, protocol):
 
 
 def campaign_posttraining_rows(campaign, labels_root):
-    """Filas nuevas por ámbito y ventana con padre, sumando los mercados de cada ámbito."""
+    """Suma por ámbito las filas nuevas de sus mercados en cada ventana con padre."""
     resolved = campaign["comparison_config"]["resolved_scopes"]
     rows = {}
     for scope in campaign["scopes"]:
@@ -116,7 +116,11 @@ def campaign_posttraining_rows(campaign, labels_root):
 
 
 def read_posttraining_rows(path, campaign):
-    """Filas nuevas declaradas en un informe de recuentos, para cada ventana con padre."""
+    """Lee las filas nuevas de un informe de recuentos y exige todas las ventanas con padre.
+
+    Un informe sin ellas no sirve para la campaña por etapas, porque los adaptadores se
+    estimarían con todo el tramo de ajuste.
+    """
     document, _ = read_manifest(Path(path), 16 * 1024**2)
     rows = document.get("posttraining_rows")
     _require(
@@ -133,7 +137,7 @@ def read_posttraining_rows(path, campaign):
 
 
 def staged_posttraining_hours(stage, counts, fresh, rates):
-    """Horas de la etapa de adaptadores en el walk-forward por etapas.
+    """Estima las horas de la etapa de adaptadores con el walk-forward por etapas.
 
     Solo las ventanas con padre tienen trabajos. Cada caso de la matriz recorre sus filas
     nuevas en lugar del tramo de ajuste completo y valida, calibra y evalúa como en la base.

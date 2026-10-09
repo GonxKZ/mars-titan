@@ -144,7 +144,10 @@ def test_the_staged_design_runs_window_by_window(tmp_path):
 
 
 def staged_jobs(value, base, *, arm="rnn", seed=42):
-    """Adaptadores y políticas sintéticos que siguen el contrato de la cadena."""
+    """Construye a mano planes de adaptadores y políticas que siguen el contrato de la cadena.
+
+    Solo son listas de trabajos para el calendario. No leen datos ni ajustan modelos.
+    """
     windows = [name for name, _ in chain.scope_windows(value, JOINT)]
     adapters = [
         dict(
@@ -556,7 +559,10 @@ def test_the_verifier_proves_every_disjunction_on_prepared_views(views):
 
 
 class Tampered:
-    """Cambiar en sitio el archivo de etiquetas de un activo y restaurarlo al salir."""
+    """Cambia en sitio el archivo de etiquetas de un activo y lo restaura al salir.
+
+    Así cada prueba altera una sola frontera y las demás reutilizan las vistas preparadas.
+    """
 
     def __init__(self, views, scope, window, change):
         manifest = json.loads((views[scope] / window / "manifest.json").read_text())
@@ -645,7 +651,11 @@ def test_the_verifier_detects_base_receipts_with_other_test_rows(views, tmp_path
 
 
 def write_selection(root, value, report, *, change=None, receipt_change=None):
-    """Selección de la cadena de US/fold-001 para gru con un adaptador elegido."""
+    """Escribe a mano la selección de la cadena de US/fold-001 para gru y su recibo de US.
+
+    El candidato elegido es un adaptador. `change` y `receipt_change` alteran el documento
+    o el recibo antes de escribirlos para probar cada regla del contrato.
+    """
     scope, window, arm, seed = "US", "fold-001", "gru", 42
     summary = report["scopes"][scope][window]
     resolved = value["comparison_config"]["resolved_scopes"][scope]

@@ -840,7 +840,7 @@ def _memory_options(declared, campaign):
 
 
 def launch_blockers(campaign):
-    """Motivos que impiden lanzar la campaña aunque su plan sea válido.
+    """Enumera los motivos que impiden lanzar la campaña aunque su plan sea válido.
 
     Una campaña retirada del repositorio, como la variante B declarada, se conserva para
     contar y comprobar, pero no se ejecuta.

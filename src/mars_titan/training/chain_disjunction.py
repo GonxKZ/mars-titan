@@ -55,14 +55,18 @@ def _micros(day):
 
 
 def _labels(manifest_path):
-    """Raíz de etiquetas y activos de una vista."""
+    """Lee del manifiesto de una vista la raíz de sus etiquetas y la lista de activos."""
     manifest, _ = read_manifest(Path(manifest_path), 64 * 1024**2)
     root = Path(manifest["roots"]["labels"])
     return root, [(asset["market"], asset["symbol"]) for asset in manifest["assets"]]
 
 
 def check_asset(task):
-    """Recuentos, huellas y extremos de un activo en todas las ventanas de un ámbito.
+    """Cuenta y resume las filas de un activo en todas las ventanas de un ámbito.
+
+    Devuelve por ventana los recuentos, las huellas y los extremos de decisión y
+    maduración. Recorre las ventanas en orden para comparar las filas nuevas de cada una
+    con las que usó el padre en la anterior sin volver a leerlas.
 
     `task` es (mercado, activo, ventanas) con cada ventana como (id, raíz de etiquetas,
     tramos en microsegundos, intervalo de filas nuevas o None).
@@ -120,7 +124,7 @@ def _fold_micros(fold):
 
 
 def _scan(campaign, scope, directory, workers):
-    """Recorrer los activos de un ámbito y agregar por ventana."""
+    """Recorre en paralelo los activos de un ámbito y agrupa sus resúmenes por ventana."""
     from .masked_campaign import scope_views
 
     checked = scope_views(directory, scope, campaign)
@@ -137,7 +141,8 @@ def _scan(campaign, scope, directory, workers):
         windows.append((window, str(root), _fold_micros(fold), fresh))
     tasks = [(market, symbol, windows) for market, symbol in sorted(assets)]
     per_window = defaultdict(lambda: defaultdict(list))
-    # Procesos nuevos: el lector de Arrow ya tiene hilos y no conviene bifurcarlo.
+    # Se arrancan procesos nuevos porque el lector de Arrow ya tiene hilos y bifurcar un
+    # proceso con hilos puede dejar cerrojos tomados en el hijo.
     with ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn")) as pool:
         for market, symbol, result in pool.map(check_asset, tasks, chunksize=16):
             for window, record in result.items():
@@ -147,7 +152,7 @@ def _scan(campaign, scope, directory, workers):
 
 
 def _summary(market_records, fresh):
-    """Recuentos, huellas y extremos de una ventana por mercado y en conjunto."""
+    """Agrega los resúmenes de los activos de una ventana por mercado y en conjunto."""
     markets, new_parts, totals = {}, {}, defaultdict(int)
     extremes = {}
     for market, records in sorted(market_records.items()):
@@ -210,7 +215,10 @@ def _summary(market_records, fresh):
 
 
 def _base_receipts(campaign_output):
-    """Huellas de filas de evaluación de los recibos base por ámbito y ventana."""
+    """Reúne por ámbito y ventana las huellas de filas de evaluación de los recibos base.
+
+    Solo lee recibos confirmados. Un trabajo sin predicciones de evaluación no aporta huella.
+    """
     found = defaultdict(dict)
     for path in sorted(Path(campaign_output).glob("jobs/**/receipt.json")):
         receipt, _ = read_manifest(path, 64 * 1024**2)
@@ -224,7 +232,11 @@ def _base_receipts(campaign_output):
 
 
 def _chain_receipts(root, campaign, scope, ordered):
-    """Selecciones confirmadas de la cadena de un ámbito, por ventana."""
+    """Lee las selecciones confirmadas de la cadena de un ámbito, agrupadas por ventana.
+
+    Cada una debe partir de la ventana anterior, que es la única que el diseño admite como
+    padre.
+    """
     found = defaultdict(list)
     for window, _ in ordered:
         folder = Path(root) / "windows" / scope / window
@@ -241,7 +253,7 @@ def _chain_receipts(root, campaign, scope, ordered):
 
 
 def verify(campaign, views, *, campaign_output=None, posttraining=None, workers=4, scopes=None):
-    """Comprobar las cuatro disjunciones y devolver el informe con sus fallos.
+    """Comprueba las cuatro disjunciones y devuelve el informe con sus fallos.
 
     `scopes` limita la comprobación a algunos ámbitos de la campaña, todos por omisión.
     """
@@ -319,7 +331,7 @@ def verify(campaign, views, *, campaign_output=None, posttraining=None, workers=
 
 
 def _check_selection(label, document, summary):
-    """Disjunciones de una selección de la cadena frente a las vistas de su ventana.
+    """Comprueba una selección de la cadena frente a las vistas de su ventana.
 
     `read_window_receipt` ya exige que la última etiqueta usada sea anterior al inicio de la
     evaluación, y toda decisión de la cinta es posterior a ese inicio. Aquí se exige además

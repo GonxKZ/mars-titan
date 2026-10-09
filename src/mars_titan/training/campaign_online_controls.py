@@ -12,8 +12,8 @@ La sección `online_controls` de la campaña declara el brazo, su padre, el braz
 el tope, la regla y el límite de trabajos. Un valor `pending` de la regla bloquea el
 lanzamiento hasta fijarlo. El tope `episodic_bank_writes` significa que, en cada tramo, las
 etiquetas usadas en pasos no superan las escrituras del banco de `cap_arm` en el mismo
-ámbito, ventana y semilla. Es igualdad de información, no de pasos. El ejecutor vive en la
-campaña base (`masked_campaign`, clase `online`). Este módulo solo declara y planifica.
+ámbito, ventana y semilla. Es igualdad de información, no de pasos. El ejecutor todavía no
+existe y se prepara en otra rama. Este módulo solo declara y planifica los trabajos.
 """
 
 ARM = "transformer_compact_online"
@@ -38,7 +38,12 @@ def _positive(value, kind):
 
 
 def declared(section, campaign):
-    """Validar la sección de la campaña con sus brazos ya resueltos en cada ámbito."""
+    """Valida la sección `online_controls` frente a los brazos ya resueltos de cada ámbito.
+
+    La regla admite valores `pending`, que aquí pasan y después bloquean el lanzamiento. El
+    padre y el brazo del tope deben ajustarse en todos los ámbitos, porque sin ellos el
+    control no tendría estado de partida ni tope.
+    """
     from .campaign_plan import scope_arms
 
     _require(
@@ -81,7 +86,11 @@ def declared(section, campaign):
 
 
 def blockers(campaign):
-    """Valores de la regla que siguen pendientes y bloquean el lanzamiento."""
+    """Enumera los valores de la regla que siguen pendientes.
+
+    `launch_blockers` los suma a los motivos que impiden lanzar, aunque el plan sea válido
+    para contar y comprobar.
+    """
     section = campaign.get("online_controls")
     if not section:
         return []
@@ -92,7 +101,12 @@ def blockers(campaign):
 
 
 def plan_online(campaign, base_jobs):
-    """Un trabajo por ámbito, ventana y semilla del padre, tras elegir padre y tope."""
+    """Planifica un trabajo por ámbito, ventana y semilla del padre.
+
+    Cada trabajo depende de los que eligen el estado de `transformer_compact` y de
+    `mars_titan_m1` en su ventana y semilla, porque parte del primero y su tope son las
+    escrituras del banco del segundo.
+    """
     from .campaign_chain import parent_jobs
     from .campaign_plan import NEURAL
 
@@ -128,7 +142,8 @@ def plan_online(campaign, base_jobs):
                         case=dict(rule=section["arms"][ARM]["rule"]),
                         anchor=window,
                         depends=depends,
-                        # Sus predicciones salen de pasos en línea: no se regeneran por inferencia.
+                        # Sus predicciones salen de pasos en línea, así que la retención no
+                        # puede regenerarlas repitiendo la inferencia del estado elegido.
                         regenerable=False,
                     )
                 )

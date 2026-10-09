@@ -90,7 +90,11 @@ def _require(condition, message):
 
 
 def _same(value, expected):
-    """Igualdad que distingue tipos: 0 no es 0.0 ni False es 0."""
+    """Compara como `==`, pero exige también el mismo tipo en cada valor anidado.
+
+    Sin esa condición, una declaración con 0 en lugar de 0.0, o con False en lugar de 0,
+    pasaría por la admitida aunque su texto y su huella sean distintos.
+    """
     if isinstance(expected, dict):
         return (
             isinstance(value, dict)
@@ -107,7 +111,11 @@ def _same(value, expected):
 
 
 def declared(value):
-    """Validar la declaración de la campaña. Solo se admite el diseño por etapas fijado."""
+    """Comprueba que la campaña declara exactamente el diseño por etapas de este módulo.
+
+    Hay un único valor admitido porque el diseño se fijó antes de ver resultados. Una
+    variante necesitaría otra declaración y, con ella, otra identidad de campaña.
+    """
     _require(
         _same(value, DESIGN),
         "La campaña declara walk_forward_stages con el diseño staged_chain_v1 completo",
@@ -116,22 +124,38 @@ def declared(value):
 
 
 def chain_arm(base_arm):
-    """Brazo publicado del predictor de la cadena de un brazo base."""
+    """Devuelve el nombre con el que se publica el predictor de la cadena de un brazo base.
+
+    El sufijo lo separa en la comparación del brazo base, que sigue siendo el reentreno
+    completo de cada ventana.
+    """
     return f"{base_arm}{CHAIN_SUFFIX}"
 
 
 def chain_job_id(scope, window, base_arm, seed):
-    """Trabajo de selección de la cadena de un ámbito, ventana, brazo base y semilla."""
+    """Devuelve el identificador del trabajo que elige la cadena de un brazo base y semilla.
+
+    Las etapas posteriores dependen de este identificador y no de los trabajos de
+    posentrenamiento, que cambian con la matriz de adaptadores.
+    """
     return f"{scope}/{window}/{chain_arm(base_arm)}/select-s{seed}"
 
 
 def chain_folder(root, scope, window, base_arm, seed):
-    """Carpeta de los recibos de la cadena, bajo la salida de la etapa de posentrenamiento."""
+    """Devuelve la carpeta de los recibos de la cadena dentro de la salida del posentrenamiento.
+
+    Sigue la misma estructura `windows/` que los recibos #390 del resto de etapas, para que
+    la RL y la comparación los encuentren igual.
+    """
     return Path(root) / "windows" / scope / window / chain_arm(base_arm) / f"seed-{seed}"
 
 
 def scope_windows(campaign, scope):
-    """Ventanas de un ámbito en orden temporal, con sus tramos."""
+    """Devuelve las ventanas de un ámbito con sus tramos, en orden temporal.
+
+    Falla si la comparación no las declara en ese orden, porque el padre de cada ventana se
+    toma de la anterior en la lista.
+    """
     windows = campaign["comparison_config"]["resolved_scopes"][scope]["windows"]
     ordered = sorted(windows.items(), key=lambda item: item[1]["evaluation"][0])
     _require(
@@ -142,7 +166,10 @@ def scope_windows(campaign, scope):
 
 
 def parent_window(campaign, scope, window):
-    """Ventana del padre del posentrenamiento, o None en la primera ventana del ámbito."""
+    """Devuelve la ventana cuyo estado elegido es el padre del posentrenamiento.
+
+    Es la anterior del mismo ámbito. La primera ventana no tiene padre y devuelve None.
+    """
     names = [name for name, _ in scope_windows(campaign, scope)]
     _require(window in names, f"{window} no es una ventana de {scope}")
     index = names.index(window)
@@ -167,7 +194,11 @@ def posttraining_rows(parent_fold, fold):
 
 
 def window_roles(campaign, scope, window):
-    """Roles declarados de una ventana de un ámbito, con sus intervalos de decisiones."""
+    """Resume los roles de una ventana con sus intervalos de decisiones.
+
+    Sirve para documentar y comprobar el diseño. El plan de trabajos no lo usa, así que un
+    cambio aquí no altera ninguna dependencia.
+    """
     folds = dict(scope_windows(campaign, scope))
     fold = folds[window]
     parent = parent_window(campaign, scope, window)
@@ -192,10 +223,11 @@ def window_roles(campaign, scope, window):
 
 
 def rl_windows(windows, window, minimum=MIN_RL_TRAIN_WINDOWS):
-    """Ventanas de la política anclada en `window`, o None si no hay bastantes.
+    """Devuelve las ventanas que usa la política anclada en `window`, o None si faltan.
 
-    `windows` son las ventanas en orden en las que el mercado tiene evaluación. La política
-    ajusta con todas las anteriores a su validación, valida con la anterior y evalúa la suya.
+    `windows` son, en orden, las ventanas en las que el mercado tiene evaluación. La
+    política ajusta con todas las anteriores a su validación, valida con la anterior y
+    evalúa la suya, de modo que ninguna cinta de ajuste es posterior a la de validación.
     """
     _require(window in windows, f"{window} no tiene evaluación en ese mercado")
     index = windows.index(window)
@@ -205,9 +237,10 @@ def rl_windows(windows, window, minimum=MIN_RL_TRAIN_WINDOWS):
 
 
 def parent_jobs(base_jobs, scope, window, arm, seed):
-    """Trabajos base que eligen el estado de un brazo y semilla en una ventana.
+    """Devuelve los trabajos base que fijan el estado elegido de un brazo y semilla.
 
-    Un traslado o un finalista de esa semilla, o las búsquedas de la semilla de búsqueda.
+    Si la ventana tiene un traslado o un finalista con esa semilla, es ese trabajo. Si no,
+    son todas las búsquedas de la semilla, porque el estado elegido sale de compararlas.
     """
     prefix = f"{scope}/{window}/{arm}/"
     found = {job["id"]: job for job in base_jobs if job["id"].startswith(prefix)}
@@ -222,10 +255,11 @@ def parent_jobs(base_jobs, scope, window, arm, seed):
 
 
 def chain_jobs(campaign, base_jobs, adapter_jobs):
-    """Selecciones de la cadena de cada brazo base y semilla de la etapa de posentrenamiento.
+    """Crea un trabajo de selección de la cadena por ámbito, ventana, brazo base y semilla.
 
-    En la ventana 0 dependen de los trabajos base que eligen su estado. En las demás, de
-    todos los trabajos de posentrenamiento de su ámbito, ventana, brazo base y semilla.
+    En la ventana 0 depende de los trabajos base que eligen su estado, que es ya el
+    predictor de la cadena. En las demás depende de todos los trabajos de posentrenamiento
+    de su ámbito, ventana, brazo y semilla, porque elige entre todos ellos.
     """
     keys = sorted({(job["scope"], job["base_arm"], job["seed"]) for job in adapter_jobs})
     by_key = {}
@@ -259,7 +293,7 @@ def chain_jobs(campaign, base_jobs, adapter_jobs):
 
 
 def check_staged(campaign, base_jobs, stages):
-    """Exigir a las etapas posteriores las dependencias del diseño por etapas.
+    """Comprueba que las etapas posteriores respetan las dependencias del diseño por etapas.
 
     Un trabajo de posentrenamiento de la ventana k ≥ 1 depende de los trabajos base que
     eligen su padre en k-1 y no existe en la primera ventana. Un trabajo de RL depende de
@@ -288,7 +322,11 @@ def check_staged(campaign, base_jobs, stages):
 
 
 def asset_digest(sample_rows):
-    """Número de filas y huella de las filas de un activo, independiente de su orden."""
+    """Calcula el número de filas y la huella de las filas de un activo.
+
+    Ordena antes de calcular para que la huella no dependa del orden de lectura, y rechaza
+    filas repetidas porque contarían dos veces la misma observación.
+    """
     rows = np.sort(np.asarray(sample_rows))
     _require(
         rows.ndim == 1 and rows.dtype.kind in "iu" and not (rows[1:] == rows[:-1]).any(),
@@ -298,9 +336,11 @@ def asset_digest(sample_rows):
 
 
 def combine(parts):
-    """Huella de un conjunto de filas a partir de las de sus activos con filas.
+    """Combina las huellas de los activos en la huella de un conjunto de filas.
 
-    `parts` asigna a cada (mercado, activo) su resultado de `asset_digest`.
+    `parts` asigna a cada (mercado, activo) su resultado de `asset_digest`. Los activos sin
+    filas deben quedar fuera, para que el mismo conjunto tenga la misma huella con
+    independencia de quién la calcule.
     """
     digest, total = hashlib.sha256(FINGERPRINT), 0
     for (market, symbol), (rows, value) in sorted(parts.items()):
@@ -311,10 +351,11 @@ def combine(parts):
 
 
 def row_fingerprint(markets, symbols, sample_rows):
-    """Número de filas y huella de filas (mercado, activo, fila de la muestra).
+    """Calcula el número de filas y la huella de filas identificadas por mercado y activo.
 
-    Es la de `combine` sobre `asset_digest` de cada activo, así que se puede calcular de una
-    vez o activo a activo con el mismo resultado.
+    Cada fila se identifica por (mercado, activo, fila de la muestra). El resultado es el de
+    `combine` sobre el `asset_digest` de cada activo, así que coincide calculado de una vez
+    o activo a activo, como hace el verificador en paralelo.
     """
     markets, symbols = np.asarray(markets, dtype=str), np.asarray(symbols, dtype=str)
     rows = np.asarray(sample_rows)
@@ -329,10 +370,12 @@ def row_fingerprint(markets, symbols, sample_rows):
 
 
 def choose(candidates):
-    """Candidato elegido por `chain_validation_score_v1`.
+    """Elige el candidato con la regla `chain_validation_score_v1`.
 
     Gana el menor `score` de validación. El padre congelado solo se sustituye con una
-    mejora estricta y los empates entre los demás se resuelven por identificador del trabajo.
+    mejora estricta, de modo que un empate conserva el estado que no se ha vuelto a
+    ajustar. Los empates entre los demás se resuelven por el identificador del trabajo para
+    que la elección no dependa del orden en que llegan los candidatos.
     """
     _require(
         all(
@@ -354,7 +397,7 @@ def choose(candidates):
 
 
 def read_selection(root, scope, window, base_arm, seed):
-    """Selección confirmada de la cadena con sus recibos por mercado, o None si no existe.
+    """Lee la selección confirmada de la cadena con sus recibos, o None si aún no existe.
 
     Exige la regla, la coherencia entre ventana, padre, candidatos y filas nuevas, y que cada
     recibo de mercado conserve su huella, el contrato #390, el trabajo elegido y la última

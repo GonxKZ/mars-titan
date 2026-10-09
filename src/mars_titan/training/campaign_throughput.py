@@ -272,7 +272,7 @@ def _option_hours(campaign, family, jobs, counts, measured, epochs):
 
 
 def _online_hours(campaign, jobs, counts, neural):
-    """Horas del control en línea, con una cota prudente de sus pasos.
+    """Acota por arriba las horas del control en línea, que todavía no tiene ejecutor.
 
     Cada trabajo predice calibración y evaluación con la inferencia más lenta de su padre y,
     como cada etiqueta madura entra a lo sumo en un paso, ajusta como mucho esas mismas filas
