@@ -14,6 +14,10 @@ Los límites son intervalos cerrados por la izquierda y abiertos por la derecha.
 
 El calendario conserva festivos, cierres anticipados y cambios horarios. La partición final se marca `test_reserved`. Este contrato no abre sus objetivos ni ejecuta una evaluación final. Cambiar valores futuros o el orden de las empresas no modifica la pertenencia de las filas anteriores.
 
+## Protocolo anual de la edición desde 2000
+
+La edición histórica con máscaras usa la [versión 2 del protocolo](walk-forward-2000.md). Evalúa años completos desde el primero con tres años de etiquetas maduras (2005 en US y 2011 en CN y en la unión), sustituye el margen fijo por la purga del intervalo de cada etiqueta, registra las filas purgadas por frontera y declara la regla común de parada. Las ventanas conjuntas no admiten un mercado vacío. Los protocolos de versión 1 conservan exactamente sus ventanas y asignaciones.
+
 ## Cobertura completa y condiciones de ejecución
 
 La nueva edición exige todos los indicadores del catálogo. Las máscaras existentes no cuentan como observaciones. Un valor cero observado sí es válido. La [puerta de admisión macro](../data/macro-admission.md) conserva las causas de exclusión y produce un índice de sesiones completas.

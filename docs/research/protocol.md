@@ -86,6 +86,8 @@ Los refinamientos K = 1, 2 y 4 de la [referencia episódica](candidate-architect
 
 Se usará walk-forward expansivo, sujeto a la cobertura real. La configuración inicial plantea al menos tres años de entrenamiento, seis meses de validación, tres de calibración y tres de evaluación por ventana, avanzando tres meses. Son duraciones de diseño, no fechas ya validadas del dataset. El último año elegible se reservará como test final cronológico, sin usarlo para elegir arquitectura, modalidades o costes.
 
+La edición desde 2000 aplica estas duraciones con evaluación anual en el [protocolo walk-forward v2](walk-forward-2000.md), que fija también el primer año evaluado de cada mercado, la purga por intervalo y la regla común de parada.
+
 La validación se usa para hiperparámetros, selección de modelo y umbral de escritura. La calibración se reserva para intervalos y abstención. Cada frontera debe purgar ejemplos cuyo intervalo de etiqueta alcance el siguiente tramo. Ningún ejemplo de entrenamiento puede tener `label_available_at` posterior al corte de ajuste. Un margen conservador de una sesión se evaluará para el horizonte principal. Para horizontes mayores debe derivarse del intervalo real de las etiquetas, no de un número fijo heredado.
 
 El modelo final se ajustará con la historia autorizada por el protocolo, se calibrará en el tramo reservado anterior al test y se evaluará una vez sobre el último año. Si se permite actualización de memoria durante ese año, será parte de la política online predefinida, sin selección ni cambios humanos basados en los resultados. Las variantes de adaptación se compararán con esa misma restricción.
