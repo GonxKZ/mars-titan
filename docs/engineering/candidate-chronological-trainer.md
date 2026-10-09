@@ -14,7 +14,7 @@ El cálculo de la candidata vive en `Candidate` (C++ con LibTorch). Se compararo
 
 La opción (a) funciona sin cambiar el código nativo. `_episodic_native` se compila contra la misma instalación de PyTorch, `named_parameters()` devuelve en cada llamada los mismos objetos Python de los 25 tensores registrados y `forward` conserva el grafo cuando el modo con gradiente está activo. Una sonda con las dimensiones reales (precios 64×5, noticias 384, gráficos 512, fundamentales 45 y macro 420), 128 filas, FP32 y 16 episodios obtuvo gradientes finitos y no nulos en los 25 tensores, sin aplicar ningún paso. Las salvedades del C++ también se respetan: el top-k queda fuera de autograd y con un único vecino el gradiente de la consulta es cero.
 
-La opción (b) añadiría una segunda implementación del brazo cuya identidad habría que demostrar equivalente en cada cambio. Las pruebas nativas ya contrastan la GRU con sus ecuaciones explícitas y la consulta con diferencias finitas, así que la réplica no aporta una comprobación que falte. La opción (c) movería a C++ todo el recorrido sin un beneficio medido, y sus pasos no pasarían por el gancho de pruebas ni por `learning_blocked()`. El coste por fila está en la GRU de ATen y en su backward, que ya son nativos en (a).
+La opción (b) añadiría una segunda implementación del brazo cuya identidad habría que demostrar equivalente en cada cambio. Las pruebas nativas ya contrastan la GRU con sus ecuaciones explícitas y la consulta con diferencias finitas, así que la réplica no aporta una comprobación que falte. La opción (c) movería a C++ todo el recorrido sin un beneficio medido. Además, sus pasos no pasarían por el gancho global de `torch.optim` y necesitarían el lector nativo de la protección. El coste por fila está en la GRU de ATen y en su backward, que ya son nativos en (a).
 
 Los parámetros solo cambian mediante el optimizador. Las proyecciones fijas del codec (rasgos 256 y claves 128) no son parámetros, así que el contenido del banco no depende de lo aprendido. Solo cambia cómo se consulta y cómo se proyectan sus valores.
 
@@ -74,7 +74,7 @@ La receta de Titans-MAC declara hoy `min_delta` 0, distinto del protocolo v2. No
 
 La barrera está justo después de una actualización, sin grafos vivos. En ese punto ya se han resuelto las etiquetas del evento, pero sus predicciones y su admisión siguen pendientes. Por eso el estado guarda el banco previo y la admisión preparada por separado, y al reanudar se predice con el banco previo antes de publicar la admisión. La validación no se reanuda a mitad, porque es determinista y se repite desde su inicio. Los parámetros recuperados se copian en el módulo vigente, de modo que el optimizador conserva sus referencias, y se comprueba su huella.
 
-Con un optimizador real de PyTorch, `run` se niega a empezar antes de crear salidas mientras la protección local declare `training_allowed=false`. Usa `learning_blocked()`, porque la función que lanza el error común (#382) todavía no está en `develop`.
+`run` llama a `require_learning_allowed()` antes de abrir fuentes o crear salidas, con cualquier optimizador, y se detiene con `LearningHoldError` mientras la protección local no declare `training_allowed` verdadero. El entrenador no usa `torch::optim` en C++, así que no necesita el lector nativo de la protección. `evaluate` y `restore_selected` son inferencia congelada y no se bloquean.
 
 ## Predicciones
 
@@ -112,7 +112,7 @@ Las pruebas de `tests/training/test_candidate_run.py` usan el corpus técnico cr
 - Copia de los parámetros guardados sobre valores escritos a mano, recorte de gradiente y contrato del Parquet con `ForecastPanel`.
 - Gradiente de la cabeza con pinball en las cinco filas de `head_weight` y solo en la de la mediana con la variante L1, y descarte contado de una etiqueta cuyo grafo ya no existe.
 - Escritura de las predicciones de validación, calibración y evaluación con el fixture temporal histórico, cada una dentro de su partición.
-- Rechazo con el bloqueo vigente antes de crear salidas, con políticas estrictas, vistas de otro corpus, particiones mal declaradas, parámetros congelados, ámbitos vacíos y cambios de receta al reanudar.
+- Rechazo con la protección temporal bloqueada antes de crear salidas, con el optimizador de registro y con AdamW, y rechazo de políticas estrictas, vistas de otro corpus, particiones mal declaradas, parámetros congelados, ámbitos vacíos y cambios de receta al reanudar.
 
 El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [recibo técnico](../../reports/engineering/candidate-chronological-trainer-20261009.json).
 
@@ -136,4 +136,3 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
 - Calentamiento episódico con etiquetas anteriores al tramo medido, que necesita indexarlas en las observaciones financieras.
 - Predicciones de calibración y evaluación sobre vistas temporales reales. Solo se han comprobado con el fixture temporal histórico.
 - Presupuesto definitivo y alternativa de reentrenamiento por ventana en [#363](https://github.com/GonxKZ/mars-titan/issues/363), con el caudal medido.
-- Sustituir la consulta de `learning_blocked()` por la función común de #382 cuando se integre.

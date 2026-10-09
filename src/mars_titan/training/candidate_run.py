@@ -58,7 +58,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .financial_run import _compatible
-from .learning_hold import learning_blocked
+from .learning_hold import require_learning_allowed
 from .selection import VALIDATION_PLATEAU, advance_selection, initial_selection, validate_selection
 
 RECIPE = "candidate_gru_chronological_v1"
@@ -779,11 +779,7 @@ class CandidateChronologicalTrainer:
 
     def run(self, *, resume=False, stop=None):
         """Recorrer épocas con presupuesto fijo, conservar el mejor estado y predecir."""
-        if isinstance(self.optimizer, torch.optim.Optimizer) and learning_blocked():
-            raise RuntimeError(
-                "El bloqueo de aprendizaje vigente impide ajustar la GRU candidata hasta "
-                "verificar la edición histórica desde 2000"
-            )
+        require_learning_allowed("el entrenador cronológico de la GRU candidata")
         output, checkpoints = self.output, self.output / "checkpoints"
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")

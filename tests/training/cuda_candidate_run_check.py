@@ -19,11 +19,15 @@ from tests.training.test_financial_run import corpus
 
 DEVICE = os.environ.get("MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE", "cuda:0")
 TOLERANCES = {torch.float32: (2e-4, 2e-6), torch.float64: (1e-8, 1e-10)}
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
-    or (DEVICE == "cuda:0" and not torch.cuda.is_available()),
-    reason="Faltan el enlace nativo o cuda:0",
-)
+# Como en test_candidate_run.py, el optimizador solo registra gradientes.
+pytestmark = [
+    pytest.mark.skipif(
+        not os.environ.get("MARS_TITAN_EPISODIC_NATIVE")
+        or (DEVICE == "cuda:0" and not torch.cuda.is_available()),
+        reason="Faltan el enlace nativo o cuda:0",
+    ),
+    pytest.mark.usefixtures("learning_doubles"),
+]
 
 
 def adapters(streams, dtype):

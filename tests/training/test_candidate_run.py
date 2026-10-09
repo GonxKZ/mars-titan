@@ -25,12 +25,18 @@ from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS, pinball_lo
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.training import candidate_run
 from mars_titan.training.checkpoints import load_training_state, save_training_state
+from mars_titan.training.learning_hold import LearningHoldError
 from tests.training.chronological_fixture import decision
 from tests.training.test_financial_run import RecordingOptimizer, StopAtStep, corpus
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
-)
+# El optimizador de las pruebas solo registra gradientes, así que basta una protección
+# temporal permitida. El gancho global sigue omitiendo cualquier paso de torch.optim.
+pytestmark = [
+    pytest.mark.skipif(
+        not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
+    ),
+    pytest.mark.usefixtures("learning_doubles"),
+]
 
 ROOT = Path(__file__).parents[2]
 CONFIG = ROOT / "configs/candidate/chronological-training.json"
@@ -527,15 +533,13 @@ def test_resume_rejects_a_changed_recipe(shared, tmp_path):
         trainer(streams, tmp_path / "run").run()
 
 
-def test_active_hold_rejects_a_real_optimizer_before_creating_outputs(
-    shared, tmp_path, monkeypatch
+@pytest.mark.parametrize("factory", ["recording", None])
+def test_active_hold_stops_the_trainer_before_creating_outputs(
+    shared, tmp_path, monkeypatch, learning_hold, factory
 ):
     _, streams = shared
-    hold = tmp_path / "hold.json"
-    hold.write_text(json.dumps(dict(training_allowed=False)))
-    monkeypatch.setenv("MARS_TITAN_TRAINING_HOLD", str(hold))
-    engine = trainer(streams, tmp_path / "run", factory=None)
-    assert isinstance(engine.optimizer, torch.optim.AdamW)
+    learning_hold(False)
+    engine = trainer(streams, tmp_path / "run", **({} if factory else dict(factory=None)))
 
     def forbidden(*args, **kwargs):
         raise AssertionError("El entrenador llegó al paso del optimizador")
@@ -543,7 +547,7 @@ def test_active_hold_rejects_a_real_optimizer_before_creating_outputs(
     # Sin esta sustitución, el gancho global de pruebas convertiría el paso en una omisión.
     monkeypatch.setattr(engine.optimizer, "step", forbidden)
     before = {name: value.clone() for name, value in engine.model.named_parameters().items()}
-    with pytest.raises(RuntimeError, match="bloqueo de aprendizaje"):
+    with pytest.raises(LearningHoldError, match="GRU candidata"):
         engine.run()
     assert not (tmp_path / "run").exists()
     after = engine.model.named_parameters()
