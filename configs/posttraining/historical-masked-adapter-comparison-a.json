@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_stage_comparison",
+  "status": "declared_before_evaluation",
+  "name": "historical-masked-2000-adapters-a",
+  "stage": "historical-masked-adapter-stage-a.json",
+  "use": "secondary_contrasts_not_for_selecting_the_base_architecture",
+  "families": {
+    "versus_frozen_parent": {
+      "base": "frozen_parent",
+      "variants": ["adapted", "full_continuation"]
+    },
+    "versus_full_continuation": {
+      "base": "full_continuation",
+      "variants": ["adapted"]
+    }
+  }
+}
