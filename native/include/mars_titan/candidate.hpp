@@ -36,6 +36,7 @@ struct Config {
     int64_t key_seed = default_key_seed;
     double temperature = 1;
     std::string normalization_id;
+    std::string input_policy = "strict_inputs_v1";
     bool operator==(const Config&) const = default;
 };
 
@@ -87,6 +88,9 @@ class Candidate final : public torch::nn::Module {
                        const at::Device& device = at::Device(at::kCPU));
     [[nodiscard]] const Config& config() const noexcept;
     [[nodiscard]] std::string representation_id() const;
+    [[nodiscard]] std::string parameter_fingerprint() const;
+    // Traslado explícito a la política histórica, conservando sus proyecciones fijas.
+    [[nodiscard]] std::vector<std::string> transfer_strict_parameters(const Candidate& source);
     [[nodiscard]] MemorySnapshot empty_memory() const;
     // Copia y separa del grafo una instantánea ya madura, con IDs crecientes únicos.
     [[nodiscard]] MemorySnapshot snapshot(const at::Tensor& keys, const at::Tensor& features,
@@ -106,6 +110,8 @@ class Candidate final : public torch::nn::Module {
     void save_state(std::ostream& destination) const;
     [[nodiscard]] static std::shared_ptr<Candidate>
     load_state(std::istream& source, const at::Device& device = at::Device(at::kCPU));
+    [[nodiscard]] static std::shared_ptr<Candidate>
+    load_state(std::istream& source, const at::Device& device, const std::string& expected_policy);
 
   private:
     void refresh_representation();
