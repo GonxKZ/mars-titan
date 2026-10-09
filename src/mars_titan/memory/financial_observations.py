@@ -25,7 +25,6 @@ from mars_titan.training.corpus_inputs import (
     _historical_times,
     _new_batch,
     _populated_groups,
-    _price_contexts,
 )
 from mars_titan.training.partition_contract import LEGACY_BOUNDS
 
@@ -258,7 +257,7 @@ def _observation(dataset, asset, decoded, row, at, prices):
     return dict(
         vectors=vectors,
         rows=rows,
-        prices=_price_contexts(prices, ends[rows], dataset.context),
+        prices=dataset.price_windows(asset, prices, price_at, ends[rows]),
         key=f"{asset['market']}/{asset['symbol']}",
         prediction_at=stamps[rows],
         sample_at=stamps[rows],
@@ -332,7 +331,12 @@ class _BlockReader:
                 block = _observation(dataset, asset, decoded, row, at, self._prices[identity])
                 if batch is None:
                     batch = _new_batch(
-                        decoded[2], dataset.context, len(chunk), masked=True, supervised=False
+                        decoded[2],
+                        dataset.context,
+                        len(chunk),
+                        masked=True,
+                        supervised=False,
+                        channels=dataset.price_channels,
                     )
                 _fill_batch(batch, filled, block, 0, 1)
             result.append(batch)
@@ -412,7 +416,14 @@ class FinancialObservationSource:
                 raise ValueError("El grupo de origen no existe")
             _, *decoded = self.dataset._sample_group(asset, file, group)
             block = _observation(self.dataset, asset, decoded, row, at, self.dataset._prices(asset))
-            batch = _new_batch(decoded[2], self.dataset.context, 1, masked=True, supervised=False)
+            batch = _new_batch(
+                decoded[2],
+                self.dataset.context,
+                1,
+                masked=True,
+                supervised=False,
+                channels=self.dataset.price_channels,
+            )
             _fill_batch(batch, 0, block, 0, 1)
             return batch
 

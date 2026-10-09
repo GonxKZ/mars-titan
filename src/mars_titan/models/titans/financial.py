@@ -10,6 +10,7 @@ from torch import nn
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.data.input_policy import MODALITIES, masked_inputs
+from mars_titan.data.price_windows import gate_price_window
 from mars_titan.models.baselines.multimodal import (
     HEADS,
     SCALAR_HEAD,
@@ -535,7 +536,8 @@ class FinancialPredictor(nn.Module):
         backend = sdpa_kernel(SDPBackend.MATH) if self.local_control is not None else nullcontext()
         local_result = None
         with torch.set_grad_enabled(differentiable), backend:
-            representations = [self.price_encoder(batch.inputs["prices"])]
+            # El relleno de una sesión ausente en todo el mercado no llega al codificador.
+            representations = [self.price_encoder(gate_price_window(batch.inputs["prices"]))]
             for index, name in enumerate(MODALITIES[1:], 1):
                 projected = self.encoders[name](batch.inputs[name])
                 if self.masked:

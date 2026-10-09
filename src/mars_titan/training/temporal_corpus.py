@@ -274,7 +274,9 @@ def _masked_sample_state(parent, asset):
             if not pa.types.is_integer(ends.type) or ends.null_count:
                 raise ValueError("La ventana histórica necesita un índice de precios entero")
             ends = ends.to_numpy()
-            if (ends < parent.context - 1).any() or (ends >= len(prices)).any():
+            # Con huecos de mercado declarados, una ventana completa puede tener menos filas.
+            first = 0 if parent.price_window else parent.context - 1
+            if (ends < first).any() or (ends >= len(prices)).any():
                 raise ValueError("La ventana histórica no tiene suficientes precios")
             available = np.maximum(available, price_available[ends])
             if not valid.all() or (available > prediction).any():

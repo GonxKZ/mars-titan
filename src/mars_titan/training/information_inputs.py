@@ -57,6 +57,43 @@ def _numeric_nodes(block, names, dependencies, histories):
     return nodes
 
 
+def _price_nodes(context, channels):
+    """Variables de la ventana de precios y dependencias que hereda el gráfico.
+
+    Desde la v3.1 cada sesión lleva un sexto canal con su bit de presencia. Los cinco canales
+    dependen de él, porque un hueco de mercado solo se distingue de un cero por ese bit.
+    """
+    if channels not in (5, 6):
+        raise ValueError("La ventana de precios no tiene cinco canales ni el bit de presencia")
+    gate = ["prices/present"] if channels == 6 else []
+    nodes = [
+        _node(
+            f"prices/{name}",
+            "prices",
+            "prices",
+            range(column, context * channels, channels),
+            dependencies=(["prices/close"] if name in {"open", "high", "low"} else []) + gate,
+            transformation="log_relative_volume"
+            if name == "volume"
+            else "log_relative_first_close",
+            history=f"{context} sesiones de precios disponibles",
+        )
+        for column, name in enumerate(("open", "high", "low", "close", "volume"))
+    ]
+    if gate:
+        nodes.append(
+            _node(
+                "prices/present",
+                "prices",
+                "prices",
+                range(5, context * channels, channels),
+                transformation="session_present_in_source_or_market_absent",
+                history=f"{context} sesiones del calendario",
+            )
+        )
+    return nodes, gate
+
+
 def corpus_view(dataset, *, macro_catalog):
     """Derivar el catálogo de la representación, ratios y fórmulas macro existentes."""
     representation = representation_identity(dataset.manifest.get("representation", {}))
@@ -99,21 +136,8 @@ def corpus_view(dataset, *, macro_catalog):
         or code.get("company_factors.py") != sha256(Path(company_factors.__file__))
     ):
         raise ValueError("La procedencia de los ratios contables no acredita sus dependencias")
-    variables = []
-    for column, name in enumerate(("open", "high", "low", "close", "volume")):
-        variables.append(
-            _node(
-                f"prices/{name}",
-                "prices",
-                "prices",
-                range(column, dataset.context * 5, 5),
-                dependencies=["prices/close"] if name in {"open", "high", "low"} else [],
-                transformation="log_relative_volume"
-                if name == "volume"
-                else "log_relative_first_close",
-                history=f"{dataset.context} sesiones de precios disponibles",
-            )
-        )
+    channels = getattr(dataset, "price_channels", 5)
+    variables, gate = _price_nodes(dataset.context, channels)
     variables.extend(
         [
             _node(
@@ -129,7 +153,8 @@ def corpus_view(dataset, *, macro_catalog):
                 "charts",
                 "charts",
                 range(512),
-                dependencies=[f"prices/{k}" for k in ("open", "high", "low", "close", "volume")],
+                dependencies=[f"prices/{k}" for k in ("open", "high", "low", "close", "volume")]
+                + gate,
                 transformation="resnet18_224_rgb_imagenet_no_crop",
                 history=f"{dataset.context} sesiones de precios disponibles",
             ),
@@ -192,7 +217,7 @@ def corpus_view(dataset, *, macro_catalog):
                 )
             ),
             shapes=dict(
-                prices=[dataset.context, 5],
+                prices=[dataset.context, channels],
                 news=[384],
                 charts=[512],
                 fundamentals=[3 * len(concepts)],

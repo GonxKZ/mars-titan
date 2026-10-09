@@ -39,7 +39,7 @@
         ],
         "normalization": "x_over_x_plus_training_median",
         "error": "abs(label - issued_prediction) after maturity",
-        "anomaly": "abs(last close log return) / median absolute deviation of the 62 previous returns of the 64-session price window",
+        "anomaly": "abs(last log return between observed closes) / median absolute deviation of the previous returns between observed closes of the 64-session window, 62 when every session is observed",
         "relevance": "max over known components: filing freshness m_f/(m_f+age) and news presence 1-p_news/2",
         "missing_relevance": "unknown and never zero: neutral 0.5 when no component is known",
         "macro_relevance": "not_included",

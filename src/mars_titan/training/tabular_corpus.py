@@ -22,6 +22,7 @@ from mars_titan.data.input_policy import (
     masked_inputs,
     policy_identity,
 )
+from mars_titan.data.price_windows import gate_price_window
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.models.baselines.boosting import BoostingModel, fit_boosting_batches
@@ -52,7 +53,13 @@ def _matrix(batch, dtype=np.float64, *, presence=False):
     count = len(batch["target"])
     if ("presence" in batch) != presence:
         raise ValueError("Los bits de presencia no coinciden con la política declarada")
-    blocks = [batch["inputs"][name].reshape(count, -1) for name in MODALITIES]
+    # El relleno de una sesión ausente en todo el mercado se anula antes de aplanar.
+    blocks = [
+        (
+            gate_price_window(batch["inputs"][name]) if name == "prices" else batch["inputs"][name]
+        ).reshape(count, -1)
+        for name in MODALITIES
+    ]
     if presence:
         bits = batch["presence"]
         if bits.dtype != np.bool_ or bits.shape != (count, len(MODALITIES)):
