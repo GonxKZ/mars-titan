@@ -171,6 +171,7 @@ def test_parent_cache_keys_include_the_presence_bits(tmp_path):
 
 def test_quantile_parent_contributes_its_median_and_rejects_scalar_fits(tmp_path):
     from mars_titan.models.quantile_head import QUANTILE_HEAD, median
+    from mars_titan.posttraining import adapter_matrix
 
     _, ordered, _ = masked_ordered(tmp_path)
     path, model = masked_parent(ordered, tmp_path / "parent", "transformer", head=QUANTILE_HEAD)
@@ -190,6 +191,13 @@ def test_quantile_parent_contributes_its_median_and_rejects_scalar_fits(tmp_path
         )
     with pytest.raises(ValueError, match="cuantiles"):
         parent.continuation()
+    with pytest.raises(ValueError, match="cuantiles"):
+        parent.adapted([], seed=1)
+    declared, digest = adapter_matrix.read_matrix("configs/posttraining/adapter-matrix-v1.json")
+    with pytest.raises(ValueError, match="escalar"):
+        adapter_matrix.plan(
+            declared, digest, "transformer", parent.model, updates_per_epoch=1, linear_features=8
+        )
 
 
 @pytest.mark.parametrize("change", ["contract", "head", "code"])

@@ -1,0 +1,224 @@
+"""Matriz finita de adaptadores: combinaciones, presupuesto, identidad y destinos."""
+
+import copy
+import itertools
+import json
+from pathlib import Path
+
+import pytest
+import torch
+from torch import nn
+
+from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
+from mars_titan.models.predictive_adaptation import adapted_copy, trainable_parameters
+from mars_titan.posttraining import adapter_matrix
+from mars_titan.posttraining.run import validate_case
+
+CONFIG = Path("configs/posttraining/adapter-matrix-v1.json")
+DIMENSIONS = dict(prices=5, news=7, charts=6, fundamentals=3, macro=6)
+
+
+def matrix():
+    return adapter_matrix.read_matrix(CONFIG)
+
+
+def parent(kind, layers=2):
+    torch.manual_seed(1)
+    return MultimodalReference(
+        kind,
+        DIMENSIONS,
+        context=8,
+        hidden_size=32,
+        layers=layers,
+        dropout=0.1,
+        transformer=dict(heads=2, feedforward_multiplier=2) if kind == "transformer" else None,
+        mask_fusion=PRESENCE_FUSION,
+    ).requires_grad_(False)
+
+
+def test_repository_matrix_declares_every_combination_once():
+    declared, digest = matrix()
+    assert declared["input_policy"] == HISTORICAL_MASKED
+    combinations = {tuple(arm["points"]) for arm in declared["arms"] if "overrides" not in arm}
+    assert combinations == {
+        combination
+        for size in (1, 2, 3)
+        for combination in itertools.combinations(adapter_matrix.POINTS, size)
+    }
+    assert [arm["id"] for arm in declared["arms"] if "overrides" in arm] == ["fusion_full_rank"]
+    for family in adapter_matrix.FAMILIES:
+        arms = adapter_matrix.arms(declared, family)
+        readout = family in adapter_matrix.READOUT_FAMILIES
+        assert len(arms) == (8 if readout else 4)
+        assert all(readout or "readout" not in arm["points"] for arm in arms)
+        cases = adapter_matrix.cases(declared, digest, family)
+        assert len(cases) == len(declared["budget"]["seeds"]) * (len(arms) + 2)
+        assert len({item["id"] for item in cases}) == len(cases)
+        for item in cases:
+            validate_case(item["case"])
+            assert item["case"]["condition"] == "real"
+            assert item["case"]["selection"] == declared["selection"]
+            if item["control"] is None:
+                assert item["case"]["adapter"]["matrix_sha256"] == digest
+                assert item["case"]["adapter"]["input_policy"] == HISTORICAL_MASKED
+
+
+@pytest.mark.parametrize("family", ["gru", "transformer"])
+def test_plan_fixes_equal_updates_and_counts_every_trainable_parameter(family):
+    declared, digest = matrix()
+    model = parent(family)
+    rows = adapter_matrix.plan(
+        declared, digest, family, model, updates_per_epoch=13, linear_features=1734
+    )
+    assert rows[0] == dict(
+        id="frozen_parent",
+        control="frozen_parent",
+        trainable_parameters=0,
+        state_bytes=0,
+        updates=0,
+        invalidates=[],
+        case=None,
+    )
+    assert {row["updates"] for row in rows[1:]} == {declared["budget"]["epochs"] * 13}
+    full = sum(value.numel() for value in model.parameters())
+    for row in rows[1:]:
+        assert row["state_bytes"] == 12 * row["trainable_parameters"]
+        if row["control"] == "linear_residual":
+            assert row["trainable_parameters"] == 1735 and row["invalidates"] == []
+        elif row["control"] == "full_continuation":
+            assert row["trainable_parameters"] == full
+            assert "cached_parent_predictions" in row["invalidates"]
+        else:
+            adapter = row["case"]["adapter"]
+            child = adapted_copy(
+                model,
+                adapter_matrix.targets(adapter, model),
+                seed=adapter_matrix.adapter_seed(row["case"]),
+            )
+            assert trainable_parameters(child) == row["trainable_parameters"] < full
+    by_arm = {row["id"].split("/")[1]: row["trainable_parameters"] for row in rows[1:4]}
+    hidden, fusion_in = 32, 5 * 32 + 5
+    assert by_arm == {
+        "linear_residual": 1735,
+        "full_continuation": full,
+        "head": hidden + 1,
+    }
+    arms = {row["id"].split("/")[1]: row for row in rows if row["id"].startswith("seed-42/")}
+    assert arms["fusion"]["trainable_parameters"] == 4 * (hidden + fusion_in)
+    assert arms["fusion_full_rank"]["trainable_parameters"] == hidden * fusion_in
+    if family == "transformer":
+        # Dos capas con consulta y salida de rango 4: 2 × 2 × 4 × (32 + 32).
+        assert arms["readout"]["trainable_parameters"] == 1024
+        assert arms["head+readout+fusion"]["trainable_parameters"] == 33 + 1024 + 4 * 197
+
+
+def test_targets_keep_keys_values_and_persistent_states_frozen():
+    declared, digest = matrix()
+    model = parent("transformer")
+    case = next(
+        item["case"]
+        for item in adapter_matrix.cases(declared, digest, "transformer")
+        if item["id"] == "seed-42/readout"
+    )
+    description = adapter_matrix.describe(case["adapter"], model)
+    packed = [row for row in description["targets"] if row["tensor"] == "in_proj_weight"]
+    assert [row["rows"] for row in packed] == [[0, 32], [0, 32]]
+    assert all(row["shape"] == [96, 32] for row in packed)
+    with pytest.raises(ValueError, match="lectura"):
+        adapter_matrix.targets(case["adapter"], parent("gru"))
+    with pytest.raises(ValueError, match="neuronales"):
+        adapter_matrix.arms(declared, "ridge")
+
+
+def test_adapter_seed_is_fixed_by_seed_arm_and_matrix():
+    declared, digest = matrix()
+    cases = {item["id"]: item["case"] for item in adapter_matrix.cases(declared, digest, "gru")}
+    seeds = {
+        key: adapter_matrix.adapter_seed(case) for key, case in cases.items() if "adapter" in case
+    }
+    assert len(set(seeds.values())) == len(seeds)
+    assert seeds == {
+        key: adapter_matrix.adapter_seed(case) for key, case in cases.items() if "adapter" in case
+    }
+    other = {item["id"]: item["case"] for item in adapter_matrix.cases(declared, "b" * 64, "gru")}
+    assert adapter_matrix.adapter_seed(other["seed-42/head"]) != seeds["seed-42/head"]
+
+
+def mutate(change):
+    declared = copy.deepcopy(json.loads(CONFIG.read_text()))
+    change(declared)
+    return declared
+
+
+INVALID = {
+    "missing_combination": lambda m: m["arms"].pop(3),
+    "duplicated_arm": lambda m: m["arms"].append(dict(m["arms"][0])),
+    "four_points": lambda m: m["arms"].append(
+        dict(id="x", points=["head", "readout", "fusion", "head"])
+    ),
+    "unordered_points": lambda m: m["arms"].__setitem__(
+        3, dict(id="readout+head", points=["readout", "head"])
+    ),
+    "renamed_arm": lambda m: m["arms"][0].__setitem__("id", "cabeza"),
+    "patience": lambda m: m["selection"].__setitem__("patience", 2),
+    "objective": lambda m: m["objectives"].__setitem__("full_continuation", "neural_mse"),
+    "head_low_rank": lambda m: m["points"].__setitem__(
+        "head", dict(form="low_rank", rank=1, alpha=1.0, invalidates=["cached_parent_predictions"])
+    ),
+    "rank": lambda m: m["points"]["fusion"].__setitem__("rank", 0),
+    "unknown_state": lambda m: m["points"]["fusion"].__setitem__("invalidates", ["weights"]),
+    "same_override": lambda m: m["arms"][-1]["overrides"].__setitem__(
+        "fusion", dict(m["points"]["fusion"])
+    ),
+    "test_opened": lambda m: m.__setitem__("final_test_opened", True),
+    "too_many_arms": lambda m: m["arms"].extend(
+        dict(
+            id=f"extra-{i}",
+            points=["fusion"],
+            overrides={"fusion": dict(form="residual", invalidates=["fused_representations"])},
+        )
+        for i in range(5)
+    ),
+    "readout_in_gru": lambda m: m["architectures"]["executable"].__setitem__(
+        "gru", ["head", "readout", "fusion"]
+    ),
+    "titans_memory_adapter": lambda m: m["architectures"]["pending"]["titans_mac"]["targets"][
+        "readout"
+    ].append("mac.memory.key_projection"),
+    "budget_epochs": lambda m: m["budget"].__setitem__("epochs", 0),
+    "control_missing": lambda m: m["controls"].pop(),
+}
+
+
+@pytest.mark.parametrize("name", sorted(INVALID))
+def test_matrix_rejects_open_or_unequal_designs(name):
+    with pytest.raises(ValueError):
+        adapter_matrix.validate_matrix(mutate(INVALID[name]))
+
+
+def test_pending_targets_exist_and_avoid_memory_states():
+    from test_financial_adapter import specification
+
+    from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
+    from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+
+    pending = matrix()[0]["architectures"]["pending"]
+    models = dict(
+        titans_mac=FinancialPredictor(
+            FinancialConfig(specification(), variant="mac_online", hidden_size=32)
+        ),
+        mars_titan_episodic_readout=EpisodicReadout(
+            EpisodicReadoutConfig("a" * 64, hidden_size=32)
+        ),
+    )
+    for name, model in models.items():
+        declared = pending[name]
+        modules = dict(model.named_modules())
+        names = {key for key, _ in model.named_parameters()} | set(modules)
+        for paths in declared["targets"].values():
+            for path in paths:
+                assert isinstance(modules[path], nn.Linear), path
+        for path in declared["frozen"]:
+            assert any(key == path or key.startswith(path + ".") for key in names), path
+    assert pending["episodic_gru_candidate"]["targets"] == {}

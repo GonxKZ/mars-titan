@@ -212,7 +212,7 @@ def _jobs(reference, tabular, adjustments, *, arm="US"):
 def _adjustment(path, report, parent, device):
     identity = report["identity"]
     case = identity["case"]
-    code = code_identity(masked=parent.masked)
+    code = code_identity(masked=parent.masked, adapters="adapter" in case)
     if identity["parent"] != parent.identity or identity["code"] != code:
         raise ValueError("El ajuste no conserva la identidad del padre o su implementación")
     grid = ActionGrid.from_dict(identity["grid"])
@@ -223,7 +223,8 @@ def _adjustment(path, report, parent, device):
     ):
         raise ValueError("La normalización no procede del entrenamiento del padre")
     neural = case["mode"].startswith("neural_")
-    model = build_model(parent, case, grid, normalization)
+    # Un brazo se reconstruye con sus destinos declarados y no acepta el estado de otro.
+    model = build_model(parent, case, grid, normalization, identity)
     state = _best_state(
         path.parent, identity, report["selection"], expected_sha256=report["checkpoint"]["sha256"]
     )

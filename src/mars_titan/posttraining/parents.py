@@ -18,6 +18,7 @@ from mars_titan.models.baselines.multimodal import (
     MultimodalReference,
 )
 from mars_titan.models.baselines.ridge import RidgeModel
+from mars_titan.models.predictive_adaptation import adapted_copy
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, median
 from mars_titan.profiling import CostProbe
 from mars_titan.training.experiment_resources import GpuLease
@@ -118,7 +119,7 @@ class FrozenParent:
 
     def _require_scalar_weights(self):
         if self.kind not in NEURAL:
-            raise ValueError("La continuación neuronal requiere pesos de un padre neuronal")
+            raise ValueError("La continuación y los adaptadores requieren un padre neuronal")
         if self.quantiles:
             # Sus objetivos actúan sobre un centro escalar. La pinball de cinco niveles no.
             raise ValueError(
@@ -128,6 +129,11 @@ class FrozenParent:
     def continuation(self):
         self._require_scalar_weights()
         return copy.deepcopy(self.model).requires_grad_(True)
+
+    def adapted(self, targets, *, seed):
+        """Copiar el padre congelado con correcciones nulas en los destinos declarados."""
+        self._require_scalar_weights()
+        return adapted_copy(self.model, targets, seed=seed)
 
 
 def _inference_contract(report, kind, *, masked=False):
