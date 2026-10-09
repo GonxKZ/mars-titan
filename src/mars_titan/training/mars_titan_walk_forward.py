@@ -18,7 +18,9 @@ con la regla asociativa de Titans en cada observación. Las fases son las del pa
 mismo calentamiento de entradas. Cada recorrido empieza con el banco vacío y la memoria
 rápida inicial, así que una ventana trasladada aplica el mismo contrato que su ancla. Las
 variantes sin banco episódico son el propio Titans-MAC y no se ajustan aquí. La corrección
-asociativa B6 solo se emite en `FinancialSession`.
+asociativa B6 no tiene lector y su ventana está en `training.mars_titan_correction`. Los
+ejecutores de la campaña eligen ese recorrido cuando la combinación declara
+`associative_memory`.
 
 `ReadoutFamily` reúne lo que distingue a una familia de lector sobre el núcleo congelado:
 MARS-TITAN con sus componentes y los brazos del factorial CM-v1 con su control C y su
@@ -218,7 +220,7 @@ def _components(components):
     components, correction = check_components(load_declaration(), components)
     _require(
         correction is None,
-        "La corrección B6 se emite en FinancialSession. Este recorrido todavía no la incluye",
+        "La corrección B6 no tiene lector. Su ventana es training.mars_titan_correction",
     )
     _require(
         "episodic_bank" in components,
@@ -783,22 +785,32 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
     from .masked_campaign import Paused as CampaignPaused
 
     case = _campaign_case(run)
+    common = dict(
+        components=case["components"],
+        seed=case["seed"],
+        output=run.folder,
+        search_case=case["search_case"],
+        device=device,
+        stop=run.stop,
+    )
     # El recorrido cronológico exige fastpath=False solo mientras dura el trabajo.
     with unfused_attention():
-        report = run_mars_titan_window(
-            run.view,
-            run.parent["folder"],
-            case["recipe"],
-            components=case["components"],
-            seed=case["seed"],
-            output=run.folder,
-            search_case=case["search_case"],
-            device=device,
-            stop=run.stop,
-            optimizer_factory=optimizer_factory,
-            stopping=case.get(STOPPING_FIELD),
-            joint_epoch=run.joint_epoch,
-        )
+        if "associative_memory" in case["components"]:
+            from .mars_titan_correction import run_correction_window
+
+            # B6 no tiene épocas, así que su caso no puede traer una regla de parada.
+            _require(STOPPING_FIELD not in case, "Un caso B6 no declara una regla de parada")
+            report = run_correction_window(run.view, run.parent["folder"], case["recipe"], **common)
+        else:
+            report = run_mars_titan_window(
+                run.view,
+                run.parent["folder"],
+                case["recipe"],
+                optimizer_factory=optimizer_factory,
+                stopping=case.get(STOPPING_FIELD),
+                joint_epoch=run.joint_epoch,
+                **common,
+            )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
@@ -812,11 +824,16 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
 
 def mars_titan_carry(run, *, device="cuda:0"):
     """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B)."""
+    from .mars_titan_correction import KIND as CORRECTION_KIND
+    from .mars_titan_correction import carry_correction
     from .masked_campaign import Paused as CampaignPaused
 
+    report, _ = read_manifest(Path(run.anchor["folder"]) / "run.json", 16 * 1024**2)
+    # El ancla decide el recorrido: una ventana B6 no tiene lector que trasladar.
+    carry = carry_correction if report.get("kind") == CORRECTION_KIND else carry_mars_titan
     try:
         with unfused_attention():
-            return carry_mars_titan(
+            return carry(
                 run.anchor["folder"],
                 run.anchor["view"],
                 run.view,

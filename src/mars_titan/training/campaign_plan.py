@@ -81,6 +81,12 @@ MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
 MARS_SEARCHED = TITANS_SEARCHED
 # Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
 MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
+# Corrección B6 sin lector. Repite mars_titan_correction.RECIPE y SEARCHED y las reglas y
+# claves de memory.associative_memory sin importar PyTorch. Una prueba lo fija.
+MARS_CORRECTION_RECIPE = "mars_titan_mature_correction_v1"
+MARS_CORRECTION_SEARCHED = ("rate", "forgetting")
+MARS_CORRECTION_RULES = ("delta", "proximal")
+MARS_CORRECTION_KEYS = ("codec", "constant")
 # Factorial CM-v1. Repite los nombres de training.cm_v1_factorial sin importar PyTorch.
 CM = "cm_v1"
 CM_NAME = "mars_titan_cm_v1_factorial"
@@ -119,10 +125,10 @@ EXTENSION_POINTS = {
     MARS: dict(
         issue=366,
         pending=(
-            "El lector por ventana y la predicción trasladada se conectan con la sección "
-            "mars_titan sobre el padre titans_mac_online. Falta declararla en las campañas A "
-            "y B después de medir memoria y caudal en cuda:0. La declaración preparada está "
-            "en historical-masked-campaign-extensions.json"
+            "El lector por ventana, la corrección B6 y la predicción trasladada se conectan "
+            "con la sección mars_titan sobre el padre titans_mac_online. Falta declararla en "
+            "las campañas A y B después de medir memoria y caudal en cuda:0. La declaración "
+            "preparada está en historical-masked-campaign-extensions.json"
         ),
     ),
     CM: dict(
@@ -213,6 +219,8 @@ _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
 _MARS = {"recipe", "arms", "pending_arms", "parent_arm", "search_seed"}
+# Receta de la corrección B6, obligatoria solo si algún brazo la declara.
+_MARS_CORRECTION = "correction_recipe"
 _CM = {"declaration", "search_seed"}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 
@@ -511,13 +519,17 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
 
     El padre es un brazo `mac_online` de la sección de Titans-MAC con las mismas semillas.
     Un brazo declarado sin productor queda en `pending_arms` con su motivo. M3 ya tiene
-    productor: estima sus escalas con el tramo de entrenamiento de cada ventana.
-    `training.mars_titan_walk_forward` valida la combinación completa en cada ajuste.
+    productor: estima sus escalas con el tramo de entrenamiento de cada ventana. Un brazo con
+    `associative_memory` es la corrección B6 sin lector: declara regla y clave, y sus casos
+    de búsqueda (η y λ) salen de `correction_recipe`. `training.mars_titan_walk_forward` y
+    `training.mars_titan_correction` validan la combinación completa en cada trabajo.
     """
     if section is None:
         return None
     _require(
-        isinstance(section, dict) and set(section) == _MARS and policy == HISTORICAL_MASKED,
+        isinstance(section, dict)
+        and _MARS <= set(section) <= _MARS | {_MARS_CORRECTION}
+        and policy == HISTORICAL_MASKED,
         "La sección de MARS-TITAN no cumple o la campaña no usa la política con máscaras",
     )
     parent = section["parent_arm"]
@@ -537,13 +549,18 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
         and all(isinstance(motive, str) and motive for motive in pending.values())
         and all(
             isinstance(components, dict)
-            and components.get("episodic_bank") in MARS_BANKS
+            and (_reader_arm(components) or _correction_arm(components))
             and arms[name]["output"] == QUANTILE_HEAD
             for name, components in mapping.items()
         )
         and len({json.dumps(c, sort_keys=True) for c in mapping.values()}) == len(mapping),
-        "Cada brazo de MARS-TITAN necesita una combinación distinta con banco episódico y "
-        "cuantiles, o un motivo pendiente",
+        "Cada brazo de MARS-TITAN necesita una combinación distinta con banco episódico o "
+        "corrección B6 y cuantiles, o un motivo pendiente",
+    )
+    corrections = {name for name, components in mapping.items() if _correction_arm(components)}
+    _require(
+        bool(corrections) == (_MARS_CORRECTION in section),
+        "La receta de la corrección B6 se declara si y solo si algún brazo la usa",
     )
     _require(
         seed == titans["seed"]
@@ -554,29 +571,72 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
         ),
         "Cada semilla de MARS-TITAN necesita su padre Titans-MAC y la misma semilla de búsqueda",
     )
-    cases = _readout_cases(recipe, rule, count)
+    recipes = {name: (path, digest, _readout_cases(recipe, rule, count)) for name in mapping}
+    if corrections:
+        correction = (base / section[_MARS_CORRECTION]).resolve()
+        document, correction_sha = read_manifest(correction, 64 * 1024)
+        cases = _correction_cases(document, count)
+        recipes.update(dict.fromkeys(corrections, (correction, correction_sha, cases)))
     candidates = {
         name: [
             (
                 case,
                 _stopping(
                     dict(
-                        recipe=str(path),
-                        recipe_sha256=digest,
+                        recipe=str(recipes[name][0]),
+                        recipe_sha256=recipes[name][1],
                         components=components,
                         seed=seed,
                         search_case=case,
                         parent_arm=parent,
                     ),
-                    rules,
+                    # B6 no tiene épocas, así que ninguna regla de parada puede aplicarse.
+                    None if name in corrections else rules,
                     name,
                 ),
             )
-            for case in cases
+            for case in recipes[name][2]
         ]
         for name, components in mapping.items()
     }
     return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+
+def _reader_arm(components):
+    """Brazo con lector: una escritura del banco y sin corrección B6, que no admite banco."""
+    return components.get("episodic_bank") in MARS_BANKS and "associative_memory" not in components
+
+
+def _correction_arm(components):
+    """Brazo B6: solo `associative_memory` con una regla y una clave declaradas."""
+    memory = components.get("associative_memory")
+    return (
+        set(components) == {"associative_memory"}
+        and isinstance(memory, dict)
+        and set(memory) == {"rule", "key"}
+        and memory["rule"] in MARS_CORRECTION_RULES
+        and memory["key"] in MARS_CORRECTION_KEYS
+    )
+
+
+def _correction_cases(recipe, count):
+    """Casos de η y λ de la corrección B6, tantos como índices ajusta cada referencia."""
+    cases = (
+        (recipe.get("walk_forward") or {}).get("search_cases") if isinstance(recipe, dict) else None
+    )
+    _require(
+        isinstance(recipe, dict)
+        and recipe.get("recipe_name") == MARS_CORRECTION_RECIPE
+        and isinstance(cases, dict)
+        and len(cases) == count
+        and all(
+            isinstance(case, dict) and case and set(case) <= set(MARS_CORRECTION_SEARCHED)
+            for case in cases.values()
+        ),
+        f"La receta de la corrección B6 necesita {count} casos de η y λ, tantos como índices "
+        "ajusta cada referencia neuronal",
+    )
+    return cases
 
 
 def _readout_cases(recipe, rule, count):
