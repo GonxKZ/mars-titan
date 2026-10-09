@@ -49,9 +49,10 @@ def _callback_signature(instance):
 def _binding_signature(binding):
     kind = type(binding)
     methods = inspect.getmembers(kind, inspect.isfunction)
-    if kind is not financial_consumers.TitansBinding or any(
-        name in vars(binding) for name, _ in methods
-    ):
+    if kind not in (
+        financial_consumers.TitansBinding,
+        financial_consumers.CandidateBinding,
+    ) or any(name in vars(binding) for name, _ in methods):
         raise ValueError("El enlace del consumidor no admite tipos o métodos sustituidos")
     return kind, tuple((name, id(function.__code__)) for name, function in methods)
 
@@ -114,9 +115,9 @@ class FinancialPhase:
 class FinancialSession(EpisodicSession):
     """Reutilizar almacenamiento, codec y banco. Executor publica la única generación.
 
-    La preparación queda fijada a FrozenFinancialConsumer mediante su enlace
-    cerrado. No se aceptan callbacks predictivos arbitrarios ni reglas M3
-    incompletas. Los helpers heredados conservan la validación de inputs
+    La preparación queda fijada a FrozenFinancialConsumer o FrozenCandidateConsumer
+    mediante su enlace cerrado. No se aceptan callbacks predictivos arbitrarios ni
+    reglas M3 incompletas. Los helpers heredados conservan la validación de inputs
     y procedencia de la sesión v1.
     """
 
@@ -315,6 +316,16 @@ class FinancialSession(EpisodicSession):
         return bank, episodes
 
     def diagnostics(self):
+        if self._binding.kind == "candidate_gru":
+            bundle = self._bundle(self.snapshot()["state"])
+            bank, _ = self._bank(bundle["bank"] if bundle else None)
+            return dict(
+                cursor=self._executor.cursor,
+                admitted=bank.seen,
+                retained=bank.size,
+                pending=len(self._executor.pending()),
+                capacity=bank.config.capacity,
+            )
         if self.admission != "m2":
             return super().diagnostics()
         bundle = self._bundle(self.snapshot()["state"])

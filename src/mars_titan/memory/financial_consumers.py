@@ -1,8 +1,8 @@
-"""Enlace cerrado del coordinador financiero con sus consumidores conocidos.
+"""Enlace cerrado del coordinador financiero con sus dos consumidores conocidos.
 
 `FinancialSession` controla una única cronología: fases, prefijos, pendientes y
-publicación. El enlace aporta lo que depende del consumidor: geometría de la
-cola, banco, estado por flujo, instantánea y preparación.
+publicación. Cada enlace aporta solo lo que difiere entre Titans-MAC y la GRU:
+geometría de la cola, banco, estado por flujo, instantánea y preparación.
 """
 
 import hashlib
@@ -11,12 +11,17 @@ from pathlib import Path
 
 import torch
 
+from mars_titan.data.input_policy import masked_inputs
+from mars_titan.models.candidate.episode_codec import FrozenCandidateCodec
+from mars_titan.models.candidate.frozen_consumer import FrozenCandidateConsumer
 from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import write_policy
+from . import candidate_bank, flow_cursors, write_policy
+from .candidate_bank import CandidateBankConfig, CandidateEpisodeBank, CandidateEpisodes
 from .episodic_codec import FrozenEpisodeCodec
 from .financial_state_artifacts import FinancialStateArtifacts
+from .flow_cursors import FlowCursors
 from .retention_bank import RetentionBank, RetentionConfig
 from .write_policy import MatureErrorBank, MatureErrorConfig
 
@@ -202,7 +207,118 @@ class TitansBinding:
         return bank.propose(incoming, **options)
 
 
+class CandidateBinding:
+    """GRU nativa con codec CPU 128×256, banco tensorial M0/M1 y cursores sin estado neural."""
+
+    kind = "candidate_gru"
+    widths = (128, 256)
+    feature_width = 16
+
+    def __init__(self, consumer, codec, retention, admission):
+        if (
+            type(codec) is not FrozenCandidateCodec
+            or type(retention) is not CandidateBankConfig
+            or admission not in {"m0", "m1"}
+        ):
+            raise ValueError(ADMISSION_ERROR)
+        self.consumer, self.codec, self.admission = consumer, codec, admission
+        self.input_spec, self.max_batch = consumer.input_spec, consumer.max_batch
+        self.device, self.dtype = consumer.device, consumer.dtype
+        self.pending_dtype = consumer.dtype
+        self.masked = masked_inputs(self.input_spec.input_policy)
+
+    def check(self):
+        identity = self.codec.identity()
+        if (
+            identity["input_specification"] != self.input_spec.identity()
+            or identity["projection_id"] != self.consumer.model.representation_id()
+            or identity["dtype"] != str(self.dtype).removeprefix("torch.")
+        ):
+            raise ValueError(SOURCE_ERROR)
+
+    @staticmethod
+    def code():
+        return {
+            "candidate_bank": _file_digest(candidate_bank),
+            "flow_cursors": _file_digest(flow_cursors),
+        }
+
+    def bank(self, native, retention, **scope):
+        return CandidateEpisodeBank(
+            native,
+            retention,
+            representation_id=self.consumer.model.representation_id(),
+            dtype=self.dtype,
+            **scope,
+        )
+
+    def state_store(self, artifacts, identity):
+        return FlowCursors(self.consumer)
+
+    @staticmethod
+    def features(row):
+        encoding = hashlib.sha256(row.key_inputs.tobytes() + row.value.tobytes()).hexdigest()
+        return [*_words(row.input_sha256), *_words(encoding)]
+
+    @staticmethod
+    def check_bank(bank, episodes):
+        decisions = {(row["flow_id"], row["prediction_at"]) for row in episodes.values()}
+        if len(decisions) != len(episodes):
+            raise ValueError("El banco GRU repite la decisión de un mismo flujo")
+
+    def snapshot(self, bank, context_id, cutoff):
+        return self.consumer.memory(bank.read_view() if self.admission == "m1" else None)
+
+    def prepare_event(self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows):
+        values = []
+        for start in range(0, len(rows), batch_rows):
+            batch = session._decision_batch(rows[start : start + batch_rows])
+            fast = session._fast_store.advance(fast, batch)
+            if not warmup:
+                result = self.consumer.prepare(batch, snapshot)
+                values.extend(result.point_predictions.detach().cpu().tolist())
+        itemsize = self.dtype.itemsize
+        control = dict(
+            context_id=context_id,
+            selection=None,
+            measurements=[],
+            observations=len(rows),
+            mac_updates=0,
+            refinements=0 if warmup else self.consumer.refinements,
+            snapshot_bytes=0
+            if snapshot is None
+            else snapshot.size * ((sum(self.widths) + 1) * itemsize + 8),
+            reevaluations=0,
+            group_estimated_bytes=0,
+        )
+        return values, fast, control
+
+    @staticmethod
+    def propose(native, bank, pending, admitted, episodes, *, confirmed_at):
+        positions = torch.tensor([index for _, index, _ in admitted], dtype=torch.int64)
+        incoming = CandidateEpisodes(
+            ids=torch.tensor([identifier for identifier, _, _ in admitted], dtype=torch.int64),
+            keys=pending["key_inputs"].index_select(0, positions),
+            values=pending["values"].index_select(0, positions),
+            times=torch.tensor(
+                [
+                    [
+                        item.prediction.decision_at,
+                        pending["rows"][index]["input_available_at"],
+                        item.label.available_at,
+                    ]
+                    for _, index, item in admitted
+                ],
+                dtype=torch.int64,
+            ),
+            labels=torch.tensor([item.label.value for _, _, item in admitted], dtype=torch.float64),
+        )
+        return bank.propose(incoming, confirmed_at=confirmed_at)
+
+
 def bind_consumer(consumer, codec, retention, admission):
     if type(consumer) is FrozenFinancialConsumer:
         return TitansBinding(consumer, codec, retention, admission)
+    if type(consumer) is FrozenCandidateConsumer:
+        return CandidateBinding(consumer, codec, retention, admission)
     raise ValueError(ADMISSION_ERROR)
