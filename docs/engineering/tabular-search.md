@@ -19,6 +19,15 @@ Se usa `cuda:0` de forma explícita. La caché de XGBoost va a disco con
 no equivalen a un límite absoluto de toda la RAM o VRAM del proceso. Se registra
 el uso observado y se mantiene un límite externo para el proceso de la campaña.
 
+La versión 3 del diseño declara la edición con máscaras. La
+[configuración histórica](../../configs/baselines/tabular-historical-masked.json)
+mantiene la rejilla, la selección y las semillas de la convergencia
+estadounidense, exige caché en disco y añade `input_policy` y
+`max_disk_cache_bytes`. Ambas se propagan a Ridge y XGBoost, la campaña rechaza
+un manifiesto de otra política y un resultado solo se confirma si conserva la
+política y los bits de presencia. Los detalles están en
+[Ridge y XGBoost con la edición de máscaras](masked-tabular-comparators.md).
+
 ## Confirmación y recuperación
 
 Cada caso conserva sus parámetros, intentos, huellas, checkpoint y predicciones.

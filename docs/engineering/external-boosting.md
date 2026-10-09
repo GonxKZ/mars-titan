@@ -44,6 +44,13 @@ se usa como protección, porque la versión instalada avisa de que no tiene
 efecto. La caché en disco puede reducir el consumo de RAM, pero añade tráfico
 de almacenamiento y PCIe. No se presupone que sea más rápida.
 
+`--max-disk-cache-bytes` declara un presupuesto para las páginas en disco.
+Antes de crear la salida se estima la caché y se comprueba el disco libre y la
+RAM disponible. Durante la construcción se miden los bytes escritos y se falla
+antes de entrenar si superan el presupuesto. La edición con máscaras lo exige.
+El plan y sus hipótesis están en
+[Ridge y XGBoost con la edición de máscaras](masked-tabular-comparators.md).
+
 La [documentación de memoria externa de XGBoost](https://xgboost.readthedocs.io/en/stable/tutorials/external_memory.html)
 describe el iterador, las páginas externas y los requisitos de la ruta GPU.
 La versión de la documentación puede diferir de la instalada. Las opciones
@@ -55,7 +62,8 @@ Tras preparar el entorno con `uv sync --extra cuda --extra encoders --extra
 research --extra boosting`, el módulo `mars_titan.training.external_corpus`
 acepta `--manifest`, `--output`, `--rounds`, `--max-depth`, `--max-bin`,
 `--learning-rate`, `--seed` y los presupuestos de lote y caché.
-`--disk-cache` selecciona disco. `--resume` exige la identidad anterior de
+`--disk-cache` selecciona disco y `--input-policy` declara la edición de
+entradas. `--resume` exige la identidad anterior de
 datos, código, parámetros y versiones. No se sincronizan dependencias mientras
 otro proceso científico usa ese entorno.
 
