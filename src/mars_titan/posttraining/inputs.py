@@ -63,6 +63,23 @@ def _resume_point(cursor, identity, sizes, offsets, batch_size):
     return point
 
 
+def _within(source, partition, raw):
+    """Exigir el tramo de la fuente o, con US y CN juntos, el tramo de cada mercado."""
+    bounds = getattr(source, "bounds", LEGACY_BOUNDS[partition])
+    if bounds is not None:
+        groups = [(bounds, slice(None))]
+    else:
+        markets = np.array([asset.split("/", 1)[0] for asset in raw["asset_ids"]])
+        if not set(markets) <= source.market_bounds.keys():
+            return False
+        groups = [(source.market_bounds[market], markets == market) for market in set(markets)]
+    return all(
+        low <= raw["prediction_at"] < cutoff
+        and not (raw["target_available_at"][rows] >= high).any()
+        for (low, high, cutoff), rows in groups
+    )
+
+
 class PairedInputs:
     """Compartir la fuente real y cargar un único episodio adicional cada vez."""
 
@@ -218,11 +235,7 @@ class PairedInputs:
             raw = read_cohort(raw, self.shapes, source.max_assets, MAX_BYTES)
             if presence is not None:
                 raw["presence"] = presence
-            low, high, cutoff = getattr(source, "bounds", LEGACY_BOUNDS[partition])
-            if (
-                not low <= raw["prediction_at"] < cutoff
-                or (raw["target_available_at"] >= high).any()
-            ):
+            if not _within(source, partition, raw):
                 raise ValueError("Una etiqueta u observación cruza la partición")
             if len(raw["target"]) != sizes[position]:
                 raise ValueError("La cohorte ha cambiado su número de filas")

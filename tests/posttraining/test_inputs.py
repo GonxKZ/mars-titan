@@ -1,6 +1,7 @@
 """Presupuesto de filas, causalidad y cursor de la comparación emparejada."""
 
 from dataclasses import replace
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -9,7 +10,7 @@ from mars_titan.episodes.augmentation import augmentation_windows, paired_world
 from mars_titan.episodes.parents import ParentCache
 from mars_titan.episodes.windows import EpisodeView
 from mars_titan.episodes.worlds import WorldConfig, generate_world
-from mars_titan.posttraining.inputs import PairedInputs, fit_normalization
+from mars_titan.posttraining.inputs import PairedInputs, _within, fit_normalization
 
 
 def sources():
@@ -149,3 +150,16 @@ def test_augmented_condition_requires_windows_and_the_confirmed_synthetic_identi
     with pytest.raises(ValueError, match="identidad"):
         collect(data, "real_synthetic")
     data.parent.close()
+
+
+def test_joint_cohorts_are_checked_against_the_bounds_of_each_market():
+    source = SimpleNamespace(bounds=None, market_bounds={"US": (0, 50, 40), "CN": (0, 30, 20)})
+    raw = dict(
+        prediction_at=10,
+        asset_ids=["CN/A", "US/B"],
+        target_available_at=np.array([25, 45]),
+    )
+    assert _within(source, "train", raw)
+    assert not _within(source, "train", dict(raw, target_available_at=np.array([31, 45])))
+    assert not _within(source, "train", dict(raw, prediction_at=25))
+    assert not _within(source, "train", dict(raw, asset_ids=["CN/A", "XX/B"]))
