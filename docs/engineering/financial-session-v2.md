@@ -49,7 +49,8 @@ la predicción del núcleo. `no_bank` ejecuta el mismo refinador con lectura cer
 M1 admite los resultados maduros y aplica la retención configurada.
 [M2](mature-error-write-policy.md) usa un reservorio, un índice selectivo por error
 maduro de la emisión y un índice reciente, con un único presupuesto 50/25/25.
-Sus pruebas de composición son CPU. M3 se rechaza. El factor de retención M
+Sus pruebas de composición incluyen CPU y una comprobación CUDA focal en
+FP32/FP64, K=1, B_mem=4 y C apagado. M3 se rechaza. El factor de retención M
 permanece separado de estas reglas y está desactivado en M2.
 
 La sesión utiliza `memory_contract="causal_v2"`. El reservorio inicializa

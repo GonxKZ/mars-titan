@@ -2,7 +2,7 @@
 
 Autor: Gonzalo García Lama. Estado actualizado el 19 de septiembre de 2026.
 
-El repositorio contiene preparación temporal de datos y sondas MLP y GRU para medir coste. La arquitectura MARS-TITAN y la comparación confirmatoria siguen pendientes. La [preparación ejecutada](../data/preparation.md) y el [presupuesto experimental](../../reports/resources/campaign-budget.md) distinguen implementación, datos admitidos y entrenamientos observados.
+La [dirección arquitectónica](../research/titans-mac-architecture.md) y las guías de cada módulo recogen el estado técnico posterior a esta revisión del entorno. Hay núcleos y consumidores implementados, mientras la edición histórica completa y la comparación confirmatoria siguen pendientes. La [preparación ejecutada](../data/preparation.md) y el [presupuesto experimental](../../reports/resources/campaign-budget.md) distinguen implementación, datos admitidos y entrenamientos observados.
 
 ## Entorno del proyecto
 

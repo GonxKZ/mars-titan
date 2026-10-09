@@ -27,7 +27,7 @@ void require(bool value, std::string_view reason) {
     }
 }
 int64_t input_width(const Config& config) {
-    int64_t width = 0;
+    int64_t width = config.input_policy == "historical_masked_2000_v1" ? modality_count : 0;
     for (std::size_t i = 0; i < config.dimensions.size(); ++i) {
         const auto dimension = config.dimensions.at(i);
         require(dimension > 0 && dimension <= maximum_dimension,
@@ -38,7 +38,15 @@ int64_t input_width(const Config& config) {
     return width;
 }
 void check_config(const Config& config) {
+    require(config.input_policy == "strict_inputs_v1" ||
+                config.input_policy == "historical_masked_2000_v1",
+            "La política de entradas del candidato no está admitida");
     (void)input_width(config);
+    if (config.input_policy == "historical_masked_2000_v1") {
+        require(config.dimensions.front() == modality_count && config.dimensions.at(3) % 3 == 0 &&
+                    config.dimensions.at(4) % 3 == 0,
+                "La política histórica necesita OHLCV y bloques de valores, observación y edad");
+    }
     require(config.max_batch > 0 && config.max_batch <= maximum_batch && config.max_episodes > 0 &&
                 config.max_episodes <= maximum_episodes && config.neighbors > 0 &&
                 config.neighbors <= maximum_neighbors,
@@ -49,6 +57,28 @@ void check_config(const Config& config) {
             "Las semillas deben ser no negativas");
     require(!config.normalization_id.empty() && config.normalization_id.size() <= feature_width,
             "Se necesita una identidad de normalización de hasta 256 bytes");
+}
+void check_historical(const Inputs& inputs, const std::array<at::Tensor, 4>& blocks) {
+    require(inputs.presence.select(1, 0).all().item<bool>() &&
+                inputs.presence.select(1, 2).all().item<bool>(),
+            "La política histórica requiere precios y gráficos");
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        const auto present = inputs.presence.select(1, static_cast<int64_t>(i + 1));
+        const auto& block = blocks.at(i);
+        require(((block == 0) | present.unsqueeze(1)).all().item<bool>(),
+                "Una modalidad ausente contiene valores distintos de cero");
+        if (i >= 2) {
+            const auto parts = block.chunk(3, 1);
+            const auto& values = parts.at(0);
+            const auto& observed = parts.at(1);
+            const auto& ages = parts.at(2);
+            require(((observed == 0) | (observed == 1)).all().item<bool>() &&
+                        (ages >= 0).all().item<bool>() &&
+                        (((values == 0) & (ages == 0)) | (observed == 1)).all().item<bool>() &&
+                        at::equal((observed == 1).any(1), present),
+                    "La máscara conceptual, su edad o la presencia histórica son incompatibles");
+        }
+    }
 }
 void check_tensor(const at::Tensor& value, at::IntArrayRef shape, const at::Tensor& reference,
                   bool finite = false) {
@@ -98,7 +128,10 @@ Candidate::Candidate(Config config, at::ScalarType dtype, const at::Device& devi
         modalities_.at(i) =
             linear(names.at(i), config_.dimensions.at(i + 1), hidden_width, generator, dtype);
     }
-    fusion_ = linear("fusion", modality_count * hidden_width, feature_width, generator, dtype);
+    const auto mask_width =
+        config_.input_policy == "historical_masked_2000_v1" ? modality_count : 0;
+    fusion_ = linear("fusion", modality_count * hidden_width + mask_width, feature_width, generator,
+                     dtype);
     initial_ = linear("initial", feature_width, hidden_width, generator, dtype);
     query_ = linear("query", hidden_width, hidden_width, generator, dtype);
     value_ = linear("value", read_input_width, hidden_width, generator, dtype);
@@ -187,9 +220,15 @@ Encoded Candidate::encode(const Inputs& inputs) const {
     require(inputs.presence.defined() && inputs.presence.layout() == at::kStrided &&
                 inputs.presence.scalar_type() == at::kBool &&
                 inputs.presence.device() == feature_projection_.device() &&
-                inputs.presence.sizes() == at::IntArrayRef({batch, modality_count}) &&
-                inputs.presence.all().item<bool>(),
-            "Se requieren las cuatro modalidades y macro en cada fila");
+                inputs.presence.sizes() == at::IntArrayRef({batch, modality_count}),
+            "La presencia necesita cinco bits por fila en el dispositivo del candidato");
+    const bool historical = config_.input_policy == "historical_masked_2000_v1";
+    if (historical) {
+        check_historical(inputs, blocks);
+    } else {
+        require(inputs.presence.all().item<bool>(),
+                "Se requieren las cuatro modalidades y macro en cada fila");
+    }
     const auto start = at::zeros({1, batch, hidden_width}, feature_projection_.options());
     const auto price_hidden =
         std::get<1>(at::gru(inputs.prices, start, gru_, true, 1, 0., is_training(), false, true))
@@ -197,8 +236,17 @@ Encoded Candidate::encode(const Inputs& inputs) const {
     std::vector<at::Tensor> projected{price_hidden};
     std::vector<at::Tensor> flattened{inputs.prices.flatten(1)};
     for (std::size_t i = 0; i < blocks.size(); ++i) {
-        projected.push_back(at::silu(modalities_.at(i)(blocks.at(i))));
+        auto value = at::silu(modalities_.at(i)(blocks.at(i)));
+        if (historical) {
+            value = value * inputs.presence.select(1, static_cast<int64_t>(i + 1)).unsqueeze(1);
+        }
+        projected.push_back(value);
         flattened.push_back(blocks.at(i));
+    }
+    if (historical) {
+        const auto presence = inputs.presence.to(feature_projection_.scalar_type());
+        projected.push_back(presence);
+        flattened.push_back(presence);
     }
     const auto fused = at::silu(fusion_(at::cat(projected, -1)));
     at::Tensor features;

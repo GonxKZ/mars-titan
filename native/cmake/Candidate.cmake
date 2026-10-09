@@ -17,10 +17,29 @@ target_include_directories(mars_titan_candidate PUBLIC "${CMAKE_CURRENT_SOURCE_D
 # Resolver primero el lector privado, sin enlazar sus símbolos contra la copia de LibTorch.
 target_link_libraries(mars_titan_candidate PRIVATE miniz PUBLIC mars_titan::torch PRIVATE OpenSSL::Crypto)
 mars_titan_configure_target(mars_titan_candidate)
+if(TARGET _episodic_native)
+    # El caster comparte tensores y autograd con el mismo SDK, sin JSON ni copias de NumPy.
+    get_target_property(candidate_torch_root mars_titan_torch MARS_TITAN_TORCH_ROOT)
+    set(candidate_python_library "${candidate_torch_root}/lib/libtorch_python.so")
+    if(NOT EXISTS "${candidate_python_library}")
+        message(FATAL_ERROR "Falta libtorch_python en el SDK del enlace tensorial candidato")
+    endif()
+    target_sources(_episodic_native PRIVATE src/candidate_python.cpp)
+    target_compile_definitions(_episodic_native PRIVATE MARS_TITAN_CANDIDATE_PYTHON=1)
+    target_link_libraries(_episodic_native PRIVATE mars_titan_candidate "${candidate_python_library}")
+endif()
 add_executable(mars-titan-candidate src/candidate_main.cpp)
 target_link_libraries(mars-titan-candidate PRIVATE mars_titan_candidate)
 mars_titan_configure_target(mars-titan-candidate)
 if(BUILD_TESTING)
+    add_executable(candidate_historical_tests tests/candidate_historical_tests.cpp)
+    target_link_libraries(candidate_historical_tests PRIVATE mars_titan_candidate)
+    mars_titan_configure_target(candidate_historical_tests)
+    add_test(NAME candidate_historical COMMAND candidate_historical_tests)
+    set_tests_properties(candidate_historical PROPERTIES TIMEOUT 120 LABELS "unit;integration;candidate")
+    mars_titan_sanitizer_test_environment(candidate_historical)
+    set_property(TEST candidate_historical APPEND PROPERTY ENVIRONMENT
+        "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
     add_executable(candidate_archive_tests tests/candidate_archive_tests.cpp)
     target_link_libraries(candidate_archive_tests PRIVATE mars_titan_candidate)
     mars_titan_configure_target(candidate_archive_tests)
@@ -91,12 +110,17 @@ if(MARS_TITAN_BUILD_FUZZER)
     endif()
 endif()
 if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(candidate_analysis_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_archive.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_identity.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_main.cpp")
+    if(TARGET _episodic_native)
+        list(APPEND candidate_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_python.cpp")
+    endif()
     add_custom_target(candidate-analysis
         COMMAND "${MARS_TITAN_CLANG_CHECK}" --analyze "-p=${CMAKE_BINARY_DIR}"
             --extra-arg=-Xanalyzer --extra-arg=-analyzer-werror
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_archive.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_identity.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_main.cpp"
+            ${candidate_analysis_sources}
         VERBATIM)
 endif()
