@@ -420,3 +420,50 @@ def test_the_campaign_script_refuses_the_walk_until_the_stages_accept_a_window(
     with pytest.raises(ValueError, match="no admite una ventana"):
         script["main"](arguments)
     assert not (tmp_path / "campaign").exists()
+
+
+def test_a_regeneration_error_keeps_the_rows_and_is_retried_while_a_comparison_is_final(
+    tmp_path,
+):
+    """Un fallo antes de comparar no decide nada. Una comparación escrita sí es definitiva."""
+    from tests.data.test_prediction_files import writer, written
+
+    state = rolling.Rolling.__new__(rolling.Rolling)
+    state.folder = tmp_path / "retention"
+    job = dict(id="US/fold-000/gru/search-a", scope="US", window="fold-000")
+    path, digest = written(tmp_path / "attempt", writer("neural"))
+    tables = {"evaluation": (path, digest)}
+    attempts = []
+
+    def failing(destination):
+        attempts.append("error")
+        raise MemoryError("sin memoria")
+
+    def identical(destination):
+        attempts.append("identical")
+        destination.mkdir(parents=True)
+        return dict(identical=True)
+
+    def differs(destination):
+        attempts.append("differs")
+        return dict(identical=False)
+
+    totals = dict(released=0, not_regenerable=0)
+    state._release_job("base", job, tables, failing, totals)
+    assert prediction_files.verify(path, digest) == prediction_files.COMPACTED
+    assert totals == dict(released=0, not_regenerable=1)
+    # En la ventana siguiente se vuelve a intentar y, si coincide, se libera.
+    state._release_job("base", job, tables, identical, totals)
+    assert prediction_files.verify(path, digest) == prediction_files.RELEASED
+    assert attempts == ["error", "identical"] and totals["released"] == 1
+    assert not (state.folder / "regeneration").exists() or not any(
+        (state.folder / "regeneration").iterdir()
+    )
+    other, other_digest = written(tmp_path / "other", writer("neural", seed=2))
+    second = dict(job, id="US/fold-000/gru/search-b")
+    state._release_job("base", second, {"evaluation": (other, other_digest)}, differs, totals)
+    state._release_job("base", second, {"evaluation": (other, other_digest)}, identical, totals)
+    # La comparación distinta ya escrita decide: no se regenera otra vez ni se libera.
+    assert attempts[-1] == "differs"
+    assert prediction_files.verify(other, other_digest) == prediction_files.COMPACTED
+    assert totals["not_regenerable"] == 2
