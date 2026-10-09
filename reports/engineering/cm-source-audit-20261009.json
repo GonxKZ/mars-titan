@@ -1,0 +1,574 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-09T00:00:21.358992+00:00",
+  "used_revision": "adc7f1241b42e322a6451854ab7e4b4c146bf78a",
+  "initial_review_at_utc": "2026-10-07T17:03:17.145065+00:00",
+  "observed_main_revision": "fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb",
+  "observed_main_commit_at_utc": "2026-10-08T05:20:00Z",
+  "revision_adopted": false,
+  "initial_download_manifest_sha256": "9d1f0e49d7b2fc4db88ad8a9a89e157001df4d51c4373751214ddee402f776bb",
+  "pinned_artifacts": [
+    {
+      "path": "lean/docs/325.md",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/docs/325.md",
+      "bytes": 2508,
+      "sha256": "e44548f4f54b1e408506529aac102b3a2bfcf930ddb5145afb4b193a97dee54b"
+    },
+    {
+      "path": "lean/docs/125.md",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/docs/125.md",
+      "bytes": 2408,
+      "sha256": "045cdf6a61cca1122b8ed8cc7d39b0229c1b4307d4cb2eb23fdf762339f855b7"
+    },
+    {
+      "path": "lean/docs/140.md",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/docs/140.md",
+      "bytes": 7886,
+      "sha256": "71f6b45431c698c92960574de306b727271ea53b7b9e6b6a099d22f5a2336dd3"
+    },
+    {
+      "path": "lean/docs/360.md",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/docs/360.md",
+      "bytes": 1927,
+      "sha256": "36af7a15e7d017d426bf0b9b6468f43d18dc417ffa0715d39bd515472d8423c5"
+    },
+    {
+      "path": "lean/README.md",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/README.md",
+      "bytes": 650,
+      "sha256": "292ff9d539f494158dfbf68d989ba85a82782a4343b2fe43088f8fa62525bf1b"
+    },
+    {
+      "path": "lean/formalization.yaml",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/formalization.yaml",
+      "bytes": 73925,
+      "sha256": "2dcbd0d6e6a22475f53d49bfdfcac9b6d2b470653c332a9f56522f5be166edb9"
+    },
+    {
+      "path": "lean/ComparatorChallenges/README.md",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/ComparatorChallenges/README.md",
+      "bytes": 287,
+      "sha256": "051459a45da1bedd1c0a6585a5b5e5425c7c40a369f2922d7b519e2fd02333b0"
+    },
+    {
+      "path": "lean/lean-toolchain",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/lean-toolchain",
+      "bytes": 25,
+      "sha256": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+    },
+    {
+      "path": "lean/lake-manifest.json",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/lake-manifest.json",
+      "bytes": 14622,
+      "sha256": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794"
+    },
+    {
+      "path": "lean/ComparatorChallenges/DirectCrouzeix.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/ComparatorChallenges/DirectCrouzeix.lean",
+      "bytes": 1353,
+      "sha256": "6aff79e03dee428cf5a677dba39da0fe14fe3d9a989a7e6d4bc0f3bf2a148d22"
+    },
+    {
+      "path": "lean/ComparatorChallenges/DirectCrouzeix.json",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/ComparatorChallenges/DirectCrouzeix.json",
+      "bytes": 371,
+      "sha256": "26346f0920c9862517f30c4c3a016a5aea03913cca5c151dd1a26eee3e7a9f82"
+    },
+    {
+      "path": "lean/ComparatorChallenges/MetricKMedian.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/ComparatorChallenges/MetricKMedian.lean",
+      "bytes": 2206,
+      "sha256": "52b0567c1c72fddfc813d86788fdd646a8f480687226dd776ec5d4550a6c1b3a"
+    },
+    {
+      "path": "lean/ComparatorChallenges/MetricKMedian.json",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/ComparatorChallenges/MetricKMedian.json",
+      "bytes": 322,
+      "sha256": "5f1d66f8b3ddb4c6545df695c636793d35a897aa168f66c7ca1007938d6a0737"
+    },
+    {
+      "path": "lean/OAI/Analysis/DirectCrouzeix/Main.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/OAI/Analysis/DirectCrouzeix/Main.lean",
+      "bytes": 2051,
+      "sha256": "0a259924198d24e07a91764943aa2623b0cde487747f7c74a863d15dd50d3e71"
+    },
+    {
+      "path": "lean/OAI/Analysis/DirectCrouzeix/CompleteBound.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/OAI/Analysis/DirectCrouzeix/CompleteBound.lean",
+      "bytes": 2757,
+      "sha256": "c8f0706d92662aaca2d1a26fe7647b3719035f72177d68fbf5b490028f12e891"
+    },
+    {
+      "path": "lean/OAI/Analysis/DirectCrouzeix/Model.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/OAI/Analysis/DirectCrouzeix/Model.lean",
+      "bytes": 1208,
+      "sha256": "3be01360e343e41c9712883d81e8845122ef13b2418640fa32c5e2fd22cdba84"
+    },
+    {
+      "path": "lean/OAI/Combinatorics/KMedian/Main.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/OAI/Combinatorics/KMedian/Main.lean",
+      "bytes": 3799,
+      "sha256": "b58d6aa7692dec100e73b17adb68e8b9424518ba25ae4dabe2c4119925863c0e"
+    },
+    {
+      "path": "lean/OAI/Combinatorics/KMedian/Model.lean",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/OAI/Combinatorics/KMedian/Model.lean",
+      "bytes": 1948,
+      "sha256": "81bed1a38e6cab0cb59b7e167335ec7755988168c3d30038b483eea839c20bb5"
+    },
+    {
+      "path": "preprints/A-direct-proof-of-the-complete-Crouzeix-inequality-September-26-2026/paper.pdf",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/preprints/A-direct-proof-of-the-complete-Crouzeix-inequality-September-26-2026/paper.pdf",
+      "bytes": 315777,
+      "sha256": "d9aa4ef2dccb1f044fdf78afd7a4c93f64e71bd60e53d0f0460329596f199bb6"
+    },
+    {
+      "path": "preprints/Single-Exponential-Recovery-and-Bounded-Price-Strictness-for-Metric-k-Median-September-24-2026/paper.pdf",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/preprints/Single-Exponential-Recovery-and-Bounded-Price-Strictness-for-Metric-k-Median-September-24-2026/paper.pdf",
+      "bytes": 495805,
+      "sha256": "823fdb284a7d3c0e3089869ba2da3d394db4f19b1c2ab56477ce6ae1b232614b"
+    },
+    {
+      "path": "preprints/The-Approximation-Threshold-for-Metric-k-Median-September-24-2026/main.pdf",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/preprints/The-Approximation-Threshold-for-Metric-k-Median-September-24-2026/main.pdf",
+      "bytes": 562378,
+      "sha256": "c8176d1671beb83d3a459ff65e5c632d94364ec7e542930bf19fad0b75524d50"
+    },
+    {
+      "path": "preprints/The-complete-Crouzeix-theorem-September-23-2026/paper.pdf",
+      "url": "https://github.com/openai/math/blob/adc7f1241b42e322a6451854ab7e4b4c146bf78a/preprints/The-complete-Crouzeix-theorem-September-23-2026/paper.pdf",
+      "bytes": 431297,
+      "sha256": "b5e37fffcae2be84577cdc73f8d0ae459ecc85da994dcf605c38f69539cc962b"
+    }
+  ],
+  "selected_revision_comparison": [
+    {
+      "path": "current/lean/docs/325.md",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/325.md",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/325.md",
+      "status": 200,
+      "headers": {
+        "ETag": "\"94121e97dc2c2dcaa7408ff8f434997a13d05c5dd6fb4bcc0ab6159f011a35ac\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "e44548f4f54b1e408506529aac102b3a2bfcf930ddb5145afb4b193a97dee54b",
+      "bytes": 2508,
+      "fetched_at_utc": "2026-10-08T23:54:10.444922+00:00",
+      "previous_sha256": "e44548f4f54b1e408506529aac102b3a2bfcf930ddb5145afb4b193a97dee54b",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/docs/125.md",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/125.md",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/125.md",
+      "status": 200,
+      "headers": {
+        "ETag": "\"9f579cf6ddbf960f02e6e82f1f4294aa4c6ae520456f125202b6b18ade3cb312\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "045cdf6a61cca1122b8ed8cc7d39b0229c1b4307d4cb2eb23fdf762339f855b7",
+      "bytes": 2408,
+      "fetched_at_utc": "2026-10-08T23:54:10.414916+00:00",
+      "previous_sha256": "045cdf6a61cca1122b8ed8cc7d39b0229c1b4307d4cb2eb23fdf762339f855b7",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/docs/140.md",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/140.md",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/140.md",
+      "status": 200,
+      "headers": {
+        "ETag": "\"7164438c24203734f14962c17ec876124a5b7840f4e5d5acab88e443a7e5e2f1\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "71f6b45431c698c92960574de306b727271ea53b7b9e6b6a099d22f5a2336dd3",
+      "bytes": 7886,
+      "fetched_at_utc": "2026-10-08T23:54:10.435747+00:00",
+      "previous_sha256": "71f6b45431c698c92960574de306b727271ea53b7b9e6b6a099d22f5a2336dd3",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/docs/360.md",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/360.md",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/docs/360.md",
+      "status": 200,
+      "headers": {
+        "ETag": "\"8bdd8be025634b3a89caba843f78ff3dc2f6c0f884b3d57a00e93565ca4bb899\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "36af7a15e7d017d426bf0b9b6468f43d18dc417ffa0715d39bd515472d8423c5",
+      "bytes": 1927,
+      "fetched_at_utc": "2026-10-08T23:54:10.672011+00:00",
+      "previous_sha256": "36af7a15e7d017d426bf0b9b6468f43d18dc417ffa0715d39bd515472d8423c5",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/README.md",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/README.md",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/README.md",
+      "status": 200,
+      "headers": {
+        "ETag": "\"669815194f86c0cef835617f7c13352beb4b98f61d60d0c090ad1c3a96fa029e\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "292ff9d539f494158dfbf68d989ba85a82782a4343b2fe43088f8fa62525bf1b",
+      "bytes": 650,
+      "fetched_at_utc": "2026-10-08T23:54:10.730965+00:00",
+      "previous_sha256": "292ff9d539f494158dfbf68d989ba85a82782a4343b2fe43088f8fa62525bf1b",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/formalization.yaml",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/formalization.yaml",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/formalization.yaml",
+      "status": 200,
+      "headers": {
+        "ETag": "\"c1b83b2764fa0df7d2a09ddb1f33ac5424132408e5ab4ee6759fc31a728b3d19\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "5a8a164259591208886cd018416e61552665265ec9e20cff636f9d51117c2278",
+      "bytes": 79482,
+      "fetched_at_utc": "2026-10-08T23:54:10.797477+00:00",
+      "previous_sha256": "2dcbd0d6e6a22475f53d49bfdfcac9b6d2b470653c332a9f56522f5be166edb9",
+      "same_as_previous": false
+    },
+    {
+      "path": "current/lean/ComparatorChallenges/README.md",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/README.md",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/README.md",
+      "status": 200,
+      "headers": {
+        "ETag": "\"c0c6aedb9c0f12c5fc5131c82a7e1fd6af8b5ea5b1975a099d9c62ee2adf1f05\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "2ed835b3c59709be6feffe0dec54fc9783fb26aa22d35517475a82ef5199c555",
+      "bytes": 1060,
+      "fetched_at_utc": "2026-10-08T23:54:11.172411+00:00",
+      "previous_sha256": "051459a45da1bedd1c0a6585a5b5e5425c7c40a369f2922d7b519e2fd02333b0",
+      "same_as_previous": false
+    },
+    {
+      "path": "current/lean/lean-toolchain",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/lean-toolchain",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/lean-toolchain",
+      "status": 200,
+      "headers": {
+        "ETag": "\"cf26d3d37a75dcbb68c9d8d11efe43cbd4a1651553132b5fe61e3459b73204de\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b",
+      "bytes": 25,
+      "fetched_at_utc": "2026-10-08T23:54:11.172363+00:00",
+      "previous_sha256": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/lake-manifest.json",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/lake-manifest.json",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/lake-manifest.json",
+      "status": 200,
+      "headers": {
+        "ETag": "\"235352515ab75fc6a934705d32997223e95e16f36c39fe793407d0dac5bf75d3\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+      "bytes": 14622,
+      "fetched_at_utc": "2026-10-08T23:54:11.185327+00:00",
+      "previous_sha256": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/ComparatorChallenges/DirectCrouzeix.lean",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/DirectCrouzeix.lean",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/DirectCrouzeix.lean",
+      "status": 200,
+      "headers": {
+        "ETag": "\"7ebe7e07e67daffd92c2dae5187fc02c8575e902050e882f69da2e4bdb46fc31\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "6aff79e03dee428cf5a677dba39da0fe14fe3d9a989a7e6d4bc0f3bf2a148d22",
+      "bytes": 1353,
+      "fetched_at_utc": "2026-10-08T23:54:11.619628+00:00",
+      "previous_sha256": "6aff79e03dee428cf5a677dba39da0fe14fe3d9a989a7e6d4bc0f3bf2a148d22",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/ComparatorChallenges/DirectCrouzeix.json",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/DirectCrouzeix.json",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/DirectCrouzeix.json",
+      "status": 200,
+      "headers": {
+        "ETag": "\"ede85da03d07a8829d752a75253e780fa43383406d639483c4d4f883b387197b\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "26346f0920c9862517f30c4c3a016a5aea03913cca5c151dd1a26eee3e7a9f82",
+      "bytes": 371,
+      "fetched_at_utc": "2026-10-08T23:54:11.621677+00:00",
+      "previous_sha256": "26346f0920c9862517f30c4c3a016a5aea03913cca5c151dd1a26eee3e7a9f82",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/ComparatorChallenges/MetricKMedian.lean",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/MetricKMedian.lean",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/MetricKMedian.lean",
+      "status": 200,
+      "headers": {
+        "ETag": "\"9080d06c7004aa0d9385f89a1fdb89e89e9c464a801e3cc7e2e702f41671a83a\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "52b0567c1c72fddfc813d86788fdd646a8f480687226dd776ec5d4550a6c1b3a",
+      "bytes": 2206,
+      "fetched_at_utc": "2026-10-08T23:54:11.613687+00:00",
+      "previous_sha256": "52b0567c1c72fddfc813d86788fdd646a8f480687226dd776ec5d4550a6c1b3a",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/ComparatorChallenges/MetricKMedian.json",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/MetricKMedian.json",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/ComparatorChallenges/MetricKMedian.json",
+      "status": 200,
+      "headers": {
+        "ETag": "\"0badf7baff9ec5322fe72e8b374d2a890157542f2c44d59eee37e860957dd7dd\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "5f1d66f8b3ddb4c6545df695c636793d35a897aa168f66c7ca1007938d6a0737",
+      "bytes": 322,
+      "fetched_at_utc": "2026-10-08T23:54:11.873170+00:00",
+      "previous_sha256": "5f1d66f8b3ddb4c6545df695c636793d35a897aa168f66c7ca1007938d6a0737",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/OAI/Analysis/DirectCrouzeix/CompleteBound.lean",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Analysis/DirectCrouzeix/CompleteBound.lean",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Analysis/DirectCrouzeix/CompleteBound.lean",
+      "status": 200,
+      "headers": {
+        "ETag": "\"81394c445f00f8257740425bfe46a71b06db72dce62381b7622e58eaa4ed4f7d\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "c8f0706d92662aaca2d1a26fe7647b3719035f72177d68fbf5b490028f12e891",
+      "bytes": 2757,
+      "fetched_at_utc": "2026-10-08T23:54:11.906628+00:00",
+      "previous_sha256": "c8f0706d92662aaca2d1a26fe7647b3719035f72177d68fbf5b490028f12e891",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/OAI/Analysis/DirectCrouzeix/Model.lean",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Analysis/DirectCrouzeix/Model.lean",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Analysis/DirectCrouzeix/Model.lean",
+      "status": 200,
+      "headers": {
+        "ETag": "\"0369afe655fd88cea4443ba7cd3a6b6cabc5e274720a8fa312387540dba35abe\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "3be01360e343e41c9712883d81e8845122ef13b2418640fa32c5e2fd22cdba84",
+      "bytes": 1208,
+      "fetched_at_utc": "2026-10-08T23:54:11.906126+00:00",
+      "previous_sha256": "3be01360e343e41c9712883d81e8845122ef13b2418640fa32c5e2fd22cdba84",
+      "same_as_previous": true
+    },
+    {
+      "path": "current/lean/OAI/Combinatorics/KMedian/Main.lean",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Combinatorics/KMedian/Main.lean",
+      "effective_url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Combinatorics/KMedian/Main.lean",
+      "status": 200,
+      "headers": {
+        "ETag": "\"ae1bb98d5283fb358a9dc095edc27b8af1a55bebf4af7fe85ed7325c7cc9f11d\"",
+        "Last-Modified": null,
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      "sha256": "b58d6aa7692dec100e73b17adb68e8b9424518ba25ae4dabe2c4119925863c0e",
+      "bytes": 3799,
+      "fetched_at_utc": "2026-10-08T23:54:12.129920+00:00",
+      "previous_sha256": "b58d6aa7692dec100e73b17adb68e8b9424518ba25ae4dabe2c4119925863c0e",
+      "same_as_previous": true
+    },
+    {
+      "path": "preprints/A-direct-proof-of-the-complete-Crouzeix-inequality-September-26-2026/paper.pdf",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/preprints/A-direct-proof-of-the-complete-Crouzeix-inequality-September-26-2026/paper.pdf",
+      "sha256": "d9aa4ef2dccb1f044fdf78afd7a4c93f64e71bd60e53d0f0460329596f199bb6",
+      "bytes": 315777,
+      "previous_sha256": "d9aa4ef2dccb1f044fdf78afd7a4c93f64e71bd60e53d0f0460329596f199bb6",
+      "same_as_previous": true,
+      "fetched_at_utc": "2026-10-08T23:57:35.607648+00:00"
+    },
+    {
+      "path": "preprints/Single-Exponential-Recovery-and-Bounded-Price-Strictness-for-Metric-k-Median-September-24-2026/paper.pdf",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/preprints/Single-Exponential-Recovery-and-Bounded-Price-Strictness-for-Metric-k-Median-September-24-2026/paper.pdf",
+      "sha256": "823fdb284a7d3c0e3089869ba2da3d394db4f19b1c2ab56477ce6ae1b232614b",
+      "bytes": 495805,
+      "previous_sha256": "823fdb284a7d3c0e3089869ba2da3d394db4f19b1c2ab56477ce6ae1b232614b",
+      "same_as_previous": true,
+      "fetched_at_utc": "2026-10-08T23:57:35.555470+00:00"
+    },
+    {
+      "path": "preprints/The-Approximation-Threshold-for-Metric-k-Median-September-24-2026/main.pdf",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/preprints/The-Approximation-Threshold-for-Metric-k-Median-September-24-2026/main.pdf",
+      "sha256": "c8176d1671beb83d3a459ff65e5c632d94364ec7e542930bf19fad0b75524d50",
+      "bytes": 562378,
+      "previous_sha256": "c8176d1671beb83d3a459ff65e5c632d94364ec7e542930bf19fad0b75524d50",
+      "same_as_previous": true,
+      "fetched_at_utc": "2026-10-08T23:57:36.032585+00:00"
+    },
+    {
+      "path": "preprints/The-complete-Crouzeix-theorem-September-23-2026/paper.pdf",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/preprints/The-complete-Crouzeix-theorem-September-23-2026/paper.pdf",
+      "sha256": "b5e37fffcae2be84577cdc73f8d0ae459ecc85da994dcf605c38f69539cc962b",
+      "bytes": 431297,
+      "previous_sha256": "b5e37fffcae2be84577cdc73f8d0ae459ecc85da994dcf605c38f69539cc962b",
+      "same_as_previous": true,
+      "fetched_at_utc": "2026-10-08T23:57:35.896492+00:00"
+    },
+    {
+      "path": "lean/OAI/Analysis/DirectCrouzeix/Main.lean",
+      "url": "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/lean/OAI/Analysis/DirectCrouzeix/Main.lean",
+      "sha256": "0a259924198d24e07a91764943aa2623b0cde487747f7c74a863d15dd50d3e71",
+      "bytes": 2051,
+      "previous_sha256": "0a259924198d24e07a91764943aa2623b0cde487747f7c74a863d15dd50d3e71",
+      "same_as_previous": true,
+      "fetched_at_utc": "2026-10-08T23:57:36.115780+00:00"
+    }
+  ],
+  "external_captures": [
+    {
+      "path": "lean-validating-latest.html",
+      "url": "https://lean-lang.org/doc/reference/latest/ValidatingProofs/",
+      "effective_url": "https://lean-lang.org/doc/reference/latest/ValidatingProofs/",
+      "status": 200,
+      "headers": {
+        "ETag": "\"06e84740917aa93bfdb960cca4d6789d-ssl\"",
+        "Last-Modified": null,
+        "Content-Type": "text/html; charset=UTF-8"
+      },
+      "sha256": "c99cd25f776c8592aa8649409a8dc0e43eb6d85ed8a7c640a5eebfc2e078909a",
+      "bytes": 137302,
+      "fetched_at_utc": "2026-10-08T23:54:12.410395+00:00"
+    },
+    {
+      "path": "crouzeix-palencia-v1.html",
+      "url": "https://arxiv.org/abs/1702.00668v1",
+      "effective_url": "https://arxiv.org/abs/1702.00668v1",
+      "status": 200,
+      "headers": {
+        "ETag": null,
+        "Last-Modified": "Mon, 24 Aug 2026 20:05:37 GMT",
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "sha256": "b346726a527eeb2dbf307e6734efbf24c029e69de4480c30b735574954bb7673",
+      "bytes": 37925,
+      "fetched_at_utc": "2026-10-08T23:54:12.043462+00:00"
+    },
+    {
+      "path": "buzano-v1.html",
+      "url": "https://arxiv.org/html/2305.17657v1",
+      "effective_url": "https://arxiv.org/html/2305.17657v1",
+      "status": 200,
+      "headers": {
+        "ETag": "\"CI/Lo4eVupYDEAE=\"",
+        "Last-Modified": "Mon, 24 Aug 2026 21:03:20 GMT",
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "sha256": "5c11179a94e9d6222bc5b8aa792e08a422b13bf4f1ab20327f6734dd0197656a",
+      "bytes": 306702,
+      "fetched_at_utc": "2026-10-08T23:54:12.211729+00:00"
+    }
+  ],
+  "verification_levels": [
+    {
+      "level": 1,
+      "name": "Declaración de formalización",
+      "status": "inspeccionada",
+      "evidence": "S1/S2, comparadores y manifiestos publicados en la revisión fijada."
+    },
+    {
+      "level": 2,
+      "name": "Enunciado y correspondencia",
+      "status": "inspección_estática_selectiva",
+      "evidence": "Definiciones de rango numérico, norma, objetivo métrico, factibilidad y declaraciones superiores. Lectura de hipótesis y teoremas principales de los manuscritos. No equivale a elaboración del enunciado ni revisión completa de demostraciones."
+    },
+    {
+      "level": 3,
+      "name": "Comprobación formal reproducida",
+      "status": "no_ejecutada",
+      "evidence": "lean, lake y elan no están en el PATH comprobado. Sin kernel, comparador, axiomas transitivos ni comprobador externo ejecutados."
+    },
+    {
+      "level": 4,
+      "name": "Hipótesis aplicadas al módulo",
+      "status": "garantías_no_acreditadas",
+      "evidence": "El diagnóstico C de un Jacobiano comprimido no es un control polinómico global. La consolidación práctica no ejecuta el algoritmo de S2 ni acredita su dominio racional separador."
+    },
+    {
+      "level": 5,
+      "name": "Validación numérica",
+      "status": "ejecutada_con_alcance_limitado",
+      "evidence": [
+        "reports/research/cm-mechanisms-verification-20261008.json",
+        "reports/research/mac-local-control-verification-20261008.json",
+        "reports/engineering/financial-session-completion-20261008.json",
+        "reports/engineering/frozen-financial-controls-manual-labels-20261009.json"
+      ]
+    },
+    {
+      "level": 6,
+      "name": "Efecto experimental en MARS-TITAN",
+      "status": "no_ejecutado",
+      "evidence": "Aprendizaje y evaluación científica bloqueados. Sin mejora predictiva medida."
+    }
+  ],
+  "formal_environment": {
+    "lean": "leanprover/lean4:v4.34.1",
+    "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+    "executables_found_in_path": [],
+    "formal_commands_executed": [],
+    "transitive_axioms_printed": false,
+    "external_checker_executed": false,
+    "comparator_permitted_axioms": [
+      "propext",
+      "Quot.sound",
+      "Classical.choice"
+    ],
+    "permitted_axioms_are_standard": true,
+    "enable_nanoda": false
+  },
+  "catalog_limit": {
+    "metric_kmedian_comparator_exists": true,
+    "metric_kmedian_main_finite_work_in_yaml": false,
+    "recovery_comparator_in_yaml": true,
+    "meaning": "La ausencia de esa entrada del YAML no equivale a inexistencia del comparador ni refuta el teorema."
+  },
+  "guide_limit": {
+    "url": "https://lean-lang.org/doc/reference/latest/ValidatingProofs/",
+    "versioned_link_observed": "4.35.0-rc4",
+    "version_difference": "La guía describe la retirada de Lean.trustCompiler en 4.35.0. Ese detalle no se atribuye al toolchain fijado 4.34.1."
+  },
+  "arxiv_date_discrepancy": {
+    "source": "S8",
+    "version": "2305.17657v1",
+    "header": "28 May 2023",
+    "printed_date": "August 24, 2026",
+    "cause": "No determinada."
+  },
+  "not_performed": [
+    "Auditoría transitiva completa de los imports o Mathlib.",
+    "Extracción o benchmark de un algoritmo ejecutable de S2.",
+    "Revisión de manuscritos o soluciones de S6/S7.",
+    "Certificación numérica con errores de solver y redondeo.",
+    "Evaluación científica o acceso al test final."
+  ]
+}
