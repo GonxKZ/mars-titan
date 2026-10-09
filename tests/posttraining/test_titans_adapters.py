@@ -243,6 +243,47 @@ def test_paired_arms_share_updates_labels_and_predictions(shared, matrix, tmp_pa
         assert engine.optimizer.calls == baseline.optimizer.calls > 3, arm
 
 
+@pytest.mark.parametrize("variant", ["transformer_direct", "mac_online"])
+def test_adapter_gradients_follow_the_chain_rule_of_the_full_continuation(
+    shared, matrix, tmp_path, variant
+):
+    """Con U nula, dL/dΔ = dL/dW, dL/dU = (α/r) dL/dW Vᵀ y dL/dV = 0 en cada paso.
+
+    El registrador no cambia pesos, así que todos los pasos se evalúan en el mismo punto que
+    los de la continuación completa. Sin recorte, el gradiente de cada corrección es la
+    regla de la cadena aplicada al del tensor original.
+    """
+    _, streams = shared
+    parent = predictor(streams, variant)
+    points = arm_points(matrix, variant)
+    points = points["head+readout+fusion" if "head+readout+fusion" in points else "head+fusion"]
+    full = posttrainer(streams, tmp_path / "full", clone(parent), max_grad_norm=None)
+    full.run()
+    model = adapted(parent, matrix, points)
+    arm = posttrainer(streams, tmp_path / "arm", model, max_grad_norm=None)
+    arm.run()
+    values = dict(model.named_parameters())
+    reference, records = named_records(full), named_records(arm)
+    assert len(records) == len(reference) > 3
+    checked = set()
+    for whole, adapted_record in zip(reference, records, strict=True):
+        for name, gradient in adapted_record.items():
+            module, rest = name.split(".parametrizations.")
+            tensor = rest.split(".")[0]
+            original = whole[f"{module}.{tensor}"]
+            if name.endswith(".delta"):
+                expected = original
+            elif name.endswith(".up"):
+                delta = model.get_submodule(module).parametrizations[tensor][0]
+                expected = delta.scaling * original @ values[name[: -len("up")] + "down"].T
+            else:
+                expected = torch.zeros_like(gradient)
+            torch.testing.assert_close(gradient, expected, rtol=1e-9, atol=1e-12)
+            checked.add(f"{module}.{tensor}")
+    targets = {f"{t.module}.{t.tensor}" for t in cm.titans_targets(matrix, points)}
+    assert checked == targets
+
+
 def test_resume_reproduces_the_continuous_adapter_run(shared, matrix, tmp_path):
     _, streams = shared
     parent = predictor(streams, "mac_online")
