@@ -1,6 +1,8 @@
 """Entrenador cronológico comprobado hasta el paso del optimizador, sin modificar pesos."""
 
+import copy
 import json
+from dataclasses import replace
 
 import pytest
 import torch
@@ -360,6 +362,52 @@ def test_resume_after_interruption_reproduces_the_continuous_run(shared, tmp_pat
     assert 1 <= len(retained) <= 3
 
 
+def test_completed_run_resumes_with_the_selected_state_not_the_latest(shared, tmp_path):
+    from mars_titan.training.checkpoints import save_training_state
+
+    _, streams = shared
+    engine = trainer(streams, tmp_path / "run")
+    report = engine.run()
+    selected = {
+        k: v.clone() for k, v in engine.predictor.state_dict().items() if torch.is_tensor(v)
+    }
+    checkpoints = tmp_path / "run/checkpoints"
+    latest = load_training_state(checkpoints, expected_identity=engine.identity)
+    # Estado de recuperación alterado a mano, sin optimizador, posterior al seleccionado.
+    latest["model"]["head.bias"] = latest["model"]["head.bias"] + 1.0
+    save_training_state(checkpoints, latest, identity=engine.identity)
+    resumed = trainer(streams, tmp_path / "run")
+    assert resumed.run(resume=True)["best_checkpoint"] == report["best_checkpoint"]
+    for name, value in resumed.predictor.state_dict().items():
+        if torch.is_tensor(value):
+            torch.testing.assert_close(value, selected[name], rtol=0, atol=0)
+
+
+def test_partition_inference_needs_a_later_partition_of_the_same_input_and_a_row_sink(
+    shared, tmp_path
+):
+    _, streams = shared
+    engine = trainer(streams, tmp_path / "run")
+    rows = []
+    with pytest.raises(ValueError, match="tramo"):
+        engine.predict_partition(streams["train"], rows)
+    early = copy.copy(streams["validation"])
+    early.phase = replace(early.phase, decision_start=streams["train"].phase.decision_end - 1)
+    with pytest.raises(ValueError, match="tramo"):
+        engine.predict_partition(early, rows)
+    with pytest.raises(ValueError, match="destino"):
+        engine.predict_partition(streams["validation"], None)
+    metrics = engine.predict_partition(streams["validation"], rows)
+    assert len(rows) == metrics["labels"] == metrics["samples"] > 0
+    flows = {flow for flow, *_ in rows}
+    assert all(levels is None for *_, levels in rows) and flows <= {
+        "US/A0000",
+        "US/A0001",
+        "US/A0002",
+    }
+    assert metrics == engine.evaluate(streams["validation"])
+
+
 def test_resume_rejects_a_changed_recipe(shared, tmp_path):
     _, streams = shared
     engine = trainer(streams, tmp_path / "run", checkpoint_updates=1)
@@ -547,7 +595,7 @@ def test_selection_follows_declared_patience_and_keeps_the_best_state(
 
 
 def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_path, monkeypatch):
-    from mars_titan.training.learning_hold import HOLD_ENV
+    from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 
     _, streams = shared
     hold = tmp_path / "hold.json"
@@ -562,7 +610,7 @@ def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_pa
     )
     assert type(engine.optimizer) is torch.optim.AdamW
     assert engine.identity["recipe"]["optimizer"] == "AdamW"
-    with pytest.raises(RuntimeError, match="bloqueo"):
+    with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
         engine.run()
     assert not (tmp_path / "run").exists()
 

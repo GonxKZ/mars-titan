@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T07:19:46.612871+00:00",
+  "commit": "ba0b779cf37166a1494679bd8b9f670da1440293",
+  "command": "uv run --no-sync python benchmarks/titans_chronological_memory.py --output <recibo>",
+  "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2",
+  "scope": "Grafo guardado de un tramo con entradas aleatorias. No es un perfil del recorrido completo. Solo cuda:0 registra el asignador.",
+  "hardware": {
+    "machine": "x86_64",
+    "processor": "desconocido",
+    "device": "cpu",
+    "cuda_device": null
+  },
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "threads": 2,
+  "recipe": "configs/titans/chronological-training-quantile.json",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    }
+  },
+  "truncation": 8,
+  "dimensions": {
+    "prices": 5,
+    "news": 384,
+    "charts": 512,
+    "fundamentals": 45,
+    "macro": 420
+  },
+  "measure": "Almacenamientos \u00fanicos guardados para el backward y alcanzables desde las salidas y el estado r\u00e1pido del tramo, sin par\u00e1metros",
+  "variants": {
+    "transformer_direct": {
+      "measure": {
+        "rows": 128,
+        "instants": 8,
+        "saved_graph_bytes": 230540288,
+        "saved_bytes_per_row_instant": 225137.0,
+        "fast_state_bytes_per_flow": 0.0,
+        "input_bytes_per_row_instant": 6729.0,
+        "parameter_bytes": 570132,
+        "forward_with_graph_seconds": 0.29603781501646154,
+        "backward_seconds": 0.2572018030041363,
+        "cuda_allocator_bytes": null
+      },
+      "estimates": {
+        "128": {
+          "flows": 128,
+          "graph_bytes_per_event": 28817536.0,
+          "graph_bytes_per_segment": 230540288.0,
+          "accumulated_bytes_per_segment": 237430784.0
+        },
+        "1024": {
+          "flows": 1024,
+          "graph_bytes_per_event": 230540288.0,
+          "graph_bytes_per_segment": 1844322304.0,
+          "accumulated_bytes_per_segment": 285664256.0
+        },
+        "us_4202": {
+          "flows": 4202,
+          "graph_bytes_per_event": 946025674.0,
+          "graph_bytes_per_segment": 7568205392.0,
+          "accumulated_bytes_per_segment": 456742352.0
+        },
+        "all_5023": {
+          "flows": 5023,
+          "graph_bytes_per_event": 1130863151.0,
+          "graph_bytes_per_segment": 9046905208.0,
+          "accumulated_bytes_per_segment": 500938424.0
+        }
+      }
+    },
+    "mac_disabled": {
+      "measure": {
+        "rows": 128,
+        "instants": 8,
+        "saved_graph_bytes": 231867424,
+        "saved_bytes_per_row_instant": 226433.03125,
+        "fast_state_bytes_per_flow": 65536.0,
+        "input_bytes_per_row_instant": 6729.0,
+        "parameter_bytes": 735772,
+        "forward_with_graph_seconds": 0.28494825298548676,
+        "backward_seconds": 0.20936351202544756,
+        "cuda_allocator_bytes": null
+      },
+      "estimates": {
+        "128": {
+          "flows": 128,
+          "graph_bytes_per_event": 28983428.0,
+          "graph_bytes_per_segment": 231867424.0,
+          "accumulated_bytes_per_segment": 255535136.0
+        },
+        "1024": {
+          "flows": 1024,
+          "graph_bytes_per_event": 231867424.0,
+          "graph_bytes_per_segment": 1854939392.0,
+          "accumulated_bytes_per_segment": 421209120.0
+        },
+        "us_4202": {
+          "flows": 4202,
+          "graph_bytes_per_event": 951471597.3125,
+          "graph_bytes_per_segment": 7611772778.5,
+          "accumulated_bytes_per_segment": 1008834032.0
+        },
+        "all_5023": {
+          "flows": 5023,
+          "graph_bytes_per_event": 1137373115.96875,
+          "graph_bytes_per_segment": 9098984927.75,
+          "accumulated_bytes_per_segment": 1160640216.0
+        }
+      }
+    },
+    "mac_frozen": {
+      "measure": {
+        "rows": 128,
+        "instants": 8,
+        "saved_graph_bytes": 279931008,
+        "saved_bytes_per_row_instant": 273370.125,
+        "fast_state_bytes_per_flow": 65536.0,
+        "input_bytes_per_row_instant": 6729.0,
+        "parameter_bytes": 735772,
+        "forward_with_graph_seconds": 0.33856516200467013,
+        "backward_seconds": 0.25333547199261375,
+        "cuda_allocator_bytes": null
+      },
+      "estimates": {
+        "128": {
+          "flows": 128,
+          "graph_bytes_per_event": 34991376.0,
+          "graph_bytes_per_segment": 279931008.0,
+          "accumulated_bytes_per_segment": 303598720.0
+        },
+        "1024": {
+          "flows": 1024,
+          "graph_bytes_per_event": 279931008.0,
+          "graph_bytes_per_segment": 2239448064.0,
+          "accumulated_bytes_per_segment": 469272704.0
+        },
+        "us_4202": {
+          "flows": 4202,
+          "graph_bytes_per_event": 1148701265.25,
+          "graph_bytes_per_segment": 9189610122.0,
+          "accumulated_bytes_per_segment": 1056897616.0
+        },
+        "all_5023": {
+          "flows": 5023,
+          "graph_bytes_per_event": 1373138137.875,
+          "graph_bytes_per_segment": 10985105103.0,
+          "accumulated_bytes_per_segment": 1208703800.0
+        }
+      }
+    },
+    "mac_online": {
+      "measure": {
+        "rows": 128,
+        "instants": 8,
+        "saved_graph_bytes": 383498464,
+        "saved_bytes_per_row_instant": 374510.21875,
+        "fast_state_bytes_per_flow": 65536.0,
+        "input_bytes_per_row_instant": 6729.0,
+        "parameter_bytes": 735772,
+        "forward_with_graph_seconds": 0.4351406159985345,
+        "backward_seconds": 0.3134097699949052,
+        "cuda_allocator_bytes": null
+      },
+      "estimates": {
+        "128": {
+          "flows": 128,
+          "graph_bytes_per_event": 47937308.0,
+          "graph_bytes_per_segment": 383498464.0,
+          "accumulated_bytes_per_segment": 407166176.0
+        },
+        "1024": {
+          "flows": 1024,
+          "graph_bytes_per_event": 383498464.0,
+          "graph_bytes_per_segment": 3067987712.0,
+          "accumulated_bytes_per_segment": 572840160.0
+        },
+        "us_4202": {
+          "flows": 4202,
+          "graph_bytes_per_event": 1573691939.1875,
+          "graph_bytes_per_segment": 12589535513.5,
+          "accumulated_bytes_per_segment": 1160465072.0
+        },
+        "all_5023": {
+          "flows": 5023,
+          "graph_bytes_per_event": 1881164828.78125,
+          "graph_bytes_per_segment": 15049318630.25,
+          "accumulated_bytes_per_segment": 1312271256.0
+        }
+      }
+    }
+  },
+  "mac_online_bytes_per_row_instant_by_rows": {
+    "64": 374511.4375,
+    "256": 374509.609375
+  },
+  "accumulation_rows": 128,
+  "populations": {
+    "128": 128,
+    "1024": 1024,
+    "us_4202": 4202,
+    "all_5023": 5023
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "gpu_workloads": 0,
+  "seconds": 5.00984664799762
+}

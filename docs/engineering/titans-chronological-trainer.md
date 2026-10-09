@@ -1,6 +1,6 @@
 # Entrenador cronológico de Titans-MAC
 
-`training/financial_run.py` ajusta los cuatro controles de [`FinancialPredictor`](titans-financial-adapter.md) (`transformer_direct`, `mac_disabled`, `mac_frozen` y `mac_online`) recorriendo los instantes de decisión en orden. Está implementado y comprobado técnicamente en CPU sin pasos de optimizador. No se ha ejecutado ningún entrenamiento: el bloqueo de #171 sigue vigente y el test de 2024 permanece cerrado.
+`training/financial_run.py` ajusta los cuatro controles de [`FinancialPredictor`](titans-financial-adapter.md) (`transformer_direct`, `mac_disabled`, `mac_frozen` y `mac_online`) recorriendo los instantes de decisión en orden. Está implementado y comprobado técnicamente en CPU sin pasos de optimizador. [`titans_walk_forward.py`](#ventana-walk-forward) lo usa para ajustar una ventana del protocolo desde 2000 y escribir predicciones por fila. No se ha ejecutado ningún entrenamiento: el bloqueo de #171 sigue vigente y el test de 2024 permanece cerrado.
 
 ## Recorrido y orden de cada evento
 
@@ -49,9 +49,97 @@ La receta propuesta está en [`configs/titans/chronological-training.json`](../.
 
 `save_training_state` conserva los dos estados de recuperación más recientes y el mejor estado aparte. Un estado de recuperación incluye modelo, optimizador, RNG, cursor, selección, historial, pesos rápidos y momentum por flujo, cola pendiente, errores acumulados y contadores. La barrera se sitúa justo después de una actualización, cuando no queda ningún grafo vivo. El cursor `stage="inputs"` indica que las etiquetas y el paso de ese evento ya están aplicados y que falta predecir sus entradas.
 
-Se guarda cada `checkpoint_updates` pasos, cada `checkpoint_seconds` y ante una solicitud de parada. La validación no se reanuda a mitad, porque es determinista y se repite desde su inicio. El mejor estado se guarda tras validar, sin estado rápido, ya que cada recorrido reinicia la memoria. Al terminar, el predictor queda con los parámetros seleccionados.
+Se guarda cada `checkpoint_updates` pasos, cada `checkpoint_seconds` y ante una solicitud de parada. La validación no se reanuda a mitad, porque es determinista y se repite desde su inicio. El mejor estado se guarda tras validar, sin estado rápido, ya que cada recorrido reinicia la memoria. Al terminar, el predictor queda con los parámetros seleccionados, cargados desde el mejor checkpoint con la huella que registra el informe. Reanudar una ejecución ya completa también carga ese estado. Antes se quedaba con el último checkpoint de recuperación, que con presupuesto fijo puede ser posterior al mejor.
 
-Con un optimizador real de PyTorch, `run` se niega a empezar mientras la protección local de aprendizaje declare `training_allowed=false`.
+Con un optimizador de `torch.optim`, `run` llama a `require_learning_allowed` antes de abrir la salida y lanza `LearningHoldError` mientras la protección local declare `training_allowed=false`. Las pruebas recorren el bucle con un optimizador propio que solo registra gradientes.
+
+## Inferencia de tramos posteriores
+
+`ChronologicalInference` reúne el recorrido por eventos que comparten el ajuste y la inferencia congelada, y `ChronologicalTrainer` lo amplía con el grafo, la pérdida y el paso. `predict` recorre validación, calibración o evaluación con la misma regla que la validación del ajuste: parámetros congelados, memoria rápida reiniciada, calentamiento de la fase sin etiquetas y predicciones emitidas antes de conocer su resultado. Exige un tramo con la misma entrada. `predict_partition` del entrenador exige además que sea del mismo corpus y posterior al ajuste. Cada etiqueta resuelta entrega a un destino de filas el flujo, la decisión, la predicción, el objetivo y, con la cabeza de cuantiles, los cinco niveles emitidos.
+
+## Memoria del tramo y acumulación por bloques
+
+Hasta la actualización, el recorrido conserva el grafo de todas las predicciones del tramo y del estado de todos sus flujos. La memoria viva crece con los activos por instante multiplicados por `truncation`. [`benchmarks/titans_chronological_memory.py`](../../benchmarks/titans_chronological_memory.py) lo mide con la receta de cuantiles (FP32, anchura 64, `truncation=8`) y las dimensiones reales de la edición histórica, en CPU y con entradas aleatorias. Cuenta los almacenamientos únicos guardados para el backward y alcanzables desde las salidas y el estado del tramo, sin parámetros.
+
+| Control | Grafo guardado por fila e instante |
+| --- | --- |
+| `transformer_direct` | 225 KB |
+| `mac_disabled` | 226 KB |
+| `mac_frozen` | 273 KB |
+| `mac_online` | 375 KB |
+
+El valor por fila es el mismo con 64, 128 y 256 filas. La mayor parte corresponde al codificador de precios sobre 64 sesiones. Con `mac_online`, el grafo vivo antes del backward sería:
+
+| Activos por instante | Por evento | Tramo de 8 instantes | Con `accumulation_rows=128` |
+| --- | --- | --- | --- |
+| 128 | 48 MB | 0,38 GB | 0,41 GB |
+| 1.024 | 384 MB | 3,1 GB | 0,57 GB |
+| 4.202 (todo EE. UU.) | 1,6 GB | 12,6 GB | 1,2 GB |
+| 5.023 (todos los activos con precios) | 1,9 GB | 15,0 GB | 1,3 GB |
+
+Son estimaciones lineales a partir de la medida, en unidades decimales, sin temporales de cada operación, contexto CUDA ni caché del asignador. Con más de unos mil activos por instante el tramo completo no cabe en los 8 GB de la GPU. El [recibo](../../reports/engineering/titans-chronological-memory-20261009.json) conserva las medidas de los cuatro controles.
+
+`ChronologicalRecipe.accumulation_rows` es opcional y vale `None` por defecto, con la identidad de receta anterior intacta. Con un entero, cada bloque del evento se predice con el mismo cálculo que en el recorrido por defecto y su grafo se corta en cuanto se emite la predicción. El tramo guarda los lotes de entrada y el estado de cada flujo al empezar. Al actualizar, `_replay` recorre los flujos con etiquetas en bloques de hasta `accumulation_rows`. Cada bloque parte de ese estado inicial, repite los lotes en el orden original, de modo que la memoria rápida avanza en el mismo orden, y retropropaga su pérdida media multiplicada por su fracción de etiquetas. La suma de los bloques es la pérdida media del tramo, así que hay un único paso por actualización. Los flujos son independientes dados los parámetros, que no cambian dentro del tramo.
+
+La memoria del tramo pasa a ser el grafo de un bloque, más los lotes de entrada (6,7 KB por fila e instante) y dos estados rápidos por flujo (64 KB cada uno en los controles con MAC). El coste previsto es un forward más por tramo. No se ha medido sobre el recorrido completo.
+
+Las pruebas de [`test_financial_run_accumulation.py`](../../tests/training/test_financial_run_accumulation.py) comparan, en los cuatro controles, con cabeza escalar y de cuantiles y bloques de uno y dos flujos, un ajuste de dos épocas con y sin acumulación. Predicciones, etiquetas, actualizaciones, métricas de validación y llamadas al optimizador coinciden bit a bit y los gradientes de cada paso coinciden con tolerancia relativa 10⁻¹⁰ en FP64. También comprueban que la repetición no supera el bloque declarado, que el grafo recorrido por cada backward baja a un tercio con bloques de un flujo sobre los tres del fixture, que la reanudación reproduce la ejecución continua y que solo se exporta un recorrido en la barrera posterior a un paso.
+
+Las recetas no declaran `accumulation_rows`. El valor para la campaña depende de los activos por instante y de la memoria medida en `cuda:0`.
+
+## Ventana walk-forward
+
+`run_titans_window` en [`training/titans_walk_forward.py`](../../src/mars_titan/training/titans_walk_forward.py) y el script [`run_titans_walk_forward.py`](../../scripts/run_titans_walk_forward.py) ajustan una variante en una ventana del protocolo v2 y escriben sus predicciones. Reciben la vista temporal con máscaras, el protocolo, la ventana, la receta, la variante, la semilla, la salida y el dispositivo, `cpu` o `cuda:0` explícito.
+
+El orden es fijo:
+
+1. `require_learning_allowed` se comprueba antes de leer ninguna fuente.
+2. El protocolo se recibe como ruta o como documento, y su huella es la de su JSON canónico. Debe contener la ventana y la semilla. La receta debe declarar `epochs` igual a `max_epochs` y la misma selección que `stopping_rule(protocol)`, hoy presupuesto fijo de 30 épocas, mejor estado y `min_delta = 1e-5`.
+3. La petición reúne las huellas de vista, protocolo y receta, la variante, la semilla, el dispositivo y el código. Si la salida ya contiene esa ventana completa, se comprueban las huellas de sus predicciones y se devuelve sin abrir la vista. Otra petición sobre la misma salida se rechaza.
+4. En `cuda:0` se exige CUDA disponible y `CUBLAS_WORKSPACE_CONFIG` antes de construir el modelo.
+5. Los contratos temporales de la vista deben coincidir con el protocolo y la ventana, con filas en los cuatro tramos y la reserva final cerrada.
+6. El ajuste usa `ChronologicalTrainer` con parámetros iniciales copiados de `pairing_source`. Después se carga el mejor estado y `predict_partition` escribe `validation-predictions.parquet`, `calibration-predictions.parquet` y `evaluation-predictions.parquet` con el esquema común (`sample_id`, `asset_id`, `market`, `prediction_at`, `target`, `prediction` y `zero`) y los cinco cuantiles cuando la receta los declara. Cada etiqueta puntuada debe llegar al destino, y `check_view_rows`, la misma comprobación que usa la GRU candidata, exige exactamente las filas de la vista por mercado, activo e instante, con el mismo objetivo. Si no coinciden, informa de cuántas faltan, sobran, se repiten o cambian de objetivo. En validación, el MAE por sesión recalculado debe reproducir la puntuación seleccionada.
+7. `run.json` guarda la petición, la identidad con la receta completa, el resumen del ajuste, el estado elegido en `checkpoint` y la huella, filas, bytes y métricas de cada tramo. Cada Parquet se escribe solo después de conciliar sus filas, y `run.json` se actualiza tras cada tramo confirmado.
+
+Una pausa durante el ajuste se reanuda desde su último checkpoint coherente. Una pausa entre tramos conserva los ya escritos y continúa con el siguiente.
+
+### Política de memoria en inferencia
+
+La política `reset_each_pass_then_input_warmup_v1` es la misma para los cuatro controles:
+
+- Cada recorrido, sea una época de ajuste o uno de los tres tramos predichos, empieza con el estado inicial de cada flujo.
+- Antes de validación, calibración y evaluación se observan las entradas de los `warmup_months` anteriores, sin emitir predicciones ni puntuar etiquetas. El calentamiento no empieza antes del origen del ajuste. Las recetas declaran 12 meses.
+- La memoria rápida solo se escribe en `mac_online`, con la regla asociativa sobre entradas. `mac_frozen` lee M0, `mac_disabled` no lee memoria y `transformer_direct` no tiene estado.
+- Las etiquetas maduras se comparan con la predicción emitida y nunca se escriben en la memoria. El banco episódico sigue desactivado.
+
+Reiniciar en cada tramo hace que la predicción de evaluación no dependa de haber recorrido antes la calibración y que los cuatro controles vean exactamente las mismas entradas. Encadenar la memoria entre tramos también sería causal, pero mezclaría la longitud de la historia con la variante. El valor de 12 meses es una declaración previa, no un ajuste con datos. Las pruebas alteran entradas posteriores al corte de cada tramo y anteriores al calentamiento, y comprueban que ninguna predicción de otro tramo cambia.
+
+### Conexión con la campaña con máscaras
+
+`training/masked_campaign.py` registra los ejecutores `("titans_mac", "fit")` y `("titans_mac", "carry")` junto a los de la GRU candidata. Solo crean trabajos si la configuración de campaña declara la sección opcional `titans_mac`, con el mismo patrón que `episodic_gru`:
+
+```json
+"titans_mac": {
+  "recipe": "../titans/chronological-training-quantile.json",
+  "arms": {"titans_mac_online": "mac_online", "titans_mac_frozen": "mac_frozen"},
+  "search_seed": 42
+}
+```
+
+`campaign_plan` valida la receta sin importar PyTorch: política de entradas con máscaras, nombre, cabeza `quantile_head_v1`, pérdida pinball, épocas y selección iguales a `stopping_rule(protocol)` y sección `walk_forward`. Cada brazo Titans de la comparación necesita una variante distinta. El caso de cada trabajo contiene la ruta y la huella de la receta, la variante y la semilla. Al no haber búsqueda de hiperparámetros, la semilla de búsqueda tiene un único candidato y las demás semillas son finalistas con el mismo caso. La huella de la receta forma parte de la identidad de cada trabajo. Sin la sección, el plan y la identidad de la campaña no cambian y `check` sigue listando la familia como pendiente.
+
+- `titans_fit` recibe el `JobRun` del trabajo, comprueba que la receta conserva la huella planificada, toma el protocolo del contrato temporal de la vista y llama a `run_titans_window` sobre el intento del trabajo. Una pausa se traduce en la pausa de la campaña y el siguiente intento reanuda desde el checkpoint coherente. La campaña lee del informe las predicciones de calibración y evaluación, el MAE de validación y el estado elegido, y comprueba las mismas filas que los demás brazos.
+- `titans_carry` predice una ventana trasladada de la variante B con `carry_titans`, que también exige el permiso de aprendizaje antes de leer nada. Comprueba que el ancla es una ventana de Titans completada sobre su vista, que dejó de aprender antes de la calibración trasladada (`carried_window`) y que el estado elegido conserva su huella. Carga ese estado en un predictor construido con la entrada de la nueva vista, y solo admite que cambien las huellas de la vista y del índice. Después predice calibración y evaluación con `ChronologicalInference`, sin ningún ajuste, aplica la misma comprobación de filas que la ventana y escribe `carry.json` con la huella del estado del ancla.
+- La política de memoria de un traslado es la misma de la ventana, `carried_memory_policy`: los parámetros son los elegidos en el ancla, la memoria rápida nunca se transfiere desde el ancla y cada tramo empieza en el estado inicial con su propio calentamiento de 12 meses de entradas.
+- El recibo de ventana de cada mercado lo escribe la campaña con el estado elegido como `parent`. En una ventana trasladada es el del ancla.
+
+[`test_titans_campaign.py`](../../tests/training/test_titans_campaign.py) ejecuta en CPU una campaña B sobre US con las vistas v2 del corpus técnico. `titans_mac_online` usa los ejecutores reales con un optimizador que solo registra gradientes y los demás brazos son los dobles de la campaña. Se comprueban los 7 ajustes y 12 traslados del plan, las mismas filas y objetivos que la GRU de referencia en cada ventana, los cuantiles y la ausencia de filas de 2024, que cada traslado parte del estado elegido en su ancla con la política declarada, los 19 recibos de ventana, el manifiesto de fuentes y la repetición bit a bit de un traslado. También se rechazan anclas incoherentes, recetas cambiadas después de planificar, estados de otra arquitectura, predicciones sin cuantiles y traslados con una fila repetida o un objetivo cambiado.
+
+### Comprobaciones de la ventana
+
+[`test_titans_walk_forward.py`](../../tests/training/test_titans_walk_forward.py) usa un protocolo técnico con una ventana y el corpus cronológico con máscaras. Comprueba las fases de todas las ventanas US, CN y conjuntas con calentamiento 0, 12 y 60 meses (este último recortado en el origen), que los tres Parquet de los cuatro controles coinciden en filas y objetivos con `CorpusDataset.batches` y que `walk_forward_comparison` los acepta en una evaluación completa, que no hay filas de 2024, la copia de parámetros emparejados, la invariancia ante perturbaciones futuras y anteriores al calentamiento, la reanudación con gradientes y salidas idénticos, el rechazo de peticiones o archivos alterados, el bloqueo antes de crear nada, el rechazo de recetas y protocolos incoherentes, de vistas con la reserva abierta o un tramo vacío y de salidas con archivos ajenos, y que una fila perdida o un objetivo cambiado detienen la ventana sin dejar Parquet sin confirmar.
+
+El [recibo de verificación](../../reports/engineering/titans-walk-forward-verification-20261009.json) registra cada archivo de pruebas ejecutado en CPU sobre develop `6119a7ea`, con 857 pruebas superadas y 4 omitidas que exigen `cuda:0` o vistas reales, y tres rondas de mutaciones dirigidas con 52 de 52 detectadas tras añadir las pruebas que motivaron las supervivientes. Ninguna ejecución dio pasos de optimizador.
 
 ## Identidades
 
@@ -103,6 +191,8 @@ Es una propiedad del núcleo sin entrenar, no un resultado predictivo. Puede imp
 
 - Ejecución real tras levantar el bloqueo, con el protocolo y las ventanas de #363.
 - Comprobación CUDA escrita y sin ejecutar: `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 UV_PROJECT_ENVIRONMENT=<entorno> uv run --no-sync python -m pytest -q tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps`. Después hay que perfilar una pasada en `cuda:0` con FP32, medir memoria y sincronizaciones y comprobar la recuperación en ese dispositivo.
+- La ruta de la ventana no tiene todavía una comprobación CUDA propia. Con el bloqueo levantado, una ventana se lanzaría con `CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 PYTHONPATH=src:. uv run --no-sync python scripts/run_titans_walk_forward.py --view <vista>/manifest.json --protocol <protocolo> --window <ventana> --recipe configs/titans/chronological-training-quantile.json --variant mac_online --seed 42 --output <salida> --device cuda:0`.
+- Medir en `cuda:0` el pico del asignador de un tramo antes de fijar `accumulation_rows`: `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 PYTHONPATH=src:. uv run --no-sync python benchmarks/titans_chronological_memory.py --device cuda:0 --output reports/engineering/titans-chronological-memory-cuda-<fecha>.json`. Con `--rows` igual al bloque elegido se obtiene el pico de la repetición. El coste del forward repetido sobre el recorrido completo tampoco se ha medido.
 - Banco episódico, M1 a M3, K mayor que 1 y C siguen fuera de este entrenador, porque `FinancialPredictor` exige banco desactivado y K=1 y el factorial CM-v1 tiene su propio contraste.
 - Repetir con `gate_bias` la observación de normas y gradientes del fixture de este entrenador. La inicialización ya está declarada en las recetas, pero esa medida concreta se hizo con v1.
 - Medir `labels_without_graph` en fases conjuntas de dos mercados.

@@ -7,8 +7,9 @@ definición. El plan enumera cada ajuste y cada predicción trasladada antes de 
 datos y respeta los límites declarados. Este módulo no lee vistas, no reserva la GPU
 y no ejecuta ningún ajuste.
 
-La sección opcional ``episodic_gru`` conecta la GRU candidata con su receta cronológica.
-Sin ella, sus brazos siguen declarados como punto de extensión pendiente.
+Las secciones opcionales ``episodic_gru`` y ``titans_mac`` conectan la GRU candidata y
+los controles de Titans-MAC con sus recetas cronológicas. Sin ellas, sus brazos siguen
+declarados como punto de extensión pendiente.
 
 Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
 cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
@@ -23,7 +24,7 @@ import math
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
-from mars_titan.data.input_policy import masked_inputs
+from mars_titan.data.input_policy import HISTORICAL_MASKED, masked_inputs
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 
@@ -37,10 +38,16 @@ HELDOUT_RETENTION = "heldout_full_train_sessions_v1"
 NEURAL_KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
 TABULAR_KINDS = ("ridge", "xgboost")
 NEURAL, TABULAR = "neural_reference", "tabular_reference"
+# Controles de Titans-MAC: brazo de la comparación y variante del entrenador cronológico.
+TITANS = "titans_mac"
+TITANS_VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
+TITANS_RECIPE = "titans_financial_chronological_v1"
 FIT, CARRY = "fit", "carry"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
+# Familias con sección opcional en la campaña. Sin ella siguen como punto de extensión.
+OPTIONAL = (EPISODIC, TITANS)
 
 # Familias de la comparación sin entrenador conectado a estas vistas. Cada una se
 # conectará con un planificador y un ejecutor propios en este mismo registro.
@@ -53,9 +60,13 @@ EXTENSION_POINTS = {
             "memoria y caudal en cuda:0, elegir accumulation_rows o recompute y ampliar límites"
         ),
     ),
-    "titans_mac": dict(
+    TITANS: dict(
         issue=23,
-        pending="Entrenador cronológico de los controles Titans-MAC sin conectar a las vistas v2",
+        pending=(
+            "El ajuste por ventana y la predicción trasladada existen y se conectan con la "
+            "sección titans_mac. Falta declararla en las campañas A y B con su presupuesto, "
+            "después de medir memoria y caudal en cuda:0 y elegir accumulation_rows"
+        ),
     ),
     "mars_titan": dict(
         issue=366, pending="Ampliaciones de MARS-TITAN sobre el núcleo con sus puntos de inserción"
@@ -100,6 +111,7 @@ _NEURAL = {
 }
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
+_TITANS = {"recipe", "arms", "search_seed"}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 
 
@@ -272,13 +284,64 @@ def _episodic(section, arms, rule, policy, base):
     return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
 
 
+def _titans(section, arms, rule, policy, base):
+    """Brazos de Titans-MAC con su receta común y su control, sin importar PyTorch.
+
+    `training.titans_walk_forward` vuelve a validar la receta completa en cada ajuste.
+    """
+    if section is None:
+        return None
+    _require(
+        isinstance(section, dict) and set(section) == _TITANS and policy == HISTORICAL_MASKED,
+        "La sección Titans no cumple o la campaña no usa la política con máscaras",
+    )
+    path = (base / section["recipe"]).resolve()
+    recipe, digest = read_manifest(path, 64 * 1024)
+    declared = {name for name, arm in arms.items() if arm["family"] == TITANS}
+    mapping = section["arms"]
+    _require(
+        isinstance(mapping, dict)
+        and set(mapping) == declared
+        and set(mapping.values()) <= set(TITANS_VARIANTS)
+        and len(set(mapping.values())) == len(mapping)
+        and all(arms[name]["output"] == QUANTILE_HEAD for name in mapping),
+        "Cada brazo Titans de la comparación necesita una variante distinta con cuantiles",
+    )
+    seed = section["search_seed"]
+    _require(
+        all(seed in _seeds(arms[name]["seeds"], name) for name in mapping),
+        "La semilla de búsqueda de Titans debe estar en todos sus brazos",
+    )
+    selection = {key: value for key, value in rule.items() if key != "max_epochs"}
+    _require(
+        isinstance(recipe, dict)
+        and recipe.get("recipe_name") == TITANS_RECIPE
+        and recipe["predictor"].get("head") == QUANTILE_HEAD
+        and recipe["recipe"].get("loss") == PINBALL
+        and recipe["recipe"].get("epochs") == rule["max_epochs"]
+        and recipe["recipe"].get("selection") == selection
+        and isinstance(recipe.get("walk_forward"), dict),
+        "La receta de Titans no aplica la cabeza común ni la regla de parada del protocolo",
+    )
+    candidates = {
+        name: [
+            (
+                "recipe",
+                dict(recipe=str(path), recipe_sha256=digest, variant=variant, seed=seed),
+            )
+        ]
+        for name, variant in mapping.items()
+    }
+    return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
+
+
 def load_campaign(path):
     """Validar la campaña y resolver comparación, protocolos, regla y candidatos."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
     _require(
         isinstance(config, dict)
-        and _FIELDS <= set(config) <= _FIELDS | {EPISODIC}
+        and _FIELDS <= set(config) <= _FIELDS | {EPISODIC, TITANS}
         and config["schema_version"] == 1
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
@@ -348,7 +411,10 @@ def load_campaign(path):
         period=every // step,
         neural=_neural(config["neural"], arms, rule, policy),
         tabular=_tabular(config["tabular"], arms, policy, base),
-        **{EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base)},
+        **{
+            EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base),
+            TITANS: _titans(config.get(TITANS), arms, rule, policy, base),
+        },
     )
 
 
@@ -390,11 +456,11 @@ def _arm_specs(campaign):
     specs = []
     arms = campaign["comparison_config"]["arms"]
     sections = [(NEURAL, campaign["neural"]), (TABULAR, campaign["tabular"])]
-    if campaign.get(EPISODIC) is not None:
-        sections.append((EPISODIC, campaign[EPISODIC]))
+    sections += [(family, campaign[family]) for family in OPTIONAL if campaign.get(family)]
     for family, section in sections:
         for name, kind in section["arms"].items():
-            model = {NEURAL: "neural", EPISODIC: EPISODIC}.get(family, kind)
+            # En las secciones opcionales, la familia también nombra el modelo del ejecutor.
+            model = {NEURAL: "neural", EPISODIC: EPISODIC, TITANS: TITANS}.get(family, kind)
             specs.append(
                 dict(
                     arm=name,
