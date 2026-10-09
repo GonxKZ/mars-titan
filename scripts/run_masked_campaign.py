@@ -4,9 +4,9 @@
 vistas de cada ámbito desde la supervisión histórica. `run` ejecuta o reanuda los
 trabajos y se detiene si rige el bloqueo de aprendizaje. `sources` publica el
 manifiesto de fuentes de un ámbito. `posttraining check|run` valida o ejecuta la etapa
-de la matriz de adaptadores sobre una campaña base confirmada. `throughput` mide el
-caudal neuronal en la GPU sin pasos de optimizador y estima las horas de las variantes
-indicadas.
+de la matriz de adaptadores sobre una campaña base confirmada. `throughput` mide en la
+GPU, sin pasos de optimizador, el caudal de las familias declaradas y estima las horas
+de las variantes indicadas.
 """
 
 import sys

@@ -182,7 +182,7 @@ uv run --no-sync python scripts/run_masked_campaign.py posttraining run \
   --views US+CN=<vistas>/US+CN --campaign-output <campaña> --output <etapa>
 ```
 
-La etapa está registrada en `LATER_STAGES` de `training/campaign_plan.py` con la matriz de versión 2, la configuración de cada variante, su punto de entrada (`campaign_stage:run_stage`) y ninguna tarea pendiente, y `check` de la campaña la informa así. La orden única de la campaña la ejecuta con el subcomando `posttraining`, que delega en `campaign_stage.main`. La orden propia del módulo sigue disponible con los mismos argumentos.
+La etapa está registrada en `LATER_STAGES` de `training/campaign_plan.py` con la matriz de versión 2, la configuración de cada variante, su punto de entrada (`campaign_stage:run_stage`) y ninguna tarea pendiente, y `check` de la campaña la informa así. La orden única de la campaña la ejecuta con el subcomando `posttraining`, que delega en `campaign_stage.main`. La orden propia del módulo sigue disponible con los mismos argumentos. La [medición de caudal](../research/training-campaign-2000.md#medición-de-caudal) de la campaña mide también sus casos y estima sus horas.
 
 ## Protección del aprendizaje
 
