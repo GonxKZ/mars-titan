@@ -10,17 +10,21 @@ from types import MappingProxyType
 
 import numpy as np
 
-from .native_runtime import ACCOUNT, POSITION, TRADE, load_library
-from .portfolio import Portfolio, Quote, amount, instant
+from .native_runtime import ACCOUNT, POSITION, RULES, TRADE, load_library
+from .portfolio import Portfolio, Quote, _at, amount, instant
 
-REASONS = {1: "missing_open", 2: "unknown_liquidity", 3: "cash_liquidity_or_lot_limit"}
+REASONS = {
+    1: "missing_open",
+    2: "unknown_liquidity",
+    3: "cash_liquidity_or_lot_limit",
+    4: "limit_up",
+    5: "limit_down",
+}
 
 
 class NativePortfolio:
     def __init__(self, instruments, cash, *, cost_bps=10, participation=0.01, library=None):
         self._schema = Portfolio(instruments, cash, cost_bps=cost_bps, participation=participation)
-        if any(instrument.restricted for instrument in self._schema.instruments.values()):
-            raise ValueError("El núcleo nativo todavía no aplica lotes, límites ni impuestos")
         if len(cash) > 32:
             raise ValueError("El núcleo nativo admite como máximo 32 cuentas")
         self.library = load_library(library)
@@ -33,6 +37,7 @@ class NativePortfolio:
             dtype=np.uint32,
         )
         self._lots = np.asarray([self.instruments[a].lot for a in self.assets], dtype=np.float64)
+        self._rules = self._static_rules()
         self.rate, self.participation = self._schema.rate, participation
         self._lock = threading.RLock()
         self._error = ctypes.create_string_buffer(512)
@@ -83,6 +88,37 @@ class NativePortfolio:
             self._metadata,
             self._held_order,
         ) = (positions, accounts, retired, prices, quote_keys, metadata, held_order)
+
+    def _static_rules(self):
+        """Reglas fijas por activo y grupos que comparten periodos. None sin reglas declaradas."""
+        if not any(instrument.restricted for instrument in self.instruments.values()):
+            return None
+        rules = np.zeros(len(self.assets), dtype=RULES)
+        groups = {}
+        for index, asset in enumerate(self.assets):
+            instrument = self.instruments[asset]
+            rules[index]["minimum_order"] = instrument.minimum_order
+            rules[index]["odd_lot_exit"] = instrument.odd_lot_exit
+            groups.setdefault((instrument.price_limits, instrument.taxes), []).append(index)
+        self._rule_groups = tuple(
+            (limits, taxes, np.asarray(indices)) for (limits, taxes), indices in groups.items()
+        )
+        self._limited = np.asarray([bool(self.instruments[a].price_limits) for a in self.assets])
+        return rules
+
+    def _market_rules(self, open_at):
+        """Banda, timbre y cierre de referencia vigentes en la apertura, como Portfolio."""
+        if self._rules is None:
+            return None
+        rules = self._rules
+        # Sin eventos en la apertura, la referencia es el último cierre de la cartera.
+        rules["reference"] = np.where(self._limited, self._prices[:, 3], np.nan)
+        for limits, taxes, indices in self._rule_groups:
+            band, tax = _at(limits, open_at), _at(taxes, open_at)
+            rules["band"][indices] = band.band if band else 0.0
+            rules["buy_tax"][indices] = tax.buy if tax else 0.0
+            rules["sell_tax"][indices] = tax.sell if tax else 0.0
+        return rules
 
     def _frame(self, quotes):
         self._schema._quotes(quotes)
@@ -229,7 +265,7 @@ class NativePortfolio:
         prices = frame.copy()
         metadata = dict(self._metadata, last_open=open_at, last_close=close_at)
         counts["native_steps"] += 1
-        self.library.step(self, frame, open_at, close_at)
+        self.library.step(self, frame, open_at, close_at, self._market_rules(open_at))
         result, held_order = self._result(self._next_positions, self._next_accounts, frame)
         (
             self._positions,

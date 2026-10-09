@@ -12,13 +12,53 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
 
 from .market import MAX_TAPE_CELLS, MarketTape
-from .portfolio import MAX_INSTRUMENTS, CorporateAction
+from .portfolio import MAX_INSTRUMENTS, CorporateAction, Instrument, Period
 
 PRICE_COLUMNS = ("open", "high", "low", "close", "volume")
 MAX_BYTES = 256 * 1024**2
 
 
-def write_tape(tape, destination):
+def _instrument(identity):
+    """Reconstruir un Instrument desde su identidad y comprobar que la conserva."""
+    values = dict(identity)
+    for key in ("price_limits", "taxes"):
+        if key in values:
+            values[key] = tuple(Period(**period) for period in values[key])
+    instrument = Instrument(**values)
+    if instrument.identity() != identity:
+        raise ValueError("Las reglas de mercado del escenario no conservan su identidad")
+    return instrument
+
+
+def instruments_from_manifest(manifest, assets):
+    """Reglas de mercado de un manifiesto de versión 2, o None en la versión 1."""
+    rules = manifest.get("instruments")
+    if (manifest.get("schema_version") == 2) != (rules is not None):
+        raise ValueError("El manifiesto declara reglas de mercado sin su versión")
+    if rules is None:
+        return None
+    if not isinstance(rules, dict) or set(rules) != set(assets):
+        raise ValueError("Las reglas de mercado deben cubrir cada activo")
+    try:
+        return {asset: _instrument(rules[asset]) for asset in assets}
+    except TypeError as error:
+        raise ValueError("Las reglas de mercado del escenario no tienen su contrato") from error
+
+
+def write_tape(tape, destination, *, instruments=None):
+    """Escribir la cinta. Con ``instruments`` el manifiesto pasa a la versión 2 con sus reglas."""
+    rules = None
+    if instruments is not None:
+        if (
+            not isinstance(instruments, dict)
+            or set(instruments) != set(tape.assets)
+            or any(
+                not isinstance(item, Instrument) or item.currency != tape.currency
+                for item in instruments.values()
+            )
+        ):
+            raise ValueError("Las reglas declaradas deben cubrir cada activo en su moneda")
+        rules = {asset: instruments[asset].identity() for asset in tape.assets}
     destination = Path(destination)
     safe_destination(destination)
     destination.mkdir(parents=True, exist_ok=False)
@@ -36,20 +76,20 @@ def write_tape(tape, destination):
     with pending.open("rb") as stream:
         os.fsync(stream.fileno())
     os.replace(pending, path)
-    atomic_json(
-        destination / "manifest.json",
-        dict(
-            schema_version=1,
-            identity=tape.identity,
-            actions=[asdict(action) for action in tape.actions],
-            tape_sha256=tape.sha256,
-            file_sha256=sha256(path),
-            file_bytes=path.stat().st_size,
-            sessions=len(tape),
-            assets=len(tape.assets),
-            final_test_opened=False,
-        ),
+    manifest = dict(
+        schema_version=1 if rules is None else 2,
+        identity=tape.identity,
+        actions=[asdict(action) for action in tape.actions],
+        tape_sha256=tape.sha256,
+        file_sha256=sha256(path),
+        file_bytes=path.stat().st_size,
+        sessions=len(tape),
+        assets=len(tape.assets),
+        final_test_opened=False,
     )
+    if rules is not None:
+        manifest["instruments"] = rules
+    atomic_json(destination / "manifest.json", manifest)
 
 
 def read_tape(directory):
@@ -60,7 +100,7 @@ def read_tape(directory):
     safe_destination(path)
     count, sessions = manifest["assets"], manifest["sessions"]
     if (
-        manifest.get("schema_version") != 1
+        manifest.get("schema_version") not in (1, 2)
         or manifest.get("final_test_opened") is not False
         or type(count) is not int
         or not 1 <= count <= MAX_INSTRUMENTS
@@ -88,6 +128,7 @@ def read_tape(directory):
         for name in selected
     }
     identity = manifest["identity"]
+    instruments_from_manifest(manifest, identity["assets"])
     if not np.all(values["asset"] == np.asarray(identity["assets"])[None]):
         raise ValueError("El orden de los activos no corresponde a su manifiesto")
     for name in ("close_time", "open_time", "prediction_time"):

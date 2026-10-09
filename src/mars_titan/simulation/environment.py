@@ -57,8 +57,6 @@ class FinancialEnv(gym.Env):
             )
         ):
             raise ValueError("Las reglas declaradas deben cubrir cada activo en su moneda")
-        if backend == "native" and instruments is not None:
-            raise ValueError("El motor nativo todavía no aplica reglas de mercado declaradas")
         audit = tape.identity.get("audit") or {}
         if (
             tape.domain == "real"
@@ -104,6 +102,11 @@ class FinancialEnv(gym.Env):
             self.identity["instruments_sha256"] = hashlib.sha256(
                 json.dumps(rules, sort_keys=True).encode()
             ).hexdigest()
+            if backend == "native":
+                from .native_runtime import RULES_CONTRACT
+
+                # El motor nativo aplica las reglas con su propio contrato binario.
+                self.identity["native_market_rules"] = RULES_CONTRACT
         self.action_space = gym.spaces.Discrete(6)
         self.observation_space = gym.spaces.Box(-10, 10, (6 * len(tape.assets) + 2,), np.float32)
         self.book, self.cursor, self.done, self.paused = None, 0, True, False
