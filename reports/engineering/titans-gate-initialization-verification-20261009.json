@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T05:39:44.403672+00:00",
+  "issue": 27,
+  "develop_commit": "90ff5c2729fd82178cfbeed0b9008d0d74121bed",
+  "tested_commits": {
+    "core": "f1c86d3a",
+    "diagnostic": "5014e4d5",
+    "financial": "72ee2222"
+  },
+  "scope": "Comprobación técnica en CPU sin optimizador, entrenamiento, datos reales ni GPU",
+  "source_sha256": {
+    "src/mars_titan/models/titans/config.py": "6a977a857dcb29b8fbc8af345420f35679b558008ccd63834e24d652ce978ecb",
+    "src/mars_titan/models/titans/neural_memory.py": "efdc184366aba09e129e8dff28fdfe81998f979e623eada04d7fc64c7dce1a65",
+    "tests/models/titans/test_gate_bias.py": "eed7d4fa61a800c2f337ee2eb05ead27f6f0868ed36062948e19518cbc972d42",
+    "tests/models/titans/test_initialization_device.py": "6c2a66c8872a749cbf984f540adc784cde83282dfe98015537d50f22e3e99f22",
+    "benchmarks/titans_gate_retention.py": "a000951967dd80e9c7208009b9deeab96f85a06019811287dc5af39093e3f283"
+  },
+  "sources": {
+    "titans_neurips_2025": {
+      "sha256": "9b0f0c4a0163abab6bc2f8acb105ae3c95f3fff25573aa71a252b0b9c040bf78",
+      "checked": [
+        "Ecuaciones 1–3, p. 3–4: η_t y θ_t dependientes de la entrada, α_t ∈ [0, 1]^{d_in}",
+        "Sección 3.3: memoria con residual y LayerNorm",
+        "Apéndice E.1: optimizador externo, sin inicialización de las tasas"
+      ]
+    },
+    "titans_arxiv_v1": {
+      "sha256": "a65e4a7d02784df1a040b487127e6dd09fff4474e5caf94d93263af3d50cfbc2",
+      "checked": [
+        "Sección 3.2: tasas por token en los experimentos, alternativa por chunk"
+      ]
+    },
+    "finding": "Ninguna versión fija forma funcional, bias ni inicialización de α, η y θ.",
+    "unofficial_implementation": {
+      "url": "https://github.com/lucidrains/titans-pytorch",
+      "commit": "1d40c445fa1794fb28582c721786482b5b683e47",
+      "commit_date": "2026-07-13T14:26:23Z",
+      "file": "titans_pytorch/neural_memory.py",
+      "file_sha256": "dae13545860b031111a274916022dd2d8a818573eaf9f699dfef81336d402a07",
+      "license": "MIT, Copyright (c) 2025 Phil Wang",
+      "imported_or_executed": false,
+      "observed": [
+        "Linear con bias y sigmoide para las tres tasas, θ = max_lr·σ con max_lr 1,0 por defecto",
+        "init_decay_bias, init_momentum_bias e init_adaptive_step_bias ponen a cero los pesos",
+        "Memoria por defecto con LayerNorm y residual"
+      ]
+    },
+    "related": {
+      "gu2023mamba": "arXiv 2312.00752v2, sección 3.6: Δ como bias, τ_Δ⁻¹(Uniform([0.001, 0.1]))",
+      "beck2024xlstm": "NeurIPS 2024: limitación (iv) y tabla 6 sobre el bias de la puerta de olvido"
+    }
+  },
+  "adapter_scale_at_initialization": {
+    "method": "FinancialPredictor mac_online FP64, fixture de test_financial_adapter.py, 40 decisiones, ganchos de lectura",
+    "hidden_32": {
+      "observed_norm": 0.1055,
+      "value_norm": 0.0616,
+      "alpha_logit_std": 0.0103,
+      "alpha_range": [
+        0.4922,
+        0.5089
+      ],
+      "fused_token_norm": 0.978
+    },
+    "hidden_64": {
+      "observed_norm": 0.1576,
+      "value_norm": 0.0852,
+      "alpha_logit_std": 0.011,
+      "alpha_range": [
+        0.4933,
+        0.5095
+      ],
+      "fused_token_norm": 1.094
+    }
+  },
+  "v1_parity": {
+    "method": "Mismo script con las fuentes exportadas de develop y con las de la rama",
+    "mac_configurations": 8,
+    "mac_identical": true,
+    "mac_digests": {
+      "torch.float32_32_2": {
+        "final_state": "02dd916650521eec83a61b024c0b06aa407741d6b3e755f2c98e2b7f2344b25f",
+        "mac_fingerprint": "4a1bdbe431c70033f014103fb10ae7344d5e2b347a68c18f6ae6535451829259",
+        "memory_fingerprint": "b89837a4296f67874e0e0904408a2a0bd57300cf35be44cc9b3613513463c08d",
+        "outputs": "057bcc8818e9602b2aea2f75f70e4ad79f37779eaa4aa214c315f6edbaafe3ed",
+        "state_dict": "338faa35f5e1b91e52c9829d8199cf5888242ce68c502b84fc5ff0f1f42fe92c",
+        "state_dict_keys": "5f5b94d4d7b391e5771acf25a2ea4c31e1943ae30b19aa70fb4aa3cc3a512877"
+      },
+      "torch.float32_4_2": {
+        "final_state": "9b15717d74767897008fc22379a245f7a306e0766e9020f4ebf5a196c79b2324",
+        "mac_fingerprint": "b4fe08388d57a3a320be482b615480f3fc96f2a2e35b5c83825b7f8dbf627a48",
+        "memory_fingerprint": "f392a1b38e7db5362ecafcb701e8561753c6243a78fb50b78ff5d6d0b40c3574",
+        "outputs": "202d0bc64b27757a0883470799d0d62ac99203c0287792ac8d8018f09aefb371",
+        "state_dict": "71edd0be66513dfeb450aaa7488eb3fde56872918bcd437be3d961943f6a2791",
+        "state_dict_keys": "5f5b94d4d7b391e5771acf25a2ea4c31e1943ae30b19aa70fb4aa3cc3a512877"
+      },
+      "torch.float32_64_2": {
+        "final_state": "cb31d3021deac7bea71b28a750d140527ff0ddf03b1228a3a0e54e709421a34d",
+        "mac_fingerprint": "06183af1dd7face39c6b12c8b6426ae62a5d7e5df9d674204f089c129582c624",
+        "memory_fingerprint": "de56e73b3d68e9c5238d16ad1eba97d57f68058aa545b9117d0c8e089f5f8b59",
+        "outputs": "a704a12ae68a9812ab0cc2a8a3146a13674843876737391175f27d973227b0ac",
+        "state_dict": "6a205b6f65cd13a661599a0be95a7b06af5df86c08f462f94639781982037e35",
+        "state_dict_keys": "5f5b94d4d7b391e5771acf25a2ea4c31e1943ae30b19aa70fb4aa3cc3a512877"
+      },
+      "torch.float32_8_1": {
+        "final_state": "8e22df7259277cd32c99a9c765a9bea1fb8a5bba3bb8d6bdfe9aa7b061eb32a2",
+        "mac_fingerprint": "65f82e84b34117a08ad8afae642ef44957790376bc6489612de6c4c5b0e94053",
+        "memory_fingerprint": "7c28b4f5a69dc1227ead881ebc318e95622a2400c97d710209a08acbfd73cfbe",
+        "outputs": "ca139fbc861cce494b88cd441dec0d150d0e4ae5201a9ce40e3709ba24610b27",
+        "state_dict": "830860451e55b65830210c4eac320b70299fe403a1b3c05e3a8c0b232bf52574",
+        "state_dict_keys": "a14eeeec7e37d38fca9d3854446b13069bfad38aed416c4c252c1718eb280050"
+      },
+      "torch.float64_32_2": {
+        "final_state": "78f84719a7b7f3185aeaa72a97585c14b39c4d44de1dd2f5ad6346755839db1c",
+        "mac_fingerprint": "4a1bdbe431c70033f014103fb10ae7344d5e2b347a68c18f6ae6535451829259",
+        "memory_fingerprint": "b89837a4296f67874e0e0904408a2a0bd57300cf35be44cc9b3613513463c08d",
+        "outputs": "7d2eda0318c5551c4b5eae78ee1d0727c340487f21f26f578d9823b8f379f68d",
+        "state_dict": "e4b164fc34c6461a9d947fb47e1fd2078d055c82eb770f4bd21f741ecee180f4",
+        "state_dict_keys": "5f5b94d4d7b391e5771acf25a2ea4c31e1943ae30b19aa70fb4aa3cc3a512877"
+      },
+      "torch.float64_4_2": {
+        "final_state": "94f0785f47fe46585c84eeaf116a024da21bcad15e78d7b68ce92509f063d4cb",
+        "mac_fingerprint": "b4fe08388d57a3a320be482b615480f3fc96f2a2e35b5c83825b7f8dbf627a48",
+        "memory_fingerprint": "f392a1b38e7db5362ecafcb701e8561753c6243a78fb50b78ff5d6d0b40c3574",
+        "outputs": "519d787d4230450433949e4477c6b4bf89e576347ee16033ba17e74f344c06c8",
+        "state_dict": "51d4155e0c5ded14eeaf1ad11b6ed35e2b447918fe6e17a2df97c25b512a7b77",
+        "state_dict_keys": "5f5b94d4d7b391e5771acf25a2ea4c31e1943ae30b19aa70fb4aa3cc3a512877"
+      },
+      "torch.float64_64_2": {
+        "final_state": "9cd6012f68c7e2dbe07dd63cda6168198ac41cb94c871aae198c2cb61eb1807d",
+        "mac_fingerprint": "06183af1dd7face39c6b12c8b6426ae62a5d7e5df9d674204f089c129582c624",
+        "memory_fingerprint": "de56e73b3d68e9c5238d16ad1eba97d57f68058aa545b9117d0c8e089f5f8b59",
+        "outputs": "37cbe304603920588b91b5e0d590d542c034074035139b975e6986ec4a314f28",
+        "state_dict": "5e75ee7f57d2109e73511eb3573180a17b62b91cdcba3b4e453f24b51613c74e",
+        "state_dict_keys": "5f5b94d4d7b391e5771acf25a2ea4c31e1943ae30b19aa70fb4aa3cc3a512877"
+      },
+      "torch.float64_8_1": {
+        "final_state": "01dbbab35cb033fc0427d5816a76eefe7b1a66fbaa25ca29d20349993195f84a",
+        "mac_fingerprint": "65f82e84b34117a08ad8afae642ef44957790376bc6489612de6c4c5b0e94053",
+        "memory_fingerprint": "7c28b4f5a69dc1227ead881ebc318e95622a2400c97d710209a08acbfd73cfbe",
+        "outputs": "d688c5a3dc8739f1e46458bc7e31d4e7af53b0045d28661ea3530acbf139f931",
+        "state_dict": "4aa215bff25e3784cf21592c9dab7384691514efaaf8d0122942ab03296db4c6",
+        "state_dict_keys": "a14eeeec7e37d38fca9d3854446b13069bfad38aed416c4c252c1718eb280050"
+      }
+    },
+    "financial_identical": true,
+    "financial_digests": {
+      "mac_frozen": {
+        "config_id": "52e3df0bf317042d638e5789fe499a39a51cea606b61241f11813c6df48ba78a",
+        "outputs": "6f1eda9e06eab9c6616bf658544e8760ed641aad66fff5e0696386a27609de65",
+        "parameter_id": "8d1f9cf76a3ce48a29137ddef2da5bc5a3bf1582cf39aaac0d4ca2857b7af781",
+        "representation_id": "a00d7aa11c3accd3fd167c60a885f2899973ee715fdf22285a519cf1c9a40135"
+      },
+      "mac_online": {
+        "config_id": "0fd7cee65d63623af6c4e6c064ad04d1eb35e21cf066e63822592d80be2ceb21",
+        "outputs": "55381487c824f4a77dab1e38341cbc9b5dd97bcd915798447413de289d57fea5",
+        "parameter_id": "8d1f9cf76a3ce48a29137ddef2da5bc5a3bf1582cf39aaac0d4ca2857b7af781",
+        "representation_id": "ae571c2dbe05f90ce9b257b92d857de1adc9382543270597ec04fcbec88a48b4"
+      }
+    }
+  },
+  "retention_receipt": {
+    "path": "reports/engineering/titans-gate-retention-20261009.json",
+    "recorded_commit": "8b8997b6fbc04ca9c8765ef531ce781f95849e28",
+    "note": "Generado antes de rebasar sobre develop. src/mars_titan/models/titans, src/mars_titan/models/baselines, src/mars_titan/data/storage.py y el script son idénticos en el commit rebasado. Dos ejecuciones dieron resultados idénticos.",
+    "rebased_commit": "72ee22228092cf4947e42e5088e7d82b3e9931cd"
+  },
+  "tests": {
+    "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, entorno uv existente sin sincronizar",
+    "native_binding": {
+      "sha256": "66adcba902c778a079cac95934c334430ee4142fe52c6a6b6ac3098eb9baab62",
+      "preset": "gru-session-cpu",
+      "native_tree": "631f6dc0286b4f832e401412aa9c07b6fe687dd6",
+      "develop_native_tree": "c5fc7ff93fc7f37736e1ac4550669739db18bc22",
+      "difference": "develop añade la evaluación PPO y liquidated_nav del entorno de simulación, ajenos a los recorridos probados"
+    },
+    "suites": [
+      {
+        "command": "uv run --no-sync python -m pytest -q tests/models/titans tests/memory tests/models/test_masked_reference_fusion.py tests/models/candidate tests/training/test_financial_run.py tests/training/test_financial_run_quantiles.py",
+        "passed": 877,
+        "skipped": 2,
+        "failed": 0,
+        "seconds": 175.2,
+        "skipped_reason": "comprobaciones cuda:0 sin dispositivo visible",
+        "commit": "f5abd476, antes de rebasar sobre 90ff5c27. Ese rebase no cambia memoria, Titans, el entrenador ni sus pruebas"
+      },
+      {
+        "command": "uv run --no-sync python -m pytest -q tests/models/titans/test_gate_bias.py tests/models/titans/test_initialization_device.py tests/training/test_financial_run.py::test_declared_recipe_builds_the_four_paired_controls tests/training/test_financial_run_quantiles.py::test_declared_quantile_recipe_builds_the_four_paired_controls",
+        "passed": 55,
+        "failed": 0,
+        "commit": "72ee2222"
+      }
+    ],
+    "optimizer_in_tests": "Las pruebas del entrenador usan RecordingOptimizer, que registra gradientes sin modificar pesos. La prueba con AdamW real comprueba que el bloqueo impide run().",
+    "not_run": [
+      "tests/training/test_quantile_reference_run.py, ajena a la memoria de Titans",
+      "Pruebas y comprobaciones CUDA"
+    ],
+    "ruff_check": "All checks passed",
+    "ruff_format_check": "866 files already formatted",
+    "check_repository": "1480 archivos, 192 referencias y 64 tareas, sin errores"
+  },
+  "mutations": [
+    {
+      "mutation": "G1 signo del logit de α",
+      "detected": true,
+      "summary": "1 failed, 3 passed in 0.64s"
+    },
+    {
+      "mutation": "G2 α = 1/h",
+      "detected": true,
+      "summary": "1 failed, 2 passed in 0.59s"
+    },
+    {
+      "mutation": "G3 θ sin dividir por theta_max",
+      "detected": true,
+      "summary": "1 failed, 2 passed in 0.70s"
+    },
+    {
+      "mutation": "G4 identidad v1 con gate_bias",
+      "detected": true,
+      "summary": "1 failed in 0.06s"
+    },
+    {
+      "mutation": "G5 sin comprobar theta_max",
+      "detected": true,
+      "summary": "1 failed, 31 passed in 0.83s"
+    },
+    {
+      "mutation": "G6 eta inicial admite 0",
+      "detected": true,
+      "summary": "1 failed, 26 passed in 0.80s"
+    },
+    {
+      "mutation": "G7 Linear con bias consume RNG",
+      "detected": true,
+      "summary": "1 failed, 1 passed in 0.65s"
+    },
+    {
+      "mutation": "G8 sin bias de η",
+      "detected": true,
+      "summary": "1 failed, 1 passed in 0.13s"
+    },
+    {
+      "mutation": "G9 bias como tensor no entrenable",
+      "detected": true,
+      "summary": "1 failed, 1 passed in 0.61s"
+    },
+    {
+      "mutation": "G10 bias fuera del bloque CPU",
+      "detected": true,
+      "summary": "1 failed, 50 passed in 5.12s"
+    },
+    {
+      "mutation": "F1 memoria sin gate_bias",
+      "detected": true,
+      "summary": "1 failed, 40 passed in 4.03s"
+    },
+    {
+      "mutation": "F2 identidad solo con MAC",
+      "detected": true,
+      "summary": "1 failed, 40 passed in 4.54s"
+    },
+    {
+      "mutation": "F3 receta parcial admitida",
+      "detected": true,
+      "summary": "1 failed, 42 passed in 4.68s"
+    },
+    {
+      "mutation": "F4 sin comprobar theta_max en FinancialConfig",
+      "detected": true,
+      "summary": "1 failed, 44 passed in 5.71s"
+    }
+  ],
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "gpu_workloads": 0,
+  "pending": [
+    "Comprobación CUDA: CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 uv run --no-sync python benchmarks/titans_gate_retention.py --device cuda:0 --output reports/engineering/titans-gate-retention-cuda-<fecha>.json",
+    "Exponer gate_bias en FinancialConfig y en configs/titans/chronological-training.json"
+  ]
+}
