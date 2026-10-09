@@ -1,25 +1,19 @@
 """Protección temporal del aprendizaje para las pruebas técnicas del postentrenamiento."""
 
-import json
-
 import pytest
 
-from mars_titan.training.learning_hold import HOLD_ENV, learning_blocked
+from mars_titan.training.learning_hold import learning_blocked
 
 
 @pytest.fixture(autouse=True)
-def entry_points_admitted(tmp_path_factory, monkeypatch):
+def entry_points_admitted(request):
     """Admitir los puntos de entrada sin retirar la guarda global de pasos.
 
-    Si la protección local está vigente, `tests/conftest.py` ya ha registrado el gancho
-    que omite cualquier paso de un optimizador de PyTorch. Aquí solo se sustituye la
-    protección leída por los puntos de entrada, para que cada prueba llegue hasta ese
-    paso como antes. Las pruebas del bloqueo declaran su propia protección temporal.
+    El postentrenamiento solo ajusta parámetros mediante optimizadores de PyTorch y las pruebas
+    de la compleción sustituyen la etapa tabular por dobles. Si la protección local está
+    vigente, `tests/conftest.py` ya ha registrado el gancho que omite esos pasos. Aquí solo se
+    sustituye la protección leída por los puntos de entrada, para que cada prueba llegue hasta
+    ese paso. Las pruebas del bloqueo declaran su propia protección.
     """
-    if not learning_blocked():
-        yield
-        return
-    path = tmp_path_factory.mktemp("hold") / "training-hold.json"
-    path.write_text(json.dumps({"training_allowed": True}))
-    monkeypatch.setenv(HOLD_ENV, str(path))
-    yield
+    if learning_blocked():
+        request.getfixturevalue("learning_doubles")

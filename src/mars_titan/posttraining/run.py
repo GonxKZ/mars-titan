@@ -31,11 +31,11 @@ from mars_titan.training.checkpoints import (
     restore_rng,
     save_training_state,
 )
+from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from . import adapter_matrix
 from .evaluation import centers, evaluate
-from .hold import refuse_while_blocked
 from .inputs import CONDITIONS
 from .parents import require_device
 from .selection import select_epoch, selection_policy
@@ -351,7 +351,7 @@ def run_case(
     max_updates=None,
 ):
     """Comparar un objetivo y condición. CPU solo admite diagnósticos de hasta 5000 filas."""
-    refuse_while_blocked("el postentrenamiento")
+    require_learning_allowed("el postentrenamiento")
     started = time.perf_counter()
     neural, budget = _validate_run(
         dataset,
