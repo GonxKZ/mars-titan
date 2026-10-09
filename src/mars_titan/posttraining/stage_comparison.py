@@ -209,7 +209,7 @@ def _stage_marker(stage_output, stage, views, scope):
         "La salida no pertenece a la etapa declarada",
     )
     _require(
-        marker["views"].get(scope) == views,
+        marker.get("views", {}).get(scope) == views,
         "La etapa usó otras vistas que las fuentes de la campaña",
     )
     return _digest(marker)
@@ -249,7 +249,7 @@ def write_sources(declaration_path, scope, base_arm, *, base_sources, stage_outp
     def relative(path):
         return os.path.relpath(Path(path).resolve(), folder.resolve())
 
-    arms = {name: {} for name, arm in config["arms"].items()}
+    arms = {name: {} for name in config["arms"]}
     policy = config["input_policy"]
     for seed in config["arms"][base_arm]["seeds"]:
         entries = arms[base_arm][str(seed)] = {}
