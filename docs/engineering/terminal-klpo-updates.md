@@ -87,3 +87,59 @@ Quedan pendientes la ejecución de Adam CPU/CUDA, la invariancia efectiva del
 crítico tras ese paso, la recuperación de una actualización ejecutada, el coste
 del ciclo completo y cualquier comparación científica. Los contadores y momentos
 escritos a mano en las pruebas no acreditan esas comprobaciones.
+
+## Comprobaciones técnicas
+
+El [recibo técnico](../../reports/engineering/terminal-klpo-updates-verification-20261009.json)
+separa diez ejecutables CPU en Release, ASan/UBSan y cobertura del delta CUDA.
+Las diez mutaciones finales se detectan. Dos mutaciones iniciales descubrieron
+aserciones insuficientes para un prefijo solo forzado y para el RNG recién
+copiado. Los intentos y las regresiones se conservan.
+
+El recibo identifica `be88f4d9` como revisión medida. ASan/UBSan, cobertura,
+análisis estático, mutaciones y CUDA se ejecutaron sobre ese código. El commit
+`603156f7` añade la aserción del RNG copiado, que se ejecutó antes por separado
+en Release, ASan/UBSan y cobertura. También reorganiza una llamada de
+`klpo_learning.cpp` sin cambiar sus 3.242 tokens C++. Los hashes de fuentes del
+recibo ya corresponden a `603156f7`, y `format_only_correspondence` enlaza el
+hash anterior con el final. Sobre `603156f7` se repitieron los diez ejecutables
+CPU en Release y ASan/UBSan, con los resultados de `head_reconciliation`.
+Cobertura, mutaciones, análisis estático y CUDA no se repitieron sobre ese commit.
+
+LLVM cubre 346 de 377 líneas del controlador. El CCN máximo de sus funciones
+es 17. La complejidad máxima de las funciones modificadas en los tres módulos
+es 35, en el lector compartido. El CRAP máximo es 147,15, usando regiones LLVM
+de código por función y Lizard 1.24.1. `update_ready` y `terminal_step` tienen
+cobertura cero porque requieren actualizaciones reales. Estas cifras son
+diagnósticos, no una demostración de corrección.
+
+En CUDA, MLP y GRU conservan pérdidas y gradientes dentro de `rtol=1e-5` y
+`atol=1e-6`. El máximo error de gradiente es 1,073×10⁻⁶ y el de pérdida
+8,115×10⁻⁸. El gradiente posterior a recuperar el actor es exacto. La referencia
+importada y la publicación de una oleada forzada también se recuperan, con RNG
+global y parámetros intactos. Ese tramo alcanzó 42.671.616 bytes asignados y
+56.623.104 reservados. El máximo asignado del delta es 76.267.008 bytes, en el
+tramo de actores, con 90.177.536 reservados y cuota Torch de 128 MiB. Un intento
+previo rechazó un perfil MLP usado por error con el fixture GRU y se conserva
+por separado.
+
+El perfil previo H=256 utiliza ocho episodios, entrada de 128 números y una
+GRU de 64 unidades. Los bloques de uno y ocho episodios alcanzan 5.024.376 y
+8.170.176 bytes de almacenamiento ATen CPU. En CUDA alcanzan 78.547.456 y
+94.834.176 bytes asignados. Son medidas instrumentadas anteriores al
+controlador. No miden el ciclo de actualización ni acreditan una aceleración.
+
+La selección reproducible evita los ejecutables anteriores que optimizan:
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 UV_OFFLINE=1 cmake --preset native-ppo-release -S native \
+  -B build/native/terminal-actor -DMARS_TITAN_BUILD_RUNNER=OFF \
+  -DMARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF
+cmake --build build/native/terminal-actor --target klpo_actor_tests \
+  klpo_reference_tests klpo_learning_tests klpo_episodes_tests klpo_terminal_tests \
+  klpo_collection_tests klpo_policy_tests ppo_variant_state_tests \
+  ppo_variant_objective_tests ppo_checkpoint_tests -j 1
+CUDA_VISIBLE_DEVICES=-1 ctest --test-dir build/native/terminal-actor \
+  -R '^(klpo_actor|klpo_reference|klpo_learning|klpo_episodes|klpo_terminal|klpo_collection|klpo_policy|ppo_variant_state|ppo_variant_objective|ppo_checkpoint)$' \
+  --output-on-failure
+```
