@@ -35,7 +35,7 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
-from .learning_hold import learning_blocked
+from .learning_hold import require_learning_allowed
 from .selection import (
     VALIDATION_PLATEAU,
     advance_selection,
@@ -654,8 +654,8 @@ class ChronologicalTrainer:
     def run(self, *, resume=False, stop=None):
         """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo."""
         output, checkpoints = self.output, self.output / "checkpoints"
-        if isinstance(self.optimizer, torch.optim.Optimizer) and learning_blocked():
-            raise RuntimeError("El bloqueo de aprendizaje vigente impide pasos de optimizador")
+        if isinstance(self.optimizer, torch.optim.Optimizer):
+            require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")
         stop = stop or StopRequest()

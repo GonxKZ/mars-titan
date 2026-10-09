@@ -589,7 +589,7 @@ def test_selection_follows_declared_patience_and_keeps_the_best_state(
 
 
 def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_path, monkeypatch):
-    from mars_titan.training.learning_hold import HOLD_ENV
+    from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
 
     _, streams = shared
     hold = tmp_path / "hold.json"
@@ -604,7 +604,7 @@ def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_pa
     )
     assert type(engine.optimizer) is torch.optim.AdamW
     assert engine.identity["recipe"]["optimizer"] == "AdamW"
-    with pytest.raises(RuntimeError, match="bloqueo"):
+    with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
         engine.run()
     assert not (tmp_path / "run").exists()
 
