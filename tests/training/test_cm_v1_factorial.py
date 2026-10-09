@@ -388,3 +388,27 @@ def test_consolidation_only_acts_when_the_bank_overflows(
     assert entries(results["small-reservoir"].audit, "prediction") != entries(
         results["small-anchored"].audit, "prediction"
     )
+
+
+def test_readout_accepts_the_b_core_and_refuses_a_penalized_core(shared, native):
+    _, streams = shared
+    plan = recipe()
+
+    def inference(mode, weight):
+        control = MACProjectionConfig(mode=mode, weight=weight, rank=2, frequency=2, grid_size=16)
+        readout, codec = reader(streams, "m1")
+        return mt.MarsTitanInference(
+            parent(streams, local_control=control),
+            readout,
+            plan,
+            admission="m1",
+            retention=mt.retention_config(plan, "m1"),
+            native=native,
+            codec=codec,
+            world="fixture",
+            fold="0",
+        )
+
+    assert inference("disabled", 0.0).predictor.local_control.config.mode == "disabled"
+    with pytest.raises(ValueError, match="solo en disabled"):
+        inference("penalty", 0.5)
