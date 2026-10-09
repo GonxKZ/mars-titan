@@ -156,6 +156,8 @@ class FinancialEnv(gym.Env):
         if (
             isinstance(action, bool)
             or not isinstance(action, (int, np.integer))
+            # Comprobar el rango antes de convertir enteros que no caben en int64.
+            or not 0 <= action < self.action_space.n
             or not self.action_space.contains(action)
         ):
             raise ValueError("La acción financiera debe estar entre cero y cinco")
