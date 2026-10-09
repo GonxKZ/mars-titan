@@ -16,7 +16,7 @@ ctest --preset native-release
 ../build/native/native-release/mars-titan-batch-benchmark --environments 4096 --assets 64 --sessions 128 --workers 4
 ```
 
-`--reference` ejecuta las mismas acciones con sesiones independientes en secuencia. El ejecutable es un diagnóstico técnico sobre una cinta generada de contabilidad conocida. Sus resultados no son retornos de una estrategia entrenada. Las cifras, paridad y condiciones se recogen en el [informe de medición](../../reports/resources/batched-rl-performance.md).
+`--reference` ejecuta las mismas acciones con sesiones independientes en secuencia. `--rules cn` declara en la cinta lote de 100, venta del resto impar, banda del 10 % y timbre de venta, y `--capital` fija el capital inicial. Sirven para medir el coste de las [reglas de mercado](native-financial-simulation.md#reglas-de-mercado). Sin ellas, la cinta y el checksum son los anteriores. El ejecutable es un diagnóstico técnico sobre una cinta generada de contabilidad conocida. Sus resultados no son retornos de una estrategia entrenada. Las cifras, paridad y condiciones se recogen en el [informe de medición](../../reports/resources/batched-rl-performance.md).
 
 Los entornos de un lote comparten el orden de activos, la moneda, la partición y el esquema de contexto. Pueden recorrer cintas diferentes y tener distintas fechas de finalización. No se mezclan entrenamiento y validación. Cada cinta conserva las condiciones de admisión histórica del simulador original. Los OHLC reales siguen necesitando procedencia acreditada.
 

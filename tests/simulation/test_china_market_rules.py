@@ -184,7 +184,7 @@ def test_rules_are_part_of_the_identity_and_absent_by_default():
         Instrument("CNY", price_limits=(Period(5, 6, band=0.1), Period(0, 10, band=0.1)), rules="x")
 
 
-def test_environment_applies_declared_rules_only_in_the_python_engine():
+def test_environment_applies_declared_rules_and_identifies_them():
     assets = ["600000.SS", "688981.SS"]
     days = [(2021, 3, 1), (2021, 3, 2), (2021, 3, 3)]
     prices = np.tile([10.0, 10.0, 10.0, 10.0, 1e7], (3, 2, 1))
@@ -207,8 +207,6 @@ def test_environment_applies_declared_rules_only_in_the_python_engine():
     _, _, _, _, info = ruled.step(5)
     assert all(t["quantity"] % 100 == 0 for t in info["trades"] if t["asset"] == "600000.SS")
     assert all(math.isfinite(t["cost"]) for t in info["trades"])
-    with pytest.raises(ValueError, match="nativo"):
-        FinancialEnv(tape, backend="native", instruments=rules)
 
 
 def test_buying_with_all_cash_reserves_the_stamp_duty_of_both_sides():

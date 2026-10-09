@@ -12,6 +12,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -123,6 +124,65 @@ std::vector<CorporateAction> actions_from(const Json& values,
     return result;
 }
 
+void require_keys(const Json& value, std::initializer_list<std::string_view> keys) {
+    if (!value.is_object() || value.size() != keys.size() ||
+        !std::ranges::all_of(keys, [&value](std::string_view key) {
+            return value.contains(std::string(key));
+        })) {
+        throw std::invalid_argument("Las reglas de mercado no conservan su contrato");
+    }
+}
+
+std::vector<RulePeriod> periods_from(const Json& values) {
+    if (!values.is_array()) {
+        throw std::invalid_argument("Los periodos de una regla deben formar una lista");
+    }
+    std::vector<RulePeriod> result;
+    result.reserve(values.size());
+    for (const auto& value : values) {
+        require_keys(value, {"start", "end", "band", "buy", "sell"});
+        result.push_back({read_json_int64(value.at("start")), read_json_int64(value.at("end")),
+                          value.at("band").get<double>(), value.at("buy").get<double>(),
+                          value.at("sell").get<double>()});
+    }
+    return result;
+}
+
+// Identidad de Instrument escrita por storage.write_tape, una entrada por activo de la cinta.
+std::vector<InstrumentRules> instruments_from(const Json& values,
+                                              const std::vector<std::string>& assets,
+                                              const std::string& currency) {
+    if (!values.is_object() || values.size() != assets.size()) {
+        throw std::invalid_argument("Las reglas de mercado deben cubrir cada activo");
+    }
+    std::vector<InstrumentRules> result;
+    result.reserve(assets.size());
+    for (const auto& asset : assets) {
+        const auto& value = values.at(asset);
+        InstrumentRules instrument;
+        if (value.size() == 2) {
+            require_keys(value, {"currency", "lot"});
+        } else {
+            require_keys(value, {"currency", "lot", "minimum_order", "odd_lot_exit",
+                                 "price_limits", "taxes", "rules"});
+            instrument.rules = value.at("rules").get<std::string>();
+            instrument.minimum_order = value.at("minimum_order").get<double>();
+            instrument.odd_lot_exit = value.at("odd_lot_exit").get<bool>();
+            instrument.price_limits = periods_from(value.at("price_limits"));
+            instrument.taxes = periods_from(value.at("taxes"));
+            if (instrument.rules.empty()) {
+                throw std::invalid_argument("Las reglas de mercado necesitan una identidad");
+            }
+        }
+        if (value.at("currency") != currency) {
+            throw std::invalid_argument("Las reglas de un activo pertenecen a otra moneda");
+        }
+        instrument.lot = value.at("lot").get<double>();
+        result.push_back(std::move(instrument));
+    }
+    return result;
+}
+
 void read_batches(parquet::arrow::FileReader& reader, MarketTape& tape, std::size_t row_count) {
     std::shared_ptr<arrow::Schema> schema;
     require_arrow(reader.GetSchema(&schema));
@@ -216,7 +276,9 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
     const auto manifest_bytes =
         read_bounded_file(directory / "manifest.json", maximum_manifest_bytes);
     const auto manifest = parse_bounded_json(manifest_bytes);
-    if (read_json_int64(manifest.at("schema_version")) != 1 ||
+    // La versión 2 añade reglas de mercado. Un lector anterior la rechaza en lugar de ignorarlas.
+    const auto version = read_json_int64(manifest.at("schema_version"));
+    if ((version != 1 && version != 2) || manifest.contains("instruments") != (version == 2) ||
         manifest.at("final_test_opened") != false) {
         throw std::invalid_argument("El manifiesto no conserva el formato o el test cerrado");
     }
@@ -254,6 +316,10 @@ std::shared_ptr<const MarketTape> load_market_tape(const std::filesystem::path& 
         throw std::invalid_argument("Las acciones corporativas no conservan su identidad");
     }
     tape->actions = actions_from(manifest.at("actions"), tape->assets);
+    if (version == 2) {
+        tape->instruments = instruments_from(manifest.at("instruments"), tape->assets,
+                                             tape->currency);
+    }
     auto parquet_bytes = read_bounded_file(directory / "market.parquet", maximum_market_bytes);
     if (positive_count(manifest.at("file_bytes"), maximum_market_bytes) != parquet_bytes.size() ||
         content_sha256(parquet_bytes) != manifest.at("file_sha256").get<std::string>()) {
