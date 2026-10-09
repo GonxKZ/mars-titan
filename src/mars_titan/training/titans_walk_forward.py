@@ -13,6 +13,10 @@ Contrato por ventana para el orquestador de la campaña con máscaras:
   o desde el primer tramo sin confirmar. Una ventana completada con la misma petición se
   devuelve después de comprobar sus huellas, sin abrir fuentes ni repetir cálculos.
 
+Campaña con máscaras: `titans_fit` y `titans_carry` son los ejecutores que registra
+`training.masked_campaign` para los ajustes y las predicciones trasladadas de la variante
+B. `carry_titans` aplica el estado elegido en la ventana ancla sin ajustar nada.
+
 Política de memoria, común a las cuatro variantes: cada recorrido parte del estado rápido
 inicial y de una cola vacía. El ajuste empieza en el inicio de su tramo. Validación,
 calibración y evaluación observan antes las entradas de los `warmup_months` previos a su
@@ -128,8 +132,23 @@ def window_phases(fold, warmup_months):
     return phases
 
 
-def _protocol(path, window, seed):
-    protocol, digest = read_manifest(Path(path), 1024**2)
+def view_protocol(view):
+    """Protocolo v2 que declara el contrato temporal de la vista, sin abrir sus datos.
+
+    En una vista conjunta todos los mercados comparten regla y ventana. Se toma el del
+    primer mercado en orden alfabético para que la petición no dependa del orden.
+    """
+    manifest, _ = read_manifest(Path(view), 64 * 1024**2)
+    contracts = temporal_contracts(manifest, input_policy=HISTORICAL_MASKED)
+    _require(contracts, "La vista no declara un contrato temporal")
+    return contracts[sorted(contracts)[0]]["protocol"]
+
+
+def _protocol(protocol, window, seed):
+    """Aceptar la ruta del protocolo o su documento. La huella es la de su JSON canónico."""
+    if not isinstance(protocol, dict):
+        protocol, _ = read_manifest(Path(protocol), 1024**2)
+    digest = hashlib.sha256(canonical(protocol).encode()).hexdigest()
     rule = stopping_rule(protocol)
     folds = {fold["id"]: fold for fold in build_folds(protocol)}
     _require(window in folds, "La ventana no pertenece al protocolo")
@@ -333,6 +352,7 @@ def run_titans_window(
         request=request,
         window=fold,
         stopping_rule=rule,
+        recipe=document,
         memory_policy=memory_policy(options["warmup_months"]),
         phases={name: asdict(phase) for name, phase in phases.items()},
         indices={name: source.identity for name, source in sources.items()},
@@ -378,6 +398,8 @@ def run_titans_window(
             plateau_epoch=fit["plateau_epoch"],
             global_step=trainer.global_step,
         )
+        # Estado elegido del que salen las predicciones. Lo usa el recibo de la campaña.
+        report["checkpoint"] = report["fit"]["best_checkpoint"]
         for name in PREDICTED:
             if name in report["predictions"]:
                 continue
@@ -424,3 +446,231 @@ def run_titans_window(
     finally:
         report["attempts"].append(dict(seconds=time.perf_counter() - started))
         atomic_json(report_path, report)
+
+
+CARRY_KIND = "titans_carried_predictions"
+CARRIED = ("calibration", "evaluation")
+# Campos del caso que la campaña declara para cada brazo de Titans-MAC.
+CASE_FIELDS = {"recipe", "recipe_sha256", "variant", "seed"}
+
+
+def carried_memory_policy(warmup_months):
+    """Política de la variante B: parámetros elegidos del ancla y memoria rápida reiniciada."""
+    return dict(
+        memory_policy(warmup_months),
+        parameters="anchor_selected_state_without_further_fitting",
+        fast_state="never_transferred_from_the_anchor_reset_at_each_pass",
+    )
+
+
+def _carried_parameters(model, target):
+    """Cargar el estado elegido del ancla en el predictor de la ventana trasladada.
+
+    Solo pueden cambiar las huellas de la vista y del índice de entrada. Representación,
+    dimensiones, política, contexto, variante, semilla y arquitectura deben coincidir.
+    """
+    expected = target.get_extra_state()
+
+    def portable(extra):
+        configuration = dict(extra["configuration"])
+        inputs = dict(configuration.pop("inputs"))
+        inputs.pop("source_sha256")
+        inputs.pop("view_sha256")
+        return canonical(dict(extra, configuration=dict(configuration, inputs=inputs), training=0))
+
+    anchor = model["_extra_state"]
+    _require(
+        portable(anchor) == portable(expected),
+        "El estado del ancla no corresponde a la entrada ni a la arquitectura del predictor",
+    )
+    target.load_state_dict({**model, "_extra_state": dict(expected, training=anchor["training"])})
+
+
+def _new_destination(output, protected):
+    safe_destination(output)
+    for source in protected:
+        outside_source(source, output)
+        outside_source(output, source)
+    _require(
+        not output.exists() and not output.is_symlink(),
+        "Las predicciones trasladadas necesitan un directorio nuevo",
+    )
+
+
+def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
+    """Predecir una ventana posterior con el estado elegido en la ventana ancla.
+
+    Es la pieza de la variante B. No ajusta parámetros ni selección. Cada tramo trasladado
+    empieza con la memoria rápida inicial y su propio calentamiento de entradas.
+    """
+    from .carried_predictions import carried_window
+    from .checkpoints import load_training_state
+    from .financial_run import ChronologicalInference, ChronologicalRecipe
+
+    started = time.perf_counter()
+    anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
+    _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
+    report, report_sha = read_manifest(anchor / "run.json", 16 * 1024**2)
+    _require(
+        report.get("kind") == KIND
+        and report.get("status") == "completed"
+        and report.get("final_test_opened") is False
+        and isinstance(report.get("checkpoint"), dict),
+        "El ancla no es una ventana de Titans-MAC completada",
+    )
+    _require(
+        sha256(anchor_view) == report["request"]["view_sha256"],
+        "La vista del ancla no es la de su ajuste",
+    )
+    _verify(anchor, report)
+    identity = report["identity"]
+    document, request = identity["recipe"], identity["request"]
+    options = walk_forward_options(document)
+    chronological = ChronologicalRecipe(**document["recipe"])
+    anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
+    if device == "cuda:0":
+        from mars_titan.data.embeddings import require_cuda
+
+        require_cuda()
+        _require(
+            os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
+            "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",
+        )
+    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    anchor_fold, fold, age = carried_window(
+        anchor_manifest, dataset.manifest, input_policy=HISTORICAL_MASKED
+    )
+    _check_view(dataset, view_protocol(view), fold)
+    _new_destination(output, (*dataset.roots.values(), view.parent, anchor))
+    phases = window_phases(fold, options["warmup_months"])
+    sources = _sources(dataset, {name: phases[name] for name in CARRIED}, output / "indices")
+    options_predictor = {k: v for k, v in document["predictor"].items() if k != "dtype"}
+    predictor = FinancialPredictor(
+        FinancialConfig(
+            sources["calibration"].specification(),
+            variant=request["variant"],
+            seed=request["seed"],
+            **options_predictor,
+        ),
+        device=device,
+        dtype=DTYPES[document["predictor"]["dtype"]],
+    )
+    fit, _ = read_manifest(anchor / "fit/run.json", 16 * 1024**2)
+    state = load_training_state(
+        anchor / "fit/checkpoints",
+        expected_identity=fit["identity"],
+        selection="best",
+        expected_sha256=report["checkpoint"]["sha256"],
+    )
+    _carried_parameters(state["model"], predictor)
+    inference = ChronologicalInference(predictor, chronological)
+    predictions = {}
+    for name in CARRIED:
+        rows = PredictionRows(inference.quantiles)
+        metrics = inference.predict(sources[name], rows, stop=stop)
+        tables = rows.finish()
+        _require(
+            rows.count == metrics["labels"] == dataset.manifest["counts"][name],
+            f"Las predicciones trasladadas de {name} no concilian con la vista",
+        )
+        path = output / f"{name}-predictions.parquet"
+        written = atomic_parquet_batches(path, tables)
+        _require(written == rows.count, f"El Parquet de {name} no conserva sus filas")
+        predictions[name] = dict(
+            path=path.name,
+            sha256=sha256(path),
+            rows=written,
+            bytes=path.stat().st_size,
+            metrics=metrics,
+        )
+    receipt = dict(
+        schema_version=1,
+        kind=CARRY_KIND,
+        status="completed",
+        anchor=dict(
+            run_sha256=report_sha,
+            checkpoint_sha256=report["checkpoint"]["sha256"],
+            view_sha256=report["request"]["view_sha256"],
+            fold=anchor_fold,
+            variant=request["variant"],
+            seed=request["seed"],
+        ),
+        view_sha256=sha256(view),
+        fold=fold,
+        months_since_anchor_information=age,
+        memory_policy=carried_memory_policy(options["warmup_months"]),
+        phases={name: asdict(phases[name]) for name in CARRIED},
+        indices={name: source.identity for name, source in sources.items()},
+        device=device,
+        code=_code(),
+        predictions=predictions,
+        final_test_opened=False,
+        scientific_training_started=False,
+        seconds=time.perf_counter() - started,
+        finished_at_utc=datetime.now(UTC).isoformat(),
+    )
+    atomic_json(output / "carry.json", receipt)
+    return receipt
+
+
+def _campaign_case(run):
+    case = run.case
+    _require(
+        isinstance(case, dict)
+        and set(case) == CASE_FIELDS
+        and case["seed"] == run.job["seed"]
+        and run.policy == HISTORICAL_MASKED,
+        "El trabajo no declara un caso de Titans-MAC de la campaña con máscaras",
+    )
+    _require(
+        sha256(Path(case["recipe"])) == case["recipe_sha256"],
+        "La receta de Titans-MAC cambió después de planificar la campaña",
+    )
+    return case
+
+
+def titans_fit(run, *, device="cuda:0", optimizer_factory=None):
+    """Ejecutor de ajuste para `training.masked_campaign`, con su `JobRun`.
+
+    Ajusta la variante y semilla del caso en la ventana del trabajo y devuelve el informe
+    con las predicciones por fila y el estado elegido. La campaña reserva la GPU.
+    """
+    from .masked_campaign import Paused as CampaignPaused
+
+    case = _campaign_case(run)
+    report = run_titans_window(
+        run.view,
+        view_protocol(run.view),
+        run.job["window"],
+        case["recipe"],
+        variant=case["variant"],
+        seed=case["seed"],
+        output=run.folder,
+        device=device,
+        stop=run.stop,
+        optimizer_factory=optimizer_factory,
+    )
+    if report["status"] == "paused":
+        raise CampaignPaused
+    _require(
+        report["status"] == "completed" and report["request"]["view_sha256"] == run.view_sha256,
+        "La ventana de Titans-MAC no confirma la vista del trabajo",
+    )
+    return report
+
+
+def titans_carry(run, *, device="cuda:0"):
+    """Ejecutor de predicción trasladada para `training.masked_campaign` (variante B)."""
+    from .masked_campaign import Paused as CampaignPaused
+
+    try:
+        return carry_titans(
+            run.anchor["folder"],
+            run.anchor["view"],
+            run.view,
+            run.folder,
+            device=device,
+            stop=run.stop,
+        )
+    except Paused as error:
+        raise CampaignPaused from error
