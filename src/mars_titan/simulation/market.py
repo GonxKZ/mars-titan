@@ -9,7 +9,11 @@ import numpy as np
 
 from mars_titan.environments.cohorts import FINAL_TEST_START_US, VALIDATION_START_US
 
-from .portfolio import CorporateAction, Quote
+from .portfolio import MAX_INSTRUMENTS, CorporateAction, Quote
+
+# 4.200 activos durante un año de 251 sesiones superan el millón de celdas anterior.
+# Con 48 bytes por celda (OHLCV y predicción en float64) el máximo ocupa 96 MiB por copia.
+MAX_TAPE_CELLS = 2_097_152
 
 
 def _times(values):
@@ -65,8 +69,8 @@ class MarketTape:
             prices.ndim != 3
             or prices.shape[2] != 5
             or prices.shape[0] < 2
-            or not 1 <= prices.shape[1] <= 4096
-            or prices.shape[0] * prices.shape[1] > 1_048_576
+            or not 1 <= prices.shape[1] <= MAX_INSTRUMENTS
+            or prices.shape[0] * prices.shape[1] > MAX_TAPE_CELLS
             or len(assets) != prices.shape[1]
             or len(set(assets)) != len(assets)
             or any(not isinstance(asset, str) or not 1 <= len(asset) <= 96 for asset in assets)

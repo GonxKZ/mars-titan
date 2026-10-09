@@ -7,6 +7,11 @@ import math
 import re
 from dataclasses import asdict, dataclass
 
+# Cubre los 4.202 activos US con precios entre 2000 y 2023 sin omitir ninguno.
+MAX_INSTRUMENTS = 8192
+# La biblioteca C++ conserva su límite anterior hasta revisar sus presupuestos.
+NATIVE_MAX_INSTRUMENTS = 4096
+
 
 def amount(value, *, positive=False):
     if (
@@ -80,7 +85,7 @@ class CorporateAction:
 class Portfolio:
     def __init__(self, instruments, cash, *, cost_bps=10, participation=0.01):
         if (
-            not 1 <= len(instruments) <= 4096
+            not 1 <= len(instruments) <= MAX_INSTRUMENTS
             or not cash
             or any(not isinstance(i, Instrument) for i in instruments.values())
             or any(not isinstance(name, str) or not 1 <= len(name) <= 96 for name in instruments)

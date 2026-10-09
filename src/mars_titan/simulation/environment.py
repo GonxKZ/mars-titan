@@ -6,7 +6,7 @@ import math
 import gymnasium as gym
 import numpy as np
 
-from .portfolio import Instrument, Portfolio
+from .portfolio import NATIVE_MAX_INSTRUMENTS, Instrument, Portfolio
 
 ACTIONS = (None, 0.0, 0.25, 0.5, 0.75, 1.0)
 
@@ -41,6 +41,8 @@ class FinancialEnv(gym.Env):
             native_library is not None and backend != "native"
         ):
             raise ValueError("El motor debe ser python o native con una biblioteca explícita")
+        if backend == "native" and len(tape.assets) > NATIVE_MAX_INSTRUMENTS:
+            raise ValueError("La biblioteca nativa todavía admite como máximo 4096 activos")
         self.backend, self.native_library = backend, None
         if backend == "native":
             from .native_runtime import load_library

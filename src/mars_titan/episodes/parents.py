@@ -7,6 +7,7 @@ import sqlite3
 
 import numpy as np
 
+from mars_titan.environments.cohorts import MAX_COHORT_ASSETS
 from mars_titan.models.baselines.inputs import MODALITIES
 
 
@@ -14,7 +15,7 @@ def input_fingerprint(raw, parent_sha256, encoding):
     ids = raw["asset_ids"]
     if (
         not isinstance(ids, list)
-        or not 1 <= len(ids) <= 4096
+        or not 1 <= len(ids) <= MAX_COHORT_ASSETS
         or len(set(ids)) != len(ids)
         or not all(isinstance(name, str) for name in ids)
         or set(raw["inputs"]) != set(MODALITIES)

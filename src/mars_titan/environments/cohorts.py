@@ -10,6 +10,9 @@ from mars_titan.models.baselines.inputs import MODALITIES
 
 FINAL_TEST_START_US = 1_704_067_200_000_000
 VALIDATION_START_US = 1_672_531_200_000_000
+# La población preparada desde 2000 llega a 4.200 activos US en una sesión de 2023.
+# El límite deja margen sin omitir empresas. La memoria la acota max_observation_bytes.
+MAX_COHORT_ASSETS = 8192
 
 
 def shapes_contract(shapes, max_assets, max_observation_bytes):
@@ -17,7 +20,7 @@ def shapes_contract(shapes, max_assets, max_observation_bytes):
         not isinstance(shapes, dict)
         or set(shapes) != set(MODALITIES)
         or type(max_assets) is not int
-        or not 1 <= max_assets <= 4096
+        or not 1 <= max_assets <= MAX_COHORT_ASSETS
         or type(max_observation_bytes) is not int
         or not 1 <= max_observation_bytes <= 128 * 1024**2
     ):

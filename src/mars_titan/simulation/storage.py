@@ -11,8 +11,8 @@ import pyarrow.parquet as pq
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
 
-from .market import MarketTape
-from .portfolio import CorporateAction
+from .market import MAX_TAPE_CELLS, MarketTape
+from .portfolio import MAX_INSTRUMENTS, CorporateAction
 
 PRICE_COLUMNS = ("open", "high", "low", "close", "volume")
 MAX_BYTES = 256 * 1024**2
@@ -63,10 +63,10 @@ def read_tape(directory):
         manifest.get("schema_version") != 1
         or manifest.get("final_test_opened") is not False
         or type(count) is not int
-        or not 1 <= count <= 4096
+        or not 1 <= count <= MAX_INSTRUMENTS
         or type(sessions) is not int
         or not 2 <= sessions <= 8192
-        or count * sessions > 1_048_576
+        or count * sessions > MAX_TAPE_CELLS
         or not path.is_file()
         or not 0 < path.stat().st_size <= MAX_BYTES
         or path.stat().st_size != manifest["file_bytes"]
