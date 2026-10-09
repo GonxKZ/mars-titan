@@ -430,3 +430,105 @@ def test_selected_market_equals_scoring_only_its_rows():
     assert us.cohort_sha256 != scores.cohort_sha256
     with pytest.raises(ValueError, match="no vacía"):
         scores.select_sessions(np.zeros(scores.session_market.shape, bool), label="none")
+
+
+def test_interval_score_by_hand_and_its_identity_with_the_pinball_of_the_ends():
+    rows = [[-2, -1, 0, 1, 2]] * 3
+    scores = score_sessions(quantile_panel([0.0, 3.0, -2.0], rows))
+    narrow, wide = scores.summary()["quantiles"]["intervals"]
+    # 80 %, alfa 0,2: 2, 2 + 10·2 y 2 + 10·1. 95 %, alfa 0,05: 4, 4 + 40·1 y 4 (borde incluido).
+    assert narrow["interval_score"] == pytest.approx((2 + 22 + 12) / 3)
+    assert wide["interval_score"] == pytest.approx((4 + 44 + 4) / 3)
+    series = scores.series("interval_score@0.8")
+    assert series.loss and series.values[0] == pytest.approx(12.0)
+    # (alfa / 2) · IS = pinball(tau) + pinball(1 − tau), en cualquier panel.
+    rng = np.random.default_rng(21)
+    random = score_sessions(random_panel(rng))
+    for index, (lower, upper) in enumerate(((1, 3), (0, 4))):
+        alpha = 2 * LEVELS[lower]
+        ends = random.pinball[:, lower] + random.pinball[:, upper]
+        assert np.allclose(alpha / 2 * random.interval_score[:, index], ends, rtol=1e-12)
+    with pytest.raises(ValueError, match="intervalo central"):
+        scores.series("interval_score@0.5")
+
+
+def test_implied_up_probability_by_hand_and_against_interpolation():
+    rows = np.array(
+        [
+            [-2, -1, 0, 1, 2],  # mediana en cero: 0,5
+            [-0.5, 0.5, 1, 2, 3],  # entre 0,025 y 0,1: F(0) = 0,025 + 0,075 · 0,5
+            [0.1, 0.2, 0.3, 0.4, 0.5],  # todo positivo: la menos segura, 0,975
+            [-5, -4, -3, -2, -1],  # todo negativo: 0,025
+            [-1, 0, 0, 1, 2],  # ceros repetidos: último nivel que no supera el cero
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=np.float64,
+    )
+    probability = forecast_scores.implied_up_probability(rows, LEVELS)
+    assert probability.tolist() == pytest.approx([0.5, 0.9375, 0.975, 0.025, 0.5, 0.025])
+    rng = np.random.default_rng(4)
+    quantiles = np.sort(rng.normal(size=(500, 5)), axis=1) + rng.normal(size=(500, 1))
+    expected = [
+        1 - np.interp(0.0, row, LEVELS, left=LEVELS[0], right=LEVELS[-1]) for row in quantiles
+    ]
+    assert np.allclose(forecast_scores.implied_up_probability(quantiles, LEVELS), expected)
+    # Desplazar los cuantiles hacia arriba nunca reduce la probabilidad de subida.
+    higher = forecast_scores.implied_up_probability(quantiles + 0.3, LEVELS)
+    assert np.all(higher >= forecast_scores.implied_up_probability(quantiles, LEVELS))
+
+
+def test_sign_brier_reliability_and_ece_by_hand():
+    rows = [
+        [-2, -1, 0, 1, 2],  # p = 0,5 y sube
+        [0.1, 0.2, 0.3, 0.4, 0.5],  # p = 0,975 y baja
+        [-2, -1, 0, 1, 2],  # objetivo cero: no cuenta
+        [-0.5, 0.5, 1, 2, 3],  # p = 0,9375 y sube
+    ]
+    scores = score_sessions(quantile_panel([1.0, -1.0, 0.0, 2.0], rows))
+    sign = scores.summary()["quantiles"]["sign_probability"]
+    brier = (0.5**2 + 0.975**2 + 0.0625**2) / 3
+    assert sign["brier"] == pytest.approx(brier) and sign["eligible_rows"] == 3
+    # Intervalos 5 (0,5) y 9 (0,975 y 0,9375): |1 − 0,5| + |1 − 1,9125| sobre 3 filas.
+    assert sign["ece"] == pytest.approx((0.5 + 0.9125) / 3)
+    curve = sign["reliability"]
+    assert curve[5]["rows"] == 1 and curve[5]["observed_up_frequency"] == 1.0
+    assert curve[9]["rows"] == 2 and curve[9]["mean_probability"] == pytest.approx(0.95625)
+    assert curve[0]["rows"] == 0 and curve[0]["mean_probability"] is None
+    series = scores.series("sign_brier")
+    assert series.loss and series.values[0] == pytest.approx(brier)
+
+
+def test_sign_statistics_survive_window_concatenation_and_market_selection():
+    rng = np.random.default_rng(31)
+    panel = random_panel(rng, rows=700, days=12)
+    pooled = score_sessions(panel)
+    early = panel.prediction_at < at(6, 0).astype(np.int64)
+    joined = forecast_scores.SessionScores.concatenate(
+        [score_sessions(split_panel(panel, early)), score_sessions(split_panel(panel, ~early))]
+    )
+    assert (
+        joined.summary()["quantiles"]["sign_probability"]
+        == pooled.summary()["quantiles"]["sign_probability"]
+    )
+    table = pooled.to_table()
+    assert table["sign_bin_rows"].to_pylist()[0] == pooled.sign_bin_rows[0].tolist()
+    assert "interval_score_0.8" in table.column_names
+
+
+def test_side_precision_series_are_defined_only_where_the_model_calls_that_side():
+    # Sesión 0: dos llamadas al alza (una acierta) y ninguna a la baja.
+    scores = score_sessions(build([1, -1, 1, -2, 3], [1, 1, -0.0, -1, -2], [0, 0, 0, 1, 1]))
+    up, down = scores.series("up_precision"), scores.series("down_precision")
+    assert not up.loss and up.defined.tolist() == [True, False]
+    assert up.values.tolist() == [0.5, 0.0]
+    assert down.defined.tolist() == [False, True] and down.values.tolist() == [0.0, 0.5]
+    with pytest.raises(ValueError, match="no emite cuantiles"):
+        scores.series("sign_brier")
+
+
+def test_probabilities_fall_in_the_interval_that_contains_them():
+    rows = [[-3, -2, -1, -0.5, 0.5]] * 2  # F(0) = 0,9375 y probabilidad de subida 0,0625
+    scores = score_sessions(quantile_panel([1.0, -1.0], rows))
+    curve = scores.summary()["quantiles"]["sign_probability"]["reliability"]
+    assert curve[0]["rows"] == 2 and curve[0]["mean_probability"] == pytest.approx(0.0625)
+    assert curve[0]["observed_up_frequency"] == 0.5 and curve[1]["rows"] == 0
