@@ -109,14 +109,56 @@ class _Raised:
         return True
 
 
+# Marca del hilo que ejecuta ahora una tarea de decodificación.
+_TASK = threading.local()
+
+
+def _marked(function, *args):
+    _TASK.active = True
+    try:
+        return function(*args)
+    finally:
+        _TASK.active = False
+
+
+def submit(executor, function, *args):
+    """Enviar una tarea de decodificación que marca su hilo mientras se ejecuta."""
+    return executor.submit(_marked, function, *args)
+
+
+def in_task():
+    """Si este hilo está ejecutando una tarea enviada con `submit`."""
+    return getattr(_TASK, "active", False)
+
+
+def drain(futures):
+    """Cancelar las tareas que no han empezado y esperar a las que están en curso.
+
+    Un recorrido abandonado sin cerrar puede finalizarlo el recolector de basura en
+    cualquier hilo, también dentro de una de sus propias tareas. Esperar ahí bloquearía ese
+    hilo para siempre, así que dentro de una tarea solo se cancela. Las tareas en curso
+    terminan solas y su resultado se descarta.
+    """
+    for future in futures:
+        future.cancel()
+    if in_task():
+        return
+    for future in futures:
+        if not future.done():
+            try:
+                future.result()
+            except BaseException:  # El recorrido ya se ha cerrado y el error no importa.
+                pass
+
+
 def ordered_map(function, items, executor, lookahead):
     """Aplicar `function` en `executor` y entregar los resultados en el orden de `items`.
 
     Como máximo `lookahead` tareas quedan enviadas sin consumir. Un error al obtener el
     siguiente elemento se entrega tras los resultados ya enviados y detiene la lectura de
     `items`, igual que en un recorrido secuencial. Al cerrar el generador se cancelan las
-    tareas que no han empezado y se espera a las que están en curso, de modo que ningún hilo
-    sigue usando los recursos del recorrido.
+    tareas que no han empezado y se espera a las que están en curso (`drain`), de modo que
+    ningún hilo sigue usando los recursos del recorrido.
     """
     if type(lookahead) is not int or lookahead < 1:
         raise ValueError("El adelanto de la decodificación debe ser un entero positivo")
@@ -128,23 +170,16 @@ def ordered_map(function, items, executor, lookahead):
                     item = next(iterator)
                 except StopIteration:
                     exhausted = True
-                except BaseException as error:  # noqa: BLE001 - se entrega en su posición
+                except BaseException as error:  # Se entrega en su posición.
                     pending.append(_Raised(error))
                     exhausted = True
                 else:
-                    pending.append(executor.submit(function, item))
+                    pending.append(submit(executor, function, item))
             if not pending:
                 return
             yield pending.popleft().result()
     finally:
-        for future in pending:
-            future.cancel()
-        for future in pending:
-            if not future.done():
-                try:
-                    future.result()
-                except BaseException:  # noqa: BLE001, S110 - el recorrido ya se ha cerrado
-                    pass
+        drain(pending)
         close = getattr(iterator, "close", None)
         if close is not None:
             close()
@@ -200,7 +235,7 @@ def background(iterable, depth):
                 if not offer(item):
                     return
             offer(_END)
-        except BaseException as error:  # noqa: BLE001 - se entrega al consumidor
+        except BaseException as error:  # Se entrega al consumidor.
             offer(_Failure(error))
         finally:
             close = getattr(iterator, "close", None)

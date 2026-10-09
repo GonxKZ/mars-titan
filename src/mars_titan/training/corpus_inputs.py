@@ -805,7 +805,7 @@ class CorpusDataset:
             decoded = self._converted(table, first["asset"])
             if self.modality_ablation is not None:
                 _, decoded = self._ablated(table, decoded)
-        except Exception:  # noqa: BLE001 - la lectura por grupo reproduce el error
+        except Exception:  # La lectura por grupo reproduce el mismo error.
             return None
         starts = dict(zip(groups, np.cumsum([0, *sizes[:-1]]).tolist(), strict=True))
         sizes = dict(zip(groups, sizes, strict=True))
@@ -942,7 +942,7 @@ class CorpusDataset:
                         },
                     )
                 )
-        except Exception as failure:  # noqa: BLE001 - se lanza tras los bloques anteriores
+        except Exception as failure:  # Se lanza tras los bloques anteriores.
             error = failure
         return shape, blocks, error
 
@@ -965,7 +965,7 @@ class CorpusDataset:
         for work in works:
             try:
                 results.append(self._group_blocks(work))
-            except Exception as error:  # noqa: BLE001 - se lanza tras los grupos anteriores
+            except Exception as error:  # Se lanza tras los grupos anteriores.
                 return results, error, asset
             if results[-1][2] is not None:
                 break
@@ -1013,19 +1013,25 @@ class CorpusDataset:
         else:
             stream = map(self._asset_blocks, plan)
         dimensions = None
-        for results, error, asset in stream:
-            for shape, blocks, failure in results:
-                if dimensions is not None and dimensions != shape:
-                    raise ValueError("Las dimensiones cambian entre activos")
-                dimensions = shape
-                yield from blocks
-                if failure is not None:
-                    raise failure
-            if error is not None:
-                raise error
-            if asset is not None:
-                for name in ("prices", "samples", "labels"):
-                    self._file(asset, name)
+        try:
+            for results, error, asset in stream:
+                for shape, blocks, failure in results:
+                    if dimensions is not None and dimensions != shape:
+                        raise ValueError("Las dimensiones cambian entre activos")
+                    dimensions = shape
+                    yield from blocks
+                    if failure is not None:
+                        raise failure
+                if error is not None:
+                    raise error
+                if asset is not None:
+                    for name in ("prices", "samples", "labels"):
+                        self._file(asset, name)
+        finally:
+            # Tras un error o un cierre, las tareas pendientes se cancelan en este hilo.
+            close = getattr(stream, "close", None)
+            if close is not None:
+                close()
 
     def observation_batches(self, *, start, end, batch_size=256):
         """Leer todas las filas históricas del intervalo, por activo y sin labels.

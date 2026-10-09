@@ -28,7 +28,7 @@ from mars_titan.training.corpus_inputs import (
     _price_contexts,
     _window_contexts,
 )
-from mars_titan.training.input_pipeline import background
+from mars_titan.training.input_pipeline import background, drain, submit
 from mars_titan.training.partition_contract import LEGACY_BOUNDS
 
 from .financial_session import FinancialPhase
@@ -347,21 +347,14 @@ class _BlockReader:
                 continue
             asset, path, metadata = self._file(identity)
             if 0 <= group < metadata.num_row_groups:
-                self._pending[identity, group] = self._executor.submit(
-                    self._decode, asset, path, metadata, group
+                self._pending[identity, group] = submit(
+                    self._executor, self._decode, asset, path, metadata, group
                 )
 
     def cancel(self):
         """Cancelar las decodificaciones adelantadas y esperar a las que están en curso."""
         pending, self._pending = list(self._pending.values()), {}
-        for future in pending:
-            future.cancel()
-        for future in pending:
-            if not future.done():
-                try:
-                    future.result()
-                except BaseException:  # noqa: BLE001, S110 - el recorrido ya terminó
-                    pass
+        drain(pending)
 
     def _decoded(self, identity, group):
         self._used[identity] = self.event
@@ -637,7 +630,7 @@ class FinancialObservationSource:
                     at, rows = next(logical)
                 except StopIteration:
                     break
-                except BaseException as error:  # noqa: BLE001 - se lanza en su posición
+                except BaseException as error:  # Se lanza en su posición, tras los anteriores.
                     failure = error
                     break
                 reader.schedule(rows)

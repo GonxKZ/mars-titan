@@ -178,6 +178,31 @@ next(stream)
 """
 
 
+SELF_CLOSED = """
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from mars_titan.training.input_pipeline import ordered_map
+executor, gate, holder = ThreadPoolExecutor(1), threading.Event(), {}
+def work(item):
+    if item == 1:
+        gate.wait()
+        # Como si el recolector finalizara el recorrido abandonado dentro de su tarea.
+        holder["stream"].close()
+    return item
+holder["stream"] = stream = ordered_map(work, range(4), executor, 2)
+assert next(stream) == 0
+gate.set()
+print(executor.submit(int, 7).result(timeout=30), flush=True)
+"""
+
+
+def test_a_map_closed_inside_its_own_task_does_not_wait_for_itself():
+    result = subprocess.run(
+        [sys.executable, "-c", SELF_CLOSED], capture_output=True, text=True, timeout=60
+    )
+    assert result.returncode == 0 and result.stdout.split() == ["7"]
+
+
 def test_an_abandoned_producer_closes_its_source_before_the_interpreter_exits():
     result = subprocess.run(
         [sys.executable, "-c", ABANDONED], capture_output=True, text=True, timeout=60
