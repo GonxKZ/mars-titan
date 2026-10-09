@@ -1,12 +1,14 @@
 """Configuración común de pytest."""
 
 import json
+import os
 from contextlib import contextmanager
 
 import pytest
 
 from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, install_optimizer_guard
 from tests.suite_support import python_shebang as _python_shebang
+from tests.suite_support import strict_problems
 
 
 def _skip(reason: str) -> None:
@@ -16,6 +18,17 @@ def _skip(reason: str) -> None:
 # Mientras la protección local esté vigente, una prueba que intente un paso de optimizador
 # de PyTorch se omite antes de modificar pesos. Sin protección, el gancho no se instala.
 _GUARD = install_optimizer_guard(_skip)
+
+
+def pytest_sessionstart(session):
+    # La comprobación local completa declara MARS_TITAN_REQUIRE_NATIVE o MARS_TITAN_REQUIRE_CUDA
+    # para que un binario o CUDA ausentes detengan la sesión en vez de omitir sus pruebas.
+    problems = strict_problems(os.environ)
+    if problems:
+        pytest.exit(
+            "Comprobación estricta incumplida: " + "; ".join(problems),
+            returncode=pytest.ExitCode.USAGE_ERROR,
+        )
 
 
 @contextmanager
