@@ -580,6 +580,50 @@ def test_orders_into_suspensions_and_missing_rows_never_fill(edition):
     assert "US/BBB" not in env.book.positions
 
 
+@pytest.mark.parametrize(
+    "backend", ["python", pytest.param("native", marks=requires_native_library)]
+)
+def test_a_session_without_any_row_creates_no_execution_no_price_and_no_reward(
+    tmp_path, backend
+):
+    # Una sesión del calendario sin fila de ningún activo, como la ausencia marcada por
+    # máscara en la edición, no inventa precio, no ejecuta órdenes y no produce recompensa.
+    hole = (100, 101)
+    write_edition(
+        tmp_path, {"US": [Asset("AAA", base=30.0, missing=hole), Asset("BBB", missing=hole)]}
+    )
+    symbols = ["AAA", "BBB"]
+    values = predictions("US", symbols, score=lambda k, i: 0.02 + 0.01 * i)
+    tape, report = build_reconstructed_tape(
+        tmp_path,
+        [evaluation_window("US", values)],
+        [values],
+        market="US",
+        partition="train",
+        dividend_payment_lag_sessions=0,
+    )
+    assert report["counts"]["missing_rows"] == 4 and report["excluded"] == {}
+    for k in hole:
+        assert np.isnan(tape.prices[k, :, [0, 1, 2, 4]]).all()
+        np.testing.assert_array_equal(tape.prices[k, :, 3], tape.prices[99, :, 3])
+    env = FinancialEnv(tape, capital=1_000_000, backend=backend)
+    env.reset(seed=0)
+    rewards, outcomes = {}, {}
+    while env.cursor <= hole[-1]:
+        decision = env.cursor
+        # Compra al principio y vuelve a pedir exposición completa justo antes del hueco.
+        action = 5 if decision in (0, hole[0] - 1, hole[0]) else 0
+        _, rewards[decision], _, _, outcomes[decision] = env.step(action)
+    assert env.book.positions
+    for decision in (hole[0] - 1, hole[0]):
+        assert outcomes[decision]["trades"] == [] and outcomes[decision]["unfilled"]
+        assert all(miss["reason"] == "missing_open" for miss in outcomes[decision]["unfilled"])
+        assert outcomes[decision]["costs"] == outcomes[hole[0] - 2]["costs"]
+        assert rewards[decision] == 0.0
+    # Las órdenes que no se ejecutaron en el hueco no se arrastran a la primera apertura real.
+    assert outcomes[hole[-1]]["trades"] == []
+
+
 def test_off_grid_opens_and_ambiguous_event_sessions_never_fill(edition):
     symbols = [a.symbol for a in US]
     for symbol, decision in (("HHH", 69), ("GGG", 89)):
