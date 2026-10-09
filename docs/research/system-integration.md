@@ -2,6 +2,8 @@
 
 La auditoría original del 4 de octubre de 2026 inspeccionó `96cab3616f78e6713b451b01437c816ba7bd010b`. La corrección arquitectónica del 8 de octubre conserva ese inventario y adopta la [separación entre GRU, Transformer, Titans-MAC y ampliaciones](titans-mac-architecture.md). La revisión del 9 de octubre distingue el inventario histórico que sigue del estado actual: la [GRU histórica](../../native/candidate_historical.md) tiene comprobaciones CPU/CUDA del módulo y el [consumidor financiero](../engineering/financial-session-v2.md) integra Titans-MAC, banco y recuperación bajo M0/M1. La conexión cronológica de la GRU y la trayectoria histórica completa siguen pendientes. No se han entrenado estas nuevas variantes.
 
+La [correspondencia de modificaciones](titans-mac-architecture.md#correspondencia-de-las-modificaciones-de-integración) del 9 de octubre relaciona cada propuesta de esta revisión con su punto de inserción sobre Titans-MAC, su nivel de implementación, su control y su evidencia. La [variante con ampliaciones](titans-mac-architecture.md#variante-mars-titan-con-ampliaciones) las declara como componentes desactivables, todos apagados y sin ejecutar.
+
 ## Decisión arquitectónica
 
 El punto principal de integración debe ser el **ciclo de decisión, registro y maduración**, con una vista de información común antes de sus consumidores. Dentro de ese ciclo, el modelo calcula representaciones y predicciones, la memoria ofrece lecturas de una instantánea y un planificador separado decide qué experiencias utilizar durante entrenamiento. La coordinación pertenece a cada ejecución, no a un servicio adicional ni a un bloque neuronal que asuma todas las responsabilidades.
