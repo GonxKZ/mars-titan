@@ -377,5 +377,6 @@ sintéticos. Un intervalo bootstrap describe la variabilidad temporal de la
 evaluación con la dependencia que capturan los bloques, no la incertidumbre de
 la selección de configuraciones ni la de otro periodo. La dirección, el Rank IC y
 la cobertura son diagnósticos secundarios. La métrica primaria sigue siendo el
-MAE residual por sesión. La [decisión propuesta sobre la cabeza de cuantiles](quantile-head-decision.md)
-determina qué modelos tendrán pinball, cobertura y curva riesgo-cobertura.
+MAE residual por sesión. La [decisión sobre la cabeza de cuantiles](quantile-head-decision.md)
+adoptó una cabeza común para las arquitecturas neuronales, [implementada](../engineering/quantile-head.md)
+con columnas que este panel acepta. Ridge y XGBoost siguen siendo escalares.

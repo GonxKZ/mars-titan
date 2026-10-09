@@ -26,7 +26,7 @@ r_k = read(snapshot, q_k)
 z_(k+1) = z_k + sigmoid(step_logit) * tanh(W[z_k, z_0, r_k, presence] + b)
 ```
 
-La forma residual procede de la [referencia GRU](../../native/candidate.md). La adaptación conserva la anchura D del núcleo financiero, claves y valores de 64 y su cabeza escalar. No comparte el espacio 128×256 ni la cabeza de cuantiles del candidato GRU. Todas las proyecciones tienen bias, no hay dropout y el paso inicial es 0,1. La temperatura predeterminada es 1. K es 1, 2 o 4 y reselecciona vecinos globalmente en cada iteración. No vuelve a escribir la memoria neuronal de Titans.
+La forma residual procede de la [referencia GRU](../../native/candidate.md). La adaptación conserva la anchura D del núcleo financiero, claves y valores de 64 y la cabeza del núcleo. No comparte el espacio 128×256 del candidato GRU. Con la [cabeza común de cuantiles](quantile-head.md), la lectura devuelve los cinco niveles y su mediana como predicción puntual. Todas las proyecciones tienen bias, no hay dropout y el paso inicial es 0,1. La temperatura predeterminada es 1. K es 1, 2 o 4 y reselecciona vecinos globalmente en cada iteración. No vuelve a escribir la memoria neuronal de Titans.
 
 `mode="bank"` exige una instantánea, incluso cuando está vacía. `mode="no_bank"` conserva el mismo bloque y recibe lectura cero y presencia falsa. Ese bloque todavía puede modificar el estado. `copy_readout_parameters` empareja sus parámetros mediante una copia y un recibo de hashes, sin transferir episodios. Las cargas ordinarias rechazan otros modos, K, codec o precisión, aunque coincidan las formas.
 

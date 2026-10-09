@@ -68,6 +68,6 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 ## Decisiones pendientes antes de entrenar
 
 - Número de ventanas con reentrenamiento completo y tratamiento de las restantes, entre las [alternativas de presupuesto](walk-forward-2000.md#coste-y-alternativas-de-presupuesto) ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
-- Cabeza de cuantiles común o calibración solo secundaria ([#22](https://github.com/GonxKZ/mars-titan/issues/22)), con una [propuesta registrada](quantile-head-decision.md).
+- Calibración común de los modelos con cuantiles ([#22](https://github.com/GonxKZ/mars-titan/issues/22)). La [cabeza común](../engineering/quantile-head.md) se adoptó el 9 de octubre según la [propuesta](quantile-head-decision.md) y su control sobre el Transformer compacto está declarado sin ejecutar.
 - Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
 - Política de retención de predicciones y checkpoints según el disco disponible.
