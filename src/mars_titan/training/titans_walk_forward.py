@@ -385,10 +385,9 @@ def run_titans_window(
                 raise Paused
             rows = PredictionRows(trainer.quantiles)
             metrics = trainer.predict_partition(sources[name], rows, stop=stop)
-            path = output / f"{name}-predictions.parquet"
-            written = atomic_parquet_batches(path, rows.finish())
+            tables = rows.finish()
             _require(
-                written == rows.count == metrics["labels"] == identity["expected_rows"][name],
+                rows.count == metrics["labels"] == identity["expected_rows"][name],
                 f"Las predicciones de {name} no concilian con la población de la vista",
             )
             if name == "validation":
@@ -402,6 +401,10 @@ def run_titans_window(
                     math.isclose(best, recomputed, rel_tol=1e-6, abs_tol=1e-12),
                     "La validación del mejor estado no reproduce la puntuación seleccionada",
                 )
+            # Solo se escribe un tramo ya conciliado. Ningún archivo queda sin confirmar.
+            path = output / f"{name}-predictions.parquet"
+            written = atomic_parquet_batches(path, tables)
+            _require(written == rows.count, f"El Parquet de {name} no conserva sus filas")
             report["predictions"][name] = dict(
                 path=path.name,
                 sha256=sha256(path),

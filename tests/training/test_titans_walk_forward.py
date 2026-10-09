@@ -24,6 +24,7 @@ from mars_titan.models.titans.financial import VARIANTS
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.corpus_inputs import CorpusDataset
+from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
 from tests.training.chronological_fixture import chronological_corpus, decision
@@ -573,3 +574,52 @@ def test_rows_sink_rejects_rows_outside_the_edition_or_without_their_output():
         rows.append(("US/A0000", FINAL_TEST_US - 1, 0.0, 0.0, None))
     with pytest.raises(ValueError):
         wf.PredictionRows(quantiles=False).append(("US/A0000", 1, 0.0, 0.0, [0.0] * 5))
+
+
+class SkipFirstRow:
+    """Destino que pierde la primera fila resuelta."""
+
+    def __init__(self, rows):
+        self.rows, self.skipped = rows, False
+
+    def append(self, record):
+        if self.skipped:
+            self.rows.append(record)
+        self.skipped = True
+
+
+def inflated_validation(original):
+    def altered(self, source, rows, *, stop=None):
+        metrics = original(self, source, rows, stop=stop)
+        if source.phase.partition == "validation":
+            metrics = dict(metrics, session_mae=metrics["session_mae"] + 1e-3)
+        return metrics
+
+    return altered
+
+
+def dropped_row(original):
+    def altered(self, source, rows, *, stop=None):
+        return original(self, source, SkipFirstRow(rows), stop=stop)
+
+    return altered
+
+
+@pytest.mark.parametrize(
+    ("wrap", "message"),
+    [(inflated_validation, "no reproduce la puntuación"), (dropped_row, "no concilian")],
+)
+def test_window_fails_when_its_predictions_do_not_reconcile(
+    base, tmp_path, monkeypatch, wrap, message
+):
+    monkeypatch.setattr(
+        ChronologicalTrainer,
+        "predict_partition",
+        wrap(ChronologicalTrainer.predict_partition),
+    )
+    output = tmp_path / "run"
+    with unfused_attention(), pytest.raises(ValueError, match=message):
+        window(base["view"], base["protocol"], base["recipe"], output)
+    report = json.loads((output / "run.json").read_text())
+    assert report["status"] == "failed" and report["predictions"] == {}
+    assert not (output / "validation-predictions.parquet").exists()
