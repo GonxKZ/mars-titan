@@ -868,7 +868,9 @@ def measure_titans(
     return rates
 
 
-def _readout_record(family, parent, document, case, window, work, device, settings):
+def _readout_record(
+    family, parent, document, case, window, work, device, settings, counters=BANK_COUNTERS
+):
     """Medir el lector de una familia sobre un padre `mac_online` con pesos iniciales.
 
     Los padres elegidos todavía no existen y su coste no depende de sus pesos. El padre se
@@ -877,7 +879,9 @@ def _readout_record(family, parent, document, case, window, work, device, settin
     receta del padre, su huella y su caso de búsqueda, que solo entran en la identidad de la
     variante. `window` es la ventana, sus fuentes y sus observaciones por evento. El recorrido
     es `ReadoutTrainer._train_pass` hasta el paso, con el banco de la escritura declarada y
-    su retención, y se exige que no cambien ni el lector ni el padre.
+    su retención, y se exige que no cambien ni el lector ni el padre. M3 estima antes sus
+    escalas con la regla de la campaña, sobre el tramo de entrenamiento de la ventana medida,
+    y el registro guarda su huella y la duración de ese recorrido, que no entra en el caudal.
     """
     from functools import partial
 
@@ -887,7 +891,7 @@ def _readout_record(family, parent, document, case, window, work, device, settin
     from . import mars_titan_walk_forward as readouts
     from . import titans_walk_forward as titans
     from .financial_run import Paused
-    from .mars_titan_run import ReadoutTrainer, _Pass, case_recipe
+    from .mars_titan_run import ReadoutTrainer, case_recipe
 
     fold, sources, inputs = window
     recipe = case_recipe(document, case["search_case"])
@@ -901,6 +905,16 @@ def _readout_record(family, parent, document, case, window, work, device, settin
         window=fold["id"],
         local_control=family.control,
     )
+    scalers = {}
+
+    def retention(variant):
+        if variant.admission != "m3":
+            return family.retention(recipe, variant)
+        if not scalers:
+            start = time.perf_counter()
+            value = readouts.window_scalers(sources["train"], recipe)
+            scalers.update(value=value, seconds=time.perf_counter() - start)
+        return family.retention(recipe, variant, scalers=scalers["value"])
 
     def build(option):
         seed_run(case["seed"])
@@ -921,7 +935,7 @@ def _readout_record(family, parent, document, case, window, work, device, settin
             readout,
             replace(recipe, **option),
             admission=variant.admission,
-            retention=family.retention(recipe, variant),
+            retention=retention(variant),
             native=readouts._native(variant.admission),
             codec=codec,
             train=sources["train"],
@@ -934,13 +948,22 @@ def _readout_record(family, parent, document, case, window, work, device, settin
 
     record = _chronological(
         build,
-        lambda trainer: _Pass(bank=trainer._new_bank("train")),
+        lambda trainer: trainer._new_pass("train"),
         Paused,
         RECIPE_ONLY,
         inputs,
         settings,
-        BANK_COUNTERS,
+        counters,
     )
+    if scalers:
+        value = scalers["value"]
+        record["write_scalers"] = dict(
+            sha256=value.fingerprint(),
+            source_sha256=value.source_sha256,
+            decisions=value.decisions,
+            labels=value.labels,
+            seconds=scalers["seconds"],
+        )
     return dict(record, bank_capacity=recipe.bank_capacity)
 
 
@@ -949,9 +972,10 @@ def measure_mars_titan(
 ):
     """Medir el lector de cada brazo de MARS-TITAN sobre su padre `titans_mac_online`.
 
-    Cada brazo se mide por separado porque la escritura (M0, M1 o M2) y K cambian el
+    Cada brazo se mide por separado porque la escritura (M0, M1, M2 o M3) y K cambian el
     cálculo. Los casos de búsqueda solo cambian la tasa de aprendizaje y comparten la
     medida. Las fases son las del padre, con su calentamiento. `work` guarda los índices.
+    M3 registra además los cambios de su índice selectivo en la ventana medida.
     """
     from mars_titan.data.embeddings import require_cuda
 
@@ -959,6 +983,7 @@ def measure_mars_titan(
     from . import titans_walk_forward as titans
     from .financial_run import load_recipe
     from .mars_titan_run import load_recipe as load_readout
+    from .mars_titan_run import m3_counters
 
     settings = dict(
         segments=segments, segment_warmup=segment_warmup, events=events, event_warmup=event_warmup
@@ -982,8 +1007,11 @@ def measure_mars_titan(
             for arm, candidates in section["candidates"].items():
                 _, case = candidates[0]
                 family = readouts._mars_family(case["components"])
+                counters = BANK_COUNTERS
+                if case["components"].get("episodic_bank") == "m3":
+                    counters += tuple(m3_counters())
                 record = _readout_record(
-                    family, parent, readout, case, window, work, device, settings
+                    family, parent, readout, case, window, work, device, settings, counters
                 )
                 rates[arm] = dict(
                     record,

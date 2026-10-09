@@ -277,6 +277,14 @@ def _mars_family(components):
     )
 
 
+def window_scalers(train, recipe):
+    """Escalas M3 de una ventana: su tramo de entrenamiento, con el reservorio y la semilla de M3.
+
+    Es la regla única que comparten el ajuste de la campaña y la medida de caudal.
+    """
+    return fit_write_scalers(train, block_rows=recipe.block_rows)
+
+
 def _training_scalers(fit, train, recipe):
     """Escalas M3 del tramo de entrenamiento de la ventana, estimadas una sola vez.
 
@@ -293,7 +301,7 @@ def _training_scalers(fit, train, recipe):
             "Las escalas M3 guardadas no proceden del tramo de entrenamiento de la ventana",
         )
         return scalers
-    return fit_write_scalers(train, block_rows=recipe.block_rows)
+    return window_scalers(train, recipe)
 
 
 def _anchor_scalers(fit):
