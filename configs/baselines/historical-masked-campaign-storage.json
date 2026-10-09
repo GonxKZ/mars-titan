@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_campaign_storage",
+  "status": "declared_before_launch",
+  "margin_bytes": 8589934592,
+  "check_seconds": 5,
+  "release_on_confirmation": true,
+  "prediction_row_bytes": {
+    "neural": {"validation": 55.01, "calibration": 53.77, "evaluation": 57.13},
+    "ridge": {"validation": 24.44, "calibration": 23.66, "evaluation": 24.8},
+    "xgboost": {"validation": 20.47, "calibration": 19.69, "evaluation": 20.83},
+    "episodic_gru": {"validation": 48.03, "calibration": 47.89, "evaluation": 48.22},
+    "titans": {"validation": 55.28, "calibration": 55.09, "evaluation": 55.44}
+  },
+  "job_report_bytes": 262144,
+  "train_sessions_bytes": 524288,
+  "state_bytes": {
+    "neural": 1748819,
+    "ridge": 40960,
+    "xgboost": 9437184,
+    "episodic_gru": 6528095,
+    "titans_mac": 2245739,
+    "mars_titan": 288035,
+    "cm_v1_core": 2507883,
+    "cm_v1": 288035
+  },
+  "retained_states": {
+    "neural": 3,
+    "ridge": 1,
+    "xgboost": 3,
+    "episodic_gru": 3,
+    "titans_mac": 3,
+    "mars_titan": 3,
+    "cm_v1_core": 3,
+    "cm_v1": 3
+  },
+  "recovery_state_extra_bytes": {
+    "neural": 0,
+    "ridge": 0,
+    "xgboost": 0,
+    "episodic_gru": 33000000,
+    "titans_mac": 0,
+    "mars_titan": 0,
+    "cm_v1_core": 0,
+    "cm_v1": 0
+  },
+  "flow_state_bytes": 67174,
+  "index": {
+    "bytes_per_row": 4.17,
+    "build_bytes_per_row": 12.18,
+    "warmup_partition": "evaluation"
+  },
+  "xgboost": {
+    "features": 1686,
+    "max_bin": 256,
+    "validation_row_bytes": 6744,
+    "max_validation_cache_bytes": 17179869184
+  },
+  "measurement": {
+    "date": "2026-10-09",
+    "method": "Tablas Parquet sintéticas con el esquema, el orden y los grupos de cada escritor y las filas reales de cada activo de las vistas publicadas. Máximo por escritor y tramo entre las 45 ventanas.",
+    "report": "reports/engineering/campaign-storage-20261009/README.md",
+    "pyarrow": "25.0.1",
+    "duckdb": "1.5.5",
+    "state_bytes": "12,0 bytes por parámetro y 38.423 de cabecera, medidos en un estado real de 50.881 parámetros con AdamW (648.995 bytes), por el número de parámetros de cada modelo",
+    "xgboost_state_bytes": "Cota del inventario para profundidad 6 y 2000 rondas, sin medir",
+    "flow_state_bytes": "Pesos rápidos y momentum por flujo del estado a mitad de época de Titans-MAC, según el inventario del código",
+    "index": "Índice ordenado de muestras y etiquetas maduras con DuckDB (grupos de 2048 filas, ZSTD) sobre las filas reales de la ventana más poblada de cada ámbito. Bytes por evento, dos eventos por muestra, y bytes del índice sin ordenar que coexiste al construirlo"
+  }
+}

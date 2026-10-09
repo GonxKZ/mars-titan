@@ -9,6 +9,11 @@ recibo walk-forward de cada mercado con el contrato de ``environments.walk_forwa
 Al final se escribe el manifiesto de fuentes de cada ámbito que consume
 ``evaluation.walk_forward_comparison``. El plan y sus variantes están en
 ``training.campaign_plan``.
+
+Con una declaración de almacenamiento (``training.campaign_storage``), la ejecución no
+empieza si el pico proyectado de lo pendiente no cabe sobre el margen, no admite un
+trabajo que no quepa, pausa de forma recuperable si el espacio libre cae por debajo del
+margen y libera tras cada recibo los índices y los estados de recuperación.
 """
 
 import argparse
@@ -50,6 +55,15 @@ from .campaign_plan import (
     load_campaign,
     plan_campaign,
 )
+from .campaign_storage import (
+    DiskGuard,
+    confirmed_ids,
+    job_footprint,
+    load_storage,
+    projection_report,
+    release_confirmed,
+    view_counts,
+)
 from .learning_hold import LearningHoldError, require_learning_allowed
 
 RUN_KIND = "historical_masked_campaign_run"
@@ -61,6 +75,10 @@ MAX_ATTEMPTS = 32
 
 class Paused(Exception):
     """Parada solicitada en una barrera confirmada de un trabajo."""
+
+
+class DiskPaused(Paused):
+    """Parada antes de empezar un trabajo que no cabe sobre el margen de disco."""
 
 
 def _views_report(directory, scope, policy):
@@ -403,9 +421,11 @@ def _identity(campaign, views):
 class _Campaign:
     """Estado confirmado de la campaña y verificación de cada recibo."""
 
-    def __init__(self, campaign, views, output, identity, executors, stop, jobs=()):
+    def __init__(self, campaign, views, output, identity, executors, stop, jobs=(), disk=None):
         self.campaign, self.views, self.output = campaign, views, output
         self.identity, self.executors, self.stop = identity, executors, stop
+        # Guardia, recuentos y declaración de almacenamiento, o nada sin declaración.
+        self.disk = disk
         self.identity_sha256 = hashlib.sha256(
             json.dumps(identity, sort_keys=True).encode()
         ).hexdigest()
@@ -621,8 +641,27 @@ class _Campaign:
         )
         return dict(parent)
 
+    def admit(self, job):
+        """Empezar un trabajo solo si lo que ocupará deja intacto el margen de disco."""
+        if self.disk is None:
+            return
+        guard, counts, storage = self.disk
+        footprint = job_footprint(job, counts[job["scope"]][job["window"]], storage)
+        need = footprint["retained_bytes"] + footprint["transient_bytes"]
+        if not guard.admits(need, job["id"]):
+            raise DiskPaused(f"{job['id']} necesita {need} bytes sobre el margen de disco")
+
+    def release(self, job, receipt):
+        """Liberar lo que nadie vuelve a leer de un intento con su recibo ya escrito."""
+        if self.disk is None:
+            return
+        if self.disk[2]["release_on_confirmation"]:
+            release_confirmed(self.output / receipt["attempt"], job["model"])
+        self.disk[0].settle(job["id"])
+
     def record(self, job, receipt):
         """Guardar el recibo y, si completa su grupo, publicar los recibos de ventana."""
+        self.release(job, receipt)
         self.receipts[job["id"]] = receipt
         group = _group(job)
         # Los auxiliares, como los núcleos de CM-v1, no publican recibo de ventana.
@@ -686,8 +725,12 @@ def _summary(output, identity, jobs, receipts, status, **extra):
     return summary
 
 
-def run_campaign(path, views, output, *, executors=None, lease=None, stop=None):
-    """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir."""
+def run_campaign(path, views, output, *, executors=None, lease=None, stop=None, storage=None):
+    """Ejecutar o reanudar la campaña. Los ejecutores y la reserva se pueden sustituir.
+
+    `storage` es la ruta de la declaración de almacenamiento. Con ella se comprueba el
+    pico proyectado antes de escribir nada y la ejecución vigila el margen de disco.
+    """
     from .checkpoints import StopRequest
 
     require_learning_allowed("la campaña con máscaras")
@@ -708,6 +751,15 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None):
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
     identity = _identity(campaign, checked)
+    disk, launch = None, None
+    if storage is not None:
+        declared = load_storage(storage)
+        guard = DiskGuard(output, declared["margin_bytes"], check_seconds=declared["check_seconds"])
+        counts = view_counts(checked)
+        launch = guard.require_launch(
+            projection_report(jobs, counts, declared, confirmed_ids(output, jobs))
+        )
+        disk = (guard, counts, declared)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     try:
@@ -724,24 +776,41 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None):
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
-        state = _Campaign(campaign, checked, output, identity, executors, None, jobs)
+        state = _Campaign(campaign, checked, output, identity, executors, None, jobs, disk)
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()
         signals = StopRequest() if stop is None else nullcontext(stop)
         workers = campaign["tabular"]["cpu_workers"]
-        _summary(output, identity, jobs, state.receipts, "running")
+        pause = None
+
+        def disk_report():
+            if disk is None:
+                return {}
+            pending = {} if pause is None else dict(pause=pause)
+            return dict(disk=dict(launch=launch, guard=disk[0].state(), **pending))
+
+        _summary(output, identity, jobs, state.receipts, "running", **disk_report())
         try:
-            with signals as state.stop, reservation, ThreadPoolExecutor(workers) as pool:
+            with signals as requested, reservation, ThreadPoolExecutor(workers) as pool:
+                state.stop = requested if disk is None else disk[0].watch(requested)
                 status = _execute(state, jobs, pool, workers)
-        except Paused:
+        except Paused as error:
             status = "paused"
+            if isinstance(error, DiskPaused):
+                pause = str(error)
+            elif disk is not None and disk[0].low:
+                pause = "El espacio libre bajó del margen durante un trabajo"
         except LearningHoldError as error:
-            _summary(output, identity, jobs, state.receipts, "blocked", error=str(error))
+            _summary(
+                output, identity, jobs, state.receipts, "blocked", error=str(error), **disk_report()
+            )
             raise
         except BaseException as error:
-            _summary(output, identity, jobs, state.receipts, "failed", error=str(error))
+            _summary(
+                output, identity, jobs, state.receipts, "failed", error=str(error), **disk_report()
+            )
             raise
-        return _summary(output, identity, jobs, state.receipts, status)
+        return _summary(output, identity, jobs, state.receipts, status, **disk_report())
     finally:
         os.close(descriptor)
 
@@ -771,6 +840,7 @@ def _execute(state, jobs, pool, workers):
             state.record(job, receipt)
             continue
         require_learning_allowed(f"el trabajo {job['id']}")
+        state.admit(job)
         run, identity = prepared
         executor = state.executors[job["model"], job["kind"]]
         if executor["device"] == "cpu":
@@ -903,6 +973,12 @@ def main(argv=None):
     for command in (execute, sources):
         command.add_argument("--views", action="append", required=True)
         command.add_argument("--output", type=Path, required=True)
+    execute.add_argument(
+        "--storage",
+        type=Path,
+        required=True,
+        help="Declaración de almacenamiento con el margen de disco y los bytes medidos",
+    )
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
     args = parser.parse_args(argv)
@@ -915,7 +991,9 @@ def main(argv=None):
             for scope, record in prepared.items()
         }
     elif args.command == "run":
-        result = run_campaign(args.campaign, _views_argument(args.views), args.output)
+        result = run_campaign(
+            args.campaign, _views_argument(args.views), args.output, storage=args.storage
+        )
         result.pop("jobs")
     else:
         destination = write_sources(
