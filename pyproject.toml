@@ -61,7 +61,7 @@ torchvision = [{index = "pytorch-cu130", marker = "sys_platform == 'linux' and p
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = [".", "src"]
+pythonpath = [".", "src", "tests/models/titans"]
 addopts = "-ra"
 
 [tool.ruff]
