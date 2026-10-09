@@ -42,7 +42,7 @@ SELECTION_KIND = "campaign_chain_selection"
 CANDIDATES = ("frozen_parent", "adapter", "continuation")
 SELECTED = ("base", *CANDIDATES)
 RL_RULE = "fixed_prior_evaluations_v1"
-RL_EXPANDING = "expanding_previous_evaluations"
+RL_EXPANDING = "expanding_prior_evaluations_v1"
 RL_TRAIN_WINDOWS = 3
 # Declaración única admitida en `walk_forward_stages` de la campaña.
 DESIGN = dict(
@@ -311,7 +311,14 @@ def check_staged(campaign, base_jobs, stages):
     con la semilla del predictor que declara en `predictor_seed`. Su `predictor` puede
     nombrar el brazo base o el brazo de la cadena. El número exacto de ventanas de ajuste lo
     fija la identidad de la etapa de RL, que también declara la sensibilidad en expansión.
+
+    La política de un mercado puede leer la cadena de otro ámbito, como el modelo conjunto,
+    en la ventana con los mismos cuatro tramos. Por eso basta con que dependa de la cadena
+    de cualquier ámbito con esos tramos. El calendario comprueba después que esa cadena
+    existe en el plan.
     """
+    from .campaign_schedule import campaign_windows
+
     for job in stages.get("adapters", ()):
         parent = parent_window(campaign, job["scope"], job["window"])
         _require(parent is not None, f"{job['id']}: la primera ventana no tiene posentrenamiento")
@@ -320,6 +327,12 @@ def check_staged(campaign, base_jobs, stages):
             set(needed) <= set(job["depends"]),
             f"{job['id']} no depende del estado elegido de la base en {parent}",
         )
+    # Ventanas de todos los ámbitos con los mismos cuatro tramos que cada (ámbito, ventana).
+    spans = {
+        pair: row["scopes"].items()
+        for row in campaign_windows(campaign)
+        for pair in row["scopes"].items()
+    }
     for job in stages.get("rl", ()):
         windows = [*job["train"], job["validation"], job["window"]]
         seed = job.get("predictor_seed")
@@ -333,9 +346,12 @@ def check_staged(campaign, base_jobs, stages):
             f"{job['id']} no ajusta con tres ventanas anteriores a su validación y su evaluación",
         )
         arm = job["predictor"].removesuffix(CHAIN_SUFFIX)
-        needed = {chain_job_id(job["scope"], window, arm, seed) for window in windows}
+        depends = set(job["depends"])
         _require(
-            needed <= set(job["depends"]),
+            all(
+                {chain_job_id(s, w, arm, seed) for s, w in spans[job["scope"], window]} & depends
+                for window in windows
+            ),
             f"{job['id']} no depende de la cadena de todas las ventanas que lee",
         )
 

@@ -121,7 +121,7 @@ def test_rl_windows_use_the_three_evaluations_before_validation_or_the_declared_
         lambda v: v["walk_forward_stages"]["posttraining"]["candidates"].append("base_retrain"),
         lambda v: v["walk_forward_stages"]["posttraining"].update(parent="chain_previous"),
         lambda v: v["walk_forward_stages"]["rl"].update(train_windows=4),
-        lambda v: v["walk_forward_stages"]["rl"].update(train="expanding_previous_evaluations"),
+        lambda v: v["walk_forward_stages"]["rl"].update(train="expanding_prior_evaluations_v1"),
         lambda v: v["walk_forward_stages"].update(test="validation"),
         lambda v: v["walk_forward_stages"].pop("test"),
     ],
@@ -167,26 +167,35 @@ def staged_jobs(value, base, *, arm="rnn", seed=42):
         )
         for parent, window in zip(windows, windows[1:], strict=False)
     ]
+    # Como en la etapa de políticas, cada mercado tiene su ámbito y lee la cadena del modelo
+    # conjunto en la ventana con los mismos tramos (CN fold-k es la conjunta fold-(k+6)).
+    joint = {}
+    for row in order.campaign_windows(value):
+        for scope, name in row["scopes"].items():
+            joint[scope, name] = row["scopes"][JOINT]
     policies = []
-    for window in windows:
-        rows = chain.rl_windows(windows, window)
-        if rows is None:
-            continue
-        read = [*rows["train"], rows["validation"], window]
-        policies.append(
-            dict(
-                id=f"{JOINT}/US/{window}/{arm}__chain/ppo/fit-s7",
-                scope=JOINT,
-                window=window,
-                anchor=window,
-                train=rows["train"],
-                validation=rows["validation"],
-                predictor=chain.chain_arm(arm),
-                predictor_seed=seed,
-                seed=7,
-                depends=[chain.chain_job_id(JOINT, name, arm, seed) for name in read],
+    for scope in ("US", "CN"):
+        names = [name for name, _ in chain.scope_windows(value, scope)]
+        for window in names:
+            rows = chain.rl_windows(names, window)
+            if rows is None:
+                continue
+            read = [*rows["train"], rows["validation"], window]
+            policies.append(
+                dict(
+                    id=f"{scope}/{window}/{arm}/ppo/fit-s7",
+                    scope=scope,
+                    market=scope,
+                    window=window,
+                    anchor=window,
+                    train=rows["train"],
+                    validation=rows["validation"],
+                    predictor=arm,
+                    predictor_seed=seed,
+                    seed=7,
+                    depends=[chain.chain_job_id(JOINT, joint[scope, n], arm, seed) for n in read],
+                )
             )
-        )
     return adapters, policies
 
 
@@ -203,7 +212,17 @@ def test_the_schedule_selects_the_chain_after_posttraining_and_before_the_policy
     assert phase["online"] < phase["adapters"] < phase["chain"] < phase["rl"]
     chains = [row["phases"][phase["chain"]]["jobs"] for row in schedule]
     assert chains == [[chain.chain_job_id(JOINT, row["window"], "rnn", 42)] for row in schedule]
-    assert [len(row["phases"][phase["rl"]]["jobs"]) for row in schedule] == [0] * 4 + [1] * 15
+    # US empieza en fold-004 y CN en su fold-004, que es la conjunta fold-010.
+    assert [len(row["phases"][phase["rl"]]["jobs"]) for row in schedule] == (
+        [0] * 4 + [1] * 6 + [2] * 9
+    )
+    first_cn = next(job for job in policies if job["scope"] == "CN")
+    assert first_cn["window"] == "fold-004" and first_cn["train"] == [
+        "fold-000",
+        "fold-001",
+        "fold-002",
+    ]
+    assert first_cn["depends"][0] == chain.chain_job_id(JOINT, "fold-006", "rnn", 42)
     # La cadena de la ventana 0 es la base y depende de las búsquedas que la eligen.
     jobs = {job["id"]: job for job in chain.chain_jobs(value, base, adapters)}
     first = jobs[chain.chain_job_id(JOINT, "fold-000", "rnn", 42)]
@@ -243,6 +262,15 @@ def _broken(kind):
         policies[0].pop("predictor_seed")
     elif kind == "policy_reads_a_later_chain":
         policies[0]["depends"].append(chain.chain_job_id(JOINT, "fold-005", "rnn", 42))
+    elif kind == "policy_reads_a_chain_outside_the_plan":
+        cn = next(job for job in policies if job["scope"] == "CN")
+        cn["depends"] = [
+            chain.chain_job_id("CN", name, "rnn", 42)
+            for name in [*cn["train"], cn["validation"], cn["window"]]
+        ]
+    elif kind == "policy_reads_a_chain_with_other_spans":
+        cn = next(job for job in policies if job["scope"] == "CN")
+        cn["depends"][0] = chain.chain_job_id(JOINT, "fold-000", "rnn", 42)
     return value, base, dict(adapters=adapters, rl=policies)
 
 
@@ -258,6 +286,8 @@ def _broken(kind):
         ("policy_evaluates_before_validation", "no ajusta con tres ventanas anteriores"),
         ("policy_without_predictor_seed", "semilla de su predictor"),
         ("policy_reads_a_later_chain", "fase posterior"),
+        ("policy_reads_a_chain_outside_the_plan", "ajena al plan"),
+        ("policy_reads_a_chain_with_other_spans", "no depende de la cadena de todas las ventanas"),
     ],
 )
 def test_the_schedule_rejects_stages_that_break_the_staged_dependencies(kind, message):
