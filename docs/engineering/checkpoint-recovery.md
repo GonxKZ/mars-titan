@@ -122,3 +122,22 @@ El parámetro opcional de un caso es:
 detuvo el ajuste antes de agotarlo. El informe conserva todas las épocas
 ejecutadas, la época elegida y las dos referencias de estado. Los casos sin
 `selection` mantienen el número fijo de épocas anterior.
+
+## Liberación al confirmar en la campaña
+
+Mientras un ajuste de la campaña con máscaras está abierto conserva la rotación
+anterior: dos estados recientes, el mejor y los fijados (las referencias neuronales
+fijan la última época). Cuando su recibo ya está escrito, ningún consumidor vuelve a
+leer los estados de recuperación. `release_recovery_states` deja solo el estado
+elegido (`best`, o el último confirmado si el ajuste no selecciona), comprueba antes
+su huella y tamaño, publica un `latest.json` que solo lo nombra y después borra los
+demás archivos de estado de esa ejecución. Un directorio sin estado íntegro no se
+toca. Así nunca desaparece el único estado confirmado y el padre que leen hijos,
+traslados, adaptadores y ablación sigue intacto.
+
+`training/campaign_storage.py` aplica esta liberación tras cada recibo cuando la
+declaración de almacenamiento lo indica (`release_on_confirmation`), junto con el
+borrado de los índices de observaciones, que se reconstruyen desde la vista. XGBoost
+conserva su estado de recuperación, porque la reanudación de un intento completo lo
+vuelve a cargar. El efecto en disco de esta política está medido en el
+[presupuesto de la campaña A](../../reports/engineering/campaign-storage-20261009/README.md).

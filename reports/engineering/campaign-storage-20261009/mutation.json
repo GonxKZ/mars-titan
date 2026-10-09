@@ -1,0 +1,350 @@
+{
+ "schema_version": 1,
+ "kind": "directed_mutation",
+ "rounds": 3,
+ "note": "Una segunda o tercera ronda repite los mutantes que sobrevivieron tras reforzar sus pruebas",
+ "mutants": [
+  {
+   "round": 1,
+   "name": "margen mínimo",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "estados conservados sin liberar",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "recuperación transitoria",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "escritura transitoria",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "índices conservados al liberar",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "bits de página XGBoost",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "tope caché validación",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "traslado con validación",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "lanzamiento sin margen",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "admisión sin margen",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "sin límite de consultas",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "índices no liberados",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "cachés de XGBoost no liberadas",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "confirmados contados",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "plan con confirmados",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "liberación conserva el último",
+   "file": "src/mars_titan/training/checkpoints.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "liberación sin integridad",
+   "file": "src/mars_titan/training/checkpoints.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "liberación borra el elegido",
+   "file": "src/mars_titan/training/checkpoints.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "liberación sin índice nuevo",
+   "file": "src/mars_titan/training/checkpoints.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "sin admisión",
+   "file": "src/mars_titan/training/masked_campaign.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "sin liberar al confirmar",
+   "file": "src/mars_titan/training/masked_campaign.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "sin comprobar el lanzamiento",
+   "file": "src/mars_titan/training/masked_campaign.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "parada sin guardia",
+   "file": "src/mars_titan/training/masked_campaign.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "tablas sin máscara de nulos",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "survived"
+  },
+  {
+   "round": 1,
+   "name": "tablas sin bits",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "mediana sin comprobar",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "cero sin signo",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "claves sin comparar",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "índice de fila invertido",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "orden común sin reordenar",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "elegido sin finalista",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "survived"
+  },
+  {
+   "round": 1,
+   "name": "cuantiles sin calibración",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "tabla común repetida",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "compactación sin original",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "survived"
+  },
+  {
+   "round": 1,
+   "name": "ablación sin índices",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 1,
+   "name": "agregados en lugar de filas",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "tablas sin máscara de nulos",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "compactación sin original",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "búsqueda abierta sin filas",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "búsqueda cerrada sin liberar",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "survived"
+  },
+  {
+   "round": 2,
+   "name": "adaptador sin comprobar centro",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "adaptador sin comprobar padre",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "adaptador sin padre",
+   "file": "src/mars_titan/training/storage_measurements.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "adaptador elegidos con validación",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "adaptador compactado sin original",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "fórmula sin redondeo hacia arriba",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "survived"
+  },
+  {
+   "round": 2,
+   "name": "coeficientes como media",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "survived"
+  },
+  {
+   "round": 2,
+   "name": "tabla común como media",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "survived"
+  },
+  {
+   "round": 2,
+   "name": "reserva sin restar",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "reserva sin guardar",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "reserva sin devolver",
+   "file": "src/mars_titan/training/campaign_storage.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "campaña sin devolver reserva",
+   "file": "src/mars_titan/training/masked_campaign.py",
+   "status": "killed"
+  },
+  {
+   "round": 2,
+   "name": "ablación sin informe",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 3,
+   "name": "búsqueda cerrada sin liberar",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 3,
+   "name": "fórmula sin redondeo hacia arriba",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 3,
+   "name": "coeficientes como media",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  },
+  {
+   "round": 3,
+   "name": "tabla común como media",
+   "file": "src/mars_titan/training/storage_budget.py",
+   "status": "killed"
+  }
+ ]
+}

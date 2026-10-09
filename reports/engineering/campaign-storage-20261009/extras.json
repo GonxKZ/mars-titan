@@ -1,0 +1,110 @@
+{
+ "schema_version": 1,
+ "kind": "historical_masked_campaign_storage_extras",
+ "aggregate_bytes_per_row": 0.5900783003021555,
+ "index_bytes_per_row": 4.161444859397627,
+ "index_build_bytes_per_row": 12.173338940755341,
+ "tape_bytes": 1531535,
+ "tape_shape": {
+  "sessions": 252,
+  "assets": 128
+ },
+ "adapter": {
+  "ordered_row_bytes": 4330,
+  "input_row_bytes": 6409,
+  "parent_cache_bytes": 67211264,
+  "state_bytes": 1800000,
+  "retained_states": 3,
+  "job_report_bytes": 307200,
+  "row_bytes_current": 99.0218862071606,
+  "row_bytes_large_groups": 65.01849551449378,
+  "row_bytes_shared_rows": 39.175983436853
+ },
+ "measured": {
+  "US/fold-018/evaluation": {
+   "rows": 1027173,
+   "adapter_current": 100065501,
+   "adapter_large_groups": 63909259,
+   "adapter_shared_rows": 40196200,
+   "aggregates_quantile": 95428,
+   "aggregate_rows": 1245,
+   "aggregates_point": 48057,
+   "index": {
+    "rows": 2054346,
+    "bytes": 4369183,
+    "raw_bytes": 19267014
+   }
+  },
+  "US/fold-018/train": {
+   "rows": 12363376,
+   "adapter_current": 1222886646,
+   "adapter_large_groups": 803848107,
+   "adapter_shared_rows": 483733779,
+   "aggregates_quantile": 1924598,
+   "aggregate_rows": 27350,
+   "aggregates_point": 943782,
+   "index": {
+    "rows": 24726752,
+    "bytes": 102899015,
+    "raw_bytes": 301007133
+   }
+  },
+  "CN/fold-012/evaluation": {
+   "rows": 194649,
+   "adapter_current": 18870800,
+   "adapter_large_groups": 12039894,
+   "adapter_shared_rows": 7625566,
+   "aggregates_quantile": 94176,
+   "aggregate_rows": 1205,
+   "aggregates_point": 46897,
+   "index": {
+    "rows": 389298,
+    "bytes": 586135,
+    "raw_bytes": 3649843
+   }
+  },
+  "CN/fold-012/train": {
+   "rows": 2275981,
+   "adapter_current": 223194326,
+   "adapter_large_groups": 143707878,
+   "adapter_shared_rows": 89052390,
+   "aggregates_quantile": 1343007,
+   "aggregate_rows": 18780,
+   "aggregates_point": 658942,
+   "index": {
+    "rows": 4551962,
+    "bytes": 15569694,
+    "raw_bytes": 49486003
+   }
+  },
+  "US+CN/fold-012/evaluation": {
+   "rows": 1221822,
+   "adapter_current": 119103433,
+   "adapter_large_groups": 76028109,
+   "adapter_shared_rows": 47818439,
+   "aggregates_quantile": 191785,
+   "aggregate_rows": 2490,
+   "aggregates_point": 97055,
+   "index": {
+    "rows": 2443644,
+    "bytes": 4922975,
+    "raw_bytes": 23231131
+   }
+  },
+  "US+CN/fold-012/train": {
+   "rows": 14639357,
+   "adapter_current": 1449616743,
+   "adapter_large_groups": 951805196,
+   "adapter_shared_rows": 572793305,
+   "aggregates_quantile": 3909142,
+   "aggregate_rows": 54700,
+   "aggregates_point": 1944714,
+   "index": {
+    "rows": 29278714,
+    "bytes": 110168217,
+    "raw_bytes": 355898038
+   }
+  }
+ },
+ "pyarrow": "25.0.1"
+}
