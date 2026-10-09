@@ -96,6 +96,83 @@ La [comparación conjunta](../../configs/evaluation/historical-masked-2000-joint
 
 Las ventanas se emparejan por intervalos idénticos: `fold-k` de US con `fold-k` del conjunto y `fold-k` de CN con `fold-(k+6)`. Las filas y los objetivos del brazo prestado deben coincidir exactamente con los del control, y la huella de la vista conjunta de cada ventana queda en el manifiesto de fuentes. Cada semilla se resume por separado y los contrastes usan la media sesión a sesión de las semillas. Ridge y XGBoost tienen una sola semilla y entran con su serie.
 
+## Walk-forward por etapas de la campaña A v2
+
+### Decisión y principio
+
+El 9 de octubre de 2026, antes de cualquier resultado, el autor eligió para la campaña A v2 un walk-forward por etapas, la «Opción 1 + control» registrada en [#437](https://github.com/GonxKZ/mars-titan/issues/437). El principio es que ninguna etapa ajusta pesos con filas cuyos objetivos ya usó la etapa anterior para ajustar los suyos, y que el año evaluado no lo ve ninguna etapa antes de su test. Todo se hace con datos reales de la edición, sin filas sintéticas, remuestreadas ni aumentadas, y con las mismas filas y divisiones para todas las familias. La [campaña v2](../../configs/baselines/historical-masked-campaign-a-v2.json) lo declara en `walk_forward_stages` con un único valor admitido (`training/campaign_chain.py`) y exige el orden ventana a ventana. Es una decisión de diseño previa a cualquier resultado, no una conclusión.
+
+### Roles de cada ventana
+
+Para la ventana k, con evaluación en el año Y, los tramos son los de la sección anterior: `train_k` = [2000, abr Y-1), `val_k` de abril a septiembre de Y-1, `cal_k` de octubre a diciembre de Y-1 y `eval_k` el año Y, todos con purga por intervalo de etiqueta.
+
+| Rol | Parte de | Ajusta con | Elige con | Calibra con | Predice |
+| --- | --- | --- | --- | --- | --- |
+| Base | Inicialización nueva | `train_k` | `val_k` | `cal_k` | `eval_k` |
+| Posentrenamiento (k ≥ 1) | Estado elegido de la base en k-1 | Filas de `train_k` con decisión en [ene Y-1, abr Y-1) | `val_k`, con el padre elegible en la época 0 | `cal_k` | `eval_k` |
+| Predictor de la cadena | Candidatos del posentrenamiento, o la base en la ventana 0 | Nada | `val_k` | `cal_k` | `eval_k` |
+| RL anclada en k | Política nueva | Cintas de `eval_0` a `eval_{k-2}` (mínimo 3) | Cinta de `eval_{k-1}` | | Cinta de `eval_k` |
+| Test | | | | | `eval_k`, igual para todas las familias |
+
+El padre del posentrenamiento es el estado elegido de la base en la ventana k-1 para el mismo brazo y semilla, el ganador de la búsqueda o el finalista. Ese padre ajustó sus pesos hasta marzo de Y-2 y usó abril a diciembre de Y-2 para elegir época y calibrar. Esos nueve meses ya influyeron en el padre por selección y calibración, así que tampoco entran en el ajuste nuevo. Las filas nuevas son las del tramo `train` de la vista k con decisión entre el final de `cal_{k-1}` y el final de `train_k` (`campaign_chain.posttraining_rows`), unos tres meses. Su etiqueta madura antes del final de `train_k` por la purga de la vista, y toda etiqueta del padre madura antes de su primera decisión, así que la purga queda en los dos extremos. La ventana 0 no tiene padre ni posentrenamiento. El padre no es el predictor de la cadena de k-1, para que las adaptaciones no se acumulen de un año a otro y cada contraste parta del mismo tipo de estado.
+
+### Predictor de la cadena
+
+Los candidatos de la ventana k ≥ 1 son el padre congelado (la base k-1 trasladada a la ventana k), cada caso de la matriz de adaptadores y la continuación completa del padre con las filas nuevas. La regla `chain_validation_score_v1` elige el menor `score` de validación de la ventana k, con la misma definición y las mismas filas que la selección de la base. Un candidato solo sustituye al padre congelado con una mejora estricta (mejora mínima declarada 0) y los empates entre los demás se resuelven por el identificador del trabajo. En la ventana 0 el predictor de la cadena es el estado elegido de la base. Ese predictor es el que alimenta la RL.
+
+El reentreno completo de la ventana k (la base k) no es candidato. La cadena mide cuánto aporta adaptar un estado con datos que no vio. Si el reentreno pudiera ganar, se mezclarían dos preguntas, adaptar o volver a entrenar desde cero, y la entrada de la RL cambiaría de naturaleza de una ventana a otra según quién ganase. La comparación base k frente a cadena k se informa aparte, como otro contraste emparejado sobre las mismas filas de `eval_k`, con las mismas métricas y las semillas resumidas igual que en el resto de la comparación.
+
+### RL expansiva
+
+La política anclada en k ajusta con las cintas reales reconstruidas de todas las evaluaciones anteriores a su validación, valida con la de `eval_{k-1}` y evalúa con la de `eval_k`. La primera política es la de la quinta ventana de cada mercado (`campaign_chain.rl_windows`). Cada cinta lleva las predicciones fuera de muestra del predictor de la cadena de su propia ventana, cuyo recibo declara la última etiqueta usada (`labels_used_until`) calculada con las etiquetas reales de sus vistas. Ningún predictor predice en una cinta filas con las que ajustó, eligió o calibró, porque esa etiqueta madura antes del inicio de su evaluación y toda decisión de la cinta es posterior.
+
+### MARS-TITAN y el control en línea
+
+MARS-TITAN pasa por las mismas etapas, filas y divisiones. Su diferencia está dentro del modelo: la memoria neuronal de Titans se actualiza en inferencia solo con entradas ya publicadas, el banco episódico solo admite errores cuya etiqueta ha madurado antes del instante de decisión y los refinamientos K = 1, 2 y 4 dan más vueltas sobre los mismos datos. La memoria llega a `eval_k` con el estado del final de su calentamiento declarado y nunca usa información posterior a cada decisión. Siguen declarados `mac_disabled`, `mac_frozen`, `mac_online`, `transformer_direct`, M0 a M3 y K = 1, 2 y 4.
+
+El control `transformer_compact_online` parte del mismo estado elegido que `transformer_compact` en la ventana k. Durante `cal_k` y `eval_k` recibe las mismas etiquetas maduras que el banco de `mars_titan_m1`, en el instante en que maduran, y actualiza sus pesos con SGD según una regla declarada antes de ejecutar (tasa, filas por paso, frecuencia, recorte y tope). El tope `episodic_bank_writes` iguala la información: en cada tramo, las etiquetas usadas en pasos no superan las escrituras del banco en el mismo ámbito, ventana y semilla. Se compara emparejado con `transformer_compact` congelado y con MARS-TITAN, para descartar que la mejora de MARS-TITAN venga solo de seguir aprendiendo. Su `labels_used_until` acota el estado fuera de línea. La causalidad de las actualizaciones dentro de `cal_k` y `eval_k` la comprueban las pruebas de su ejecutor, igual que las de MARS-TITAN.
+
+### Cadena de etapas
+
+```mermaid
+flowchart TB
+  Bprev["Base k-1: ajusta hasta marzo de Y-2 y elige y calibra con abril a diciembre de Y-2"]
+  Bk["Base k: reentreno completo hasta marzo de Y-1"]
+  P["Posentrenamiento k: ajusta con enero a marzo de Y-1, elige con val_k y calibra con cal_k"]
+  C["Predictor de la cadena k: padre congelado, adaptador o continuación"]
+  Cprev["Predictores de la cadena 0 a k-1: predicciones fuera de muestra de cada evaluación"]
+  R["RL k: ajusta con las cintas de eval_0 a eval_k-2 y valida con eval_k-1"]
+  T["Test eval_k, año Y: mismas filas para todas las familias"]
+  Bprev -->|"estado elegido como padre"| P
+  P --> C
+  Cprev -->|"cintas de ajuste y validación"| R
+  C -->|"cinta de eval_k"| R
+  C --> T
+  R --> T
+  Bk -.->|"contraste aparte, mismas filas"| T
+```
+
+### Contrato de los recibos y verificador de disjunción
+
+Los recibos de la cadena viven bajo la salida de la etapa de posentrenamiento. `windows/<ámbito>/<ventana>/<brazo>__chain/seed-<s>/<mercado>.json` es un recibo walk-forward con el esquema exacto de [#390](https://github.com/GonxKZ/mars-titan/pull/390). Su `parent` identifica el trabajo elegido y la huella de su recibo confirmado. `selection.json`, en la misma carpeta, guarda la regla, los candidatos con su `score`, el elegido, el estado que conserva, las filas nuevas de ajuste con su huella y la huella de cada recibo de mercado. Se escribe el último y marca la confirmación. `campaign_chain.read_selection` exige la regla, la coherencia entre ventana, padre, candidatos y filas nuevas y que cada recibo de mercado conserve su huella, el trabajo elegido y la última etiqueta usada. La primera ventana publica la cadena con `selected.kind = "base"`.
+
+`run_masked_campaign.py disjunction` (`training/chain_disjunction.py`) lee las vistas y, si se le dan, los recibos de la campaña base y de la cadena. No ajusta nada y demuestra con recuentos y huellas por identidad de fila (mercado, activo y fila de la muestra) que:
+
+1. las filas nuevas del posentrenamiento de cada ventana no cortan las de ajuste, validación ni calibración de la vista del padre, y que toda etiqueta del padre madura antes de la primera decisión nueva,
+2. cada recibo de la cadena declara una última etiqueta usada anterior a la primera decisión de su evaluación y no anterior a la maduración de la calibración de su ventana, la más tardía de las que fijan el estado,
+3. las filas de test coinciden: una sola huella de evaluación por ventana en los recibos base, la misma huella por mercado en las ventanas de ámbitos distintos con los mismos tramos y el mismo número de filas en la cadena,
+4. ninguna fila asignada a un tramo es de 2024, y cada una cae en su tramo con la etiqueta madura antes de su final.
+
+Las filas fuera de todo tramo no entran en ninguna etapa. Que su objetivo sea nulo lo comprueba la verificación independiente de las vistas. El informe guarda por ventana las huellas de las filas nuevas y de la evaluación por mercado, los extremos de decisión y maduración, la huella del manifiesto de cada vista y los fallos. La orden termina con código 1 si encuentra alguno. Se ejecutará sobre las vistas de la edición v3.1 cuando estén preparadas y después sobre los recibos de cada ventana.
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py disjunction \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --views US+CN=<vistas v3.1>/US+CN --views US=<vistas v3.1>/US --views CN=<vistas v3.1>/CN \
+  [--campaign-output <campaña>] [--posttraining <etapa de adaptadores>] \
+  --workers 4 --output <informe de disjunción>
+```
+
 ## Purga por el intervalo de cada etiqueta
 
 Una fila pertenece a un tramo solo si su decisión está dentro del tramo y su etiqueta madura estrictamente antes del final, es decir, si el intervalo [`prediction_at`, `label_available_at`] cabe entero en [inicio, fin). El objetivo es el residual apertura-cierre de la sesión siguiente. Su entrada (`entry_at`) y su salida (`exit_at`) son la apertura y el cierre de esa sesión, posteriores a la decisión, y `label_available_at` es la última disponibilidad del activo y del factor. La tabla de etiquetas no guarda `entry_at` ni `exit_at`, pero ambos quedan dentro del intervalo usado, que es por tanto una cota conservadora de la purga.
@@ -126,7 +203,7 @@ La búsqueda temporal compara la regla del plan con la del protocolo, incluidos 
 
 ## Estado y calentamiento por ventana
 
-Cada ventana parte de una inicialización nueva con su semilla. No hereda pesos, optimizador, normalizadores ni calibrador de otra ventana. Los pesos rápidos y el momentum de Titans, el banco episódico, la cola de etiquetas pendientes y el cursor se reinician al empezar cada ventana y al empezar cada pasada de validación, calibración o evaluación.
+Cada ventana de la campaña base parte de una inicialización nueva con su semilla. No hereda pesos, optimizador, normalizadores ni calibrador de otra ventana. En la campaña A v2, el posentrenamiento de la ventana k parte del estado elegido de la base en k-1 y solo ajusta con filas que ese estado no usó, como se describe en el [walk-forward por etapas](#walk-forward-por-etapas-de-la-campaña-a-v2). Los pesos rápidos y el momentum de Titans, el banco episódico, la cola de etiquetas pendientes y el cursor se reinician al empezar cada ventana y al empezar cada pasada de validación, calibración o evaluación.
 
 El calentamiento de los brazos con memoria usa solo las sesiones anteriores al comienzo del tramo que se va a medir y solo etiquetas con `label_available_at` anterior a ese comienzo. Su longitud será la misma para todos los brazos con memoria. Esta política está declarada aquí y su aplicación corresponde a cada ejecutor. El [punto de entrada de Titans-MAC](../engineering/titans-chronological-trainer.md#ventana-walk-forward) la aplica con 12 meses de entradas, sin etiquetas, limitados al origen del ajuste. Los demás ejecutores todavía no la conectan a estas vistas. La separación entre el checkpoint seleccionado y los de recuperación, con rotación acotada, sigue la [política de checkpoints](../engineering/checkpoint-recovery.md) y se coordina con [#67](https://github.com/GonxKZ/mars-titan/issues/67).
 

@@ -96,7 +96,7 @@ Ajustes por brazo y semilla en cada ámbito:
 
 En B cada brazo y semilla añade 12 predicciones trasladadas en US y 8 en CN y en US+CN. Cada configuración declara `max_training_jobs` y `max_prediction_jobs` iguales a su plan, de modo que añadir brazos, semillas o candidatos exige cambiar la configuración y su huella. Superarlos detiene la comprobación con el recuento previsto y el límite. La búsqueda temporal de referencias ya no tiene un tope fijo de 512 ejecuciones: un plan de versión 4 puede declarar `max_runs`, y sin ese campo conserva el límite anterior.
 
-El 9 de octubre se eligió la variante A con todas las familias, registrada en [#363](https://github.com/GonxKZ/mars-titan/issues/363). Se prefirió entrenar cada ventana con todo el pasado disponible a reducir el coste, así que la medida de caudal ya no decide entre A y B. Con la [declaración ampliada](#declaración-preparada-de-las-familias-pendientes), A suma 4.680 ajustes en la campaña base, 3.915 en la etapa de adaptadores y 2.160 en la de políticas. La variante B conserva su configuración y sus pruebas, pero no es la elegida. La duración real se medirá con los primeros trabajos.
+El 9 de octubre se eligió la variante A con todas las familias, registrada en [#363](https://github.com/GonxKZ/mars-titan/issues/363). Se prefirió entrenar cada ventana con todo el pasado disponible a reducir el coste, así que la medida de caudal ya no decide entre A y B. Con la [declaración ampliada](#declaración-preparada-de-las-familias-pendientes), A suma 4.680 ajustes en la campaña base, 3.915 en la etapa de adaptadores y 2.160 en la de políticas. La variante B conserva su configuración y sus pruebas, pero no es la elegida. Desde el 9 de octubre, además, la configuración declarada de B está retirada por decisión del autor: `campaign_plan.RETIRED` la lista y `launch_blockers` impide lanzarla, mientras `check` sigue contando sus trabajos y las copias de las pruebas ejercitan su código de traslado. La duración real se medirá con los primeros trabajos.
 
 ### Campaña A v2 con modelo conjunto
 
@@ -119,7 +119,9 @@ El control de MARS-TITAN es `mars_titan_m1` por cuatro motivos fijados antes de 
 | `execution` | `{"order": "by_window"}`. La campaña recorre cada ventana completa antes de la siguiente |
 | `numerics` | FP32 estricto: `float32_matmul_precision="highest"`, `cuda_matmul_allow_tf32=false` y `cudnn_allow_tf32=false`. Es el único valor admitido |
 | `data_policy` | `real_edition_only`, el único valor admitido. Solo datos reales de la edición verificada, sin condiciones sintéticas, remuestreadas ni de aumento |
-| Límites | 2.322 ajustes y ninguna predicción trasladada |
+| `walk_forward_stages` | El [walk-forward por etapas](walk-forward-2000.md#walk-forward-por-etapas-de-la-campaña-a-v2) `staged_chain_v1`, único valor admitido: posentrenamiento desde la base k-1 con filas nuevas, predictor de la cadena con mejora estricta y RL expansiva con un mínimo de 3 ventanas |
+| `online_controls` | El control `transformer_compact_online`, con padre `transformer_compact`, tope de escrituras del banco de `mars_titan_m1` y regla SGD con tasa, filas por paso, frecuencia y recorte pendientes |
+| Límites | 2.322 ajustes, ninguna predicción trasladada y 153 trabajos del control en línea |
 
 Cada finalista depende de todas las búsquedas de su brazo y ventana y, si el brazo parte de otro, del finalista del padre con la misma semilla. Su identidad guarda el caso elegido, la búsqueda ganadora y la huella de su recibo, de modo que un cambio en una búsqueda confirmada invalida el finalista al reanudar. La selección solo lee el MAE por sesión de validación del recibo, con desempate por identificador. La comparación resume cada semilla por separado y contrasta la media sesión a sesión de las semillas.
 
@@ -131,7 +133,7 @@ Cada finalista depende de todas las búsquedas de su brazo y ventana y, si el br
 | Ridge y XGBoost | 17 × 45 = 765 | 15 × 19 = 285 |
 | Total | 4.680 | 2.322 |
 
-Por ventana conjunta hay 87 ajustes neuronales: 21 brazos o núcleos con dos casos y dos finalistas, y la GRU candidata con un caso y dos finalistas. Las etapas posteriores solo usan el modelo conjunto: 1.653 ajustes de adaptadores, 3.534 predicciones de la ablación de modalidades y 2.160 ajustes y 1.584 referencias de políticas. La cinta US de políticas recorre 15 ventanas (2009 a 2023) y la CN 9 (2015 a 2023), las dos con las predicciones del modelo conjunto en su mercado.
+Por ventana conjunta hay 87 ajustes neuronales: 21 brazos o núcleos con dos casos y dos finalistas, y la GRU candidata con un caso y dos finalistas. Las etapas posteriores solo usan el modelo conjunto. Las configuraciones de etapa todavía declaradas son anteriores al walk-forward por etapas: 1.653 ajustes de adaptadores, 3.534 predicciones de la ablación de modalidades y 2.160 ajustes y 1.584 referencias de políticas. Con el diseño por etapas, la misma matriz de adaptadores no ajusta en la primera ventana y deja 1.566 ajustes con filas nuevas, 270 predicciones del padre congelado y 285 selecciones de la cadena (cinco brazos de referencia, tres semillas y 19 ventanas). Esos recuentos cambiarán al extender los adaptadores a todas las familias ([#446](https://github.com/GonxKZ/mars-titan/pull/446)) y la RL expansiva ([#430](https://github.com/GonxKZ/mars-titan/pull/430)). La cinta US de políticas recorre 15 ventanas (2009 a 2023) y la CN 9 (2015 a 2023), las dos con las predicciones de la cadena del modelo conjunto en su mercado.
 
 Las filas salen de los objetivos `targets-v3` con la regla de las vistas, en el [informe de recuentos](../../reports/data/campaign-a-v2-window-counts-20261009.json). Los de US y CN coinciden exactamente con las vistas ya verificadas. US+CN suma 125.553.766 filas de ajuste, 7.292.172 de validación, 3.721.369 de calibración y 15.434.391 de evaluación en sus 19 ventanas. Las vistas de la campaña v2 se prepararán sobre la edición v3.1, así que estos recuentos se [recalcularán](walk-forward-2000.md#comparación-con-los-controles-separados) con sus objetivos.
 
@@ -145,6 +147,14 @@ Por orden del autor del 9 de octubre (no inventar datos ni perder precisión), l
 
 El lanzador fija los tres indicadores en cada trabajo, antes de que su ejecutor cree modelos. Al confirmar exige que sigan igual y que el informe del ejecutor no registre otro valor con ninguno de los nombres que usan los informes del proyecto, guarda la precisión en cada recibo y rechaza al reanudar un recibo con otra. Las etapas de adaptadores y de ablación aplican la misma precisión de su campaña base, y la medida de caudal mide con ella. El caudal de 16.000 muestras-época por segundo de la proyección se midió con TF32 permitido en cuDNN, así que puede ser optimista para los brazos recurrentes.
 
+#### Walk-forward por etapas y control en línea
+
+El 9 de octubre, antes de cualquier resultado, el autor eligió el walk-forward por etapas con un control en línea ([#437](https://github.com/GonxKZ/mars-titan/issues/437)). El [protocolo](walk-forward-2000.md#walk-forward-por-etapas-de-la-campaña-a-v2) describe los roles de cada ventana, la regla del predictor de la cadena, el motivo por el que el reentreno de la ventana no es candidato, el diagrama de la cadena, el contrato de los recibos y el verificador de disjunción. Aquí se recoge lo que cambia en el plan.
+
+- `walk_forward_stages` fija el diseño con un único valor admitido y exige `execution.order = "by_window"`. Con esa declaración, el calendario crea las selecciones de la cadena a partir de la etapa de adaptadores y exige dependencias concretas (`campaign_chain.check_staged`). Cada trabajo de posentrenamiento de la ventana k depende de los trabajos base que eligen su padre en k-1, y la primera ventana no tiene posentrenamiento. Cada trabajo de RL declara `predictor_seed` y depende de la selección de la cadena de todas las ventanas que lee. Las configuraciones de etapa anteriores al diseño se rechazan con su motivo hasta que adopten el contrato.
+- `online_controls` declara `transformer_compact_online`. El plan crea un trabajo por ámbito, ventana y semilla (153 en total: 19 ventanas conjuntas, 19 de US y 13 de CN por tres semillas). Cada uno depende de los trabajos que eligen el estado de `transformer_compact` y de `mars_titan_m1` en la misma ventana y semilla. Sus trabajos llevan `regenerable=False`, porque sus predicciones salen de pasos en línea y la retención rodante no puede regenerarlas por inferencia. Mientras su regla tenga valores `pending`, `launch_blockers` impide lanzar la campaña. Su ejecutor y su brazo en la comparación se preparan en otra rama.
+- La ablación de modalidades no incluye el control en línea, que no tiene un estado elegido que ablacionar. La estimación de disco lo excluye hasta tener el informe de su ejecutor, y la de horas lo acota con una predicción y, como máximo, un paso por fila de calibración y evaluación.
+
 #### Orden ventana a ventana
 
 Para liberar disco a medida que avanza, la campaña v2 se ejecuta ventana a ventana. `training/campaign_schedule.py` agrupa en una ventana de campaña las ventanas de todos los ámbitos con los cuatro tramos idénticos, con el nombre de la conjunta: de `fold-000` a `fold-005` están US+CN y US, y desde `fold-006` también CN. Cada ventana recorre estas fases, y después empieza la siguiente:
@@ -154,20 +164,24 @@ Para liberar disco a medida que avanza, la campaña v2 se ejecuta ventana a vent
 | `base_search` | Casos de búsqueda de todos los brazos y ámbitos con la semilla 42 |
 | `selection` | Caso elegido de cada brazo con el MAE de validación de sus recibos. No es un trabajo |
 | `selected_case_seeds` | El caso elegido con 43 y 44 |
-| `adapters`, `ablation`, `rl` | Etapas posteriores de la misma ventana |
+| `online` | El control en línea, desde el estado elegido de su padre y con el tope de su lector |
+| `adapters` | Posentrenamiento desde la base de la ventana anterior con las filas nuevas |
+| `chain` | Selección del predictor de la cadena de cada brazo base y semilla |
+| `ablation`, `rl` | Ablación de modalidades y políticas, que leen la cadena de esta ventana y de las anteriores |
 | `comparison` | Agregados por sesión de la comparación de la ventana en los tres ámbitos |
 | `release` | Liberación de lo temporal de la ventana, a cargo de la retención rodante |
 
-El plan comprueba que ninguna dependencia apunta a una fase posterior ni a una ventana posterior. Con el reentrenamiento anual no hay dependencias entre ventanas. `run`, `posttraining run`, `ablation run` y `rl run` aceptan `--window`, ejecutan solo los trabajos de esa ventana con sus dependencias y confirman solo la base de esa ventana. `schedule` muestra el orden sin leer datos. La persistencia de los agregados por ventana, que permitiría liberar las predicciones por fila antes del informe final, está pendiente y se coordinará con la nueva versión de la comparación.
+El plan comprueba que ninguna dependencia apunta a una fase posterior ni a una ventana posterior. La campaña base no tiene dependencias entre ventanas. Las únicas que cruzan ventanas son las del diseño por etapas: el posentrenamiento de k depende de la base en k-1 y la RL de k de las cadenas anteriores. `run`, `posttraining run`, `ablation run` y `rl run` aceptan `--window`, ejecutan solo los trabajos de esa ventana con sus dependencias y confirman solo la base de esa ventana. `schedule` muestra el orden sin leer datos. Admite `--adapter-stage`, `--ablation-stage` y `--rl-stage`, que hoy se rechazan porque sus configuraciones son anteriores al diseño por etapas. La persistencia de los agregados por ventana, que permitiría liberar las predicciones por fila antes del informe final, está pendiente y se coordinará con la nueva versión de la comparación.
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py check \
   --campaign configs/baselines/historical-masked-campaign-a-v2.json
 uv run --no-sync python scripts/run_masked_campaign.py schedule \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json
+uv run --no-sync python scripts/run_masked_campaign.py disjunction \
   --campaign configs/baselines/historical-masked-campaign-a-v2.json \
-  --adapter-stage configs/posttraining/historical-masked-adapter-stage-a-v2.json \
-  --ablation-stage configs/evaluation/historical-masked-ablation-stage-a-v2.json \
-  --rl-stage configs/simulation/historical-masked-rl-stage-a-v2.json
+  --views US+CN=<vistas conjuntas v3.1>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN \
+  --output <informe de disjunción>
 uv run --no-sync python scripts/run_masked_campaign.py run \
   --campaign configs/baselines/historical-masked-campaign-a-v2.json \
   --views US+CN=<vistas conjuntas v3>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN \
@@ -185,13 +199,24 @@ uv run --no-sync python scripts/run_masked_campaign.py run \
 | Adaptadores | 1.884 h | 995 h | 995 h |
 | Ablación de modalidades | | 27 h | 27 h |
 
-Las 10 épocas efectivas son una estimación para la parada conjunta (rango de 8 a 14): la mediana de la mejor época en la campaña de referencias fue 3, la paciencia es 5 y el grupo para con su miembro más lento. Ridge, XGBoost y las políticas no escalan con el caudal neuronal y se estiman aparte entre 145 y 340 h sin medir. Con 4 semanas de reloj (672 h) y unas 580 h útiles, el factor de caudal necesario es horas neuronales / (580 − horas fijas): 10,1 con 250 h fijas y 7,0 con 100 h. Todo son hipótesis hasta medir el caudal de cada familia en esta edición.
+Las 10 épocas efectivas son una estimación para la parada conjunta (rango de 8 a 14): la mediana de la mejor época en la campaña de referencias fue 3, la paciencia es 5 y el grupo para con su miembro más lento. Ridge, XGBoost y las políticas no escalan con el caudal neuronal y se estiman aparte entre 145 y 340 h sin medir. Con 4 semanas de reloj (672 h) y unas 580 h útiles, el factor de caudal necesario es horas neuronales / (580 − horas fijas): 10,1 con 250 h fijas y 7,0 con 100 h. Esta tabla conserva los adaptadores anteriores al walk-forward por etapas, que ajustaban con todo el tramo de ajuste de su ventana.
+
+Con el walk-forward por etapas, los adaptadores solo recorren las filas nuevas de las ventanas con padre: 3.326.967 en US+CN, 2.775.272 en US y 447.458 en CN, frente a las 125.553.766 filas de ajuste del conjunto. El [informe de recuentos](../../reports/data/campaign-a-v2-window-counts-20261009.json) las recoge en `posttraining_rows`, contadas en los objetivos `targets-v3` con la regla de `campaign_chain.posttraining_rows`. Desde `fold-007`, las del conjunto menos las de US son exactamente las de la ventana CN con los mismos tramos. El caudal medido tras la nueva tubería de lectura, en `US+CN/fold-012` con FP32 estricto, es de 33.300 filas/s para un trabajo del Transformer compacto (40.400 para la GRU y 48.500 para DLinear), y tres trabajos a la vez con MPS suman entre 44.100 y 74.200 filas/s. Proceden del informe `reports/engineering/campaign-pipeline-20261009` de la rama `perf/campaign-pipeline`, todavía en revisión. Con 10 épocas efectivas e inferencia a 3 veces el caudal:
+
+| Etapa | 33.300 filas/s, adaptadores anteriores | 33.300 filas/s, por etapas | 44.100 filas/s, por etapas |
+| --- | ---: | ---: | ---: |
+| Base neuronal y control en línea | 1.116 h | 1.116 h | 842 h |
+| Adaptadores | 478 h | 30 h | 23 h |
+| Ablación de modalidades | 13 h | 13 h | 10 h |
+| Total neuronal | 1.607 h | 1.159 h | 875 h |
+
+El control en línea suma 1,3 h a 33.300 filas/s, acotado con una predicción y como mucho un paso por fila de calibración y evaluación. Con el diseño por etapas y 33.300 filas/s, el factor de caudal necesario para 580 h útiles es 3,5 con 250 h fijas y 2,4 con 100 h. Con 44.100 filas/s baja a 2,7 y 1,8. Ninguna de las dos cifras cabe todavía en cuatro semanas. Las dos tasas son hipótesis de trabajo. La primera aplica el caudal de un Transformer solo a todas las familias, y Titans-MAC, MARS-TITAN, CM-v1 y la GRU candidata no se han medido, así que los brazos recurrentes y con memoria pueden ser más lentos. La segunda supone tres ranuras ocupadas todo el tiempo con el peor agregado medido. Las horas de la RL y de las referencias tabulares siguen fuera de la cuenta neuronal.
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py budget \
   --campaign configs/baselines/historical-masked-campaign-a-v2.json \
   --counts reports/data/campaign-a-v2-window-counts-20261009.json \
-  --rate 16000 --epochs 10 \
+  --rate 33300 --epochs 10 \
   --stage configs/posttraining/historical-masked-adapter-stage-a-v2.json \
   --ablation-stage configs/evaluation/historical-masked-ablation-stage-a-v2.json \
   --fixed-hours 250 --target-hours 580
@@ -343,7 +368,7 @@ Las pruebas de `tests/training/test_campaign_plan.py`, `test_masked_campaign.py`
 
 ## Postentrenamiento
 
-Cada postentrenamiento parte de un padre seleccionado en la misma ventana y se compara con ese padre congelado. Los adaptadores se colocan solos y en combinaciones de uno, dos o tres puntos de inserción, con el mismo presupuesto de actualizaciones y la misma validación. Se ajustan solo con el tramo de ajuste de la ventana, se seleccionan con su validación y predicen calibración y evaluación con las mismas filas que la campaña base. Los objetivos ya derivados se describen en [adaptación predictiva](predictive-adaptation.md).
+En las campañas A y B, cada postentrenamiento parte de un padre seleccionado en la misma ventana y se compara con ese padre congelado. En la campaña A v2 parte del estado elegido de la base en la ventana anterior y solo ajusta con las filas que ese padre no usó, según el [walk-forward por etapas](walk-forward-2000.md#walk-forward-por-etapas-de-la-campaña-a-v2). Los adaptadores se colocan solos y en combinaciones de uno, dos o tres puntos de inserción, con el mismo presupuesto de actualizaciones y la misma validación. Se ajustan solo con el tramo de ajuste de la ventana, se seleccionan con su validación y predicen calibración y evaluación con las mismas filas que la campaña base. Los objetivos ya derivados se describen en [adaptación predictiva](predictive-adaptation.md).
 
 Las referencias neuronales de la campaña emiten cinco cuantiles. Sus adaptadores y su continuación completa optimizan la pinball media de esos niveles, la misma pérdida del padre, y la selección usa el MAE por sesión de la mediana. La corrección lineal residual queda excluida para estos padres con un motivo declarado: corrige un único valor escalar, la mediana guardada en la caché, y la corrección por nivel inicializada a cero ya es el brazo de la cabeza. Con padres escalares se conserva el diseño anterior, en el que la corrección residual se compara con la salida continua del padre.
 
@@ -355,7 +380,7 @@ Los entornos consumen únicamente predicciones fuera de muestra del walk-forward
 
 La etapa está declarada en las [políticas comunes](../../configs/simulation/historical-masked-rl-policies.json) y en una configuración por variante ([A](../../configs/simulation/historical-masked-rl-stage-a.json) y [B](../../configs/simulation/historical-masked-rl-stage-b.json)). `simulation/policy_plan.py` valida la declaración y enumera los trabajos sin leer datos, `simulation/window_tapes.py` monta las cintas de cada tramo y `simulation/campaign_stage.py` ejecuta, reanuda y confirma. No se ha ejecutado.
 
-Cada política aprende y se elige con información anterior a su evaluación. La política de la ventana k se ajusta con los tramos de evaluación de las tres ventanas anteriores a k−1, se selecciona con el de k−1 y se evalúa en k. Se usan tramos de evaluación porque son los únicos con predicciones fuera de muestra de un ajuste que terminó antes, de modo que el predictor no vio ninguna etiqueta posterior a la primera decisión del tramo. La construcción lo exige con el `labels_used_until` de cada recibo. Las cuatro primeras ventanas del protocolo se reservan para el primer ajuste y la primera validación. EE. UU. tiene así 15 ventanas de política, que evalúan de 2009 a 2023, y China 9, de 2015 a 2023. 2024 sigue cerrado.
+Cada política aprende y se elige con información anterior a su evaluación. La política de la ventana k se ajusta con los tramos de evaluación de las tres ventanas anteriores a k−1, se selecciona con el de k−1 y se evalúa en k. Se usan tramos de evaluación porque son los únicos con predicciones fuera de muestra de un ajuste que terminó antes, de modo que el predictor no vio ninguna etiqueta posterior a la primera decisión del tramo. La construcción lo exige con el `labels_used_until` de cada recibo. Las cuatro primeras ventanas del protocolo se reservan para el primer ajuste y la primera validación. EE. UU. tiene así 15 ventanas de política, que evalúan de 2009 a 2023, y China 9, de 2015 a 2023. 2024 sigue cerrado. En la campaña A v2 la ventana de ajuste es expansiva, con todas las evaluaciones anteriores a la validación y un mínimo de tres, y cada cinta lleva las predicciones del predictor de la cadena de su ventana. El primer ancla y el número de ventanas de política no cambian.
 
 El objetivo del trabajo exige medir el resultado financiero de todos los modelos, así que la etapa se declara en dos niveles:
 
@@ -435,6 +460,8 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 - Registrar la huella de la configuración que se lance. La campaña A v2 ya copia la declaración ampliada ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
 - Preparar y verificar las vistas de los tres ámbitos de la campaña v2 sobre la edición v3.1, cuando esa edición esté verificada, y recalcular con ella los recuentos y la proyección de horas.
 - Fijar las opciones de memoria pendientes de la campaña A v2 y conectar la parada conjunta en su sección `stopping`.
+- Fijar la regla del control `transformer_compact_online` (tasa, filas por paso, frecuencia y recorte) y conectar su ejecutor y su brazo en la comparación.
+- Integrar las etapas de adaptadores y de políticas con el contrato de la cadena y ejecutar el verificador de disjunción sobre las vistas v3.1 y, después, sobre los recibos de cada ventana.
 - Elegir, si la medida de caudal no cabe en el presupuesto, entre las palancas de la [proyección de horas](#proyección-de-horas).
 - Comparación parcial con las referencias, si se quiere evaluarlas antes de conectar las demás familias.
 - Revisar la configuración de evaluación declarada antes de ver resultados: familias de contrastes, base de los refinamientos K, mínimo de activos del Rank IC y longitud de bloque ([#32](https://github.com/GonxKZ/mars-titan/issues/32)). La [cabeza común](../engineering/quantile-head.md) y su calibración CQR ([#22](https://github.com/GonxKZ/mars-titan/issues/22)) están implementadas y el control de la cabeza sobre el Transformer compacto está declarado sin ejecutar.
