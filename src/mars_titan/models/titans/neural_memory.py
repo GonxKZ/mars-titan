@@ -4,6 +4,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
+from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
 from .state import (
     NeuralMemoryState,
@@ -50,6 +51,15 @@ class NeuralMemory(nn.Module):
                 logits = config.gate_bias.logits(config.theta_max)
                 for gate, value in zip(gates, logits, strict=True):
                     gate.bias = nn.Parameter(torch.full((gate.out_features,), value, dtype=dtype))
+            if config.qkv_convolution:
+                # Se sortean después de los parámetros anteriores para que estos conserven
+                # sus valores con la misma semilla.
+                self.key_convolution = CausalDepthwiseConvolution(
+                    config.dim, config.qkv_convolution, dtype=dtype
+                )
+                self.value_convolution = CausalDepthwiseConvolution(
+                    config.dim, config.qkv_convolution, dtype=dtype
+                )
         self.to(device=device)
 
     def _reference(self) -> Tensor:
@@ -64,6 +74,9 @@ class NeuralMemory(nn.Module):
         bounded_integer(batch_size, "lote", 1, self.config.max_batch)
         element_size = self._reference().element_size()
         required = batch_size * (2 * self.config.depth * self.config.dim**2 * element_size + 8)
+        # Se cuentan las tres ventanas de q, k y v porque dependen de esta configuración,
+        # aunque la de q viaje en el estado de MAC.
+        required += batch_size * 3 * self.config.window * self.config.dim * element_size
         if required > self.config.max_state_bytes:
             raise ValueError("El estado supera el presupuesto de bytes")
 
@@ -78,9 +91,60 @@ class NeuralMemory(nn.Module):
             tuple(torch.zeros_like(w) for w in weights),
             torch.zeros(batch_size, dtype=torch.int64, device=reference.device),
             self.config.fingerprint(),
+            self.initial_windows(batch_size, 2),
         )
         self.validate_state(state)
         return state
+
+    def initial_windows(self, batch_size: int, count: int) -> tuple[Tensor, ...]:
+        """Ventanas a cero, equivalentes al relleno por la izquierda. Vacío sin convolución."""
+        if not self.config.window:
+            return ()
+        reference = self._reference()
+        shape = (batch_size, self.config.window, self.config.dim)
+        return tuple(
+            torch.zeros(shape, dtype=reference.dtype, device=reference.device) for _ in range(count)
+        )
+
+    def validate_windows(
+        self,
+        windows: object,
+        count: int,
+        batch: int,
+        *,
+        device=None,
+        storage_ids: set | None = None,
+    ) -> int:
+        """Comprobar las ventanas declaradas y devolver los bytes de su almacenamiento."""
+        expected_count = count if self.config.window else 0
+        if type(windows) is not tuple or len(windows) != expected_count:
+            raise ValueError("Las ventanas de convolución no corresponden al contrato")
+        reference = self._reference()
+        expected_device = reference.device if device is None else torch.device(device)
+        storage_ids = set() if storage_ids is None else storage_ids
+        storage_bytes = 0
+        for value in windows:
+            if (
+                not isinstance(value, Tensor)
+                or value.layout != torch.strided
+                or value.shape != (batch, self.config.window, self.config.dim)
+                or value.dtype != reference.dtype
+                or value.device != expected_device
+                or not value.is_contiguous()
+            ):
+                raise ValueError(
+                    "La ventana tiene forma, tipo, dispositivo o contigüidad incompatible"
+                )
+            storage = value.untyped_storage()
+            storage_id = (value.device, storage.data_ptr())
+            if storage_id in storage_ids:
+                raise ValueError(
+                    "Los tensores del estado no pueden compartir almacenamiento mutable"
+                )
+            storage_ids.add(storage_id)
+            storage_bytes += storage.nbytes()
+            check_finite(value, "La ventana de convolución")
+        return storage_bytes
 
     def validate_state(self, state: NeuralMemoryState, *, device=None) -> None:
         if not isinstance(state, NeuralMemoryState) or state.config_id != self.config.fingerprint():
@@ -132,6 +196,11 @@ class NeuralMemory(nn.Module):
                     raise ValueError("Los pasos del estado no pueden ser negativos")
             else:
                 check_finite(value, "El estado")
+        storage_bytes += self.validate_windows(
+            state.convolution, 2, batch, device=expected_device, storage_ids=storage_ids
+        )
+        if storage_bytes > self.config.max_state_bytes:
+            raise ValueError("El almacenamiento del estado supera el presupuesto de bytes")
 
     def validate_input(self, values: Tensor, state: NeuralMemoryState) -> None:
         self.validate_state(state)
@@ -163,6 +232,14 @@ class NeuralMemory(nn.Module):
             result = values + F.layer_norm(result, (self.config.dim,), eps=LAYER_NORM_EPS)
         return result
 
+    def project(self, values: Tensor, convolution, window: Tensor | None):
+        """Convolución causal opcional y SiLU opcional sobre una proyección lineal."""
+        if window is not None:
+            values, window = convolution(values, window)
+        if self.config.qkv_silu:
+            values = F.silu(values)
+        return values, window
+
     def read(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
         """Lee sin escribir. La proyección y normalización de queries corresponden a MAC."""
         self.validate_input(query, state)
@@ -181,6 +258,7 @@ class NeuralMemory(nn.Module):
         if (state.steps > torch.iinfo(torch.int64).max - observed.shape[1]).any():
             raise ValueError("El contador de pasos desbordaría int64")
         weights, momentum = state.weights, state.momentum
+        key_window, value_window = state.convolution or (None, None)
         with torch.enable_grad():
             for token in observed.unbind(1):
                 if not differentiable:
@@ -192,6 +270,16 @@ class NeuralMemory(nn.Module):
                 theta_logits = self.theta_projection(token)
                 for projected in (keys, values, alpha_logits, eta_logits, theta_logits):
                     check_finite(projected, "Las proyecciones asociativas")
+                if key_window is not None or self.config.qkv_silu:
+                    # La convolución avanza token a token, igual que la proyección, y por eso
+                    # cada posición recibe los mismos bits en cualquier partición de la secuencia.
+                    keys, key_window = self.project(
+                        keys.unsqueeze(1), getattr(self, "key_convolution", None), key_window
+                    )
+                    values, value_window = self.project(
+                        values.unsqueeze(1), getattr(self, "value_convolution", None), value_window
+                    )
+                    keys, values = keys.squeeze(1), values.squeeze(1)
                 if self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
                 alpha = alpha_logits.sigmoid().unsqueeze(-1)
@@ -219,8 +307,11 @@ class NeuralMemory(nn.Module):
                 if not differentiable:
                     weights = tuple(w.detach() for w in weights)
                     momentum = tuple(m.detach() for m in momentum)
+        windows = () if key_window is None else (key_window, value_window)
+        if not differentiable:
+            windows = tuple(w.detach() for w in windows)
         return NeuralMemoryState(
-            weights, momentum, state.steps + observed.shape[1], state.config_id
+            weights, momentum, state.steps + observed.shape[1], state.config_id, windows
         )
 
     def get_extra_state(self) -> dict:
@@ -236,21 +327,30 @@ class NeuralMemory(nn.Module):
     def export_state(self, state: NeuralMemoryState) -> dict:
         self.validate_state(state)
         copied = copy_state(state, differentiable=False)
-        return {
+        payload = {
             "schema_version": 1,
             "configuration": self.config.identity(),
             "weights": copied.weights,
             "momentum": copied.momentum,
             "steps": copied.steps,
         }
+        if self.config.window:
+            payload["convolution"] = copied.convolution
+        return payload
+
+    def payload_fields(self) -> set[str]:
+        fields = {"schema_version", "configuration", "weights", "momentum", "steps"}
+        return fields | {"convolution"} if self.config.window else fields
 
     def restore_state(self, payload: object) -> NeuralMemoryState:
-        value = require_payload(
-            payload, {"schema_version", "configuration", "weights", "momentum", "steps"}
-        )
+        value = require_payload(payload, self.payload_fields())
         require_identity(value["configuration"], self.config.identity())
         state = NeuralMemoryState(
-            value["weights"], value["momentum"], value["steps"], self.config.fingerprint()
+            value["weights"],
+            value["momentum"],
+            value["steps"],
+            self.config.fingerprint(),
+            value.get("convolution", ()),
         )
         self.validate_state(state)
         return copy_state(state, differentiable=False)

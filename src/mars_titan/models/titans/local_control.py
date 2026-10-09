@@ -8,7 +8,7 @@ import hashlib
 import math
 import re
 import sys
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass
 
 import torch
 from torch import nn
@@ -22,8 +22,8 @@ from mars_titan.cm.numerical_radius import (
 
 from .config import MACConfig, bounded_integer, canonical, require_identity
 from .mac import TitansMAC
-from .state import check_differentiable, check_finite
-from .transition_jacobian import fast_state_point, fast_state_transition
+from .state import check_differentiable, check_finite, map_mac_rows
+from .transition_jacobian import fast_state_dimension, fast_state_point, fast_state_transition
 
 
 @dataclass(frozen=True)
@@ -125,7 +125,7 @@ class MACProjectionControl(nn.Module):
         if dtype not in (torch.float32, torch.float64):
             raise ValueError("El control local admite float32 y float64")
         self.config, self.mac_config = config, mac_config
-        self.state_dimension = 2 * mac_config.memory.depth * mac_config.memory.dim**2
+        self.state_dimension = fast_state_dimension(mac_config)
         if config.rank > self.state_dimension:
             raise ValueError("El rango supera la dimensión del estado")
         self._check_budget(1, dtype)
@@ -196,12 +196,17 @@ class MACProjectionControl(nn.Module):
             raise ValueError("La base fue modificada fuera de su contrato")
 
     def get_extra_state(self):
-        return dict(
+        result = dict(
             configuration=self.config.identity(),
             mac_contract=self.mac_config.identity(),
             dtype=str(self.basis.dtype),
             basis_sha256=self._basis_id,
         )
+        # Con convolución, z incluye después de pesos y momentum las ventanas de k, v y q, y
+        # el contrato de C lo declara porque cambia la base y su dimensión.
+        if self.mac_config.memory.window:
+            result["fast_state_layout"] = "weights_momentum_then_key_value_query_windows"
+        return result
 
     def set_extra_state(self, state):
         require_identity(state, self.get_extra_state())
@@ -380,22 +385,13 @@ class MACProjectionControl(nn.Module):
         operators = []
         with torch.enable_grad(), sdpa_kernel(SDPBackend.MATH):
             for index in selected:
-                memory = replace(
-                    state.memory,
-                    weights=tuple(
-                        value[index : index + 1].detach().clone() for value in state.memory.weights
-                    ),
-                    momentum=tuple(
-                        value[index : index + 1].detach().clone() for value in state.memory.momentum
-                    ),
-                    steps=state.memory.steps[index : index + 1].clone(),
+                local = map_mac_rows(
+                    state, lambda value, index=index: value[index : index + 1].detach().clone()
                 )
                 token = segment[index : index + 1]
                 if not graph:
                     token = token.detach()
-                operators.append(
-                    self._operator(mac, token, replace(state, memory=memory), differentiable=graph)
-                )
+                operators.append(self._operator(mac, token, local, differentiable=graph))
             matrices = torch.stack(operators)
             estimates = numerical_radius_estimates(
                 matrices,

@@ -1,10 +1,24 @@
 """Proyecciones de la sección 4.4 de Titans, sin optimizador ni datos de campaña."""
 
+import copy
 import hashlib
 import importlib
+from dataclasses import replace
 
 import pytest
 import torch
+from torch.nn import functional as F
+from torch.nn.attention import SDPBackend, sdpa_kernel
+
+from mars_titan.models.titans.causal_convolution import CausalDepthwiseConvolution
+from mars_titan.models.titans.config import PAPER_CONVOLUTION_KERNEL, PAPER_PROJECTIONS
+from mars_titan.models.titans.state import mac_tensors, map_mac_rows
+from mars_titan.models.titans.transition_jacobian import (
+    fast_state_dimension,
+    fast_state_jacobian,
+    fast_state_point,
+    fast_state_transition,
+)
 
 # Huellas FP32 capturadas en develop 030e7b31, antes de introducir SiLU y convolución.
 BASELINE = {
@@ -225,3 +239,546 @@ def test_disabled_projections_keep_the_develop_core_bit_for_bit(name):
 def test_disabled_projections_keep_the_develop_financial_predictor_bit_for_bit(name):
     variant, options = FINANCIAL_CASES[name]
     assert financial_trace(variant, **options) == BASELINE[f"financial/{name}"]
+
+
+# Núcleo nuevo: SiLU, convolución causal de núcleo 4 y L2 de q y k.
+PAPER = dict(normalize_qk=True, qkv_silu=True, qkv_convolution=4)
+
+
+def paper_memory(dim=8, *, batch=2, tokens=3, **options):
+    return api().MemoryConfig(
+        dim=dim, depth=2, max_batch=batch, max_tokens=tokens, **(PAPER | options)
+    )
+
+
+def paper_mac(dim=8, *, batch=2, mode="online", dtype=torch.float32, **options):
+    package = api()
+    memory = paper_memory(dim, batch=batch, **options)
+    config = package.MACConfig(
+        memory=memory, heads=2, persistent_tokens=2, max_segment=3, memory_mode=mode
+    )
+    return package.TitansMAC(config, dtype=dtype)
+
+
+def reference_convolution(weight, sequence):
+    """nn.Conv1d en profundidad con relleno K − 1 y recorte causal, como ShortConvolution."""
+    kernel = weight.shape[-1]
+    padded = F.pad(sequence.transpose(1, 2), (kernel - 1, 0))
+    return F.conv1d(padded, weight, groups=weight.shape[0]).transpose(1, 2)
+
+
+def state_tensors(state):
+    return mac_tensors(state)
+
+
+def assert_bits(left, right):
+    left, right = list(left), list(right)
+    assert len(left) == len(right)
+    for first, second in zip(left, right, strict=True):
+        assert first.dtype == second.dtype and torch.equal(first, second)
+
+
+def segments(count, *, batch=2, dim=8, seed=5, dtype=torch.float32):
+    generator = torch.Generator().manual_seed(seed)
+    return [
+        0.5 * torch.randn(batch, 3, dim, generator=generator, dtype=dtype) for _ in range(count)
+    ]
+
+
+def test_paper_identity_names_the_three_components_and_keeps_previous_identities():
+    package = api()
+    identity = package.MemoryConfig(dim=8, **PAPER).identity()
+    assert identity["projections"] == PAPER_PROJECTIONS == "titans_mac_paper_projections_v2"
+    assert identity["qkv_activation"]["function"] == "silu"
+    assert identity["qkv_convolution"]["kernel"] == PAPER_CONVOLUTION_KERNEL == 4
+    assert identity["qkv_convolution"]["bias"] is False
+    assert identity["projection_order"] == "linear_convolution_silu_then_l2_query_key"
+    assert identity["normalize_qk"] is True
+    previous = package.MemoryConfig(dim=8).identity()
+    for key in ("projections", "qkv_activation", "qkv_convolution", "qkv_silu"):
+        assert key not in previous
+    options = [
+        {},
+        dict(qkv_silu=True),
+        dict(qkv_convolution=4),
+        PAPER,
+        PAPER | dict(normalize_qk=False),
+        PAPER | dict(qkv_convolution=3),
+    ]
+    configs = [package.MemoryConfig(dim=8, **option) for option in options]
+    assert len({config.fingerprint() for config in configs}) == len(options)
+    named = [config for config in configs if "projections" in config.identity()]
+    assert named == [package.MemoryConfig(dim=8, **PAPER)]
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        dict(qkv_silu=1),
+        dict(qkv_silu=None),
+        dict(qkv_convolution=1),
+        dict(qkv_convolution=9),
+        dict(qkv_convolution=-1),
+        dict(qkv_convolution=True),
+        dict(qkv_convolution=False),
+        dict(qkv_convolution=4.0),
+        dict(qkv_convolution=0.0),
+    ],
+)
+def test_projection_fields_reject_ambiguous_values(options):
+    with pytest.raises(ValueError):
+        api().MemoryConfig(dim=4, **options)
+
+
+def test_paper_components_add_three_kernels_after_the_previous_draws():
+    rng = torch.get_rng_state().clone()
+    previous = paper_mac(qkv_silu=False, qkv_convolution=0).state_dict()
+    current = paper_mac().state_dict()
+    assert torch.equal(torch.get_rng_state(), rng)
+    added = set(current) - set(previous)
+    assert added == {
+        "memory.key_convolution.weight",
+        "memory.value_convolution.weight",
+        "query_convolution.weight",
+    }
+    for name, value in previous.items():
+        if isinstance(value, torch.Tensor):
+            assert torch.equal(current[name], value)
+    kernels = [current[name] for name in sorted(added)]
+    for kernel in kernels:
+        assert kernel.shape == (8, 1, 4) and kernel.abs().max() <= 0.5
+    assert not torch.equal(kernels[0], kernels[1]) and not torch.equal(kernels[1], kernels[2])
+
+
+def test_convolution_matches_causal_conv1d_and_gives_the_same_bits_in_chunks():
+    strict_fp32()
+    generator = torch.Generator().manual_seed(3)
+    module = CausalDepthwiseConvolution(6, 4, dtype=torch.float64)
+    sequence = torch.randn(2, 11, 6, generator=generator, dtype=torch.float64)
+    zeros = torch.zeros(2, 3, 6, dtype=torch.float64)
+    whole, window = module(sequence, zeros)
+    expected = reference_convolution(module.weight, sequence)
+    torch.testing.assert_close(whole, expected, rtol=1e-13, atol=1e-14)
+    assert torch.equal(window, sequence[:, -3:])
+    module = module.float()
+    sequence, zeros = sequence.float(), zeros.float()
+    whole, window = module(sequence, zeros)
+    for sizes in ([1] * 11, [2, 5, 4], [3, 8], [10, 1]):
+        outputs, current = [], zeros
+        for piece in sequence.split(sizes, dim=1):
+            output, current = module(piece, current)
+            outputs.append(output)
+        assert torch.equal(torch.cat(outputs, dim=1), whole)
+        assert torch.equal(current, window)
+    perturbed = sequence.clone()
+    perturbed[:, 7:] += 5
+    future, _ = module(perturbed, zeros)
+    assert torch.equal(future[:, :7], whole[:, :7])
+    assert not torch.equal(future[:, 7:], whole[:, 7:])
+
+
+def test_memory_update_writes_silu_of_the_causal_convolution_with_l2_keys():
+    package = api()
+    config = paper_memory(4, batch=1)
+    memory = package.NeuralMemory(config, dtype=torch.float64)
+    generator = torch.Generator().manual_seed(9)
+    observed = 0.4 * torch.randn(1, 3, 4, generator=generator, dtype=torch.float64)
+    state = memory.initial_state(1)
+    actual = memory.update(observed, state)
+    with torch.no_grad():
+        projected_keys = memory.key_projection(observed)
+        projected_values = memory.value_projection(observed)
+        keys = F.normalize(
+            F.silu(reference_convolution(memory.key_convolution.weight, projected_keys)),
+            dim=-1,
+            eps=1e-12,
+        )
+        values = F.silu(reference_convolution(memory.value_convolution.weight, projected_values))
+    weights, momentum = state.weights, state.momentum
+    for index in range(3):
+        token = observed[:, index]
+        with torch.no_grad():
+            alpha = memory.alpha_projection(token).sigmoid().unsqueeze(-1)
+            eta = memory.eta_projection(token).sigmoid().unsqueeze(-1)
+            theta = config.theta_max * memory.theta_projection(token).sigmoid().unsqueeze(-1)
+        local = tuple(weight.detach().clone().requires_grad_(True) for weight in weights)
+        hidden = F.gelu(keys[:, index : index + 1] @ local[0].transpose(1, 2))
+        residual = (hidden @ local[1].transpose(1, 2)).squeeze(1) - values[:, index]
+        gradients = torch.autograd.grad(residual.square().sum(), local)
+        momentum = tuple(
+            eta * previous - theta * gradient
+            for previous, gradient in zip(momentum, gradients, strict=True)
+        )
+        weights = tuple(
+            (1 - alpha) * weight + surprise
+            for weight, surprise in zip(weights, momentum, strict=True)
+        )
+    for left, right in zip(actual.weights + actual.momentum, weights + momentum, strict=True):
+        torch.testing.assert_close(left, right, rtol=1e-12, atol=1e-13)
+    # La ventana guarda las proyecciones sin convolución. El núcleo proyecta token a token.
+    torch.testing.assert_close(actual.convolution[0], projected_keys, rtol=1e-14, atol=1e-15)
+    torch.testing.assert_close(actual.convolution[1], projected_values, rtol=1e-14, atol=1e-15)
+
+
+def test_mac_reads_with_the_l2_of_silu_of_the_convolved_query(monkeypatch):
+    mac = paper_mac(4, batch=1, dtype=torch.float64)
+    queries, original = [], mac.memory.read
+
+    def spy(query, state):
+        queries.append(query.detach().clone())
+        return original(query, state)
+
+    monkeypatch.setattr(mac.memory, "read", spy)
+    pieces = segments(2, batch=1, dim=4, dtype=torch.float64)
+    state = mac.initial_state(1)
+    for piece in pieces:
+        _, state = mac(piece, state)
+    sequence = torch.cat(pieces, dim=1)
+    with torch.no_grad():
+        projected = mac.query_projection(sequence)
+        expected = F.normalize(
+            F.silu(reference_convolution(mac.query_convolution.weight, projected)),
+            dim=-1,
+            eps=1e-12,
+        )
+    # Cada segmento lee con q y después con la salida y al cierre.
+    torch.testing.assert_close(torch.cat(queries[::2], dim=1), expected, rtol=1e-12, atol=1e-13)
+    torch.testing.assert_close(state.convolution[0], projected[:, -3:], rtol=1e-14, atol=1e-15)
+
+
+def test_memory_update_in_chunks_gives_the_same_bits_as_one_call():
+    strict_fp32()
+    memory = api().NeuralMemory(paper_memory(tokens=6))
+    generator = torch.Generator().manual_seed(13)
+    observed = 0.5 * torch.randn(2, 6, 8, generator=generator)
+    whole = memory.update(observed, memory.initial_state(2))
+    for sizes in ([1] * 6, [2, 4], [3, 1, 2], [5, 1]):
+        state = memory.initial_state(2)
+        for piece in observed.split(sizes, dim=1):
+            state = memory.update(piece, state)
+        assert_bits(
+            (*state.weights, *state.momentum, state.steps, *state.convolution),
+            (*whole.weights, *whole.momentum, whole.steps, *whole.convolution),
+        )
+
+
+def test_future_segments_do_not_change_past_outputs_or_windows():
+    strict_fp32()
+    mac = paper_mac()
+    pieces = segments(4)
+    state, outputs, states = mac.initial_state(2), [], []
+    for piece in pieces:
+        output, state = mac(piece, state)
+        outputs.append(output)
+        states.append(state)
+    changed = [*pieces[:2], pieces[2] + 3, -pieces[3]]
+    state = mac.initial_state(2)
+    for index, piece in enumerate(changed):
+        output, state = mac(piece, state)
+        if index < 2:
+            assert torch.equal(output, outputs[index])
+            assert_bits(state_tensors(state), state_tensors(states[index]))
+        else:
+            assert not torch.equal(output, outputs[index])
+
+
+def test_restoring_the_mac_state_mid_sequence_reproduces_the_same_bits():
+    strict_fp32()
+    mac = paper_mac()
+    pieces = segments(4)
+    state, outputs = mac.initial_state(2), []
+    for piece in pieces:
+        output, state = mac(piece, state)
+        outputs.append(output)
+    middle = mac.initial_state(2)
+    for piece in pieces[:2]:
+        _, middle = mac(piece, middle)
+    payload = mac.export_state(middle)
+    assert set(payload) == {"schema_version", "configuration", "memory", "convolution"}
+    assert "convolution" in payload["memory"]
+    restored_model = paper_mac()
+    restored_model.load_state_dict(mac.state_dict())
+    restored = restored_model.restore_state(copy.deepcopy(payload))
+    resumed = []
+    for piece in pieces[2:]:
+        output, restored = restored_model(piece, restored)
+        resumed.append(output)
+    assert_bits(resumed, outputs[2:])
+    assert_bits(state_tensors(restored), state_tensors(state))
+    incomplete = dict(payload)
+    incomplete.pop("convolution")
+    with pytest.raises(ValueError):
+        mac.restore_state(incomplete)
+
+
+@pytest.mark.parametrize("mode", ["frozen", "disabled"])
+def test_windows_only_advance_for_the_projections_each_mode_computes(mode):
+    mac = paper_mac(4, batch=1, mode=mode, dtype=torch.float64)
+    piece = segments(1, batch=1, dim=4, dtype=torch.float64)[0]
+    initial = mac.initial_state(1)
+    _, state = mac(piece, initial)
+    for window in state.memory.convolution:
+        assert torch.equal(window, torch.zeros_like(window))
+    with torch.no_grad():
+        expected = mac.query_projection(piece) if mode == "frozen" else initial.convolution[0]
+    assert torch.equal(state.convolution[0], expected)
+    assert state.convolution[0].data_ptr() != initial.convolution[0].data_ptr()
+
+
+def test_windows_stay_isolated_per_flow():
+    strict_fp32()
+    mac = paper_mac()
+    pieces = segments(3)
+    changed = [piece.clone() for piece in pieces]
+    for piece in changed:
+        piece[1] = piece[1] * -2 + 1
+    left, right = mac.initial_state(2), mac.initial_state(2)
+    for original, other in zip(pieces, changed, strict=True):
+        first, left = mac(original, left)
+        second, right = mac(other, right)
+        assert torch.equal(first[0], second[0]) and not torch.equal(first[1], second[1])
+    for one, two in zip(state_tensors(left), state_tensors(right), strict=True):
+        assert torch.equal(one[0], two[0])
+
+
+def test_state_validation_rejects_missing_misshaped_shared_or_non_finite_windows():
+    mac = paper_mac()
+    piece = segments(1)[0]
+    state = mac.initial_state(2)
+    memory = state.memory
+    key, value = memory.convolution
+    query = state.convolution[0]
+    invalid = [
+        replace(state, convolution=()),
+        replace(state, convolution=[query]),
+        replace(state, memory=replace(memory, convolution=(key,))),
+        replace(state, memory=replace(memory, convolution=(key, torch.zeros(2, 2, 8)))),
+        replace(state, memory=replace(memory, convolution=(key, key))),
+        replace(state, convolution=(key,)),
+        replace(state, convolution=(torch.full_like(query, float("nan")),)),
+        replace(state, convolution=(query.double(),)),
+        replace(state, convolution=(torch.zeros(2, 8, 3).transpose(1, 2),)),
+    ]
+    for candidate in invalid:
+        with pytest.raises(ValueError):
+            mac(piece, candidate)
+    package = api()
+    previous = package.TitansMAC(
+        package.MACConfig(
+            memory=package.MemoryConfig(dim=8, max_batch=2, max_tokens=3),
+            heads=2,
+            persistent_tokens=2,
+            max_segment=3,
+        )
+    )
+    with pytest.raises(ValueError):
+        previous(piece, replace(previous.initial_state(2), convolution=(query,)))
+
+
+def test_state_budget_counts_the_three_windows():
+    package = api()
+    weights = 2 * (2 * 2 * 8 * 8 * 4 + 8)
+    windows = 2 * 3 * 3 * 8 * 4
+    exact = package.NeuralMemory(paper_memory(max_state_bytes=weights + windows))
+    exact.initial_state(2)
+    short = package.NeuralMemory(paper_memory(max_state_bytes=weights + windows - 1))
+    with pytest.raises(ValueError):
+        short.initial_state(2)
+
+
+def paper_predictor(variant="mac_online", **options):
+    from test_financial_adapter import specification
+
+    module = importlib.import_module("mars_titan.models.titans.financial")
+    spec = specification()
+    config = module.FinancialConfig(
+        spec, variant=variant, hidden_size=32, memory_projections=PAPER_PROJECTIONS, **options
+    )
+    return module, spec, module.FinancialPredictor(config)
+
+
+def decisions(module, spec, count, *, scale=1.0):
+    from test_financial_adapter import raw_batch
+
+    result = []
+    for day in range(count):
+        raw = raw_batch(at=START + day * DAY)
+        raw["inputs"] = {name: value * scale for name, value in raw["inputs"].items()}
+        result.append(module.DecisionBatch.from_corpus(raw, spec, dtype=torch.float32))
+    return result
+
+
+def test_financial_switch_builds_the_paper_core_with_a_new_identity():
+    module, spec, model = paper_predictor()
+    memory = model.mac.config.memory
+    assert (memory.qkv_silu, memory.qkv_convolution, memory.normalize_qk) == (True, 4, True)
+    assert memory.identity()["projections"] == PAPER_PROJECTIONS
+    assert model.config.identity()["memory_projections"] == PAPER_PROJECTIONS
+    default = module.FinancialConfig(spec, variant="mac_online", hidden_size=32)
+    assert "memory_projections" not in default.identity()
+    for value in ("paper", None, 1, "linear_v2"):
+        with pytest.raises(ValueError):
+            module.FinancialConfig(spec, hidden_size=32, memory_projections=value)
+    assert model._tensor_bytes_per_flow() == (4 * 32 + 3 * 3) * 32 * 4 + 16
+    state = model.initial_state(("US/AAA", "US/BBB"))
+    usage = model.state_usage(state)
+    assert usage["tensor_bytes"] == 2 * model._tensor_bytes_per_flow()
+
+
+@pytest.mark.parametrize("variant", ["mac_online", "mac_frozen", "mac_disabled"])
+def test_financial_restore_mid_sequence_reproduces_the_same_bits(variant):
+    strict_fp32()
+    module, spec, model = paper_predictor(variant, **CAMPAIGN_MEMORY)
+    batches = decisions(module, spec, 4)
+    state, expected = model.initial_state(batches[0].flow_ids), []
+    with torch.no_grad():
+        for index, batch in enumerate(batches):
+            prepared = model.prepare(batch, state)
+            expected.append(prepared.point_predictions)
+            state = prepared.next_state
+            if index == 1:
+                middle = state
+    final = state
+    for restore in (
+        lambda value: model.restore_state(copy.deepcopy(model.export_state(value))),
+        lambda value: model.restore_state(model.export_state_cpu(value), device="cpu"),
+    ):
+        state, resumed = restore(middle), []
+        with torch.no_grad():
+            for batch in batches[2:]:
+                prepared = model.prepare(batch, state)
+                resumed.append(prepared.point_predictions)
+                state = prepared.next_state
+        assert_bits(resumed, expected[2:])
+        assert_bits(state_tensors(state.mac), state_tensors(final.mac))
+
+
+def test_financial_selection_gathering_and_trainer_rows_carry_each_flow_window():
+    from mars_titan.training.financial_run import _split, _stack
+
+    module, spec, model = paper_predictor()
+    state = model.initial_state(("US/AAA", "US/BBB"))
+    with torch.no_grad():
+        for batch in decisions(module, spec, 2):
+            state = model.prepare(batch, state).next_state
+    windows = [*state.mac.memory.convolution, *state.mac.convolution]
+    assert all(not torch.equal(window[0], window[1]) for window in windows)
+    reverse = ("US/BBB", "US/AAA")
+    selected = model.select_state(state, reverse)
+    payload = model.export_state_cpu(state)
+    gathered = model.gather_state(
+        {flow: (payload, 1 - index) for index, flow in enumerate(reverse)}, reverse
+    )
+    pieces = dict(_split(state, detach=True))
+    stacked = _stack([pieces[flow] for flow in reverse])
+    for candidate in (selected, gathered, stacked):
+        assert candidate.flow_ids == reverse
+        for original, value in zip(
+            state_tensors(state.mac), state_tensors(candidate.mac), strict=True
+        ):
+            assert torch.equal(value, original.flip(0))
+
+
+def test_dense_jacobian_with_windows_matches_differences_and_shifts_the_query_window():
+    package = api()
+    mac = package.TitansMAC(
+        package.MACConfig(
+            memory=package.MemoryConfig(dim=2, max_tokens=1, max_batch=4, **PAPER),
+            persistent_tokens=2,
+            max_segment=1,
+        ),
+        dtype=torch.float64,
+    )
+    tokens = torch.linspace(-0.4, 0.5, 8, dtype=torch.float64).reshape(1, 4, 2)
+    state = mac.initial_state(1)
+    with torch.no_grad(), sdpa_kernel(SDPBackend.MATH):
+        for index in range(3):
+            _, state = mac(tokens[:, index : index + 1], state)
+    token = tokens[:, 3:]
+    order = fast_state_dimension(mac.config)
+    assert order == 2 * 2 * 4 + 3 * 3 * 2
+    jacobian = fast_state_jacobian(mac, token, state)
+    assert jacobian.shape == (order, order)
+    point = fast_state_point(state).detach()
+    transition = fast_state_transition(mac, token, state)
+    generator = torch.Generator().manual_seed(5)
+    for _ in range(3):
+        direction = torch.randn(point.shape, generator=generator, dtype=torch.float64)
+        step = 1e-6
+        with torch.enable_grad(), sdpa_kernel(SDPBackend.MATH):
+            numeric = (
+                transition(point + step * direction) - transition(point - step * direction)
+            ) / (2 * step)
+        torch.testing.assert_close(jacobian @ direction, numeric, rtol=1e-6, atol=1e-8)
+    # La ventana de q se desplaza y su entrada nueva W_Q x no depende de z.
+    shift = torch.zeros(6, order, dtype=torch.float64)
+    shift[0:4, order - 4 : order] = torch.eye(4, dtype=torch.float64)
+    assert torch.equal(jacobian[-6:], shift)
+    assert jacobian[16:28].abs().sum() > 0
+
+
+def test_local_control_projects_the_jacobian_with_windows():
+    package = api()
+    control_api = importlib.import_module("mars_titan.models.titans.local_control")
+    mac = package.TitansMAC(
+        package.MACConfig(
+            memory=package.MemoryConfig(dim=2, max_tokens=1, max_batch=4, **PAPER),
+            persistent_tokens=2,
+            max_segment=1,
+        ),
+        dtype=torch.float64,
+    )
+    control = control_api.MACProjectionControl(
+        control_api.MACProjectionConfig(mode="diagnostic", rank=3, frequency=1, grid_size=13),
+        mac.config,
+        dtype=torch.float64,
+    )
+    assert control.state_dimension == fast_state_dimension(mac.config) == 34
+    assert control.get_extra_state()["fast_state_layout"] == (
+        "weights_momentum_then_key_value_query_windows"
+    )
+    token = torch.tensor([[[0.2, -0.1]], [[0.3, 0.4]]], dtype=torch.float64)
+    state = mac.initial_state(2)
+    with torch.no_grad(), sdpa_kernel(SDPBackend.MATH):
+        _, state = mac(token, state)
+    flows = ("flow-0", "flow-1")
+    counters = state.memory.steps.detach().cpu()
+    selection = control.select_flows(flows, counters, context_id="a" * 64)
+    result = control(
+        mac,
+        token,
+        state,
+        flow_ids=flows,
+        observed_steps=counters,
+        selection=selection,
+        context_id="a" * 64,
+    )
+    index = result.indices[0]
+    single = map_mac_rows(state, lambda value: value[index : index + 1].clone())
+    jacobian = fast_state_jacobian(mac, token[index : index + 1], single)
+    torch.testing.assert_close(
+        result.operators[0], control.basis.T @ jacobian @ control.basis, rtol=1e-11, atol=1e-12
+    )
+
+
+def test_windows_keep_a_graph_only_in_differentiable_calls():
+    mac = paper_mac()
+    piece = segments(1)[0]
+    _, detached = mac(piece, mac.initial_state(2))
+    assert all(
+        value.grad_fn is None and not value.requires_grad for value in state_tensors(detached)
+    )
+    _, graph = mac(piece, mac.initial_state(2, differentiable=True), differentiable=True)
+    windows = [*graph.memory.convolution, *graph.convolution]
+    assert all(window.grad_fn is not None for window in windows)
+    gradient = torch.autograd.grad(graph.convolution[0].sum(), mac.query_projection.weight)[0]
+    assert gradient.abs().sum() > 0
+
+
+def test_financial_state_checks_reject_a_foreign_query_window():
+    _, _, model = paper_predictor()
+    state = model.initial_state(("US/AAA", "US/BBB"))
+    query = state.mac.convolution[0]
+    for window in (torch.zeros(2, 2, 32), query[:1].clone(), query.double()):
+        with pytest.raises(ValueError):
+            model.state_usage(replace(state, mac=replace(state.mac, convolution=(window,))))
