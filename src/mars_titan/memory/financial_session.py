@@ -23,7 +23,7 @@ from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.training import prefix_eligibility
 from mars_titan.training.prefix_eligibility import PrefixEvidence, PrefixTargetVerifier
 
-from . import episodic_session, financial_state_artifacts
+from . import episodic_session, financial_state_artifacts, write_policy
 from .episodic_codec import FrozenEpisodeCodec
 from .episodic_session import (
     EpisodicSession,
@@ -36,6 +36,7 @@ from .episodic_session import (
 from .financial_state_artifacts import FinancialStateArtifacts
 from .retention_bank import RetentionBank, RetentionConfig
 from .session_artifacts import SessionArtifacts
+from .write_policy import MatureErrorBank, MatureErrorConfig
 
 
 def _callback_signature(instance):
@@ -106,7 +107,7 @@ class FinancialSession(EpisodicSession):
     """Reutilizar almacenamiento, codec y banco. Executor publica la única generación.
 
     La preparación queda fijada a FrozenFinancialConsumer. No se aceptan callbacks
-    predictivos arbitrarios ni reglas M2/M3 incompletas. Los helpers heredados
+    predictivos arbitrarios ni reglas M3 incompletas. Los helpers heredados
     conservan la validación de inputs y procedencia de la sesión v1.
     """
 
@@ -134,11 +135,15 @@ class FinancialSession(EpisodicSession):
             or type(codec) is not FrozenEpisodeCodec
             or type(prefixes) is not PrefixTargetVerifier
             or type(phase) is not FinancialPhase
-            or type(retention) is not RetentionConfig
-            or admission not in {"m0", "m1"}
+            or not (
+                (admission in {"m0", "m1"} and type(retention) is RetentionConfig)
+                or (admission == "m2" and type(retention) is MatureErrorConfig)
+            )
             or type(resume) is not bool
         ):
-            raise ValueError("El ciclo v2 necesita componentes verificados y admisión m0 o m1")
+            raise ValueError(
+                "La admisión requiere M0/M1 con retención original o M2 con sus tres índices"
+            )
         bounded_integer(block_rows, "lote físico", 1, consumer.predictor.config.max_batch)
         bounded_integer(max_input_blocks, "bloques de inputs pendientes", 1, 256)
         bounded_integer(max_log_bytes, "registro de la fase", 1, 16 * 1024**3)
@@ -177,6 +182,10 @@ class FinancialSession(EpisodicSession):
                 Path(prefix_eligibility.__file__).read_bytes()
             ).hexdigest(),
         }
+        if admission == "m2":
+            code["write_policy"] = hashlib.sha256(
+                Path(write_policy.__file__).read_bytes()
+            ).hexdigest()
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -217,14 +226,15 @@ class FinancialSession(EpisodicSession):
             admission,
             max_input_blocks,
         )
-        self._prototype = RetentionBank(
+        bank_type = MatureErrorBank if admission == "m2" else RetentionBank
+        self._prototype = bank_type(
             native,
             retention,
             codec_id=codec.fingerprint(),
             world=_digest([world, self.task, self.horizon]),
             partition=phase.partition,
             fold=fold,
-            memory_contract="causal_v2",
+            **({} if admission == "m2" else {"memory_contract": "causal_v2"}),
         )
         self.artifacts = SessionArtifacts(
             native, self.output / "artifacts", max_files=1024, max_total_bytes=2 * 1024**3
@@ -299,6 +309,36 @@ class FinancialSession(EpisodicSession):
 
     def _input_rows(self, reference, **_):
         return super()._input_rows(reference, allow_mixed_cutoffs=True)
+
+    def _bank(self, reference):
+        bank, episodes = super()._bank(reference)
+        if self.admission == "m2":
+            scores = {key: abs(row["error"]) for key, row in episodes.items()}
+            selected = sorted(scores, key=lambda key: (-scores[key], key))[
+                : bank.config.quotas["selective"]
+            ]
+            if bank.selective_scores != {key: scores[key] for key in selected}:
+                raise ValueError("El índice selectivo M2 contradice los errores de las emisiones")
+        return bank, episodes
+
+    def diagnostics(self):
+        if self.admission != "m2":
+            return super().diagnostics()
+        bundle = self._bundle(self.snapshot()["state"])
+        bank, _ = self._bank(bundle["bank"] if bundle else None)
+        indices = bank.index_ids()
+        slots = sum(map(len, indices.values()))
+        unique = len({identifier for values in indices.values() for identifier in values})
+        return dict(
+            cursor=self._executor.cursor,
+            admitted=bank.seen,
+            retained=unique,
+            pending=len(self._executor.pending()),
+            B_mem=bank.config.capacity,
+            quotas=bank.config.quotas,
+            physical_slots=slots,
+            duplicate_slots=slots - unique,
+        )
 
     def _fast(self, bundle):
         value = self._fast_store.empty() if bundle is None else self._read(bundle["fast"], "fast")
@@ -626,7 +666,7 @@ class FinancialSession(EpisodicSession):
             if key not in positions or key in removed:
                 raise ValueError("El resultado no enlaza una predicción pendiente")
             index = positions[key]
-            if self.admission == "m1":
+            if self.admission in {"m1", "m2"}:
                 metadata = pending["rows"][index]
                 record = self.native.MemoryRecord()
                 record.id, record.decision_at = (
@@ -674,7 +714,10 @@ class FinancialSession(EpisodicSession):
                 raise ValueError("La finalización no corresponde al pendiente y cierre declarados")
             removed.add(key)
         if incoming:
-            bank = bank.propose(incoming, confirmed_at=proposed["cutoff"])
+            options = dict(confirmed_at=proposed["cutoff"])
+            if self.admission == "m2":
+                options["errors"] = {record.id: episodes[record.id]["error"] for record in incoming}
+            bank = bank.propose(incoming, **options)
         selected = {r.id for r in bank.records()}
         bank_ref = self._stage(
             dict(snapshot=bank.snapshot(), episodes={i: episodes[i] for i in sorted(selected)}),
@@ -811,7 +854,7 @@ class FinancialSession(EpisodicSession):
             if proof is None or proof.fingerprint() != row["evidence"]["evidence_sha256"]:
                 raise ValueError("La resolución nativa no conserva la evidencia verificada")
         bank, _ = self._bank(bundle["bank"])
-        if bank.seen != (snapshot["applied"] if self.admission == "m1" else 0):
+        if bank.seen != (snapshot["applied"] if self.admission in {"m1", "m2"} else 0):
             raise ValueError("El banco no concilia con los labels maduros y la regla de admisión")
         pending = self._read(bundle["pending"], "pending")
         expected = {(p.asset, p.decision_at) for p in self._executor.pending()}

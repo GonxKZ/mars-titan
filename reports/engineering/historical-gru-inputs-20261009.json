@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "source_commit": "2e130ff7002351b74a320f9f6657d4ab5d3a0a1e",
+  "created_at": "2026-10-09T00:22:55.305491+00:00",
+  "input_policy": "historical_masked_2000_v1",
+  "scope": "Candidato GRU nativo, enlace tensorial y adaptador de entradas con memoria vacía. Sin integración cronológica, ajuste ni corpus científico.",
+  "runtime": {
+    "torch": "2.14.0+cu130",
+    "compiler": "Clang 21.1.8",
+    "cpp_standard": 20,
+    "device": "cpu",
+    "python_threads": 2,
+    "native_fixture_threads": 1
+  },
+  "tests": {
+    "new_python": 49,
+    "compatible_episode_backend": 14,
+    "combined_python": 63,
+    "native_ctest": 6,
+    "native_historical_cases": 9,
+    "asan_ubsan_ctest": 6,
+    "final_historical_asan": true,
+    "mutation_kills": 10,
+    "mutation_total": 10
+  },
+  "strict_archive": {
+    "bytes": 8031885,
+    "sha256": "00a99b030d10f74f9139b0c2d5348b1cec4a8503f4c01209058e18bda3551aa2",
+    "exact": true,
+    "fixture": "mars-titan-candidate cpu, configuración estricta predeterminada y FP64"
+  },
+  "mutations": [
+    {
+      "name": "post_projection_gate",
+      "detected": true
+    },
+    {
+      "name": "fusion_presence",
+      "detected": true
+    },
+    {
+      "name": "codec_presence",
+      "detected": true
+    },
+    {
+      "name": "concept_binary",
+      "detected": true
+    },
+    {
+      "name": "input_byte_budget",
+      "detected": true
+    },
+    {
+      "name": "transfer_presence_zero",
+      "detected": true
+    },
+    {
+      "name": "transfer_semantic_identity",
+      "detected": true
+    },
+    {
+      "name": "python_input_contract",
+      "detected": true
+    },
+    {
+      "name": "python_median",
+      "detected": true
+    },
+    {
+      "name": "python_recovery_identity",
+      "detected": true
+    }
+  ],
+  "quality": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1",
+      "lizard": "1.17.31"
+    },
+    "convention": "Líneas ejecutables y ramas de coverage.py/LLVM. Radon Function y closures, sin agregados Class. Lizard CCN por función C++. CRAP=CCN²*(1-fracción de líneas cubiertas)³+CCN. Los rangos anidados pueden compartir líneas.",
+    "files": [
+      {
+        "path": "src/mars_titan/models/candidate/input_adapter.py",
+        "sha256": "ce25c1e74c318d40b9be310dd8f5d3d636e8cbb39e8653d2cfa0e59fb5511eb6",
+        "coverage": {
+          "covered_lines": 92,
+          "num_statements": 95,
+          "percent_covered": 94.87179487179488,
+          "percent_covered_display": "95",
+          "missing_lines": 3,
+          "excluded_lines": 0,
+          "percent_statements_covered": 96.84210526315789,
+          "percent_statements_covered_display": "97",
+          "num_branches": 22,
+          "num_partial_branches": 3,
+          "covered_branches": 19,
+          "missing_branches": 3,
+          "percent_branches_covered": 86.36363636363636,
+          "percent_branches_covered_display": "86"
+        },
+        "max_crap": 9.0
+      },
+      {
+        "path": "native/src/candidate.cpp",
+        "sha256": "63e5a1f441707c38f35608aaf6293db7e0d352b3b109f6854e66552b100642bc",
+        "coverage": {
+          "BRF": 202,
+          "BRH": 161,
+          "LF": 311,
+          "LH": 311
+        },
+        "max_crap": 14.0
+      },
+      {
+        "path": "native/src/candidate_archive.cpp",
+        "sha256": "91867667508742563f82d0d135512eaabc478497fe05a923250011a6adc84dca",
+        "coverage": {
+          "BRF": 114,
+          "BRH": 82,
+          "LF": 208,
+          "LH": 208
+        },
+        "max_crap": 17.0
+      },
+      {
+        "path": "native/src/candidate_identity.cpp",
+        "sha256": "b171622679961c64291941e00e0c5cb1f58015d0b3a088b9a1af8b85c564ddd2",
+        "coverage": {
+          "BRF": 70,
+          "BRH": 53,
+          "LF": 124,
+          "LH": 112
+        },
+        "max_crap": 19.029670419988495
+      },
+      {
+        "path": "native/src/candidate_python.cpp",
+        "sha256": "2bd1198c14929b0ec6566f1812e70116765ec15077579de9c1c84204241a6816",
+        "coverage": {
+          "BRF": 10,
+          "BRH": 10,
+          "LF": 101,
+          "LH": 101
+        },
+        "max_crap": 3.0
+      }
+    ]
+  },
+  "benchmark": {
+    "dimensions": {
+      "prices": 5,
+      "news": 384,
+      "charts": 512,
+      "fundamentals": 45,
+      "macro": 420
+    },
+    "threads": 2,
+    "warmup_per_case": 3,
+    "repetitions": 10,
+    "total_process_seconds": 5.95,
+    "work_seconds": 4.262303278999752,
+    "process_peak_rss_bytes": 764497920,
+    "scope": "Vista CPU ya validada, digest, conversión a tensores, GRU, fusión, codec fijo, refinamientos y cuantiles. No incluye lectura de Parquet ni codificadores originales.",
+    "concurrent_work": "Codificación histórica coordinada en otro proceso. Medida técnica local, no benchmark aislado ni evidencia de mejora.",
+    "cases": [
+      {
+        "dtype": "torch.float32",
+        "rows": 1,
+        "refinements": 1,
+        "p50": 0.0012591710037668236,
+        "p95": 0.0012859928043326362,
+        "p99": 0.0012870857625966892,
+        "rows_per_second": 794.1733068888096,
+        "input_bytes": 6729,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 1,
+        "refinements": 2,
+        "p50": 0.0014958645042497665,
+        "p95": 0.0016076095955213532,
+        "p99": 0.0016116963181411848,
+        "rows_per_second": 668.5097461427754,
+        "input_bytes": 6729,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 1,
+        "refinements": 4,
+        "p50": 0.001507571003457997,
+        "p95": 0.0015561174506729003,
+        "p99": 0.0015618194970011246,
+        "rows_per_second": 663.3186746801616,
+        "input_bytes": 6729,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 16,
+        "refinements": 1,
+        "p50": 0.003134335005597677,
+        "p95": 0.003336488050263142,
+        "p99": 0.0033522096140950453,
+        "rows_per_second": 5104.75107843458,
+        "input_bytes": 107664,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 16,
+        "refinements": 2,
+        "p50": 0.0031708884926047176,
+        "p95": 0.003410969002288766,
+        "p99": 0.0034340954065555707,
+        "rows_per_second": 5045.904337953191,
+        "input_bytes": 107664,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 16,
+        "refinements": 4,
+        "p50": 0.0033034220032277517,
+        "p95": 0.003577742558263708,
+        "p99": 0.0036087461179704406,
+        "rows_per_second": 4843.4623200930755,
+        "input_bytes": 107664,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 256,
+        "refinements": 1,
+        "p50": 0.028612932495889254,
+        "p95": 0.041432811102276895,
+        "p99": 0.044207411022653104,
+        "rows_per_second": 8947.003248855352,
+        "input_bytes": 1722624,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 256,
+        "refinements": 2,
+        "p50": 0.028088425504392944,
+        "p95": 0.028736443346133456,
+        "p99": 0.028862967860186474,
+        "rows_per_second": 9114.074406198468,
+        "input_bytes": 1722624,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float32",
+        "rows": 256,
+        "refinements": 4,
+        "p50": 0.02884895450551994,
+        "p95": 0.029673863245989196,
+        "p99": 0.029955698244157246,
+        "rows_per_second": 8873.805113146029,
+        "input_bytes": 1722624,
+        "learned_parameter_bytes": 2163224
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 1,
+        "refinements": 1,
+        "p50": 0.0017816690015024506,
+        "p95": 0.0018354284948145505,
+        "p99": 0.0018373328894085716,
+        "rows_per_second": 561.2714814910723,
+        "input_bytes": 6729,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 1,
+        "refinements": 2,
+        "p50": 0.0017888174988911487,
+        "p95": 0.0018991548029589466,
+        "p99": 0.0019041069675586185,
+        "rows_per_second": 559.0285205840615,
+        "input_bytes": 6729,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 1,
+        "refinements": 4,
+        "p50": 0.0017380770077579655,
+        "p95": 0.0020345294928119984,
+        "p99": 0.002038478694594232,
+        "rows_per_second": 575.3485004038752,
+        "input_bytes": 6729,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 16,
+        "refinements": 1,
+        "p50": 0.004901066997263115,
+        "p95": 0.005092786594468634,
+        "p99": 0.005110510118247476,
+        "rows_per_second": 3264.5952420023686,
+        "input_bytes": 107664,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 16,
+        "refinements": 2,
+        "p50": 0.005123527007526718,
+        "p95": 0.00540103240055032,
+        "p99": 0.005427653681254014,
+        "rows_per_second": 3122.848767361858,
+        "input_bytes": 107664,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 16,
+        "refinements": 4,
+        "p50": 0.00522832900605863,
+        "p95": 0.006086148006579605,
+        "p99": 0.006288223208248383,
+        "rows_per_second": 3060.2511780454274,
+        "input_bytes": 107664,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 256,
+        "refinements": 1,
+        "p50": 0.06488521349820076,
+        "p95": 0.06713398279898683,
+        "p99": 0.06795105896060705,
+        "rows_per_second": 3945.428953656734,
+        "input_bytes": 1722624,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 256,
+        "refinements": 2,
+        "p50": 0.06516259349882603,
+        "p95": 0.06850299814977916,
+        "p99": 0.06947118682932342,
+        "rows_per_second": 3928.6343015891794,
+        "input_bytes": 1722624,
+        "learned_parameter_bytes": 4326448
+      },
+      {
+        "dtype": "torch.float64",
+        "rows": 256,
+        "refinements": 4,
+        "p50": 0.06845455949951429,
+        "p95": 0.07401476350423764,
+        "p99": 0.07433796070617973,
+        "rows_per_second": 3739.7070680414854,
+        "input_bytes": 1722624,
+        "learned_parameter_bytes": 4326448
+      }
+    ],
+    "unmeasured": [
+      "energía",
+      "contadores hardware",
+      "asignaciones totales",
+      "VRAM",
+      "transferencias GPU"
+    ]
+  },
+  "diagnostics": [
+    "Avisos estrictos del compilador y Lifetime Safety experimental",
+    "clang-tidy sobre producción y la prueba nativa nueva",
+    "Clang Static Analyzer sobre el núcleo y el enlace Python",
+    "Ruff: análisis y formato",
+    "check_repository: contratos y enlaces"
+  ],
+  "cuda": {
+    "status": "passed",
+    "schema_version": 1,
+    "created_at": "2026-10-09T00:40:55.021997+00:00",
+    "torch": "2.14.0+cu130",
+    "device": "cuda:0",
+    "gpu_inventory": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1089 MiB",
+    "initial_free_bytes": 1001979904,
+    "allocator_limit_bytes": 134217728,
+    "peak_reserved_bytes": 100663296,
+    "source_sha256": "8154f7b1bb564f50f8297b067edc8cbf2db9974c4ec91914c13f9c8a192e4eed",
+    "native_binary_sha256": "94d21d69e2c02d0f31526789f1929e90b04fa3d429adf2fe07a78442c76d3b9c",
+    "optimizer_steps": 0,
+    "cases": [
+      {
+        "dtype": "torch.float32",
+        "refinements": 1,
+        "rows": 2,
+        "bank": "empty",
+        "rtol": 0.0002,
+        "atol": 2e-06,
+        "max_absolute_error": 1.5497207641601562e-06,
+        "gradients_compared": 21,
+        "recovery_exact": true,
+        "rng_unchanged": true,
+        "incompatible_catalog_rejected": true
+      },
+      {
+        "dtype": "torch.float32",
+        "refinements": 2,
+        "rows": 2,
+        "bank": "empty",
+        "rtol": 0.0002,
+        "atol": 2e-06,
+        "max_absolute_error": 1.5497207641601562e-06,
+        "gradients_compared": 21,
+        "recovery_exact": true,
+        "rng_unchanged": true,
+        "incompatible_catalog_rejected": true
+      },
+      {
+        "dtype": "torch.float32",
+        "refinements": 4,
+        "rows": 2,
+        "bank": "empty",
+        "rtol": 0.0002,
+        "atol": 2e-06,
+        "max_absolute_error": 1.5497207641601562e-06,
+        "gradients_compared": 21,
+        "recovery_exact": true,
+        "rng_unchanged": true,
+        "incompatible_catalog_rejected": true
+      },
+      {
+        "dtype": "torch.float64",
+        "refinements": 1,
+        "rows": 2,
+        "bank": "empty",
+        "rtol": 1e-08,
+        "atol": 1e-10,
+        "max_absolute_error": 1.5543122344752192e-15,
+        "gradients_compared": 21,
+        "recovery_exact": true,
+        "rng_unchanged": true,
+        "incompatible_catalog_rejected": true
+      },
+      {
+        "dtype": "torch.float64",
+        "refinements": 2,
+        "rows": 2,
+        "bank": "empty",
+        "rtol": 1e-08,
+        "atol": 1e-10,
+        "max_absolute_error": 1.5543122344752192e-15,
+        "gradients_compared": 21,
+        "recovery_exact": true,
+        "rng_unchanged": true,
+        "incompatible_catalog_rejected": true
+      },
+      {
+        "dtype": "torch.float64",
+        "refinements": 4,
+        "rows": 2,
+        "bank": "empty",
+        "rtol": 1e-08,
+        "atol": 1e-10,
+        "max_absolute_error": 1.5543122344752192e-15,
+        "gradients_compared": 21,
+        "recovery_exact": true,
+        "rng_unchanged": true,
+        "incompatible_catalog_rejected": true
+      }
+    ],
+    "receipt_sha256": "4c635137b233e4c00796c3b7fe5dff5077f399bc68ef553211e75ce735f25585",
+    "warning": "cuDNN informa de pesos GRU que no forman un bloque contiguo. No se ha optimizado esa disposición.",
+    "limits": "Fixture técnico con memoria vacía y parámetros sin ajustar. Sin benchmark CUDA aislado, optimizador ni corpus real."
+  },
+  "independent_review": {
+    "revision": "2e130ff7002351b74a320f9f6657d4ab5d3a0a1e",
+    "status": "sin_hallazgos_materiales_en_el_alcance_revisado",
+    "tests": {
+      "selected_public": 49,
+      "independent": 8,
+      "total_passed": 57,
+      "pytest_seconds": 2.79,
+      "process_seconds": 3.82,
+      "peak_rss_bytes": 832196608,
+      "cpu_quota_percent": 200,
+      "memory_max_bytes": 2147483648,
+      "swap_bytes": 0,
+      "threads": 2
+    },
+    "independent_cases": [
+      "Cambiar solo el hash de procedencia no cambia parámetros, claves ni predicciones.",
+      "El resultado sobrevive al propietario Python y conserva gradientes de entrada.",
+      "El lote validado posee sus datos e ignora objetos de objetivo no convertibles.",
+      "Cero observado y ausencia producen geometrías episódicas diferentes.",
+      "El dtype global no sustituye la precisión explícita ni cambia el RNG.",
+      "Las fronteras de 1999 y 2024 se rechazan en la edición histórica.",
+      "Un archivo falso con hash exterior recalculado también se rechaza."
+    ],
+    "reviewed_boundaries": [
+      "Política opt-in y rechazo estricto por defecto.",
+      "Fusión con máscara posterior a proyección y cinco bits adicionales.",
+      "Versión de archivo, representación y traslado explícito.",
+      "Propiedad y vida de tensores del enlace pybind.",
+      "Uso del contrato común de entradas y alcance de memoria vacía."
+    ],
+    "artifacts": {
+      "test_review.py": "d7e930b847d17cdf18790f1c4fed0701d7ee02e0fa98cf0a391d7576cdae4c29",
+      "tests.log": "bc0be1717f4412fb768c843b3979d35730d7a34471a373dd765e968c1eb10cbb"
+    },
+    "receipt_sha256": "c3272e417eaba9952823d841341f04c6cc110c5a6d4f6d4b01bebe5e38d23d09",
+    "scope": "Revisión CPU anterior a la comprobación CUDA. No repitió sanitizadores ni ejecutó GPU. CUDA corresponde al recibo posterior separado de esta entrega."
+  },
+  "limits": [
+    "El codec histórico conserva sus proyecciones propias al trasladar parámetros. La paridad del traslado se comprueba solo con todas las modalidades presentes y memoria vacía.",
+    "La instrumentación ASan/UBSan cubre los ejecutables nativos. El SDK LibTorch y el proceso CPython del enlace no están instrumentados por esta comprobación.",
+    "La cobertura y las mutaciones no demuestran ausencia de defectos. No se ha medido mejora predictiva."
+  ],
+  "completed_at": "2026-10-09T00:43:08.597215+00:00"
+}

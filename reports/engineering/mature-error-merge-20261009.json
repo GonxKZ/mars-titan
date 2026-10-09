@@ -1,0 +1,48 @@
+{
+  "recorded_at_utc": "2026-10-09T01:44:02.489588+00:00",
+  "cuda_runtime_commit": "4e62049cd80f1159362d64cc60d5960f9721660e",
+  "merged_develop": "679557157a01c73823f3cd6fa70fe16b73ab7b6c",
+  "effective_python_paths": [
+    "src/mars_titan/memory",
+    "src/mars_titan/models/titans",
+    "src/mars_titan/models/baselines",
+    "src/mars_titan/data",
+    "src/mars_titan/training"
+  ],
+  "effective_python_files": 140,
+  "effective_python_sources_unchanged": true,
+  "source_map_sha256": "d84a08aa410ae1abdfc74ea7abaf6a0f7ba681520910678ca43a10ea2431b7c4",
+  "other_src_changes": [
+    "src/mars_titan/models/candidate/__init__.py",
+    "src/mars_titan/models/candidate/input_adapter.py"
+  ],
+  "native_binary_unchanged": true,
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "native_source_delta": "episodic_python.cpp añade el enlace GRU bajo MARS_TITAN_CANDIDATE_PYTHON. El binario usado por M2 permanece congelado y no se recompiló.",
+  "historical_inventory_unchanged_from_develop": true,
+  "CUDA_rerun": false,
+  "schema_version": 1,
+  "branch_parent": "0c89bac5aa108f0dbddfef501ef0ba29db9359e8",
+  "cpu_validation": {
+    "passed": 8,
+    "pytest_seconds": 8.98,
+    "manual_labels": true,
+    "optimizer_steps": 0,
+    "target_estimation_calls": 0,
+    "CUDA_enabled": false,
+    "selected_tests": [
+      "test_m2_uses_original_mature_error_without_filtering_observations",
+      "test_m2_preserves_order_partition_and_atomic_recovery",
+      "test_previous_admission_routes_keep_their_own_recovery",
+      "test_incompatible_write_contracts_fail_before_creating_a_session"
+    ]
+  },
+  "cuda_receipt": "reports/engineering/mature-error-cuda-20261009.json",
+  "cuda_receipt_sha256": "a64c346bed70b2e354082475dccf3966e1d7fbfc579415911311abec00d1896a",
+  "source_comparison_receipt_sha256": "d0e24549cb1192b891d6c0c78f2e5dabaef3d14e7dfabf7279f206b27e67ce83",
+  "cpu_log_sha256": "8a7c7a96a4658b3c17f522d2ced2ee2fc3ca51364085bb3f0e45d2279ffe1639",
+  "limits": [
+    "CUDA conserva el alcance ejecutado en 4e62049c: FP32/FP64, K=1, B_mem=4 y C desactivado. No se repitió tras conciliar fuentes idénticas.",
+    "El binario nativo fijado se conserva. El nuevo enlace opcional GRU tiene su verificación independiente."
+  ]
+}
