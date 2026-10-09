@@ -24,10 +24,10 @@ from mars_titan.models.baselines.multimodal import (
     PRESENCE_FUSION,
     STRICT_FUSION,
     MultimodalReference,
+    transformer_batch_options,
     validate_architecture,
 )
 from mars_titan.models.baselines.transformer import (
-    CompactPriceTransformer,
     transformer_options,
     validate_attention_budget,
 )
@@ -203,8 +203,6 @@ def _options(
         raise ValueError(
             "El Transformer y la política con máscaras requieren una arquitectura científica"
         )
-    if transformer and batch_size > CompactPriceTransformer.max_batch:
-        raise ValueError("El lote supera el presupuesto de la referencia Transformer")
     if "architecture" in case:
         architecture = case["architecture"]
         expected = {"hidden_size", "layers", "dropout"} | (
@@ -526,6 +524,7 @@ def run_reference_case(
             context=dataset.context,
             heads=architecture["transformer"]["heads"],
             layers=architecture["layers"],
+            **transformer_batch_options(case["kind"], batch_size),
         )
     for protected in (*dataset.roots.values(), Path("dataset")):
         outside_source(protected, output)
@@ -545,6 +544,7 @@ def run_reference_case(
             mask_fusion=PRESENCE_FUSION if masked else STRICT_FUSION,
             **case["architecture"],
             **({"head": QUANTILE_HEAD} if quantiles else {}),
+            **transformer_batch_options(case["kind"], batch_size),
         )
         if "architecture" in case
         else CostProbe(case["kind"], dimensions, context=dataset.context)

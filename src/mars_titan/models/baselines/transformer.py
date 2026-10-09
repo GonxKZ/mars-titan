@@ -5,9 +5,45 @@ import math
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
+# Lote por defecto y presupuesto de atención por defecto. Con estos valores el contrato
+# del codificador queda igual que antes de admitir lotes mayores.
 _MAX_BATCH = 256
 _MAX_ATTENTION_ELEMENTS = 2**24
+# Lote máximo admitido de forma explícita. El presupuesto de atención crece con el lote y
+# conserva los mismos elementos por ventana que el valor por defecto.
+MAX_BATCH_LIMIT = 8192
+_ELEMENTS_PER_WINDOW = _MAX_ATTENTION_ELEMENTS // _MAX_BATCH
+
+
+def attention_budget(max_batch=_MAX_BATCH):
+    """Elementos de atención admitidos para un lote máximo, nunca menos que el presupuesto base."""
+    if type(max_batch) is not int or not 1 <= max_batch <= MAX_BATCH_LIMIT:
+        raise ValueError(f"El lote máximo debe ser un entero entre 1 y {MAX_BATCH_LIMIT}")
+    return max(_MAX_ATTENTION_ELEMENTS, _ELEMENTS_PER_WINDOW * max_batch)
+
+
+def first_nonfinite(checks):
+    """Mensaje de la primera comprobación con NaN o infinito, con una sola sincronización.
+
+    `checks` contiene pares (tensor, mensaje) en el orden en que el cálculo los comprobaba
+    uno a uno. Cada `isfinite(...).all()` se queda en el dispositivo y solo la lista final
+    se copia al host, en lugar de esperar a la GPU en cada comprobación.
+    """
+    if not checks:
+        return None
+    flags = torch.stack([torch.isfinite(value.detach()).all() for value, _ in checks])
+    for finite, (_, message) in zip(flags.tolist(), checks, strict=True):
+        if not finite:
+            return message
+    return None
+
+
+def raise_nonfinite(checks):
+    message = first_nonfinite(checks)
+    if message is not None:
+        raise ValueError(message)
 
 
 def transformer_options(options):
@@ -26,11 +62,12 @@ def transformer_options(options):
     return dict(options)
 
 
-def validate_attention_budget(batch, *, context, heads, layers):
+def validate_attention_budget(batch, *, context, heads, layers, max_batch=_MAX_BATCH):
     """Comprobar lote y posiciones de atención sin construir el modelo ni leer datos."""
-    if type(batch) is not int or not 1 <= batch <= _MAX_BATCH:
+    elements = attention_budget(max_batch)
+    if type(batch) is not int or not 1 <= batch <= max_batch:
         raise ValueError("El lote de precios supera el presupuesto o está vacío")
-    if batch * context**2 * heads * layers > _MAX_ATTENTION_ELEMENTS:
+    if batch * context**2 * heads * layers > elements:
         raise ValueError("La atención supera el presupuesto conjunto de lote y contexto")
 
 
@@ -39,17 +76,39 @@ class CompactPriceTransformer(nn.Module):
 
     La atención y la FFN no usan dropout. La referencia multimodal conserva
     su regularización en la fusión. Los límites de lote no seleccionan datos.
+    `max_batch` amplía el lote admitido y su presupuesto de atención. Con el valor por
+    defecto el contrato y los checkpoints anteriores no cambian.
+
+    `forward` solo necesita la representación del último token. Todas las capas salvo la
+    última se calculan completas y la última solo proyecta claves y valores de toda la
+    ventana: la consulta, la atención, la FFN y las normalizaciones posteriores se calculan
+    para el último token. Con la máscara causal el último token atiende a toda la ventana,
+    así que el resultado es el mismo que `encode_sequence(...)[:, -1]` en aritmética exacta.
+
+    Las capas se evalúan con sus propios pesos y `scaled_dot_product_attention`, sin pasar
+    por `TransformerEncoderLayer.forward`. En evaluación sin gradiente esa llamada puede
+    tomar la ruta nativa de PyTorch, que en CUDA aproxima GELU con tanh. Así el resultado
+    no depende del modo ni del indicador global de fastpath.
     """
 
     max_batch = _MAX_BATCH
 
     def __init__(
-        self, input_size, *, context=64, hidden_size=64, layers=1, heads=4, feedforward_multiplier=2
+        self,
+        input_size,
+        *,
+        context=64,
+        hidden_size=64,
+        layers=1,
+        heads=4,
+        feedforward_multiplier=2,
+        max_batch=_MAX_BATCH,
     ):
         super().__init__()
         options = transformer_options(
             dict(heads=heads, feedforward_multiplier=feedforward_multiplier)
         )
+        elements = attention_budget(max_batch)
         if (
             type(input_size) is not int
             or not 1 <= input_size <= 2048
@@ -62,6 +121,7 @@ class CompactPriceTransformer(nn.Module):
             or hidden_size % heads
         ):
             raise ValueError("La forma o arquitectura del Transformer no es válida")
+        self.max_batch, self._max_attention_elements = max_batch, elements
         self._settings = dict(
             input_size=input_size,
             context=context,
@@ -97,6 +157,8 @@ class CompactPriceTransformer(nn.Module):
         encoded[:, 0::2], encoded[:, 1::2] = phases.sin(), phases.cos()
         # Se reconstruyen desde el contrato y no se aceptan como pesos aprendidos.
         self.register_buffer("positions", encoded, persistent=False)
+        # Las capas aplican la causalidad con `is_causal`. La máscara se conserva porque las
+        # huellas de parámetros de Titans-MAC también recorren los buffers no persistentes.
         self.register_buffer(
             "causal_mask",
             torch.ones(context, context, dtype=torch.bool, device=device).triu(1),
@@ -120,8 +182,8 @@ class CompactPriceTransformer(nn.Module):
             dropout=0.0,
             aggregation="last_token",
             state_policy="reset_per_window",
-            max_batch=_MAX_BATCH,
-            max_attention_elements=_MAX_ATTENTION_ELEMENTS,
+            max_batch=self.max_batch,
+            max_attention_elements=self._max_attention_elements,
             dtypes=("float32", "float64"),
         )
 
@@ -149,8 +211,8 @@ class CompactPriceTransformer(nn.Module):
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
-    def encode_sequence(self, prices):
-        """Devolver todos los tokens para contrastar el orden de información."""
+    def _validated(self, prices):
+        """Comprobar forma, presupuesto, precisión y dispositivo sin esperar a la GPU."""
         if (
             not isinstance(prices, torch.Tensor)
             or prices.layout != torch.strided
@@ -165,6 +227,7 @@ class CompactPriceTransformer(nn.Module):
             context=settings["context"],
             heads=settings["heads"],
             layers=settings["layers"],
+            max_batch=self.max_batch,
         )
         if (
             prices.dtype not in (torch.float32, torch.float64)
@@ -175,15 +238,66 @@ class CompactPriceTransformer(nn.Module):
             raise ValueError("Los precios y los pesos deben compartir dispositivo")
         if torch.is_autocast_enabled(prices.device.type):
             raise ValueError("Esta referencia no admite autocast")
-        if not torch.isfinite(prices).all():
-            raise ValueError("Los precios contienen valores no finitos")
-        encoded = self.projection(prices) + self.positions.to(dtype=prices.dtype)
+        return self.projection(prices) + self.positions.to(dtype=prices.dtype)
+
+    def _layer(self, block, encoded, *, last_only):
+        """Capa con normalización previa: x + SA(LN1(x)) y después y + FFN(LN2(y)).
+
+        Con `last_only` las claves y valores cubren toda la ventana y el resto se calcula
+        solo para el último token, al que la máscara causal no oculta ninguna clave.
+        """
+        attention, settings = block.self_attn, self._settings
+        hidden, heads = settings["hidden_size"], settings["heads"]
+        batch, width = encoded.shape[0], hidden // heads
+        normalized = block.norm1(encoded)
+        weight, bias = attention.in_proj_weight, attention.in_proj_bias
+        if last_only:
+            residual = encoded[:, -1:]
+            query = F.linear(normalized[:, -1:], weight[:hidden], bias[:hidden])
+            keys, values = F.linear(normalized, weight[hidden:], bias[hidden:]).split(
+                hidden, dim=-1
+            )
+        else:
+            residual = encoded
+            query, keys, values = F.linear(normalized, weight, bias).split(hidden, dim=-1)
+        query, keys, values = (
+            value.view(batch, -1, heads, width).transpose(1, 2) for value in (query, keys, values)
+        )
+        attended = F.scaled_dot_product_attention(query, keys, values, is_causal=not last_only)
+        attended = attended.transpose(1, 2).reshape(batch, -1, hidden)
+        token = residual + attention.out_proj(attended)
+        return token + block.linear2(block.activation(block.linear1(block.norm2(token))))
+
+    def encode_sequence(self, prices):
+        """Devolver todos los tokens para contrastar el orden de información."""
+        encoded = self._validated(prices)
+        raise_nonfinite([(prices, "Los precios contienen valores no finitos")])
         for block in self.blocks:
-            encoded = block(encoded, src_mask=self.causal_mask, is_causal=True)
+            encoded = self._layer(block, encoded, last_only=False)
         representation = self.norm(encoded)
-        if not torch.isfinite(representation).all():
-            raise ValueError("La representación Transformer contiene valores no finitos")
+        raise_nonfinite(
+            [(representation, "La representación Transformer contiene valores no finitos")]
+        )
         return representation
 
+    def encode_last(self, prices):
+        """Representación del último token y sus comprobaciones de finitud pendientes.
+
+        El llamante decide cuándo comprobarlas con `raise_nonfinite`, de modo que una
+        referencia multimodal reúne todas las de su forward en una sola sincronización.
+        """
+        encoded = self._validated(prices)
+        *complete, last = self.blocks
+        for block in complete:
+            encoded = self._layer(block, encoded, last_only=False)
+        representation = self.norm(self._layer(last, encoded, last_only=True))[:, 0]
+        checks = [
+            (prices, "Los precios contienen valores no finitos"),
+            (representation, "La representación Transformer contiene valores no finitos"),
+        ]
+        return representation, checks
+
     def forward(self, prices):
-        return self.encode_sequence(prices)[:, -1]
+        representation, checks = self.encode_last(prices)
+        raise_nonfinite(checks)
+        return representation
