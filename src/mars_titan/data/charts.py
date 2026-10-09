@@ -5,8 +5,18 @@ from io import BytesIO
 import numpy as np
 from PIL import Image, ImageDraw
 
+from .prices import check_ordering_rtol, ordering_excess
 
-def chart_png(prices: np.ndarray, *, end_index: int, context: int = 64) -> bytes:
+
+def chart_png(
+    prices: np.ndarray, *, end_index: int, context: int = 64, ordering_rtol: float = 0.0
+) -> bytes:
+    """Dibujar la ventana tal como llega.
+
+    `ordering_rtol` solo relaja la comprobación de coherencia con la tolerancia declarada por
+    la auditoría de precios. Los valores no se corrigen ni se recortan.
+    """
+    check_ordering_rtol(ordering_rtol)
     if context < 2 or end_index < context - 1 or end_index >= len(prices):
         raise ValueError("No hay suficientes observaciones pasadas para el gráfico")
     window = np.asarray(prices[end_index - context + 1 : end_index + 1], dtype=np.float64)
@@ -18,7 +28,9 @@ def chart_png(prices: np.ndarray, *, end_index: int, context: int = 64) -> bytes
     draw = ImageDraw.Draw(image)
     width = max(1, min(4, int(200 / context / 2)))
     for i, (opening, upper, lower, close) in enumerate(window):
-        if lower > min(opening, close) or upper < max(opening, close):
+        if (lower > min(opening, close) or upper < max(opening, close)) and (
+            not ordering_rtol or ordering_excess(opening, upper, lower, close) > ordering_rtol
+        ):
             raise ValueError("Los valores OHLC son incoherentes")
         x = round(12 + i * 200 / (context - 1))
         y = [round(212 - (price - low) * 200 / span) for price in (opening, upper, lower, close)]
