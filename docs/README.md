@@ -26,6 +26,7 @@ La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](en
 | Consultar la preparación por bloques | [Límites, paridad y medición macro](../reports/data/streaming-validation.md), con recuperación por activo. |
 | Revisar pruebas y límites de calidad | [Verificación local](../reports/resources/quality.md), con integración CUDA, cobertura, CRAP y mutación dirigida. |
 | Entender la pregunta y cómo contrastarla | [Protocolo](research/protocol.md), [matriz de experimentos](research/experiment-matrix.md), [riesgos](research/risks.md). |
+| Seguir la campaña sobre la edición desde 2000 | [Etapas, equidad, validación temporal, postentrenamiento, refuerzo y cómputo](research/training-campaign-2000.md), con el estado de cada etapa y sus tareas. |
 | Consultar la ampliación y su aportación candidata | [Alcance ampliado](research/research-expansion.md), [arquitectura candidata](research/candidate-architecture.md), [registro de hipótesis](research/novelty-ledger.md) y [crítica adversarial](research/adversarial-review.md). |
 | Organizar el trabajo | [Objetivos y hitos](research/roadmap.md), [tablero de tareas](research/task-board.md) y [auditoría de redundancias y etiquetas](research/backlog-review.md). |
 | Corregir la propuesta técnica inicial | [Revisión crítica del original](research/original-review.md). |
