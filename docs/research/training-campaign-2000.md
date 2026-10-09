@@ -19,7 +19,7 @@ El bloqueo de aprendizaje sigue vigente hasta que la edición esté completa y v
 | 5. Entrenamiento base | Referencias, GRU episódica, Transformer compacto, núcleo Titans-MAC, MARS-TITAN con ampliaciones y CM-v1 | Runners en adaptación a la política con máscaras. El entrenador cronológico de Titans está en implementación | [#234](https://github.com/GonxKZ/mars-titan/issues/234), [#23](https://github.com/GonxKZ/mars-titan/issues/23), [#293](https://github.com/GonxKZ/mars-titan/issues/293) |
 | 6. Postentrenamiento | Padre congelado, continuación supervisada, corrección residual y adaptadores, solos y combinados | Implementado sobre la edición estricta. Falta la edición con máscaras y la matriz de combinaciones | [#364](https://github.com/GonxKZ/mars-titan/issues/364), [#128](https://github.com/GonxKZ/mars-titan/issues/128) |
 | 7. Refuerzo | Variantes de PPO, KLPO prioritario y Double DQN sobre entornos auditados | Controladores implementados sin ejecutar pasos. Auditoría de entornos en curso | [#137](https://github.com/GonxKZ/mars-titan/issues/137), [#365](https://github.com/GonxKZ/mars-titan/issues/365) |
-| 8. Evaluación | MAE residual por sesión y métricas secundarias con incertidumbre por bloques | Métricas principales existentes. Secundarias en implementación | [#32](https://github.com/GonxKZ/mars-titan/issues/32), [#36](https://github.com/GonxKZ/mars-titan/issues/36) |
+| 8. Evaluación | MAE residual por sesión y métricas secundarias con incertidumbre por bloques | Métricas principales y secundarias implementadas con pruebas técnicas, sin aplicar a esta edición | [#32](https://github.com/GonxKZ/mars-titan/issues/32), [#36](https://github.com/GonxKZ/mars-titan/issues/36) |
 
 ## Población y equidad
 
@@ -68,6 +68,6 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 ## Decisiones pendientes antes de entrenar
 
 - Número de ventanas con reentrenamiento completo y tratamiento de las restantes ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
-- Cabeza de cuantiles común o calibración solo secundaria ([#22](https://github.com/GonxKZ/mars-titan/issues/22)).
+- Cabeza de cuantiles común o calibración solo secundaria ([#22](https://github.com/GonxKZ/mars-titan/issues/22)), con una [propuesta registrada](quantile-head-decision.md).
 - Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
 - Política de retención de predicciones y checkpoints según el disco disponible.
