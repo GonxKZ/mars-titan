@@ -56,28 +56,51 @@ LEGACY_IDENTITY = {
 }
 
 
-@pytest.fixture
-def cpu_runner(monkeypatch):
-    """Sustituir CUDA y AdamW solo en la prueba, sin aplicar actualizaciones."""
-    record = SimpleNamespace(calls=[], optimizers=0)
+def recording_optimizer(record):
+    """Construir un sustituto de AdamW que registra gradientes y nunca actualiza pesos.
 
-    class RecordingOptimizer(torch.optim.Optimizer):
+    No hereda de torch.optim.Optimizer porque no aplica ninguna actualización. Así la
+    guarda global del bloqueo no necesita omitir estas pruebas y el contrato se comprueba
+    aquí: cada llamada exige pesos idénticos a los recibidos al construirlo.
+    """
+
+    class RecordingOptimizer:
         def __init__(self, parameters, lr):
-            super().__init__(parameters, dict(lr=lr))
-            values = [p for group in self.param_groups for p in group["params"]]
-            self.initial = [value.detach().clone() for value in values]
+            self.parameters, self.lr, self.steps = list(parameters), lr, 0
+            self.initial = [value.detach().clone() for value in self.parameters]
             record.optimizers += 1
 
+        def zero_grad(self, set_to_none=True):
+            if set_to_none is not True:
+                raise AssertionError("El runner libera los gradientes entre lotes")
+            for value in self.parameters:
+                value.grad = None
+
         @torch.no_grad()
-        def step(self, closure=None):
-            if closure is not None:
-                raise AssertionError("El runner no usa cierres")
-            values = [p for group in self.param_groups for p in group["params"]]
-            # Los pesos siguen iguales a los recibidos al crear el optimizador.
+        def step(self):
+            values = self.parameters
             assert all(torch.equal(a, b) for a, b in zip(values, self.initial, strict=True))
             record.calls.append(
                 [None if p.grad is None else p.grad.detach().clone() for p in values]
             )
+            self.steps += 1
+
+        def state_dict(self):
+            return dict(kind="recording_without_updates", lr=self.lr, steps=self.steps)
+
+        def load_state_dict(self, state):
+            if state.get("kind") != "recording_without_updates" or state.get("lr") != self.lr:
+                raise AssertionError("El estado no corresponde al sustituto sin actualizaciones")
+            self.steps = state["steps"]
+
+    return RecordingOptimizer
+
+
+@pytest.fixture
+def cpu_runner(monkeypatch):
+    """Sustituir CUDA y AdamW solo en la prueba, sin aplicar actualizaciones."""
+    record = SimpleNamespace(calls=[], optimizers=0)
+    RecordingOptimizer = recording_optimizer(record)
 
     deterministic = torch.are_deterministic_algorithms_enabled()
     threads = torch.get_num_threads()
