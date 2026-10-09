@@ -519,6 +519,27 @@ def test_the_hold_is_checked_again_before_each_pending_job(base, tmp_path, learn
     assert summary["status"] == "blocked" and summary["completed"]["prediction_jobs"] == 1
 
 
+def test_each_receipt_releases_the_indices_of_its_attempt(base, tmp_path, monkeypatch):
+    """La liberación llega después del recibo, con el modelo del trabajo."""
+    calls = []
+
+    def released(folder, model):
+        receipts = list((tmp_path / "out" / "jobs").rglob("receipt.json"))
+        calls.append((folder, model, len(receipts)))
+        return {}
+
+    monkeypatch.setattr(ablation, "release_confirmed", released)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    summary = ablation.run_stage(
+        base.stage, base.views, base.output, tmp_path / "out", lease=CpuLease, stop=RUNNING
+    )
+    assert summary["status"] == "completed"
+    assert [count for _, _, count in calls] == list(range(1, len(calls) + 1))
+    assert len(calls) == summary["completed"]["prediction_jobs"] > 0
+    for folder, model, _ in calls:
+        assert folder.name.startswith("attempt-") and model == "neural"
+
+
 def _without_ablation(report, folder):
     report.pop("modality_ablation")
 

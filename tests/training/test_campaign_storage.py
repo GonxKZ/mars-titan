@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training import campaign_storage as storage
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.checkpoints import (
@@ -290,6 +290,64 @@ def test_release_confirmed_removes_only_stale_xgboost_caches(tmp_path):
     released = storage.release_confirmed(folder, "xgboost")
     assert released["external_caches"] > 0 and model.exists()
     assert not (folder / "external-abc").exists()
+
+
+def boosters(folder, *, selected_round=10, rounds=(10, 14), status="completed"):
+    """Intento terminado de XGBoost con su elegido y sus boosters de recuperación."""
+    (folder / "checkpoints").mkdir(parents=True)
+    records = {}
+    for count in sorted({selected_round, *rounds}):
+        path = folder / f"checkpoints/attempt-0001-round-{count:04d}.ubj"
+        path.write_bytes(b"booster" * count)
+        records[count] = dict(path=str(path.relative_to(folder)), sha256=sha256(path))
+    report = dict(
+        status=status,
+        checkpoint=records[selected_round],
+        recovery_checkpoint=records[rounds[-1]],
+        recovery_checkpoints=[records[count] for count in rounds],
+    )
+    atomic_json(folder / "run.json", report)
+    return records
+
+
+def test_release_confirmed_keeps_the_selected_booster_and_drops_the_recovery_ones(tmp_path):
+    folder = tmp_path / "attempt-0001"
+    records = boosters(folder)
+    released = storage.release_confirmed(folder, "xgboost")
+    assert released["recovery_boosters"] == len(b"booster") * 14
+    assert (folder / records[10]["path"]).is_file()
+    assert not (folder / records[14]["path"]).exists()
+    assert json.loads((folder / "released.json").read_text())["recovery_boosters"] > 0
+    assert storage.release_confirmed(folder, "xgboost") == dict(recovery_boosters=0)
+    # Un elegido que coincide con la última ronda se conserva.
+    last = tmp_path / "last"
+    records = boosters(last, selected_round=14)
+    storage.release_confirmed(last, "xgboost")
+    assert (last / records[14]["path"]).is_file() and not (last / records[10]["path"]).exists()
+
+
+def test_boosters_are_not_released_without_a_completed_and_intact_selection(tmp_path):
+    running = tmp_path / "running"
+    boosters(running, status="running")
+    with pytest.raises(ValueError, match="terminado"):
+        storage.release_confirmed(running, "xgboost")
+    assert len(list((running / "checkpoints").iterdir())) == 2
+    broken = tmp_path / "broken"
+    records = boosters(broken)
+    (broken / records[10]["path"]).write_bytes(b"otro")
+    with pytest.raises(ValueError, match="elegido no conserva"):
+        storage.release_confirmed(broken, "xgboost")
+    assert (broken / records[14]["path"]).is_file()
+    changed = tmp_path / "changed"
+    records = boosters(changed)
+    (changed / records[14]["path"]).write_bytes(b"otro")
+    with pytest.raises(ValueError, match="ha cambiado"):
+        storage.release_confirmed(changed, "xgboost")
+    # Un traslado de XGBoost no tiene boosters de recuperación que liberar.
+    carry = tmp_path / "carry"
+    carry.mkdir()
+    atomic_json(carry / "carry.json", dict(status="completed"))
+    assert storage.release_confirmed(carry, "xgboost") == dict(recovery_boosters=0)
 
 
 # Integración con la campaña: dobles que no ajustan y disco libre simulado.

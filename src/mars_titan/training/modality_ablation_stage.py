@@ -51,6 +51,7 @@ from .campaign_plan import (
     plan_campaign,
     schedule,
 )
+from .campaign_storage import release_confirmed
 from .learning_hold import LearningHoldError, hold_path, learning_blocked
 
 STAGE_KIND = "historical_masked_modality_ablation_stage"
@@ -534,6 +535,8 @@ class _Stage:
         )
         target = self.folder(job) / "receipt.json"
         atomic_json(target, receipt)
+        # Con el recibo escrito, los índices del calentamiento ya no se leen.
+        release_confirmed(run.folder, job["model"])
         return dict(receipt, sha256=sha256(target))
 
     def execute(self, jobs):
