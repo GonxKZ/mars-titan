@@ -6,7 +6,7 @@ Revisión del 9 de octubre de 2026. Este documento ordena el recorrido completo 
 
 Entrenar desde cero todas las arquitecturas comparadas con todos los datos utilizables desde 2000, con las mismas filas, la misma validación temporal y presupuestos comparables. Después se aplican postentrenamientos y políticas de refuerzo sobre esas mismas bases. La pregunta es cuánto cambia el error de cada variante frente a sus referencias, con incertidumbre temporal y costes medidos.
 
-La condición del bloqueo de aprendizaje era preparar la edición desde 2000 con ausencias y máscaras explícitas y la misma población para todos los modelos. La edición y sus objetivos residuales se verificaron el 9 de octubre ([recibo](../../reports/data/historical-edition-v3-targets-20261009.json)). Ese mismo día se eligió la [variante A](#variantes-de-presupuesto) con todas las familias y se prepararon y verificaron sus [vistas walk-forward](walk-forward-2000.md#vistas-de-la-campaña-a) ([recibo](../../reports/data/campaign-a-views-20261009.json)). La protección local sigue activa y la campaña no se ha lanzado. No se entrenará ningún modelo hasta terminar el código y las implementaciones pendientes y revisar un resumen de su estado.
+La condición del bloqueo de aprendizaje era preparar la edición desde 2000 con ausencias y máscaras explícitas y la misma población para todos los modelos. La edición y sus objetivos residuales se verificaron el 9 de octubre ([recibo](../../reports/data/historical-edition-v3-targets-20261009.json)). Ese mismo día se eligió la [variante A](#variantes-de-presupuesto) con todas las familias y se prepararon y verificaron sus [vistas walk-forward](walk-forward-2000.md#vistas-de-la-campaña-a) ([recibo](../../reports/data/campaign-a-views-20261009.json)). La protección local sigue activa y la campaña no se ha lanzado. No se entrenará ningún modelo hasta terminar el código y las implementaciones pendientes y revisar un resumen de su estado. Ese mismo 9 de octubre, antes de cualquier resultado, el diseño de A cambió a un [modelo conjunto US+CN desde 2004 con controles separados](#campaña-a-v2-con-modelo-conjunto), declarado como campaña A v2 sin modificar la configuración original.
 
 ## Etapas y estado
 
@@ -15,7 +15,7 @@ La condición del bloqueo de aprendizaje era preparar la edición desde 2000 con
 | 1. Edición de entradas | Codificación v3 de precios, noticias, gráficos, fundamentales y 140 posiciones macro con nivel, presencia y antigüedad, más cinco bits de presencia por modalidad | Completa. 5.023 activos codificados (4.213 US y 810 CN), 15 sin muestras, y 17.076.024 muestras. Precios, gráficos y macro en todas las filas, fundamentales en el 34,4 % y noticias en el 17,9 % ([recibo](../../reports/data/historical-edition-v3-targets-20261009.json)) | [#171](https://github.com/GonxKZ/mars-titan/issues/171) |
 | 2. Objetivos | Retorno residual apertura-cierre de la sesión siguiente, OLS con 252 sesiones y un mínimo de 126 pares, solo con pares disponibles en la decisión | Generados y verificados. 15.560.197 filas de entrenamiento hasta 2022 y 1.221.822 de validación en 2023, con 294.005 exclusiones por motivo. El recálculo independiente de 190.830 etiquetas de 60 activos no encontró diferencias. La lectura de sesiones guardadas como diccionario se corrigió en [#413](https://github.com/GonxKZ/mars-titan/pull/413) | [#15](https://github.com/GonxKZ/mars-titan/issues/15) |
 | 3. Verificación de la edición | Conciliación de los 5.676 candidatos, recuentos frente al censo de ventanas, máscaras, disponibilidad no posterior a la decisión, ninguna fila de 2024 | Hecha. La verificación independiente termina con `corpus_complete` verdadero y las filas aceptadas y excluidas suman exactamente las muestras de la edición. 2024 sigue fuera | [#171](https://github.com/GonxKZ/mars-titan/issues/171) |
-| 4. Protocolo temporal | Ventanas anuales expansivas desde el primer año con etiquetas, validación interna al final de cada tramo de entrenamiento, evaluación del año siguiente, purga por intervalo real de etiquetas | Diseño y comprobaciones técnicas en el [protocolo v2](walk-forward-2000.md). Variantes de presupuesto A y B declaradas con su [recuento de trabajos](#variantes-de-presupuesto). La [orden de medición](#medición-de-caudal) cubre referencias, Titans-MAC, GRU candidata, lectores de MARS-TITAN, núcleos y lectores de CM-v1 y adaptadores, con una [declaración preparada](#declaración-preparada-de-las-familias-pendientes) de las tres familias que A y B no declaran. Variante A elegida. Sus [vistas reales](walk-forward-2000.md#vistas-de-la-campaña-a) están preparadas y verificadas de forma independiente: 19 ventanas en US y 13 en CN y en US+CN, con objetivos idénticos a `targets-v3` y ninguna fila elegible perdida. Los lectores saltan los grupos Parquet vacíos de 25 archivos de muestras ([#416](https://github.com/GonxKZ/mars-titan/pull/416)). La orden de caudal no se ha ejecutado | [#363](https://github.com/GonxKZ/mars-titan/issues/363) |
+| 4. Protocolo temporal | Ventanas anuales expansivas desde el primer año con etiquetas, validación interna al final de cada tramo de entrenamiento, evaluación del año siguiente, purga por intervalo real de etiquetas | Diseño y comprobaciones técnicas en el [protocolo v2](walk-forward-2000.md). Variantes de presupuesto A y B declaradas con su [recuento de trabajos](#variantes-de-presupuesto). La [orden de medición](#medición-de-caudal) cubre referencias, Titans-MAC, GRU candidata, lectores de MARS-TITAN, núcleos y lectores de CM-v1 y adaptadores, con una [declaración preparada](#declaración-preparada-de-las-familias-pendientes) de las tres familias que A y B no declaran. Variante A elegida. Sus [vistas reales](walk-forward-2000.md#vistas-de-la-campaña-a) están preparadas y verificadas de forma independiente: 19 ventanas en US y 13 en CN y en US+CN, con objetivos idénticos a `targets-v3` y ninguna fila elegible perdida. Los lectores saltan los grupos Parquet vacíos de 25 archivos de muestras ([#416](https://github.com/GonxKZ/mars-titan/pull/416)). La orden de caudal no se ha ejecutado. La [campaña A v2](#campaña-a-v2-con-modelo-conjunto) declara el protocolo conjunto v3 desde 2004, con sus vistas todavía sin generar | [#363](https://github.com/GonxKZ/mars-titan/issues/363) |
 | 5. Entrenamiento base | Referencias, GRU episódica, Transformer compacto, núcleo Titans-MAC, MARS-TITAN con ampliaciones y CM-v1 | [Orquestación](#orquestación-de-los-brazos-con-entrenador) de las referencias neuronales y tabulares preparada y comprobada con dobles, sin ejecutar. Los entrenadores cronológicos de [Titans-MAC](../engineering/titans-chronological-trainer.md) y de la [GRU episódica](../engineering/candidate-chronological-trainer.md) están comprobados sin pasos de optimizador. Los dos tienen entrada por ventana y traslado para B, registrados en la orquestación mediante secciones opcionales y comprobados en CPU. Las campañas A y B declaran Titans-MAC con su [receta de campaña](../engineering/titans-chronological-trainer.md#receta-de-la-campaña-y-casos-de-búsqueda), sin ejecutar. La GRU episódica, MARS-TITAN y CM-v1 están en la declaración ampliada de A, todavía sin copiar a su configuración. Las [comprobaciones CUDA](../../reports/engineering/cuda-checks-20261009/README.md) de estas rutas pasan sin pasos de optimizador. M2 lo hace con el enlace de `develop` desde [#418](https://github.com/GonxKZ/mars-titan/pull/418) | [#234](https://github.com/GonxKZ/mars-titan/issues/234), [#23](https://github.com/GonxKZ/mars-titan/issues/23), [#293](https://github.com/GonxKZ/mars-titan/issues/293) |
 | 6. Postentrenamiento | Padre congelado, continuación supervisada, corrección residual y adaptadores, solos y combinados | Edición con máscaras, matriz con pinball para padres de cuantiles, modo matriz de la cola y [etapa por ventana](../engineering/masked-posttraining.md#etapa-por-ventana-de-la-campaña) comprobados hasta el paso del optimizador, sin ejecutar. La etapa está registrada en la orquestación como etapa posterior, con el subcomando `posttraining` de la orden única | [#364](https://github.com/GonxKZ/mars-titan/issues/364), [#128](https://github.com/GonxKZ/mars-titan/issues/128) |
 | 7. Refuerzo | Variantes de PPO, KLPO prioritario y Double DQN sobre entornos auditados | Controladores implementados sin ejecutar pasos. [Etapa de políticas por ventana](#etapa-de-políticas-por-ventana) declarada para A y B en dos niveles (KLPO y referencias sobre todos los predictores de la campaña, y PPO y Double DQN sobre dos), registrada en la orquestación con el subcomando `rl` y comprobada en CPU con ejecutores sustitutos, sin ejecutar. Los brazos aprendidos se lanzan con `mars-titan-ppo` (esquema 4) y `mars-titan-klpo` sobre cintas reconstruidas, también chinas con sus reglas, comprobados en diagnóstico CPU sin pasos de optimizador ([#420](https://github.com/GonxKZ/mars-titan/pull/420)). Falta compilarlos con LibTorch CUDA y medir su rendimiento en `cuda:0`. Ningún ajuste RL se ha ejecutado | [#137](https://github.com/GonxKZ/mars-titan/issues/137), [#365](https://github.com/GonxKZ/mars-titan/issues/365) |
@@ -31,7 +31,7 @@ La comparación estricta, que exige las cuatro modalidades completas y los 140 i
 
 ## Validación temporal y sobreajuste
 
-Cada ventana entrena con todo el pasado disponible hasta su corte, valida en el tramo final de ese pasado y evalúa el año siguiente. La purga elimina las filas cuya etiqueta madura después del corte. China no tiene etiquetas residuales antes de 2006 porque sus precios y el factor CSI300 empiezan ese año. Por eso las ventanas conjuntas empiezan en 2011, el primer año con tres años de etiquetas maduras en los dos mercados, y ninguna ventana admite un mercado vacío. Las ventanas solo de US evalúan desde 2005 y siguen entrenando con todo el pasado disponible. El [protocolo v2](walk-forward-2000.md) justifica la decisión.
+Cada ventana entrena con todo el pasado disponible hasta su corte, valida en el tramo final de ese pasado y evalúa el año siguiente. La purga elimina las filas cuya etiqueta madura después del corte. China no tiene etiquetas residuales antes de 2006 porque sus precios y el factor CSI300 empiezan ese año. Por eso las ventanas conjuntas del protocolo v2 empiezan en 2011, el primer año con tres años de etiquetas maduras en los dos mercados, y ninguna ventana admite un mercado vacío. Las ventanas solo de US evalúan desde 2005 y siguen entrenando con todo el pasado disponible. El [protocolo v2](walk-forward-2000.md) justifica la decisión. La campaña A v2 usa en su lugar el [protocolo conjunto v3](walk-forward-2000.md#protocolo-conjunto-v3-de-la-campaña-a-v2): 19 ventanas desde 2004 con China en el ajuste en cuanto tiene filas y en las métricas solo desde 2011.
 
 La selección guarda el mejor estado según la validación temporal, con presupuesto fijo de 30 épocas, paciencia y mejora mínima declaradas en el protocolo. Los controles emparejados conservan el mismo número de actualizaciones. Si una parada independiente rompiera esa igualdad, se usa selección del mejor estado con presupuesto fijo. Los checkpoints de recuperación rotan con un límite pequeño y el mejor estado se guarda aparte, según [la política de checkpoints](../engineering/checkpoint-recovery.md).
 
@@ -97,6 +97,95 @@ Ajustes por brazo y semilla en cada ámbito:
 En B cada brazo y semilla añade 12 predicciones trasladadas en US y 8 en CN y en US+CN. Cada configuración declara `max_training_jobs` y `max_prediction_jobs` iguales a su plan, de modo que añadir brazos, semillas o candidatos exige cambiar la configuración y su huella. Superarlos detiene la comprobación con el recuento previsto y el límite. La búsqueda temporal de referencias ya no tiene un tope fijo de 512 ejecuciones: un plan de versión 4 puede declarar `max_runs`, y sin ese campo conserva el límite anterior.
 
 El 9 de octubre se eligió la variante A con todas las familias, registrada en [#363](https://github.com/GonxKZ/mars-titan/issues/363). Se prefirió entrenar cada ventana con todo el pasado disponible a reducir el coste, así que la medida de caudal ya no decide entre A y B. Con la [declaración ampliada](#declaración-preparada-de-las-familias-pendientes), A suma 4.680 ajustes en la campaña base, 3.915 en la etapa de adaptadores y 2.160 en la de políticas. La variante B conserva su configuración y sus pruebas, pero no es la elegida. La duración real se medirá con los primeros trabajos.
+
+### Campaña A v2 con modelo conjunto
+
+El 9 de octubre de 2026, antes de cualquier resultado, el autor tomó cuatro decisiones definitivas sobre la variante A, registradas en [#363](https://github.com/GonxKZ/mars-titan/issues/363). Son decisiones de diseño, no conclusiones. La [configuración v2](../../configs/baselines/historical-masked-campaign-a-v2.json) las declara en un archivo nuevo, y la de A y sus etapas no cambian.
+
+1. Reentrenamiento anual desde cero en cada ventana. Se descarta el reentrenamiento cada 36 meses.
+2. Todas las familias entrenan un único modelo conjunto US+CN con el [protocolo conjunto v3](walk-forward-2000.md#protocolo-conjunto-v3-de-la-campaña-a-v2), que empieza como US (primera validación en abril de 2004, 19 ventanas). China entra en el ajuste en cuanto tiene filas y sus métricas solo cuentan desde 2011, donde se cumple su historia mínima. Tres familias entrenan además modelos separados de US y CN como controles: `transformer_compact`, `titans_mac_online` y el brazo de MARS-TITAN `mars_titan_m1` (M1 con K = 1).
+3. Los casos de búsqueda se ajustan con una sola semilla, la 42. El caso elegido por validación en cada ventana se repite con 43 y 44.
+4. La parada temprana conjunta se conectará cuando exista su ejecutor, en preparación en otra tarea.
+
+El control de MARS-TITAN es `mars_titan_m1` por cuatro motivos fijados antes de lanzar: es la variante principal (K = 1) de la declaración de ampliaciones, es la base de la familia de refinamientos K, su lector es el B de CM-v1 y su padre `titans_mac_online` también es un control. Padre y lector se entrenan así separados en el mismo ámbito, y el contraste no mezcla un padre conjunto con un lector separado. El ámbito de un mercado solo acepta un brazo con padre si ese padre también se ajusta en el ámbito. Solo los núcleos auxiliares de CM-v1 se incorporan sin declararlos.
+
+| Elemento | Declaración en la campaña v2 |
+| --- | --- |
+| Ámbitos | US+CN con todos los brazos. US y CN solo con los tres controles separados |
+| Brazos | Los de A más la GRU candidata, MARS-TITAN y CM-v1, copiados de la [declaración ampliada](#declaración-preparada-de-las-familias-pendientes) |
+| `seed_policy` | Búsqueda con 42 y caso elegido con 43 y 44. Ridge y XGBoost son deterministas y tienen una sola semilla (XGBoost usa `subsample` y `colsample_bytree` iguales a 1,0, así que la semilla no interviene). La [configuración tabular v2](../../configs/baselines/tabular-historical-masked-v2.json) solo cambia los finalistas de XGBoost |
+| `stopping` | `{"mode": "protocol"}`, presupuesto fijo del protocolo. Es el punto de conexión de la parada conjunta, que entrará como otro modo con sus grupos. Cualquier otro modo se rechaza hoy |
+| `memory_options` | `accumulation_rows` de Titans-MAC, GRU candidata y CM-v1 y `recompute` de la GRU candidata, todos `pending`. `check` los lista como impedimentos y `run` se niega a empezar hasta que coincidan con el valor de su receta |
+| `execution` | `{"order": "by_window"}`. La campaña recorre cada ventana completa antes de la siguiente |
+| Límites | 2.322 ajustes y ninguna predicción trasladada |
+
+Cada finalista depende de todas las búsquedas de su brazo y ventana y, si el brazo parte de otro, del finalista del padre con la misma semilla. Su identidad guarda el caso elegido, la búsqueda ganadora y la huella de su recibo, de modo que un cambio en una búsqueda confirmada invalida el finalista al reanudar. La selección solo lee el MAE por sesión de validación del recibo, con desempate por identificador. La comparación resume cada semilla por separado y contrasta la media sesión a sesión de las semillas.
+
+| Ajustes base | A ampliada (tres ámbitos) | A v2 |
+| --- | ---: | ---: |
+| Neuronales, US+CN | 87 × 13 = 1.131 | 87 × 19 = 1.653 |
+| Neuronales, US | 87 × 19 = 1.653 | 12 × 19 = 228 |
+| Neuronales, CN | 87 × 13 = 1.131 | 12 × 13 = 156 |
+| Ridge y XGBoost | 17 × 45 = 765 | 15 × 19 = 285 |
+| Total | 4.680 | 2.322 |
+
+Por ventana conjunta hay 87 ajustes neuronales: 21 brazos o núcleos con dos casos y dos finalistas, y la GRU candidata con un caso y dos finalistas. Las etapas posteriores solo usan el modelo conjunto: 1.653 ajustes de adaptadores, 3.534 predicciones de la ablación de modalidades y 2.160 ajustes y 1.584 referencias de políticas. La cinta US de políticas recorre 15 ventanas (2009 a 2023) y la CN 9 (2015 a 2023), las dos con las predicciones del modelo conjunto en su mercado.
+
+Las filas salen de los objetivos con la regla de las vistas, en el [informe de recuentos](../../reports/data/campaign-a-v2-window-counts-20261009.json). Los de US y CN coinciden exactamente con las vistas ya verificadas. US+CN suma 125.553.766 filas de ajuste, 7.292.172 de validación, 3.721.369 de calibración y 15.434.391 de evaluación en sus 19 ventanas.
+
+#### Orden ventana a ventana
+
+Para liberar disco a medida que avanza, la campaña v2 se ejecuta ventana a ventana. `training/campaign_schedule.py` agrupa en una ventana de campaña las ventanas de todos los ámbitos con los cuatro tramos idénticos, con el nombre de la conjunta: de `fold-000` a `fold-005` están US+CN y US, y desde `fold-006` también CN. Cada ventana recorre estas fases, y después empieza la siguiente:
+
+| Fase | Contenido |
+| --- | --- |
+| `base_search` | Casos de búsqueda de todos los brazos y ámbitos con la semilla 42 |
+| `selection` | Caso elegido de cada brazo con el MAE de validación de sus recibos. No es un trabajo |
+| `selected_case_seeds` | El caso elegido con 43 y 44 |
+| `adapters`, `ablation`, `rl` | Etapas posteriores de la misma ventana |
+| `comparison` | Agregados por sesión de la comparación de la ventana en los tres ámbitos |
+| `release` | Liberación de lo temporal de la ventana, a cargo de la retención rodante |
+
+El plan comprueba que ninguna dependencia apunta a una fase posterior ni a una ventana posterior. Con el reentrenamiento anual no hay dependencias entre ventanas. `run`, `posttraining run`, `ablation run` y `rl run` aceptan `--window`, ejecutan solo los trabajos de esa ventana con sus dependencias y confirman solo la base de esa ventana. `schedule` muestra el orden sin leer datos. La persistencia de los agregados por ventana, que permitiría liberar las predicciones por fila antes del informe final, está pendiente y se coordinará con la nueva versión de la comparación.
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py check \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json
+uv run --no-sync python scripts/run_masked_campaign.py schedule \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --adapter-stage configs/posttraining/historical-masked-adapter-stage-a-v2.json \
+  --ablation-stage configs/evaluation/historical-masked-ablation-stage-a-v2.json \
+  --rl-stage configs/simulation/historical-masked-rl-stage-a-v2.json
+uv run --no-sync python scripts/run_masked_campaign.py run \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --views US+CN=<vistas conjuntas v3>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN \
+  --output <campaña> --storage configs/baselines/historical-masked-campaign-storage.json \
+  --window fold-000
+```
+
+#### Proyección de horas
+
+`run_masked_campaign.py budget` aplica la fórmula de la [medición de caudal](#medición-de-caudal) a los trabajos exactos del plan: filas de ajuste por épocas entre el caudal, más las pasadas de validación, las predicciones finales y el calentamiento de las familias con memoria. El caudal puede ser uno común, con la inferencia a un múltiplo declarado, o el informe medido de `throughput`, y las épocas pueden sustituirse por las efectivas previstas de una parada temprana. Con 16.000 muestras-época por segundo, el caudal de la campaña de referencias del 6 y 7 de octubre, y la inferencia a 3 veces ese caudal:
+
+| Etapa | A ampliada, 30 épocas | A v2, 30 épocas | A v2, unas 10 épocas efectivas |
+| --- | ---: | ---: | ---: |
+| Base neuronal | 11.373 h | 6.837 h | 2.319 h |
+| Adaptadores | 1.884 h | 995 h | 995 h |
+| Ablación de modalidades | | 27 h | 27 h |
+
+Las 10 épocas efectivas son una estimación para la parada conjunta (rango de 8 a 14): la mediana de la mejor época en la campaña de referencias fue 3, la paciencia es 5 y el grupo para con su miembro más lento. Ridge, XGBoost y las políticas no escalan con el caudal neuronal y se estiman aparte entre 145 y 340 h sin medir. Con 4 semanas de reloj (672 h) y unas 580 h útiles, el factor de caudal necesario es horas neuronales / (580 − horas fijas): 10,1 con 250 h fijas y 7,0 con 100 h. Todo son hipótesis hasta medir el caudal de cada familia en esta edición.
+
+```bash
+uv run --no-sync python scripts/run_masked_campaign.py budget \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --counts reports/data/campaign-a-v2-window-counts-20261009.json \
+  --rate 16000 --epochs 10 \
+  --stage configs/posttraining/historical-masked-adapter-stage-a-v2.json \
+  --ablation-stage configs/evaluation/historical-masked-ablation-stage-a-v2.json \
+  --fixed-hours 250 --target-hours 580
+```
+
+Si no cabe, en [#363](https://github.com/GonxKZ/mars-titan/issues/363) se ordenaron palancas de menor a mayor coste científico, todas con los datos completos y el reentrenamiento anual, sin elegir ninguna: el propio caudal, una parada más ajustada (12 épocas y paciencia 3), adaptadores con una semilla y 3 épocas, un solo caso de búsqueda, la continuación anual en caliente como comparación distinta, una prioridad de brazos declarada antes de lanzar y, en último lugar, renunciar a los controles separados.
 
 ### Parada y pérdida
 
@@ -326,12 +415,15 @@ La métrica principal es el MAE residual por sesión. Primero se promedian los a
 
 ## Cómputo
 
-La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía de ahorro, que el equipo necesita para no apagarse por temperatura. En esas condiciones la GPU trabaja a unos 1.305 MHz con limitación térmica. La auditoría de preparación estima unas 85 h por familia, configuración y semilla si se reentrena cada ventana anual completa con 30 épocas. Es una hipótesis basada en caudales de ediciones anteriores. La variante A se eligió sin esperar a la [orden de medición](#medición-de-caudal), que no se ha ejecutado. La duración real se medirá con los primeros trabajos, y el presupuesto por ajuste es el mismo para los brazos emparejados. Las optimizaciones de rendimiento y el presupuesto de disco de la campaña se están preparando en [#363](https://github.com/GonxKZ/mars-titan/issues/363).
+La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía de ahorro, que el equipo necesita para no apagarse por temperatura. En esas condiciones la GPU trabaja a unos 1.305 MHz con limitación térmica. La auditoría de preparación estima unas 85 h por familia, configuración y semilla si se reentrena cada ventana anual completa con 30 épocas. Es una hipótesis basada en caudales de ediciones anteriores. La variante A se eligió sin esperar a la [orden de medición](#medición-de-caudal), que no se ha ejecutado. La [proyección de la campaña A v2](#proyección-de-horas) da 3.341 h neuronales con unas 10 épocas efectivas a 16.000 muestras-época por segundo, frente a unas 580 h útiles disponibles. La duración real se medirá con los primeros trabajos, y el presupuesto por ajuste es el mismo para los brazos emparejados. Las optimizaciones de rendimiento y el presupuesto de disco de la campaña se están preparando en [#363](https://github.com/GonxKZ/mars-titan/issues/363).
 
 ## Decisiones pendientes antes de entrenar
 
 - Terminar el código y las implementaciones pendientes y revisar un resumen de su estado. Hasta entonces la protección de aprendizaje sigue activa.
-- Registrar la huella de la configuración de A que se lance, con la declaración ampliada copiada ([#363](https://github.com/GonxKZ/mars-titan/issues/363)). La variante ya está elegida.
+- Registrar la huella de la configuración que se lance. La campaña A v2 ya copia la declaración ampliada ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
+- Preparar y verificar las vistas conjuntas v3, pendientes de la confirmación del autor y de la revisión del hueco de datos chinos entre mayo y julio de 2019.
+- Fijar las opciones de memoria pendientes de la campaña A v2 y conectar la parada conjunta en su sección `stopping`.
+- Elegir, si la medida de caudal no cabe en el presupuesto, entre las palancas de la [proyección de horas](#proyección-de-horas).
 - Comparación parcial con las referencias, si se quiere evaluarlas antes de conectar las demás familias.
 - Revisar la configuración de evaluación declarada antes de ver resultados: familias de contrastes, base de los refinamientos K, mínimo de activos del Rank IC y longitud de bloque ([#32](https://github.com/GonxKZ/mars-titan/issues/32)). La [cabeza común](../engineering/quantile-head.md) y su calibración CQR ([#22](https://github.com/GonxKZ/mars-titan/issues/22)) están implementadas y el control de la cabeza sobre el Transformer compacto está declarado sin ejecutar.
 - Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
