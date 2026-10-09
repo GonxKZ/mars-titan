@@ -741,13 +741,8 @@ class ReadoutTrainer(MarsTitanInference):
             for source in (train, validation)
         ):
             raise ValueError("Las vistas no conservan la entrada del padre")
-        if admission == "m3" and (
-            retention.scalers.source_sha256 != train.identity
-            or retention.scalers.dataset_sha256 != train.dataset.identity
-            or (retention.scalers.decision_start, retention.scalers.decision_end)
-            != (train.phase.decision_start, train.phase.decision_end)
-        ):
-            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
+        if admission == "m3":
+            self._check_scalers(retention.scalers, train)
         self.train, self.validation = train, validation
         self.output = Path(output)
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
@@ -801,6 +796,17 @@ class ReadoutTrainer(MarsTitanInference):
         self.identity = json.loads(canonical(self.identity))
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+
+    @staticmethod
+    def _check_scalers(scalers, train):
+        """Las escalas M3 salen del tramo de entrenamiento de este mismo ajuste."""
+        if (
+            scalers.source_sha256 != train.identity
+            or scalers.dataset_sha256 != train.dataset.identity
+            or (scalers.decision_start, scalers.decision_end)
+            != (train.phase.decision_start, train.phase.decision_end)
+        ):
+            raise ValueError("Las escalas M3 no proceden del tramo de entrenamiento de este ajuste")
 
     def _parameter_groups(self, readout, admission):
         """Papeles, parámetros inertes y tensores ajustables por nombre."""

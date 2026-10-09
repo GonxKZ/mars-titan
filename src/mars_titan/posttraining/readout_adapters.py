@@ -26,7 +26,7 @@ import hashlib
 import importlib
 import json
 import math
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import torch
@@ -60,6 +60,8 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
             raise ValueError("Los bloques de flujos del núcleo deben ser un entero de 1 a 256")
         self.core = bool(adapter_names(predictor))
         self.core_rows, self._source, self._measured = core_rows, None, None
+        # Por etapas, las escalas M3 son las congeladas del brazo padre en su ventana.
+        self._parent_scalers = (posttraining.get("placement") or {}).get("scalers")
         control = predictor.local_control
         self.penalized = self.core and control is not None and control.config.mode == "penalty"
         super().__init__(predictor, readout, recipe, **options)
@@ -80,7 +82,18 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
         self.identity = json.loads(canonical(self.identity))
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
 
-    # Reglas del padre y de los parámetros ajustables.
+    def _check_scalers(self, scalers, train):
+        if self._parent_scalers is None:
+            return ReadoutTrainer._check_scalers(scalers, train)
+        if (
+            asdict(scalers) != self._parent_scalers
+            or scalers.decision_end > train.phase.decision_start
+        ):
+            raise ValueError("Las escalas M3 no son las del brazo padre anteriores al ajuste")
+        return None
+
+    # Con el núcleo adaptado, el padre debe ser mac_online sin diagnóstico C y solo pueden
+    # requerir gradiente sus correcciones. Sin núcleo rige la regla del ajuste base.
     def _check_parent(self, predictor):
         if not self.core:
             return MarsTitanInference._check_parent(predictor)
@@ -137,7 +150,8 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
             raise ValueError("El ajuste cambió parámetros del núcleo fuera de sus adaptadores")
         return None
 
-    # Estado ajustable del núcleo en los checkpoints.
+    # Los checkpoints guardan también las correcciones del núcleo, que no forman parte del
+    # lector. Al reanudar se recargan y se comprueba la huella sellada del núcleo.
     def _extra_state(self):
         if not self.core:
             return {}
@@ -165,7 +179,7 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
         if self.predictor._parameter_id != state["core_sha256"]:
             raise ValueError("Los adaptadores recuperados del núcleo no conservan su huella")
 
-    # Emisión con el núcleo adaptado.
+    # Se recuerda la fuente que se evalúa porque el plan de C del evento depende de ella.
     def evaluate(self, source, *, stop=None, rows=None):
         self._source = source
         return super().evaluate(source, stop=stop, rows=rows)
@@ -218,7 +232,7 @@ class ReadoutAdapterTrainer(ReadoutTrainer):
     def _block_extra(self, batch, plan):
         return dict(batch=batch, plan=plan) if self.core else {}
 
-    # Actualización.
+    # El paso del lector puede no recibir gradiente cuando la instantánea no tiene episodios.
     def _backward_block(self, loss, record):
         """Sin episodios en la instantánea, la lectura episódica no interviene en la pérdida.
 

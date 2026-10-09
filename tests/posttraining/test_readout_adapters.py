@@ -382,3 +382,52 @@ def test_constructor_rejects_cores_and_readers_outside_the_arm(shared, tmp_path,
             output=tmp_path / "e",
             **common,
         )
+
+
+def test_staged_m3_scalers_are_the_parent_ones_frozen_before_the_new_rows():
+    """Por etapas, M3 conserva las escalas del brazo padre, anteriores a las filas nuevas."""
+    from dataclasses import asdict
+    from types import SimpleNamespace
+
+    from mars_titan.memory.write_scores import WriteScalers
+
+    scalers = WriteScalers(
+        source_sha256="a" * 64,
+        dataset_sha256="b" * 64,
+        decision_start=10,
+        decision_end=100,
+        decisions=4,
+        labels=4,
+        filing_decisions=0,
+        news_decisions=2,
+        error_median=0.5,
+        anomaly_median=1.5,
+        filing_age_median=None,
+        news_share=0.5,
+    )
+    later = SimpleNamespace(
+        identity="c" * 64,
+        dataset=SimpleNamespace(identity="d" * 64),
+        phase=SimpleNamespace(decision_start=100, decision_end=200),
+    )
+    staged = SimpleNamespace(_parent_scalers=asdict(scalers))
+    assert ReadoutAdapterTrainer._check_scalers(staged, scalers, later) is None
+    # Escalas que no son las del padre o que miran dentro de las filas nuevas.
+    other = SimpleNamespace(_parent_scalers=dict(asdict(scalers), error_median=0.25))
+    with pytest.raises(ValueError, match="brazo padre"):
+        ReadoutAdapterTrainer._check_scalers(other, scalers, later)
+    early = SimpleNamespace(
+        identity=later.identity, dataset=later.dataset, phase=SimpleNamespace(decision_start=99)
+    )
+    with pytest.raises(ValueError, match="brazo padre"):
+        ReadoutAdapterTrainer._check_scalers(staged, scalers, early)
+    # Sin colocación por etapas rige la regla del ajuste base: el propio tramo de ajuste.
+    base = SimpleNamespace(_parent_scalers=None)
+    with pytest.raises(ValueError, match="tramo de entrenamiento"):
+        ReadoutAdapterTrainer._check_scalers(base, scalers, later)
+    own = SimpleNamespace(
+        identity="a" * 64,
+        dataset=SimpleNamespace(identity="b" * 64),
+        phase=SimpleNamespace(decision_start=10, decision_end=100),
+    )
+    assert ReadoutAdapterTrainer._check_scalers(base, scalers, own) is None
