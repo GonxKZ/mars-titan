@@ -26,7 +26,9 @@ de la etapa de ablación y se comparan con las originales en las mismas filas, c
 calibrador ya ajustado. Sin ese manifiesto, la sección queda pendiente y el resto del
 informe no cambia.
 
-El informe añade en todas las versiones la fiabilidad de la probabilidad implícita de subida
+La versión 4 declara la cartera larga y corta por cuartiles (``long_short``), que calcula
+``long_short_comparison`` con estas mismas fuentes y comprobaciones. El informe añade en
+todas las versiones la fiabilidad de la probabilidad implícita de subida
 (``sign_reliability``): ECE medio de las semillas con intervalo percentil por bloques de
 días y curva de fiabilidad, en bruto y con el calibrador común.
 """
@@ -49,7 +51,7 @@ from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.evaluation import modality_ablation, modality_strata
+from mars_titan.evaluation import long_short, modality_ablation, modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import (
     COVERAGE_ERROR,
@@ -120,11 +122,13 @@ _CONFIG_FIELDS = {
 }
 STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
+LONG_SHORT_FIELD = "long_short"
 # Secciones secundarias que añade cada versión de la configuración.
 SECTIONS = {
     1: set(),
     2: {STRATA_FIELD},
     3: {STRATA_FIELD, ABLATION_FIELD},
+    4: {STRATA_FIELD, ABLATION_FIELD, LONG_SHORT_FIELD},
 }
 _METRIC_FIELDS = {"primary", "market_weighting", "rank_ic_min_assets", "quantile_head"}
 _CALIBRATION_FIELDS = {"method", "partition", "nominals", "groups", "min_rows", "order_rule"}
@@ -265,7 +269,8 @@ def load_config(path):
 def validate_config(config, digest, folder):
     """Validar una configuración ya leída. ``folder`` resuelve las rutas de los protocolos.
 
-    Cada versión añade las secciones secundarias de ``SECTIONS``.
+    Cada versión añade las secciones secundarias de ``SECTIONS``. La 4 añade la cartera
+    larga y corta por cuartiles.
     """
     version = config.get("schema_version") if isinstance(config, dict) else None
     _require(
@@ -351,6 +356,8 @@ def validate_config(config, digest, folder):
         modality_strata.declaration(config[STRATA_FIELD], SERIES_METRICS)
     if version >= 3:
         modality_ablation.declaration(config[ABLATION_FIELD])
+    if version >= 4:
+        long_short.declaration(config[LONG_SHORT_FIELD])
     resolved = {scope: _protocols(folder, scope, declared) for scope, declared in scopes.items()}
     return dict(config, sha256=digest, resolved_scopes=resolved, resolved_families=families)
 

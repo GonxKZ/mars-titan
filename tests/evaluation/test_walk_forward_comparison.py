@@ -586,6 +586,30 @@ def test_session_table_keeps_window_market_and_metric_columns(joint):
 NEW_METRICS = ["up_precision", "down_precision", "sign_brier", "interval_score@0.8"]
 
 
+def test_version_four_requires_the_portfolio_and_older_versions_reject_it(tmp_path):
+    document = json.loads(CONFIG.read_text())
+    for scope in document["scopes"].values():
+        scope["protocols"] = {
+            market: str((CONFIG.parent / name).resolve())
+            for market, name in scope["protocols"].items()
+        }
+    missing = copy.deepcopy(document)
+    missing.pop("long_short")
+    save(tmp_path / "missing.json", missing)
+    with pytest.raises(ValueError, match="contrato"):
+        walk.load_config(tmp_path / "missing.json")
+    older = copy.deepcopy(document)
+    older["schema_version"] = 3
+    save(tmp_path / "older.json", older)
+    with pytest.raises(ValueError, match="contrato"):
+        walk.load_config(tmp_path / "older.json")
+    broken = copy.deepcopy(document)
+    broken["long_short"]["fraction"] = 0.75
+    save(tmp_path / "broken.json", broken)
+    with pytest.raises(ValueError, match="fracción"):
+        walk.load_config(tmp_path / "broken.json")
+
+
 @pytest.fixture(scope="module")
 def extended(tmp_path_factory):
     study = Study(tmp_path_factory.mktemp("extended"))
