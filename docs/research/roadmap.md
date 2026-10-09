@@ -29,7 +29,7 @@ Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) de
 
 ## Estado a 9 de octubre de 2026
 
-La tabla resume la evidencia técnica integrada en `develop` hasta `debaeeed` para la [campaña desde 2000](training-campaign-2000.md). Ningún hito está cerrado. La edición histórica y sus objetivos residuales ya están verificados y se ha elegido la variante A con todas las familias. Los criterios de aceptación exigen ejecutar entrenamientos y evaluaciones que todavía no se han lanzado y que la protección del aprendizaje sigue deteniendo.
+La tabla resume la evidencia técnica integrada en `develop` hasta `0a94c728` para la [campaña desde 2000](training-campaign-2000.md). Ningún hito está cerrado. La edición histórica y sus objetivos residuales ya están verificados y se ha elegido la variante A con todas las familias. Los criterios de aceptación exigen ejecutar entrenamientos y evaluaciones que todavía no se han lanzado y que la protección del aprendizaje sigue deteniendo.
 
 | Hito | Evidencia técnica integrada | Pendiente para su criterio de cierre |
 | --- | --- | --- |

@@ -29,7 +29,7 @@ La inspección cubre responsabilidades y conexiones relevantes. No certifica aus
 
 ## Estado tras las integraciones del 9 de octubre
 
-El inventario anterior describe el código del 4 de octubre. Las PR integradas en `develop` el 9 de octubre, hasta `debaeeed`, cubren ya las seis responsabilidades del recorrido temporal para la [campaña desde 2000](training-campaign-2000.md). Todas se han comprobado con pruebas que llegan hasta el paso del optimizador sin aplicarlo, casi siempre en CPU, y las [comprobaciones CUDA del 9 de octubre](../../reports/engineering/cuda-checks-20261009/README.md) repitieron en `cuda:0` las de los entrenadores y sesiones. La edición histórica y sus objetivos residuales ya están [verificados](../../reports/data/historical-edition-v3-targets-20261009.json), pero ningún recorrido se ha ejecutado con aprendizaje.
+El inventario anterior describe el código del 4 de octubre. Las PR integradas en `develop` el 9 de octubre, hasta `0a94c728`, cubren ya las seis responsabilidades del recorrido temporal para la [campaña desde 2000](training-campaign-2000.md). Todas se han comprobado con pruebas que llegan hasta el paso del optimizador sin aplicarlo, casi siempre en CPU, y las [comprobaciones CUDA del 9 de octubre](../../reports/engineering/cuda-checks-20261009/README.md) repitieron en `cuda:0` las de los entrenadores y sesiones. La edición histórica y sus objetivos residuales ya están [verificados](../../reports/data/historical-edition-v3-targets-20261009.json), pero ningún recorrido se ha ejecutado con aprendizaje.
 
 | Responsabilidad | Implementación integrada | Pendiente |
 | --- | --- | --- |
