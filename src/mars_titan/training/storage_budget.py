@@ -418,6 +418,34 @@ def estimate(args):
         result["adapters"] = adapter_estimate(args.adapter_stage, reports, extras)
     if args.rl_stage is not None:
         result["policies"] = rl_estimate(args.rl_stage, campaign, extras, args.extensions)
+    if args.schedule is not None:
+        from .rolling_retention import load_schedule
+        from .rolling_storage import rolling_estimate, rolling_inputs, window_increment
+
+        windows = load_schedule(args.schedule, campaign)
+        stages = rolling_inputs(
+            jobs,
+            windows,
+            extras,
+            ablation=args.ablation_stage,
+            adapters=args.adapter_stage,
+            rl=args.rl_stage,
+        )
+        rolling = rolling_estimate(
+            jobs,
+            windows,
+            result["counts"],
+            measured,
+            storage,
+            extras,
+            ordered_copy=not args.adapter_blocks,
+            **stages,
+        )
+        result["rolling"] = dict(
+            rolling,
+            adapter_corpus="blocks" if args.adapter_blocks else "ordered_copy",
+            increment={scenario: window_increment(rolling, scenario) for scenario in rolling},
+        )
     return result
 
 
@@ -429,6 +457,12 @@ def main(argv=None):
     parser.add_argument("--ablation-stage", type=Path)
     parser.add_argument("--adapter-stage", type=Path)
     parser.add_argument("--rl-stage", type=Path)
+    parser.add_argument("--schedule", type=Path, help="Orden por ventanas de la retención v2")
+    parser.add_argument(
+        "--adapter-blocks",
+        action="store_true",
+        help="Los adaptadores leen la vista por bloques, sin copia ordenada",
+    )
     parser.add_argument("--extras", type=Path, required=True)
     sources = parser.add_mutually_exclusive_group(required=True)
     sources.add_argument("--views", action="append")
@@ -441,6 +475,19 @@ def main(argv=None):
     result = estimate(args)
     atomic_json(args.output, result)
     print(json.dumps(result["base"]["totals"], indent=2))
+    if "rolling" in result:
+        print(
+            json.dumps(
+                {
+                    scenario: {
+                        k: result["rolling"][scenario][k]
+                        for k in ("retained_bytes", "peak_bytes", "peak_at")
+                    }
+                    for scenario in ("all_regenerated", "none_regenerated")
+                },
+                indent=2,
+            )
+        )
     return 0
 
 

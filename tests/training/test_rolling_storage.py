@@ -162,3 +162,54 @@ def test_window_increment_is_the_largest_growth_over_what_was_kept(declared):
         for row, before in zip(rows, [0] + [r["retained_bytes"] for r in rows[:-1]], strict=True)
     ]
     assert increment == dict(bytes=max(growth), window=rows[growth.index(max(growth))]["window"])
+
+
+def test_the_storage_command_adds_the_rolling_walk_of_campaign_a(tmp_path, capsys):
+    """La orden `storage` con `--schedule` recorre las etapas declaradas por ventana."""
+    import json
+
+    from mars_titan.training import storage_budget as budget
+    from mars_titan.training.campaign_plan import load_campaign
+
+    campaign = load_campaign("configs/baselines/historical-masked-campaign-a.json")
+    resolved = campaign["comparison_config"]["resolved_scopes"]
+    counts = {s: dict.fromkeys(resolved[s]["windows"], COUNTS) for s in campaign["scopes"]}
+    names = sorted({w for s in campaign["scopes"] for w in resolved[s]["windows"]})
+    schedule = dict(
+        schema_version=1,
+        campaign=campaign["sha256"],
+        windows=[
+            dict(window=w, scopes={s: w for s in campaign["scopes"] if w in counts[s]})
+            for w in names
+        ],
+    )
+    files = dict(counts=counts, schedule=schedule, extras=dict(EXTRAS, tape_bytes=17))
+    files["row-bytes"] = budget.row_bytes(measured())
+    for name, value in files.items():
+        (tmp_path / f"{name}.json").write_text(json.dumps(value))
+    arguments = ["--campaign", "configs/baselines/historical-masked-campaign-a.json"]
+    arguments += ["--storage", str(DECLARATION), "--counts", str(tmp_path / "counts.json")]
+    arguments += ["--row-bytes", str(tmp_path / "row-bytes.json")]
+    arguments += ["--extras", str(tmp_path / "extras.json")]
+    arguments += ["--schedule", str(tmp_path / "schedule.json"), "--adapter-blocks"]
+    for stage, path in (
+        ("ablation", "configs/evaluation/historical-masked-ablation-stage-a.json"),
+        ("adapter", "configs/posttraining/historical-masked-adapter-stage-a.json"),
+        ("rl", "configs/simulation/historical-masked-rl-stage-a.json"),
+    ):
+        arguments += [f"--{stage}-stage", path]
+    arguments += ["--output", str(tmp_path / "estimate.json")]
+    assert budget.main(arguments) == 0
+    result = json.loads((tmp_path / "estimate.json").read_text())["rolling"]
+    assert result["adapter_corpus"] == "blocks"
+    for scenario in rolling.SCENARIOS:
+        walk = result[scenario]
+        assert [row["window"] for row in walk["windows"]] == names
+        assert walk["peak_bytes"] >= max(row["retained_bytes"] for row in walk["windows"])
+        assert result["increment"][scenario]["bytes"] > 0
+    # Las cintas de las políticas y las entradas que leen se conservan en las dos.
+    assert (
+        result["none_regenerated"]["retained_bytes"] > result["all_regenerated"]["retained_bytes"]
+    )
+    printed = json.loads(capsys.readouterr().out.split("\n}\n", 1)[1])
+    assert printed["all_regenerated"]["peak_at"] == result["all_regenerated"]["peak_at"]
