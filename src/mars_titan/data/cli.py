@@ -82,6 +82,12 @@ def main() -> int:
     prices.add_argument("--state", type=Path, default=Path("data/interim/price-audit-state.json"))
     prices.add_argument("--report", type=Path, default=Path("reports/data/price-audit.json"))
     prices.add_argument("--details", type=Path, help="Parquet por activo en un directorio separado")
+    prices.add_argument(
+        "--ordering-rtol",
+        type=float,
+        default=0.0,
+        help="Tolerancia relativa del redondeo en el orden OHLC. Cero conserva la vía estricta",
+    )
     macro = commands.add_parser(
         "macro", help="Calcular el contexto macro con unidades y versiones históricas"
     )
@@ -208,7 +214,13 @@ def main() -> int:
             raise ValueError("El informe no puede sobrescribir el inventario ni el estado")
         if args.details is not None:
             outside_source(args.details, args.report)
-        result = audit_prices(args.source, args.database, args.state, details_root=args.details)
+        result = audit_prices(
+            args.source,
+            args.database,
+            args.state,
+            details_root=args.details,
+            ordering_rtol=args.ordering_rtol,
+        )
         atomic_json(args.report, result)
     elif args.command == "macro":
         from .macro_preparation import prepare_macro
