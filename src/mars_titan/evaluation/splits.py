@@ -123,6 +123,22 @@ def build_folds(config):
     return folds
 
 
+def eligible_folds(protocol, reference):
+    """Ventanas de `protocol` que existen idénticas en `reference`, del mismo mercado.
+
+    Sirve para declarar en qué ventanas de un protocolo conjunto cuenta un mercado: las que
+    su propio protocolo, con su historia mínima, también recorre con los mismos cuatro tramos.
+    """
+    if reference.get("market") != protocol.get("market"):
+        raise ValueError("El protocolo de elegibilidad debe ser del mismo mercado")
+    own = build_folds(protocol)
+    allowed = {tuple(tuple(fold[name]) for name in PARTITIONS) for fold in build_folds(reference)}
+    eligible = [fold["id"] for fold in own if tuple(tuple(fold[n]) for n in PARTITIONS) in allowed]
+    if not eligible:
+        raise ValueError("Ninguna ventana del protocolo es elegible para el mercado")
+    return eligible
+
+
 class FoldPartitioner:
     """Preparar una vez los cortes y reutilizarlos en lotes de metadatos del panel."""
 
