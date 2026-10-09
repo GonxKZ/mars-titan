@@ -85,6 +85,29 @@ def _populated_groups(file):
     return [g for g in range(file.num_row_groups) if file.metadata.row_group(g).num_rows]
 
 
+def _group_bytes(file, group, columns):
+    """Bytes sin comprimir de las columnas leídas de un grupo, según sus metadatos."""
+    metadata = file.metadata.row_group(int(group))
+    return sum(
+        metadata.column(c).total_uncompressed_size
+        for c in range(metadata.num_columns)
+        if metadata.column(c).path_in_schema.split(".")[0] in columns
+    )
+
+
+def _row_range(decoded, start, stop):
+    """Filas `start:stop` de unas muestras decodificadas, como vistas sin copia."""
+    timestamps, ends, vectors, presence, availability, availability_valid = decoded
+    return (
+        timestamps[start:stop],
+        ends[start:stop],
+        {name: values[start:stop] for name, values in vectors.items()},
+        presence[start:stop],
+        availability[start:stop],
+        availability_valid[start:stop],
+    )
+
+
 def _historical_times(table):
     timestamps = _times(table["prediction_at"])
     if (timestamps < np.datetime64("2000-01-01", "us").astype(np.int64)).any() or (
@@ -603,10 +626,8 @@ class CorpusDataset:
         self._remember(key, signature, (prices, available))
         return prices, available
 
-    def _sample_group(self, asset, file, group):
-        """Decodificar las modalidades una vez con las mismas reglas en ambos recorridos."""
-        path = self._file(asset, "samples")
-        temporal = self.temporals.get(asset["market"])
+    def _sample_columns(self, file):
+        """Columnas de muestras que lee la edición, comprobadas contra el esquema."""
         columns = ["prediction_at", "price_end_index", *VECTORS] + (
             ["cohort_id"] if self.cohort else []
         )
@@ -620,13 +641,13 @@ class CorpusDataset:
             columns.append("input_availability")
             if "macro_available_at" in file.schema_arrow.names:
                 columns.append("macro_available_at")
-        metadata = file.metadata.row_group(int(group))
-        size = sum(
-            metadata.column(c).total_uncompressed_size
-            for c in range(metadata.num_columns)
-            if metadata.column(c).path_in_schema.split(".")[0] in columns
-        )
-        if size > MAX_TABLE_BYTES:
+        return columns
+
+    def _sample_group(self, asset, file, group):
+        """Decodificar las modalidades una vez con las mismas reglas en ambos recorridos."""
+        path = self._file(asset, "samples")
+        columns = self._sample_columns(file)
+        if _group_bytes(file, group, columns) > MAX_TABLE_BYTES:
             raise ValueError("El grupo de características supera 64 MiB")
         cache_key = "samples", path, int(group), tuple(columns)
         signature = self.verified[path]
@@ -641,6 +662,16 @@ class CorpusDataset:
         validate_cohort_rows(table, self.cohort)
         if table.nbytes > MAX_TABLE_BYTES:
             raise ValueError("El grupo decodificado supera el presupuesto")
+        decoded = self._converted(table, asset)
+        if self.cache_sample_tables and cache_miss:
+            self._remember(cache_key, signature, table)
+        if self.modality_ablation is not None:
+            table, decoded = self._ablated(table, decoded)
+        return table, *decoded
+
+    def _converted(self, table, asset):
+        """Fechas, ventanas, vectores, presencia y disponibilidad, comprobados fila a fila."""
+        temporal = self.temporals.get(asset["market"])
         timestamps = _historical_times(table) if self.masked else _times(table["prediction_at"])
         macro = temporal.lookup(timestamps) if temporal and not self.masked else None
         ends = table["price_end_index"].to_numpy()
@@ -653,16 +684,58 @@ class CorpusDataset:
         availability, availability_valid = _availability(
             table, macro_override=macro[1:] if macro else None, presence=presence
         )
-        if self.cache_sample_tables and cache_miss:
-            self._remember(cache_key, signature, table)
-        if self.modality_ablation is not None:
-            # La lectura original ya pasó sus comprobaciones. La tabla ablacionada vuelve a
-            # pasarlas igual que una muestra con la modalidad ausente.
-            table = ablate_samples(table, self.modality_ablation)
-            vectors = _vectors(table, historical=True)
-            presence = _presence(table, vectors, self.manifest["representation"])
-            availability, availability_valid = _availability(table, presence=presence)
-        return table, timestamps, ends, vectors, presence, availability, availability_valid
+        return timestamps, ends, vectors, presence, availability, availability_valid
+
+    def _ablated(self, table, decoded):
+        # La lectura original ya pasó sus comprobaciones. La tabla ablacionada vuelve a
+        # pasarlas igual que una muestra con la modalidad ausente.
+        timestamps, ends = decoded[:2]
+        table = ablate_samples(table, self.modality_ablation)
+        vectors = _vectors(table, historical=True)
+        presence = _presence(table, vectors, self.manifest["representation"])
+        availability, availability_valid = _availability(table, presence=presence)
+        return table, (timestamps, ends, vectors, presence, availability, availability_valid)
+
+    def _asset_samples(self, works):
+        """Decodificar juntos los grupos de un activo, o `None` si hay que leerlos de uno en uno.
+
+        Una sola lectura de Arrow, con sus hilos si la tubería los tiene, sustituye a una
+        lectura por grupo. Las comprobaciones de `_sample_group` son por fila, así que la
+        tabla del activo las supera si y solo si las supera cada grupo, y cada grupo es un
+        tramo con los mismos valores que su lectura aislada. Con cualquier fallo, con la
+        caché de tablas o fuera de la edición con máscaras se devuelve `None` y el activo se
+        lee grupo a grupo, que lanza el mismo error en la misma posición.
+        """
+        if not works or not self.masked or self.cache_sample_tables:
+            return None
+        first = works[0]
+        groups = sorted(work["group"] for work in works)
+        try:
+            self._file(first["asset"], "samples")
+            with pq.ParquetFile(first["path"], metadata=first["metadata"], pre_buffer=True) as file:
+                columns = self._sample_columns(file)
+                if any(_group_bytes(file, group, columns) > MAX_TABLE_BYTES for group in groups):
+                    return None
+                table = file.read_row_groups(
+                    groups, columns=columns, use_threads=bool(self.pipeline.decode_workers)
+                )
+                sizes = [file.metadata.row_group(group).num_rows for group in groups]
+            # Cada grupo ocupa como mucho lo que ocupa la tabla de su activo.
+            if table.nbytes > MAX_TABLE_BYTES:
+                return None
+            validate_cohort_rows(table, self.cohort)
+            decoded = self._converted(table, first["asset"])
+            if self.modality_ablation is not None:
+                _, decoded = self._ablated(table, decoded)
+        except Exception:  # noqa: BLE001 - la lectura por grupo reproduce el error
+            return None
+        starts = dict(zip(groups, np.cumsum([0, *sizes[:-1]]).tolist(), strict=True))
+        sizes = dict(zip(groups, sizes, strict=True))
+        result = []
+        for work in works:
+            start, size = starts[work["group"]], sizes[work["group"]]
+            result.append((size, _row_range(decoded, start, start + size)))
+        return result
 
     def _group_plan(self, partition, epoch, seed, cursor):
         """Recorrer activos y grupos en el orden del lector sin decodificar vectores.
@@ -741,20 +814,19 @@ class CorpusDataset:
         if consumed != self.manifest["counts"][partition]:
             raise ValueError("El recorrido no visita exactamente la población declarada")
 
-    def _group_blocks(self, item):
-        """Decodificar un grupo del plan y formar sus bloques. Puede ejecutarse en un hilo.
+    def _group_blocks(self, work):
+        """Decodificar un grupo del plan por separado y formar sus bloques."""
+        with pq.ParquetFile(work["path"], metadata=work["metadata"]) as file:
+            table, *decoded = self._sample_group(work["asset"], file, work["group"])
+        return self._group_result(work, len(table), decoded)
+
+    def _group_result(self, work, size, decoded):
+        """Bloques de un grupo con `size` filas decodificadas.
 
         Si un bloque no es válido, se devuelven los anteriores y el error, que el lector
         lanza después de entregarlos, como en la ruta secuencial.
         """
-        kind, work = item
-        if kind != "group":
-            return item
-        asset, group = work["asset"], work["group"]
-        with pq.ParquetFile(work["path"], metadata=work["metadata"]) as file:
-            table, timestamps, ends, vectors, presence, availability, availability_valid = (
-                self._sample_group(asset, file, group)
-            )
+        timestamps, ends, vectors, presence, availability, availability_valid = decoded
         shape = {name: values.shape[1] for name, values in vectors.items()}
         positions, prediction, target, maturity = work["labels"]
         prices, available = work["prices"]
@@ -763,7 +835,7 @@ class CorpusDataset:
         try:
             for offset, labels, consumed in work["blocks"]:
                 block_rows = positions[labels] - work["first_row"]
-                if (block_rows < 0).any() or (block_rows >= len(table)).any():
+                if (block_rows < 0).any() or (block_rows >= size).any():
                     raise ValueError("La etiqueta queda fuera de su grupo de muestras")
                 contexts = _price_contexts(prices, ends[block_rows], self.context)
                 blocks.append(
@@ -794,29 +866,75 @@ class CorpusDataset:
                 )
         except Exception as failure:  # noqa: BLE001 - se lanza tras los bloques anteriores
             error = failure
-        return "group", (shape, blocks, error)
+        return shape, blocks, error
+
+    def _asset_blocks(self, item):
+        """Bloques de los grupos de un activo en el orden del plan. Puede ir en un hilo.
+
+        Devuelve los resultados por grupo, el error que interrumpió el activo y el activo si
+        el plan lo completó. Sin lectura conjunta, cada grupo se lee aparte y se detiene en
+        el primer error, que el lector lanza después de los bloques anteriores.
+        """
+        works, asset = item
+        samples = self._asset_samples(works)
+        results = []
+        if samples is not None:
+            for work, (size, decoded) in zip(works, samples, strict=True):
+                results.append(self._group_result(work, size, decoded))
+                if results[-1][2] is not None:
+                    break
+            return results, None, asset
+        for work in works:
+            try:
+                results.append(self._group_blocks(work))
+            except Exception as error:  # noqa: BLE001 - se lanza tras los grupos anteriores
+                return results, error, asset
+            if results[-1][2] is not None:
+                break
+        return results, None, asset
+
+    @staticmethod
+    def _asset_plan(plan):
+        """Agrupar los trabajos del plan por activo.
+
+        Un error del plan se lanza después de entregar los grupos que lo preceden, que
+        forman un activo incompleto sin comprobación final de sus archivos.
+        """
+        works = []
+        try:
+            for kind, value in plan:
+                if kind == "group":
+                    works.append(value)
+                    continue
+                yield works, value
+                works = []
+        except Exception:
+            if works:
+                yield works, None
+            raise
 
     def _blocks(self, partition, epoch, seed, cursor):
-        plan = self._group_plan(partition, epoch, seed, cursor)
+        plan = self._asset_plan(self._group_plan(partition, epoch, seed, cursor))
         if self.pipeline.decode_workers:
             stream = ordered_map(
-                self._group_blocks, plan, self._executor(), self.pipeline.lookahead
+                self._asset_blocks, plan, self._executor(), self.pipeline.decode_workers + 1
             )
         else:
-            stream = map(self._group_blocks, plan)
+            stream = map(self._asset_blocks, plan)
         dimensions = None
-        for kind, value in stream:
-            if kind == "asset":
-                for name in ("prices", "samples", "labels"):
-                    self._file(value, name)
-                continue
-            shape, blocks, error = value
-            if dimensions is not None and dimensions != shape:
-                raise ValueError("Las dimensiones cambian entre activos")
-            dimensions = shape
-            yield from blocks
+        for results, error, asset in stream:
+            for shape, blocks, failure in results:
+                if dimensions is not None and dimensions != shape:
+                    raise ValueError("Las dimensiones cambian entre activos")
+                dimensions = shape
+                yield from blocks
+                if failure is not None:
+                    raise failure
             if error is not None:
                 raise error
+            if asset is not None:
+                for name in ("prices", "samples", "labels"):
+                    self._file(asset, name)
 
     def observation_batches(self, *, start, end, batch_size=256):
         """Leer todas las filas históricas del intervalo, por activo y sin labels.

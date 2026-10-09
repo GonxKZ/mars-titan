@@ -27,12 +27,15 @@ PIPELINES = [
     pytest.param(PipelineOptions(decode_workers=8, prefetch_batches=16), id="8hilos"),
 ]
 # Revisión anterior a la tubería: su lector es la referencia de la ruta secuencial.
-REFERENCE = "7a9e93e3"
+REFERENCE = "14c6b1dd"
+ABLATIONS = ["mask_news", "mask_fundamentals", "mask_news_and_fundamentals"]
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def dataset(manifest, pipeline):
-    return CorpusDataset(manifest, input_policy=HISTORICAL_MASKED, pipeline=pipeline)
+def dataset(manifest, pipeline, ablation=None):
+    return CorpusDataset(
+        manifest, input_policy=HISTORICAL_MASKED, pipeline=pipeline, modality_ablation=ablation
+    )
 
 
 def corpus(tmp_path, **options):
@@ -86,6 +89,19 @@ def test_sequential_route_matches_the_reader_before_the_pipeline(tmp_path):
     regroup_samples(manifest, 4, inner_empty)
     before = reference_reader()(manifest, input_policy=HISTORICAL_MASKED)
     assert passes(dataset(manifest, SEQUENTIAL)) == passes(before)
+
+
+@pytest.mark.parametrize("ablation", ABLATIONS)
+def test_ablated_reading_is_identical_to_the_reader_before_the_pipeline(tmp_path, ablation):
+    manifest = corpus(tmp_path)
+    regroup_samples(manifest, 4, inner_empty)
+    before = reference_reader()(
+        manifest, input_policy=HISTORICAL_MASKED, modality_ablation=ablation
+    )
+    expected = passes(before)
+    assert expected != passes(dataset(manifest, SEQUENTIAL))
+    for options in [SEQUENTIAL, *(p.values[0] for p in PIPELINES)]:
+        assert passes(dataset(manifest, options, ablation)) == expected
 
 
 @pytest.mark.parametrize("pipeline", PIPELINES)
@@ -206,25 +222,41 @@ def test_a_corrupt_group_fails_at_the_same_position(tmp_path, corrupt):
 
 
 def test_pipeline_decodes_at_most_its_lookahead_beyond_the_consumer(tmp_path, monkeypatch):
-    manifest = corpus(tmp_path, assets=3, group_size=4)
+    manifest = corpus(tmp_path, assets=6, group_size=4)
     pipeline = PipelineOptions(decode_workers=2, prefetch_batches=1)
     reader = dataset(manifest, pipeline)
-    started, original = [], reader._group_blocks
+    started, original = [], reader._asset_blocks
 
     def counted(item):
-        if item[0] == "group":
-            started.append(item[1]["cursor"])
+        started.append(item[0][0]["cursor"][0])
         return original(item)
 
-    monkeypatch.setattr(reader, "_group_blocks", counted)
+    monkeypatch.setattr(reader, "_asset_blocks", counted)
     consumed, ahead = set(), []
     for batch in reader.batches(partition="train", batch_size=1, epoch=0, seed=0):
-        cursor = batch["confirmed_cursor"]
-        consumed.add((cursor["asset"], cursor["group"]))
+        consumed.add(batch["confirmed_cursor"]["asset"])
         ahead.append(len(started) - len(consumed))
-    # Adelanto de decodificación, más lo que el productor retiene con un lote por fila.
-    assert max(ahead) <= pipeline.lookahead + pipeline.prefetch_batches + 2
+    # Activos decodificados por adelantado, más el que retiene el productor.
+    assert max(ahead) <= pipeline.decode_workers + 1 + 1
     assert len(started) == len(consumed)
+
+
+@pytest.mark.parametrize("options", [SEQUENTIAL, PipelineOptions(decode_workers=2)])
+def test_each_asset_is_read_once_and_the_group_reader_stays_unused(tmp_path, monkeypatch, options):
+    manifest = corpus(tmp_path, assets=3)
+    regroup_samples(manifest, 4, inner_empty)
+    expected = stream(dataset(manifest, options), "train", 3, 0, 1)
+    reader, reads = dataset(manifest, options), []
+    original = pq.ParquetFile.read_row_groups
+
+    def recorded(self, groups, **options):
+        reads.append(tuple(groups))
+        return original(self, groups, **options)
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_groups", recorded)
+    monkeypatch.setattr(reader, "_group_blocks", None)
+    assert stream(reader, "train", 3, 0, 1) == expected
+    assert len(reads) == len(reader.assets) and all(r == tuple(sorted(r)) for r in reads)
 
 
 def test_window_contexts_match_each_asset_window():

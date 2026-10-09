@@ -7,6 +7,7 @@ from mars_titan.training.input_pipeline import PipelineOptions
 from tests.training.chronological_fixture import phases
 from tests.training.empty_groups_fixture import canonical
 from tests.training.test_pipeline_batches import (
+    ABLATIONS,
     CORRUPTIONS,
     PIPELINES,
     SEQUENTIAL,
@@ -15,13 +16,13 @@ from tests.training.test_pipeline_batches import (
 )
 
 
-def sources(tmp_path, pipeline, *, corrupt=None, **options):
+def sources(tmp_path, pipeline, *, corrupt=None, ablation=None, **options):
     """Índices de cada fase preparados con la ruta secuencial y leídos con `pipeline`."""
     manifest = corpus(tmp_path, **options)
     if corrupt is not None:
         corrupt(manifest, "A0001", 7)
-    prepared = dataset(manifest, SEQUENTIAL)
-    reader = dataset(manifest, pipeline)
+    prepared = dataset(manifest, SEQUENTIAL, ablation)
+    reader = dataset(manifest, pipeline, ablation)
     result = {}
     for phase in phases():
         index = api.prepare_observation_index(
@@ -66,6 +67,17 @@ def test_batched_events_match_the_per_observation_reader(tmp_path, pipeline, blo
     for source in streams.values():
         expected = per_row(source.events())
         assert per_row(source.batched_events(block_rows=block_rows)) == expected
+
+
+@pytest.mark.parametrize("ablation", ABLATIONS)
+def test_ablated_events_match_the_per_observation_reader(tmp_path, ablation):
+    _, plain = sources(tmp_path / "plain", SEQUENTIAL, group_size=3)
+    for index, options in enumerate([SEQUENTIAL, *(p.values[0] for p in PIPELINES)]):
+        _, streams = sources(tmp_path / str(index), options, ablation=ablation, group_size=3)
+        for name, source in streams.items():
+            expected = per_row(source.events())
+            assert expected != per_row(plain[name].events())
+            assert per_row(source.batched_events(block_rows=2)) == expected
 
 
 @pytest.mark.parametrize("pipeline", [p.values[0] for p in PIPELINES])
