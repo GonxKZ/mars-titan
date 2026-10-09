@@ -25,10 +25,12 @@ from mars_titan.simulation.market_rules import china_a_share_instrument
 from mars_titan.simulation.native_portfolio import REASONS
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape
 from mars_titan.simulation.storage import write_tape
+from tests.simulation.policy_tape_fixture import monthly_window
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
     predictions,
+    tape_days,
     write_edition,
 )
 
@@ -204,6 +206,37 @@ def test_cpp_session_matches_python_step_by_step_on_real_tapes(
         else (lambda _o, step: POLICIES[policy](step)),
     )
     assert report["financial_validation"] == expected["financial_validation"]
+
+
+@pytest.mark.parametrize("policy", ["hold_initial", "rebalance_100"])
+def test_cpp_session_values_a_final_session_without_row_like_python(tmp_path, policy):
+    # La serie sigue en diciembre, así que la última sesión de noviembre sin fila se valora
+    # con el último cierre negociado en los dos motores.
+    year = tape_days("US")
+    write_edition(
+        tmp_path / "edition",
+        {"US": [Asset("GAP", base=30.0, missing=(year.index("2023-11-30"),)), Asset("REF")]},
+    )
+    window, values = monthly_window(
+        "US", -2, ["GAP", "REF"], score=lambda k, i: 0.02 if i == 0 else 0.01
+    )
+    tape, report = build_reconstructed_tape(
+        tmp_path / "edition",
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+    )
+    assert report["counts"]["final_sessions_without_row"] == 1
+    write_tape(tape, tmp_path / "input")
+    output = tmp_path / "output"
+    arguments = ["--policy", policy, "--cost-bps", "10", "--capital", str(CAPITAL), "--trace"]
+    result = run(tmp_path / "input", output, *arguments)
+    assert result.returncode == 0, result.stderr
+    env = assert_trace_parity(tape, "US", read(output / "trace.json"), policy, 10)
+    assert env.book.positions["US/GAP"] > 0
+    assert read(output / "run.json")["financial_validation"]["completed"] is True
 
 
 @pytest.mark.parametrize("market", ["US", "CN"])

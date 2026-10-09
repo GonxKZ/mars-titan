@@ -18,6 +18,7 @@ from mars_titan.simulation.market_rules import china_a_share_instrument
 from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape, read_edition
 from tests.environments.walk_forward_fixture import microseconds
 from tests.simulation.native_library import requires_native_library
+from tests.simulation.policy_tape_fixture import monthly_window
 from tests.simulation.unadjusted_edition_fixture import (
     Asset,
     evaluation_window,
@@ -63,7 +64,7 @@ CN = [
 EXPECTED_EXCLUSIONS = {
     "US/CCC": "unverified_rows_in_tape",
     "US/DDD": "no_verified_traded_close_at_start",
-    "US/EEE": "missing_last_session",
+    "US/EEE": "series_ends_in_tape",
     "US/FFF": "no_verified_rows",
     "US/JJJ": "no_verified_traded_close_at_start",
 }
@@ -116,7 +117,53 @@ def test_identity_declares_the_reconstructed_treatment_and_its_limits(edition):
     assert audit["population"] == "listed_through_2025_03"
     assert audit["assumptions"] == {"dividend_payment_lag_sessions": 3}
     assert audit["edition_id"] == read_edition(edition)["edition_id"]
-    assert tape.identity["source"]["exclusions"]["missing_last_session"] == 1
+    assert tape.identity["source"]["exclusions"]["series_ends_in_tape"] == 1
+    assert tape.identity["source"]["final_session"] == (
+        "missing_row_valued_at_last_traded_close_when_series_continues_v1"
+    )
+
+
+def test_a_final_session_without_row_is_valued_at_the_last_traded_close(tmp_path):
+    # Como DVN el 31 de diciembre de 2009: falta la fila de la última sesión, pero la serie
+    # sigue después de la cinta. Se valora con el último cierre negociado, sin ejecución, y
+    # ya no anula la ventana. Una serie que termina dentro de la cinta sigue excluida.
+    year = tape_days("US")
+    last = year.index("2023-11-30")
+    write_edition(
+        tmp_path,
+        {
+            "US": [
+                Asset("GAP", base=30.0, missing=(last,)),
+                Asset("END", base=40.0, end=last - 3),
+                Asset("REF", base=50.0),
+            ]
+        },
+    )
+    symbols = ["END", "GAP", "REF"]
+    # Solo GAP tiene puntuación positiva, así que la cartera invertida lo mantiene al final.
+    window, values = monthly_window("US", -2, symbols, score=lambda k, i: 0.02 if i == 1 else -0.01)
+    tape, report = build_reconstructed_tape(
+        tmp_path,
+        [window],
+        [values],
+        market="US",
+        partition="validation",
+        dividend_payment_lag_sessions=0,
+    )
+    assert report["excluded"] == {"US/END": "series_ends_in_tape"}
+    assert tape.assets == ["US/GAP", "US/REF"] and str(report["last_session"]) == "2023-11-30"
+    assert report["counts"]["final_sessions_without_row"] == 1
+    gap = tape.assets.index("US/GAP")
+    assert np.isnan(tape.prices[-1, gap, [0, 1, 2, 4]]).all()
+    assert tape.prices[-1, gap, 3] == tape.prices[-2, gap, 3]
+    env = FinancialEnv(tape, capital=1_000_000)
+    env.reset(seed=0)
+    while not env.done:
+        info = env.step(5 if env.cursor == 0 else 0)[4]
+    assert info["reward_valid"] and info["reason"] == "episode_limit"
+    held = env.book.positions["US/GAP"]
+    cash = env.book.cash["USD"]
+    assert env.book.nav["USD"] == pytest.approx(cash + held * tape.prices[-2, gap, 3], rel=1e-15)
 
 
 def test_sessions_and_fit_ends_come_from_the_receipt_and_never_reach_2024(edition):
