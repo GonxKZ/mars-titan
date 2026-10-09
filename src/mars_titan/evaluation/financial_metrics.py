@@ -23,7 +23,7 @@ import math
 
 import numpy as np
 
-from .paired_comparisons import _intervals, circular_block_counts
+from .paired_comparisons import circular_block_counts, family_intervals
 
 PERIODS_PER_YEAR = 252
 CONVENTIONS = dict(
@@ -249,7 +249,7 @@ def block_bootstrap(
                 difference = draws[name][:, columns] - draws[name][:, [b]]
                 usable = known & np.isfinite(difference).all(axis=0)
                 if usable.any():
-                    bounds = _intervals(estimate[usable], difference[:, usable], confidence)
+                    bounds = family_intervals(estimate[usable], difference[:, usable], confidence)
                     for k, index in enumerate(np.flatnonzero(usable)):
                         rows[others[index]].update(
                             interval=_pair(bounds["lower"][k], bounds["upper"][k]),
