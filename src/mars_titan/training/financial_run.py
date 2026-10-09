@@ -120,7 +120,10 @@ class ChronologicalRecipe:
 
 
 def load_recipe(path):
-    """Leer la receta declarada antes de ejecutar, con sus variantes y su estado."""
+    """Leer la receta declarada antes de ejecutar, con sus variantes y su estado.
+
+    `walk_forward` es opcional y solo lo interpreta `training.titans_walk_forward`.
+    """
     path = Path(path)
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024:
         raise ValueError("La receta no es un archivo regular de hasta 64 KiB")
@@ -128,7 +131,7 @@ def load_recipe(path):
     fields = {"schema_version", "recipe_name", "status", "variants", "pairing_source"}
     if (
         not isinstance(document, dict)
-        or set(document) != fields | {"predictor", "recipe", "pending"}
+        or set(document) - {"walk_forward"} != fields | {"predictor", "recipe", "pending"}
         or document["schema_version"] != 1
         or document["recipe_name"] != RECIPE
         or tuple(document["variants"]) != VARIANTS
@@ -223,7 +226,7 @@ def _compatible(expected, supplied):
     return canonical(left) == canonical(right)
 
 
-class _Pause(Exception):
+class Paused(Exception):
     """Solicitud de parada atendida en una barrera ya confirmada."""
 
 
@@ -249,6 +252,9 @@ class _Pass:
         )
     )
     graphs: dict = field(default_factory=dict)
+    # Inferencia: `rows.append((flujo, decisión, predicción, objetivo, cuantiles))`.
+    rows: object = None
+    levels: dict = field(default_factory=dict)
     predictions: list = field(default_factory=list)
     targets: list = field(default_factory=list)
     used: list = field(default_factory=list)
@@ -408,8 +414,15 @@ class ChronologicalTrainer:
             values = prepared.point_predictions.detach().cpu().tolist()
             # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
             graphs = prepared.quantiles if self.quantiles else prepared.point_predictions
+            levels = (
+                prepared.quantiles.detach().cpu().tolist()
+                if run.rows is not None and self.quantiles
+                else None
+            )
             for row, (flow, at) in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
                 run.pending[flow, at] = values[row]
+                if levels is not None:
+                    run.levels[flow, at] = levels[row]
                 if grad:
                     run.graphs[flow, at] = graphs[row]
                 if self.audit is not None:
@@ -450,6 +463,8 @@ class ChronologicalTrainer:
                 phase = "train" if train else "validation"
                 self.audit.append(("label", phase, flow, decision_at, event.at))
             graph = run.graphs.pop(key, None)
+            if run.rows is not None:
+                run.rows.append((flow, decision_at, issued, value, run.levels.pop(key, None)))
             if not train:
                 continue
             if graph is None:
@@ -504,6 +519,7 @@ class ChronologicalTrainer:
         run.flows.clear()
         run.pending.clear()
         run.graphs.clear()
+        run.levels.clear()
 
     @staticmethod
     def _metrics(run):
@@ -519,14 +535,17 @@ class ChronologicalTrainer:
             **counters,
         )
 
-    def evaluate(self, source, *, stop=None):
-        """Validación temporal con parámetros congelados y memoria rápida reiniciada."""
-        predictor, run = self.predictor, _Pass()
+    def evaluate(self, source, *, stop=None, rows=None):
+        """Validación temporal con parámetros congelados y memoria rápida reiniciada.
+
+        Con `rows`, cada etiqueta resuelta añade su predicción emitida y sus cuantiles.
+        """
+        predictor, run = self.predictor, _Pass(rows=rows)
         predictor.eval()
         with torch.no_grad():
             for event in source.batched_events(block_rows=self.recipe.block_rows):
                 if stop is not None and stop.requested:
-                    raise _Pause
+                    raise Paused
                 self._labels(run, event, train=False)
                 if event.inputs:
                     self._observe(run, source, event, differentiable=False)
@@ -535,6 +554,24 @@ class ChronologicalTrainer:
         if run.counters["labels"] == 0:
             raise ValueError("La validación no contiene etiquetas maduras")
         return self._metrics(run)
+
+    def predict_partition(self, source, rows, *, stop=None):
+        """Recorrer un tramo posterior al ajuste con la misma regla que la validación.
+
+        La memoria rápida empieza en su estado inicial, observa el calentamiento de la fase
+        sin etiquetas y avanza en orden. Las etiquetas solo se comparan con lo emitido.
+        """
+        if (
+            type(source) is not FinancialObservationSource
+            or source.phase.partition not in ("validation", "calibration", "evaluation")
+            or source.dataset.identity != self.train.dataset.identity
+            or source.phase.decision_start < self.train.phase.decision_end
+            or not _compatible(self.predictor.config.inputs, source.specification())
+        ):
+            raise ValueError("El tramo no pertenece al corpus y la entrada del ajuste")
+        if not hasattr(rows, "append"):
+            raise ValueError("La inferencia necesita un destino de filas")
+        return self.evaluate(source, stop=stop, rows=rows)
 
     def _train_pass(self, run, cursor, stop, save):
         predictor, source = self.predictor, self.train
@@ -561,7 +598,7 @@ class ChronologicalTrainer:
                         save(dict(cursor, event=index, stage="inputs"), run)
                         since, last = 0, time.perf_counter()
                         if stop.requested:
-                            raise _Pause
+                            raise Paused
             if event.inputs:
                 self._observe(run, source, event, differentiable=True)
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
@@ -603,6 +640,17 @@ class ChronologicalTrainer:
         run.counters = dict(payload["counters"])
         return run
 
+    def _load_best(self, report):
+        """Dejar el predictor con el estado seleccionado que acredita el informe."""
+        state = load_training_state(
+            self.output / "checkpoints",
+            expected_identity=self.identity,
+            selection="best",
+            expected_sha256=report["best_checkpoint"]["sha256"],
+        )
+        self.predictor.load_state_dict(state["model"])
+        return state
+
     def run(self, *, resume=False, stop=None):
         """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo."""
         output, checkpoints = self.output, self.output / "checkpoints"
@@ -628,6 +676,7 @@ class ChronologicalTrainer:
                 self.predictor.train()
                 run = self._restore(state["run"])
             if report["status"] == "completed":
+                self._load_best(report)
                 return report
         else:
             output.mkdir(parents=True)
@@ -697,16 +746,13 @@ class ChronologicalTrainer:
                     )
                     save(cursor, best=self.selection["last_improved"])
                     if stop.requested and not finished:
-                        raise _Pause
+                        raise Paused
                     continue
                 self.train_metrics = self._train_pass(run or _Pass(), cursor, stop, save)
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
-            best = load_training_state(
-                checkpoints, expected_identity=self.identity, selection="best"
-            )
-            self.predictor.load_state_dict(best["model"])
+            self._load_best(report)
             report.update(
                 status="completed",
                 stopped_early=cursor["epoch"] < self.recipe.epochs,
@@ -717,7 +763,7 @@ class ChronologicalTrainer:
                 finished_at_utc=datetime.now(UTC).isoformat(),
             )
             return report
-        except _Pause:
+        except Paused:
             report["status"] = "paused"
             return report
         except BaseException as error:
