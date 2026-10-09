@@ -80,13 +80,57 @@ La barrera está justo después de una actualización, sin grafos vivos. En ese 
 
 Tras la última época se carga el mejor estado y se escriben `validation-predictions.parquet` y, si se declaran sus fases, `calibration-predictions.parquet` y `evaluation-predictions.parquet`. El esquema es el de las referencias neuronales (`sample_id`, `asset_id`, `market`, `prediction_at`, `target`, `prediction` y `zero`) más `QUANTILE_COLUMNS`. `prediction` y `quantile_0500` tienen los mismos bits y `ForecastPanel.from_arrow` lee la tabla con sus cinco niveles. Solo se escriben las filas cuya etiqueta madura dentro de la fase.
 
-`restore_selected` carga el mejor estado de una ejecución completa en un adaptador con el mismo contrato y comprueba la huella. Ese adaptador, congelado, sirve a `FrozenCandidateConsumer`.
+`restore_selected` carga el mejor estado de una ejecución completa en un adaptador con el mismo contrato y comprueba la huella. Ese adaptador, congelado, sirve a `FrozenCandidateConsumer`. Con `carried=True` admite un adaptador de otra ventana de la misma edición: solo pueden cambiar la huella de la vista y la del índice de entrada, y deben coincidir representación, configuración, codec, binario y código.
+
+La parte del recorrido que no ajusta (banco, instantánea, predicción, etiquetas, admisión y `evaluate`) está en `CandidateChronologicalPredictor`. `CandidateChronologicalTrainer` la extiende con el optimizador, la pérdida, las actualizaciones, los checkpoints y `run`. La división no cambia el comportamiento del entrenador y permite predecir una ventana posterior sin crear un optimizador.
 
 ## Paridad con la inferencia congelada
 
 La GRU de ATen en CPU no produce los mismos bits cuando sus pesos requieren gradiente, aunque el modo sin gradiente esté activo. La diferencia medida fue de hasta 2,2e-16 en FP64 sobre el corpus técnico. Por eso la evaluación desactiva temporalmente `requires_grad` en los parámetros y lo restaura al terminar. Con ello la validación del entrenador coincide bit a bit con una repetición independiente que usa `FrozenCandidateConsumer`, su codec y un `CandidateEpisodeBank` propio, en M0 y M1 con K = 1 y 2. Las pruebas existentes de `FinancialSession` ya comprueban que la sesión emite lo mismo que ese consumidor con la instantánea previa a las etiquetas. No se ejecutó la sesión completa sobre el corpus técnico porque su verificador de prefijos necesita una edición materializada cuyo fixture estima objetivos residuales.
 
 `FrozenCandidateConsumer`, `FinancialSession`, el banco y el código nativo no se han modificado.
+
+## Ventanas walk-forward de la campaña
+
+`training/candidate_walk_forward.py` conecta la candidata con la [campaña con máscaras](../research/training-campaign-2000.md#orquestación-de-los-brazos-con-entrenador) mediante dos entradas que siguen el contrato de trabajo de `masked_campaign.py`.
+
+`fit_window` recibe la vista v2 de una ventana, la receta, la semilla y el identificador del trabajo. Comprueba la protección antes de abrir la vista, prepara en `indices/<tramo>` el índice de observaciones de los cuatro tramos y construye el adaptador de la semilla con las semillas fijas del codec. Cada fase va del inicio al final de su tramo, sin calentamiento, con los mismos límites en todos los mercados de la vista, y una vista con purga por sesiones se rechaza. El entrenador escribe en `run/` y predice validación, calibración y evaluación con el mejor estado. Después se comparan las filas de cada tramo con las de la vista y se escribe `window.json` con la vista, la receta, la ejecución, el estado elegido (`checkpoint`), las fases, las predicciones, los recibos y la política del banco. Si la salida ya existe, reanuda los índices confirmados y la ejecución desde su último checkpoint, y una ejecución completa se devuelve sin repetir nada.
+
+`carry_window` predice la calibración y la evaluación de una ventana posterior con el estado elegido en su ancla, sin ajustar nada. `carried_window` de `carried_predictions.py` exige la misma edición y el mismo protocolo, y que la validación del ancla termine antes de la calibración trasladada. Se comprueban las huellas de `window.json`, del informe de la ejecución y del estado elegido, el adaptador se construye para la nueva ventana con la configuración del ancla y `restore_selected(..., carried=True)` carga sus parámetros. El recibo `carry.json` se escribe con `_receipt` del mismo módulo e incluye la huella del estado del ancla, la de sus parámetros y los meses entre el final de la información del ancla y la evaluación trasladada.
+
+### Banco y cola al cruzar de ventana
+
+| Estado | Al pasar del ancla a la ventana trasladada |
+| --- | --- |
+| Parámetros elegidos en el ancla | Se conservan sin cambios |
+| Proyecciones fijas del codec y receta (admisión, K, capacidad, semilla y bloques del banco) | Se conservan |
+| Banco episódico y admisión preparada | Se reinician. El banco empieza vacío en cada tramo |
+| Predicciones a la espera de etiqueta | Se descartan al cerrar cada tramo |
+| Errores por sesión y estado de la GRU | Se reinician |
+
+No hay calentamiento con etiquetas del ancla ni de tramos anteriores. Cada tramo solo admite etiquetas que maduran dentro de él, después de emitir su predicción, y cada predicción lee la instantánea previa a las etiquetas de su instante. Es la regla que ya siguen la validación, la calibración y la evaluación de una ventana ajustada, así que una ventana trasladada solo se diferencia de una ajustada en los parámetros. Calentar el banco con etiquetas recientes podría ayudarle en los años intermedios, pero cambiaría también la regla de las ventanas ajustadas y necesitaría su propio contraste. La política se guarda como `bank_policy` en `window.json` y en `carry.json`.
+
+### Filas y recibos
+
+`check_view_rows` compara cada tramo predicho con las filas que declara la vista (mercado, activo, instante y objetivo de sus etiquetas aceptadas) y falla indicando cuántas faltan, cuántas son ajenas, cuántas se repiten y cuántas tienen otro objetivo. El lector de observaciones predice todas las muestras del tramo, pero solo escribe las filas cuya etiqueta madura dentro de él, que en una vista v2 son exactamente las de la partición.
+
+Cada entrada escribe en `receipts/<mercado>.json` el recibo walk-forward de cada mercado con el contrato de `environments/walk_forward_receipt.py`, con calibración y evaluación como `masked_campaign.publish`. El padre es el trabajo ajustado con la huella de su estado elegido, y en un traslado es el ancla. `labels_used_until` es el microsegundo anterior a la evaluación, como en la campaña, y se refiere al ajuste, la selección y la calibración. Durante la evaluación el banco sigue admitiendo etiquetas que maduran antes de cada predicción.
+
+### Registro en la campaña
+
+`masked_campaign.EXECUTORS` registra `("episodic_gru", "fit")`, que reanuda su intento, y `("episodic_gru", "carry")`, que empieza uno nuevo. Ambos llaman a `run_job` en `cuda:0` y no usan el lote de la campaña, porque la candidata agrupa por `block_rows` según su receta. `confirm` decide si lee los cuantiles por la salida declarada del brazo en la comparación, no por su familia. `campaign_plan.py` acepta una sección opcional `episodic_gru` con la receta, la variante de cada brazo y la semilla de búsqueda:
+
+```json
+"episodic_gru": {
+  "recipe": "../candidate/chronological-training.json",
+  "arms": {"gru_episodic": "m1_k1"},
+  "search_seed": 42
+}
+```
+
+El planificador la valida sin importar PyTorch (nombre de la receta, política, cabeza, variante, semillas y regla de parada del protocolo). Con un único candidato, cada ventana reentrenada tiene una búsqueda con la semilla de búsqueda y un finalista por cada semilla restante, y cada ventana trasladada una predicción por semilla. El caso guarda la ruta y la huella de la receta, y `campaign_case` la vuelve a leer con `load_recipe` antes de ajustar.
+
+Las campañas A y B declaradas aún no incluyen la sección. En B añadiría 51 ajustes y 84 traslados (680 y 616 en total) y en A 135 ajustes (1.800). Antes hay que medir memoria y caudal en `cuda:0` y elegir entre `accumulation_rows` y `recompute`, porque la extrapolación del tramo completo supera los 8 GB con el universo completo y cada opción cambia la identidad de la receta. Hasta entonces la comprobación de la campaña sigue informando del brazo como pendiente.
 
 ## Coste y memoria medidos
 
@@ -155,7 +199,20 @@ Las pruebas de `tests/training/test_candidate_run.py` usan el corpus técnico cr
 - La acumulación reduce el pico de tensores guardados y la recomputación deja fuera de los bloques solo la pila y la pérdida.
 - Reanudación de una ejecución con acumulación, con y sin recomputación, igual a la continua.
 
-El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [recibo técnico](../../reports/engineering/candidate-chronological-trainer-20261009.json) y en el [recibo de memoria](../../reports/engineering/candidate-trainer-memory-20261009.json).
+`tests/training/test_candidate_walk_forward.py` comprueba las ventanas sobre vistas v2 del corpus técnico (un activo por mercado), con un optimizador que solo registra gradientes. El de las ventanas ancla desplaza además una vez los pesos al construirse, sin gradientes, para que su estado elegido se distinga de una inicialización nueva:
+
+- El ajuste de una ventana escribe validación, calibración y evaluación con el esquema común y tantas filas como la vista, ninguna de 2024, el estado elegido con su huella y un recibo por mercado válido con `read_window_receipt`. El estado elegido es el inicial, porque ningún paso cambia pesos.
+- Las filas predichas tienen la misma huella de filas y objetivos y los mismos `sample_id` que el lector por lotes que usan los demás brazos.
+- La comprobación de filas cuenta por separado una fila ausente, una ajena, una repetida y una con otro objetivo, y también un cambio de mercado.
+- Un ajuste parado a mitad de época se reanuda con el mismo estado elegido, las mismas predicciones y el mismo identificador de ejecución que uno continuo. Una ejecución completa no se repite.
+- Ambas entradas se detienen con la protección bloqueada antes de crear salidas.
+- El traslado parte del estado del ancla: registra su huella, coincide bit a bit con un recorrido independiente con ese estado y difiere de una inicialización nueva con la misma semilla. Rechaza una ventana no posterior, un ancla de otra vista, parámetros o estado elegido alterados y una salida existente.
+- En el traslado, la primera predicción de cada tramo lee un banco vacío aunque el ancla admitió episodios en su evaluación, cada predicción lee exactamente las admisiones anteriores a su instante y todas las etiquetas maduran dentro del tramo.
+- Una vista conjunta US+CN produce un recibo por mercado al ajustar y al trasladar, y la última ventana US no predice ninguna fila de 2024.
+- La campaña con la sección `episodic_gru`, ejecutores reales en CPU para la candidata y dobles para la GRU de referencia completa las 13 ventanas de US+CN. Cada trabajo de la candidata evalúa las mismas filas que la referencia, cada traslado parte del estado de su ancla, los recibos publicados coinciden con los escritos por la entrada y el manifiesto de fuentes alimenta la comparación sin filas de 2024.
+- El planificador solo crea trabajos de la candidata con su sección, con los recuentos y dependencias previstos, y rechaza variantes, semillas, campos, presupuestos, cabezas o brazos distintos de los declarados.
+
+El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [recibo técnico](../../reports/engineering/candidate-chronological-trainer-20261009.json), en el [recibo de memoria](../../reports/engineering/candidate-trainer-memory-20261009.json) y en el [recibo de las ventanas](../../reports/engineering/candidate-walk-forward-20261009.json).
 
 ## Pendiente
 
@@ -173,9 +230,11 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
     uv run --no-sync python -m pytest -q tests/training/cuda_candidate_run_check.py
   ```
 
-  Después hay que perfilar en `cuda:0` el recorrido completo, incluidas las sincronizaciones de las comprobaciones de finitud del nativo y la memoria de los grafos del tramo.
+  El mismo archivo compara también el ajuste de una ventana v2 y su traslado a la siguiente en CPU y en `cuda:0`, y el traslado en `cuda:0` del estado elegido en CPU. Comprueba que la inicialización de la semilla coincide en ambos dispositivos, algo que todavía no se ha verificado. Después hay que perfilar en `cuda:0` el recorrido completo, incluidas las sincronizaciones de las comprobaciones de finitud del nativo y la memoria de los grafos del tramo.
 - Calentamiento episódico con etiquetas anteriores al tramo medido, que necesita indexarlas en las observaciones financieras.
-- Predicciones de calibración y evaluación sobre vistas temporales reales. Solo se han comprobado con el fixture temporal histórico.
+- Ventanas sobre la edición real. Las entradas por ventana solo se han comprobado con vistas v2 del corpus técnico, con un activo por mercado.
+- Declarar la sección `episodic_gru` en las campañas A y B, con la opción de memoria elegida y los límites ampliados.
+- Índices de observaciones compartidos. Cada ajuste y cada traslado preparan los suyos aunque solo dependen de la vista y del tramo, así que las semillas repiten ese trabajo. Conviene medir antes su coste con la edición real.
 - Presupuesto definitivo y alternativa de reentrenamiento por ventana en [#363](https://github.com/GonxKZ/mars-titan/issues/363), con el caudal medido.
 - Memoria en `cuda:0`. Con el enlace CUDA compilado como arriba, desde la raíz:
 
