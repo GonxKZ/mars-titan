@@ -13,6 +13,8 @@ La ventana cercana de precios pertenece al Transformer común y conserva el cont
 | `mac_frozen` | MAC con P, lectura y gate, seguido de la misma cabeza | Ninguna |
 | `mac_online` | MAC completo seguido de la misma cabeza | Una por decisión y flujo |
 
+`FinancialConfig(gate_bias=None)` construye la memoria con la identidad v1 de las puertas, sin bias, y conserva las huellas anteriores. Con `gate_bias` los tres controles MAC usan la [inicialización con bias declarado](titans-gate-initialization.md). Una receta JSON puede declararla con sus tres valores. La identidad registra `memory_gate_bias` en las cuatro variantes, también en `transformer_direct`, para que el emparejamiento desde `mac_online` compare la misma configuración.
+
 La atención del control desactivado recibe un único token. Ese control mide el bloque añadido, sin constituir otro codificador temporal de 64 posiciones. La construcción utiliza `MultimodalReference` para obtener los componentes comunes. Sus rutas originales no se modifican. Todos los controles nuevos usan dropout cero.
 
 `copy_paired_parameters(source, target)` copia explícitamente los parámetros compatibles y devuelve un recibo con sus nombres, formas y huellas de origen y destino. La fuente `mac_online` permite emparejar los cuatro controles. El recibo distingue parámetros copiados de los que solo se inicializan. No transfiere cursores, momentum ni pesos rápidos de un flujo. Las cargas ordinarias siguen rechazando contratos diferentes. Esta copia se realiza antes del recorrido y no reanuda un grafo diferenciable existente.
@@ -50,7 +52,7 @@ prepared = predictor.prepare(decisions, state)
 
 `prepare(..., differentiable=True)` conserva el camino del objetivo externo por la actualización asociativa. El modo predeterminado devuelve predicción y estado sin grafo persistente. `torch.no_grad()` es compatible con la actualización interna. `torch.inference_mode()` se rechaza en esta interfaz. No se ejecuta un optimizador ni se utiliza un error financiero para calcular la sorpresa asociativa.
 
-Los parámetros deben permanecer estables durante el flujo, salvo mediante la carga o copia identificada. Dentro de `prepare` se comprueban versiones de tensores, sin convertir parámetros o entradas CUDA a NumPy/CPU. Ese control barato no detecta cualquier modificación posible. `verify_parameter_identity`, la creación de estado y las fronteras de exportación y recuperación contrastan además las huellas de bytes. Debe confirmarse esa comprobación antes de publicar una propuesta de sesión. Una modificación no autorizada mediante `.data` puede eludir el contador y se rechaza en esa frontera fuerte.
+Los parámetros deben permanecer estables durante el flujo, salvo mediante la carga, la copia identificada o el paso del [entrenador cronológico](titans-chronological-trainer.md), que vuelve a sellar su huella después de cada actualización. Dentro de `prepare` se comprueban versiones de tensores, sin convertir parámetros o entradas CUDA a NumPy/CPU. Ese control barato no detecta cualquier modificación posible. `verify_parameter_identity`, la creación de estado y las fronteras de exportación y recuperación contrastan además las huellas de bytes. Debe confirmarse esa comprobación antes de publicar una propuesta de sesión. Una modificación no autorizada mediante `.data` puede eludir el contador y se rechaza en esa frontera fuerte.
 
 ## Recuperación y presupuestos
 

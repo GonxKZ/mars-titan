@@ -30,6 +30,7 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .learning_hold import require_learning_allowed
 from .predictive_evaluation import evaluate_predictive
 from .predictive_inputs import PredictiveDataset, fit_standardizer
 from .run_receipts import initialize_receipt
@@ -126,6 +127,7 @@ def run_predictive_case(
     normalization=None,
 ):
     """Usar todos los ejemplos de train, con selección al terminar épocas completas."""
+    require_learning_allowed("el ajuste del adaptador predictivo")
     _options(case, batch_size, checkpoint_steps, checkpoint_seconds)
     output, ordered, parent_cache = Path(output), Path(ordered), Path(parent_cache)
     safe_destination(output)

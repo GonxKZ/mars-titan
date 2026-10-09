@@ -21,6 +21,7 @@ from mars_titan.training.checkpoints import (
     restore_rng,
     save_training_state,
 )
+from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .algorithms import FinancialNetwork, double_targets, generalized_advantage, ppo_objective
@@ -117,6 +118,8 @@ class FinancialTrainer:
             or type(seed) is not int
             or not 0 <= seed < 2**32
             or device not in {"cpu", "cuda:0"}
+            # Un cierre ausente invalidaría la transición y ocultaría la pérdida de la posición.
+            or np.isnan(env.tape.prices[:, :, 3]).any()
             or (device == "cpu" and (not diagnostic or config.total_steps > 32))
             or (
                 device == "cuda:0"
@@ -124,7 +127,7 @@ class FinancialTrainer:
             )
         ):
             raise ValueError(
-                "El entrenamiento necesita una fuente de train y admisión CUDA explícita"
+                "El entrenamiento necesita una fuente de train completa y admisión CUDA explícita"
             )
         self.env, self.algorithm, self.config, self.seed, self.device = (
             env,
@@ -148,7 +151,8 @@ class FinancialTrainer:
             else None
         )
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=config.learning_rate)
-        self.rng = np.random.default_rng(seed)
+        # El mundo sintético usa default_rng(seed). La exploración toma un flujo hijo distinto.
+        self.rng = np.random.default_rng(np.random.SeedSequence(seed).spawn(1)[0])
         self.sampling = torch.Generator(device=device).manual_seed(seed)
         self.replay = (
             Replay(config.replay_capacity, env.observation_space.shape[0])
@@ -166,6 +170,7 @@ class FinancialTrainer:
             seed=seed,
             device=device,
             diagnostic=diagnostic,
+            rng_streams=dict(numpy="seed_sequence_spawn_v1", torch="manual_seed"),
             environment=env.identity,
             torch=str(torch.__version__),
             numerics=dict(
@@ -379,6 +384,7 @@ class FinancialTrainer:
         self.observation = self.env._observation()
 
     def run(self, output, *, resume=False, stop_after=None, stop=None):
+        require_learning_allowed("el ajuste de la política financiera")
         output = Path(output)
         if output.exists() and not resume or resume and not output.is_dir():
             raise ValueError("Usa una ejecución nueva o recuperación explícita")

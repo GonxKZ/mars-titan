@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_adapter_matrix",
+  "input_policy": "historical_masked_2000_v1",
+  "final_test_opened": false,
+  "points": {
+    "head": {
+      "form": "residual",
+      "invalidates": ["cached_parent_predictions"]
+    },
+    "readout": {
+      "form": "low_rank",
+      "rank": 4,
+      "alpha": 4.0,
+      "invalidates": ["cached_parent_predictions", "attention_outputs"]
+    },
+    "fusion": {
+      "form": "low_rank",
+      "rank": 4,
+      "alpha": 4.0,
+      "invalidates": ["cached_parent_predictions", "fused_representations"]
+    }
+  },
+  "arms": [
+    {"id": "head", "points": ["head"]},
+    {"id": "readout", "points": ["readout"]},
+    {"id": "fusion", "points": ["fusion"]},
+    {"id": "head+readout", "points": ["head", "readout"]},
+    {"id": "head+fusion", "points": ["head", "fusion"]},
+    {"id": "readout+fusion", "points": ["readout", "fusion"]},
+    {"id": "head+readout+fusion", "points": ["head", "readout", "fusion"]},
+    {
+      "id": "fusion_full_rank",
+      "points": ["fusion"],
+      "overrides": {
+        "fusion": {
+          "form": "residual",
+          "invalidates": ["cached_parent_predictions", "fused_representations"]
+        }
+      }
+    }
+  ],
+  "controls": ["frozen_parent", "linear_residual", "full_continuation"],
+  "objectives": {
+    "adapters": "neural_mae",
+    "full_continuation": "neural_mae",
+    "linear_residual": "mae"
+  },
+  "budget": {
+    "seeds": [42, 43, 44],
+    "epochs": 5,
+    "batch_size": 256,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.01,
+    "clip_norm": 1.0,
+    "beta": 0.1,
+    "behavior_epsilon": 0.000001,
+    "auxiliary_samples": 128
+  },
+  "selection": {
+    "version": 2,
+    "metric": "session_mae",
+    "patience": null,
+    "min_delta": 0.00001
+  },
+  "architectures": {
+    "executable": {
+      "rnn": ["head", "fusion"],
+      "lstm": ["head", "fusion"],
+      "gru": ["head", "fusion"],
+      "dlinear": ["head", "fusion"],
+      "transformer": ["head", "readout", "fusion"]
+    },
+    "pending": {
+      "titans_mac": {
+        "reason": "FinancialPredictor sella sus parámetros y avanza memoria por sesión. Su postentrenamiento necesita el entrenador cronológico y no se carga como padre de este recorrido.",
+        "targets": {
+          "head": ["head"],
+          "readout": ["mac.query_projection", "mac.attention.out_proj"],
+          "fusion": ["fusion.0"]
+        },
+        "frozen": ["mac.memory", "mac.persistent"]
+      },
+      "mars_titan_episodic_readout": {
+        "reason": "La lectura episódica depende de una instantánea del banco por sesión. Sus claves proceden del codec y no son parámetros adaptables.",
+        "targets": {
+          "readout": ["query_projection", "value_projection"]
+        },
+        "frozen": ["refinement", "step_logit"]
+      },
+      "episodic_gru_candidate": {
+        "reason": "Los pesos viven en el runtime C++. Un adaptador exigiría soporte nativo con perfil previo y referencia numérica en Python.",
+        "targets": {},
+        "frozen": []
+      }
+    }
+  }
+}

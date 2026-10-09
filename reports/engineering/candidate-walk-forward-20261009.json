@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "recorded_at_utc": "2026-10-09T07:57:47+00:00",
+ "tested_head": "939cc6592bc774cd158d654e6a13e461c5e18348",
+ "base": "029d0b5bb573957309adc794d486e91d25eb4c85",
+ "scope": "Ventanas walk-forward de la GRU candidata en CPU con vistas v2 del corpus técnico, sin pasos de optimizador ni entrenamiento",
+ "source_sha256": {
+  "src/mars_titan/training/candidate_walk_forward.py": "308b01c0ff2dfa40029ec9f9d570209e6fab122ef6978c99277273ce5086d409",
+  "src/mars_titan/training/candidate_run.py": "bfe6ce6004ea2fd27f3e737d4f1b0e81bdb19507ad7457eb62e115188bbb4700",
+  "src/mars_titan/training/campaign_plan.py": "6ea4948670119e117fe167fc2996e64672eb6b2d5578bae16d45bab37838f0bf",
+  "src/mars_titan/training/masked_campaign.py": "d637d14dc3d5ff72e32272273093eab7839c58a5fbc2552aeeff6c6ba33affac",
+  "tests/training/test_candidate_walk_forward.py": "3f884f56c870750a09f0bc5d8f7a4f45b5de4100b5dd5c56fc087e249f3aa3da",
+  "tests/training/cuda_candidate_run_check.py": "6170ebae940d62aa5eb2c9b0b33b3d64b1e26152b1325210b86f0c6bd5ca56cd",
+  "configs/candidate/chronological-training.json": "1408b2bce94159f5d33e83fc1d8b46aa8671ae7f08cac2d2212790fee14686ec"
+ },
+ "environment": {
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "threads": "OMP_NUM_THREADS=2, MKL_NUM_THREADS=2",
+  "device": "cpu con CUDA_VISIBLE_DEVICES=-1",
+  "concurrent_load": "Otros procesos en curso durante las pruebas. Los tiempos son orientativos"
+ },
+ "native_binding": {
+  "sha256": "3fb8b98af1582b3b8c616525e5bfbf3bf5d03f834b8d8caa7080fbd89a30ec43",
+  "preset": "native-candidate-release",
+  "cuda": false,
+  "candidate_sources_changed_since_build": false,
+  "note": "Desde la compilación solo cambiaron en native/ la protección de aprendizaje y PPO (#388)"
+ },
+ "tests": {
+  "affected": {
+   "command": "uv run --no-sync python -m pytest -q -p no:cacheprovider tests/training/test_candidate_walk_forward.py tests/training/test_campaign_plan.py tests/training/test_masked_campaign.py tests/training/test_carried_predictions.py tests/training/test_campaign_throughput.py tests/training/test_candidate_run.py tests/training/test_candidate_accumulation.py",
+   "passed": 155,
+   "seconds": 306.87,
+   "note": "Ejecución antes de añadir dos comprobaciones al archivo nuevo"
+  },
+  "walk_forward_file": {
+   "passed": 23,
+   "seconds": 48.03
+  },
+  "cuda_check_on_cpu": {
+   "command": "MARS_TITAN_CANDIDATE_RUN_CHECK_DEVICE=cpu uv run --no-sync python -m pytest -q -p no:cacheprovider tests/training/cuda_candidate_run_check.py",
+   "passed": 6,
+   "seconds": 42.24,
+   "note": "No acredita CUDA"
+  },
+  "ruff": true,
+  "format": true,
+  "check_repository": true,
+  "optimizer_steps": 0
+ },
+ "mutations": {
+  "runner": "Sustitución dirigida, una por ejecución, con el archivo de pruebas filtrado por -k",
+  "detected": 12,
+  "total": 12,
+  "cases": [
+   "row_differences sin objetivos distintos",
+   "row_differences sin repetidas",
+   "fit_window sin reanudar",
+   "traslado sin cargar el estado del ancla",
+   "labels_used_until dos microsegundos antes",
+   "recibo solo con evaluación",
+   "banco del traslado con la ventana del ancla",
+   "cuantiles leídos por familia en confirm",
+   "pendientes sin excluir familias conectadas",
+   "planificador sin regla de parada de la receta",
+   "planificador sin comprobar semillas",
+   "restore_selected sin admitir otra ventana"
+  ]
+ },
+ "rows": {
+  "rule": "Cada tramo predicho tiene exactamente las filas de la vista (mercado, activo, instante y objetivo)",
+  "checked_with": "Etiquetas aceptadas de la vista y lector por lotes de las referencias, con la huella de filas de la campaña",
+  "corpus": "técnico con un activo por mercado y seis decisiones al año"
+ },
+ "campaign_counts_if_declared": {
+  "B": {
+   "training_jobs": 680,
+   "prediction_jobs": 616,
+   "added_training": 51,
+   "added_prediction": 84
+  },
+  "A": {
+   "training_jobs": 1800,
+   "prediction_jobs": 0,
+   "added_training": 135
+  },
+  "declared_in_campaigns": false
+ },
+ "not_executed": [
+  "Entrenamiento, piloto o evaluación científica",
+  "Ventanas sobre la edición real",
+  "Comprobación en cuda:0"
+ ]
+}

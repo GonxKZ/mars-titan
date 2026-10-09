@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "kind": "rl_environment_integrity_second_phase",
+  "recorded_at_utc": "2026-10-09T04:24:17.283343+00:00",
+  "base_revision": "91e49eaa",
+  "code_revision": "76fc622a",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/365",
+  "scope": "Cierre de los puntos abiertos de la primera auditoría. Pruebas CPU con fixtures sintéticos y una política fija. Sin pasos de optimizador, sin CTest que ejecute Adam y sin GPU.",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "gpu_used": false,
+    "cuda_visible_devices": "-1"
+  },
+  "toolchain": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "duckdb_threads": 2,
+    "clang": "21.1.8",
+    "cmake": "4.2.3",
+    "native_preset": "native-ppo-release con MARS_TITAN_LIBTORCH_ENABLE_CUDA=OFF y MARS_TITAN_BUILD_FINANCIAL=ON",
+    "torch": "2.14.0+cu130"
+  },
+  "measurements": {
+    "source": "/home/gonzalo/.local/state/mars-titan/history-2000-20261007/materialization/prepared-accounting-v1 (solo lectura)",
+    "method": "DuckDB sobre los 5.023 prices.parquet preparados, con 2 hilos y 2 GiB",
+    "max_assets_per_session": {
+      "US": {
+        "assets": 4200,
+        "session": "2023-11-06"
+      },
+      "CN": {
+        "assets": 810,
+        "session": "2022-08-22"
+      }
+    },
+    "max_assets_with_complete_64_window": {
+      "US": 4195,
+      "CN": 810
+    },
+    "max_assets_training_until_2022": {
+      "US": 4189,
+      "CN": 810
+    },
+    "distinct_assets": {
+      "US": 4202,
+      "CN": 810
+    },
+    "survivorship": {
+      "US_assets_ending_before_2023_12": 2,
+      "US_earliest_last_session": "2017-03-13",
+      "CN_last_session_all": "2023-12-29"
+    },
+    "price_grid": {
+      "tolerance_cents": 0.05,
+      "CN_off_cent_share": 0.8409,
+      "US_off_cent_share": 0.694,
+      "CN_off_cent_share_2023": 0.7486,
+      "US_off_cent_share_2023": 0.6226,
+      "interpretation": "Coherente con precios ajustados. La medida no identifica el método de ajuste"
+    },
+    "cn_boards": {
+      "sse_main": 449,
+      "szse_main": 282,
+      "chinext": 59,
+      "star": 20
+    },
+    "observation_bytes_per_asset_historical_shapes": 6725
+  },
+  "items": [
+    {
+      "id": 1,
+      "title": "Capacidad de cohortes y cintas",
+      "status": "corrected",
+      "change": "MAX_COHORT_ASSETS=8192, MAX_INSTRUMENTS=8192, MAX_TAPE_CELLS=2097152, motor nativo limitado a 4096 con error explícito",
+      "tests": [
+        "tests/environments/test_cohort_capacity.py",
+        "tests/simulation/test_tape_capacity.py"
+      ],
+      "dependencies": [
+        "environments/corpus_source.py:_partition sigue en 4096 filas por cohorte",
+        "posttraining/parents.py y models/baselines/inputs.py aceptan 4096 filas por llamada",
+        "modo clásico del banco episódico con 4096 activos"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Evaluación nativa incompleta",
+      "status": "corrected",
+      "change": "mean_log_growth y mean_liquidated_log_growth quedan como NaN si la evaluación está pausada, vacía o incompleta",
+      "tests": [
+        "native/tests/ppo_evaluation_tests.cpp::incomplete_evaluation_has_no_score"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Estado de la campaña Python",
+      "status": "corrected",
+      "change": "evaluation_status publica failed con valoración incompleta y la campaña cuenta incomplete_evaluations",
+      "tests": [
+        "tests/simulation/test_evaluation.py::test_campaign_status_follows_the_valuation_not_the_process"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Flujos aleatorios del entrenador Python",
+      "status": "corrected",
+      "change": "default_rng(SeedSequence(seed).spawn(1)[0]) con identidad rng_streams=seed_sequence_spawn_v1",
+      "tests": [
+        "tests/simulation/test_trainer_streams.py::test_exploration_stream_differs_from_the_world_generator_with_the_same_seed"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Selección nativa con venta final",
+      "status": "corrected_with_declared_metric",
+      "change": "liquidated_nav, FinancialMetrics.liquidated_net_return, PpoEvaluation.mean_liquidated_log_growth y métrica ruin_count_then_mean_liquidated_log_growth. Las configuraciones existentes conservan la anterior",
+      "tests": [
+        "native/tests/ppo_evaluation_tests.cpp::liquidated_growth_pays_the_final_exit",
+        "native/tests/ppo_evaluation_tests.cpp::cash_has_no_exit_cost"
+      ],
+      "not_executed": "La selección completa con la métrica nueva requiere ejecutar Adam y no se ha ejecutado"
+    },
+    {
+      "id": 6,
+      "title": "Cierres ausentes en el ajuste",
+      "status": "corrected",
+      "change": "FinancialTrainer y load_ppo_input rechazan fuentes con algún cierre ausente. Las aperturas ausentes siguen admitidas",
+      "tests": [
+        "tests/simulation/test_trainer_streams.py::test_training_rejects_tapes_whose_missing_closes_could_censor_losses",
+        "native/tests/ppo_inputs_tests.cpp::missing_closes_are_rejected_before_any_transition"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Reglas del mercado chino",
+      "status": "partially_implemented",
+      "change": "Lotes, resto impar, mínimo STAR, bandas por tablero y fecha, redondeo por la mitad hacia arriba sobre referencia exderecho e impuesto de timbre por fechas en el motor Python. T+1 por construcción",
+      "tests": [
+        "tests/simulation/test_china_market_rules.py"
+      ],
+      "sources": "docs/engineering/china-market-rules.md",
+      "pending": [
+        "estado ST",
+        "cinco primeras sesiones tras la salida a bolsa",
+        "ampliaciones de capital",
+        "desplazamiento de un céntimo para precios bajos desde 2023",
+        "topes por orden de ChiNext y STAR",
+        "comisiones de bolsa y registro por fecha",
+        "motor nativo"
+      ]
+    }
+  ],
+  "tests": {
+    "python_new": 47,
+    "python_files": [
+      "tests/environments/test_cohort_capacity.py",
+      "tests/simulation/test_tape_capacity.py",
+      "tests/simulation/test_trainer_streams.py",
+      "tests/simulation/test_china_market_rules.py",
+      "tests/simulation/test_evaluation.py"
+    ],
+    "python_regression": {
+      "passed": 453,
+      "skipped": 1,
+      "skipped_reason": "hmmlearn no instalado",
+      "selection": "identificadores explícitos sin entrenadores que ejecuten pasos"
+    },
+    "native": {
+      "passed": [
+        "simulation",
+        "c_abi",
+        "financial_session",
+        "financial_batch",
+        "ppo_inputs",
+        "ppo_evaluation"
+      ],
+      "adam_executed": false
+    }
+  },
+  "mutations": [
+    {
+      "name": "trainer_accepts_missing_close",
+      "tests": "test_trainer_streams.py",
+      "result": "killed"
+    },
+    {
+      "name": "trainer_shares_world_stream",
+      "tests": "test_trainer_streams.py",
+      "result": "killed"
+    },
+    {
+      "name": "campaign_always_completed",
+      "tests": "test_evaluation.py",
+      "result": "killed"
+    },
+    {
+      "name": "cohort_cap_back_to_4096",
+      "tests": "test_cohort_capacity.py",
+      "result": "killed"
+    },
+    {
+      "name": "grid_probabilities_old_cap",
+      "tests": "test_cohort_capacity.py",
+      "result": "killed"
+    },
+    {
+      "name": "tape_cells_old_cap",
+      "tests": "test_tape_capacity.py",
+      "result": "killed"
+    },
+    {
+      "name": "storage_old_asset_cap",
+      "tests": "test_tape_capacity.py",
+      "result": "killed"
+    },
+    {
+      "name": "native_cap_unchecked",
+      "tests": "test_tape_capacity.py",
+      "result": "killed"
+    },
+    {
+      "name": "half_even_rounding",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_odd_lot_sale",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_minimum_order",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_ex_rights_reference",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "tax_ignores_side",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "limit_up_strict",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "limit_down_ignored",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "buy_tax_not_reserved",
+      "tests": "test_china_market_rules.py",
+      "result": "killed_after_adding_full_cash_case"
+    },
+    {
+      "name": "chinext_always_20",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "identity_without_rules",
+      "tests": "test_china_market_rules.py",
+      "result": "killed"
+    },
+    {
+      "name": "native_incomplete_returns_zero",
+      "tests": "ppo_evaluation_tests.cpp",
+      "result": "killed"
+    },
+    {
+      "name": "native_liquidation_without_cost",
+      "tests": "ppo_evaluation_tests.cpp",
+      "result": "killed"
+    },
+    {
+      "name": "native_inputs_accept_missing_close",
+      "tests": "ppo_inputs_tests.cpp",
+      "result": "killed"
+    }
+  ],
+  "parity": {
+    "base_revision": "d03229b2",
+    "method": "Mundo sintético de 6 activos, 60 sesiones y semilla 11, acciones aleatorias fijas, referencias fijas, instantáneas contables y entorno predictivo",
+    "identical": [
+      "financial_python",
+      "financial_native",
+      "eval_cash",
+      "eval_hold_initial",
+      "eval_rebalance_50",
+      "snapshot_python sin tape_sha256",
+      "snapshot_native sin tape_sha256",
+      "prediction",
+      "prediction_identity"
+    ],
+    "changed": {
+      "fields": [
+        "tape_sha256",
+        "identity.tape_sha256"
+      ],
+      "reason": "SyntheticWorld incluye en su identidad la huella de environments/cohorts.py, que contiene el contrato de capacidad"
+    },
+    "trajectory_sha256": {
+      "financial_python": "a7b90b59f3951a8f0b60f991614505a9eacb4f82c3e8ecad12a9b15b6755e91f",
+      "financial_native": "e798ee5f41801602a91d817c78d5311c0e3d76ec14ffdb248e22b20148bb6f1e",
+      "prediction": "c70cc480d08f1e5f9b3d74d583867190e20cbe11b805fc30ef6d348ed059f7a5"
+    }
+  },
+  "source_sha256": {
+    "src/mars_titan/environments/cohorts.py": "c2e0ee4c2ae5a9702ea169633fcc9052d78322867574da3f4221ad4b4688ed11",
+    "src/mars_titan/environments/actions.py": "3128336f895755e59c2e042339f358fbc1df95c3e2d9ac987ca25222c994b801",
+    "src/mars_titan/episodes/parents.py": "9b11a1e3dc725f4614ec68bb8ada7365dfdc364ee1a56d7e68b8ee02e8e516cc",
+    "src/mars_titan/simulation/portfolio.py": "b428a88164aaaf22d7c42bcc9ad9461a1b2d4982b78e1a8ab49c14ee84e68851",
+    "src/mars_titan/simulation/market.py": "d2772d6767a2acf102ca7e1af50f6883a8e74e0e644837fa9e0d19b45c176a9f",
+    "src/mars_titan/simulation/storage.py": "9bc3b2d66830549a6e78b3b6d66dc90abe4bd8d8a2f2c39d57e95ee24e5cd2b9",
+    "src/mars_titan/simulation/environment.py": "fbf1b4d5c381da6e4c2c95b86300dfb4cb798b5ef25890174347f85bb684d492",
+    "src/mars_titan/simulation/campaign.py": "9e54e04ebd4ab0cc125a9a464b18362ee5df7443b418295bf20ee38dbaab4547",
+    "src/mars_titan/simulation/training.py": "92d883b6f839d0c77848a7c899c260b29efa49b94110ffb68f2a7cf5ee606715",
+    "src/mars_titan/simulation/native_portfolio.py": "8278a1adfe06c4c6412e370646cfd3a3c7987b5d4dc0b89655bf29d19d2cbf02",
+    "src/mars_titan/simulation/market_rules.py": "f8b4e7f1317d669b3ee0e61f80a537af213c9bcedbb038b410b46f566429d675",
+    "native/src/ppo_inputs.cpp": "401eea801d9d7be6bf39b9c0815e82c36ba4d286e501e882d349796b328fe48f",
+    "native/src/ppo_training.cpp": "c9232b7f9c0a414080600118ac9bb53ace322add2a30b4b064f5667f66a3f58f",
+    "native/src/ppo_experiment.cpp": "751f8d3c9ac79b0e1fc76d4736e6bb1e56accacaae3c791344252fb58795886e",
+    "native/src/financial_session.cpp": "4160b27bce034b088a8b74326bba55fec3e3ec951e44da51d004e31a8158f799",
+    "native/tests/ppo_evaluation_tests.cpp": "c5d958325c499a9c368296f12d4ee33731e257df1669d652cfab8a4c7261da34",
+    "native/tests/ppo_inputs_tests.cpp": "68256d16c12319555024cc3896d2f4ddc5cc0433823b0891689f4775568b7412"
+  },
+  "not_executed": [
+    "Pruebas que entrenan o pueden entrenar: test_training.py, test_campaign.py, test_native_environment.py, test_native_ppo_runner.py, test_native_ppo_launcher.py, test_ppo_objective_config.py, test_adaptive_campaign.py, test_benchmark_adaptive_rl.py, test_episodic_cuda.py y test_rejected_checkpoint_preserves_complete_trainer_state",
+    "CTest ppo_training, ppo_policy y demás ejecutables nativos que contienen pasos de Adam",
+    "Ejecución del binario mars-titan-ppo con la métrica liquidada",
+    "Comprobaciones CUDA"
+  ]
+}

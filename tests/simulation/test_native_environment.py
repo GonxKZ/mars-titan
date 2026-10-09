@@ -7,8 +7,9 @@ import torch
 from mars_titan.episodes.worlds import WorldConfig, generate_world
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.market import MarketTape
-from mars_titan.simulation.native_runtime import NativeLibrary
+from mars_titan.simulation.native_runtime import NativeLibrary, library_path, load_library
 from mars_titan.simulation.training import FinancialTrainer, TrainConfig
+from tests.simulation.native_library import requires_native_library
 
 
 def tape():
@@ -16,6 +17,7 @@ def tape():
     return MarketTape.from_world(world, lambda inputs: inputs["news"][:, 0] * 0.002)
 
 
+@requires_native_library
 def test_native_environment_matches_every_observation_and_valuation():
     source = tape()
     reference = FinancialEnv(source)
@@ -30,6 +32,7 @@ def test_native_environment_matches_every_observation_and_valuation():
     assert native.book.execution_counts["native_steps"] == len(source) - 1
 
 
+@requires_native_library
 @pytest.mark.parametrize("algorithm", ["ppo", "double_dqn"])
 def test_native_training_recovers_exactly(tmp_path, algorithm):
     config = TrainConfig(
@@ -68,3 +71,12 @@ def test_unaligned_numpy_memory_is_rejected_before_casting():
     assert not frame.flags.aligned
     with pytest.raises(ValueError):
         NativeLibrary.frame(frame, 2)
+
+
+def test_a_declared_library_is_never_treated_as_missing(tmp_path, monkeypatch):
+    declared = tmp_path / "libmars_titan_simulation.so"
+    monkeypatch.setenv("MARS_TITAN_NATIVE_LIBRARY", str(declared))
+    assert library_path() == str(declared)
+    assert library_path(tmp_path / "explicit.so") == tmp_path / "explicit.so"
+    with pytest.raises(FileNotFoundError):
+        load_library()

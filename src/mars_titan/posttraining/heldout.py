@@ -15,11 +15,12 @@ import torch
 
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.evaluation.session_metrics import SessionErrors
-from mars_titan.models.baselines.inputs import MODALITIES
-from mars_titan.models.predictive_adaptation import LinearResidualPolicy, gaussian_log_probabilities
+from mars_titan.models.predictive_adaptation import gaussian_log_probabilities
+from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.experiment_resources import GpuLease
@@ -28,9 +29,10 @@ from mars_titan.training.predictive_parents import _verified_file
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .evaluation import centers
+from .inputs import adapter_features
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import load_parent
-from .run import _best_state, code_identity
+from .run import _best_state, build_model, case_code, code_identity
 
 PARTITIONS = ("calibration", "evaluation")
 
@@ -49,7 +51,11 @@ def evaluate_partition(
     batch_size=256,
     predictor=None,
 ):
-    """Recorrer un bloque posterior con el estado ya seleccionado y acumuladores acotados."""
+    """Recorrer un bloque posterior con el estado ya seleccionado y acumuladores acotados.
+
+    Un modelo de cuantiles escribe sus cinco niveles con las columnas de la cabeza y su
+    mediana como predicción, el esquema común de la comparación walk-forward.
+    """
     if partition not in PARTITIONS or dataset.temporal is None:
         raise ValueError("Solo se admiten calibración y evaluación de una vista temporal")
     if (
@@ -72,30 +78,39 @@ def evaluate_partition(
             ):
                 if stop.requested:
                     raise InterruptedError("Evaluación interrumpida antes de confirmar el bloque")
-                inherited = parent.predict(batch["inputs"])
+                presence = batch.get("presence")
+                # La ruta estricta conserva la llamada original, sin argumentos nuevos.
+                extra = () if presence is None else (presence,)
+                inherited = parent.predict(batch["inputs"], *extra)
                 predictions = dict(
                     prediction=inherited, parent=inherited, zero=np.zeros(len(inherited))
                 )
+                levels = {}
                 if predictor is not None:
-                    predictions["prediction"] = predictor.predict(batch["inputs"])
+                    predictions["prediction"] = predictor.predict(batch["inputs"], *extra)
                 if model is not None:
-                    features = np.concatenate(
-                        [batch["inputs"][k].reshape(len(inherited), -1) for k in MODALITIES]
-                        + [inherited[:, None].astype(np.float32)],
-                        axis=1,
-                    )
+                    features = adapter_features(batch["inputs"], presence, inherited)
                     center = centers(
                         model,
                         dict(batch, parent=inherited, features=features),
                         neural=neural,
                         device=device,
                     )
-                    probability = (
-                        gaussian_log_probabilities(center, values, grid.scale).exp().cpu().numpy()
-                    )
-                    predictions.update(
-                        prediction=grid.median(probability), center=center.cpu().numpy()
-                    )
+                    if center.ndim == 2:
+                        quantiles = center.cpu().numpy()
+                        point = quantiles[:, MEDIAN_INDEX]
+                        predictions.update(prediction=point, center=point)
+                        levels = dict(zip(QUANTILE_COLUMNS, quantiles.T, strict=True))
+                    else:
+                        probability = (
+                            gaussian_log_probabilities(center, values, grid.scale)
+                            .exp()
+                            .cpu()
+                            .numpy()
+                        )
+                        predictions.update(
+                            prediction=grid.median(probability), center=center.cpu().numpy()
+                        )
                 for name, prediction in predictions.items():
                     errors[name].update(
                         batch["market"], batch["prediction_at"], prediction - batch["target"]
@@ -110,6 +125,7 @@ def evaluate_partition(
                         ),
                         target=batch["target"],
                         **predictions,
+                        **levels,
                     )
                 )
 
@@ -211,7 +227,9 @@ def _jobs(reference, tabular, adjustments, *, arm="US"):
 
 def _adjustment(path, report, parent, device):
     identity = report["identity"]
-    if identity["parent"] != parent.identity or identity["code"] != code_identity():
+    case = identity["case"]
+    code = case_code(case, masked=parent.masked)
+    if identity["parent"] != parent.identity or identity["code"] != code:
         raise ValueError("El ajuste no conserva la identidad del padre o su implementación")
     grid = ActionGrid.from_dict(identity["grid"])
     normalization = identity["normalization"]
@@ -220,21 +238,17 @@ def _adjustment(path, report, parent, device):
         or normalization["parent_sha256"] != parent.identity["checkpoint_sha256"]
     ):
         raise ValueError("La normalización no procede del entrenamiento del padre")
-    neural = identity["case"]["mode"].startswith("neural_")
-    model = (
-        parent.continuation()
-        if neural
-        else LinearResidualPolicy(
-            normalization["mean"],
-            normalization["scale"],
-            target_scale=grid.scale,
-        )
-    )
+    neural = case["mode"].startswith("neural_")
+    # Un brazo se reconstruye con sus destinos declarados y no acepta el estado de otro.
+    model = build_model(parent, case, grid, normalization, identity)
     state = _best_state(
         path.parent, identity, report["selection"], expected_sha256=report["checkpoint"]["sha256"]
     )
     model.load_state_dict(state["model"], strict=True)
-    if any(not torch.isfinite(value).all() for value in model.state_dict().values()):
+    if any(
+        torch.is_tensor(value) and not torch.isfinite(value).all()
+        for value in model.state_dict().values()
+    ):
         raise ValueError("El modelo seleccionado contiene pesos no finitos")
     return model.to(device).eval().requires_grad_(False), grid, neural
 
@@ -271,6 +285,8 @@ def run_evaluation(reference, tabular, adjustments, output, *, arm="US", stop=No
     source, ordered_hash = read_manifest(ordered, 8 * 1024**2)
     if source.get("source_manifest", {}).get("sha256") != proof["manifest_sha256"]:
         raise ValueError("Falta el vínculo temporal de los datos ordenados")
+    # La política se lee del corpus ordenado confirmado, ligado por huella a la cola.
+    policy = source.get("input_policy", STRICT_INPUTS)
     safe_destination(output)
     for protected in (
         reference.parent,
@@ -287,7 +303,8 @@ def run_evaluation(reference, tabular, adjustments, output, *, arm="US", stop=No
         ordered_sha256=ordered_hash,
         manifest_sha256=proof["manifest_sha256"],
         partitions=list(PARTITIONS),
-        code=code_identity()
+        **policy_identity(policy),
+        code=code_identity(masked=masked_inputs(policy))
         | {
             f"posttraining/{name}": sha256(Path(__file__).with_name(name))
             for name in ("heldout.py", "parent_selection.py")
@@ -330,7 +347,7 @@ def run_evaluation(reference, tabular, adjustments, output, *, arm="US", stop=No
                 torch.set_num_threads(4)
                 torch.use_deterministic_algorithms(True)
                 torch.backends.cudnn.benchmark = False
-                dataset = CorpusDataset(Path(proof["manifest"]))
+                dataset = CorpusDataset(Path(proof["manifest"]), input_policy=policy)
                 for job in jobs:
                     if stop.requested:
                         raise InterruptedError("Evaluación pausada")

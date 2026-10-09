@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "propuesta_sin_ejecutar",
+  "variants": [
+    "transformer_direct",
+    "mac_disabled",
+    "mac_frozen",
+    "mac_online"
+  ],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {"alpha_half_life": 256.0, "eta": 0.5, "theta": 0.05}
+  },
+  "recipe": {
+    "truncation": 8,
+    "loss": "pinball",
+    "huber_delta": 0.01,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 128,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0
+  },
+  "walk_forward": {"warmup_months": 12},
+  "pending": [
+    "La selección y el presupuesto repiten la regla común de los protocolos v2 de #363. titans_walk_forward rechaza la receta si no coinciden.",
+    "El calentamiento de 12 meses antes de validación, calibración y evaluación debe ser el mismo en todos los brazos con memoria.",
+    "La inicialización de las puertas de la memoria usa gate_bias con semivida de 256 observaciones, decidida en #27 con fixtures técnicos. Su efecto con datos reales no se ha medido.",
+    "El caudal en cuda:0 se medirá antes de fijar el presupuesto común.",
+    "La cabeza quantile_head_v1 cambia la escala del gradiente de la mediana. La tasa de aprendizaje se revisará con la misma búsqueda que la variante escalar."
+  ]
+}

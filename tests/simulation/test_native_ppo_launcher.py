@@ -50,7 +50,8 @@ def gpu_xml(free=7400, total=8188, *, compute=False):
 
 
 @pytest.fixture
-def setup(tmp_path):
+def setup(tmp_path, learning_doubles):
+    # El hijo es un arnés sin aprendizaje, así que el lanzador puede superar la protección.
     bin_dir, runtime = tmp_path / "bin", tmp_path / "runtime"
     bin_dir.mkdir()
     runtime.mkdir(mode=0o700)

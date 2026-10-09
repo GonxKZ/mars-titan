@@ -11,18 +11,41 @@ from pathlib import Path
 from mars_titan.budget_training import seed_run
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import require_cuda
+from mars_titan.data.input_policy import INPUT_POLICIES, STRICT_INPUTS, masked_inputs
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.models.baselines.transformer import CompactPriceTransformer
 
 from .checkpoints import StopRequest
+from .learning_hold import require_learning_allowed
 from .reference_campaign import _check_finished, campaign_views
 from .reference_design import candidate_indices, design_cases
-from .reference_run import _confirmed_state, read_json, run_reference_case, scientific_identity
-from .selection import validate_selection
+from .reference_run import (
+    FULL_TRAIN_VALIDATION,
+    PREDICTION_RETENTIONS,
+    _confirmed_state,
+    read_json,
+    run_reference_case,
+    scientific_identity,
+)
+from .selection import FIXED_BUDGET, VALIDATION_PLATEAU, validate_selection
 from .temporal_contract import temporal_contracts
+
+# Límite histórico de una campaña temporal. Un plan de versión 4 puede declarar otro
+# con `max_runs`, acotado por MAX_DECLARED_RUNS, antes de ejecutar.
+DEFAULT_MAX_RUNS = 512
+MAX_DECLARED_RUNS = 4096
 
 
 class _Paused(Exception):
     """Interrupción entre casos o en una barrera confirmada del entrenador."""
+
+
+def _scientific(plan):
+    """Incluir las huellas del Transformer y de las máscaras cuando el diseño las usa."""
+    return scientific_identity(
+        kind="transformer" if "transformer" in plan["models"] else None,
+        input_policy=plan.get("input_policy", STRICT_INPUTS),
+    )
 
 
 def _configuration(path):
@@ -48,16 +71,21 @@ def _configuration(path):
     }
     extra = (
         {"case_indices", "continuation_selection"}
-        if isinstance(plan, dict) and plan.get("schema_version") in {2, 3}
+        if isinstance(plan, dict) and plan.get("schema_version") in {2, 3, 4}
         else set()
     )
     if isinstance(plan, dict) and plan.get("schema_version") == 3:
         extra.add("minimum_epochs")
+    # La versión 4 declara la lectura, la parada y la retención antes de ejecutar.
+    # Puede declarar además el límite de ejecuciones de la campaña temporal.
+    if isinstance(plan, dict) and plan.get("schema_version") == 4:
+        extra |= {"input_policy", "stopping", "prediction_retention"}
+        extra |= {"max_runs"} & set(plan)
     if (
         not isinstance(plan, dict)
         or set(plan) != keys | extra
         or type(plan["schema_version"]) is not int
-        or plan["schema_version"] not in {1, 2, 3}
+        or plan["schema_version"] not in {1, 2, 3, 4}
         or plan["scope"] not in {"development_snapshot", "full_corpus"}
         or not isinstance(plan["arms"], list)
         or not plan["arms"]
@@ -93,6 +121,22 @@ def _configuration(path):
         type(plan["minimum_epochs"]) is not int or plan["posttraining_epochs"] != 5
     ):
         raise ValueError("La edición con mínimo mantiene cinco épocas en los controles pareados")
+    if plan["schema_version"] == 4 and (
+        not isinstance(plan["input_policy"], str)
+        or plan["input_policy"] not in INPUT_POLICIES
+        or plan["stopping"] not in (VALIDATION_PLATEAU, FIXED_BUDGET)
+        or plan["prediction_retention"] not in PREDICTION_RETENTIONS
+        or (masked_inputs(plan["input_policy"]) and plan["context_sessions"] != 64)
+    ):
+        raise ValueError("La versión 4 necesita política, parada y retención admitidas")
+    if "max_runs" in plan and (
+        type(plan["max_runs"]) is not int or not 1 <= plan["max_runs"] <= MAX_DECLARED_RUNS
+    ):
+        raise ValueError(f"El límite declarado debe ser un entero entre 1 y {MAX_DECLARED_RUNS}")
+    if "transformer" in plan["models"] and (
+        plan["schema_version"] != 4 or plan["batch_size"] > CompactPriceTransformer.max_batch
+    ):
+        raise ValueError("El Transformer requiere la versión 4 y lotes de hasta 256 ventanas")
     cases = design_cases(
         plan["models"],
         seed=plan["search_seed"],
@@ -100,11 +144,12 @@ def _configuration(path):
         patience=plan["patience"],
         min_delta=plan["min_delta"],
         minimum_epochs=plan.get("minimum_epochs"),
+        stopping=plan.get("stopping"),
     )
-    if plan["schema_version"] in {2, 3}:
+    if plan["schema_version"] in {2, 3, 4}:
         indices = candidate_indices(plan)
         validate_selection(plan["continuation_selection"])
-        if "minimum_epochs" in plan["continuation_selection"]:
+        if {"minimum_epochs", "stopping"} & set(plan["continuation_selection"]):
             raise ValueError("Los controles pareados conservan su política de presupuesto fijo")
         if plan["continuation_selection"]["patience"] < plan["posttraining_epochs"]:
             raise ValueError(
@@ -146,7 +191,7 @@ class _Study:
             raise _Paused
         if any(sha256(path) != digest for path, digest in self.sources.items()):
             raise ValueError("La configuración o el manifiesto de origen han cambiado")
-        if scientific_identity() != self.summary["identity"]["scientific"]:
+        if _scientific(self.plan) != self.summary["identity"]["scientific"]:
             raise ValueError("El entorno o código científico ha cambiado")
         for name in ("reference_search.py", "reference_design.py"):
             if sha256(Path(__file__).with_name(name)) != self.summary["identity"]["code"][name]:
@@ -180,6 +225,10 @@ class _Study:
                     stop=self.stop,
                     weighting=item["weighting"],
                     initialize_from=self.output / parent["path"] if parent else None,
+                    input_policy=self.plan.get("input_policy", STRICT_INPUTS),
+                    prediction_retention=self.plan.get(
+                        "prediction_retention", FULL_TRAIN_VALIDATION
+                    ),
                 )
                 item.update(status=report["status"], report_sha256=sha256(folder / "run.json"))
                 if report["status"] == "paused":
@@ -277,8 +326,10 @@ def _execute_design(study, cases):
                             epochs=plan["posttraining_epochs"],
                             learning_rate=plan["posttraining_learning_rate"],
                         )
-                        if plan["schema_version"] in {2, 3}:
+                        if plan["schema_version"] in {2, 3, 4}:
                             case["selection"] = dict(plan["continuation_selection"])
+                        if plan["schema_version"] == 4:
+                            case["selection"]["stopping"] = plan["stopping"]
                         study.execute(
                             _task(
                                 arm,
@@ -295,11 +346,13 @@ def _execute_design(study, cases):
 
 
 def run_search(config: Path, manifest: Path, output: Path, *, resume=False, progress=None):
+    require_learning_allowed("la búsqueda de referencias neuronales")
     plan, cases, config_hash = _configuration(config)
-    views = campaign_views(manifest, plan["arms"])
+    policy = plan.get("input_policy", STRICT_INPUTS)
+    views = campaign_views(manifest, plan["arms"], input_policy=policy)
     first = next(iter(views.values()))
-    if plan["schema_version"] in {2, 3} and not temporal_contracts(first):
-        raise ValueError("La búsqueda estricta necesita una vista temporal con admisión macro")
+    if plan["schema_version"] in {2, 3, 4} and not temporal_contracts(first, input_policy=policy):
+        raise ValueError("La búsqueda necesita una vista temporal declarada en su manifiesto")
     if first["context_sessions"] != plan["context_sessions"]:
         raise ValueError("El contexto de la edición no coincide con el diseño de búsqueda")
     source_hash = first["source_manifest_sha256"]
@@ -328,7 +381,7 @@ def run_search(config: Path, manifest: Path, output: Path, *, resume=False, prog
         config_sha256=config_hash,
         manifest_sha256=source_hash,
         configuration=plan,
-        scientific=scientific_identity(),
+        scientific=_scientific(plan),
         code={
             name: sha256(Path(__file__).with_name(name))
             for name in ("reference_search.py", "reference_design.py")

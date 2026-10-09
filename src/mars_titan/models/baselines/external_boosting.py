@@ -4,6 +4,8 @@ import hashlib
 import json
 import math
 import os
+import shutil
+import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,10 +15,112 @@ import numpy as np
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import sha256
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .boosting_selection import BoostingSelection, selection_callback, session_validation
 
 MAX_MODEL_BYTES = 128 * 1024**2
+MAX_DISK_CACHE_BYTES = 4 * 1024**4
+
+
+def free_disk_bytes(path):
+    """Espacio libre del sistema de archivos que alojará la ruta, aunque aún no exista."""
+    path = Path(path).absolute()
+    while not path.exists():
+        path = path.parent
+    return shutil.disk_usage(path).free
+
+
+def available_ram_bytes():
+    """MemAvailable de Linux, que incluye la caché de páginas recuperable."""
+    with open("/proc/meminfo", encoding="ascii") as stream:
+        for line in stream:
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) * 1024
+    raise RuntimeError("No se puede comprobar la memoria disponible del equipo")
+
+
+def directory_bytes(path):
+    """Bytes de los archivos regulares bajo la ruta, sin seguir enlaces."""
+    total = 0
+    for root, _, files in os.walk(path):
+        for name in files:
+            status = os.lstat(os.path.join(root, name))
+            if stat.S_ISREG(status.st_mode):
+                total += status.st_size
+    return total
+
+
+def external_cache_plan(
+    *,
+    rows,
+    features,
+    max_bin,
+    on_host,
+    max_host_cache_bytes,
+    max_disk_cache_bytes,
+    available_ram,
+    free_disk,
+    other_disk_bytes=0,
+):
+    """Comprobar antes de recorrer el corpus que la caché cabe en sus presupuestos reales.
+
+    La cota host repite la fórmula float32 que el ajuste ya aplica. Para disco se
+    estiman páginas ELLPACK densas con índice de bin local por característica,
+    ceil(log2(max_bin + 1)) bits por valor. Es una hipótesis sobre XGBoost 3.3 que
+    el ajuste contrasta con los bytes observados. También se informa de la cota sin
+    esa compresión, con índices globales de ceil(log2(features * max_bin + 1)) bits.
+    """
+    for value, low, high in (
+        (rows, 1, 2**63 - 1),
+        (features, 1, 65536),
+        (max_bin, 2, 512),
+        (max_host_cache_bytes, 1, 24 * 1024**3),
+        (available_ram, 0, 2**63 - 1),
+        (free_disk, 0, 2**63 - 1),
+        (other_disk_bytes, 0, 2**63 - 1),
+    ):
+        if type(value) is not int or not low <= value <= high:
+            raise ValueError("El plan de memoria externa necesita enteros acotados")
+    if type(on_host) is not bool or (
+        max_disk_cache_bytes is not None
+        and (
+            on_host
+            or type(max_disk_cache_bytes) is not int
+            or not 1 <= max_disk_cache_bytes <= MAX_DISK_CACHE_BYTES
+        )
+    ):
+        raise ValueError("El presupuesto de disco solo se declara para la caché en disco")
+    host = rows * (features * 4 + 16)
+    local_bits, global_bits = max_bin.bit_length(), (features * max_bin).bit_length()
+    dense = math.ceil(rows * features * local_bits / 8)
+    upper = math.ceil(rows * features * global_bits / 8)
+    disk = 0 if on_host else dense
+    plan = dict(
+        schema_version=1,
+        rows=rows,
+        features=features,
+        max_bin=max_bin,
+        cache_location="host" if on_host else "disk",
+        host_cache_bytes_estimate=host if on_host else 0,
+        max_host_cache_bytes=max_host_cache_bytes,
+        available_ram_bytes=available_ram,
+        disk_cache_bytes_estimate=disk,
+        disk_cache_estimate_basis="ellpack_dense_feature_local_bins_hypothesis",
+        disk_cache_bytes_global_bins_bound=0 if on_host else upper,
+        max_disk_cache_bytes=max_disk_cache_bytes,
+        other_disk_bytes=other_disk_bytes,
+        free_disk_bytes=free_disk,
+    )
+    if on_host and host > min(max_host_cache_bytes, available_ram):
+        raise ValueError(
+            "La caché host estimada supera el presupuesto declarado o la RAM disponible"
+        )
+    if max_disk_cache_bytes is not None and disk > max_disk_cache_bytes:
+        raise ValueError("Las páginas estimadas superan el presupuesto de disco declarado")
+    if disk + other_disk_bytes > free_disk:
+        raise ValueError("Las páginas y cachés estimadas no caben en el disco libre")
+    return plan
 
 
 def _libraries():
@@ -214,6 +318,7 @@ def fit_external_boosting(
     max_batch_bytes=256 * 1024**2,
     max_host_cache_bytes=16 * 1024**3,
     on_host=True,
+    max_disk_cache_bytes=None,
     resume=None,
     checkpoint=None,
     checkpoint_interval=10,
@@ -222,7 +327,12 @@ def fit_external_boosting(
     validation_rows=None,
     stop_requested=None,
 ):
-    """Ajustar todas las filas mediante ExtMemQuantileDMatrix, sin concatenación global."""
+    """Ajustar todas las filas mediante ExtMemQuantileDMatrix, sin concatenación global.
+
+    Con un presupuesto de disco declarado, cada lote comprueba los bytes ya escritos
+    en la caché y la construcción falla antes de entrenar si los supera.
+    """
+    require_learning_allowed("el ajuste XGBoost con páginas externas")
     for value, low, high in (
         (expected_rows, 1, 2**63 - 1),
         (rounds, 1, 2000 if selection is not None else 1000),
@@ -246,6 +356,12 @@ def fit_external_boosting(
         or (stop_requested is not None and not callable(stop_requested))
     ):
         raise ValueError("La factoría o la tasa de aprendizaje no son válidas")
+    if max_disk_cache_bytes is not None and (
+        on_host
+        or type(max_disk_cache_bytes) is not int
+        or not 1 <= max_disk_cache_bytes <= MAX_DISK_CACHE_BYTES
+    ):
+        raise ValueError("El presupuesto de disco solo se declara para la caché en disco")
     selector = None
     if selection is not None:
         selector = BoostingSelection(
@@ -338,6 +454,11 @@ def fit_external_boosting(
                 )
             if not np.isfinite(x).all() or not np.isfinite(y).all():
                 raise ValueError("El bloque no conserva valores finitos al convertir a float32")
+            if (
+                max_disk_cache_bytes is not None
+                and directory_bytes(cache_directory) > max_disk_cache_bytes
+            ):
+                raise ValueError("Las páginas escritas superan el presupuesto de disco")
             self.rows += len(x)
             if self.rows > expected_rows:
                 raise ValueError("El iterador entrega más filas que la población declarada")
@@ -366,6 +487,14 @@ def fit_external_boosting(
                 or not iterator.completed
             ):
                 raise ValueError("La matriz externa no conserva la población y sus dimensiones")
+            disk_audit = {}
+            if max_disk_cache_bytes is not None:
+                observed = directory_bytes(cache_directory)
+                if observed > max_disk_cache_bytes:
+                    raise ValueError("Las páginas escritas superan el presupuesto de disco")
+                disk_audit = dict(
+                    disk_cache=dict(max_bytes=max_disk_cache_bytes, observed_bytes=observed)
+                )
             params = dict(
                 device="cuda:0",
                 tree_method="hist",
@@ -391,6 +520,7 @@ def fit_external_boosting(
                 params=params,
                 precision="float32_features_labels",
                 cuda_async_pool=True,
+                **disk_audit,
             )
             completed = 0
             if resume is not None:

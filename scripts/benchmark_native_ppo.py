@@ -14,6 +14,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mars_titan.training.learning_hold import require_learning_allowed
+
 
 def require(condition, message):
     if not condition:
@@ -267,6 +269,7 @@ def main():
         parser.error("La salida ya existe. Elige otro archivo para conservar sus resultados.")
     if args.output.resolve().is_relative_to(args.private.resolve()):
         parser.error("La salida debe quedar fuera del directorio privado del benchmark.")
+    require_learning_allowed("la medición de PPO nativo")
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     os.environ["LC_ALL"] = "C"
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):

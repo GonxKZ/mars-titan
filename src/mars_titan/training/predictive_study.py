@@ -12,6 +12,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.klpo import MODES
 
 from .checkpoints import StopRequest
+from .learning_hold import require_learning_allowed
 from .predictive_inputs import PredictiveDataset, fit_standardizer
 from .predictive_parents import prepare_parent_cache
 from .predictive_run import _code, _options, run_predictive_case
@@ -83,6 +84,7 @@ def _configuration(path):
 
 
 def run_predictive_study(config_path, ordered, parent, output, *, resume=False, stop=None):
+    require_learning_allowed("el estudio de adaptadores predictivos")
     config_path, ordered, parent, output = map(Path, (config_path, ordered, parent, output))
     config, cases, config_hash = _configuration(config_path)
     source, source_hash = read_manifest(ordered)

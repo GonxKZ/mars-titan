@@ -17,7 +17,7 @@ Cada ventana comprende ocho candidatos, ocho repeticiones adicionales y veinticu
 
 ## Ejecución y recuperación
 
-`uv run python -m mars_titan.training.temporal_search --help` describe la ejecución. Requiere la configuración, el directorio de las vistas y un destino nuevo. `--resume` comprueba la identidad de la preparación y continúa las ejecuciones pendientes. Un resumen incompatible se rechaza sin sobrescribir su evidencia.
+`uv run python -m mars_titan.training.temporal_search --help` describe la ejecución. Requiere la configuración, el directorio de las vistas y un destino nuevo. `--check` valida las mismas entradas y devuelve la identidad y el número de trabajos sin reservar la GPU. `--resume` comprueba la identidad de la preparación y continúa las ejecuciones pendientes. Un resumen incompatible se rechaza sin sobrescribir su evidencia.
 
 El controlador comprueba que estén todas las ventanas del protocolo, con poblaciones positivas y huellas coincidentes. Usa la admisión CUDA existente para mantener una única carga científica y conservar margen de memoria. Cada ventana publica su registro y el resumen exterior actualiza el número de ejecuciones realmente completadas. Las métricas por época permanecen en el `run.json` correspondiente.
 

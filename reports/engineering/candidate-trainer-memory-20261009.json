@@ -1,0 +1,402 @@
+{
+ "schema_version": 1,
+ "recorded_at_utc": "2026-10-09T07:12:31+00:00",
+ "tested_head": "bf48b2bdfc40e22d6920738f5889770eea1bfb86",
+ "base": "a872e772ffbd3d9cf2d313cc15b150a1452766b6",
+ "scope": "Memoria del entrenador de la GRU candidata en CPU, sin pasos de optimizador ni entrenamiento",
+ "source_sha256": {
+  "src/mars_titan/training/candidate_run.py": "d6395c2177465863d8ce82a6d05684bb297f211c2a1cea43f622e44b3153dd9c",
+  "tests/training/test_candidate_accumulation.py": "3c34de0a9d593070714941f30bf2d66f88b23e1d1f7c6dd46511d2c62ebefd6d",
+  "tests/training/candidate_memory_check.py": "eb8bf61335c3db41e1a98d0504da5ca2f80ca30ca81bed17e061fb6db84ebb4f",
+  "tests/training/test_candidate_run.py": "f3f97eb646b857804dbef61f292e75e484c9004b11fcbc9c7ab098a3411bfa2c",
+  "configs/candidate/chronological-training.json": "1408b2bce94159f5d33e83fc1d8b46aa8671ae7f08cac2d2212790fee14686ec"
+ },
+ "environment": {
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "compiler": "Ubuntu clang 21.1.8",
+  "threads": "OMP_NUM_THREADS=2, MKL_NUM_THREADS=2",
+  "device": "cpu con CUDA_VISIBLE_DEVICES=-1",
+  "concurrent_load": "Otros procesos en curso durante las medidas. Los tiempos son orientativos"
+ },
+ "native_binding": {
+  "sha256": "3fb8b98af1582b3b8c616525e5bfbf3bf5d03f834b8d8caa7080fbd89a30ec43",
+  "preset": "native-candidate-release",
+  "cuda": false,
+  "candidate_sources_changed_since_build": false
+ },
+ "tests": {
+  "affected": {
+   "command": "uv run --no-sync python -m pytest -q -rs -p no:cacheprovider tests/training/test_candidate_run.py tests/training/test_candidate_accumulation.py tests/training/test_financial_run.py tests/models/candidate tests/memory/test_financial_session_gru.py tests/memory/test_candidate_bank.py tests/models/test_quantile_head.py tests/models/test_quantile_head_native.py tests/training/test_learning_hold.py tests/training/test_learning_hold_guards.py tests/training/test_selection_budget.py",
+   "passed": 370,
+   "skipped": 3,
+   "skipped_reason": "comprobaciones cuda:0 sin dispositivo visible",
+   "seconds": 201.54
+  },
+  "candidate_files": {
+   "test_candidate_run.py": 42,
+   "test_candidate_accumulation.py": 26
+  },
+  "cuda_check_on_cpu": {
+   "passed": 4,
+   "seconds": 27.6,
+   "note": "No acredita CUDA"
+  },
+  "memory_check": {
+   "command": "MARS_TITAN_CANDIDATE_MEMORY_CHECK_REPORT=<json> uv run --no-sync python -m pytest -q -p no:cacheprovider tests/training/candidate_memory_check.py",
+   "passed": 3,
+   "seconds": 787.86
+  },
+  "ruff": true,
+  "format": true,
+  "optimizer_steps": 0
+ },
+ "equivalence": {
+  "accumulation_fp64": {
+   "rtol": 1e-12,
+   "atol": 1e-15,
+   "max_abs_observed": 4.163336342344337e-17,
+   "corpus": "técnico de 3 activos"
+  },
+  "accumulation_fp32": {
+   "rtol": 1e-05,
+   "atol": 1e-07,
+   "max_abs_observed": 7.450580596923828e-09,
+   "corpus": "técnico de 3 activos"
+  },
+  "accumulation_fp32_real_widths": {
+   "max_abs_observed": 5.960464477539063e-08,
+   "max_abs_gradient": 0.10000003129243851
+  },
+  "recompute": "Gradientes iguales bit a bit en el corpus técnico (FP64 y FP32), en un bloque de 128 filas y en las épocas de 128 y 256 activos"
+ },
+ "memory_cpu": {
+  "measure": "Pico neto del asignador de ATen en CPU leído de los eventos de memoria del perfilador. Excluye Arrow y NumPy",
+  "recipe": {
+   "update_instants": 8,
+   "block_rows": 128,
+   "bank_capacity": 1024,
+   "dtype": "float32",
+   "widths": {
+    "prices": "64x5",
+    "news": 384,
+    "charts": 512,
+    "fundamentals": 45,
+    "macro": 420
+   }
+  },
+  "runs": [
+   {
+    "check": "peak_memory",
+    "assets": 128,
+    "accumulation_rows": null,
+    "recompute": false,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 293507234,
+    "peak_allocated_bytes_per_asset": 2293025.265625,
+    "peak_saved_bytes_outside_recompute": 270254690,
+    "parameter_bytes": 2163224,
+    "seconds": 17.5237245419994,
+    "updates": 4,
+    "labels_in_loss": 3959,
+    "labels_without_graph": 0,
+    "predictions": 4088,
+    "max_abs_gradient_difference": 0.0,
+    "max_abs_gradient": 0.10000003129243851,
+    "gradients_bitwise_equal": true
+   },
+   {
+    "check": "peak_memory",
+    "assets": 128,
+    "accumulation_rows": 128,
+    "recompute": false,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 88800568,
+    "peak_allocated_bytes_per_asset": 693754.4375,
+    "peak_saved_bytes_outside_recompute": 67690800,
+    "parameter_bytes": 2163224,
+    "seconds": 16.22685094800545,
+    "updates": 4,
+    "labels_in_loss": 3959,
+    "labels_without_graph": 0,
+    "predictions": 4088,
+    "max_abs_gradient_difference": 5.21540641784668e-08,
+    "max_abs_gradient": 0.10000003129243851,
+    "gradients_bitwise_equal": false
+   },
+   {
+    "check": "peak_memory",
+    "assets": 128,
+    "accumulation_rows": 1024,
+    "recompute": false,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 88800568,
+    "peak_allocated_bytes_per_asset": 693754.4375,
+    "peak_saved_bytes_outside_recompute": 67690800,
+    "parameter_bytes": 2163224,
+    "seconds": 17.17068381802528,
+    "updates": 4,
+    "labels_in_loss": 3959,
+    "labels_without_graph": 0,
+    "predictions": 4088,
+    "max_abs_gradient_difference": 5.21540641784668e-08,
+    "max_abs_gradient": 0.10000003129243851,
+    "gradients_bitwise_equal": false
+   },
+   {
+    "check": "peak_memory",
+    "assets": 128,
+    "accumulation_rows": null,
+    "recompute": true,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 74115374,
+    "peak_allocated_bytes_per_asset": 579026.359375,
+    "peak_saved_bytes_outside_recompute": 40924,
+    "parameter_bytes": 2163224,
+    "seconds": 17.25511717001791,
+    "updates": 4,
+    "labels_in_loss": 3959,
+    "labels_without_graph": 0,
+    "predictions": 4088,
+    "max_abs_gradient_difference": 0.0,
+    "max_abs_gradient": 0.10000003129243851,
+    "gradients_bitwise_equal": true
+   },
+   {
+    "check": "peak_memory",
+    "assets": 128,
+    "accumulation_rows": 128,
+    "recompute": true,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 59297388,
+    "peak_allocated_bytes_per_asset": 463260.84375,
+    "peak_saved_bytes_outside_recompute": 5160,
+    "parameter_bytes": 2163224,
+    "seconds": 17.238347979000537,
+    "updates": 4,
+    "labels_in_loss": 3959,
+    "labels_without_graph": 0,
+    "predictions": 4088,
+    "max_abs_gradient_difference": 5.21540641784668e-08,
+    "max_abs_gradient": 0.10000003129243851,
+    "gradients_bitwise_equal": false
+   },
+   {
+    "check": "peak_memory",
+    "assets": 256,
+    "accumulation_rows": null,
+    "recompute": false,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 564472002,
+    "peak_allocated_bytes_per_asset": 2204968.7578125,
+    "peak_saved_bytes_outside_recompute": 541038210,
+    "parameter_bytes": 2163224,
+    "seconds": 31.496495437982958,
+    "updates": 4,
+    "labels_in_loss": 7927,
+    "labels_without_graph": 0,
+    "predictions": 8184,
+    "max_abs_gradient_difference": 0.0,
+    "max_abs_gradient": 0.10000001639127731,
+    "gradients_bitwise_equal": true
+   },
+   {
+    "check": "peak_memory",
+    "assets": 256,
+    "accumulation_rows": 128,
+    "recompute": false,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 122847676,
+    "peak_allocated_bytes_per_asset": 479873.734375,
+    "peak_saved_bytes_outside_recompute": 101533620,
+    "parameter_bytes": 2163224,
+    "seconds": 39.33354108399362,
+    "updates": 4,
+    "labels_in_loss": 7927,
+    "labels_without_graph": 0,
+    "predictions": 8184,
+    "max_abs_gradient_difference": 5.21540641784668e-08,
+    "max_abs_gradient": 0.10000001639127731,
+    "gradients_bitwise_equal": false
+   },
+   {
+    "check": "peak_memory",
+    "assets": 256,
+    "accumulation_rows": 1024,
+    "recompute": false,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 122847676,
+    "peak_allocated_bytes_per_asset": 479873.734375,
+    "peak_saved_bytes_outside_recompute": 101538740,
+    "parameter_bytes": 2163224,
+    "seconds": 36.523943269014126,
+    "updates": 4,
+    "labels_in_loss": 7927,
+    "labels_without_graph": 0,
+    "predictions": 8184,
+    "max_abs_gradient_difference": 5.960464477539063e-08,
+    "max_abs_gradient": 0.10000001639127731,
+    "gradients_bitwise_equal": false
+   },
+   {
+    "check": "peak_memory",
+    "assets": 256,
+    "accumulation_rows": null,
+    "recompute": true,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 82381574,
+    "peak_allocated_bytes_per_asset": 321803.0234375,
+    "peak_saved_bytes_outside_recompute": 81884,
+    "parameter_bytes": 2163224,
+    "seconds": 39.658600812981604,
+    "updates": 4,
+    "labels_in_loss": 7927,
+    "labels_without_graph": 0,
+    "predictions": 8184,
+    "max_abs_gradient_difference": 0.0,
+    "max_abs_gradient": 0.10000001639127731,
+    "gradients_bitwise_equal": true
+   },
+   {
+    "check": "peak_memory",
+    "assets": 256,
+    "accumulation_rows": 128,
+    "recompute": true,
+    "update_instants": 8,
+    "block_rows": 128,
+    "dtype": "float32",
+    "peak_allocated_bytes": 60368044,
+    "peak_allocated_bytes_per_asset": 235812.671875,
+    "peak_saved_bytes_outside_recompute": 10280,
+    "parameter_bytes": 2163224,
+    "seconds": 34.97056069699465,
+    "updates": 4,
+    "labels_in_loss": 7927,
+    "labels_without_graph": 0,
+    "predictions": 8184,
+    "max_abs_gradient_difference": 5.21540641784668e-08,
+    "max_abs_gradient": 0.10000001639127731,
+    "gradients_bitwise_equal": false
+   }
+  ],
+  "recompute_one_block": {
+   "rows": 128,
+   "dtype": "float32",
+   "seconds_forward_backward": 0.05463456700090319,
+   "seconds_checkpoint_forward_backward": 0.0952660650073085,
+   "seconds_forward_without_graph": 0.02144240401685238,
+   "held_saved_bytes_per_row": 264397.03125,
+   "held_saved_bytes_per_row_with_checkpoint": 0.0,
+   "input_bytes_per_row": 6729.0,
+   "gradients_bitwise_equal": true
+  },
+  "note": "Los picos con acumulación incluyen un bloque de 128 filas retenido por una fila sin etiqueta del corpus técnico"
+ },
+ "extrapolation": {
+  "status": "Estimación desde CPU, pendiente de medir en cuda:0",
+  "rows_per_event_upper_bound": 5676,
+  "bytes": {
+   "segment": {
+    "formula": "23 MB + 2,12 MB × N",
+    "upper_bound_gb": 12.0
+   },
+   "accumulation_without_retained_blocks": {
+    "formula": "21 MB + 264 KB × N",
+    "upper_bound_gb": 1.5
+   },
+   "recompute": {
+    "formula": "66 MB + 65 KB × N",
+    "upper_bound_gb": 0.43
+   },
+   "accumulation_and_recompute": {
+    "formula": "58 MB + 8 KB × N",
+    "upper_bound_gb": 0.11
+   }
+  },
+  "not_included": [
+   "contexto CUDA",
+   "búferes propios de la GRU de cuDNN",
+   "espacios de trabajo de cuBLAS y cuDNN",
+   "fragmentación del asignador con caché"
+  ]
+ },
+ "mutations": {
+  "executed": 8,
+  "detected": 8,
+  "cases": [
+   {
+    "mutation": "no_division",
+    "description": "Gradiente acumulado sin dividir por las etiquetas del tramo",
+    "detected": true,
+    "summary": "1 failed, 15 deselected in 6.83s"
+   },
+   {
+    "mutation": "retain_never",
+    "description": "Backward sin retener el grafo de un bloque con filas pendientes",
+    "detected": true,
+    "summary": "1 failed, 23 deselected in 1.43s"
+   },
+   {
+    "mutation": "no_outstanding_decrement",
+    "description": "Filas pendientes del bloque sin descontar",
+    "detected": true,
+    "summary": "1 failed, 23 deselected in 1.44s"
+   },
+   {
+    "mutation": "recompute_ignored",
+    "description": "Opción recompute sin efecto",
+    "detected": true,
+    "summary": "1 failed, 24 deselected in 9.40s"
+   },
+   {
+    "mutation": "accumulate_not_called",
+    "description": "Recorrido de ajuste sin acumular al madurar",
+    "detected": true,
+    "summary": "1 failed, 16 deselected in 5.25s"
+   },
+   {
+    "mutation": "group_mean",
+    "description": "Media por grupo en lugar de suma",
+    "detected": true,
+    "summary": "1 failed, 15 deselected in 6.97s"
+   },
+   {
+    "mutation": "same_identity",
+    "description": "Acumulación con la misma identidad de reducción",
+    "detected": true,
+    "summary": "1 failed, 24 deselected in 0.64s"
+   },
+   {
+    "mutation": "rows_split_across_groups",
+    "description": "Grupos por filas que reparten un bloque",
+    "detected": true,
+    "summary": "1 failed, 10 passed, 15 deselected in 49.84s"
+   }
+  ],
+  "note": "El primer intento de accumulate_not_called no seleccionó pruebas y se repitió con la selección corregida, igual que rows_split_across_groups tras añadir la prueba de grupos"
+ },
+ "not_executed": [
+  "Entrenamiento, piloto o evaluación científica",
+  "Pasos de optimizador",
+  "Medida de memoria y caudal en cuda:0"
+ ],
+ "final_test_opened": false
+}

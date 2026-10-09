@@ -213,7 +213,8 @@ def _load(path):
     return NativeLibrary(path)
 
 
-def load_library(path=None):
+def library_path(path=None):
+    """Ruta declarada o biblioteca compilada en native-release, sin cargarla. None si no hay."""
     selected = path or os.environ.get("MARS_TITAN_NATIVE_LIBRARY")
     if selected is None:
         root = Path(__file__).parents[3] / "build" / "native" / "native-release"
@@ -226,6 +227,11 @@ def load_library(path=None):
             )
         ]
         selected = next((item for item in candidates if item.is_file()), None)
+    return selected
+
+
+def load_library(path=None):
+    selected = library_path(path)
     if selected is None:
         raise FileNotFoundError(
             "Compila native con los presets native-release antes de usar el simulador nativo"

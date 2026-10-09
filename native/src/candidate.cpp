@@ -90,13 +90,14 @@ void check_tensor(const at::Tensor& value, at::IntArrayRef shape, const at::Tens
         require(at::isfinite(value).all().item<bool>(), "El candidato recibió NaN o infinito");
     }
 }
-at::Tensor normalize(const at::Tensor& value) {
+} // namespace
+
+at::Tensor Candidate::normalize(const at::Tensor& value) {
     // Escalar antes de elevar al cuadrado evita convertir una norma desbordada en ceros.
     const auto scale = value.abs().amax(-1, true).clamp_min(normalization_epsilon);
     const auto scaled = value / scale;
     return scaled / scaled.norm(2, -1, true).clamp_min(normalization_epsilon / scale);
 }
-} // namespace
 
 int64_t MemorySnapshot::size() const { return keys_.size(0); }
 
@@ -204,62 +205,63 @@ Candidate::snapshot(const at::Tensor& keys, const at::Tensor& features,
     result.representation_id_ = representation_id;
     return result;
 }
-Encoded Candidate::encode(const Inputs& inputs) const {
+int64_t Candidate::validate_inputs(const Inputs& inputs, const Config& config,
+                                   const at::Tensor& reference) {
     require(inputs.prices.defined() && inputs.prices.dim() == 3,
             "Los precios necesitan tres dimensiones");
     const auto batch = inputs.prices.size(0);
-    require(batch > 0 && batch <= config_.max_batch, "El lote está vacío o supera el presupuesto");
-    check_tensor(inputs.prices, {batch, price_window, config_.dimensions.front()},
-                 feature_projection_, true);
+    require(batch > 0 && batch <= config.max_batch, "El lote está vacío o supera el presupuesto");
+    check_tensor(inputs.prices, {batch, price_window, config.dimensions.front()}, reference, true);
     const std::array<at::Tensor, modality_count - 1> blocks{inputs.news, inputs.charts,
                                                             inputs.fundamentals, inputs.macro};
     for (std::size_t i = 0; i < blocks.size(); ++i) {
-        check_tensor(blocks.at(i), {batch, config_.dimensions.at(i + 1)}, feature_projection_,
-                     true);
+        check_tensor(blocks.at(i), {batch, config.dimensions.at(i + 1)}, reference, true);
     }
     require(inputs.presence.defined() && inputs.presence.layout() == at::kStrided &&
                 inputs.presence.scalar_type() == at::kBool &&
-                inputs.presence.device() == feature_projection_.device() &&
+                inputs.presence.device() == reference.device() &&
                 inputs.presence.sizes() == at::IntArrayRef({batch, modality_count}),
             "La presencia necesita cinco bits por fila en el dispositivo del candidato");
-    const bool historical = config_.input_policy == "historical_masked_2000_v1";
-    if (historical) {
+    if (config.input_policy == "historical_masked_2000_v1") {
         check_historical(inputs, blocks);
     } else {
         require(inputs.presence.all().item<bool>(),
                 "Se requieren las cuatro modalidades y macro en cada fila");
     }
+    return batch;
+}
+
+at::Tensor Candidate::encode_context(const Inputs& inputs) const {
+    const auto batch = validate_inputs(inputs, config_, feature_projection_);
+    const bool historical = config_.input_policy == "historical_masked_2000_v1";
+    const std::array<at::Tensor, modality_count - 1> blocks{inputs.news, inputs.charts,
+                                                            inputs.fundamentals, inputs.macro};
     const auto start = at::zeros({1, batch, hidden_width}, feature_projection_.options());
     const auto price_hidden =
         std::get<1>(at::gru(inputs.prices, start, gru_, true, 1, 0., is_training(), false, true))
             .select(0, 0);
     std::vector<at::Tensor> projected{price_hidden};
-    std::vector<at::Tensor> flattened{inputs.prices.flatten(1)};
     for (std::size_t i = 0; i < blocks.size(); ++i) {
         auto value = at::silu(modalities_.at(i)(blocks.at(i)));
         if (historical) {
             value = value * inputs.presence.select(1, static_cast<int64_t>(i + 1)).unsqueeze(1);
         }
         projected.push_back(value);
-        flattened.push_back(blocks.at(i));
     }
     if (historical) {
         const auto presence = inputs.presence.to(feature_projection_.scalar_type());
         projected.push_back(presence);
-        flattened.push_back(presence);
     }
     const auto fused = at::silu(fusion_(at::cat(projected, -1)));
-    at::Tensor features;
-    at::Tensor keys;
-    {
-        const at::NoGradGuard guard;
-        features = at::matmul(at::cat(flattened, -1), feature_projection_);
-        keys = normalize(at::matmul(features, key_projection_));
-    }
-    require(at::isfinite(fused).all().item<bool>() && at::isfinite(features).all().item<bool>() &&
-                at::isfinite(keys).all().item<bool>(),
-            "La codificación excede el rango numérico");
-    return {fused, features, keys};
+    require(at::isfinite(fused).all().item<bool>(), "La codificación excede el rango numérico");
+    return fused;
+}
+
+Encoded Candidate::encode(const Inputs& inputs) const {
+    const auto fused = encode_context(inputs);
+    const auto episodes =
+        project_episodes(flatten_inputs(inputs, config_), feature_projection_, key_projection_);
+    return {fused, episodes.values, episodes.keys};
 }
 at::Tensor Candidate::initial_state(const at::Tensor& fused) const {
     require(fused.defined() && fused.dim() == 2 && fused.size(0) > 0 &&

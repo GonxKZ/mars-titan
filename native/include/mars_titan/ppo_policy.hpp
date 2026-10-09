@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace mars_titan::learning {
 
@@ -58,6 +59,14 @@ struct PpoHyperparameters {
 struct PpoForward {
     at::Tensor logits;
     at::Tensor values;
+};
+
+struct PpoTerminalAdamOptions {
+    double learning_rate = 0;
+    // Cero desactiva el clipping. El resto del contrato Adam permanece cerrado.
+    double gradient_norm = 0;
+    void validate() const;
+    bool operator==(const PpoTerminalAdamOptions&) const noexcept = default;
 };
 
 struct PpoInference {
@@ -205,6 +214,8 @@ public:
     void restore_random_state(const PpoRandomState& state);
 
     [[nodiscard]] std::size_t observation_width() const noexcept;
+    [[nodiscard]] std::size_t memory_budget() const noexcept;
+    [[nodiscard]] std::string critic_fingerprint() const;
     [[nodiscard]] const PpoHyperparameters& hyperparameters() const noexcept;
     [[nodiscard]] const std::string& device() const noexcept;
     [[nodiscard]] uint64_t seed() const;
@@ -219,7 +230,22 @@ public:
     // Parámetros FP32 y geometría, sin RNG, gradientes, Adam ni direcciones de memoria.
     [[nodiscard]] std::string parameter_fingerprint() const;
 
+    // Ruta terminal optativa. No reutiliza el optimizador de PPO.
+    void enable_terminal_adam(PpoTerminalAdamOptions options);
+    [[nodiscard]] bool terminal_adam_enabled() const noexcept;
+    [[nodiscard]] PpoTerminalAdamOptions terminal_adam_options() const;
+    void terminal_zero_grad();
+    [[nodiscard]] std::vector<at::Tensor> terminal_gradients() const;
+    [[nodiscard]] double validate_terminal_gradients() const;
+    // Un fallo desde el inicio de Adam invalida el objeto hasta recuperar otro checkpoint.
+    [[nodiscard]] double terminal_step();
+    [[nodiscard]] PpoPolicy frozen_reference(const PpoRandomState& initial_rng) const;
+    [[nodiscard]] static PpoPolicy load_terminal(std::istream& source,
+                                                std::string_view device = "cpu");
+
 private:
+    [[nodiscard]] static PpoPolicy load_mode(std::istream& source, std::string_view device,
+                                            bool terminal);
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_rl_policies",
+  "status": "declared_not_executed",
+  "predictor": {
+    "arms": ["transformer_compact", "titans_mac_online"],
+    "seed": 42
+  },
+  "train_windows": 3,
+  "universe": {
+    "rule": "median_traded_value_in_validation_v1",
+    "max_assets": 128
+  },
+  "environment": {
+    "capital": 1000000,
+    "cost_bps": 10,
+    "participation": 0.01,
+    "score_scale": 0.01,
+    "ruin_penalty": -20,
+    "dividend_payment_lag_sessions": 0
+  },
+  "evaluation_costs_bps": [0, 10, 25],
+  "seeds": [42, 43, 44],
+  "budget": {
+    "transitions": 262144,
+    "environments": 16,
+    "rollout_transitions": 1024,
+    "evaluation_transitions": 16384
+  },
+  "selection": {
+    "metric": "ruin_count_then_mean_liquidated_log_growth",
+    "partition": "validation",
+    "min_delta": 0.0001,
+    "patience": 5,
+    "early_stopping": false
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip": 0.2,
+    "entropy": 0.01,
+    "value_weight": 0.5,
+    "gradient_norm": 1.0,
+    "epochs": 4,
+    "minibatch_size": 64
+  },
+  "policies": {
+    "klpo_terminal": {
+      "engine": "native_klpo",
+      "objective": "klpo_terminal_token_full_v1",
+      "controller": "klpo_full_fresh_waves_v1",
+      "confirmed_updates_per_reference": 2
+    },
+    "ppo_clip_full_kl": {
+      "engine": "native_ppo",
+      "variant": "ppo",
+      "policy_objective": {"schema_version": 1, "id": "ppo_clip_full_kl_v1"}
+    },
+    "ppo_kl_penalty_adaptive": {
+      "engine": "native_ppo",
+      "variant": "ppo",
+      "policy_objective": {
+        "schema_version": 1,
+        "id": "ppo_kl_penalty_adaptive_v1",
+        "target_kl": 0.01,
+        "beta_initial": 1.0,
+        "beta_min": 0.000001,
+        "beta_max": 1000000.0
+      }
+    },
+    "ppo_clip_kl_epoch_stop": {
+      "engine": "native_ppo",
+      "variant": "ppo",
+      "policy_objective": {"schema_version": 1, "id": "ppo_clip_kl_epoch_stop_v1", "target_kl": 0.01}
+    },
+    "double_dqn": {
+      "engine": "native_ppo",
+      "variant": "double_dqn",
+      "policy_objective": null
+    }
+  },
+  "references": ["cash", "hold_initial", "rebalance_50"],
+  "contrasts": {
+    "primary": "klpo_terminal",
+    "controls": [
+      "ppo_clip_full_kl",
+      "ppo_kl_penalty_adaptive",
+      "ppo_clip_kl_epoch_stop",
+      "double_dqn",
+      "cash",
+      "hold_initial",
+      "rebalance_50"
+    ]
+  },
+  "final_test_opened": false
+}

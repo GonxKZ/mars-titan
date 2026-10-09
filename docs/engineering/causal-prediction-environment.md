@@ -26,9 +26,21 @@ debe justificar ese límite con los manifiestos de preparación. El entorno no
 deduce una fecha de publicación a partir de un periodo contable.
 
 Las entradas deben estar disponibles en la decisión. Las etiquetas deben madurar
-después. Los datos de entrenamiento no pueden cruzar el inicio de 2023. La
-validación usa decisiones y etiquetas de 2023. Las fechas de 2024 en adelante
-se rechazan antes de decidir.
+después. Sin ventana declarada, los datos de entrenamiento no pueden cruzar el
+inicio de 2023 y la validación usa decisiones y etiquetas de 2023. Las fechas de
+2024 en adelante se rechazan antes de decidir. Si la fuente declara `partition`,
+debe coincidir con la del entorno. Así, la validación walk-forward que empieza en
+diciembre de 2022 no puede recorrerse como entrenamiento aunque sus fechas sean
+anteriores a 2023.
+
+Con `window`, el entorno toma los cortes de un recibo de ventana del protocolo
+walk-forward v2 (`environments/walk_forward_receipt.py`). Admite los cuatro
+tramos (ajuste, validación, calibración y evaluación). Cada decisión debe caer
+dentro de su tramo y cada etiqueta debe madurar antes de su final, que es la
+misma purga por intervalo del protocolo. Si la fuente declara límites por
+mercado, deben coincidir con los del recibo. La ventana entra en la identidad
+del entorno, de modo que un estado guardado con otra ventana no se restaura. El
+contrato del recibo está en la [revisión de integridad](rl-environment-integrity.md#recibo-de-ventana-walk-forward).
 
 Una llamada a `step` registra todas las acciones de la cohorte. Después avanza
 al siguiente instante y devuelve únicamente los créditos cuya etiqueta ya ha
@@ -74,8 +86,13 @@ acción si los créditos corresponden a cohortes anteriores.
 
 ## Presupuesto y recuperación
 
-El espacio permite hasta 4.096 activos por cohorte. El bloque de observación
-tiene por defecto un límite de 64 MiB y la cola admite hasta 65.536 etiquetas.
+El espacio permite hasta 8.192 activos por cohorte (`MAX_COHORT_ASSETS`). La
+población preparada desde 2000 llega a 4.200 activos US en una misma sesión de
+noviembre de 2023, por encima del límite anterior de 4.096. Con las formas de la
+edición histórica (precios 64×5, noticias 384, gráficos 512, fundamentales 45 y
+macro 420), cada activo ocupa 6.725 bytes en la observación rellenada. La sesión
+más poblada necesita unos 28 MB y el máximo de 8.192 activos unos 55 MB, dentro
+del límite por defecto de 64 MiB. La cola admite hasta 65.536 etiquetas.
 Una entrada que supera el presupuesto falla sin avanzar el estado confirmado.
 Estos límites no autorizan omitir empresas. Si una edición admisible los supera,
 debe revisarse la representación antes de ejecutar esa edición.
@@ -86,12 +103,21 @@ el estado del entorno. El cálculo de percentiles de la rejilla admite hasta
 Los temporales del cálculo y la memoria del llamador son adicionales. Ese
 cálculo no necesita cargar las modalidades completas en RAM.
 
-`snapshot` exporta tipos JSON simples con identidad, cursor, reloj, cohorte
-actual, etiquetas pendientes y generadores aleatorios. `restore` comprueba
-la identidad y la huella de la cohorte actual antes de cambiar el estado.
-El contenedor de checkpoint del entrenamiento debe verificar la integridad
-del archivo completo. El entorno no incorpora pesos, optimizador ni el corpus
-dentro de su estado.
+`snapshot` exporta, con el esquema 2, tipos JSON simples con identidad,
+cursor, reloj, cohorte actual, decisiones pendientes, huellas de sus cohortes
+de origen, reinicios abandonados y generadores aleatorios. Las decisiones
+pendientes no incluyen su objetivo. `restore` comprueba la identidad y la
+huella de la cohorte actual, vuelve a leer cada cohorte de origen, verifica su
+huella, activo y maduración y recupera desde ella los objetivos. Un checkpoint
+no puede revelar ni sustituir etiquetas inmaduras. El esquema 1, que sí las
+contenía, se rechaza.
+
+Un reinicio con decisiones tomadas no emite sus créditos pendientes. El estado
+acumula los episodios abandonados y los créditos perdidos para que los informes
+puedan declararlos. El contenedor de checkpoint del entrenamiento debe verificar
+la integridad del archivo completo. El entorno no incorpora pesos, optimizador
+ni el corpus dentro de su estado. La [auditoría adversarial](rl-environment-integrity.md)
+recoge los intentos de trampa sobre este entorno y sus límites.
 
 La comprobación de Gymnasium avisa de que el espacio numérico no tiene cotas
 estadísticas fijadas. Las entradas reales sí deben ser finitas y representables

@@ -3,12 +3,13 @@
 import pytest
 import torch
 
-from mars_titan.models.titans import MACConfig, MemoryConfig, NeuralMemory, TitansMAC
+from mars_titan.models.titans import GateBias, MACConfig, MemoryConfig, NeuralMemory, TitansMAC
 
 
+@pytest.mark.parametrize("gate_bias", [None, GateBias()])
 @pytest.mark.parametrize("kind", ["memory", "mac"])
-def test_explicit_cpu_initialization_overrides_ambient_device_without_changing_rng(kind):
-    config = MemoryConfig(dim=4, depth=2)
+def test_explicit_cpu_initialization_overrides_ambient_device_without_changing_rng(kind, gate_bias):
+    config = MemoryConfig(dim=4, depth=2, gate_bias=gate_bias)
 
     def build():
         if kind == "memory":

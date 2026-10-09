@@ -23,6 +23,52 @@ def require_identity(actual: object, expected: dict) -> None:
         raise ValueError("La configuración no coincide con el contrato del módulo")
 
 
+def _finite_number(value: object, name: str) -> float:
+    if type(value) not in (int, float) or not math.isfinite(value):
+        raise ValueError(f"{name} debe ser un número finito")
+    return float(value)
+
+
+def _logit(probability: float) -> float:
+    return math.log(probability) - math.log1p(-probability)
+
+
+# Valor por defecto de torch.nn.LayerNorm. Las fuentes no fijan el épsilon de la memoria.
+LAYER_NORM_EPS = 1e-5
+
+
+@dataclass(frozen=True)
+class GateBias:
+    """Tasas iniciales declaradas para entrada nula. Los pesos conservan la dependencia."""
+
+    alpha_half_life: float = 256.0
+    eta: float = 0.5
+    theta: float = 0.05
+
+    def __post_init__(self) -> None:
+        half_life = _finite_number(self.alpha_half_life, "alpha_half_life")
+        eta = _finite_number(self.eta, "eta")
+        theta = _finite_number(self.theta, "theta")
+        if not 1 <= half_life <= 1e6:
+            raise ValueError("alpha_half_life debe pertenecer a [1, 1e6] observaciones")
+        if not 0 < eta < 1:
+            raise ValueError("eta inicial debe pertenecer a (0, 1)")
+        if not 0 < theta < 1:
+            raise ValueError("theta inicial debe pertenecer a (0, 1)")
+        object.__setattr__(self, "alpha_half_life", half_life)
+        object.__setattr__(self, "eta", eta)
+        object.__setattr__(self, "theta", theta)
+
+    def logits(self, theta_max: float) -> tuple[float, float, float]:
+        """Bias de α, η y θ. Con α constante, (1 − α)^h = 1/2 tras h observaciones."""
+        if not self.theta < theta_max:
+            raise ValueError("theta inicial debe ser menor que theta_max")
+        rate = math.log(2) / self.alpha_half_life
+        # logit(α) = log(α) − log(1 − α), con α = 1 − 2^(−1/h) calculado sin cancelación.
+        alpha = math.log(-math.expm1(-rate)) + rate
+        return alpha, _logit(self.eta), _logit(self.theta / theta_max)
+
+
 @dataclass(frozen=True)
 class MemoryConfig:
     dim: int
@@ -33,9 +79,16 @@ class MemoryConfig:
     max_tokens: int = 64
     max_state_bytes: int = 64 * 1024 * 1024
     parameter_seed: int = 42
+    gate_bias: GateBias | None = None
+    # M(x) = x + LN(MLP(x)), sección 3.3 de las actas. LN sin afinidad aprendida.
+    residual_layer_norm: bool = False
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
+        if type(self.residual_layer_norm) is not bool:
+            raise ValueError("residual_layer_norm debe ser booleano")
+        if self.residual_layer_norm and self.dim < 2:
+            raise ValueError("LayerNorm sobre una sola dimensión anula siempre la lectura")
         bounded_integer(self.depth, "depth", 1, 2)
         bounded_integer(self.max_batch, "max_batch", 1, 256)
         bounded_integer(self.max_tokens, "max_tokens", 1, 256)
@@ -50,16 +103,38 @@ class MemoryConfig:
         ):
             raise ValueError("theta_max debe ser finito y pertenecer a (0, 1]")
         object.__setattr__(self, "theta_max", float(self.theta_max))
+        if self.gate_bias is not None:
+            if not isinstance(self.gate_bias, GateBias):
+                raise ValueError("gate_bias debe ser GateBias o None")
+            self.gate_bias.logits(self.theta_max)
 
     def identity(self) -> dict:
+        fields = asdict(self)
+        gate_bias = fields.pop("gate_bias")
+        residual = fields.pop("residual_layer_norm")
+        # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
+        extension = (
+            {}
+            if gate_bias is None
+            else {"gate_bias": {**gate_bias, "init": "constant_logit_bias_v1_weight_draws"}}
+        )
+        if residual:
+            extension["memory_function"] = {
+                "form": "input_plus_layer_norm_of_mlp",
+                "source": "neurips_2025_section_3_3",
+                "layer_norm_eps": LAYER_NORM_EPS,
+                "layer_norm_affine": False,
+                "expansion": 1,
+            }
         return {
-            **asdict(self),
+            **fields,
+            **extension,
             "schema_version": 1,
             "architecture": "square_mlp",
             "hidden_activation": "gelu_exact",
             "bias": False,
-            "residual": False,
-            "layer_norm": False,
+            "residual": residual,
+            "layer_norm": residual,
             "normalization_eps": 1e-12,
             "loss_reduction": "sum_per_token_per_flow",
             "forgetting_broadcast": "output_rows_each_matrix",

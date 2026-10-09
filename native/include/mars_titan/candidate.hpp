@@ -5,6 +5,7 @@
 #include <torch/nn/module.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iosfwd>
 #include <memory>
@@ -21,6 +22,7 @@ inline constexpr double normalization_epsilon = 1e-12;
 inline constexpr int64_t maximum_batch = 256;
 inline constexpr int64_t maximum_episodes = 8192;
 inline constexpr int64_t maximum_neighbors = 8;
+inline constexpr std::size_t maximum_codec_bytes = std::size_t{64} << 20;
 
 struct Config {
     static constexpr std::array<int64_t, modality_count> default_dimensions{5, 384, 512, 45, 420};
@@ -81,6 +83,31 @@ struct Prediction {
     Read read;
 };
 
+struct EpisodeEncoding {
+    at::Tensor keys;
+    at::Tensor values;
+};
+
+class Candidate;
+
+// Solo proyecciones CPU propias. No conserva el propietario ni parámetros aprendidos.
+class CpuEpisodeCodec final {
+  public:
+    explicit CpuEpisodeCodec(const Candidate& source,
+                             std::size_t max_working_bytes = maximum_codec_bytes);
+    [[nodiscard]] EpisodeEncoding encode(const Inputs& inputs) const;
+    [[nodiscard]] const std::string& projection_id() const noexcept;
+    [[nodiscard]] std::size_t estimated_bytes(int64_t batch) const;
+    [[nodiscard]] at::ScalarType dtype() const noexcept;
+
+  private:
+    Config config_;
+    at::Tensor feature_projection_;
+    at::Tensor key_projection_;
+    std::string projection_id_;
+    std::size_t max_working_bytes_;
+};
+
 // Cálculo puro. La admisión temporal y la publicación de memoria pertenecen al ejecutor.
 class Candidate final : public torch::nn::Module {
   public:
@@ -97,6 +124,9 @@ class Candidate final : public torch::nn::Module {
                                           const at::Tensor& returns, const at::Tensor& ids,
                                           const std::string& representation_id) const;
     [[nodiscard]] Encoded encode(const Inputs& inputs) const;
+    [[nodiscard]] at::Tensor encode_context(const Inputs& inputs) const;
+    [[nodiscard]] std::shared_ptr<CpuEpisodeCodec>
+    cpu_episode_codec(std::size_t max_working_bytes = maximum_codec_bytes) const;
     [[nodiscard]] at::Tensor initial_state(const at::Tensor& fused) const;
     [[nodiscard]] Read read(const at::Tensor& state, const MemorySnapshot& memory) const;
     [[nodiscard]] at::Tensor refine(const at::Tensor& state, const at::Tensor& fused,
@@ -114,6 +144,14 @@ class Candidate final : public torch::nn::Module {
     load_state(std::istream& source, const at::Device& device, const std::string& expected_policy);
 
   private:
+    friend class CpuEpisodeCodec;
+    [[nodiscard]] static int64_t validate_inputs(const Inputs& inputs, const Config& config,
+                                                 const at::Tensor& reference);
+    [[nodiscard]] static at::Tensor flatten_inputs(const Inputs& inputs, const Config& config);
+    [[nodiscard]] static at::Tensor normalize(const at::Tensor& value);
+    [[nodiscard]] static EpisodeEncoding project_episodes(const at::Tensor& flattened,
+                                                          const at::Tensor& feature_projection,
+                                                          const at::Tensor& key_projection);
     void refresh_representation();
     struct Linear {
         at::Tensor weight;

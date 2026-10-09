@@ -3,16 +3,29 @@
 import hashlib
 import re
 from contextlib import nullcontext
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 
 import torch
 from torch import nn
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.data.input_policy import MODALITIES, masked_inputs
-from mars_titan.models.baselines.multimodal import MultimodalReference, validate_architecture
+from mars_titan.models.baselines.multimodal import (
+    HEADS,
+    SCALAR_HEAD,
+    MultimodalReference,
+    validate_architecture,
+)
+from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 
-from .config import MACConfig, MemoryConfig, bounded_integer, canonical, require_identity
+from .config import (
+    GateBias,
+    MACConfig,
+    MemoryConfig,
+    bounded_integer,
+    canonical,
+    require_identity,
+)
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
@@ -33,10 +46,27 @@ class FinancialConfig:
     max_state_bytes: int = 64 * 1024**2
     bank_policy: str = "disabled"
     refinements: int = 1
+    head: str = SCALAR_HEAD
+    gate_bias: GateBias | None = None
+    # Memoria M(x) = x + LN(MLP(x)) de la sección 3.3 de las actas. False conserva v1.
+    memory_residual_layer_norm: bool = False
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
             raise ValueError("El predictor necesita una entrada y un control identificados")
+        if not isinstance(self.head, str) or self.head not in HEADS:
+            raise ValueError("La cabeza de salida no pertenece al contrato del predictor")
+        if isinstance(self.gate_bias, dict):
+            # Las recetas JSON declaran los tres valores de forma explícita.
+            if set(self.gate_bias) != {field.name for field in fields(GateBias)}:
+                raise ValueError("gate_bias debe declarar alpha_half_life, eta y theta")
+            object.__setattr__(self, "gate_bias", GateBias(**self.gate_bias))
+        if self.gate_bias is not None:
+            if not isinstance(self.gate_bias, GateBias):
+                raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
+            self.gate_bias.logits(MemoryConfig.theta_max)
+        if type(self.memory_residual_layer_norm) is not bool:
+            raise ValueError("memory_residual_layer_norm debe ser booleano")
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
@@ -50,7 +80,7 @@ class FinancialConfig:
             raise ValueError("Esta pieza admite únicamente banco desactivado y K=1")
 
     def identity(self):
-        return dict(
+        result = dict(
             schema_version=1,
             inputs=self.inputs.identity(),
             variant=self.variant,
@@ -72,6 +102,17 @@ class FinancialConfig:
             if masked_inputs(self.inputs.input_policy)
             else "strict_original",
         )
+        # La identidad escalar no cambia. La cabeza de cuantiles sustituye la salida.
+        if self.head == QUANTILE_HEAD:
+            result.update(output=QUANTILE_HEAD, output_head=dict(CONTRACT))
+        # Sin bias declarado la identidad no cambia. Se registra en todas las variantes para
+        # que el emparejamiento desde mac_online compare la misma configuración.
+        if self.gate_bias is not None:
+            result.update(memory_gate_bias=asdict(self.gate_bias))
+        # Igual que gate_bias: solo aparece si se declara y se registra en las cuatro variantes.
+        if self.memory_residual_layer_norm:
+            result.update(memory_residual_layer_norm=True)
+        return result
 
 
 @dataclass(frozen=True)
@@ -94,6 +135,8 @@ class PreparedDecisions:
     input_digest: str
     working_state: torch.Tensor | None = None
     local_control: ProjectedMACResult | None = None
+    # Solo con `quantile_head_v1`: [flujos, 5]. La predicción puntual es su mediana.
+    quantiles: torch.Tensor | None = None
 
 
 def _tensor_digest(value):
@@ -140,6 +183,10 @@ class FinancialPredictor(nn.Module):
             )
             if self.masked:
                 self.fusion[0] = nn.Linear(5 * config.hidden_size + 5, config.hidden_size)
+            # La cabeza de cuantiles se crea al final. El tronco recibe los mismos pesos
+            # iniciales que la variante escalar con la misma semilla.
+            if config.head == QUANTILE_HEAD:
+                self.head = QuantileHead(config.hidden_size)
         self.mac = None
         if config.variant != "transformer_direct":
             self.mac = TitansMAC(
@@ -151,6 +198,8 @@ class FinancialPredictor(nn.Module):
                         max_tokens=1,
                         max_state_bytes=config.max_state_bytes,
                         parameter_seed=config.seed,
+                        gate_bias=config.gate_bias,
+                        residual_layer_norm=config.memory_residual_layer_norm,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -513,7 +562,13 @@ class FinancialPredictor(nn.Module):
                     context_id=control_context_id,
                     differentiable=differentiable,
                 )
-            point = self.head(encoded).squeeze(-1)
+            quantiles = None
+            if self.config.head == QUANTILE_HEAD:
+                quantiles = self.head(encoded)
+                check_finite(quantiles, "Los cuantiles")
+                point = median(quantiles)
+            else:
+                point = self.head(encoded).squeeze(-1)
             check_finite(point, "La predicción")
             working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
@@ -531,6 +586,7 @@ class FinancialPredictor(nn.Module):
             batch.input_digest,
             working,
             local_result,
+            quantiles,
         )
 
     def export_state(self, state):

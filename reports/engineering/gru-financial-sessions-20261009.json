@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T04:06:48.847104+00:00",
+  "issues": [
+    18,
+    23
+  ],
+  "branch": "feat/gru-financial-sessions",
+  "base_commit": "c8e306de7bc6586a4063db181226e9b04bb72d8c",
+  "integration_choice": "rebase local de una rama sin publicar sobre origin/develop",
+  "commits": [
+    "a2fe20cf1e0827d953d9c6ec8a1b9992a01f3336 test(memory): prepare the GRU session device check",
+    "b0c0a61042eefe68278cda717dfc39d432a17e21 feat(memory): integrate the episodic GRU with financial sessions",
+    "a5537e0ea0a2cb765f5cde33dd2fd9eeb9a7b456 refactor(memory): route financial sessions through a closed consumer binding",
+    "ec7a59aa8e498092e4c863b02484f381607bbd3c feat(memory): add GRU tensor episode storage",
+    "322aa5f2140a31516ed9a29e97e4bb9fe27285f8 feat(memory): share causal reservoir draws across bank geometries",
+    "c2694b81741cd48ea59e15c4d1a7aed148c0acf3 feat(candidate): add a fixed CPU episode codec"
+  ],
+  "sources": {
+    "native/include/mars_titan/candidate.hpp": "2c27c8137d4ad0837b9126da2c3660fc790259eb349b12d8fdbb44b9577799e3",
+    "native/src/candidate.cpp": "46c5cd5c20ed9c0fe690ad459a68d4392512aa753b85d9e4151fb53999fb2a11",
+    "native/src/candidate_codec.cpp": "6cdf979ce50266cae976a25fc2cf2c8b207bcd732cc4b47f7975823377b0f9ba",
+    "native/src/candidate_python.cpp": "b9d927e7275815f96f6cf244f420faba40814725e8ca2d4a912c8666b6ba9718",
+    "native/tests/candidate_codec_tests.cpp": "24cd41ac05d16954b6eb01f04e1faa1ccb6084caca0e4b782689b4471542d10f",
+    "native/include/mars_titan/episodic_memory.hpp": "64172b8ed5ff60727a9ba6f7d61e227d8d473c4189af991ae9e36624193fa98b",
+    "native/src/episodic_memory.cpp": "d3d5f6cc98726896b5609b6db69fb6bd47490a5653a8eaaa4ef5f2b6361de1cc",
+    "native/src/episodic_python.cpp": "cd70431faa40ba6d859b8bdfe9dc4efc69d62a50bbf3bfbea98b3d1771871e0d",
+    "native/tests/episodic_memory_tests.cpp": "fd4a141ff6b00ed8a56897b7ae68624795a876b67f32fefd8ae4225d0df38c87",
+    "src/mars_titan/models/candidate/episode_codec.py": "ce5f579888808ab99f536c72d923539469addc7842819a9818dccfb944149c19",
+    "src/mars_titan/models/candidate/frozen_consumer.py": "ae21347a7995ac11152e1795a39b4acfbb536f0398fae483b4cca459f8f68418",
+    "src/mars_titan/memory/candidate_bank.py": "32ba8615e4e64e0827054d739fac28c65ffceb96f3ed47c0161603ba4552ad5e",
+    "src/mars_titan/memory/flow_cursors.py": "12c3bbec60f7d98a8bc0ec3e37964c553ead49378d6e09e4be649684e85fe410",
+    "src/mars_titan/memory/financial_consumers.py": "c2bab18188ab5da02b801cfda82dabd700c7cfdfda45207abe599b41c46f37b7",
+    "src/mars_titan/memory/financial_session.py": "5131c523670f26ac62cd71e0abf2d4c92cbadfc1502bf71b67b2915d057315b6",
+    "src/mars_titan/memory/episodic_session.py": "3d9e5c1ad30cc7521201fad22460146abf4da299a1ed2bee05cae9175c7f49c7",
+    "tests/models/candidate/test_episode_codec.py": "0085cfe43aa8ae1750e6f54c0c218510910421435c56c3c49d9cee88d6669a1f",
+    "tests/memory/test_candidate_bank.py": "173ecab9f9db092d2581df0c660cbebd785f70544d263c090be756878005c15c",
+    "tests/memory/test_flow_cursors.py": "e9bffa7d11b37f79f198c0207f419e6b8b6a45de0edf2fbb4f2e684c230d81f9",
+    "tests/memory/test_financial_session_gru.py": "d07da3babb4b83c8d137abad083d662ac904c1b4699c58a48b98f11c781d2d4f",
+    "tests/memory/cuda_gru_session_check.py": "ce6e4f8b5833934c73f73cef774a1423d8733d5de692c8b7e70ddac55d964c56"
+  },
+  "native_sha256": "b451f99c6e6c1d94aaddd32298fe327cc48278befb5d343148902f5290a32b90",
+  "runtime": {
+    "python": "3.14.4",
+    "torch": "2.14.0+cu130",
+    "compiler": "Clang 21.1.8",
+    "device": "cpu",
+    "cuda_visible_devices": "-1",
+    "cpu_threads": 2,
+    "host_exclusive": false
+  },
+  "learning_hold": {
+    "optimizer_steps": 0,
+    "target_estimation_calls": 0,
+    "pytest_guard": "gancho global previo a optimizer.step, residual_targets, residual_targets_array, ridge, boosting, StandardScaler y ejecutables nativos de entrenamiento",
+    "ctest_selection": "candidate, episodic_memory, financial_session y cohort_execution; sin pruebas de PPO, KLPO ni Adam nativo"
+  },
+  "codec": {
+    "strict_archive": {
+      "bytes": 8031885,
+      "sha256": "00a99b030d10f74f9139b0c2d5348b1cec4a8503f4c01209058e18bda3551aa2",
+      "matches_previous": true
+    },
+    "python_tests": 19,
+    "alignment_probe": {
+      "configurations": 8,
+      "offsets": 33,
+      "differing_offsets": 0,
+      "threads": 2
+    },
+    "mutations": {
+      "cpp": {
+        "cpp_drop_key_norm_check": "killed",
+        "cpp_budget_after_validation": "killed",
+        "cpp_skip_input_validation": "killed",
+        "cpp_tolerance_widened": "killed",
+        "cpp_constructor_budget_ignored": "killed",
+        "cpp_batch_projection_not_per_row": "killed"
+      },
+      "python": {
+        "py_skip_batch_verify": "survived",
+        "py_skip_numerics_check": "killed",
+        "py_writable_arrays": "killed",
+        "py_identity_without_dtype": "killed",
+        "py_digest_without_values": "killed",
+        "py_contract_check_removed": "killed",
+        "py_digest_without_keys": "killed"
+      },
+      "equivalent": {
+        "py_skip_batch_verify": "DecisionBatch.from_validated vuelve a verificar el lote"
+      }
+    }
+  },
+  "bank": {
+    "python_tests": 14,
+    "native_reservoir_test": "episodic_memory CTest compara plazas y RNG con EpisodicMemory v2"
+  },
+  "session": {
+    "gru_tests": 19,
+    "cursor_tests": 4,
+    "cpu_rehearsal_of_device_check": "gru-session-cpu-rehearsal.json, no acredita CUDA",
+    "mutations": {
+      "bank_confirmed_backwards": "killed",
+      "bank_repeated_id": "killed",
+      "bank_late_maturity": "killed",
+      "bank_first_writer_wins": "killed",
+      "bank_skip_initial_rng": "killed",
+      "bank_skip_unique_ids": "killed",
+      "bank_skip_key_norm": "killed",
+      "bank_unsorted_view": "killed",
+      "bank_skip_budget": "killed",
+      "bank_skip_size": "killed",
+      "bank_skip_ordered_partial": "killed",
+      "cursor_allows_repeat": "killed",
+      "binding_skip_duplicate_decisions": "killed",
+      "binding_swap_times": "killed",
+      "binding_skip_projection_check": "killed",
+      "binding_read_empty_memory": "killed",
+      "binding_warmup_skips_cursor": "killed",
+      "binding_issued_as_label": "killed",
+      "binding_k_not_recorded": "killed",
+      "consumer_skip_fingerprint": "killed",
+      "consumer_skip_frozen": "killed",
+      "consumer_k_ignored": "killed"
+    }
+  },
+  "titans_parity": {
+    "scenarios": [
+      "m0",
+      "m1_reservoir",
+      "m1_reservoir_single_rows",
+      "m1_uniform_diagnostic",
+      "m1_recent",
+      "m1_anchored_diagnostic",
+      "m2",
+      "m2_diagnostic"
+    ],
+    "reference": "develop 48860dab con el binario previo y develop c8e306de con el binario de esta rama",
+    "compared": "predicciones, aplicaciones, registros retenidos, episodios sin IDs de identidad, índices M2, cola, estado rápido, diagnósticos y contadores",
+    "exact": true,
+    "leaves": {
+      "m0": 1468,
+      "m1_reservoir": 3820,
+      "m1_reservoir_single_rows": 3820,
+      "m1_uniform_diagnostic": 3820,
+      "m1_recent": 3820,
+      "m1_anchored_diagnostic": 3820,
+      "m2": 3420,
+      "m2_diagnostic": 3420
+    },
+    "rebased_leaves": {
+      "m0": 1468,
+      "m1_reservoir": 3820,
+      "m1_reservoir_single_rows": 3820,
+      "m1_uniform_diagnostic": 3820,
+      "m1_recent": 3820,
+      "m1_anchored_diagnostic": 3820,
+      "m2": 3420,
+      "m2_diagnostic": 3420
+    }
+  },
+  "native_checks": {
+    "release_ctest": "10/10 (candidate, episodic_memory, financial_session, cohort_execution)",
+    "asan_ubsan_ctest": "10/10 con el módulo episódico Python compilado",
+    "clang_tidy": "sin diagnósticos tras sustituir dos números mágicos de la prueba nativa",
+    "clang_analyzer": "sin diagnósticos en candidate*.cpp, episodic_memory.cpp y episodic_python.cpp",
+    "clang_format": "21.1.8 sin cambios"
+  },
+  "full_suite": {
+    "baseline": {
+      "commit": "48860dab + codec",
+      "failed": 641,
+      "passed": 4549,
+      "skipped": 57,
+      "errors": 14,
+      "guard_blocked": 297
+    },
+    "final": {
+      "commit": "dcd63179 + rama",
+      "failed": 660,
+      "passed": 4769,
+      "skipped": 75,
+      "errors": 14,
+      "guard_blocked": 282
+    },
+    "new_failures": "35 en archivos nuevos de develop: 34 de tests/simulation/test_financial_adversarial.py sin simulador nativo compilado y 1 de test_external_cache_plan.py bloqueada por el guardia",
+    "memory_candidate_titans_new_failures": 0,
+    "not_run_by_hold": "25 pruebas de test_financial_session.py y test_financial_observation_source.py cuyo fixture estima objetivos residuales",
+    "rebased_focused": {
+      "commit": "c8e306de + rama",
+      "selection": "tests/memory, tests/models/candidate, tests/models/titans, test_compact_transformer.py y test_masked_reference_fusion.py",
+      "passed": 819,
+      "failed_guard_blocked": 25,
+      "other_failures": 0
+    }
+  },
+  "measurements": {
+    "runtime": {
+      "python": "3.12.14",
+      "torch": "2.14.0+cu130",
+      "cpu": "desconocido",
+      "threads": 2,
+      "device": "cpu"
+    },
+    "bank": {
+      "torch.float32": {
+        "capacity": 8192,
+        "incoming": 8192,
+        "fill_seconds": {
+          "min": 0.019710118998773396,
+          "median": 0.02186662699386943,
+          "max": 0.0474037810054142
+        },
+        "replacement_seconds": {
+          "min": 0.0437843889958458,
+          "median": 0.0453953719988931,
+          "max": 0.04576149900094606
+        },
+        "restore_seconds": {
+          "min": 0.01475130399921909,
+          "median": 0.02151481600594707,
+          "max": 0.024901271986891516
+        },
+        "read_view_seconds": {
+          "min": 0.002519308007322252,
+          "median": 0.005689127006917261,
+          "max": 0.00572888100577984
+        },
+        "retained": 8192,
+        "replaced_from_second_batch": 4044,
+        "estimated_working_bytes": 64618496,
+        "snapshot_tensor_bytes": 12910592,
+        "python_traced_peak_bytes_replacement": 621066
+      },
+      "torch.float64": {
+        "capacity": 8192,
+        "incoming": 8192,
+        "fill_seconds": {
+          "min": 0.027466665997053497,
+          "median": 0.030559129008906893,
+          "max": 0.04379563000111375
+        },
+        "replacement_seconds": {
+          "min": 0.04129897500388324,
+          "median": 0.047012708004331216,
+          "max": 0.053649994006264023
+        },
+        "restore_seconds": {
+          "min": 0.018055523993098177,
+          "median": 0.01834227200015448,
+          "max": 0.022641269999439828
+        },
+        "read_view_seconds": {
+          "min": 0.00357721300679259,
+          "median": 0.0036269970005378127,
+          "max": 0.009406743993167765
+        },
+        "retained": 8192,
+        "replaced_from_second_batch": 4044,
+        "estimated_working_bytes": 127533056,
+        "snapshot_tensor_bytes": 25493504,
+        "python_traced_peak_bytes_replacement": 620967
+      }
+    },
+    "codec": {
+      "float32": {
+        "rows": 256,
+        "dimensions": [
+          5,
+          384,
+          512,
+          45,
+          420
+        ],
+        "seconds": {
+          "min": 0.05044124099367764,
+          "median": 0.05622520699398592,
+          "max": 0.13196071700076573
+        },
+        "estimated_bytes": 6540288
+      },
+      "float64": {
+        "rows": 256,
+        "dimensions": [
+          5,
+          384,
+          512,
+          45,
+          420
+        ],
+        "seconds": {
+          "min": 0.0717515540018212,
+          "median": 0.07884224200097378,
+          "max": 0.09230023800046183
+        },
+        "estimated_bytes": 13015040
+      }
+    },
+    "process_max_rss_bytes": 818085888
+  },
+  "pending": [
+    "CUDA del codec, consumidor y sesión GRU con tests/memory/cuda_gru_session_check.py y candidate_cuda",
+    "Aceptación sobre fases históricas completas y coste del recorrido con dimensiones reales",
+    "M2, M3 y C/M sobre la GRU no están definidos",
+    "Contraste científico, bloqueado hasta verificar la edición histórica desde 2000"
+  ],
+  "scope": "Comprobación técnica con datos y etiquetas manuales. No mide utilidad predictiva.",
+  "commits_note": "El commit de documentación que contiene este recibo no puede citarse a sí mismo"
+}

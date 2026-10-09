@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "declared_not_executed",
+  "variants": [
+    "transformer_direct",
+    "mac_disabled",
+    "mac_frozen",
+    "mac_online"
+  ],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {"alpha_half_life": 256.0, "eta": 0.5, "theta": 0.05},
+    "memory_residual_layer_norm": true
+  },
+  "recipe": {
+    "truncation": 8,
+    "loss": "pinball",
+    "huber_delta": 0.01,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 128,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0,
+    "accumulation_rows": null
+  },
+  "walk_forward": {
+    "warmup_months": 12,
+    "search_cases": {
+      "lr1e-4": {"learning_rate": 0.0001},
+      "lr1e-3": {"learning_rate": 0.001}
+    }
+  },
+  "pending": [
+    "Receta de la campaña con máscaras desde 2000. Las recetas chronological-training.json y chronological-training-quantile.json siguen siendo v1 y no cambian.",
+    "Memoria x + LN(MLP(x)) de la sección 3.3 de las actas junto a gate_bias en los cuatro controles, decidida en #27 con fixtures técnicos. Su efecto con datos reales no se ha medido.",
+    "Los dos casos de búsqueda solo cambian la tasa de aprendizaje: 1e-4, la de los casos 0 y 10 del diseño que ajusta cada referencia neuronal, y 1e-3, la de la receta v1. Se elige con session_mae de validación y el mismo presupuesto fijo de 30 épocas por caso.",
+    "accumulation_rows queda en null hasta medir la memoria del tramo en cuda:0 con benchmarks/titans_chronological_memory.py. El valor previsto es 128 si el tramo completo de mac_online no cabe en la GPU con los activos por instante de US. Fijarlo cambia la huella de la receta y la identidad de todos los trabajos Titans, así que se hará antes de lanzar la campaña.",
+    "El caudal en cuda:0 se medirá antes de elegir entre las variantes A y B de #363."
+  ]
+}

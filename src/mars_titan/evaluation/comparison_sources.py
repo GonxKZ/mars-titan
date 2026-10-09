@@ -5,6 +5,7 @@ from collections import Counter
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.evaluation.splits import PARTITIONS, build_folds
 from mars_titan.posttraining.parent_selection import (
@@ -171,7 +172,7 @@ def _jobs(reader, summaries, folders):
     return jobs, records, originals
 
 
-def _temporal(reader, proof, reference_proof, fold_id, base_hash):
+def _temporal(reader, proof, reference_proof, fold_id, base_hash, input_policy):
     excluded = {"parents", "tabular_summary_sha256"}
     if matching_seeds(proof) is not None:
         excluded |= MATCHING_FIELDS
@@ -202,11 +203,12 @@ def _temporal(reader, proof, reference_proof, fold_id, base_hash):
         set(counts) == set(PARTITIONS) and all(type(n) is int and n > 0 for n in counts.values()),
         "La cohorte necesita las cuatro poblaciones temporales",
     )
-    fold = temporal_fold(manifest)
-    for view in temporal_contracts(manifest).values():
+    fold = temporal_fold(manifest, input_policy=input_policy)
+    version = 2 if masked_inputs(input_policy) else 1
+    for view in temporal_contracts(manifest, input_policy=input_policy).values():
         protocol = view["protocol"]
         _require(
-            view["schema_version"] == 1
+            view["schema_version"] == version
             and fold["id"] == fold_id
             and protocol["final_test_start"] == "2024-01-01"
             and fold in build_folds(protocol),
@@ -354,9 +356,11 @@ def _metadata(original, result):
     return metadata
 
 
-def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, signature, proof):
-    window = temporal_fold(manifest)
-    contracts = temporal_contracts(manifest)
+def _fold_sources(
+    reader, fold_id, summaries, folders, evaluation, manifest, signature, proof, input_policy
+):
+    window = temporal_fold(manifest, input_policy=input_policy)
+    contracts = temporal_contracts(manifest, input_policy=input_policy)
     _require(
         evaluation.get("kind") == "frozen_temporal_evaluation",
         "La evaluación no acredita el trabajo temporal congelado",
@@ -498,13 +502,18 @@ def _fold_sources(reader, fold_id, summaries, folders, evaluation, manifest, sig
     return rows
 
 
-def predictive_sources(reference: Path, completion: Path) -> tuple[list[dict], dict]:
+def predictive_sources(
+    reference: Path, completion: Path, *, input_policy=STRICT_INPUTS
+) -> tuple[list[dict], dict]:
     """Admitir recibos y devolver rutas con sus hashes, sin abrir los Parquet.
 
     Cada fila identifica modelo y partición. ``bounds`` incluye el inicio y
     excluye el final. ``included`` conserva la búsqueda ganadora y los finalistas.
     ``provenance`` solo contiene rutas relativas a las dos campañas.
+    ``input_policy`` se declara y nunca se deduce: cada manifiesto debe adherirse
+    exactamente a ella y sus vistas deben tener la versión de esa política.
     """
+    masked_inputs(input_policy)
     reference, completion = Path(reference), Path(completion)
     for path in (reference, completion):
         safe_destination(path)
@@ -546,6 +555,7 @@ def predictive_sources(reference: Path, completion: Path) -> tuple[list[dict], d
             final_test_opened=False,
             domain="real",
             folds=[],
+            **policy_identity(input_policy),
         )
         sources = []
         for fold in folds:
@@ -588,7 +598,12 @@ def predictive_sources(reference: Path, completion: Path) -> tuple[list[dict], d
                 "La prueba tabular no conserva su huella",
             )
             manifest, signature, window = _temporal(
-                reader, proof, reference_proof, fold_id, ref["identity"]["manifests"][fold_id]
+                reader,
+                proof,
+                reference_proof,
+                fold_id,
+                ref["identity"]["manifests"][fold_id],
+                input_policy,
             )
             _require(
                 summaries["reference"]["identity"]["manifest_sha256"]
@@ -617,6 +632,7 @@ def predictive_sources(reference: Path, completion: Path) -> tuple[list[dict], d
                 manifest,
                 signature,
                 proof,
+                input_policy,
             )
             sources.extend(rows)
             provenance["folds"].append(

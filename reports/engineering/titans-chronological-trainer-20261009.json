@@ -1,0 +1,355 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T04:12:00.180046+00:00",
+  "tested_head": "d1642181ed0a4eec1f0c5c5ec6ab28840c27b102",
+  "scope": "Comprobación técnica en CPU sin pasos de optimizador ni entrenamiento",
+  "source_sha256": {
+    "src/mars_titan/training/financial_run.py": "966d1a4b47df3ce1bae2383fae6c9e6cdd91ff14a3dc8219540a53cbb3ffb703",
+    "src/mars_titan/memory/financial_observations.py": "65d2d09055871f3748b8ce79bbeaebdc319e91f3c0a700fdf5925c8dee6cfc0c",
+    "benchmarks/financial_observations.py": "3667e05a8c2e5477366c3e43a4a024a76932296d93557057ef0be8537d63db0f",
+    "tests/training/test_financial_run.py": "1e7a896ead103707925f33028ea0a3c4781813060a3b3bbcc914b400aa40982d",
+    "tests/training/chronological_fixture.py": "a1f736dd81036b53d46c6da6b2071750f84b8701b8996bb76f57be57b9b69042",
+    "tests/memory/test_financial_observation_blocks.py": "8919497d49dfd2d128adecbbcc4aa01d766b41626d413030bdcfd811ecfeb3cc",
+    "tests/memory/test_financial_run_session.py": "fe614ba9f2f215791fdb2582ac5ce1cd9a5ac97cddaa918e43b0554675473c3d",
+    "configs/titans/chronological-training.json": "d493b786f6d2e51ced551a9338b6137fb51cba3695c885862c29f1c1f0da1496"
+  },
+  "tests": {
+    "command": "uv run --no-sync python -m pytest -q -rs -p no:cacheprovider tests/memory tests/models/titans tests/training/test_financial_run.py tests/training/test_selection_budget.py",
+    "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MARS_TITAN_EPISODIC_NATIVE con el enlace de esta rama",
+    "passed": 673,
+    "skipped": 1,
+    "skipped_reason": "comprobación cuda:0 sin dispositivo visible",
+    "seconds": 160.43,
+    "ruff": true,
+    "format": true,
+    "optimizer_steps": 0
+  },
+  "native_binding": {
+    "sha256": "bb8e46ac7f2d56a70df2e1ac77851de8837e7429b4ef081084b367f9e94b5273",
+    "preset": "native-release",
+    "cuda": false,
+    "session_parity": "predicciones emitidas idénticas a FinancialSession con M0, sin lector episódico"
+  },
+  "mutations": {
+    "executed": 19,
+    "detected": 18,
+    "cases": [
+      {
+        "mutation": "T1 tramo más corto",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 3.53s"
+      },
+      {
+        "mutation": "T2 sin truncar BPTT",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 2.77s"
+      },
+      {
+        "mutation": "T3 sin anclar M0 en frozen",
+        "detected": true,
+        "summary": "1 failed, 17 passed in 8.87s"
+      },
+      {
+        "mutation": "T4 primera decisión como calentamiento",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 2.09s"
+      },
+      {
+        "mutation": "T5 cola pendiente sin persistir",
+        "detected": true,
+        "summary": "1 failed, 20 passed in 27.20s"
+      },
+      {
+        "mutation": "T6 sin zero_grad",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 4.10s"
+      },
+      {
+        "mutation": "T7 mejor estado en cada época",
+        "detected": true,
+        "summary": "1 failed, 26 passed in 35.88s"
+      },
+      {
+        "mutation": "T8 presupuesto fijo con parada",
+        "detected": false,
+        "summary": "28 passed in 40.01s",
+        "note": "Equivalente con la regla propia anterior, que exigía paciencia mayor que las épocas. Se retiró la condición y después se adoptó stopping=fixed_budget de selection.py."
+      },
+      {
+        "mutation": "T9 etiquetas antes del paso omitidas",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 3.83s"
+      },
+      {
+        "mutation": "R1 grupo en caché sin comprobar",
+        "detected": true,
+        "summary": "1 failed in 2.02s"
+      },
+      {
+        "mutation": "R2 sin desalojo",
+        "detected": true,
+        "summary": "1 failed, 5 passed in 9.78s"
+      },
+      {
+        "mutation": "R3 bloques solapados",
+        "detected": true,
+        "summary": "1 failed in 1.68s"
+      },
+      {
+        "mutation": "R4 precios del primer activo",
+        "detected": true,
+        "summary": "1 failed in 1.90s"
+      },
+      {
+        "mutation": "R5 etiquetas del primer activo",
+        "detected": true,
+        "summary": "1 failed in 2.07s"
+      },
+      {
+        "mutation": "T12 barrera guardada como inicio de evento",
+        "detected": true,
+        "summary": "1 failed, 20 passed in 32.08s"
+      },
+      {
+        "mutation": "T13 calentamiento tratado como decisión",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 4.33s"
+      },
+      {
+        "mutation": "T10 predicción antes de la actualización del tramo",
+        "detected": true,
+        "summary": "1 failed, 16 passed in 4.37s"
+      },
+      {
+        "mutation": "T14 sin sellar parámetros tras el paso",
+        "detected": true,
+        "summary": "1 failed, 16 passed"
+      },
+      {
+        "mutation": "T15 parada por paciencia ignorada",
+        "detected": true,
+        "summary": "1 failed, 26 passed"
+      }
+    ]
+  },
+  "reader_benchmark": {
+    "workload": {
+      "assets": 16,
+      "first": "2022-07-01",
+      "last": "2023-03-31",
+      "group_rows": 128,
+      "block_rows": 128,
+      "widths": {
+        "news": 384,
+        "charts": 512,
+        "concepts": 26,
+        "indicators": 140
+      },
+      "repeats": 3
+    },
+    "phases": {
+      "train": {
+        "rows": 1995,
+        "per_observation_microseconds": 5520.06837694391,
+        "asset_blocks_microseconds": 211.63898446208523,
+        "per_observation_seconds": [
+          11.157668838000973,
+          11.0125364120031,
+          10.647287024999969
+        ],
+        "asset_blocks_seconds": [
+          0.46245713699318003,
+          0.42221977400186006,
+          0.3618557680019876
+        ],
+        "speedup": 26.082474318113263,
+        "same_stream_sha256": "eea67f9b525f436775b02e53bba6fd7a621191bdc68bcd1c14380eb5cfc86319"
+      },
+      "validation": {
+        "rows": 1307,
+        "per_observation_microseconds": 5144.420771230925,
+        "asset_blocks_microseconds": 199.2012899775698,
+        "per_observation_seconds": [
+          6.511289917994873,
+          6.777913156009163,
+          6.72375794799882
+        ],
+        "asset_blocks_seconds": [
+          0.3226230190048227,
+          0.25841158199182246,
+          0.2603560860006837
+        ],
+        "speedup": 25.825238239221196,
+        "same_stream_sha256": "5a3b868e36e44a358cc632a7367f6c1fb243835ad13bc7a02143f2539e48977d"
+      }
+    },
+    "edition_read_only": [
+      {
+        "symbol": "AA",
+        "rows": 5660,
+        "row_groups": 45,
+        "rows_per_group": 128,
+        "group_decode_seconds": [
+          0.0035532659967429936,
+          0.003455743004451506,
+          0.003188952003256418,
+          0.0035353830025997013,
+          0.003357478999532759,
+          0.003592759996536188,
+          0.003448410003329627,
+          0.0033470600028522313
+        ],
+        "per_observation_seconds": 0.0034864438476915893,
+        "asset_blocks_seconds": 6.133669148766785e-05
+      },
+      {
+        "symbol": "AFMC",
+        "rows": 898,
+        "row_groups": 8,
+        "rows_per_group": 128,
+        "group_decode_seconds": [
+          0.003696332991239615,
+          0.003244686988182366,
+          0.003225461987312883,
+          0.0034346939937677234,
+          0.003407302006962709,
+          0.0036703850055346265,
+          0.0032885200052987784,
+          0.0016135629994096234
+        ],
+        "per_observation_seconds": 0.0034341475038672797,
+        "asset_blocks_seconds": 0.0001123920524719324
+      },
+      {
+        "symbol": "AROW",
+        "rows": 5098,
+        "row_groups": 40,
+        "rows_per_group": 128,
+        "group_decode_seconds": [
+          0.003846043997327797,
+          0.003559909004252404,
+          0.0035612009960459545,
+          0.00344111499725841,
+          0.0034720539988484234,
+          0.0033374820050084963,
+          0.003498132005915977,
+          0.003501610000967048
+        ],
+        "per_observation_seconds": 0.003534561769129141,
+        "asset_blocks_seconds": 6.203350790201512e-05
+      }
+    ],
+    "environment": {
+      "recorded_at_utc": "2026-10-09T03:52:54.321830+00:00",
+      "python": "3.12.14",
+      "platform": "Linux-7.0.0-38-generic-x86_64-desconocido-with-glibc2.43",
+      "processor": "desconocido",
+      "cpu_count": 16,
+      "omp_threads": "2",
+      "pyarrow": "25.0.1",
+      "numpy": "2.5.3",
+      "peak_rss_bytes": 726994944
+    },
+    "concurrent_load": "Codificación histórica en curso, carga media cercana a 11,6"
+  },
+  "train_pass_profile": {
+    "workload": "16 activos, anchura 64, float32, truncation 8, bloques de 128, CPU con dos hilos, cProfile",
+    "mac_online": {
+      "seconds": 3.433,
+      "observations": 1995,
+      "updates": 14,
+      "prepare_seconds": 1.715,
+      "backward_seconds": 0.965,
+      "reader_seconds": 0.431,
+      "core_finite_checks_seconds": 0.587,
+      "validated_cpu_batch_seconds": 0.108,
+      "seal_seconds": 0.03
+    },
+    "transformer_direct": {
+      "seconds": 1.96,
+      "observations": 1995,
+      "updates": 14,
+      "prepare_seconds": 0.691,
+      "backward_seconds": 0.516,
+      "reader_seconds": 0.473
+    },
+    "price_cache": {
+      "before_pass_seconds": 4.018,
+      "after_pass_seconds": 3.673,
+      "reader_before": 0.78,
+      "reader_after": 0.466
+    }
+  },
+  "mac_online_initial_contraction": {
+    "description": "Norma de Frobenius de la primera capa rápida y de la representación previa a la cabeza para US/A0000 con parámetros iniciales",
+    "mac_online": [
+      {
+        "observations": 1,
+        "fast_norm": 2.818152178883984,
+        "working_norm": 0.00042193614816522
+      },
+      {
+        "observations": 6,
+        "fast_norm": 0.08743889106549049,
+        "working_norm": 3.5963428753603976e-07
+      },
+      {
+        "observations": 11,
+        "fast_norm": 0.0027449869437781837,
+        "working_norm": 3.4011314976903726e-10
+      },
+      {
+        "observations": 21,
+        "fast_norm": 2.8886584503877126e-06,
+        "working_norm": 4.615438278169206e-16
+      },
+      {
+        "observations": 36,
+        "fast_norm": 1.4377422820396449e-10,
+        "working_norm": 1.8153139107632747e-24
+      }
+    ],
+    "mac_frozen": [
+      {
+        "observations": 1,
+        "fast_norm": 5.64661975994188,
+        "working_norm": 0.0016830921027617834
+      },
+      {
+        "observations": 6,
+        "fast_norm": 5.64661975994188,
+        "working_norm": 0.0015770085366000892
+      },
+      {
+        "observations": 11,
+        "fast_norm": 5.64661975994188,
+        "working_norm": 0.0016640071154951008
+      },
+      {
+        "observations": 21,
+        "fast_norm": 5.64661975994188,
+        "working_norm": 0.0018579226516139786
+      },
+      {
+        "observations": 36,
+        "fast_norm": 5.64661975994188,
+        "working_norm": 0.0015779641631680564
+      }
+    ],
+    "head_gradient_max_abs_first_updates": [
+      1.327e-07,
+      1.408e-09,
+      2.368e-11,
+      3.899e-13
+    ]
+  },
+  "pending": [
+    "Ejecución real tras levantar el bloqueo de #171 y fijar el protocolo de #363.",
+    "Comprobación CUDA escrita y no ejecutada: tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps.",
+    "Perfil en cuda:0 de las comprobaciones de finitud del núcleo, que sincronizan el dispositivo.",
+    "Inicialización de las tasas de mac_online, que requiere una identidad nueva del núcleo.",
+    "Banco episódico, K mayor que 1 y C siguen desactivados en FinancialPredictor.",
+    "labels_without_graph en fases conjuntas de dos mercados."
+  ],
+  "final_test_opened": false
+}

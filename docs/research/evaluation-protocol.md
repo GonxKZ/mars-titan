@@ -14,6 +14,10 @@ Los límites son intervalos cerrados por la izquierda y abiertos por la derecha.
 
 El calendario conserva festivos, cierres anticipados y cambios horarios. La partición final se marca `test_reserved`. Este contrato no abre sus objetivos ni ejecuta una evaluación final. Cambiar valores futuros o el orden de las empresas no modifica la pertenencia de las filas anteriores.
 
+## Protocolo anual de la edición desde 2000
+
+La edición histórica con máscaras usa la [versión 2 del protocolo](walk-forward-2000.md). Evalúa años completos desde el primero con tres años de etiquetas maduras (2005 en US y 2011 en CN y en la unión), sustituye el margen fijo por la purga del intervalo de cada etiqueta, registra las filas purgadas por frontera y declara la regla común de parada. Las ventanas conjuntas no admiten un mercado vacío. Los protocolos de versión 1 conservan exactamente sus ventanas y asignaciones.
+
 ## Cobertura completa y condiciones de ejecución
 
 La nueva edición exige todos los indicadores del catálogo. Las máscaras existentes no cuentan como observaciones. Un valor cero observado sí es válido. La [puerta de admisión macro](../data/macro-admission.md) conserva las causas de exclusión y produce un índice de sesiones completas.
@@ -35,7 +39,9 @@ La recuperación de un indicador no permite cambiar su fecha de publicación. Lo
 
 ## Selección y componentes que deben ajustarse de nuevo
 
-La métrica primaria sigue siendo MAE por sesión. MSE y Rank IC son diagnósticos complementarios. Las semillas declaradas son 42, 43 y 44. Los controles sin aprendizaje y el estado inicial del padre deben poder superar a una continuación que empeore. La comparación de ajustes emparejados conserva el mismo presupuesto de actualizaciones y selecciona el mejor estado permitido por su protocolo.
+La métrica primaria sigue siendo MAE por sesión. MSE, RMSE, dirección, Rank IC por sesión y, para los modelos con cuantiles, pinball, cobertura, anchura y riesgo-cobertura son diagnósticos complementarios definidos en [métricas](metrics.md). Las semillas declaradas son 42, 43 y 44. Los controles sin aprendizaje y el estado inicial del padre deben poder superar a una continuación que empeore. La comparación de ajustes emparejados conserva el mismo presupuesto de actualizaciones y selecciona el mejor estado permitido por su protocolo.
+
+Las comparaciones entre modelos se hacen sobre las mismas filas, comprobadas mediante la huella de la población, y con contrastes emparejados por sesión. La incertidumbre se estima con un bootstrap circular por bloques de días UTC que mantiene juntos todos los activos y ambos mercados de cada día y aplica los mismos índices a todos los modelos. La longitud de bloque, su sensibilidad, la semilla, la ponderación entre mercados y la familia de contrastes que se afirmarán a la vez se fijan con desarrollo antes de evaluar. Una afirmación dentro de la familia exige que su intervalo simultáneo excluya el cero. La [decisión sobre la cabeza de cuantiles](quantile-head-decision.md) da a todas las arquitecturas neuronales la misma [cabeza](../engineering/quantile-head.md), así que calibración y abstención serán comparables entre ellas si el control de la cabeza no obliga a volver a la salida escalar.
 
 Cada ventana necesita sus propios normalizadores, rejilla de acciones, predictor padre, optimizador y calibrador. La rejilla y los padres actuales se ajustaron con datos hasta 2022. Utilizarlos en una ventana anterior introduciría información posterior al corte, aunque sus pesos permaneciesen congelados. Los valores derivados de entradas pasadas pueden reutilizarse cuando su cálculo y disponibilidad no dependan del futuro.
 

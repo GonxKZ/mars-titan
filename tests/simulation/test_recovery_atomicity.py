@@ -11,6 +11,7 @@ from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.portfolio import CorporateAction
 from mars_titan.simulation.training import FinancialTrainer, TrainConfig
+from tests.simulation.native_library import NATIVE_BACKEND
 
 
 def market(*, actions=()):
@@ -126,7 +127,7 @@ def test_market_rejects_corporate_actions_outside_its_calendar():
         market(actions=(action,))
 
 
-@pytest.mark.parametrize("backend", ["python", "native"])
+@pytest.mark.parametrize("backend", ["python", NATIVE_BACKEND])
 def test_failed_corporate_action_preserves_pending_orders_and_cursor(backend):
     action = CorporateAction("overflow", "A", "split", 4, 1e308, verified=True)
     env = FinancialEnv(market(actions=(action,)), backend=backend)
@@ -142,7 +143,7 @@ def test_failed_corporate_action_preserves_pending_orders_and_cursor(backend):
     assert env.book is book
 
 
-@pytest.mark.parametrize("backend", ["python", "native"])
+@pytest.mark.parametrize("backend", ["python", NATIVE_BACKEND])
 def test_failed_observation_preserves_the_next_successful_transition(backend, monkeypatch):
     env = FinancialEnv(market(), backend=backend)
     env.reset(seed=42)

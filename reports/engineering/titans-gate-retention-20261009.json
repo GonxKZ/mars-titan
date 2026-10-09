@@ -1,0 +1,3751 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T05:27:09.808126+00:00",
+  "commit": "8b8997b6fbc04ca9c8765ef531ce781f95849e28",
+  "command": "uv run --no-sync python benchmarks/titans_gate_retention.py --output <recibo>",
+  "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2",
+  "scope": "Din\u00e1mica t\u00e9cnica con fixtures aleatorios en CPU, sin optimizador ni datos",
+  "hardware": {
+    "machine": "x86_64",
+    "processor": "desconocido",
+    "device": "cpu",
+    "cuda_name": null,
+    "cuda_peak_bytes": null
+  },
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "threads": 2,
+  "shapes": {
+    "dim": 64,
+    "depth": 2,
+    "flows": 4,
+    "segment": 1,
+    "heads": 4,
+    "persistent_tokens": 4,
+    "length": 4096
+  },
+  "streams": {
+    "fused_norm_1": "N(0, I/D), norma cercana a la del token fusionado inicial",
+    "unit_variance": "N(0, I)",
+    "recurring_unit": "cuatro prototipos N(0, I) alternos m\u00e1s 0,3\u00b7N(0, I)"
+  },
+  "outer_objective": "suma de head(salida) en los \u00faltimos `window` pasos, con grafo",
+  "window": 8,
+  "half_life_formula": "log(0,5)/log(1 \u2212 \u03b1)",
+  "half_life_examples": {
+    "0.5": 1.0,
+    "0.1": 6.578813478960583,
+    "0.0107717": 64.00171331774719,
+    "0.0027039439145298736": 256.0
+  },
+  "candidates": {
+    "v1": {
+      "gate_bias": null,
+      "alpha_max": null
+    },
+    "A_h64_eta0.5": {
+      "gate_bias": {
+        "alpha_half_life": 64.0,
+        "eta": 0.5,
+        "theta": 0.05
+      },
+      "alpha_max": null
+    },
+    "A_h256_eta0.5": {
+      "gate_bias": {
+        "alpha_half_life": 256.0,
+        "eta": 0.5,
+        "theta": 0.05
+      },
+      "alpha_max": null
+    },
+    "A_h256_eta0.9": {
+      "gate_bias": {
+        "alpha_half_life": 256.0,
+        "eta": 0.9,
+        "theta": 0.05
+      },
+      "alpha_max": null
+    },
+    "A_h1024_eta0.5": {
+      "gate_bias": {
+        "alpha_half_life": 1024.0,
+        "eta": 0.5,
+        "theta": 0.05
+      },
+      "alpha_max": null
+    },
+    "B_alpha_max_2alpha256": {
+      "gate_bias": null,
+      "alpha_max": 0.005407887829059747
+    }
+  },
+  "results": {
+    "float64/fused_norm_1/v1": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          3.9929761547385945,
+          3.98102083881673
+        ],
+        "8": [
+          0.030903857413316485,
+          0.030750645666885817
+        ],
+        "64": [
+          3.82749903752233e-18,
+          3.886047753083907e-18
+        ],
+        "256": [
+          3.4885524826358023e-69,
+          3.4584346867675203e-69
+        ],
+        "512": [
+          3.4744192670759073e-137,
+          3.39755807594233e-137
+        ],
+        "1024": [
+          0.0,
+          0.0
+        ],
+        "2048": [
+          0.0,
+          0.0
+        ],
+        "4096": [
+          0.0,
+          0.0
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.0,
+          "mean": 2.06973626733746e-21,
+          "max": 3.82749903752233e-18
+        },
+        {
+          "min": 0.0,
+          "mean": 2.0998646855593204e-21,
+          "max": 3.886047753083907e-18
+        }
+      ],
+      "output_norm": {
+        "1": 0.0004286188647475808,
+        "8": 2.2513827904240156e-08,
+        "64": 2.6570993656834546e-39,
+        "256": 1.0929082921861752e-141,
+        "512": 0.0,
+        "1024": 0.0,
+        "2048": 0.0,
+        "4096": 0.0
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.5002543122693719,
+          "mean": 0.5004908984445247,
+          "max": 0.5007021381673239
+        },
+        "eta": {
+          "min": 0.4965874232423806,
+          "mean": 0.49936633208038717,
+          "max": 0.5016962744378071
+        },
+        "theta": {
+          "min": 0.04977907661082426,
+          "mean": 0.0500075557159526,
+          "max": 0.05029390563880139
+        }
+      },
+      "value_norm": {
+        "min": 0.0685557371372491,
+        "mean": 0.08170631722093821,
+        "max": 0.0969290339558089
+      },
+      "mean_association_spectral_norm": 0.06603750520127064,
+      "write_forget_ratio_per_token": 0.016307035864724397,
+      "write_forget_ratio_mean_association": 0.01317983728017155,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 7.899552425339063e-35,
+          "mac.persistent": 3.654429754265811e-35,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 2.6675466139189747e-37,
+          "mac.memory.value_projection.weight": 1.0075212021007848e-36,
+          "mac.memory.alpha_projection.weight": 4.620055614564451e-37,
+          "mac.memory.eta_projection.weight": 3.0823975211655055e-38,
+          "mac.memory.theta_projection.weight": 2.8640313042894005e-39,
+          "mac.query_projection.weight": 2.1060255640137238e-67,
+          "mac.attention.in_proj_weight": 5.020982122852703e-35,
+          "mac.attention.out_proj.weight": 7.390883556857176e-35
+        },
+        "256": {
+          "head.weight": 5.076830197540772e-137,
+          "mac.persistent": 2.624206509522868e-137,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 2.7305344424189716e-139,
+          "mac.memory.value_projection.weight": 7.774580638609215e-139,
+          "mac.memory.alpha_projection.weight": 3.2762276152108154e-139,
+          "mac.memory.eta_projection.weight": 2.5102355033665714e-140,
+          "mac.memory.theta_projection.weight": 3.328357092113819e-141,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 3.498738365525517e-137,
+          "mac.attention.out_proj.weight": 5.306166223684585e-137
+        },
+        "1024": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "4096": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        }
+      }
+    },
+    "float64/fused_norm_1/A_h64_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.911793202082353,
+          7.887808625224295
+        ],
+        "8": [
+          7.304603695224375,
+          7.282307645300944
+        ],
+        "64": [
+          3.9594740029515347,
+          3.9469677673619046
+        ],
+        "256": [
+          0.5041993049779512,
+          0.5028547638266783
+        ],
+        "512": [
+          0.04993341096461417,
+          0.04995240861935688
+        ],
+        "1024": [
+          0.004628086089449476,
+          0.004633947550633402
+        ],
+        "2048": [
+          6.666566294608438e-05,
+          6.669526885721351e-05
+        ],
+        "4096": [
+          1.3436788301123852e-08,
+          1.3420289596380966e-08
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 1.3436788301123852e-08,
+          "mean": 0.09402104465977867,
+          "max": 3.9594740029515347
+        },
+        {
+          "min": 1.3420289596380966e-08,
+          "mean": 0.09375823038863836,
+          "max": 3.9469677673619046
+        }
+      ],
+      "output_norm": {
+        "1": 0.0016751746983988038,
+        "8": 0.00135971600208993,
+        "64": 0.00038252065837086316,
+        "256": 5.535923193469076e-06,
+        "512": 2.459479870686837e-07,
+        "1024": 2.8241243654048084e-09,
+        "2048": 5.065620492826551e-13,
+        "4096": 3.575106922353968e-20
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.010783359774584604,
+          "mean": 0.01079351461378615,
+          "max": 0.010802552630204968
+        },
+        "eta": {
+          "min": 0.4965874232423806,
+          "mean": 0.4993662853003671,
+          "max": 0.5016962744378071
+        },
+        "theta": {
+          "min": 0.049779076610855226,
+          "mean": 0.05000761232346222,
+          "max": 0.05029390563880139
+        }
+      },
+      "value_norm": {
+        "min": 0.06855573646213635,
+        "mean": 0.08171609865514129,
+        "max": 0.09779891678868814
+      },
+      "mean_association_spectral_norm": 0.06602531390075544,
+      "write_forget_ratio_per_token": 0.7562419520437426,
+      "write_forget_ratio_mean_association": 0.6110315236576295,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.011636487093571188,
+          "mac.persistent": 0.008961338537707655,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00011760016959811401,
+          "mac.memory.value_projection.weight": 4.10157457857201e-05,
+          "mac.memory.alpha_projection.weight": 9.054438558826927e-06,
+          "mac.memory.alpha_projection.bias": 6.553763191893281e-05,
+          "mac.memory.eta_projection.weight": 4.5191133312423533e-08,
+          "mac.memory.eta_projection.bias": 2.764676148296987e-07,
+          "mac.memory.theta_projection.weight": 1.0499494113651935e-07,
+          "mac.memory.theta_projection.bias": 5.474417171050647e-07,
+          "mac.query_projection.weight": 0.0001993914209151563,
+          "mac.attention.in_proj_weight": 0.01177232581517083,
+          "mac.attention.out_proj.weight": 0.017200816749046624
+        },
+        "256": {
+          "head.weight": 0.0001926818018965262,
+          "mac.persistent": 0.0001435140409164192,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.8683513208977433e-06,
+          "mac.memory.value_projection.weight": 2.0211502223361233e-06,
+          "mac.memory.alpha_projection.weight": 1.4753414841188156e-07,
+          "mac.memory.alpha_projection.bias": 1.0557459181233403e-06,
+          "mac.memory.eta_projection.weight": 1.0716104617636497e-08,
+          "mac.memory.eta_projection.bias": 7.613429746960973e-08,
+          "mac.memory.theta_projection.weight": 1.0194639191231747e-08,
+          "mac.memory.theta_projection.bias": 7.209004019608833e-08,
+          "mac.query_projection.weight": 5.568746843476448e-08,
+          "mac.attention.in_proj_weight": 0.0001910392592185178,
+          "mac.attention.out_proj.weight": 0.00027775818034214716
+        },
+        "1024": {
+          "head.weight": 9.279747509684115e-08,
+          "mac.persistent": 4.8399885392171976e-08,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.0132996690296282e-09,
+          "mac.memory.value_projection.weight": 2.8604523030712694e-09,
+          "mac.memory.alpha_projection.weight": 4.5319881179248915e-11,
+          "mac.memory.alpha_projection.bias": 3.2543076047392807e-10,
+          "mac.memory.eta_projection.weight": 1.0810209839998633e-11,
+          "mac.memory.eta_projection.bias": 7.811828131465351e-11,
+          "mac.memory.theta_projection.weight": 9.271778973212997e-12,
+          "mac.memory.theta_projection.bias": 6.5983218628818e-11,
+          "mac.query_projection.weight": 1.658236941269262e-14,
+          "mac.attention.in_proj_weight": 6.491023517325311e-08,
+          "mac.attention.out_proj.weight": 9.372606762870685e-08
+        },
+        "4096": {
+          "head.weight": 9.336874200405439e-19,
+          "mac.persistent": 4.510289768895757e-19,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 8.82062205639354e-21,
+          "mac.memory.value_projection.weight": 2.6602413551402678e-20,
+          "mac.memory.alpha_projection.weight": 4.323627112506933e-22,
+          "mac.memory.alpha_projection.bias": 3.1289953599666894e-21,
+          "mac.memory.eta_projection.weight": 8.794635250901707e-23,
+          "mac.memory.eta_projection.bias": 6.312868035135735e-22,
+          "mac.memory.theta_projection.weight": 9.037428215121376e-23,
+          "mac.memory.theta_projection.bias": 6.570379527391753e-22,
+          "mac.query_projection.weight": 9.228041055456108e-37,
+          "mac.attention.in_proj_weight": 6.187520192328046e-19,
+          "mac.attention.out_proj.weight": 9.095289503019093e-19
+        }
+      }
+    },
+    "float64/fused_norm_1/A_h256_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.97649266356826,
+          7.952307204765404
+        ],
+        "8": [
+          7.795359401846525,
+          7.771487706102042
+        ],
+        "64": [
+          6.647938969372923,
+          6.62546862715176
+        ],
+        "256": [
+          3.920422372055646,
+          3.9064572389218024
+        ],
+        "512": [
+          1.9673007117354397,
+          1.9607311847535538
+        ],
+        "1024": [
+          0.5725784332074361,
+          0.5720981104041889
+        ],
+        "2048": [
+          0.3098485081214386,
+          0.3080467175766132
+        ],
+        "4096": [
+          0.31177532594438156,
+          0.3024195688398316
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.3071600020575512,
+          "mean": 0.8157420845377913,
+          "max": 6.647938969372923
+        },
+        {
+          "min": 0.30177436737857205,
+          "mean": 0.8109427132291613,
+          "max": 6.62546862715176
+        }
+      ],
+      "output_norm": {
+        "1": 0.001702550917920105,
+        "8": 0.0015673116381451472,
+        "64": 0.0011262867130805727,
+        "256": 0.0003068130388803236,
+        "512": 8.842869229887484e-05,
+        "1024": 1.3528100738048815e-05,
+        "2048": 1.039735280253779e-05,
+        "4096": 1.8452298703572435e-05
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002706823680109478,
+          "mean": 0.002709393508355387,
+          "max": 0.0027117339789271147
+        },
+        "eta": {
+          "min": 0.49658669584888177,
+          "mean": 0.4993644873061047,
+          "max": 0.5016972739338801
+        },
+        "theta": {
+          "min": 0.049779161444689614,
+          "mean": 0.05000768529345655,
+          "max": 0.050294287046537184
+        }
+      },
+      "value_norm": {
+        "min": 0.0685447920584487,
+        "mean": 0.08174637745662669,
+        "max": 0.0981180179884943
+      },
+      "mean_association_spectral_norm": 0.0659878311310861,
+      "write_forget_ratio_per_token": 3.0137798856369473,
+      "write_forget_ratio_mean_association": 2.4328025821718344,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.03022787621769157,
+          "mac.persistent": 0.023855826354627574,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0006182066304303623,
+          "mac.memory.value_projection.weight": 9.71376359171804e-05,
+          "mac.memory.alpha_projection.weight": 6.024022988814396e-06,
+          "mac.memory.alpha_projection.bias": 4.392259071570563e-05,
+          "mac.memory.eta_projection.weight": 4.0949298499690057e-07,
+          "mac.memory.eta_projection.bias": 2.9918646902024414e-06,
+          "mac.memory.theta_projection.weight": 3.984468798641701e-07,
+          "mac.memory.theta_projection.bias": 1.9569706776066004e-06,
+          "mac.query_projection.weight": 0.0014037047313616366,
+          "mac.attention.in_proj_weight": 0.03121978096668463,
+          "mac.attention.out_proj.weight": 0.04550350977847751
+        },
+        "256": {
+          "head.weight": 0.01041464063041691,
+          "mac.persistent": 0.008298974559230914,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 8.361643769480335e-05,
+          "mac.memory.value_projection.weight": 3.529444484779259e-05,
+          "mac.memory.alpha_projection.weight": 2.1044904886484513e-06,
+          "mac.memory.alpha_projection.bias": 1.5086770934438923e-05,
+          "mac.memory.eta_projection.weight": 1.0072537955869844e-07,
+          "mac.memory.eta_projection.bias": 6.960473590523306e-07,
+          "mac.memory.theta_projection.weight": 1.0153321563151261e-07,
+          "mac.memory.theta_projection.bias": 7.229824087862182e-07,
+          "mac.query_projection.weight": 0.00016189073437835024,
+          "mac.attention.in_proj_weight": 0.011015893142736608,
+          "mac.attention.out_proj.weight": 0.015585822544437276
+        },
+        "1024": {
+          "head.weight": 0.0004242648642837828,
+          "mac.persistent": 0.00024703083151862834,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.870679768732756e-06,
+          "mac.memory.value_projection.weight": 1.2089430597626691e-05,
+          "mac.memory.alpha_projection.weight": 6.296574171823041e-08,
+          "mac.memory.alpha_projection.bias": 4.534437054811515e-07,
+          "mac.memory.eta_projection.weight": 1.790247105746143e-08,
+          "mac.memory.eta_projection.bias": 1.304559907467591e-07,
+          "mac.memory.theta_projection.weight": 1.1856913945046334e-08,
+          "mac.memory.theta_projection.bias": 8.248963661374877e-08,
+          "mac.query_projection.weight": 3.6452864212513397e-07,
+          "mac.attention.in_proj_weight": 0.000325386923157401,
+          "mac.attention.out_proj.weight": 0.0004793112340120593
+        },
+        "4096": {
+          "head.weight": 0.00046713647257912784,
+          "mac.persistent": 0.00022652503695813636,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.8622649635661517e-06,
+          "mac.memory.value_projection.weight": 1.484607958926903e-05,
+          "mac.memory.alpha_projection.weight": 5.5115460874130764e-08,
+          "mac.memory.alpha_projection.bias": 3.992576873263056e-07,
+          "mac.memory.eta_projection.weight": 1.5452527520041398e-08,
+          "mac.memory.eta_projection.bias": 1.0750649326572274e-07,
+          "mac.memory.theta_projection.weight": 1.8958811273282045e-08,
+          "mac.memory.theta_projection.bias": 1.368472488649155e-07,
+          "mac.query_projection.weight": 2.292856180451799e-07,
+          "mac.attention.in_proj_weight": 0.0003111608624048592,
+          "mac.attention.out_proj.weight": 0.0004575701895609334
+        }
+      }
+    },
+    "float64/fused_norm_1/A_h256_eta0.9": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.97649266356826,
+          7.952307204765404
+        ],
+        "8": [
+          7.775173355277839,
+          7.742451204941008
+        ],
+        "64": [
+          6.518923404524524,
+          6.4244483692100545
+        ],
+        "256": [
+          3.80184187291197,
+          3.7329898045696135
+        ],
+        "512": [
+          1.921080388411489,
+          1.8882106900345645
+        ],
+        "1024": [
+          0.6128067165053659,
+          0.6152861647459916
+        ],
+        "2048": [
+          0.379268482843078,
+          0.3886183298295464
+        ],
+        "4096": [
+          0.3658461590428302,
+          0.35831725393465125
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.36242377572412016,
+          "mean": 0.8523660641648393,
+          "max": 6.518923404524524
+        },
+        {
+          "min": 0.35594680068953544,
+          "mean": 0.8464013581264854,
+          "max": 6.4244483692100545
+        }
+      ],
+      "output_norm": {
+        "1": 0.001702550917920105,
+        "8": 0.001537511216744435,
+        "64": 0.0010406609074245295,
+        "256": 0.0002678078571965762,
+        "512": 8.294299707458985e-05,
+        "1024": 1.946109458783352e-05,
+        "2048": 1.5218280876531623e-05,
+        "4096": 2.321834958742723e-05
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002706822676517019,
+          "mean": 0.0027093937152165206,
+          "max": 0.0027117412609894424
+        },
+        "eta": {
+          "min": 0.8987640467621834,
+          "mean": 0.8997702060115,
+          "max": 0.9006089755871884
+        },
+        "theta": {
+          "min": 0.0497791689671814,
+          "mean": 0.05000763980651417,
+          "max": 0.050294448418435035
+        }
+      },
+      "value_norm": {
+        "min": 0.06854285619451113,
+        "mean": 0.08174123064246769,
+        "max": 0.09812159653789768
+      },
+      "mean_association_spectral_norm": 0.06599457466244432,
+      "write_forget_ratio_per_token": 15.052497816451016,
+      "write_forget_ratio_mean_association": 12.152779976473171,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.028051302742693573,
+          "mac.persistent": 0.0231286843461189,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0011571024790575312,
+          "mac.memory.value_projection.weight": 0.0002346775482826969,
+          "mac.memory.alpha_projection.weight": 5.62050791674099e-06,
+          "mac.memory.alpha_projection.bias": 4.097594118973691e-05,
+          "mac.memory.eta_projection.weight": 2.215572380263665e-07,
+          "mac.memory.eta_projection.bias": 1.4973765164693386e-06,
+          "mac.memory.theta_projection.weight": 7.295453702769527e-07,
+          "mac.memory.theta_projection.bias": 4.818154620587081e-06,
+          "mac.query_projection.weight": 0.0012603397564331948,
+          "mac.attention.in_proj_weight": 0.030403489196761467,
+          "mac.attention.out_proj.weight": 0.04453828317022363
+        },
+        "256": {
+          "head.weight": 0.009013046773350688,
+          "mac.persistent": 0.007563307097576673,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00016134643051634884,
+          "mac.memory.value_projection.weight": 9.685961069076261e-05,
+          "mac.memory.alpha_projection.weight": 1.8446253193866152e-06,
+          "mac.memory.alpha_projection.bias": 1.3218738511708207e-05,
+          "mac.memory.eta_projection.weight": 7.451711950477756e-08,
+          "mac.memory.eta_projection.bias": 5.135428504973756e-07,
+          "mac.memory.theta_projection.weight": 1.524098483292253e-07,
+          "mac.memory.theta_projection.bias": 1.038749126378081e-06,
+          "mac.query_projection.weight": 0.0001305486669407287,
+          "mac.attention.in_proj_weight": 0.010050605794587837,
+          "mac.attention.out_proj.weight": 0.01414933277873754
+        },
+        "1024": {
+          "head.weight": 0.0006332582944873959,
+          "mac.persistent": 0.0003472851067593098,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.406924671844227e-06,
+          "mac.memory.value_projection.weight": 3.1855817596015446e-05,
+          "mac.memory.alpha_projection.weight": 8.465491704949657e-08,
+          "mac.memory.alpha_projection.bias": 6.100832646001999e-07,
+          "mac.memory.eta_projection.weight": 2.0437022128441317e-08,
+          "mac.memory.eta_projection.bias": 1.5205135827074322e-07,
+          "mac.memory.theta_projection.weight": 1.1677172804323767e-08,
+          "mac.memory.theta_projection.bias": 5.998212885004113e-08,
+          "mac.query_projection.weight": 7.369463050204113e-07,
+          "mac.attention.in_proj_weight": 0.0004551499518110328,
+          "mac.attention.out_proj.weight": 0.000670510263592282
+        },
+        "4096": {
+          "head.weight": 0.0005851157175456031,
+          "mac.persistent": 0.0002813458219844001,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.0792433073134363e-06,
+          "mac.memory.value_projection.weight": 3.4295440634583206e-05,
+          "mac.memory.alpha_projection.weight": 6.938936596908619e-08,
+          "mac.memory.alpha_projection.bias": 5.022724517344442e-07,
+          "mac.memory.eta_projection.weight": 2.7878371925756947e-09,
+          "mac.memory.eta_projection.bias": 2.074820858833958e-08,
+          "mac.memory.theta_projection.weight": 1.4833904279763205e-08,
+          "mac.memory.theta_projection.bias": 7.951252377691916e-08,
+          "mac.query_projection.weight": 3.794069220085865e-07,
+          "mac.attention.in_proj_weight": 0.0003841029508889356,
+          "mac.attention.out_proj.weight": 0.0005710061888796011
+        }
+      }
+    },
+    "float64/fused_norm_1/A_h1024_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.992750195835896,
+          7.968514249631946
+        ],
+        "8": [
+          7.923107744323156,
+          7.898824355762759
+        ],
+        "64": [
+          7.565142904968245,
+          7.5389135878655535
+        ],
+        "256": [
+          6.549464067530726,
+          6.522213635766142
+        ],
+        "512": [
+          5.456061717348763,
+          5.430629162448845
+        ],
+        "1024": [
+          3.830449764390184,
+          3.811326532848768
+        ],
+        "2048": [
+          1.9320067802196843,
+          1.9234250564360982
+        ],
+        "4096": [
+          0.6101153001652881,
+          0.6115496695259535
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.6101153001652881,
+          "mean": 2.5620642350902982,
+          "max": 7.565142904968245
+        },
+        {
+          "min": 0.6115496695259535,
+          "mean": 2.5515020506085313,
+          "max": 7.5389135878655535
+        }
+      ],
+      "output_norm": {
+        "1": 0.0017094644810361271,
+        "8": 0.0016245783075242767,
+        "64": 0.0014971643653054068,
+        "256": 0.0008669665930015567,
+        "512": 0.0006511826151504403,
+        "1024": 0.00034565650134914044,
+        "2048": 7.875751872508031e-05,
+        "4096": 2.845982390243353e-05
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0006773867956878618,
+          "mean": 0.000678038136703915,
+          "max": 0.0006786707722758001
+        },
+        "eta": {
+          "min": 0.4965925649712284,
+          "mean": 0.4993560128730308,
+          "max": 0.5018691559702002
+        },
+        "theta": {
+          "min": 0.049775616190539544,
+          "mean": 0.05000802341472337,
+          "max": 0.05029494523894351
+        }
+      },
+      "value_norm": {
+        "min": 0.06890281079017324,
+        "mean": 0.08183539670374612,
+        "max": 0.09820005606404453
+      },
+      "mean_association_spectral_norm": 0.06584600856266248,
+      "write_forget_ratio_per_token": 12.055847756886177,
+      "write_forget_ratio_mean_association": 9.700319013590654,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.0382458273914763,
+          "mac.persistent": 0.03044130026273613,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0009515873595428862,
+          "mac.memory.value_projection.weight": 0.000119775315389189,
+          "mac.memory.alpha_projection.weight": 1.9162681271481675e-06,
+          "mac.memory.alpha_projection.bias": 1.4017386286591115e-05,
+          "mac.memory.eta_projection.weight": 7.037649070334844e-07,
+          "mac.memory.eta_projection.bias": 5.104142882637177e-06,
+          "mac.memory.theta_projection.weight": 7.092715782462735e-07,
+          "mac.memory.theta_projection.bias": 3.5665472233649555e-06,
+          "mac.query_projection.weight": 0.0023049301923669134,
+          "mac.attention.in_proj_weight": 0.03981760416220589,
+          "mac.attention.out_proj.weight": 0.05791645260716571
+        },
+        "256": {
+          "head.weight": 0.028242347859041287,
+          "mac.persistent": 0.022856686233608974,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.000454194750252622,
+          "mac.memory.value_projection.weight": 7.508850285664623e-05,
+          "mac.memory.alpha_projection.weight": 1.4417974869756059e-06,
+          "mac.memory.alpha_projection.bias": 1.035967781898557e-05,
+          "mac.memory.eta_projection.weight": 2.637339005554817e-07,
+          "mac.memory.eta_projection.bias": 1.7678483094827233e-06,
+          "mac.memory.theta_projection.weight": 2.402774803314839e-07,
+          "mac.memory.theta_projection.bias": 1.8236896552744082e-06,
+          "mac.query_projection.weight": 0.001228799473723399,
+          "mac.attention.in_proj_weight": 0.030474363372794827,
+          "mac.attention.out_proj.weight": 0.04287053148604204
+        },
+        "1024": {
+          "head.weight": 0.009117925789660381,
+          "mac.persistent": 0.0076015440944285865,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 9.776655878757476e-05,
+          "mac.memory.value_projection.weight": 5.332507785473582e-05,
+          "mac.memory.alpha_projection.weight": 4.971090101043182e-07,
+          "mac.memory.alpha_projection.bias": 3.5999808661058915e-06,
+          "mac.memory.eta_projection.weight": 8.456953045892072e-09,
+          "mac.memory.eta_projection.bias": 1.6212373680346945e-08,
+          "mac.memory.theta_projection.weight": 1.8858739367162697e-08,
+          "mac.memory.theta_projection.bias": 5.3941795230160284e-08,
+          "mac.query_projection.weight": 0.00012796901708681414,
+          "mac.attention.in_proj_weight": 0.010290159567498774,
+          "mac.attention.out_proj.weight": 0.014274420075042506
+        },
+        "4096": {
+          "head.weight": 0.0006911493526210889,
+          "mac.persistent": 0.00035166955802440976,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 9.881079521691535e-07,
+          "mac.memory.value_projection.weight": 1.9155815532781398e-05,
+          "mac.memory.alpha_projection.weight": 2.233641714794694e-08,
+          "mac.memory.alpha_projection.bias": 1.6187243638276736e-07,
+          "mac.memory.eta_projection.weight": 2.767847130604913e-09,
+          "mac.memory.eta_projection.bias": 1.0590024789193375e-08,
+          "mac.memory.theta_projection.weight": 8.9119179836947e-09,
+          "mac.memory.theta_projection.bias": 5.171122293557092e-08,
+          "mac.query_projection.weight": 5.56854862073232e-07,
+          "mac.attention.in_proj_weight": 0.0004715477606688866,
+          "mac.attention.out_proj.weight": 0.00071339019845362
+        }
+      }
+    },
+    "float64/fused_norm_1/B_alpha_max_2alpha256": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.976516377220583,
+          7.95233026982926
+        ],
+        "8": [
+          7.795549932377735,
+          7.771666873865365
+        ],
+        "64": [
+          6.649209940634252,
+          6.62667096439545
+        ],
+        "256": [
+          3.923202389713282,
+          3.909092787607638
+        ],
+        "512": [
+          1.9699295337204665,
+          1.9632198300454724
+        ],
+        "1024": [
+          0.5736429360838153,
+          0.5730437324246923
+        ],
+        "2048": [
+          0.309920263907738,
+          0.3080344960334914
+        ],
+        "4096": [
+          0.3117505314444774,
+          0.30244732201385405
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.30719948114307116,
+          "mean": 0.816354824239447,
+          "max": 6.649209940634252
+        },
+        {
+          "min": 0.3018005184271122,
+          "mean": 0.8114893759336916,
+          "max": 6.62667096439545
+        }
+      ],
+      "output_norm": {
+        "1": 0.0017025684655250135,
+        "8": 0.001567404798834105,
+        "64": 0.001126906062369495,
+        "256": 0.00030755363594731403,
+        "512": 8.883901107922213e-05,
+        "1024": 1.3597002595837645e-05,
+        "2048": 1.0397261815528978e-05,
+        "4096": 1.844620780680226e-05
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0027053189263792484,
+          "mean": 0.0027065981831220546,
+          "max": 0.0027077669102533748
+        },
+        "eta": {
+          "min": 0.49658669578770465,
+          "mean": 0.49936449067752997,
+          "max": 0.5016972739372625
+        },
+        "theta": {
+          "min": 0.04977916183186701,
+          "mean": 0.05000768598182501,
+          "max": 0.05029428810839377
+        }
+      },
+      "value_norm": {
+        "min": 0.0685447206104433,
+        "mean": 0.08174640039832605,
+        "max": 0.09811823859626918
+      },
+      "mean_association_spectral_norm": 0.0659878256167532,
+      "write_forget_ratio_per_token": 3.016893371049688,
+      "write_forget_ratio_mean_association": 2.435314982716256,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.030243029977746663,
+          "mac.persistent": 0.02388417673322935,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0006189265353911659,
+          "mac.memory.value_projection.weight": 9.724740007771703e-05,
+          "mac.memory.alpha_projection.linear.weight": 3.0101816721824666e-06,
+          "mac.memory.eta_projection.weight": 4.0960658431522265e-07,
+          "mac.memory.theta_projection.weight": 3.986789892803366e-07,
+          "mac.query_projection.weight": 0.0014056502338214089,
+          "mac.attention.in_proj_weight": 0.03125187286375026,
+          "mac.attention.out_proj.weight": 0.04554291663499764
+        },
+        "256": {
+          "head.weight": 0.010436887243314987,
+          "mac.persistent": 0.008342127973046483,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 8.38882222939088e-05,
+          "mac.memory.value_projection.weight": 3.544026744731438e-05,
+          "mac.memory.alpha_projection.linear.weight": 1.053093815674488e-06,
+          "mac.memory.eta_projection.weight": 1.0088865652463308e-07,
+          "mac.memory.theta_projection.weight": 1.0165953081364605e-07,
+          "mac.query_projection.weight": 0.00016285751243643197,
+          "mac.attention.in_proj_weight": 0.011066883453976674,
+          "mac.attention.out_proj.weight": 0.015641869592395576
+        },
+        "1024": {
+          "head.weight": 0.00042581285641549936,
+          "mac.persistent": 0.00024851209238440936,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.867451668519029e-06,
+          "mac.memory.value_projection.weight": 1.2155991326879524e-05,
+          "mac.memory.alpha_projection.linear.weight": 3.1721222529105623e-08,
+          "mac.memory.eta_projection.weight": 1.793988523350031e-08,
+          "mac.memory.theta_projection.weight": 1.1865802548063566e-08,
+          "mac.query_projection.weight": 3.644094214164579e-07,
+          "mac.attention.in_proj_weight": 0.0003271071639865633,
+          "mac.attention.out_proj.weight": 0.000482241569342502
+        },
+        "4096": {
+          "head.weight": 0.00046693962435546943,
+          "mac.persistent": 0.0002265116898500403,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.8592634547163865e-06,
+          "mac.memory.value_projection.weight": 1.4835458817956643e-05,
+          "mac.memory.alpha_projection.linear.weight": 2.767152677955283e-08,
+          "mac.memory.eta_projection.weight": 1.546745299776425e-08,
+          "mac.memory.theta_projection.weight": 1.896966474108644e-08,
+          "mac.query_projection.weight": 2.2925804673561154e-07,
+          "mac.attention.in_proj_weight": 0.0003112577111566697,
+          "mac.attention.out_proj.weight": 0.00045764061486842054
+        }
+      }
+    },
+    "float64/unit_variance/v1": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          3.9918182237437927,
+          3.9792044998999865
+        ],
+        "8": [
+          0.0309260842526235,
+          0.030804930989023552
+        ],
+        "64": [
+          1.9278092614558373e-18,
+          1.9148899416020142e-18
+        ],
+        "256": [
+          2.005833259058876e-71,
+          1.9669985250526924e-71
+        ],
+        "512": [
+          5.90601505899747e-142,
+          5.736725079348511e-142
+        ],
+        "1024": [
+          0.0,
+          0.0
+        ],
+        "2048": [
+          0.0,
+          0.0
+        ],
+        "4096": [
+          0.0,
+          0.0
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.0,
+          "mean": 1.0060229279088418e-21,
+          "max": 1.9278092614558373e-18
+        },
+        {
+          "min": 0.0,
+          "mean": 1.0004681440005839e-21,
+          "max": 1.9148899416020142e-18
+        }
+      ],
+      "output_norm": {
+        "1": 0.005256493338696903,
+        "8": 4.0391537373338434e-07,
+        "64": 2.4860793494636458e-39,
+        "256": 8.95210923360216e-145,
+        "512": 0.0,
+        "1024": 0.0,
+        "2048": 0.0,
+        "4096": 0.0
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.49820757351994377,
+          "mean": 0.5004814893995686,
+          "max": 0.5027411401591755
+        },
+        "eta": {
+          "min": 0.47485453070305983,
+          "mean": 0.4995629406134282,
+          "max": 0.5232178189622808
+        },
+        "theta": {
+          "min": 0.047418945697321774,
+          "mean": 0.05002374347812728,
+          "max": 0.05298871593021701
+        }
+      },
+      "value_norm": {
+        "min": 0.213522736086414,
+        "mean": 0.34628368447129665,
+        "max": 0.6820183229075465
+      },
+      "mean_association_spectral_norm": 0.03461053005268459,
+      "write_forget_ratio_per_token": 0.06916250831640666,
+      "write_forget_ratio_mean_association": 0.006912688006825394,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 1.2703783715867904e-34,
+          "mac.persistent": 2.2730829595549756e-35,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 6.796368522394897e-37,
+          "mac.memory.value_projection.weight": 1.3793422643475303e-36,
+          "mac.memory.alpha_projection.weight": 2.5573042467066772e-36,
+          "mac.memory.eta_projection.weight": 1.646435142658392e-37,
+          "mac.memory.theta_projection.weight": 1.5002061803042845e-38,
+          "mac.query_projection.weight": 5.541392227777164e-68,
+          "mac.attention.in_proj_weight": 1.3325214344591421e-34,
+          "mac.attention.out_proj.weight": 1.4821407102286188e-34
+        },
+        "256": {
+          "head.weight": 4.1940622267691423e-140,
+          "mac.persistent": 3.925060782528334e-141,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 4.398655031501305e-142,
+          "mac.memory.value_projection.weight": 6.93480608054978e-142,
+          "mac.memory.alpha_projection.weight": 1.3237774878542357e-141,
+          "mac.memory.eta_projection.weight": 1.2786763900288716e-142,
+          "mac.memory.theta_projection.weight": 1.6999230823031741e-143,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 5.729963377846172e-140,
+          "mac.attention.out_proj.weight": 5.64939658131488e-140
+        },
+        "1024": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "4096": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        }
+      }
+    },
+    "float64/unit_variance/A_h64_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.912715832138991,
+          7.888517973999774
+        ],
+        "8": [
+          7.300645579172998,
+          7.278223638418649
+        ],
+        "64": [
+          3.9179973170130604,
+          3.9062228411547135
+        ],
+        "256": [
+          0.5092499823391443,
+          0.5079433819471281
+        ],
+        "512": [
+          0.03932063942684605,
+          0.039260225555645074
+        ],
+        "1024": [
+          0.00047191270216941225,
+          0.00047250090274116594
+        ],
+        "2048": [
+          2.1377464156449011e-07,
+          2.14079013945356e-07
+        ],
+        "4096": [
+          5.5684450590693255e-14,
+          5.5554378375374206e-14
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 5.5684450590693255e-14,
+          "mean": 0.09195010961953284,
+          "max": 3.9179973170130604
+        },
+        {
+          "min": 5.5554378375374206e-14,
+          "mean": 0.09169607101257281,
+          "max": 3.9062228411547135
+        }
+      ],
+      "output_norm": {
+        "1": 0.020876281924705718,
+        "8": 0.021920025901548304,
+        "64": 0.003639699453970237,
+        "256": 9.1008796594466e-05,
+        "512": 6.147363579729309e-07,
+        "1024": 2.5607197397133534e-10,
+        "2048": 1.5037178103833118e-16,
+        "4096": 5.903891390180484e-30
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.01071055245233516,
+          "mean": 0.010803635997998624,
+          "max": 0.010909916251580797
+        },
+        "eta": {
+          "min": 0.47485453099521713,
+          "mean": 0.4995628044017464,
+          "max": 0.5232178189608805
+        },
+        "theta": {
+          "min": 0.047418945697321774,
+          "mean": 0.0500237969965873,
+          "max": 0.05298871593021701
+        }
+      },
+      "value_norm": {
+        "min": 0.21352273608642233,
+        "mean": 0.34628420458073267,
+        "max": 0.6820183229075465
+      },
+      "mean_association_spectral_norm": 0.03460907809618027,
+      "write_forget_ratio_per_token": 3.203980102683766,
+      "write_forget_ratio_mean_association": 0.32021904587489775,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.047306561067702105,
+          "mac.persistent": 0.010315956051556118,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0011421655990157772,
+          "mac.memory.value_projection.weight": 0.0008679225274480963,
+          "mac.memory.alpha_projection.weight": 7.086000095692829e-05,
+          "mac.memory.alpha_projection.bias": 0.0002526355920507378,
+          "mac.memory.eta_projection.weight": 1.3480841349139182e-05,
+          "mac.memory.eta_projection.bias": 2.6372718615120576e-05,
+          "mac.memory.theta_projection.weight": 1.3148344985450195e-05,
+          "mac.memory.theta_projection.bias": 6.301300387957886e-05,
+          "mac.query_projection.weight": 0.0008810049273655229,
+          "mac.attention.in_proj_weight": 0.06387469206792205,
+          "mac.attention.out_proj.weight": 0.079349049628915
+        },
+        "256": {
+          "head.weight": 0.0009891820382804772,
+          "mac.persistent": 0.00021540329553556184,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 1.7470731104899376e-05,
+          "mac.memory.value_projection.weight": 1.5960544281779484e-05,
+          "mac.memory.alpha_projection.weight": 1.811310817969782e-06,
+          "mac.memory.alpha_projection.bias": 6.246788852384349e-06,
+          "mac.memory.eta_projection.weight": 1.9813441363511214e-07,
+          "mac.memory.eta_projection.bias": 3.4642512073363714e-07,
+          "mac.memory.theta_projection.weight": 2.893355797798767e-07,
+          "mac.memory.theta_projection.bias": 3.019959417734991e-07,
+          "mac.query_projection.weight": 2.7871470128688317e-07,
+          "mac.attention.in_proj_weight": 0.0013763751043928104,
+          "mac.attention.out_proj.weight": 0.0015310637678547336
+        },
+        "1024": {
+          "head.weight": 3.753288007967855e-09,
+          "mac.persistent": 2.945318468158404e-10,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 5.272183376161434e-11,
+          "mac.memory.value_projection.weight": 7.709458097518682e-11,
+          "mac.memory.alpha_projection.weight": 3.5381832360455625e-12,
+          "mac.memory.alpha_projection.bias": 1.498297310592602e-11,
+          "mac.memory.eta_projection.weight": 1.1016378764637784e-12,
+          "mac.memory.eta_projection.bias": 3.5571178382710758e-12,
+          "mac.memory.theta_projection.weight": 1.730998352390836e-12,
+          "mac.memory.theta_projection.bias": 4.527778321922496e-12,
+          "mac.query_projection.weight": 2.218972136571665e-18,
+          "mac.attention.in_proj_weight": 4.219481591626931e-09,
+          "mac.attention.out_proj.weight": 4.703670105693136e-09
+        },
+        "4096": {
+          "head.weight": 1.2792620998568702e-28,
+          "mac.persistent": 9.22902246103451e-30,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 3.0892806191107323e-30,
+          "mac.memory.value_projection.weight": 4.543086101644808e-30,
+          "mac.memory.alpha_projection.weight": 1.7573929058855102e-31,
+          "mac.memory.alpha_projection.bias": 6.950578062746637e-31,
+          "mac.memory.eta_projection.weight": 9.790595863839206e-32,
+          "mac.memory.eta_projection.bias": 2.851477216507494e-31,
+          "mac.memory.theta_projection.weight": 1.7971165888285423e-31,
+          "mac.memory.theta_projection.bias": 2.4889305460407156e-31,
+          "mac.query_projection.weight": 1.368359671344469e-57,
+          "mac.attention.in_proj_weight": 1.2506248199167586e-28,
+          "mac.attention.out_proj.weight": 1.5650340428732758e-28
+        }
+      }
+    },
+    "float64/unit_variance/A_h256_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.977563134005018,
+          7.95318019463231
+        ],
+        "8": [
+          7.79154787593612,
+          7.767531319178144
+        ],
+        "64": [
+          6.546720496990347,
+          6.526129873681908
+        ],
+        "256": [
+          3.881023541499001,
+          3.870189099567515
+        ],
+        "512": [
+          2.1021291650106475,
+          2.0975700041307337
+        ],
+        "1024": [
+          0.9031920384979794,
+          0.9031998661712499
+        ],
+        "2048": [
+          0.5731633853244755,
+          0.573199316846169
+        ],
+        "4096": [
+          0.48148746538743475,
+          0.4790763354862868
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.48050131837789106,
+          "mean": 1.0287712376325289,
+          "max": 6.546720496990347
+        },
+        {
+          "min": 0.47812525378841075,
+          "mean": 1.0268689285767072,
+          "max": 6.526129873681908
+        }
+      ],
+      "output_norm": {
+        "1": 0.021223897687492242,
+        "8": 0.025000359487382353,
+        "64": 0.00997323855075522,
+        "256": 0.004943163314584752,
+        "512": 0.0014242589583879294,
+        "1024": 0.0006479718980081854,
+        "2048": 0.0005951772677102475,
+        "4096": 0.00035332164115801955
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0026884435589965387,
+          "mean": 0.002711998889710232,
+          "max": 0.0027389387908295488
+        },
+        "eta": {
+          "min": 0.4748667323145963,
+          "mean": 0.4995608831363281,
+          "max": 0.5232186228609764
+        },
+        "theta": {
+          "min": 0.04741885647740698,
+          "mean": 0.050023829170862455,
+          "max": 0.05298851698357672
+        }
+      },
+      "value_norm": {
+        "min": 0.21356910885840577,
+        "mean": 0.3462841984189366,
+        "max": 0.6820361805892552
+      },
+      "mean_association_spectral_norm": 0.034610722274454477,
+      "write_forget_ratio_per_token": 12.763472603867417,
+      "write_forget_ratio_mean_association": 1.2756949568216456,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.12340417218264244,
+          "mac.persistent": 0.027893087008894913,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.005273479332221861,
+          "mac.memory.value_projection.weight": 0.0022115567705464096,
+          "mac.memory.alpha_projection.weight": 4.798840554236994e-05,
+          "mac.memory.alpha_projection.bias": 0.00017044012009051395,
+          "mac.memory.eta_projection.weight": 4.715437737609951e-05,
+          "mac.memory.eta_projection.bias": 8.983591782890234e-05,
+          "mac.memory.theta_projection.weight": 4.7549855984131796e-05,
+          "mac.memory.theta_projection.bias": 0.0001916474027038678,
+          "mac.query_projection.weight": 0.005811885754074068,
+          "mac.attention.in_proj_weight": 0.16606598855001337,
+          "mac.attention.out_proj.weight": 0.20639870219731857
+        },
+        "256": {
+          "head.weight": 0.05051232095485269,
+          "mac.persistent": 0.011394474004846644,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0008787606929747299,
+          "mac.memory.value_projection.weight": 0.0008461700474302492,
+          "mac.memory.alpha_projection.weight": 2.5341614254114532e-05,
+          "mac.memory.alpha_projection.bias": 8.751290891476631e-05,
+          "mac.memory.eta_projection.weight": 5.6054586361055024e-06,
+          "mac.memory.eta_projection.bias": 1.937003927827574e-06,
+          "mac.memory.theta_projection.weight": 1.268925499304469e-05,
+          "mac.memory.theta_projection.bias": 3.625931648282962e-06,
+          "mac.query_projection.weight": 0.0006758742164409395,
+          "mac.attention.in_proj_weight": 0.07085066461762436,
+          "mac.attention.out_proj.weight": 0.07770408473724194
+        },
+        "1024": {
+          "head.weight": 0.007060548379472896,
+          "mac.persistent": 0.0008221523430854509,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 9.109396059802639e-05,
+          "mac.memory.value_projection.weight": 0.0001431329641121379,
+          "mac.memory.alpha_projection.weight": 1.8264397434179475e-06,
+          "mac.memory.alpha_projection.bias": 7.169651619714678e-06,
+          "mac.memory.eta_projection.weight": 1.4868328960568533e-06,
+          "mac.memory.eta_projection.bias": 1.4650730389199222e-06,
+          "mac.memory.theta_projection.weight": 2.671633359655154e-06,
+          "mac.memory.theta_projection.bias": 3.994715961540842e-06,
+          "mac.query_projection.weight": 9.245308232884671e-06,
+          "mac.attention.in_proj_weight": 0.00785193478520141,
+          "mac.attention.out_proj.weight": 0.0090905733926995
+        },
+        "4096": {
+          "head.weight": 0.005329838002240991,
+          "mac.persistent": 0.00040270263361847134,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 9.949763212170588e-05,
+          "mac.memory.value_projection.weight": 0.00017700311066237294,
+          "mac.memory.alpha_projection.weight": 1.6699944136344495e-06,
+          "mac.memory.alpha_projection.bias": 7.1306725558914e-06,
+          "mac.memory.eta_projection.weight": 3.3214644491934187e-06,
+          "mac.memory.eta_projection.bias": 1.1016580634525624e-05,
+          "mac.memory.theta_projection.weight": 5.6517062608187665e-06,
+          "mac.memory.theta_projection.bias": 1.1020106619434028e-05,
+          "mac.query_projection.weight": 2.8681751454345515e-06,
+          "mac.attention.in_proj_weight": 0.00534027847316868,
+          "mac.attention.out_proj.weight": 0.006716205765589164
+        }
+      }
+    },
+    "float64/unit_variance/A_h256_eta0.9": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.977563134005018,
+          7.95318019463231
+        ],
+        "8": [
+          7.758497520581669,
+          7.730239560190286
+        ],
+        "64": [
+          6.359436899909965,
+          6.26856997308489
+        ],
+        "256": [
+          4.144840480189715,
+          4.09853689633728
+        ],
+        "512": [
+          3.045359293235681,
+          3.0380076246652923
+        ],
+        "1024": [
+          2.58214146971254,
+          2.597482143367617
+        ],
+        "2048": [
+          2.5024916302547795,
+          2.519267720840753
+        ],
+        "4096": [
+          2.4531317989435992,
+          2.460479459610216
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 2.4330903788684894,
+          "mean": 2.722503930918782,
+          "max": 6.359436899909965
+        },
+        {
+          "min": 2.4439745494905027,
+          "mean": 2.7281780323909413,
+          "max": 6.26856997308489
+        }
+      ],
+      "output_norm": {
+        "1": 0.021223897687492242,
+        "8": 0.02478649093882561,
+        "64": 0.009333722450116346,
+        "256": 0.007037013034392139,
+        "512": 0.003993746320393348,
+        "1024": 0.004580501377778895,
+        "2048": 0.00479554253957162,
+        "4096": 0.00539832129526513
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002688411799605421,
+          "mean": 0.0027119906449696025,
+          "max": 0.002738889555459382
+        },
+        "eta": {
+          "min": 0.8900505850552572,
+          "mean": 0.8997496804129461,
+          "max": 0.9079973725372559
+        },
+        "theta": {
+          "min": 0.04740960669707528,
+          "mean": 0.050023653346990896,
+          "max": 0.05299159781041283
+        }
+      },
+      "value_norm": {
+        "min": 0.21355390956244164,
+        "mean": 0.3461227742023247,
+        "max": 0.6817482612284047
+      },
+      "mean_association_spectral_norm": 0.03458595854041961,
+      "write_forget_ratio_per_token": 63.684189973865514,
+      "write_forget_ratio_mean_association": 6.363576506031384,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.11926484383835191,
+          "mac.persistent": 0.025601137186162148,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.006273442551749999,
+          "mac.memory.value_projection.weight": 0.0037376006159516,
+          "mac.memory.alpha_projection.weight": 4.2967164611986636e-05,
+          "mac.memory.alpha_projection.bias": 0.00014652614796299015,
+          "mac.memory.eta_projection.weight": 2.5128500545677976e-05,
+          "mac.memory.eta_projection.bias": 4.14248918248281e-05,
+          "mac.memory.theta_projection.weight": 3.977322679665345e-05,
+          "mac.memory.theta_projection.bias": 0.00014900955251009973,
+          "mac.query_projection.weight": 0.004619872793289173,
+          "mac.attention.in_proj_weight": 0.14559751727489484,
+          "mac.attention.out_proj.weight": 0.18418331785548692
+        },
+        "256": {
+          "head.weight": 0.07398707398432211,
+          "mac.persistent": 0.01367809525847648,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0014789941870001632,
+          "mac.memory.value_projection.weight": 0.001744444407308591,
+          "mac.memory.alpha_projection.weight": 3.0170095903498888e-05,
+          "mac.memory.alpha_projection.bias": 0.0001087516801707614,
+          "mac.memory.eta_projection.weight": 1.5441877656433027e-05,
+          "mac.memory.eta_projection.bias": 6.428915615960427e-05,
+          "mac.memory.theta_projection.weight": 1.9888640016470614e-05,
+          "mac.memory.theta_projection.bias": 1.0831198450346297e-05,
+          "mac.query_projection.weight": 0.001138409382021504,
+          "mac.attention.in_proj_weight": 0.0890252816468328,
+          "mac.attention.out_proj.weight": 0.09681389525784596
+        },
+        "1024": {
+          "head.weight": 0.055243140040748935,
+          "mac.persistent": 0.0068826001656925985,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0010825969707359817,
+          "mac.memory.value_projection.weight": 0.001650149927303058,
+          "mac.memory.alpha_projection.weight": 1.3389678205538978e-05,
+          "mac.memory.alpha_projection.bias": 5.2192801221977935e-05,
+          "mac.memory.eta_projection.weight": 7.336232408600473e-06,
+          "mac.memory.eta_projection.bias": 4.686828650347686e-06,
+          "mac.memory.theta_projection.weight": 2.5508109884635195e-05,
+          "mac.memory.theta_projection.bias": 2.4572589139274577e-05,
+          "mac.query_projection.weight": 0.0005166751183642371,
+          "mac.attention.in_proj_weight": 0.054673344460054035,
+          "mac.attention.out_proj.weight": 0.06687783062175826
+        },
+        "4096": {
+          "head.weight": 0.05708939610105661,
+          "mac.persistent": 0.007434435977948377,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0021888039328463007,
+          "mac.memory.value_projection.weight": 0.002900081274251912,
+          "mac.memory.alpha_projection.weight": 1.608605922683516e-05,
+          "mac.memory.alpha_projection.bias": 6.249834552778727e-05,
+          "mac.memory.eta_projection.weight": 3.348158995158126e-05,
+          "mac.memory.eta_projection.bias": 0.00014559018459274682,
+          "mac.memory.theta_projection.weight": 8.438805107184968e-05,
+          "mac.memory.theta_projection.bias": 0.00014832222611629015,
+          "mac.query_projection.weight": 0.0005553997059617188,
+          "mac.attention.in_proj_weight": 0.0552390819024185,
+          "mac.attention.out_proj.weight": 0.06796076772446515
+        }
+      }
+    },
+    "float64/unit_variance/A_h1024_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.993858600127589,
+          7.9694291872073535
+        ],
+        "8": [
+          7.919338819447483,
+          7.894905858532939
+        ],
+        "64": [
+          7.438851589042405,
+          7.415006703036058
+        ],
+        "256": [
+          6.37987589739812,
+          6.361916261693477
+        ],
+        "512": [
+          5.408231995979428,
+          5.397407056807171
+        ],
+        "1024": [
+          4.1133771541510145,
+          4.112058527146605
+        ],
+        "2048": [
+          2.9100241423836866,
+          2.9140658552296457
+        ],
+        "4096": [
+          2.374213594895853,
+          2.3707705357927136
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 2.3740763211762825,
+          "mean": 3.4628379912524454,
+          "max": 7.438851589042405
+        },
+        {
+          "min": 2.3706864501409557,
+          "mean": 3.4613611735524286,
+          "max": 7.415006703036058
+        }
+      ],
+      "output_norm": {
+        "1": 0.02131171352189438,
+        "8": 0.02583683144095394,
+        "64": 0.012809717004738912,
+        "256": 0.012872310536022644,
+        "512": 0.008765574408065004,
+        "1024": 0.006495068242151757,
+        "2048": 0.004675942600294747,
+        "4096": 0.004997296522303486
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0006727792417591549,
+          "mean": 0.0006786930424027456,
+          "max": 0.000685433680519451
+        },
+        "eta": {
+          "min": 0.474893806601231,
+          "mean": 0.4995473396343524,
+          "max": 0.5233147274131992
+        },
+        "theta": {
+          "min": 0.047412852443161936,
+          "mean": 0.05002360080578319,
+          "max": 0.052992080139379685
+        }
+      },
+      "value_norm": {
+        "min": 0.2137192655672584,
+        "mean": 0.346180069069112,
+        "max": 0.6817734166929784
+      },
+      "mean_association_spectral_norm": 0.034597870194398944,
+      "write_forget_ratio_per_token": 50.984787187279245,
+      "write_forget_ratio_mean_association": 5.095513019388707,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.15678046217726477,
+          "mac.persistent": 0.03584742093262721,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.007939465491374012,
+          "mac.memory.value_projection.weight": 0.0027829517029858814,
+          "mac.memory.alpha_projection.weight": 1.5401181304598732e-05,
+          "mac.memory.alpha_projection.bias": 5.461595182589477e-05,
+          "mac.memory.eta_projection.weight": 6.645862684049735e-05,
+          "mac.memory.eta_projection.bias": 0.00012254306209982829,
+          "mac.memory.theta_projection.weight": 6.892973320386693e-05,
+          "mac.memory.theta_projection.bias": 0.0002568569919668893,
+          "mac.query_projection.weight": 0.009310543343960835,
+          "mac.attention.in_proj_weight": 0.21082990969815854,
+          "mac.attention.out_proj.weight": 0.2617707020284181
+        },
+        "256": {
+          "head.weight": 0.13275424491818055,
+          "mac.persistent": 0.02932341562664147,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0030953724405376813,
+          "mac.memory.value_projection.weight": 0.0022269956733159606,
+          "mac.memory.alpha_projection.weight": 1.716027483600075e-05,
+          "mac.memory.alpha_projection.bias": 5.904810077149104e-05,
+          "mac.memory.eta_projection.weight": 1.3297946053342623e-05,
+          "mac.memory.eta_projection.bias": 3.3845497480445204e-05,
+          "mac.memory.theta_projection.weight": 3.7019145230142724e-05,
+          "mac.memory.theta_projection.bias": 6.887270400637476e-05,
+          "mac.query_projection.weight": 0.004507189359092941,
+          "mac.attention.in_proj_weight": 0.18664507763581464,
+          "mac.attention.out_proj.weight": 0.2029775717470717
+        },
+        "1024": {
+          "head.weight": 0.0643777936253286,
+          "mac.persistent": 0.010162675962912865,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0008155468861793103,
+          "mac.memory.value_projection.weight": 0.0010981840863438285,
+          "mac.memory.alpha_projection.weight": 5.561684099134663e-06,
+          "mac.memory.alpha_projection.bias": 2.140951337599938e-05,
+          "mac.memory.eta_projection.weight": 9.573612086413417e-06,
+          "mac.memory.eta_projection.bias": 2.992454391704308e-06,
+          "mac.memory.theta_projection.weight": 2.1155562821555938e-05,
+          "mac.memory.theta_projection.bias": 9.602832358544886e-06,
+          "mac.query_projection.weight": 0.0009204501637582486,
+          "mac.attention.in_proj_weight": 0.07608984351215566,
+          "mac.attention.out_proj.weight": 0.0838771621804069
+        },
+        "4096": {
+          "head.weight": 0.04988784382196203,
+          "mac.persistent": 0.00687845943568704,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0008499374279356973,
+          "mac.memory.value_projection.weight": 0.0012844898683139541,
+          "mac.memory.alpha_projection.weight": 3.5021404342359154e-06,
+          "mac.memory.alpha_projection.bias": 1.3003879041097204e-05,
+          "mac.memory.eta_projection.weight": 1.8467051922617543e-05,
+          "mac.memory.eta_projection.bias": 6.863917729020123e-05,
+          "mac.memory.theta_projection.weight": 2.7672626018255892e-05,
+          "mac.memory.theta_projection.bias": 5.7617621483800946e-05,
+          "mac.query_projection.weight": 0.0004129926553829374,
+          "mac.attention.in_proj_weight": 0.04864797504741136,
+          "mac.attention.out_proj.weight": 0.060905126480501774
+        }
+      }
+    },
+    "float64/unit_variance/B_alpha_max_2alpha256": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.977620909520364,
+          7.953240068879402
+        ],
+        "8": [
+          7.791982350137239,
+          7.767950324298065
+        ],
+        "64": [
+          6.5495284718808895,
+          6.528864601462413
+        ],
+        "256": [
+          3.886369867805993,
+          3.875411562353308
+        ],
+        "512": [
+          2.1074411105247965,
+          2.1028000383035073
+        ],
+        "1024": [
+          0.9065204055900311,
+          0.9063669791081127
+        ],
+        "2048": [
+          0.5755562136098398,
+          0.575470328581514
+        ],
+        "4096": [
+          0.4827401925183906,
+          0.48049258977313647
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.48176077334574385,
+          "mean": 1.031520822319946,
+          "max": 6.5495284718808895
+        },
+        {
+          "min": 0.4795378672690096,
+          "mean": 1.0295617413413185,
+          "max": 6.528864601462413
+        }
+      ],
+      "output_norm": {
+        "1": 0.021224364650415127,
+        "8": 0.025000991038258938,
+        "64": 0.009983788981566974,
+        "256": 0.004952204918987276,
+        "512": 0.0014327212680010346,
+        "1024": 0.0006522064887312692,
+        "2048": 0.0005984756868170041,
+        "4096": 0.0003559629418007558
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0026942603915388647,
+          "mean": 0.0027065473124784356,
+          "max": 0.002718767503265604
+        },
+        "eta": {
+          "min": 0.4748665759108957,
+          "mean": 0.49956088796459874,
+          "max": 0.5232186667055823
+        },
+        "theta": {
+          "min": 0.04741885356908553,
+          "mean": 0.05002382968662569,
+          "max": 0.05298851288597781
+        }
+      },
+      "value_norm": {
+        "min": 0.21356922882908744,
+        "mean": 0.3462840738401014,
+        "max": 0.6820362362061816
+      },
+      "mean_association_spectral_norm": 0.034610772867970256,
+      "write_forget_ratio_per_token": 12.789176678683283,
+      "write_forget_ratio_mean_association": 1.2782663790614937,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.12346782106592859,
+          "mac.persistent": 0.02791467076362072,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.005279947280500267,
+          "mac.memory.value_projection.weight": 0.002213187277499459,
+          "mac.memory.alpha_projection.linear.weight": 2.41060361054255e-05,
+          "mac.memory.eta_projection.weight": 4.721186270347226e-05,
+          "mac.memory.theta_projection.weight": 4.763032508355609e-05,
+          "mac.query_projection.weight": 0.005818839121825016,
+          "mac.attention.in_proj_weight": 0.16613288510624008,
+          "mac.attention.out_proj.weight": 0.20651374536886138
+        },
+        "256": {
+          "head.weight": 0.05067737659550207,
+          "mac.persistent": 0.011449551059213501,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0008808090594953487,
+          "mac.memory.value_projection.weight": 0.0008479369833641302,
+          "mac.memory.alpha_projection.linear.weight": 1.2635962478763744e-05,
+          "mac.memory.eta_projection.weight": 5.596402986926589e-06,
+          "mac.memory.theta_projection.weight": 1.2717603293186563e-05,
+          "mac.query_projection.weight": 0.00067851157429091,
+          "mac.attention.in_proj_weight": 0.07099276469766083,
+          "mac.attention.out_proj.weight": 0.0778815897871373
+        },
+        "1024": {
+          "head.weight": 0.007080896783640817,
+          "mac.persistent": 0.0008245342294202848,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 9.146559410629796e-05,
+          "mac.memory.value_projection.weight": 0.0001438424588013767,
+          "mac.memory.alpha_projection.linear.weight": 9.138670760292736e-07,
+          "mac.memory.eta_projection.weight": 1.4910579916762046e-06,
+          "mac.memory.theta_projection.weight": 2.6834584185819145e-06,
+          "mac.query_projection.weight": 9.300663047231514e-06,
+          "mac.attention.in_proj_weight": 0.007886177496627279,
+          "mac.attention.out_proj.weight": 0.009128916282126556
+        },
+        "4096": {
+          "head.weight": 0.00535176105255913,
+          "mac.persistent": 0.0004024174858859062,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 9.957387774500391e-05,
+          "mac.memory.value_projection.weight": 0.00017795446993476607,
+          "mac.memory.alpha_projection.linear.weight": 8.333721479475702e-07,
+          "mac.memory.eta_projection.weight": 3.341946472798961e-06,
+          "mac.memory.theta_projection.weight": 5.67601322873363e-06,
+          "mac.query_projection.weight": 2.887129287987911e-06,
+          "mac.attention.in_proj_weight": 0.005358692871239776,
+          "mac.attention.out_proj.weight": 0.006739032539858313
+        }
+      }
+    },
+    "float64/recurring_unit/v1": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          3.9916367537494573,
+          3.978869356785507
+        ],
+        "8": [
+          0.030971807562290933,
+          0.030834047320494284
+        ],
+        "64": [
+          2.7812175124003054e-17,
+          2.7475250102404583e-17
+        ],
+        "256": [
+          3.064681096629006e-65,
+          2.757519685691916e-65
+        ],
+        "512": [
+          1.8699183216499946e-128,
+          1.5696301952314893e-128
+        ],
+        "1024": [
+          0.0,
+          0.0
+        ],
+        "2048": [
+          0.0,
+          0.0
+        ],
+        "4096": [
+          0.0,
+          0.0
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.0,
+          "mean": 1.5638612373175888e-20,
+          "max": 2.7812175124003054e-17
+        },
+        {
+          "min": 0.0,
+          "mean": 1.544412064616013e-20,
+          "max": 2.7475250102404583e-17
+        }
+      ],
+      "output_norm": {
+        "1": 0.005290054332234806,
+        "8": 3.932673218401458e-07,
+        "64": 2.3056163575938803e-36,
+        "256": 2.940652544255185e-132,
+        "512": 0.0,
+        "1024": 0.0,
+        "2048": 0.0,
+        "4096": 0.0
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.49999645102283763,
+          "mean": 0.5011005747168367,
+          "max": 0.5023950726730063
+        },
+        "eta": {
+          "min": 0.4857682694303139,
+          "mean": 0.4965702236577909,
+          "max": 0.506904965612659
+        },
+        "theta": {
+          "min": 0.04863298467197564,
+          "mean": 0.05025948776572085,
+          "max": 0.051460898196675854
+        }
+      },
+      "value_norm": {
+        "min": 0.29408469294871376,
+        "mean": 0.37364344123752913,
+        "max": 0.5150324551035375
+      },
+      "mean_association_spectral_norm": 0.12951044933392386,
+      "write_forget_ratio_per_token": 0.07444090104891266,
+      "write_forget_ratio_mean_association": 0.025802338485417263,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 1.188890677632311e-32,
+          "mac.persistent": 2.556921938476491e-33,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 4.602092873560526e-34,
+          "mac.memory.value_projection.weight": 4.801570103268951e-34,
+          "mac.memory.alpha_projection.weight": 3.2034538733284483e-34,
+          "mac.memory.eta_projection.weight": 7.172917743160424e-35,
+          "mac.memory.theta_projection.weight": 2.1545570970458215e-35,
+          "mac.query_projection.weight": 4.6168370414773714e-64,
+          "mac.attention.in_proj_weight": 1.8690766931162505e-32,
+          "mac.attention.out_proj.weight": 1.941694904238057e-32
+        },
+        "256": {
+          "head.weight": 9.42558434191083e-129,
+          "mac.persistent": 3.451561041827858e-129,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 6.0881586984959444e-130,
+          "mac.memory.value_projection.weight": 4.638047662246339e-130,
+          "mac.memory.alpha_projection.weight": 2.832079774313555e-130,
+          "mac.memory.eta_projection.weight": 3.6919115730099433e-131,
+          "mac.memory.theta_projection.weight": 1.0758188975080252e-131,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 2.702586543170936e-128,
+          "mac.attention.out_proj.weight": 2.915364804095135e-128
+        },
+        "1024": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "4096": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        }
+      }
+    },
+    "float64/recurring_unit/A_h64_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.912871573672826,
+          7.888647886658285
+        ],
+        "8": [
+          7.302222905395238,
+          7.279506122562436
+        ],
+        "64": [
+          3.973695952820266,
+          3.961417778804045
+        ],
+        "256": [
+          0.7415511248121676,
+          0.7383648699382682
+        ],
+        "512": [
+          0.4760268530800085,
+          0.46647467177779645
+        ],
+        "1024": [
+          0.44755169296073455,
+          0.42952204825386187
+        ],
+        "2048": [
+          0.4898641819870828,
+          0.45681623188371256
+        ],
+        "4096": [
+          0.5864739532680849,
+          0.5324121408447201
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.44272825834150625,
+          "mean": 0.5779091741299242,
+          "max": 3.973695952820266
+        },
+        {
+          "min": 0.4251302604947018,
+          "mean": 0.5444738698925499,
+          "max": 3.961417778804045
+        }
+      ],
+      "output_norm": {
+        "1": 0.020810143621834865,
+        "8": 0.021305369966791977,
+        "64": 0.00676683317343872,
+        "256": 0.0004999321476519502,
+        "512": 0.00038932420464702895,
+        "1024": 0.0004960473167803419,
+        "2048": 0.00031836871616330235,
+        "4096": 0.0006140308694120749
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.010786483074253169,
+          "mean": 0.010831890341179966,
+          "max": 0.01089840642794527
+        },
+        "eta": {
+          "min": 0.4857723938754068,
+          "mean": 0.49657266802998423,
+          "max": 0.506905866320181
+        },
+        "theta": {
+          "min": 0.048632412756077464,
+          "mean": 0.05025971358665747,
+          "max": 0.05146174632444283
+        }
+      },
+      "value_norm": {
+        "min": 0.29413899747456534,
+        "mean": 0.37366782572178825,
+        "max": 0.5151112551992912
+      },
+      "mean_association_spectral_norm": 0.12952453026111407,
+      "write_forget_ratio_per_token": 3.4440121045042074,
+      "write_forget_ratio_mean_association": 1.1937983935005074,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.0851712254845083,
+          "mac.persistent": 0.014269179299705653,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0017346857416959678,
+          "mac.memory.value_projection.weight": 0.002874185402790676,
+          "mac.memory.alpha_projection.weight": 0.0001473622851822714,
+          "mac.memory.alpha_projection.bias": 0.0003841281697237853,
+          "mac.memory.eta_projection.weight": 1.717766194390784e-05,
+          "mac.memory.eta_projection.bias": 1.097844900421566e-05,
+          "mac.memory.theta_projection.weight": 4.935235420683201e-05,
+          "mac.memory.theta_projection.bias": 4.4141761647172635e-05,
+          "mac.query_projection.weight": 0.0012415878892484166,
+          "mac.attention.in_proj_weight": 0.10631308013676792,
+          "mac.attention.out_proj.weight": 0.11994858945655414
+        },
+        "256": {
+          "head.weight": 0.008348663631166542,
+          "mac.persistent": 0.0011867564631623888,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0002773667188960183,
+          "mac.memory.value_projection.weight": 0.0004601014001604953,
+          "mac.memory.alpha_projection.weight": 1.1162970005708103e-05,
+          "mac.memory.alpha_projection.bias": 2.8274129227893266e-05,
+          "mac.memory.eta_projection.weight": 3.453331546361031e-06,
+          "mac.memory.eta_projection.bias": 4.608708937471989e-06,
+          "mac.memory.theta_projection.weight": 1.1602185438438492e-05,
+          "mac.memory.theta_projection.bias": 1.168831712125919e-05,
+          "mac.query_projection.weight": 1.21157074400081e-05,
+          "mac.attention.in_proj_weight": 0.011230778522898709,
+          "mac.attention.out_proj.weight": 0.010386591574938214
+        },
+        "1024": {
+          "head.weight": 0.009060178666781089,
+          "mac.persistent": 0.0007678654905703438,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00028280593682660974,
+          "mac.memory.value_projection.weight": 0.0006364826825581153,
+          "mac.memory.alpha_projection.weight": 1.181023277041353e-05,
+          "mac.memory.alpha_projection.bias": 3.1267224332404694e-05,
+          "mac.memory.eta_projection.weight": 4.48864814970407e-06,
+          "mac.memory.eta_projection.bias": 8.022406360005982e-06,
+          "mac.memory.theta_projection.weight": 1.1209702665160387e-05,
+          "mac.memory.theta_projection.bias": 1.264316608101368e-05,
+          "mac.query_projection.weight": 1.6695813134321986e-05,
+          "mac.attention.in_proj_weight": 0.011702340700962773,
+          "mac.attention.out_proj.weight": 0.010658563133722971
+        },
+        "4096": {
+          "head.weight": 0.011596682598551098,
+          "mac.persistent": 0.0012498313478116626,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0004294170866907525,
+          "mac.memory.value_projection.weight": 0.0011421300761285237,
+          "mac.memory.alpha_projection.weight": 2.3222212906872517e-05,
+          "mac.memory.alpha_projection.bias": 5.56920365564664e-05,
+          "mac.memory.eta_projection.weight": 8.179634932817734e-06,
+          "mac.memory.eta_projection.bias": 3.041888443635804e-06,
+          "mac.memory.theta_projection.weight": 2.0593932208756234e-05,
+          "mac.memory.theta_projection.bias": 1.018605529290149e-05,
+          "mac.query_projection.weight": 3.40463673558149e-05,
+          "mac.attention.in_proj_weight": 0.016986232377786882,
+          "mac.attention.out_proj.weight": 0.01569970690306685
+        }
+      }
+    },
+    "float64/recurring_unit/A_h256_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.977738576470871,
+          7.9533334187065865
+        ],
+        "8": [
+          7.794157413532805,
+          7.769885678666297
+        ],
+        "64": [
+          6.657372106323213,
+          6.635869989137941
+        ],
+        "256": [
+          4.071156786224123,
+          4.060186175504924
+        ],
+        "512": [
+          2.3518824467653783,
+          2.3409967225530255
+        ],
+        "1024": [
+          1.464067396065424,
+          1.4201705255041062
+        ],
+        "2048": [
+          1.3712381906353666,
+          1.2725578367690544
+        ],
+        "4096": [
+          1.3504992701640433,
+          1.208226494084035
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 1.3469683267012458,
+          "mean": 1.718967179670827,
+          "max": 6.657372106323213
+        },
+        {
+          "min": 1.2058182354366027,
+          "mean": 1.6309613163370558,
+          "max": 6.635869989137941
+        }
+      ],
+      "output_norm": {
+        "1": 0.02115378211553419,
+        "8": 0.024289387338944764,
+        "64": 0.018788424284222647,
+        "256": 0.007265168374189829,
+        "512": 0.0034183921392856426,
+        "1024": 0.0039488646098877695,
+        "2048": 0.0029530027756918854,
+        "4096": 0.0032224114436131164
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0027076530606652736,
+          "mean": 0.0027191710674629777,
+          "max": 0.00273613505459032
+        },
+        "eta": {
+          "min": 0.48579049218758524,
+          "mean": 0.4965839022444706,
+          "max": 0.5068928007123159
+        },
+        "theta": {
+          "min": 0.04863363462101909,
+          "mean": 0.05025996625625153,
+          "max": 0.05146277757012272
+        }
+      },
+      "value_norm": {
+        "min": 0.2942485622807516,
+        "mean": 0.3736736457009687,
+        "max": 0.5164134838559644
+      },
+      "mean_association_spectral_norm": 0.12945479552538353,
+      "write_forget_ratio_per_token": 13.719902730037013,
+      "write_forget_ratio_mean_association": 4.753097316278006,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.2191347441763067,
+          "mac.persistent": 0.03778093281949855,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.007838148270877743,
+          "mac.memory.value_projection.weight": 0.006981719111584056,
+          "mac.memory.alpha_projection.weight": 0.00010073427542686335,
+          "mac.memory.alpha_projection.bias": 0.00026447243020630805,
+          "mac.memory.eta_projection.weight": 3.7132295473163626e-05,
+          "mac.memory.eta_projection.bias": 2.602862737073508e-05,
+          "mac.memory.theta_projection.weight": 8.134166868522052e-05,
+          "mac.memory.theta_projection.bias": 0.00010150332138936181,
+          "mac.query_projection.weight": 0.008590503827027125,
+          "mac.attention.in_proj_weight": 0.2870231571855058,
+          "mac.attention.out_proj.weight": 0.3183828573117482
+        },
+        "256": {
+          "head.weight": 0.08210090432034314,
+          "mac.persistent": 0.01479990315333058,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.001304135613118451,
+          "mac.memory.value_projection.weight": 0.002782992189189501,
+          "mac.memory.alpha_projection.weight": 3.513062878374887e-05,
+          "mac.memory.alpha_projection.bias": 9.85394663966208e-05,
+          "mac.memory.eta_projection.weight": 1.01247395383725e-05,
+          "mac.memory.eta_projection.bias": 1.026041680405965e-05,
+          "mac.memory.theta_projection.weight": 2.7075882729885733e-05,
+          "mac.memory.theta_projection.bias": 2.876438471325643e-06,
+          "mac.query_projection.weight": 0.0012466937295224983,
+          "mac.attention.in_proj_weight": 0.10602352725689013,
+          "mac.attention.out_proj.weight": 0.11278674501415671
+        },
+        "1024": {
+          "head.weight": 0.03535557725297088,
+          "mac.persistent": 0.006337660955770091,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0006396555827378254,
+          "mac.memory.value_projection.weight": 0.002359439502497859,
+          "mac.memory.alpha_projection.weight": 1.366222378167232e-05,
+          "mac.memory.alpha_projection.bias": 3.98293022441793e-05,
+          "mac.memory.eta_projection.weight": 1.2197228653487666e-05,
+          "mac.memory.eta_projection.bias": 1.58591381272411e-05,
+          "mac.memory.theta_projection.weight": 2.191014220726849e-05,
+          "mac.memory.theta_projection.bias": 1.5307140181402786e-05,
+          "mac.query_projection.weight": 0.00021387670445061142,
+          "mac.attention.in_proj_weight": 0.05239355872922733,
+          "mac.attention.out_proj.weight": 0.051940035048797725
+        },
+        "4096": {
+          "head.weight": 0.029011282697937586,
+          "mac.persistent": 0.004801624204517134,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0004464424471516161,
+          "mac.memory.value_projection.weight": 0.002750022477953439,
+          "mac.memory.alpha_projection.weight": 1.4445503787924875e-05,
+          "mac.memory.alpha_projection.bias": 3.9714044153793976e-05,
+          "mac.memory.eta_projection.weight": 9.490047536771632e-06,
+          "mac.memory.eta_projection.bias": 2.4719560506848622e-05,
+          "mac.memory.theta_projection.weight": 1.5458330488424157e-05,
+          "mac.memory.theta_projection.bias": 1.9647229623379857e-05,
+          "mac.query_projection.weight": 0.00017153424294276176,
+          "mac.attention.in_proj_weight": 0.04325924488547592,
+          "mac.attention.out_proj.weight": 0.04246003768320163
+        }
+      }
+    },
+    "float64/recurring_unit/A_h256_eta0.9": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.977738576470871,
+          7.9533334187065865
+        ],
+        "8": [
+          7.7666161732289565,
+          7.73797401976442
+        ],
+        "64": [
+          6.6190543894569664,
+          6.571863655356038
+        ],
+        "256": [
+          4.087356535847981,
+          4.066637779082114
+        ],
+        "512": [
+          2.4880358975808736,
+          2.5052448973990873
+        ],
+        "1024": [
+          1.6635538089962687,
+          1.7002882981748964
+        ],
+        "2048": [
+          1.4941407990161952,
+          1.5148698216634806
+        ],
+        "4096": [
+          1.4289114607633624,
+          1.4385184314235193
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 1.4151174584876394,
+          "mean": 1.840617412818709,
+          "max": 6.6190543894569664
+        },
+        {
+          "min": 1.4278052984290237,
+          "mean": 1.8558887438673914,
+          "max": 6.571863655356038
+        }
+      ],
+      "output_norm": {
+        "1": 0.02115378211553419,
+        "8": 0.02422828030762303,
+        "64": 0.018176210297114234,
+        "256": 0.007705668625443671,
+        "512": 0.005221989841421361,
+        "1024": 0.006287669611329999,
+        "2048": 0.004209638053816898,
+        "4096": 0.004352705009796221
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002707632742740931,
+          "mean": 0.0027191768929204665,
+          "max": 0.002736145942220223
+        },
+        "eta": {
+          "min": 0.8946463449088399,
+          "mean": 0.8986610202717875,
+          "max": 0.9022183243756892
+        },
+        "theta": {
+          "min": 0.048634102783595694,
+          "mean": 0.05026001056331727,
+          "max": 0.05146298675413932
+        }
+      },
+      "value_norm": {
+        "min": 0.2942247375304292,
+        "mean": 0.3736492386400675,
+        "max": 0.516214426338834
+      },
+      "mean_association_spectral_norm": 0.129464101473458,
+      "write_forget_ratio_per_token": 68.1510715369791,
+      "write_forget_ratio_mean_association": 23.61336871205986,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.21848160795083352,
+          "mac.persistent": 0.037413684625305005,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.013103182175172484,
+          "mac.memory.value_projection.weight": 0.012290625108109158,
+          "mac.memory.alpha_projection.weight": 0.00010420736286342976,
+          "mac.memory.alpha_projection.bias": 0.00026312898706980627,
+          "mac.memory.eta_projection.weight": 2.6205969350778107e-05,
+          "mac.memory.eta_projection.bias": 2.3844895237111917e-05,
+          "mac.memory.theta_projection.weight": 3.168769198371833e-05,
+          "mac.memory.theta_projection.bias": 2.3084445983321885e-05,
+          "mac.query_projection.weight": 0.008235146305097635,
+          "mac.attention.in_proj_weight": 0.28808346804552915,
+          "mac.attention.out_proj.weight": 0.3121369328772373
+        },
+        "256": {
+          "head.weight": 0.09046998177994307,
+          "mac.persistent": 0.016500516091004537,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0023121211757731828,
+          "mac.memory.value_projection.weight": 0.005492292557268893,
+          "mac.memory.alpha_projection.weight": 3.936369623638263e-05,
+          "mac.memory.alpha_projection.bias": 0.00010945214600390002,
+          "mac.memory.eta_projection.weight": 1.7908271784939062e-05,
+          "mac.memory.eta_projection.bias": 2.014292569040749e-06,
+          "mac.memory.theta_projection.weight": 3.4730475408491045e-05,
+          "mac.memory.theta_projection.bias": 1.557051475815271e-06,
+          "mac.query_projection.weight": 0.0013562211064626823,
+          "mac.attention.in_proj_weight": 0.11616349992544434,
+          "mac.attention.out_proj.weight": 0.12050103712661349
+        },
+        "1024": {
+          "head.weight": 0.05195758261023733,
+          "mac.persistent": 0.008845135715155213,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0015194749870550799,
+          "mac.memory.value_projection.weight": 0.005439807253374058,
+          "mac.memory.alpha_projection.weight": 2.0745798872002457e-05,
+          "mac.memory.alpha_projection.bias": 5.9050872320125996e-05,
+          "mac.memory.eta_projection.weight": 1.446566451863217e-05,
+          "mac.memory.eta_projection.bias": 2.3722889757925015e-06,
+          "mac.memory.theta_projection.weight": 3.637994379306773e-05,
+          "mac.memory.theta_projection.bias": 4.0348146856394504e-05,
+          "mac.query_projection.weight": 0.00037670143499100915,
+          "mac.attention.in_proj_weight": 0.07292853030381816,
+          "mac.attention.out_proj.weight": 0.07366742685017946
+        },
+        "4096": {
+          "head.weight": 0.03978786805702894,
+          "mac.persistent": 0.006161325401798238,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0011026111665638513,
+          "mac.memory.value_projection.weight": 0.005175058048603602,
+          "mac.memory.alpha_projection.weight": 1.873294140831716e-05,
+          "mac.memory.alpha_projection.bias": 5.19994480685758e-05,
+          "mac.memory.eta_projection.weight": 9.944383960497187e-06,
+          "mac.memory.eta_projection.bias": 3.712114860660768e-05,
+          "mac.memory.theta_projection.weight": 1.7273245486748475e-05,
+          "mac.memory.theta_projection.bias": 2.4434543861439855e-05,
+          "mac.query_projection.weight": 0.0002402248661690397,
+          "mac.attention.in_proj_weight": 0.05565672687100561,
+          "mac.attention.out_proj.weight": 0.05522724419924688
+        }
+      }
+    },
+    "float64/recurring_unit/A_h1024_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.99403908711986,
+          7.969588369192555
+        ],
+        "8": [
+          7.922235839041078,
+          7.897558456352968
+        ],
+        "64": [
+          7.574395760491219,
+          7.549465413912363
+        ],
+        "256": [
+          6.65150282677236,
+          6.631332432978654
+        ],
+        "512": [
+          5.620654818494261,
+          5.606240522374035
+        ],
+        "1024": [
+          4.10759995199242,
+          4.100259106637925
+        ],
+        "2048": [
+          2.4859641330643294,
+          2.47523418439171
+        ],
+        "4096": [
+          1.6742671473485524,
+          1.6202831466861285
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 1.6739154962452027,
+          "mean": 3.1349466589173107,
+          "max": 7.574395760491219
+        },
+        {
+          "min": 1.6202831466861285,
+          "mean": 3.1134891949422263,
+          "max": 7.549465413912363
+        }
+      ],
+      "output_norm": {
+        "1": 0.021240584135187826,
+        "8": 0.025099191269961765,
+        "64": 0.024260559950278003,
+        "256": 0.01835922048454542,
+        "512": 0.012762873663099675,
+        "1024": 0.010510383615886614,
+        "2048": 0.005084568041321215,
+        "4096": 0.005112789406777035
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0006776016948008973,
+          "mean": 0.000680488574094655,
+          "max": 0.0006848174027191062
+        },
+        "eta": {
+          "min": 0.48579978648006006,
+          "mean": 0.49659893966260327,
+          "max": 0.5068690004738244
+        },
+        "theta": {
+          "min": 0.04863334184212044,
+          "mean": 0.050261085215346335,
+          "max": 0.05146384968060741
+        }
+      },
+      "value_norm": {
+        "min": 0.29384626942220793,
+        "mean": 0.3736186713558959,
+        "max": 0.5179459477358613
+      },
+      "mean_association_spectral_norm": 0.1292381968276146,
+      "write_forget_ratio_per_token": 54.8182881867998,
+      "write_forget_ratio_mean_association": 18.96215917884355,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.27738388633530814,
+          "mac.persistent": 0.04829732096480301,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.012071712001787801,
+          "mac.memory.value_projection.weight": 0.008694473767308515,
+          "mac.memory.alpha_projection.weight": 3.253998019072998e-05,
+          "mac.memory.alpha_projection.bias": 8.567425997889696e-05,
+          "mac.memory.eta_projection.weight": 4.7041859210973785e-05,
+          "mac.memory.eta_projection.bias": 3.4686872464022014e-05,
+          "mac.memory.theta_projection.weight": 9.341802345183522e-05,
+          "mac.memory.theta_projection.bias": 0.00012904022333078043,
+          "mac.query_projection.weight": 0.013999288688229014,
+          "mac.attention.in_proj_weight": 0.3687868201271819,
+          "mac.attention.out_proj.weight": 0.40716420403825804
+        },
+        "256": {
+          "head.weight": 0.20292282681471813,
+          "mac.persistent": 0.03652929535757604,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0057335644702282505,
+          "mac.memory.value_projection.weight": 0.0055499670643785245,
+          "mac.memory.alpha_projection.weight": 2.249461183986622e-05,
+          "mac.memory.alpha_projection.bias": 6.544770402570579e-05,
+          "mac.memory.eta_projection.weight": 1.5406145990864594e-05,
+          "mac.memory.eta_projection.bias": 2.2110523333006003e-05,
+          "mac.memory.theta_projection.weight": 3.308037669030321e-05,
+          "mac.memory.theta_projection.bias": 1.526096548233915e-05,
+          "mac.query_projection.weight": 0.007962587164552499,
+          "mac.attention.in_proj_weight": 0.2672742231155909,
+          "mac.attention.out_proj.weight": 0.28769682869688795
+        },
+        "1024": {
+          "head.weight": 0.10219136501866755,
+          "mac.persistent": 0.015586779884766153,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0016955941978729918,
+          "mac.memory.value_projection.weight": 0.003802289148079327,
+          "mac.memory.alpha_projection.weight": 1.087400369644002e-05,
+          "mac.memory.alpha_projection.bias": 3.121275502702869e-05,
+          "mac.memory.eta_projection.weight": 1.2054239763015563e-05,
+          "mac.memory.eta_projection.bias": 2.2291411336442813e-05,
+          "mac.memory.theta_projection.weight": 2.1614624056707074e-05,
+          "mac.memory.theta_projection.bias": 3.427973007506249e-05,
+          "mac.query_projection.weight": 0.0013683468947571396,
+          "mac.attention.in_proj_weight": 0.11952133524791754,
+          "mac.attention.out_proj.weight": 0.13173986867747145
+        },
+        "4096": {
+          "head.weight": 0.04526040826824988,
+          "mac.persistent": 0.007172271476292736,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0006418106611960189,
+          "mac.memory.value_projection.weight": 0.002964777723229967,
+          "mac.memory.alpha_projection.weight": 4.719238612225258e-06,
+          "mac.memory.alpha_projection.bias": 1.323902077473036e-05,
+          "mac.memory.eta_projection.weight": 6.480664531475547e-06,
+          "mac.memory.eta_projection.bias": 2.234272513446598e-05,
+          "mac.memory.theta_projection.weight": 1.213971200644286e-05,
+          "mac.memory.theta_projection.bias": 2.1921610699425406e-05,
+          "mac.query_projection.weight": 0.00034215903677035247,
+          "mac.attention.in_proj_weight": 0.06306699267203192,
+          "mac.attention.out_proj.weight": 0.06420312641665367
+        }
+      }
+    },
+    "float64/recurring_unit/B_alpha_max_2alpha256": {
+      "weight_norm_by_layer": {
+        "0": [
+          8.002491502379236,
+          7.977991949920981
+        ],
+        "1": [
+          7.977800653118277,
+          7.953398137850656
+        ],
+        "8": [
+          7.794725580718752,
+          7.770454320441017
+        ],
+        "64": [
+          6.661324414722363,
+          6.639840120405812
+        ],
+        "256": [
+          4.07918700222843,
+          4.068282168669926
+        ],
+        "512": [
+          2.358259932493445,
+          2.347607359021591
+        ],
+        "1024": [
+          1.4652861595255393,
+          1.4222483178260086
+        ],
+        "2048": [
+          1.3710816305650304,
+          1.2740190791131447
+        ],
+        "4096": [
+          1.3489882218139317,
+          1.20873315514468
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 1.3460523418661658,
+          "mean": 1.7199171666324449,
+          "max": 6.661324414722363
+        },
+        {
+          "min": 1.206320676001098,
+          "mean": 1.6333145184244207,
+          "max": 6.639840120405812
+        }
+      ],
+      "output_norm": {
+        "1": 0.021154005187199145,
+        "8": 0.024292566720271056,
+        "64": 0.018818712399620713,
+        "256": 0.007307266512267556,
+        "512": 0.0034372309313736586,
+        "1024": 0.0039561877579535,
+        "2048": 0.0029624003277688004,
+        "4096": 0.0032125125416294226
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.0027039162746799834,
+          "mean": 0.0027099028373235873,
+          "max": 0.0027169410960786256
+        },
+        "eta": {
+          "min": 0.48579054541491695,
+          "mean": 0.49658379912979,
+          "max": 0.5068924119823235
+        },
+        "theta": {
+          "min": 0.048633631979581274,
+          "mean": 0.0502599630713718,
+          "max": 0.05146275684598903
+        }
+      },
+      "value_norm": {
+        "min": 0.29425403328841376,
+        "mean": 0.37367377088312853,
+        "max": 0.5164147548964625
+      },
+      "mean_association_spectral_norm": 0.12945500403205612,
+      "write_forget_ratio_per_token": 13.766827552046337,
+      "write_forget_ratio_mean_association": 4.769359947439773,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.21946112604857929,
+          "mac.persistent": 0.03786939817189792,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.007865791061107456,
+          "mac.memory.value_projection.weight": 0.007003457805645824,
+          "mac.memory.alpha_projection.linear.weight": 4.993297863808019e-05,
+          "mac.memory.eta_projection.weight": 3.722915943272713e-05,
+          "mac.memory.theta_projection.weight": 8.150942972479817e-05,
+          "mac.query_projection.weight": 0.008609447446724917,
+          "mac.attention.in_proj_weight": 0.28759850763339223,
+          "mac.attention.out_proj.weight": 0.3188726956291481
+        },
+        "256": {
+          "head.weight": 0.08262023694253655,
+          "mac.persistent": 0.014932416307235278,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0013142012449789437,
+          "mac.memory.value_projection.weight": 0.002803137140087848,
+          "mac.memory.alpha_projection.linear.weight": 1.7519259979557315e-05,
+          "mac.memory.eta_projection.weight": 1.0126225551658601e-05,
+          "mac.memory.theta_projection.weight": 2.7069885441621734e-05,
+          "mac.query_projection.weight": 0.0012536723770137374,
+          "mac.attention.in_proj_weight": 0.10683322678439389,
+          "mac.attention.out_proj.weight": 0.113422539028289
+        },
+        "1024": {
+          "head.weight": 0.035391957560022044,
+          "mac.persistent": 0.006347348829451081,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0006394053125718239,
+          "mac.memory.value_projection.weight": 0.002365260396490106,
+          "mac.memory.alpha_projection.linear.weight": 6.855392022426023e-06,
+          "mac.memory.eta_projection.weight": 1.2186870703409693e-05,
+          "mac.memory.theta_projection.weight": 2.1916126648121984e-05,
+          "mac.query_projection.weight": 0.0002145192528289789,
+          "mac.attention.in_proj_weight": 0.052514034888089124,
+          "mac.attention.out_proj.weight": 0.052027055857807376
+        },
+        "4096": {
+          "head.weight": 0.028934339200150965,
+          "mac.persistent": 0.004778329530663366,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0004469188554461347,
+          "mac.memory.value_projection.weight": 0.0027495035304598717,
+          "mac.memory.alpha_projection.linear.weight": 7.290829909773207e-06,
+          "mac.memory.eta_projection.weight": 9.465834741438223e-06,
+          "mac.memory.theta_projection.weight": 1.5457119236353255e-05,
+          "mac.query_projection.weight": 0.00017120743062913447,
+          "mac.attention.in_proj_weight": 0.04316174886570426,
+          "mac.attention.out_proj.weight": 0.04237537755379578
+        }
+      }
+    },
+    "float32/fused_norm_1/v1": {
+      "weight_norm_by_layer": {
+        "0": [
+          7.935905456542969,
+          8.054825782775879
+        ],
+        "1": [
+          3.966604471206665,
+          4.025733947753906
+        ],
+        "8": [
+          0.031029097735881805,
+          0.03137993440032005
+        ],
+        "64": [
+          1.8073029912592005e-18,
+          1.8242992781004807e-18
+        ],
+        "256": [
+          0.0,
+          0.0
+        ],
+        "512": [
+          0.0,
+          0.0
+        ],
+        "1024": [
+          0.0,
+          0.0
+        ],
+        "2048": [
+          0.0,
+          0.0
+        ],
+        "4096": [
+          0.0,
+          0.0
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.0,
+          "mean": 9.59723789951493e-22,
+          "max": 1.8073029912592005e-18
+        },
+        {
+          "min": 0.0,
+          "mean": 9.682635085474282e-22,
+          "max": 1.8242992781004807e-18
+        }
+      ],
+      "output_norm": {
+        "1": 0.00023166180471889675,
+        "8": 1.3425236033981491e-08,
+        "64": 0.0,
+        "256": 0.0,
+        "512": 0.0,
+        "1024": 0.0,
+        "2048": 0.0,
+        "4096": 0.0
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.49931588768959045,
+          "mean": 0.49959367625706363,
+          "max": 0.499911367893219
+        },
+        "eta": {
+          "min": 0.4965703785419464,
+          "mean": 0.49848888753331266,
+          "max": 0.5003563165664673
+        },
+        "theta": {
+          "min": 0.049687916040420534,
+          "mean": 0.04996283116997802,
+          "max": 0.05023438930511475
+        }
+      },
+      "value_norm": {
+        "min": 0.05611778195862836,
+        "mean": 0.07211092730831409,
+        "max": 0.08595009126514269
+      },
+      "mean_association_spectral_norm": 0.04913252056191201,
+      "write_forget_ratio_per_token": 0.014379726543649954,
+      "write_forget_ratio_mean_association": 0.009797574881540809,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "256": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "1024": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "4096": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        }
+      }
+    },
+    "float32/fused_norm_1/A_h256_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          7.935905456542969,
+          8.054825782775879
+        ],
+        "1": [
+          7.909339904785156,
+          8.028165817260742
+        ],
+        "8": [
+          7.722548484802246,
+          7.838786602020264
+        ],
+        "64": [
+          6.542660713195801,
+          6.640655040740967
+        ],
+        "256": [
+          3.836475372314453,
+          3.894009828567505
+        ],
+        "512": [
+          1.923861026763916,
+          1.95249342918396
+        ],
+        "1024": [
+          0.5455188751220703,
+          0.5519903302192688
+        ],
+        "2048": [
+          0.2660021483898163,
+          0.2645063102245331
+        ],
+        "4096": [
+          0.26901713013648987,
+          0.2640646696090698
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.2639920115470886,
+          "mean": 0.7713105041425635,
+          "max": 6.542660713195801
+        },
+        {
+          "min": 0.26067501306533813,
+          "mean": 0.7780284339563444,
+          "max": 6.640655040740967
+        }
+      ],
+      "output_norm": {
+        "1": 0.0009188646799884737,
+        "8": 0.0008328112890012562,
+        "64": 0.0006210038554854691,
+        "256": 0.0002630889939609915,
+        "512": 6.621183274546638e-05,
+        "1024": 1.3558004866354167e-05,
+        "2048": 1.1668641491269227e-05,
+        "4096": 1.688529664534144e-05
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002696695737540722,
+          "mean": 0.002699668865716376,
+          "max": 0.0027032194193452597
+        },
+        "eta": {
+          "min": 0.49657005071640015,
+          "mean": 0.49848879128694534,
+          "max": 0.5003550052642822
+        },
+        "theta": {
+          "min": 0.049688112735748295,
+          "mean": 0.04996270708579687,
+          "max": 0.05023370981216431
+        }
+      },
+      "value_norm": {
+        "min": 0.056320664030697895,
+        "mean": 0.0721433220433707,
+        "max": 0.08636943868571281
+      },
+      "mean_association_spectral_norm": 0.049085683850139304,
+      "write_forget_ratio_per_token": 2.6622629987757294,
+      "write_forget_ratio_mean_association": 1.8113804047624587,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.012378714047372341,
+          "mac.persistent": 0.013890514150261879,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.000393516180338338,
+          "mac.memory.value_projection.weight": 5.592949310084805e-05,
+          "mac.memory.alpha_projection.weight": 1.2594587133207824e-06,
+          "mac.memory.alpha_projection.bias": 1.3505038623407017e-05,
+          "mac.memory.eta_projection.weight": 2.848930762411328e-07,
+          "mac.memory.eta_projection.bias": 2.9894190447521396e-06,
+          "mac.memory.theta_projection.weight": 1.6097190780328674e-07,
+          "mac.memory.theta_projection.bias": 9.958374675989035e-07,
+          "mac.query_projection.weight": 0.0008221327443607152,
+          "mac.attention.in_proj_weight": 0.015759237110614777,
+          "mac.attention.out_proj.weight": 0.01713412068784237
+        },
+        "256": {
+          "head.weight": 0.004601974505931139,
+          "mac.persistent": 0.005117644090205431,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 6.718291115248576e-05,
+          "mac.memory.value_projection.weight": 2.3543254428659566e-05,
+          "mac.memory.alpha_projection.weight": 4.926880023958802e-07,
+          "mac.memory.alpha_projection.bias": 5.165654783922946e-06,
+          "mac.memory.eta_projection.weight": 9.731230221632359e-08,
+          "mac.memory.eta_projection.bias": 1.035756895362283e-06,
+          "mac.memory.theta_projection.weight": 1.0240388803595124e-07,
+          "mac.memory.theta_projection.bias": 1.111169467549189e-06,
+          "mac.query_projection.weight": 8.824848919175565e-05,
+          "mac.attention.in_proj_weight": 0.005724533926695585,
+          "mac.attention.out_proj.weight": 0.0064507960341870785
+        },
+        "1024": {
+          "head.weight": 0.00039385887794196606,
+          "mac.persistent": 0.0002713350986596197,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 2.86224394585588e-06,
+          "mac.memory.value_projection.weight": 4.580053428071551e-06,
+          "mac.memory.alpha_projection.weight": 2.8209706570692106e-08,
+          "mac.memory.alpha_projection.bias": 3.0003317874616187e-07,
+          "mac.memory.eta_projection.weight": 2.832431533761337e-08,
+          "mac.memory.eta_projection.bias": 3.069339129524451e-07,
+          "mac.memory.theta_projection.weight": 3.1627127583533365e-08,
+          "mac.memory.theta_projection.bias": 3.154422927309497e-07,
+          "mac.query_projection.weight": 2.057046373238336e-07,
+          "mac.attention.in_proj_weight": 0.0003197753394488245,
+          "mac.attention.out_proj.weight": 0.0004338486469350755
+        },
+        "4096": {
+          "head.weight": 0.0004144084523431957,
+          "mac.persistent": 0.00027597005828283727,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 2.2420231289288495e-06,
+          "mac.memory.value_projection.weight": 4.6720538193767425e-06,
+          "mac.memory.alpha_projection.weight": 3.0183947785644705e-08,
+          "mac.memory.alpha_projection.bias": 3.2648694059389527e-07,
+          "mac.memory.eta_projection.weight": 2.9351664210253148e-08,
+          "mac.memory.eta_projection.bias": 3.211234513855743e-07,
+          "mac.memory.theta_projection.weight": 3.0791124316920104e-08,
+          "mac.memory.theta_projection.bias": 3.206052099358203e-07,
+          "mac.query_projection.weight": 2.2488755746508104e-07,
+          "mac.attention.in_proj_weight": 0.0003405922034289688,
+          "mac.attention.out_proj.weight": 0.0004307911149226129
+        }
+      }
+    },
+    "float32/unit_variance/v1": {
+      "weight_norm_by_layer": {
+        "0": [
+          7.935905456542969,
+          8.054825782775879
+        ],
+        "1": [
+          3.965831756591797,
+          4.024603366851807
+        ],
+        "8": [
+          0.030868804082274437,
+          0.03125752508640289
+        ],
+        "64": [
+          1.8177682735740683e-18,
+          1.8137798154554907e-18
+        ],
+        "256": [
+          0.0,
+          0.0
+        ],
+        "512": [
+          0.0,
+          0.0
+        ],
+        "1024": [
+          0.0,
+          0.0
+        ],
+        "2048": [
+          0.0,
+          0.0
+        ],
+        "4096": [
+          0.0,
+          0.0
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.0,
+          "mean": 9.50195704825758e-22,
+          "max": 1.8177682735740683e-18
+        },
+        {
+          "min": 0.0,
+          "mean": 9.486171507643225e-22,
+          "max": 1.8137798154554907e-18
+        }
+      ],
+      "output_norm": {
+        "1": 0.003791088704019785,
+        "8": 3.6036561823493685e-07,
+        "64": 0.0,
+        "256": 0.0,
+        "512": 0.0,
+        "1024": 0.0,
+        "2048": 0.0,
+        "4096": 0.0
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.4971294701099396,
+          "mean": 0.49962445401615696,
+          "max": 0.5026499032974243
+        },
+        "eta": {
+          "min": 0.4799115061759949,
+          "mean": 0.49862643490632763,
+          "max": 0.5207412838935852
+        },
+        "theta": {
+          "min": 0.04727962613105774,
+          "mean": 0.049968100457044785,
+          "max": 0.05255557298660279
+        }
+      },
+      "value_norm": {
+        "min": 0.2041152678117023,
+        "mean": 0.3463572383999669,
+        "max": 0.581412860935967
+      },
+      "mean_association_spectral_norm": 0.03428008016058007,
+      "write_forget_ratio_per_token": 0.06908949042173976,
+      "write_forget_ratio_mean_association": 0.00683800714214002,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "256": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "1024": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "4096": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        }
+      }
+    },
+    "float32/unit_variance/A_h256_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          7.935905456542969,
+          8.054825782775879
+        ],
+        "1": [
+          7.910647392272949,
+          8.029417037963867
+        ],
+        "8": [
+          7.7218708992004395,
+          7.838736057281494
+        ],
+        "64": [
+          6.46221923828125,
+          6.565633773803711
+        ],
+        "256": [
+          3.8180532455444336,
+          3.880537509918213
+        ],
+        "512": [
+          2.0699868202209473,
+          2.0981497764587402
+        ],
+        "1024": [
+          0.8848811388015747,
+          0.8880428075790405
+        ],
+        "2048": [
+          0.5650132894515991,
+          0.5645650029182434
+        ],
+        "4096": [
+          0.49887990951538086,
+          0.4982015788555145
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.4908977448940277,
+          "mean": 1.0192189494389445,
+          "max": 6.46221923828125
+        },
+        {
+          "min": 0.4899631142616272,
+          "mean": 1.0271397226875958,
+          "max": 6.565633773803711
+        }
+      ],
+      "output_norm": {
+        "1": 0.015180213376879692,
+        "8": 0.022439654916524887,
+        "64": 0.03540480509400368,
+        "256": 0.016979707404971123,
+        "512": 0.0027463440783321857,
+        "1024": 0.0013520559296011925,
+        "2048": 0.0004553269245661795,
+        "4096": 0.0008633891702629626
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002678254619240761,
+          "mean": 0.002702903334864004,
+          "max": 0.0027354785706847906
+        },
+        "eta": {
+          "min": 0.4799191951751709,
+          "mean": 0.4986263406899525,
+          "max": 0.5207388401031494
+        },
+        "theta": {
+          "min": 0.047278052568435674,
+          "mean": 0.04996806717390428,
+          "max": 0.05255576968193054
+        }
+      },
+      "value_norm": {
+        "min": 0.20408183964301105,
+        "mean": 0.34634348909430895,
+        "max": 0.5814614162004768
+      },
+      "mean_association_spectral_norm": 0.03427188946954514,
+      "write_forget_ratio_per_token": 12.77048968712605,
+      "write_forget_ratio_mean_association": 1.2636842464504172,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.21989044547080994,
+          "mac.persistent": 0.015483861789107323,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.009738297201693058,
+          "mac.memory.value_projection.weight": 0.005011982750147581,
+          "mac.memory.alpha_projection.weight": 0.00011165942851221189,
+          "mac.memory.alpha_projection.bias": 0.0003736579092219472,
+          "mac.memory.eta_projection.weight": 9.469404176343232e-05,
+          "mac.memory.eta_projection.bias": 7.684790762141347e-05,
+          "mac.memory.theta_projection.weight": 0.00015298127254936844,
+          "mac.memory.theta_projection.bias": 0.00044915309990756214,
+          "mac.query_projection.weight": 0.005765831097960472,
+          "mac.attention.in_proj_weight": 0.23408502340316772,
+          "mac.attention.out_proj.weight": 0.27035683393478394
+        },
+        "256": {
+          "head.weight": 0.07650056481361389,
+          "mac.persistent": 0.00871320441365242,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00134190428070724,
+          "mac.memory.value_projection.weight": 0.002280627144500613,
+          "mac.memory.alpha_projection.weight": 3.1362265872303396e-05,
+          "mac.memory.alpha_projection.bias": 0.0001109506847569719,
+          "mac.memory.eta_projection.weight": 9.765437425812706e-06,
+          "mac.memory.eta_projection.bias": 3.311986802145839e-05,
+          "mac.memory.theta_projection.weight": 4.277013795217499e-05,
+          "mac.memory.theta_projection.bias": 2.544566996220965e-05,
+          "mac.query_projection.weight": 0.0005832589813508093,
+          "mac.attention.in_proj_weight": 0.07286272943019867,
+          "mac.attention.out_proj.weight": 0.07777392119169235
+        },
+        "1024": {
+          "head.weight": 0.007576590403914452,
+          "mac.persistent": 0.001694904058240354,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00011905176506843418,
+          "mac.memory.value_projection.weight": 0.00013965969264972955,
+          "mac.memory.alpha_projection.weight": 1.6138924365804996e-06,
+          "mac.memory.alpha_projection.bias": 7.524735337938182e-06,
+          "mac.memory.eta_projection.weight": 1.5121776186788338e-06,
+          "mac.memory.eta_projection.bias": 4.334629011282232e-06,
+          "mac.memory.theta_projection.weight": 3.696346311699017e-06,
+          "mac.memory.theta_projection.bias": 1.0081374057335779e-05,
+          "mac.query_projection.weight": 1.3418810340226628e-05,
+          "mac.attention.in_proj_weight": 0.006603029556572437,
+          "mac.attention.out_proj.weight": 0.007776324171572924
+        },
+        "4096": {
+          "head.weight": 0.004312776494771242,
+          "mac.persistent": 0.0005857912474311888,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00015654988237656653,
+          "mac.memory.value_projection.weight": 0.0001419535547029227,
+          "mac.memory.alpha_projection.weight": 1.0723800869527622e-06,
+          "mac.memory.alpha_projection.bias": 5.121412868902553e-06,
+          "mac.memory.eta_projection.weight": 1.3361068340600468e-06,
+          "mac.memory.eta_projection.bias": 3.4489355584810255e-06,
+          "mac.memory.theta_projection.weight": 3.092261977144517e-06,
+          "mac.memory.theta_projection.bias": 4.998886652174406e-06,
+          "mac.query_projection.weight": 3.7366373817349086e-06,
+          "mac.attention.in_proj_weight": 0.005245544947683811,
+          "mac.attention.out_proj.weight": 0.005530411843210459
+        }
+      }
+    },
+    "float32/recurring_unit/v1": {
+      "weight_norm_by_layer": {
+        "0": [
+          7.935905456542969,
+          8.054825782775879
+        ],
+        "1": [
+          3.966327667236328,
+          4.02583646774292
+        ],
+        "8": [
+          0.030813656747341156,
+          0.03117300383746624
+        ],
+        "64": [
+          5.922316724348139e-17,
+          5.886946481355372e-17
+        ],
+        "256": [
+          0.0,
+          0.0
+        ],
+        "512": [
+          0.0,
+          0.0
+        ],
+        "1024": [
+          0.0,
+          0.0
+        ],
+        "2048": [
+          0.0,
+          0.0
+        ],
+        "4096": [
+          0.0,
+          0.0
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 0.0,
+          "mean": 3.4029758005599254e-20,
+          "max": 5.922316724348139e-17
+        },
+        {
+          "min": 0.0,
+          "mean": 3.3733720027633835e-20,
+          "max": 5.886946481355372e-17
+        }
+      ],
+      "output_norm": {
+        "1": 0.004002043046057224,
+        "8": 3.907640007128066e-07,
+        "64": 0.0,
+        "256": 0.0,
+        "512": 0.0,
+        "1024": 0.0,
+        "2048": 0.0,
+        "4096": 0.0
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.4991287589073181,
+          "mean": 0.5005872356705368,
+          "max": 0.5028476715087891
+        },
+        "eta": {
+          "min": 0.48710593581199646,
+          "mean": 0.5026836149336305,
+          "max": 0.5217121243476868
+        },
+        "theta": {
+          "min": 0.04858737885951996,
+          "mean": 0.05014612854356529,
+          "max": 0.05186035633087158
+        }
+      },
+      "value_norm": {
+        "min": 0.24689231943790352,
+        "mean": 0.36745863204660073,
+        "max": 0.6008057805109756
+      },
+      "mean_association_spectral_norm": 0.1413761917002149,
+      "write_forget_ratio_per_token": 0.07401731449444958,
+      "write_forget_ratio_mean_association": 0.02847745332534556,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "256": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "1024": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        },
+        "4096": {
+          "head.weight": 0.0,
+          "mac.persistent": 0.0,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0,
+          "mac.memory.value_projection.weight": 0.0,
+          "mac.memory.alpha_projection.weight": 0.0,
+          "mac.memory.eta_projection.weight": 0.0,
+          "mac.memory.theta_projection.weight": 0.0,
+          "mac.query_projection.weight": 0.0,
+          "mac.attention.in_proj_weight": 0.0,
+          "mac.attention.out_proj.weight": 0.0
+        }
+      }
+    },
+    "float32/recurring_unit/A_h256_eta0.5": {
+      "weight_norm_by_layer": {
+        "0": [
+          7.935905456542969,
+          8.054825782775879
+        ],
+        "1": [
+          7.910618782043457,
+          8.02936840057373
+        ],
+        "8": [
+          7.724852085113525,
+          7.841669082641602
+        ],
+        "64": [
+          6.5887370109558105,
+          6.688250541687012
+        ],
+        "256": [
+          4.023697376251221,
+          4.078306198120117
+        ],
+        "512": [
+          2.311117172241211,
+          2.3230981826782227
+        ],
+        "1024": [
+          1.413376808166504,
+          1.3661874532699585
+        ],
+        "2048": [
+          1.3147294521331787,
+          1.2230141162872314
+        ],
+        "4096": [
+          1.3107447624206543,
+          1.1791843175888062
+        ]
+      },
+      "weight_norm_range_after_64": [
+        {
+          "min": 1.2883810997009277,
+          "mean": 1.6624376378046382,
+          "max": 6.5887370109558105
+        },
+        {
+          "min": 1.1627707481384277,
+          "mean": 1.5885002518776123,
+          "max": 6.688250541687012
+        }
+      ],
+      "output_norm": {
+        "1": 0.016038501635193825,
+        "8": 0.02558509260416031,
+        "64": 0.024663876742124557,
+        "256": 0.008155258372426033,
+        "512": 0.004860010929405689,
+        "1024": 0.0032763855997473,
+        "2048": 0.0015732907922938466,
+        "4096": 0.0026441775262355804
+      },
+      "rates": {
+        "alpha": {
+          "min": 0.002696552313864231,
+          "mean": 0.002713486647621721,
+          "max": 0.0027399761602282524
+        },
+        "eta": {
+          "min": 0.4870847165584564,
+          "mean": 0.5026797421014635,
+          "max": 0.5216965675354004
+        },
+        "theta": {
+          "min": 0.048579376935958866,
+          "mean": 0.050143441185355186,
+          "max": 0.051855409145355226
+        }
+      },
+      "value_norm": {
+        "min": 0.2469795489744071,
+        "mean": 0.36747488382725235,
+        "max": 0.6008314668970015
+      },
+      "mean_association_spectral_norm": 0.14125863963678958,
+      "write_forget_ratio_per_token": 13.654567765048236,
+      "write_forget_ratio_mean_association": 5.248863942020596,
+      "outer_gradient_norms": {
+        "64": {
+          "head.weight": 0.2254154533147812,
+          "mac.persistent": 0.021496132016181946,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.00568321393802762,
+          "mac.memory.value_projection.weight": 0.004148629028350115,
+          "mac.memory.alpha_projection.weight": 9.079198935069144e-05,
+          "mac.memory.alpha_projection.bias": 0.000289759918814525,
+          "mac.memory.eta_projection.weight": 2.4568958906456828e-05,
+          "mac.memory.eta_projection.bias": 8.145460014929995e-05,
+          "mac.memory.theta_projection.weight": 5.295407754601911e-05,
+          "mac.memory.theta_projection.bias": 8.223186887335032e-05,
+          "mac.query_projection.weight": 0.00974650401622057,
+          "mac.attention.in_proj_weight": 0.30310219526290894,
+          "mac.attention.out_proj.weight": 0.3091996908187866
+        },
+        "256": {
+          "head.weight": 0.08399949222803116,
+          "mac.persistent": 0.009443961083889008,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.001584548968821764,
+          "mac.memory.value_projection.weight": 0.0023294214624911547,
+          "mac.memory.alpha_projection.weight": 3.339843897265382e-05,
+          "mac.memory.alpha_projection.bias": 9.417034016223624e-05,
+          "mac.memory.eta_projection.weight": 1.1125040145998355e-05,
+          "mac.memory.eta_projection.bias": 2.0846440747845918e-05,
+          "mac.memory.theta_projection.weight": 3.0785940907662734e-05,
+          "mac.memory.theta_projection.bias": 1.2550728570204228e-05,
+          "mac.query_projection.weight": 0.001452728291042149,
+          "mac.attention.in_proj_weight": 0.1025385931134224,
+          "mac.attention.out_proj.weight": 0.1131146103143692
+        },
+        "1024": {
+          "head.weight": 0.027157340198755264,
+          "mac.persistent": 0.00464254803955555,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0006478672148659825,
+          "mac.memory.value_projection.weight": 0.001801762031391263,
+          "mac.memory.alpha_projection.weight": 1.112895188271068e-05,
+          "mac.memory.alpha_projection.bias": 2.496876368240919e-05,
+          "mac.memory.eta_projection.weight": 1.1425441698520444e-05,
+          "mac.memory.eta_projection.bias": 1.2567943485919386e-05,
+          "mac.memory.theta_projection.weight": 2.435085116303526e-05,
+          "mac.memory.theta_projection.bias": 1.8733357137534767e-05,
+          "mac.query_projection.weight": 0.00022550983703695238,
+          "mac.attention.in_proj_weight": 0.03521079197525978,
+          "mac.attention.out_proj.weight": 0.041109487414360046
+        },
+        "4096": {
+          "head.weight": 0.025448331609368324,
+          "mac.persistent": 0.0038494772743433714,
+          "mac.memory.initial_weights.0": 0.0,
+          "mac.memory.initial_weights.1": 0.0,
+          "mac.memory.key_projection.weight": 0.0005118887638673186,
+          "mac.memory.value_projection.weight": 0.002090342342853546,
+          "mac.memory.alpha_projection.weight": 1.240593792317668e-05,
+          "mac.memory.alpha_projection.bias": 2.9261000236147083e-05,
+          "mac.memory.eta_projection.weight": 2.060822953353636e-05,
+          "mac.memory.eta_projection.bias": 1.3720316928811371e-05,
+          "mac.memory.theta_projection.weight": 4.604791683959775e-05,
+          "mac.memory.theta_projection.bias": 1.9602406609919854e-05,
+          "mac.query_projection.weight": 0.0001674090453889221,
+          "mac.attention.in_proj_weight": 0.03257910534739494,
+          "mac.attention.out_proj.weight": 0.03539445251226425
+        }
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "gpu_workloads": 0,
+  "seconds": 411.4128675760003
+}

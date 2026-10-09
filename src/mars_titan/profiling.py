@@ -14,6 +14,7 @@ from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import atomic_json
 from mars_titan.data.streaming import iter_windows
 from mars_titan.models.baselines.dlinear import DLinear
+from mars_titan.training.learning_hold import require_learning_allowed
 
 MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
 RECURRENT_ENCODERS = {"gru": nn.GRU, "rnn": nn.RNN, "lstm": nn.LSTM}
@@ -118,6 +119,7 @@ def profile_case(
     steps: int = 50,
     repeat: int = 0,
 ) -> dict:
+    require_learning_allowed("el perfilado con pasos de AdamW")
     if not paths or min(batch_size, steps) < 1 or workers not in {0, 2, 4}:
         raise ValueError("La carga de perfilado no es válida")
     device = require_cuda()

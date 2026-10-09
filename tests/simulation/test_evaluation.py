@@ -52,3 +52,14 @@ def test_ruin_is_an_observed_result_with_explicit_reward_penalty():
     assert metrics["completed"] is True
     assert metrics["invalid_reason"] == "ruined"
     assert report["ruin_reward_penalty"] == -20
+
+
+@pytest.mark.parametrize(
+    "options,status",
+    [({}, "completed"), ({"missing": True}, "failed"), ({"ruined": True}, "completed")],
+)
+def test_campaign_status_follows_the_valuation_not_the_process(options, status):
+    from mars_titan.simulation.campaign import evaluation_status
+
+    report = evaluate(FinancialEnv(tape(**options), capital=1000, cost_bps=0), lambda *_: 5)
+    assert evaluation_status(report) == status

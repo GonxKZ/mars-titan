@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from mars_titan.data.embeddings import require_cuda
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .inputs import validated_blocks
 
@@ -67,7 +68,37 @@ class RidgeModel:
         return cls(*values, intercept)
 
 
+def centered_normal_equations(blocks, mean, scale, target_mean, count, *, device):
+    """Acumular Z'Z y Z'y centrados por bloques, en float64 y sin concatenar filas.
+
+    Z = (X - mean) / scale. La memoria crece con d² y con un bloque, nunca con las
+    filas. El centrado final usa sumas de la misma pasada y la cuenta de la anterior.
+    """
+    import torch
+
+    gram = torch.zeros((len(mean), len(mean)), dtype=torch.float64, device=device)
+    rhs = torch.zeros(len(mean), dtype=torch.float64, device=device)
+    sum_x = torch.zeros_like(rhs)
+    sum_y = torch.zeros((), dtype=torch.float64, device=device)
+    digest = hashlib.sha256()
+    for x, y in blocks:
+        digest.update(x.tobytes())
+        digest.update(y.tobytes())
+        if x.shape[1] != len(mean):
+            raise ValueError("Han cambiado las dimensiones del entrenamiento")
+        features = torch.as_tensor((x - mean) / scale, dtype=torch.float64, device=device)
+        target = torch.as_tensor(y - target_mean, dtype=torch.float64, device=device)
+        gram.addmm_(features.T, features)
+        rhs.addmv_(features.T, target)
+        sum_x += features.sum(dim=0)
+        sum_y += target.sum()
+    gram -= torch.outer(sum_x, sum_x) / count
+    rhs -= sum_x * sum_y / count
+    return gram, rhs, sum_x, digest.digest()
+
+
 def fit_ridge_blocks(factory, *, alpha: float = 1.0, device: str = "cuda:0") -> RidgeModel:
+    require_learning_allowed("el ajuste ridge por bloques")
     import torch
 
     if device != "cuda:0" or not np.isfinite(alpha) or alpha <= 0:
@@ -99,26 +130,11 @@ def fit_ridge_blocks(factory, *, alpha: float = 1.0, device: str = "cuda:0") -> 
     constant = variance <= count * epsilon * variance + np.square(count * mean * epsilon)
     scale = np.sqrt(variance)
     scale[constant] = 1.0
-    gram = torch.zeros((len(mean), len(mean)), dtype=torch.float64, device=device)
-    rhs = torch.zeros(len(mean), dtype=torch.float64, device=device)
-    sum_x = torch.zeros_like(rhs)
-    sum_y = torch.zeros((), dtype=torch.float64, device=device)
-    second = hashlib.sha256()
-    for x, y in validated_blocks(factory):
-        second.update(x.tobytes())
-        second.update(y.tobytes())
-        if x.shape[1] != len(mean):
-            raise ValueError("Han cambiado las dimensiones del entrenamiento")
-        features = torch.as_tensor((x - mean) / scale, dtype=torch.float64, device=device)
-        target = torch.as_tensor(y - target_mean, dtype=torch.float64, device=device)
-        gram.addmm_(features.T, features)
-        rhs.addmv_(features.T, target)
-        sum_x += features.sum(dim=0)
-        sum_y += target.sum()
-    if first.digest() != second.digest():
+    gram, rhs, sum_x, second = centered_normal_equations(
+        validated_blocks(factory), mean, scale, target_mean, count, device=device
+    )
+    if first.digest() != second:
         raise ValueError("Los datos de entrenamiento han cambiado entre pasadas")
-    gram -= torch.outer(sum_x, sum_x) / count
-    rhs -= sum_x * sum_y / count
     gram.diagonal().add_(alpha)
     if not torch.isfinite(gram).all() or not torch.isfinite(rhs).all():
         raise ValueError("El sistema Ridge no contiene valores finitos")

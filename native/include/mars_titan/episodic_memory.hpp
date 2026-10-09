@@ -19,6 +19,7 @@ inline constexpr std::size_t episodic_memory_capacity = 1024;
 inline constexpr std::size_t episodic_memory_neighbors = 4;
 inline constexpr std::size_t maximum_retention_batch = 8192;
 inline constexpr std::size_t maximum_episodic_archive_bytes = std::size_t{2} * 1024 * 1024;
+inline constexpr std::size_t maximum_reservoir_capacity = 8192;
 using MemoryVector = std::array<float, episodic_memory_width>;
 
 struct MemoryScope {
@@ -128,5 +129,15 @@ class EpisodicMemory {
 [[nodiscard]] std::string serialize_memory(const MemorySnapshot& snapshot);
 [[nodiscard]] MemorySnapshot deserialize_memory(std::string_view archive);
 [[nodiscard]] MemoryVector normalize_memory_key(const MemoryVector& key);
+
+// Sorteos del reservorio causal v2 para bancos de otra geometría. Una plaza -1 descarta el
+// episodio. El estado es el texto canónico de mt19937_64 y la entrada nunca se modifica.
+struct ReservoirDraws {
+    std::vector<int64_t> slots;
+    std::string state;
+};
+[[nodiscard]] std::string causal_reservoir_state(uint64_t seed);
+[[nodiscard]] ReservoirDraws causal_reservoir_draws(std::string_view state, uint64_t seen,
+                                                    std::size_t capacity, std::size_t count);
 } // namespace mars_titan::learning
 #endif

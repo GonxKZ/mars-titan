@@ -115,13 +115,16 @@ void validate_record(const MemoryRecord& record, int64_t confirmed_at, bool norm
             "La clave guardada no conserva una norma unitaria");
 }
 
+constexpr unsigned int word_bits = 32;
+ReservoirEngine causal_engine(uint64_t seed) {
+    // El ámbito protege la recuperación. No participa en los sorteos de v2.
+    std::seed_seq sequence{static_cast<uint32_t>(seed), static_cast<uint32_t>(seed >> word_bits)};
+    return ReservoirEngine(sequence);
+}
+
 ReservoirEngine initial_rng(uint64_t seed, const MemoryScope& scope, std::uint32_t version) {
-    constexpr unsigned int word_bits = 32;
     if (version == causal_snapshot_version) {
-        // El ámbito protege la recuperación. No participa en los sorteos de v2.
-        std::seed_seq sequence{static_cast<uint32_t>(seed),
-                               static_cast<uint32_t>(seed >> word_bits)};
-        return ReservoirEngine(sequence);
+        return causal_engine(seed);
     }
     std::vector<uint32_t> words{
         static_cast<uint32_t>(seed), static_cast<uint32_t>(seed >> word_bits),
@@ -166,6 +169,14 @@ uint64_t choose_slot(ReservoirEngine& engine, uint64_t bound) {
         value = engine();
     }
     return value % bound;
+}
+
+// La admisión número seen ocupa una plaza libre o sustituye una plaza sorteada.
+std::optional<std::size_t> reservoir_slot(ReservoirEngine& engine, uint64_t seen,
+                                          std::size_t capacity) {
+    const auto chosen = seen < capacity ? seen : choose_slot(engine, seen + 1);
+    return chosen < capacity ? std::optional<std::size_t>(static_cast<std::size_t>(chosen))
+                             : std::nullopt;
 }
 
 at::Tensor vector_tensor(const MemoryVector& values) {
@@ -353,6 +364,25 @@ EpisodicMemory::~EpisodicMemory() = default;
 
 MemoryVector normalize_memory_key(const MemoryVector& key) { return normalize(key); }
 
+std::string causal_reservoir_state(uint64_t seed) { return encode_rng(causal_engine(seed)); }
+
+ReservoirDraws causal_reservoir_draws(std::string_view state, uint64_t seen, std::size_t capacity,
+                                      std::size_t count) {
+    require(capacity > 0 && capacity <= maximum_reservoir_capacity &&
+                count <= maximum_retention_batch && seen <= maximum_seen &&
+                count <= maximum_seen - seen,
+            "Los sorteos del reservorio exceden su capacidad, lote o contador");
+    auto engine = decode_rng(std::string(state));
+    ReservoirDraws result;
+    result.slots.reserve(count);
+    for (std::size_t offset = 0; offset < count; ++offset) {
+        const auto slot = reservoir_slot(engine, seen + offset, capacity);
+        result.slots.push_back(slot ? static_cast<int64_t>(*slot) : -1);
+    }
+    result.state = encode_rng(engine);
+    return result;
+}
+
 std::vector<MemoryRecord> EpisodicMemory::retained_records() const { return impl_->records; }
 
 std::vector<MemoryRecord> EpisodicMemory::validate_batch(std::span<const MemoryRecord> incoming,
@@ -416,11 +446,7 @@ PreparedMemoryWrite EpisodicMemory::prepare_write(const MemoryRecord& input,
     auto record = input;
     record.key = normalize(record.key);
     auto rng = impl_->rng;
-    const auto chosen =
-        impl_->seen < impl_->capacity ? impl_->seen : choose_slot(rng, impl_->seen + 1);
-    const auto slot = chosen < impl_->capacity
-                          ? std::optional<std::size_t>(static_cast<std::size_t>(chosen))
-                          : std::nullopt;
+    const auto slot = reservoir_slot(rng, impl_->seen, impl_->capacity);
     return PreparedMemoryWrite(
         std::make_unique<PreparedMemoryWrite::Impl>(PreparedMemoryWrite::Impl{
             impl_->owner, impl_->generation, slot, record, confirmed_at, rng}));

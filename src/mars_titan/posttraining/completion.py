@@ -12,6 +12,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.training.checkpoints import StopRequest
+from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 
@@ -233,6 +234,8 @@ def _inputs(args):
 
 
 def _stage(args):
+    if args.stage in {"tabular", "posttraining"}:
+        require_learning_allowed(f"la etapa {args.stage}")
     from mars_titan.training.baseline_queue import reference_market
 
     folder = args.output / args.fold
@@ -283,6 +286,7 @@ def _stage(args):
 
 
 def run_completion(args, stop):
+    require_learning_allowed("la campaña de compleción")
     for protected in (args.reference, args.encoded.parent, args.tabular_config, args.post_config):
         outside_source(protected, args.output)
         outside_source(args.output, protected)

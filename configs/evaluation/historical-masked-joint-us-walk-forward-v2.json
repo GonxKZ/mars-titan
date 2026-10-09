@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "market": "US",
+  "train_start": "2000-01-01",
+  "first_validation_start": "2010-04-01",
+  "validation_months": 6,
+  "calibration_months": 3,
+  "evaluation_months": 12,
+  "step_months": 12,
+  "minimum_train_months": 114,
+  "purge": "label_interval",
+  "final_test_start": "2024-01-01",
+  "final_test_end": "2025-01-01",
+  "primary_metric": "session_mae",
+  "selection": {
+    "metric": "session_mae",
+    "stopping": "fixed_budget",
+    "patience": 5,
+    "min_delta": 1e-05,
+    "max_epochs": 30
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ]
+}
