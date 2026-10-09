@@ -1460,8 +1460,18 @@ PpoForward PpoPolicy::terminal_forward(const at::Tensor& history,
 PpoAction PpoPolicy::act_recurrent(const at::Tensor& observations, const at::Tensor& state,
                                    const at::Tensor& episode_starts, bool deterministic) {
     require(!impl_->architecture.double_dqn, "Double DQN debe usar su selector epsilon-greedy");
+    return sample(infer(observations, state, episode_starts), deterministic);
+}
+
+PpoAction PpoPolicy::sample(const PpoInference& output, bool deterministic) {
+    require(!impl_->architecture.double_dqn, "Double DQN debe usar su selector epsilon-greedy");
+    require(output.logits.defined() && output.logits.dim() == 2 && output.logits.size(1) == ppo_action_count &&
+                output.logits.scalar_type() == at::kFloat && output.logits.device() == impl_->tensor_device &&
+                output.values.defined() && output.values.sizes() == at::IntArrayRef({output.logits.size(0)}) &&
+                output.values.device() == impl_->tensor_device && output.next_state.defined() &&
+                output.next_state.size(0) == output.logits.size(0),
+            "La inferencia no corresponde a la arquitectura o al dispositivo de la política");
     const at::NoGradGuard no_grad;
-    const auto output = infer(observations, state, episode_starts);
     const auto log_probabilities = output.logits.log_softmax(-1);
     const auto actions = deterministic ? log_probabilities.argmax(1) :
         at::multinomial(log_probabilities.exp(), 1, true, impl_->sampler).squeeze(1);
