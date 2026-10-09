@@ -20,6 +20,8 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 
 from .config import (
+    MAX_BLOCK_ROWS,
+    MAX_STATE_BYTES,
     PAPER_CONVOLUTION_KERNEL,
     PAPER_PROJECTIONS,
     GateBias,
@@ -33,7 +35,15 @@ from .config import (
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
-from .state import MACState, check_differentiable, check_finite, mac_tensors, map_mac_rows
+from .state import (
+    MACState,
+    check_differentiable,
+    check_finite,
+    deferred_checks,
+    mac_tensors,
+    map_mac_rows,
+    require_true,
+)
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 # Opciones de MemoryConfig de cada nombre de proyecciones. linear_v1 no añade ninguna y
@@ -103,8 +113,8 @@ class FinancialConfig:
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
-        bounded_integer(self.max_batch, "lote", 1, 256)
-        bounded_integer(self.max_state_bytes, "bytes de estado", 1, 256 * 1024**2)
+        bounded_integer(self.max_batch, "lote", 1, MAX_BLOCK_ROWS)
+        bounded_integer(self.max_state_bytes, "bytes de estado", 1, MAX_STATE_BYTES)
         if (
             self.bank_policy != "disabled"
             or type(self.refinements) is not int
@@ -213,6 +223,8 @@ class FinancialPredictor(nn.Module):
                 hidden_size=config.hidden_size,
                 layers=config.layers,
                 dropout=0.0,
+                # Con el lote por defecto (256) el contrato del codificador no cambia.
+                max_batch=config.max_batch,
             )
             self.price_encoder = reference.price_encoder
             self.encoders, self.fusion, self.head = (
@@ -470,8 +482,14 @@ class FinancialPredictor(nn.Module):
                 if self.config.variant == "mac_online"
                 else torch.zeros_like(state.observed_steps)
             )
-            if not torch.equal(state.mac.memory.steps, expected.to(state.mac.memory.steps.device)):
-                raise ValueError("Las escrituras MAC no coinciden con las observaciones")
+            steps = state.mac.memory.steps
+            message = "Las escrituras MAC no coinciden con las observaciones"
+            if steps.shape != expected.shape or steps.dtype != expected.dtype:
+                raise ValueError(message)
+            if steps.device.type == "cuda":
+                # La copia desde memoria fijada no espera al dispositivo.
+                expected = expected.pin_memory().to(steps.device, non_blocking=True)
+            require_true((steps == expected.to(steps.device)).all(), message)
         elif state.mac is not None:
             raise ValueError("El control directo no admite estado MAC")
         self._check_bytes(self._usage(state)["total_bytes"])
@@ -534,6 +552,21 @@ class FinancialPredictor(nn.Module):
     def prepare(
         self, batch, state, *, differentiable=False, control_selection=None, control_context_id=None
     ):
+        """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
+
+        Las comprobaciones de datos en CUDA se resuelven juntas antes de devolver, con el
+        mismo error y mensaje que en su línea, para no esperar al dispositivo en cada una.
+        """
+        with deferred_checks():
+            return self._prepare(
+                batch,
+                state,
+                differentiable=differentiable,
+                control_selection=control_selection,
+                control_context_id=control_context_id,
+            )
+
+    def _prepare(self, batch, state, *, differentiable, control_selection, control_context_id):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide la actualización asociativa, utilice no_grad")

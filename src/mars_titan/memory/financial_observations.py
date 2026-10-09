@@ -17,6 +17,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments import corpus_source
 from mars_titan.environments.corpus_source import _ordered_parquet
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
 from mars_titan.models.titans.financial_inputs import FinancialInputSpec, validated_cpu_batch
 from mars_titan.training import corpus_inputs
 from mars_titan.training.corpus_inputs import (
@@ -296,8 +297,8 @@ class _BlockReader:
     STALE_EVENTS = 16
 
     def __init__(self, source, block_rows, max_cached_bytes, executor=None):
-        if type(block_rows) is not int or not 1 <= block_rows <= 256:
-            raise ValueError("El bloque de activos debe tener entre 1 y 256 filas")
+        if type(block_rows) is not int or not 1 <= block_rows <= MAX_BLOCK_ROWS:
+            raise ValueError(f"El bloque de activos debe tener entre 1 y {MAX_BLOCK_ROWS} filas")
         if type(max_cached_bytes) is not int or not 1024**2 <= max_cached_bytes <= 8 * 1024**3:
             raise ValueError("La caché de grupos debe estar entre 1 MiB y 8 GiB")
         self.source, self.block_rows, self.limit = source, block_rows, max_cached_bytes

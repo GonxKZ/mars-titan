@@ -6,6 +6,7 @@ import pytest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import sha256
 from mars_titan.memory import financial_observations as api
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
 from mars_titan.training.corpus_inputs import CorpusDataset
 from tests.training.chronological_fixture import chronological_corpus, phases
 
@@ -124,7 +125,12 @@ def test_eviction_redecodes_without_changing_the_stream(tmp_path):
 
 @pytest.mark.parametrize(
     "options",
-    [dict(block_rows=0), dict(block_rows=257), dict(block_rows=True), dict(max_cached_bytes=1)],
+    [
+        dict(block_rows=0),
+        dict(block_rows=MAX_BLOCK_ROWS + 1),
+        dict(block_rows=True),
+        dict(max_cached_bytes=1),
+    ],
 )
 def test_invalid_block_or_cache_budget_is_rejected_before_reading(tmp_path, options):
     _, streams = sources(tmp_path)
