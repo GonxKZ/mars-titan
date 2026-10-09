@@ -35,6 +35,8 @@ Cada ventana entrena con todo el pasado disponible hasta su corte, valida en el 
 
 La selección guarda el mejor estado según la validación temporal, con presupuesto fijo de 30 épocas, paciencia y mejora mínima declaradas en el protocolo. Los controles emparejados conservan el mismo número de actualizaciones. Si una parada independiente rompiera esa igualdad, se usa selección del mejor estado con presupuesto fijo. Los checkpoints de recuperación rotan con un límite pequeño y el mejor estado se guarda aparte, según [la política de checkpoints](../engineering/checkpoint-recovery.md).
 
+Los brazos con memoria predicen cada tramo desde el estado inicial, tras observar las entradas de los 12 meses anteriores sin etiquetas. El calentamiento es el mismo para los cuatro controles de Titans-MAC y está declarado en sus recetas antes de entrenar. Ninguna etiqueta madura se escribe en la memoria rápida. La [política completa](../engineering/titans-chronological-trainer.md#política-de-memoria-en-inferencia) explica por qué no se encadena la memoria entre tramos.
+
 El test de 2024 no participa en ninguna selección. Se abrirá una sola vez, con la configuración fijada, al final de la campaña.
 
 ## Familias entrenadas
@@ -194,3 +196,5 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 - Revisar la configuración de evaluación declarada antes de ver resultados: familias de contrastes, base de los refinamientos K, mínimo de activos del Rank IC y longitud de bloque ([#32](https://github.com/GonxKZ/mars-titan/issues/32)). La [cabeza común](../engineering/quantile-head.md) y su calibración CQR ([#22](https://github.com/GonxKZ/mars-titan/issues/22)) están implementadas y el control de la cabeza sobre el Transformer compacto está declarado sin ejecutar.
 - Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
 - Política de retención de predicciones y checkpoints según el disco disponible.
+- Memoria de Titans-MAC para la campaña. La [memoria con residual y LayerNorm](../engineering/titans-mac-output-scale.md) de la sección 3.3 del artículo mantiene la escala de la salida de MAC en fixtures, pero cambia la identidad de los cuatro brazos y queda propuesta en [#27](https://github.com/GonxKZ/mars-titan/issues/27).
+- `accumulation_rows` según los activos por instante. Sin acumulación, el grafo de un tramo de `mac_online` con más de unos mil activos supera la memoria de la GPU según la [estimación medida en CPU](../engineering/titans-chronological-trainer.md#memoria-del-tramo-y-acumulación-por-bloques).
