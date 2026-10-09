@@ -271,3 +271,18 @@ def test_in_place_attachment_equals_the_copy_and_keeps_the_base_digest(kind):
         rebuilt.get_submodule("head").parametrizations.weight.original.add_(1)
     assert base_digest(rebuilt) != base_digest(original)
     assert adapter_names(original) == []
+
+
+def test_root_module_targets_keep_their_names_and_the_base_digest():
+    torch.manual_seed(2)
+    module = torch.nn.Linear(3, 5).requires_grad_(False)
+    declared = [AdapterTarget("", "weight", "residual"), AdapterTarget("", "bias", "residual")]
+    adapted = adapted_copy(module, declared, seed=1)
+    assert adapter_names(adapted) == [
+        "parametrizations.weight.0.delta",
+        "parametrizations.bias.0.delta",
+    ]
+    assert base_digest(adapted) == base_digest(module)
+    with torch.no_grad():
+        adapted.parametrizations.bias.original.add_(1)
+    assert base_digest(adapted) != base_digest(module)

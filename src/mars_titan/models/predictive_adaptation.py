@@ -320,12 +320,16 @@ def trainable_parameters(model):
     return sum(value.numel() for value in model.parameters() if value.requires_grad)
 
 
+def _parametrized(name):
+    return name.startswith("parametrizations.") or ".parametrizations." in name
+
+
 def adapter_names(model):
     """Nombres de los parámetros de corrección, en el orden de `named_parameters`."""
     return [
         name
         for name, _ in model.named_parameters()
-        if ".parametrizations." in name and not name.endswith(".original")
+        if _parametrized(name) and not name.endswith(".original")
     ]
 
 
@@ -338,7 +342,7 @@ def base_digest(model):
     adapters = set(adapter_names(model))
     # Una parametrización mueve el tensor al final del orden de su módulo: se ordena por nombre.
     values = {
-        name.replace(".parametrizations.", ".").removesuffix(".original"): value
+        ("." + name).replace(".parametrizations.", ".").removesuffix(".original")[1:]: value
         for name, value in model.named_parameters()
         if name not in adapters
     }
