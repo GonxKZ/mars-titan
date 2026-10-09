@@ -62,6 +62,7 @@ from mars_titan.models.titans.financial import (
     copy_paired_parameters,
 )
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
+from mars_titan.models.titans.local_control import MACProjectionConfig
 
 from .candidate_walk_forward import check_view_rows
 from .checkpoints import StopRequest
@@ -248,14 +249,30 @@ def _sources(dataset, phases, root):
     return sources
 
 
-def _predictor(document, specification, variant, seed, device):
-    """Construir la variante con los parámetros iniciales copiados del emparejamiento."""
+def control_config(local_control):
+    """Contrato del control local C de la petición. Solo existe en `mac_online`."""
+    if local_control is None:
+        return None
+    _require(isinstance(local_control, dict), "El control local se declara como un objeto")
+    return MACProjectionConfig(**local_control)
+
+
+def _predictor(document, specification, variant, seed, device, local_control=None):
+    """Construir la variante con los parámetros iniciales copiados del emparejamiento.
+
+    Con el control C, la variante es `mac_online` y coincide con la fuente del emparejamiento.
+    """
     options = {key: value for key, value in document["predictor"].items() if key != "dtype"}
     dtype = DTYPES[document["predictor"]["dtype"]]
+    control = control_config(local_control)
+    _require(
+        control is None or variant == document["pairing_source"],
+        "El control C necesita que mac_online sea la fuente del emparejamiento",
+    )
 
     def build(name):
         config = FinancialConfig(specification, variant=name, seed=seed, **options)
-        return FinancialPredictor(config, device=device, dtype=dtype)
+        return FinancialPredictor(config, local_control=control, device=device, dtype=dtype)
 
     target = build(variant)
     if variant == document["pairing_source"]:
@@ -267,11 +284,13 @@ def _code():
     return {name: sha256(Path(importlib.import_module(name).__file__)) for name in _CODE}
 
 
-def _request(view, protocol_sha, window, recipe, variant, seed, device, search_case=None):
+def _request(
+    view, protocol_sha, window, recipe, variant, seed, device, search_case=None, local_control=None
+):
     """Petición verificable sin abrir la vista: huellas de sus archivos y del código.
 
-    El caso de búsqueda solo aparece si la receta los declara, de modo que las peticiones
-    de las recetas sin casos conservan su forma anterior.
+    El caso de búsqueda solo aparece si la receta los declara y el control C solo si se
+    pide, de modo que las demás peticiones conservan su forma anterior.
     """
     request = dict(
         view_sha256=sha256(Path(view)),
@@ -285,6 +304,8 @@ def _request(view, protocol_sha, window, recipe, variant, seed, device, search_c
     )
     if search_case is not None:
         request["search_case"] = search_case
+    if local_control is not None:
+        request["local_control"] = asdict(control_config(local_control))
     return request
 
 
@@ -363,22 +384,31 @@ def run_titans_window(
     stop=None,
     optimizer_factory=None,
     search_case=None,
+    local_control=None,
 ):
     """Ajustar una variante en una ventana y escribir sus predicciones por fila.
 
     La protección del aprendizaje se comprueba antes de leer ninguna fuente.
     `optimizer_factory` solo existe para comprobar el bucle con un optimizador que no
     modifica pesos. `search_case` elige uno de los casos de búsqueda de la receta, y es
-    obligatorio si la receta los declara.
+    obligatorio si la receta los declara. `local_control` declara el control C de CM-v1
+    (disabled para su B o penalty) y solo se admite con `mac_online`.
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
+    _require(
+        local_control is None or variant == "mac_online",
+        "El control local C solo se declara sobre mac_online",
+    )
+    control_config(local_control)
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     view, output = Path(view), Path(output)
     protocol_document, protocol_sha, rule, fold = _protocol(protocol, window, seed)
     chronological, document, options = _recipe(recipe, rule, search_case)
-    request = _request(view, protocol_sha, window, recipe, variant, seed, device, search_case)
+    request = _request(
+        view, protocol_sha, window, recipe, variant, seed, device, search_case, local_control
+    )
     safe_destination(output)
     report_path = output / "run.json"
     if report_path.exists():
@@ -407,7 +437,9 @@ def run_titans_window(
     phases = window_phases(fold, options["warmup_months"])
     sources = _sources(dataset, phases, Path(indices) if indices else output / "indices")
     specification = sources["train"].specification()
-    predictor, pairing = _predictor(document, specification, variant, seed, device)
+    predictor, pairing = _predictor(
+        document, specification, variant, seed, device, request.get("local_control")
+    )
     trainer = ChronologicalTrainer(
         predictor,
         chronological,
@@ -621,6 +653,7 @@ def carry_titans(anchor, anchor_view, view, output, *, device="cuda:0", stop=Non
             seed=request["seed"],
             **options_predictor,
         ),
+        local_control=control_config(request.get("local_control")),
         device=device,
         dtype=DTYPES[document["predictor"]["dtype"]],
     )

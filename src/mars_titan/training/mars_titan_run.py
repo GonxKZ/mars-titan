@@ -223,12 +223,15 @@ def case_recipe(document, search_case):
     return ReadoutRecipe(**(document["recipe"] | cases[search_case]))
 
 
-def retention_config(recipe, admission, *, policy="reservoir"):
-    """Configuración del banco de cada escritura. M0 no construye banco."""
+def retention_config(recipe, admission, *, policy="reservoir", **options):
+    """Configuración del banco de cada escritura. M0 no construye banco.
+
+    `options` son los límites de la retención con centros fijos de M1, como la frontera.
+    """
     if admission == "m0":
         return None
     return bank_retention(
-        admission, capacity=recipe.bank_capacity, seed=recipe.bank_seed, policy=policy
+        admission, capacity=recipe.bank_capacity, seed=recipe.bank_seed, policy=policy, **options
     )
 
 
@@ -349,8 +352,12 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
-        if config.variant != "mac_online" or predictor.local_control is not None:
-            raise ValueError("MARS-TITAN parte de Titans-MAC mac_online sin C, que pertenece a CM")
+        control = predictor.local_control
+        if config.variant != "mac_online" or (
+            control is not None and control.config.mode != "disabled"
+        ):
+            # La B de CM-v1 llega con C en modo disabled. La penalización solo ajusta el núcleo.
+            raise ValueError("El lector parte de Titans-MAC mac_online, con C solo en disabled")
         if predictor.training or any(p.requires_grad for p in predictor.parameters()):
             raise ValueError("El padre Titans-MAC debe llegar congelado, en eval y sin gradientes")
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
