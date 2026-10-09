@@ -23,6 +23,7 @@ from mars_titan.cm.numerical_radius import (
 from .config import MACConfig, bounded_integer, canonical, require_identity
 from .mac import TitansMAC
 from .state import check_differentiable, check_finite
+from .transition_jacobian import fast_state_point, fast_state_transition
 
 
 @dataclass(frozen=True)
@@ -330,22 +331,8 @@ class MACProjectionControl(nn.Module):
         return tuple(indices[flow] for flow in selection.selected_flow_ids if flow in indices)
 
     def _operator(self, mac, token, state, *, differentiable):
-        memory = state.memory
-        point = torch.cat([value.flatten() for value in (*memory.weights, *memory.momentum)])
-        point = point.detach().requires_grad_(True)
-        dim, depth = self.mac_config.memory.dim, self.mac_config.memory.depth
-
-        def transition(value):
-            pieces = tuple(piece.reshape(1, dim, dim).clone() for piece in value.split(dim**2))
-            local = replace(memory, weights=pieces[:depth], momentum=pieces[depth:])
-            _, following = mac(token, replace(state, memory=local), differentiable=True)
-            return torch.cat(
-                [
-                    tensor.flatten()
-                    for tensor in (*following.memory.weights, *following.memory.momentum)
-                ]
-            )
-
+        point = fast_state_point(state).detach().requires_grad_(True)
+        transition = fast_state_transition(mac, token, state)
         columns = []
         for direction in self.basis.T:
             _, product = torch.autograd.functional.jvp(
