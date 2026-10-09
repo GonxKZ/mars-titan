@@ -29,7 +29,7 @@ La inspección cubre responsabilidades y conexiones relevantes. No certifica aus
 
 ## Estado tras las integraciones del 9 de octubre
 
-El inventario anterior describe el código del 4 de octubre. Las PR integradas en `develop` el 9 de octubre, hasta `374440a7`, cubren ya las seis responsabilidades del recorrido temporal para la [campaña desde 2000](training-campaign-2000.md). Todas se han comprobado con pruebas que llegan hasta el paso del optimizador sin aplicarlo, casi siempre en CPU. Ninguna se ha ejecutado con aprendizaje ni sobre datos reales de la edición.
+El inventario anterior describe el código del 4 de octubre. Las PR integradas en `develop` el 9 de octubre, hasta `abe7032a`, cubren ya las seis responsabilidades del recorrido temporal para la [campaña desde 2000](training-campaign-2000.md). Todas se han comprobado con pruebas que llegan hasta el paso del optimizador sin aplicarlo, casi siempre en CPU. Ninguna se ha ejecutado con aprendizaje ni sobre datos reales de la edición.
 
 | Responsabilidad | Implementación integrada | Pendiente |
 | --- | --- | --- |

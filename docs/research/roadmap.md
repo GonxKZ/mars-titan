@@ -29,7 +29,7 @@ Se trabajará en unidades pequeñas y revisables. El [tablero](task-board.md) de
 
 ## Estado a 9 de octubre de 2026
 
-La tabla resume la evidencia técnica integrada en `develop` hasta `374440a7` para la [campaña desde 2000](training-campaign-2000.md). Ningún hito está cerrado. Las implementaciones y sus pruebas preparan la comparación, pero los criterios de aceptación exigen ejecutar entrenamientos y evaluaciones que siguen bloqueados hasta verificar la edición histórica y sus objetivos residuales.
+La tabla resume la evidencia técnica integrada en `develop` hasta `abe7032a` para la [campaña desde 2000](training-campaign-2000.md). Ningún hito está cerrado. Las implementaciones y sus pruebas preparan la comparación, pero los criterios de aceptación exigen ejecutar entrenamientos y evaluaciones que siguen bloqueados hasta verificar la edición histórica y sus objetivos residuales.
 
 | Hito | Evidencia técnica integrada | Pendiente para su criterio de cierre |
 | --- | --- | --- |
