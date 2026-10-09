@@ -140,7 +140,7 @@ def test_native_accounting_reproduces_the_references_without_predictions(referen
         )
 
 
-# Índice chino calculado con niveles diarios
+# El índice chino se calcula en el informe con sus niveles diarios, no en el motor.
 
 
 def us(day, hour):
