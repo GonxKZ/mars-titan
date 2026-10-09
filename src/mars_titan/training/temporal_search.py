@@ -21,6 +21,7 @@ from mars_titan.evaluation.splits import PARTITIONS, build_folds, stopping_rule
 from .checkpoints import StopRequest
 from .cohort_contract import input_identity
 from .experiment_resources import GpuLease
+from .learning_hold import require_learning_allowed
 from .reference_search import _configuration, run_search
 from .selection import VALIDATION_PLATEAU
 from .temporal_contract import temporal_contracts, temporal_fold
@@ -236,6 +237,7 @@ def check_temporal_search(config, views):
 
 
 def run_temporal_search(config, views, output, *, resume=False):
+    require_learning_allowed("la búsqueda temporal de referencias")
     config, views, output = map(Path, (config, views, output))
     records, identity, per_fold = _inputs(config, views)
     safe_destination(output)

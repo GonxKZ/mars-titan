@@ -18,6 +18,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training.gpu_supervisor import memory_reason, read_gpu
+from mars_titan.training.learning_hold import require_learning_allowed
 
 MIB = 1024**2
 RESERVE_MIB = 1024
@@ -456,6 +457,8 @@ def main(argv=None):
             ]
         ):
             parser.error("El estado de vigilancia debe quedar fuera de las fuentes y de la salida")
+    if args.audit_run is None:
+        require_learning_allowed("el entrenamiento PPO nativo")
     try:
         binary = args.binary.resolve(strict=True)
         if not binary.is_file() or not os.access(binary, os.X_OK):

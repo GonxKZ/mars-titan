@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from mars_titan.data.embeddings import require_cuda
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .inputs import validated_blocks
 
@@ -97,6 +98,7 @@ def centered_normal_equations(blocks, mean, scale, target_mean, count, *, device
 
 
 def fit_ridge_blocks(factory, *, alpha: float = 1.0, device: str = "cuda:0") -> RidgeModel:
+    require_learning_allowed("el ajuste ridge por bloques")
     import torch
 
     if device != "cuda:0" or not np.isfinite(alpha) or alpha <= 0:

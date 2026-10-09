@@ -13,6 +13,7 @@ from pathlib import Path
 
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.gru_probe import run_temporal_probe
+from mars_titan.training.learning_hold import require_learning_allowed
 
 _FIXED = {
     "schema_version": 1,
@@ -264,6 +265,7 @@ def _record_report(item, report, output):
 
 def run_campaign(config: Path, prepared: Path, samples: Path, output: Path) -> dict:
     """Ejecutar una campaña nueva y detenerla conservando el primer fallo."""
+    require_learning_allowed("la rejilla de referencias y controles")
     plan = _load_config(config)
     for source in (
         prepared,

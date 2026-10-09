@@ -16,11 +16,15 @@ import pytest
 
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.storage import read_tape, write_tape
+from mars_titan.training.learning_hold import learning_blocked
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def binary():
+    # Estas integraciones ejecutan pasos de optimizador en LibTorch con el binario real.
+    if learning_blocked():
+        pytest.skip("Bloqueo de aprendizaje vigente: PPO nativo no se ejecuta en estas pruebas")
     result = Path(
         os.environ.get(
             "MARS_TITAN_PPO_EXECUTABLE", "build/native/native-ppo-release/mars-titan-ppo"

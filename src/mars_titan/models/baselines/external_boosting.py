@@ -15,6 +15,7 @@ import numpy as np
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.embeddings import require_cuda
 from mars_titan.data.storage import sha256
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .boosting_selection import BoostingSelection, selection_callback, session_validation
 
@@ -331,6 +332,7 @@ def fit_external_boosting(
     Con un presupuesto de disco declarado, cada lote comprueba los bytes ya escritos
     en la caché y la construcción falla antes de entrenar si los supera.
     """
+    require_learning_allowed("el ajuste XGBoost con páginas externas")
     for value, low, high in (
         (expected_rows, 1, 2**63 - 1),
         (rounds, 1, 2000 if selection is not None else 1000),

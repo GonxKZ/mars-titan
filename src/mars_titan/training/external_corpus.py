@@ -33,6 +33,7 @@ from mars_titan.models.baselines.external_boosting import (
 
 from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
+from .learning_hold import require_learning_allowed
 from .tabular_corpus import _matrix, _predict, feature_order
 
 # Opciones del recorrido que no son parámetros del ajuste externo.
@@ -180,6 +181,7 @@ def run_external_reference(
     Antes de crear la salida se estima la caché con la población declarada y se
     falla si no cabe en los presupuestos de RAM o disco ni en lo disponible.
     """
+    require_learning_allowed("el ajuste XGBoost del corpus")
     if type(batch_size) is not int or not 1 <= batch_size <= 4096 or type(resume) is not bool:
         raise ValueError("El lote o el modo de recuperación no son válidos")
     if input_policy not in INPUT_POLICIES:

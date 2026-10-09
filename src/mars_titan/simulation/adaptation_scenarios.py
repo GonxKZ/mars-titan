@@ -8,6 +8,7 @@ import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.training.learning_hold import require_learning_allowed
 
 from .market import MarketTape
 from .portfolio import CorporateAction
@@ -307,6 +308,7 @@ def _write_context(world, directory):
 
 def fit_hmm(training_features):
     """Ajustar dos emisiones diagonales solo con secuencias declaradas de entrenamiento."""
+    require_learning_allowed("el ajuste HMM de escenarios")
     if not training_features or any(split != "train" for split, _ in training_features):
         raise ValueError("El HMM solo admite secuencias de entrenamiento")
     arrays = [np.asarray(values, dtype=np.float64) for _, values in training_features]
@@ -373,6 +375,8 @@ def fit_hmm(training_features):
 
 def prepare_adaptation_scenarios(settings, output, *, fit_markov=False):
     """Confirmar un catálogo nuevo sin mezclar la verdad del evaluador con el contexto PPO."""
+    if fit_markov:
+        require_learning_allowed("el ajuste HMM de escenarios")
     planned = cases(settings)
     output = Path(output)
     safe_destination(output)

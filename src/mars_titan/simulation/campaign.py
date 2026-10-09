@@ -7,6 +7,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.training.learning_hold import require_learning_allowed
 from mars_titan.training.run_receipts import initialize_receipt
 
 from .environment import FinancialEnv
@@ -22,6 +23,7 @@ def evaluation_status(result):
 def run_campaign(
     train, validation, output, config, *, resume=False, diagnostic=False, lease=None, stop=None
 ):
+    require_learning_allowed("la campaña de comparadores financieros")
     required = {
         "schema_version",
         "seeds",

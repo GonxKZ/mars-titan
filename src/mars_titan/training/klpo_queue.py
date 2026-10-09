@@ -12,6 +12,7 @@ from mars_titan.environments.corpus_source import prepare_causal_corpus
 
 from .baseline_queue import reference_view
 from .checkpoints import StopRequest
+from .learning_hold import require_learning_allowed
 from .predictive_run import _code
 from .predictive_study import _configuration, run_predictive_study
 from .run_receipts import initialize_receipt
@@ -171,6 +172,7 @@ def _finished_study(folder, expected, cases):
 
 def run_queue(config, reference, tabular, output, *, arm="US", stop=None):
     """Preparar una única copia ordenada y recorrer todos los controles de cada padre."""
+    require_learning_allowed("la cola de ajustes predictivos KLPO")
     config, reference, tabular, output = map(Path, (config, reference, tabular, output))
     plan, cases, config_hash = _configuration(config)
     if plan["schema_version"] != 2:

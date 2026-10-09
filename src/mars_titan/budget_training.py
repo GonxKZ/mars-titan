@@ -22,6 +22,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.streaming import iter_windows
 from mars_titan.data.temporal import MarketClock
 from mars_titan.profiling import CostProbe
+from mars_titan.training.learning_hold import require_learning_allowed
 
 
 def seed_run(seed: int) -> None:
@@ -319,6 +320,7 @@ def train_budget_grid(
     kinds: tuple[str, ...] = ("mlp", "gru"),
 ):
     """Paneles técnicos completos y reanudación de los casos de cuatro activos."""
+    require_learning_allowed("la medición supervisada con AdamW")
     if (
         not 1 <= epochs <= 30
         or not panel_sizes

@@ -29,6 +29,7 @@ from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
 
 from .corpus_inputs import CorpusDataset
+from .learning_hold import require_learning_allowed
 
 
 def feature_order(input_policy):
@@ -121,6 +122,7 @@ def run_tabular_reference(
     input_policy: str = STRICT_INPUTS,
 ) -> dict:
     """Ajustar todas las filas o declarar falta de presupuesto, nunca reducir la población."""
+    require_learning_allowed("el ajuste de la referencia tabular")
     if (
         kind not in {"ridge", "boosting"}
         or input_policy not in INPUT_POLICIES

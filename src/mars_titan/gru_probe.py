@@ -30,6 +30,7 @@ from mars_titan.data.streaming import iter_windows
 from mars_titan.models.baselines.initialization import initialize_weights
 from mars_titan.profiling import MODALITIES, RECURRENT_ENCODERS, CostProbe
 from mars_titan.reference_probe import prepare_probe
+from mars_titan.training.learning_hold import require_learning_allowed
 
 
 def run_temporal_probe(
@@ -47,6 +48,7 @@ def run_temporal_probe(
     initialize_from=None,
 ):
     """Ejecutar una configuración de coste, sin selección sobre el test final."""
+    require_learning_allowed("la sonda temporal supervisada")
     if type(epochs) is not int or not 2 <= epochs <= 30:
         raise ValueError("La medición requiere entre 2 y 30 épocas")
     if type(seed) is not int or not 0 <= seed < 2**32:

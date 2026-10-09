@@ -16,6 +16,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.baselines.transformer import CompactPriceTransformer
 
 from .checkpoints import StopRequest
+from .learning_hold import require_learning_allowed
 from .reference_campaign import _check_finished, campaign_views
 from .reference_design import candidate_indices, design_cases
 from .reference_run import (
@@ -334,6 +335,7 @@ def _execute_design(study, cases):
 
 
 def run_search(config: Path, manifest: Path, output: Path, *, resume=False, progress=None):
+    require_learning_allowed("la búsqueda de referencias neuronales")
     plan, cases, config_hash = _configuration(config)
     policy = plan.get("input_policy", STRICT_INPUTS)
     views = campaign_views(manifest, plan["arms"], input_policy=policy)

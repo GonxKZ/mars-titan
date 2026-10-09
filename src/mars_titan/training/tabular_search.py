@@ -24,6 +24,7 @@ from mars_titan.models.baselines.external_boosting import MAX_DISK_CACHE_BYTES
 from .checkpoints import StopRequest
 from .cohort_contract import input_identity
 from .external_corpus import run_external_reference
+from .learning_hold import require_learning_allowed
 from .partition_contract import supervision_bounds
 from .tabular_corpus import feature_order, run_tabular_reference
 from .temporal_contract import temporal_contracts
@@ -406,6 +407,7 @@ class _Study:
 def run_tabular_search(
     config_path, manifest, output, *, resume=False, stop=None, expected_source_hash=None
 ):
+    require_learning_allowed("la búsqueda tabular")
     config_path, manifest, output = map(Path, (config_path, manifest, output))
     config, cases, config_hash = _configuration(config_path)
     policy = _policy(config)

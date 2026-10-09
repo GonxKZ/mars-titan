@@ -50,6 +50,7 @@ from .checkpoints import (
     save_training_state,
 )
 from .corpus_inputs import CorpusDataset
+from .learning_hold import require_learning_allowed
 from .selection import FIXED_BUDGET, advance_selection, initial_selection, validate_selection
 
 KINDS = ("rnn", "lstm", "gru", "dlinear", "transformer")
@@ -471,6 +472,7 @@ def run_reference_case(
     Sin argumentos nuevos se conserva la ruta estricta: lectura, identidad y archivos.
     La política con máscaras activa la fusión con presencia y la registra en la identidad.
     """
+    require_learning_allowed("el ajuste de la referencia neuronal")
     _options(
         case,
         batch_size,

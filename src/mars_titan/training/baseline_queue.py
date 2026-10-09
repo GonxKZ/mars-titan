@@ -7,6 +7,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 
 from .checkpoints import StopRequest
+from .learning_hold import require_learning_allowed
 from .tabular_search import _artifact, run_tabular_search
 from .temporal_contract import temporal_contracts
 
@@ -111,6 +112,7 @@ def reference_view(path, arm="US"):
 
 
 def run_queue(config, reference, output, *, arm="US", stop=None):
+    require_learning_allowed("la cola de referencias tabulares")
     reference, output = Path(reference), Path(output)
     safe_destination(output)
     outside_source(reference.parent, output)
