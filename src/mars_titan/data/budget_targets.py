@@ -9,6 +9,9 @@ from .temporal import MarketClock
 
 
 def _aligned_returns(frame, sessions, cutoff):
+    # Los precios preparados guardan la sesión como diccionario y pandas la lee como
+    # categoría sin orden, que no admite comparar con el corte.
+    frame = frame.assign(session=frame.session.astype(str))
     frame = frame.loc[frame.session <= cutoff].copy()
     if frame.session.duplicated().any():
         raise ValueError("Hay una sesión de precios duplicada en las etiquetas")
