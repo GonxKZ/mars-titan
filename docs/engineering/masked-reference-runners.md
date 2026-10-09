@@ -61,7 +61,7 @@ El tamaño en disco de la política nueva no se ha medido sobre la edición real
 
 [La búsqueda histórica estadounidense](../../configs/baselines/historical-masked-reference-search-us.json) usa la versión 4 con las cinco familias, los candidatos 0 y 10, las semillas 42, 43 y 44, 30 épocas, paciencia 5 y mejora mínima 0,00001. Son los mismos valores de la [búsqueda temporal estricta](strict-temporal-search.md), salvo el lote de 256 para todas las familias, el presupuesto fijo y la retención nueva. Por ventana son 10 casos de búsqueda, 10 finalistas nuevos y 30 continuaciones. Con diez ventanas suman 500 ejecuciones.
 
-Es una propuesta técnica sin coste medido. Antes de lanzarla hay que medir tiempo, memoria y disco por época sobre la población admitida y revisar el presupuesto. El controlador temporal todavía acepta solo las versiones 2 y 3. Su adaptación a la política histórica pertenece a otra tarea.
+Es una propuesta técnica sin coste medido. Antes de lanzarla hay que medir tiempo, memoria y disco por época sobre la población admitida y revisar el presupuesto. El controlador temporal acepta la versión 4, lee la política del plan y exige que las vistas declaren la misma. Con el [protocolo anual v2](../research/walk-forward-2000.md) el plan debe aplicar además su regla de parada.
 
 ## Comprobaciones
 
@@ -89,7 +89,7 @@ Las pruebas CUDA existentes de `test_reference_run.py`, `test_selection.py` y `t
 
 ## Pendiente
 
-- Adaptar el controlador temporal y las vistas conjuntas a la versión 4 y a la política histórica.
+- Decidir el presupuesto del protocolo anual v2. Con 50 trabajos por ventana, las 19 ventanas US y las 13 conjuntas superan el límite de 512 de `temporal_search`.
 - `posttraining.parents` construye la referencia sin `mask_fusion`. Con un padre histórico, la carga estricta del estado falla por la forma de la primera capa de fusión. Debe leer el campo de la identidad antes de usarse con esta edición.
 - La cola de referencias, el análisis de campañas y las fuentes de comparación esperan `train` y `validation` como predicciones completas. Deben aceptar la retención nueva antes de consumir estas ejecuciones.
 - Ejecutar la campaña tras verificar la edición histórica y levantar el bloqueo, con medidas de coste previas. Las mejoras predictivas de cualquier familia siguen sin medir.
