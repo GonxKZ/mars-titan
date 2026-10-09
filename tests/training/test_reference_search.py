@@ -236,8 +236,8 @@ def test_changed_source_between_view_read_and_hash_is_not_adopted(tmp_path, monk
     config, manifest = setup(tmp_path)
     engine, original = module(), module().campaign_views
 
-    def change_source(path, arms):
-        views = original(path, arms)
+    def change_source(path, arms, **options):
+        views = original(path, arms, **options)
         source = json.loads(path.read_text())
         source["context_sessions"] = 32
         path.write_text(json.dumps(source))
