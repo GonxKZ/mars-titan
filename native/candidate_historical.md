@@ -100,3 +100,18 @@ M2/M3 ni C/M sobre la GRU y no acredita entrenamiento o comparación predictiva.
 La integración cronológica deberá fijar también los flags de ejecución numérica
 durante la sesión y comprobarlos al recuperar, además de la identidad de este
 adaptador.
+
+## Comprobaciones técnicas
+
+El [recibo de verificación](../reports/engineering/historical-gru-inputs-20261009.json)
+registra 49 pruebas nuevas y 14 de compatibilidad del enlace, seis CTest nativos,
+ASan/UBSan en los ejecutables y diez mutaciones detectadas. El archivo estricto
+de referencia conserva exactamente sus bytes. La revisión independiente CPU
+ejecutó 49 pruebas públicas y ocho sondas propias, sin hallar defectos materiales
+en ese alcance. No repitió los sanitizadores ni ejecutó GPU.
+
+La comprobación CUDA posterior pasó los seis casos de memoria vacía, con 21
+gradientes contrastados por caso, recuperación exacta y RNG intactos. El pico
+reservado de Torch fue de 96 MiB, dentro de la cuota de 128 MiB. Se conservaron
+las tolerancias de la referencia y el aviso de cuDNN sobre pesos GRU no contiguos.
+Esta prueba no mide una mejora de rendimiento ni de predicción.
