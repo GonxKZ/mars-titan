@@ -515,7 +515,7 @@ def run_titans_window(
 CARRY_KIND = "titans_carried_predictions"
 CARRIED = ("calibration", "evaluation")
 # Campos del caso que la campaña declara para cada brazo de Titans-MAC.
-CASE_FIELDS = {"recipe", "recipe_sha256", "variant", "seed"}
+CASE_FIELDS = {"recipe", "recipe_sha256", "variant", "seed", "search_case"}
 
 
 def carried_memory_policy(warmup_months):
@@ -712,6 +712,7 @@ def titans_fit(run, *, device="cuda:0", optimizer_factory=None):
         device=device,
         stop=run.stop,
         optimizer_factory=optimizer_factory,
+        search_case=case["search_case"],
     )
     if report["status"] == "paused":
         raise CampaignPaused

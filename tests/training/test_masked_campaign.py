@@ -62,6 +62,8 @@ def write_campaign(folder, *, variant="B", scopes=("US",), arms=ARMS, **changes)
         (CONFIGS / f"baselines/historical-masked-campaign-{variant.lower()}.json").read_text()
     )
     value.update(comparison="comparison.json", scopes=list(scopes))
+    # La comparación reducida no declara los brazos de Titans-MAC. test_titans_campaign los añade.
+    value.pop("titans_mac")
     value["neural"]["arms"] = {arm: arm for arm in arms if arm not in {"ridge", "xgboost"}}
     value["tabular"].update(
         config="tabular.json", arms={arm: arm for arm in arms if arm in {"ridge", "xgboost"}}

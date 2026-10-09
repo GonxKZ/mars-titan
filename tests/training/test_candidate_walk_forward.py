@@ -553,11 +553,12 @@ def test_planner_declares_candidate_jobs_only_with_its_section(tmp_path):
 
     declared = plan.check_campaign(ROOT / "configs/baselines/historical-masked-campaign-b.json")
     assert "accumulation_rows" in declared["pending_families"]["episodic_gru"]["pending"]
-    assert declared["counts"]["training_jobs"] == 629
+    assert "gru_episodic" not in declared["counts"]["scopes"]["US"]["arms"]
     path = write_variant(
         tmp_path,
         "B",
         episodic_gru=section(),
+        titans_mac=None,
         limits=dict(max_training_jobs=629 + 17 * 3, max_prediction_jobs=532 + 28 * 3),
     )
     report = plan.check_campaign(path)
@@ -584,7 +585,8 @@ def test_planner_declares_candidate_jobs_only_with_its_section(tmp_path):
     carry = next(job for job in jobs if job["id"] == "US/fold-001/gru_episodic/carry-s43")
     assert carry["anchor"] == "fold-000"
     assert carry["depends"] == ["US/fold-000/gru_episodic/finalist-s43"]
-    with pytest.raises(ValueError, match="680 trabajos"):
+    # Con los límites declarados, que ya cuentan Titans-MAC, la sección no cabe.
+    with pytest.raises(ValueError, match="952 trabajos"):
         plan.check_campaign(write_variant(tmp_path, "B", episodic_gru=section()))
 
 

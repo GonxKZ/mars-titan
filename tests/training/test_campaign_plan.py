@@ -9,29 +9,37 @@ from pathlib import Path
 
 import pytest
 
-from mars_titan.data.storage import atomic_json
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training.reference_design import design_cases
 
 BASELINES = Path("configs/baselines")
 EVALUATION = Path("configs/evaluation")
+TITANS_RECIPE = Path("configs/titans/chronological-training-historical-masked.json")
 CAMPAIGNS = {
     variant: BASELINES / f"historical-masked-campaign-{variant.lower()}.json" for variant in "AB"
 }
 NEURAL_ARMS = ("rnn", "lstm", "gru", "dlinear", "transformer_compact")
-# Recuentos derivados a mano: por ventana reentrenada, cada brazo neuronal ajusta dos
-# candidatos con la semilla 42 y dos finalistas, Ridge tres alfas y XGBoost doce
-# configuraciones con la semilla 42 y dos finalistas. Cada traslado es uno por semilla.
+TITANS_ARMS = (
+    "titans_transformer_direct",
+    "titans_mac_disabled",
+    "titans_mac_frozen",
+    "titans_mac_online",
+)
+# Recuentos derivados a mano: por ventana reentrenada, cada brazo neuronal y cada control
+# de Titans-MAC ajustan dos candidatos con la semilla 42 y dos finalistas, Ridge tres
+# alfas y XGBoost doce configuraciones con la semilla 42 y dos finalistas. Cada traslado
+# es uno por semilla.
 EXPECTED = {
     "A": dict(
         windows=dict(US=(19, 0), CN=(13, 0), JOINT=(13, 0)),
-        training=1665,
+        training=2385,
         prediction=0,
     ),
     "B": dict(
         windows=dict(US=(7, 12), CN=(5, 8), JOINT=(5, 8)),
-        training=629,
-        prediction=532,
+        training=901,
+        prediction=868,
     ),
 }
 
@@ -58,7 +66,7 @@ def test_declared_variants_count_jobs_per_scope_arm_and_seed(variant):
         assert len(record["retrained_windows"]) == trained
         assert record["carried_windows"] == carried
         assert record["windows"] == trained + carried
-        for arm in NEURAL_ARMS:
+        for arm in NEURAL_ARMS + TITANS_ARMS:
             assert record["arms"][arm] == {
                 "42": dict(fit=2 * trained, carry=carried),
                 "43": dict(fit=trained, carry=carried),
@@ -70,8 +78,8 @@ def test_declared_variants_count_jobs_per_scope_arm_and_seed(variant):
             "43": dict(fit=trained, carry=carried),
             "44": dict(fit=trained, carry=carried),
         }
-        assert record["training_jobs"] == trained * (5 * 4 + 3 + 14)
-        assert record["prediction_jobs"] == carried * (5 * 3 + 1 + 3)
+        assert record["training_jobs"] == trained * (5 * 4 + 3 + 14 + 4 * 4)
+        assert record["prediction_jobs"] == carried * (5 * 3 + 1 + 3 + 4 * 3)
     # Los límites declarados coinciden con el plan: cualquier ampliación exige cambiarlos.
     assert campaign["limits"] == dict(
         max_training_jobs=expected["training"], max_prediction_jobs=expected["prediction"]
@@ -191,11 +199,15 @@ def test_constants_repeat_the_runner_names_without_importing_torch():
 
 
 def write_variant(tmp_path, base="A", **changes):
+    """Copiar una variante declarada con rutas absolutas. Un cambio None retira la sección."""
     value = json.loads(CAMPAIGNS[base].read_text())
     value["comparison"] = str((EVALUATION / "historical-masked-2000-comparison.json").resolve())
     value["tabular"]["config"] = str((BASELINES / "tabular-historical-masked.json").resolve())
+    value["titans_mac"]["recipe"] = str(TITANS_RECIPE.resolve())
     for key, item in changes.items():
-        if isinstance(item, dict) and isinstance(value.get(key), dict):
+        if item is None:
+            value.pop(key)
+        elif isinstance(item, dict) and isinstance(value.get(key), dict):
             value[key] = value[key] | item
         else:
             value[key] = item
@@ -207,9 +219,9 @@ def write_variant(tmp_path, base="A", **changes):
 @pytest.mark.parametrize(
     ("variant", "limits", "message"),
     [
-        ("A", dict(max_training_jobs=1664), "1665 trabajos.*max_training_jobs=1664"),
-        ("B", dict(max_prediction_jobs=531), "532 trabajos.*max_prediction_jobs=531"),
-        ("B", dict(max_training_jobs=628), "629 trabajos.*max_training_jobs=628"),
+        ("A", dict(max_training_jobs=2384), "2385 trabajos.*max_training_jobs=2384"),
+        ("B", dict(max_prediction_jobs=867), "868 trabajos.*max_prediction_jobs=867"),
+        ("B", dict(max_training_jobs=900), "901 trabajos.*max_training_jobs=900"),
     ],
 )
 def test_declared_limits_reject_a_plan_over_budget(tmp_path, variant, limits, message):
@@ -278,15 +290,9 @@ def test_protocols_with_different_stopping_rules_are_rejected(tmp_path):
 def test_pending_families_and_later_stages_are_declared_not_planned():
     report = plan.check_campaign(CAMPAIGNS["B"])
     pending = report["pending_families"]
-    assert set(pending) == {"episodic_gru", "titans_mac", "mars_titan", "cm_v1"}
-    assert pending["titans_mac"]["arms"] == [
-        "titans_transformer_direct",
-        "titans_mac_disabled",
-        "titans_mac_frozen",
-        "titans_mac_online",
-    ]
+    assert set(pending) == {"episodic_gru", "mars_titan", "cm_v1"}
     planned = {job["arm"] for job in plan.plan_campaign(loaded("B"))}
-    assert planned == {*NEURAL_ARMS, "ridge", "xgboost"}
+    assert planned == {*NEURAL_ARMS, "ridge", "xgboost", *TITANS_ARMS}
     assert not planned & {arm for entry in pending.values() for arm in entry["arms"]}
     stage = report["later_stages"]["posttraining_adapter_matrix"]
     assert Path(stage["config"]).is_file()
@@ -296,3 +302,71 @@ def test_pending_families_and_later_stages_are_declared_not_planned():
         "objetivo pinball para padres con cuantiles",
     ]
     assert report["scientific_training_started"] is False and report["final_test_opened"] is False
+
+
+def test_titans_arms_search_as_many_optimizer_cases_as_the_neural_references():
+    campaign = loaded("A")
+    recipe = json.loads(TITANS_RECIPE.read_text())
+    section = campaign["titans_mac"]
+    assert section["sha256"] == sha256(TITANS_RECIPE)
+    for arm, variant in zip(TITANS_ARMS, plan.TITANS_VARIANTS, strict=True):
+        candidates = section["candidates"][arm]
+        assert len(candidates) == len(campaign["neural"]["case_indices"]) == 2
+        assert candidates == [
+            (
+                name,
+                dict(
+                    recipe=str(TITANS_RECIPE.resolve()),
+                    recipe_sha256=sha256(TITANS_RECIPE),
+                    variant=variant,
+                    seed=42,
+                    search_case=name,
+                ),
+            )
+            for name in ("lr1e-4", "lr1e-3")
+        ]
+    # Rejilla sin datos: la tasa que usan los casos 0 y 10 de cada referencia neuronal y la
+    # de la receta v1, con el presupuesto y la selección del protocolo.
+    references = {
+        design_cases([kind], seed=42)[index]["case"]["learning_rate"]
+        for kind in campaign["neural"]["arms"].values()
+        for index in campaign["neural"]["case_indices"]
+    }
+    v1 = json.loads(Path("configs/titans/chronological-training-quantile.json").read_text())
+    cases = recipe["walk_forward"]["search_cases"]
+    assert references == {1e-4}
+    assert cases == {"lr1e-4": dict(learning_rate=1e-4), "lr1e-3": dict(learning_rate=1e-3)}
+    assert {case["learning_rate"] for case in cases.values()} == {
+        *references,
+        v1["recipe"]["learning_rate"],
+    }
+    assert "learning_rate" not in recipe["recipe"]
+    assert recipe["recipe"]["epochs"] == campaign["rule"]["max_epochs"] == 30
+    assert recipe["predictor"]["memory_residual_layer_norm"] is True
+    assert recipe["recipe"]["accumulation_rows"] is None
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        dict(neural=dict(case_indices=[0])),
+        dict(cases={"lr1e-4": dict(learning_rate=1e-4)}),
+        dict(cases={"wd": dict(weight_decay=0.01), "lr": dict(weight_decay=0.0)}),
+        dict(cases=None),
+    ],
+    ids=["neural_count", "fewer_cases", "other_hyperparameter", "without_cases"],
+)
+def test_titans_section_requires_a_fair_optimizer_search(tmp_path, change):
+    recipe = json.loads(TITANS_RECIPE.read_text())
+    if "cases" in change:
+        if change["cases"] is None:
+            recipe["walk_forward"].pop("search_cases")
+        else:
+            recipe["walk_forward"]["search_cases"] = change["cases"]
+    atomic_json(tmp_path / "titans.json", recipe)
+    neural = change.get("neural", {})
+    path = write_variant(
+        tmp_path, "A", neural=neural, titans_mac=dict(recipe=str(tmp_path / "titans.json"))
+    )
+    with pytest.raises(ValueError, match="tantos"):
+        plan.load_campaign(path)

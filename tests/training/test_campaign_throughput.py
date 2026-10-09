@@ -148,4 +148,4 @@ def test_script_checks_a_campaign_without_reading_data(capsys):
     script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
     assert script["main"](["check", "--campaign", str(CAMPAIGNS["B"])]) == 0
     report = json.loads(capsys.readouterr().out)
-    assert report["status"] == "checked" and report["counts"]["prediction_jobs"] == 532
+    assert report["status"] == "checked" and report["counts"]["prediction_jobs"] == 868
