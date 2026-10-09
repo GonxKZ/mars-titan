@@ -104,6 +104,23 @@ flowchart LR
 
 La [búsqueda implementada para la ampliación](../engineering/reference-search.md) fija doce configuraciones por familia principal, semilla `42` para seleccionar y semillas `42`, `43` y `44` para los finalistas. Se registra cada intento, incluidos errores y descartes. Este diseño sustituye el presupuesto inicial de diez configuraciones para las nuevas campañas, sin reinterpretar los experimentos anteriores. La reserva final permanece cerrada durante esa selección.
 
+### Modificación del 9 de octubre de 2026: retención v2 de las predicciones por fila
+
+Esta modificación se declara antes de cualquier resultado de la campaña A, que no se ha ejecutado. Afecta a dos frases de este protocolo: «Se registra cada intento, incluidos errores y descartes.» y, en el orden de actualización, «Emitir y conservar las predicciones de **todos** los activos de esa sesión con ese estado.»
+
+El motivo es el disco. Con los recuentos de A v2 (2.322 ajustes en 19 ventanas), conservar todas las tablas por fila ocupa 277,5 GB en la campaña base, 183,3 GB en la ablación de modalidades y 256,4 GB en los adaptadores, frente a unos 48 GB libres y un margen declarado de 8 GiB. Ninguna disposición sin pérdida de esas tablas basta. El cálculo está en el [informe de la retención v2](../../reports/engineering/rolling-retention-20261009/README.md).
+
+La [declaración](../../configs/baselines/historical-masked-retention-v2.json) fija estas reglas:
+
+- La campaña avanza ventana a ventana. Cada ventana termina sus ajustes, su selección, sus semillas, los adaptadores, la ablación, las políticas y sus agregados antes de liberar nada y de empezar la siguiente.
+- Todo intento conserva su recibo, su informe y su estado elegido, también los fallidos y los descartados. Nada de lo que registra un intento se borra.
+- Los agregados por sesión que usa la comparación se calculan en FP64 y se guardan sin redondear por ventana.
+- Una tabla por fila de la base o de la ablación solo se libera si se regenera por inferencia desde el estado elegido, con el mismo código, el mismo orden de lotes y FP32 estricto (sin TF32 en cuBLAS ni en cuDNN), y sale idéntica bit a bit a la huella de contenido registrada. El ajuste que se predijo con otra precisión no se regenera.
+- Si la regeneración no es idéntica, la tabla se compacta sin pérdida (tabla común de filas por ventana y tramo y decimales propios, con lectura bit a bit) y se conserva. Nunca se cuantiza ni se guarda en float16.
+- Las evaluaciones que leerá una política posterior y las tablas de los adaptadores se compactan sin pérdida y se conservan hasta su último lector.
+
+Con estas reglas «conservar» significa poder recuperar exactamente. Las predicciones de cada sesión siguen emitiéndose con el estado previo a su actualización y se comparan con su huella antes de liberar el archivo. La orden `run_masked_campaign.py regenerate` las vuelve a escribir cuando alguien necesite leerlas. Las métricas o los estratos nuevos que no estén en los agregados exigirán esa regeneración, que tiene un coste de cómputo.
+
 El [plan de cómputo](../engineering/compute-plan.md) distingue el cribado, la confirmación y el análisis. La disponibilidad 24/7 no sustituye una estimación de tiempo. Las ejecuciones prolongadas cumplirán el [contrato de checkpoints](../engineering/checkpoint-recovery.md), con datos, estados, versiones y posición confirmada recuperables.
 
 ## Métricas e interpretación
