@@ -219,12 +219,14 @@ def test_extending_rejects_sections_already_declared_or_foreign(tmp_path):
         extensions.extended_campaign(prepared, copied)
 
 
-def test_the_core_recipe_of_cm_v1_rejects_block_accumulation(tmp_path):
+def test_the_core_recipe_of_cm_v1_admits_block_accumulation(tmp_path):
+    """C acumula por bloques, así que el núcleo conserva la receta de Titans-MAC con 128.
+
+    Lo que sigue sin admitirse es una receta de núcleo que no cumple la regla común.
+    """
     core = json.loads(
         Path("configs/titans/chronological-training-historical-masked.json").read_text()
     )
-    core["recipe"]["accumulation_rows"] = 128
-    atomic_json(tmp_path / "core.json", core)
     declaration = json.loads(Path("configs/titans/cm-v1-factorial.json").read_text())
     readout = Path("configs/titans/episodic-readout-historical-masked.json").resolve()
     declaration["base"].update(core_recipe=str(tmp_path / "core.json"), readout_recipe=str(readout))
@@ -232,13 +234,15 @@ def test_the_core_recipe_of_cm_v1_rejects_block_accumulation(tmp_path):
     section = dict(declaration=str(tmp_path / "cm.json"), search_seed=42)
     limits = dict(max_training_jobs=100_000, max_prediction_jobs=100_000)
     path = write_variant(tmp_path, "A", cm_v1=section, limits=limits)
-    with pytest.raises(ValueError, match="no admite acumulación por bloques"):
-        plan.load_campaign(path)
-    core["recipe"]["accumulation_rows"] = None
+    for rows in (128, None):
+        core["recipe"]["accumulation_rows"] = rows
+        atomic_json(tmp_path / "core.json", core)
+        loaded = plan.load_campaign(path)[plan.CM]
+        assert loaded["recipes"]["core_recipe"] == str(tmp_path / "core.json")
+    core["recipe"].update(accumulation_rows=128, epochs=core["recipe"]["epochs"] + 1)
     atomic_json(tmp_path / "core.json", core)
-    assert plan.load_campaign(path)[plan.CM]["recipes"]["core_recipe"] == str(
-        tmp_path / "core.json"
-    )
+    with pytest.raises(ValueError, match="regla de parada del protocolo"):
+        plan.load_campaign(path)
 
 
 def test_the_prepared_file_keeps_its_schema_and_its_folder(tmp_path):

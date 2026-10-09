@@ -10,14 +10,14 @@ PyTorch y al terminar se exige que los pesos no hayan cambiado, también los del
 congelado de un lector. Solo se registran tiempos, memoria y contadores, nunca pérdidas
 ni errores, así que no es una evaluación.
 
-Titans-MAC compara `accumulation_rows` y la GRU candidata `accumulation_rows` y
-`recompute` con la misma medida. Los lectores no tienen opciones de memoria y los núcleos
-de CM-v1 solo admiten la de su receta, porque la penalización C no acumula por bloques.
-Una opción que no cabe en la memoria reservada queda registrada como tal. Las horas se
-estiman aplicando los caudales a las filas de cada ventana de las variantes A y B, por
-familia y por opción, incluida la etapa de la matriz de adaptadores. Con una declaración
-preparada (`campaign_extensions`), las familias que A y B todavía no declaran se miden y
-se estiman como si lo estuvieran.
+Titans-MAC y los núcleos de CM-v1, que comparten su receta y también acumulan con la
+penalización C, comparan `accumulation_rows`, y la GRU candidata `accumulation_rows` y
+`recompute`, con la misma medida. Los lectores no tienen opciones de memoria y su medida
+vale para cada opción de su familia. Una opción que no cabe en la memoria reservada queda
+registrada como tal. Las horas se estiman aplicando los caudales a las filas de cada
+ventana de las variantes A y B, por familia y por opción, incluida la etapa de la matriz
+de adaptadores. Con una declaración preparada (`campaign_extensions`), las familias que A
+y B todavía no declaran se miden y se estiman como si lo estuvieran.
 
 Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
 financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
@@ -69,7 +69,7 @@ CANDIDATE_OPTIONS = (
     {"accumulation_rows": None, "recompute": True},
     {"accumulation_rows": 128, "recompute": True},
 )
-# Única opción de los lectores y de los núcleos de CM-v1: la de su receta.
+# Única opción de los lectores: la de su receta.
 RECIPE_ONLY = ({},)
 # Familias que recorren el ajuste cronológico y sus fases con calentamiento.
 CHRONOLOGICAL = (TITANS, EPISODIC, MARS, CM)
@@ -231,13 +231,23 @@ def _chronological_rows(campaign, family, counts):
 
 
 def _option_hours(campaign, family, jobs, counts, measured, epochs):
-    """Horas de una familia cronológica con cada opción de memoria medida."""
+    """Horas de una familia cronológica con cada opción de memoria medida.
+
+    Un brazo medido solo con su receta, como un lector de CM-v1, usa esa medida en cada
+    opción de los brazos de su familia que comparan opciones, como sus núcleos.
+    """
     rows = _chronological_rows(campaign, family, counts)
-    declared = {record["declared_option"] for record in measured.values()}
+    compared = {
+        arm: record for arm, record in measured.items() if list(record["options"]) != ["recipe"]
+    } or measured
+    declared = {record["declared_option"] for record in compared.values()}
     _require(len(declared) == 1, "Los brazos de una familia deben declarar la misma opción")
     result = dict(declared=declared.pop(), options={})
-    for name in next(iter(measured.values()))["options"]:
-        records = {arm: record["options"][name] for arm, record in measured.items()}
+    for name in next(iter(compared.values()))["options"]:
+        records = {
+            arm: record["options"][name if arm in compared else "recipe"]
+            for arm, record in measured.items()
+        }
         peak = max(record["peak_vram_allocated_bytes"] for record in records.values())
         if any(record.get("status") == OUT_OF_MEMORY for record in records.values()):
             result["options"][name] = dict(status=OUT_OF_MEMORY, peak_vram_allocated_bytes=peak)
@@ -1012,8 +1022,8 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
     Los núcleos recorren `ChronologicalTrainer._train_pass` con la receta del núcleo:
     `cm_v1_core_b` con C en `disabled` (SDPA Math) y `cm_v1_core_c` con la penalización,
     que en cada evento elige los flujos medidos y calcula su término de RᵀJR con su JVP. Se
-    registran los grupos y flujos de C de la ventana medida. Solo se mide la opción de la
-    receta: C no admite acumulación por bloques y los dos núcleos comparten receta. Cada
+    registran los grupos y flujos de C de la ventana medida. Los núcleos comparten la receta
+    de Titans-MAC y comparan sus mismas opciones de `accumulation_rows`, que C admite. Cada
     brazo mide su lector M1 con K = 1 sobre el gemelo `disabled` de su núcleo, con la
     retención reservoir en B y B+C y con centros fijos en B+M y B+C+M.
     """
@@ -1063,7 +1073,7 @@ def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=
                     build,
                     lambda _: _Pass(),
                     Paused,
-                    RECIPE_ONLY,
+                    _options(recipe, TITANS_OPTIONS),
                     inputs,
                     settings,
                     CONTROL_COUNTERS if contract["mode"] == "penalty" else (),

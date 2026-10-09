@@ -81,7 +81,7 @@ def chronological(arms, *, slower=50.0, failing=None):
 
 
 def readouts(arms, *, failing=None):
-    """Caudales de una familia con una sola opción, la de su receta, como lectores y núcleos."""
+    """Caudales de una familia con una sola opción, la de su receta, como los lectores."""
     return {
         arm: dict(
             declared_option="recipe",
@@ -109,9 +109,11 @@ def all_rates(campaign):
     rates[TITANS] = chronological(campaign[TITANS]["arms"])
     if campaign.get(EPISODIC):
         rates[EPISODIC] = chronological(["gru_episodic"])
-    for family in (MARS, CM):
-        if campaign.get(family):
-            rates[family] = readouts(campaign[family]["arms"])
+    if campaign.get(MARS):
+        rates[MARS] = readouts(campaign[MARS]["arms"])
+    if campaign.get(CM):
+        # Los núcleos comparan las opciones de Titans-MAC y los lectores solo su receta.
+        rates[CM] = {**chronological(plan.CM_CORES), **readouts(plan.CM_ARMS)}
     return counts, rates
 
 
@@ -334,7 +336,7 @@ def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant,
     counts, rates = all_rates(campaign)
     estimate = throughput.estimate_hours(campaign, counts, rates)
     families = estimate["families"]
-    readout, factorial = (families[family]["options"]["recipe"] for family in (MARS, CM))
+    readout, factorial = families[MARS]["options"]["recipe"], families[CM]["options"][DECLARED]
     assert (readout["training_jobs"], readout["prediction_jobs"]) == mars
     assert (factorial["training_jobs"], factorial["prediction_jobs"]) == cm
     # Cada lector predice con el calentamiento de 12 meses de su padre y los núcleos solo
@@ -356,7 +358,7 @@ def test_readout_and_core_hours_follow_the_exact_plan_and_their_parents(variant,
         assert families[family]["declared_in_campaign"] is False
     assert not {"declared_in_campaign", "parents"} & set(families[TITANS])
     totals = estimate["total_gpu_hours"]
-    added = sum(families[f]["options"][o]["hours"] for f, o in ((MARS, "recipe"), (CM, "recipe")))
+    added = sum(families[f]["options"][o]["hours"] for f, o in ((MARS, "recipe"), (CM, DECLARED)))
     added += families[EPISODIC]["options"][DECLARED]["hours"]
     added += families[TITANS]["options"][DECLARED]["hours"] + families[NEURAL]["hours"]
     assert totals["declared_options"] == pytest.approx(added) and totals["without_estimate"] == []
@@ -366,11 +368,39 @@ def test_cm_hours_take_the_warmup_of_the_core_recipe(tmp_path):
     campaign = cm_campaign(tmp_path, warmup_months=6)
     counts, rates = all_rates(campaign)
     factorial = throughput.estimate_hours(campaign, counts, rates)["families"][CM]
-    hours = factorial["options"]["recipe"]["scopes"]["US"]["arms"]["cm_v1_b"]
+    hours = factorial["options"][DECLARED]["scopes"]["US"]["arms"]["cm_v1_b"]
     assert hours == pytest.approx(window_hours(campaign, "US", 6))
     assert hours != pytest.approx(window_hours(campaign, "US", 12))
     # Fuera de la medición con declaración preparada, la sección viene del archivo.
     assert factorial["declared_in_campaign"] is True
+
+
+def test_each_core_option_takes_the_recipe_measure_of_the_readouts():
+    campaign = extended("A")
+    counts, rates = all_rates(campaign)
+    rates[CM]["cm_v1_core_c"]["options"][DECLARED] = dict(
+        status=throughput.OUT_OF_MEMORY, peak_vram_allocated_bytes=9
+    )
+    estimate = throughput.estimate_hours(campaign, counts, rates)
+    factorial = estimate["families"][CM]
+    assert factorial["declared"] == DECLARED and set(factorial["options"]) == {DECLARED, HALVED}
+    assert factorial["options"][DECLARED] == dict(
+        status="out_of_memory", peak_vram_allocated_bytes=9
+    )
+    halved = factorial["options"][HALVED]
+    arms = halved["scopes"]["US"]["arms"]
+    # Los lectores conservan la medida de su receta y los núcleos usan la de 128, más lenta.
+    for name in plan.CM_ARMS:
+        assert arms[name] == pytest.approx(window_hours(campaign, "US", 12))
+    for name in plan.CM_CORES:
+        assert arms[name] > window_hours(campaign, "US", 12, carried=False)
+    assert halved["peak_vram_allocated_bytes"] == 5
+    totals = estimate["total_gpu_hours"]
+    assert totals["declared_options"] is None and totals["without_estimate"] == []
+    # Dos núcleos con opciones distintas declaradas no se combinan.
+    rates[CM]["cm_v1_core_b"]["declared_option"] = HALVED
+    with pytest.raises(ValueError, match="misma opción"):
+        throughput.estimate_hours(campaign, counts, rates)
 
 
 def test_a_core_out_of_memory_leaves_cm_without_an_estimate():
@@ -874,24 +904,27 @@ def test_cm_measurement_walks_both_cores_with_the_penalty_and_the_four_readouts(
     for core, mode in zip(plan.CM_CORES, ("disabled", "penalty"), strict=True):
         record = rates[core]
         assert record["control_mode"] == mode and record["accumulation_rows"] is None
-        assert record["declared_option"] == "recipe" and record["inference"] > 0
-        (result,) = record["options"].values()
-        assert result["train"] > 0 and result["step_calls_without_update"] == 2
+        assert record["declared_option"] == DECLARED and record["inference"] > 0
+        # Los núcleos comparan las dos opciones de Titans-MAC, también con C.
+        assert list(record["options"]) == [DECLARED, HALVED]
+        for result in record["options"].values():
+            assert result["train"] > 0 and result["step_calls_without_update"] == 2
     # Solo el núcleo con la penalización recorre flujos medidos de C en la ventana.
-    assert "window_counters" not in rates["cm_v1_core_b"]["options"]["recipe"]
-    counters = rates["cm_v1_core_c"]["options"]["recipe"]["window_counters"]
-    assert counters["end"]["control_flows"] > counters["start"]["control_flows"] >= 0
-    assert counters["end"]["control_groups"] > counters["start"]["control_groups"]
+    for name in (DECLARED, HALVED):
+        assert "window_counters" not in rates["cm_v1_core_b"]["options"][name]
+        counters = rates["cm_v1_core_c"]["options"][name]["window_counters"]
+        assert counters["end"]["control_flows"] > counters["start"]["control_flows"] >= 0
+        assert counters["end"]["control_groups"] > counters["start"]["control_groups"]
     for arm, core in plan.CM_ARMS.items():
         record = rates[arm]
         assert record["parent_arm"] == core and record["bank_capacity"] == 8
         assert (record["control"], record["consolidation"]) == cm_v1_factorial.ARMS[arm]
         (result,) = record["options"].values()
         assert result["window_counters"]["end"]["admitted"] > 0
-    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * 6
+    assert set(guarded_steps) == {1} and len(guarded_steps) == 2 * 8
     # Los núcleos ajustan todos sus parámetros y los lectores vigilan además su padre.
-    assert frozen_checks[:2] == [0, 0] and all(count > 0 for count in frozen_checks[2:])
-    assert len(frozen_checks) == 6
+    assert frozen_checks[:4] == [0] * 4 and all(count > 0 for count in frozen_checks[4:])
+    assert len(frozen_checks) == 8
 
 
 def test_cm_measurement_needs_a_window_that_reaches_the_flows_of_c(tmp_path):

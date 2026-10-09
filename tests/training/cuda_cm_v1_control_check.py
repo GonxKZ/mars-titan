@@ -2,7 +2,8 @@
 
 Se ejecuta de forma explícita. Compara un recorrido de ajuste con su validación en CPU y en
 el dispositivo indicado, con los mismos parámetros iniciales, la misma base de C y el
-optimizador que solo registra gradientes. Cubre B (C disabled) y B+C (penalty).
+optimizador que solo registra gradientes. Cubre B (C disabled) y B+C (penalty), sin
+acumulación y con `accumulation_rows=2`.
 `MARS_TITAN_CM_CONTROL_CHECK_DEVICE=cpu` ensaya la lógica sin GPU y no acredita CUDA.
 `MARS_TITAN_CM_CONTROL_CHECK_REPORT` guarda las medidas en JSON.
 """
@@ -42,7 +43,7 @@ def explicit_fastpath():
     torch.backends.mha.set_fastpath_enabled(previous)
 
 
-def trainer(streams, output, *, mode, dtype, device):
+def trainer(streams, output, *, mode, dtype, device, rows):
     weight = 0.5 if mode == "penalty" else 0.0
     config = FinancialConfig(
         streams["train"].specification(), variant="mac_online", hidden_size=32, seed=42
@@ -53,7 +54,9 @@ def trainer(streams, output, *, mode, dtype, device):
         dtype=dtype,
         device=device,
     )
-    recipe = ChronologicalRecipe(truncation=3, epochs=1, block_rows=2, selection=SELECTION)
+    recipe = ChronologicalRecipe(
+        truncation=3, epochs=1, block_rows=2, selection=SELECTION, accumulation_rows=rows
+    )
     return ChronologicalTrainer(
         predictor,
         recipe,
@@ -65,9 +68,10 @@ def trainer(streams, output, *, mode, dtype, device):
     )
 
 
+@pytest.mark.parametrize("rows", [None, 2])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 @pytest.mark.parametrize("mode", ["disabled", "penalty"])
-def test_device_pass_matches_cpu_without_optimizer_steps(tmp_path, mode, dtype):
+def test_device_pass_matches_cpu_without_optimizer_steps(tmp_path, mode, dtype, rows):
     _, streams = corpus(tmp_path / "corpus")
     rtol, atol = TOLERANCES[dtype]
     cuda = DEVICE.startswith("cuda")
@@ -76,7 +80,9 @@ def test_device_pass_matches_cpu_without_optimizer_steps(tmp_path, mode, dtype):
         if cuda and name == "device":
             torch.cuda.reset_peak_memory_stats(0)
         start = time.perf_counter()
-        engines[name] = trainer(streams, tmp_path / name, mode=mode, dtype=dtype, device=device)
+        engines[name] = trainer(
+            streams, tmp_path / name, mode=mode, dtype=dtype, device=device, rows=rows
+        )
         reports[name] = engines[name].run()
         if cuda and name == "device":
             torch.cuda.synchronize(0)
@@ -112,6 +118,7 @@ def test_device_pass_matches_cpu_without_optimizer_steps(tmp_path, mode, dtype):
                 device=DEVICE,
                 dtype=str(dtype),
                 mode=mode,
+                accumulation_rows=rows,
                 updates=len(records[0]),
                 control_groups=train[1].get("control_groups"),
                 seconds=seconds,
