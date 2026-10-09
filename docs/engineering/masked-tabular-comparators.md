@@ -76,4 +76,4 @@ CUDA_VISIBLE_DEVICES=0 uv run --no-sync pytest -q tests/models/test_external_cac
 
 La primera prueba construye páginas en disco con 20.000 filas aleatorias de 1.719 columnas y contrasta los bytes reales con la estimación densa. La segunda comprueba que la guardia detiene la construcción. En ambas `xgb.train` se sustituye por una excepción. La paridad de `fit_ridge_blocks` y las pruebas CUDA anteriores de Ridge y XGBoost ajustan modelos sobre fixtures y esperan al levantamiento del bloqueo.
 
-Los padres tabulares de postentrenamiento todavía no reciben los bits. `FrozenParent` compara la anchura del modelo con las modalidades y rechaza un padre de la edición con máscaras. Su adaptación es otra tarea.
+Los padres tabulares de postentrenamiento reciben ya los cinco bits después de las modalidades. El [postentrenamiento con la edición histórica](masked-posttraining.md) describe la carga y sus comprobaciones.

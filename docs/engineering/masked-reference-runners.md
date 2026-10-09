@@ -90,6 +90,6 @@ Las pruebas CUDA existentes de `test_reference_run.py`, `test_selection.py` y `t
 ## Pendiente
 
 - Decidir el presupuesto del protocolo anual v2. Con 50 trabajos por ventana, las 19 ventanas US y las 13 conjuntas superan el límite de 512 de `temporal_search`.
-- `posttraining.parents` construye la referencia sin `mask_fusion`. Con un padre histórico, la carga estricta del estado falla por la forma de la primera capa de fusión. Debe leer el campo de la identidad antes de usarse con esta edición.
+- `posttraining.parents` lee ya `mask_fusion` de la identidad del padre, como describe el [postentrenamiento con la edición histórica](masked-posttraining.md).
 - La cola de referencias, el análisis de campañas y las fuentes de comparación esperan `train` y `validation` como predicciones completas. Deben aceptar la retención nueva antes de consumir estas ejecuciones.
 - Ejecutar la campaña tras verificar la edición histórica y levantar el bloqueo, con medidas de coste previas. Las mejoras predictivas de cualquier familia siguen sin medir.
