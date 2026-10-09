@@ -8,6 +8,8 @@ import math
 import gymnasium as gym
 import numpy as np
 
+from .market import RECONSTRUCTED
+from .market_rules import china_a_share_instrument
 from .portfolio import NATIVE_MAX_INSTRUMENTS, Instrument, Portfolio
 
 ACTIONS = (None, 0.0, 0.25, 0.5, 0.75, 1.0)
@@ -57,6 +59,15 @@ class FinancialEnv(gym.Env):
             raise ValueError("Las reglas declaradas deben cubrir cada activo en su moneda")
         if backend == "native" and instruments is not None:
             raise ValueError("El motor nativo todavía no aplica reglas de mercado declaradas")
+        audit = tape.identity.get("audit") or {}
+        if (
+            tape.domain == "real"
+            and audit.get("price_basis") == RECONSTRUCTED
+            and tape.currency == "CNY"
+            and instruments != {asset: china_a_share_instrument(asset) for asset in tape.assets}
+        ):
+            # Lotes, bandas diarias y timbre solo tienen sentido con precios negociados.
+            raise ValueError("Una cinta china reconstruida necesita las reglas de acciones A")
         self.instruments = (
             dict(instruments)
             if instruments is not None

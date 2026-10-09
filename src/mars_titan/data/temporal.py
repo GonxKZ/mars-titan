@@ -27,6 +27,10 @@ class MarketClock:
             close.to_pydatetime().astimezone(UTC) + timedelta(minutes=5)
             for close in calendar.schedule["close"]
         ]
+        # Apertura oficial de cada sesión, donde la simulación ejecuta las órdenes.
+        self.opens = [
+            opened.to_pydatetime().astimezone(UTC) for opened in calendar.schedule["open"]
+        ]
         self._by_day = dict(zip(self.days, self.decisions, strict=True))
 
     def decision(self, day: str | date) -> datetime:
