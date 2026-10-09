@@ -182,6 +182,10 @@ class MatureErrorBank:
         self._check_receipt_shape(self._receipt)
         return json.loads(_canonical(self._receipt))
 
+    @property
+    def selective_scores(self):
+        return dict(self._scores)
+
     def index_ids(self):
         by_role, _ = self._records()
         return {role: tuple(sorted(row.id for row in rows)) for role, rows in by_role.items()}
@@ -300,6 +304,7 @@ class MatureErrorBank:
             or not retained <= before | offered
             or retained != set(unique)
             or _canonical(receipt["index_ids"]) != _canonical(index_ids)
+            or index_ids["recent"] != sorted(before | offered)[-self.config.quotas["recent"] :]
             or receipt["physical_slots"] != slots
             or receipt["unique_episodes"] != len(unique)
             or receipt["duplicate_slots"] != slots - len(unique)

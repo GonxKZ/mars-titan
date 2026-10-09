@@ -2,6 +2,7 @@
 
 import copy
 import importlib
+import struct
 
 import pytest
 from test_native_episode_backend import native as native
@@ -140,6 +141,27 @@ def test_receipt_cannot_invent_episodes_before_the_first_offer(native):
         bank(native).restore(snapshot)
 
 
+def test_recent_index_must_match_the_mature_ids_preserved_in_the_receipt(native):
+    incoming = [record(native, i) for i in range(1, 9)]
+    value = bank(native, capacity=8).propose(
+        incoming, errors={row.id: float(row.id) for row in incoming}, confirmed_at=17
+    )
+    assert value.index_ids()["recent"] == (7, 8)
+    snapshot = value.snapshot()
+    replacement = bank(native, capacity=8)
+    replacement._indices["recent"].retain_batch(incoming, [1, 8], 17)
+    snapshot["indices"]["recent"] = replacement._indices["recent"].snapshot_bytes()
+    receipt = snapshot["receipt"]
+    receipt["index_ids"]["recent"] = [1, 8]
+    union = sorted({key for values in receipt["index_ids"].values() for key in values})
+    receipt["retained_ids"] = receipt["new_unique_ids"] = union
+    receipt["unique_episodes"] = len(union)
+    receipt["duplicate_slots"] = receipt["physical_slots"] - len(union)
+    receipt["native_archive_bytes"]["recent"] = len(snapshot["indices"]["recent"])
+    with pytest.raises(ValueError):
+        value.restore(snapshot)
+
+
 def test_tiny_errors_are_ranked_in_float64(native):
     incoming = [record(native, 1), record(native, 2)]
     for row in incoming:
@@ -161,6 +183,39 @@ def test_duplicate_copies_must_match_float_bits(native):
     snapshot["indices"]["selective"] = replacement._indices["selective"].snapshot_bytes()
     with pytest.raises(ValueError, match="bits"):
         bank(native).restore(snapshot)
+
+
+def test_non_idempotent_keys_are_normalized_once_across_indices_and_recovery(native):
+    raw = [11.0, 19.0, 1.0] + [0.0] * 61
+
+    def bits(values):
+        return struct.pack("<64f", *values)
+
+    expected = bits(native.normalize_key(raw))
+    assert expected != bits(native.normalize_key(native.normalize_key(raw)))
+    value = bank(native, capacity=8)
+    for start in (1, 5, 9):
+        incoming = [record(native, i) for i in range(start, start + 4)]
+        for row in incoming:
+            row.key = raw
+        value = value.propose(
+            incoming,
+            errors={row.id: 100.0 if row.id == 1 else float(row.id) for row in incoming},
+            confirmed_at=incoming[-1].maturity_at,
+        )
+        assert value.index_ids()["selective"] == (1, start + 3)
+        for index in value._indices.values():
+            assert all(bits(row.key) == expected for row in index.retained_records())
+        snapshot = value.snapshot()
+        value = bank(native, capacity=8).restore(snapshot)
+        assert value.snapshot() == snapshot
+
+
+def test_selective_scores_are_returned_without_mutable_aliases(native):
+    value = bank(native).propose([record(native, 1)], errors={1: -0.5}, confirmed_at=3)
+    scores = value.selective_scores
+    scores[1] = 999.0
+    assert value.selective_scores == {1: 0.5}
 
 
 def test_proposal_budget_and_future_labels_preserve_the_original(native):
