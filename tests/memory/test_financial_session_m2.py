@@ -8,6 +8,7 @@ import torch
 from test_financial_session import moment
 from test_financial_session_controls import (
     FLOWS,
+    capture_control,
     matured_record,
     paired_consumers,
     tensor_leaves,
@@ -165,8 +166,10 @@ def test_previous_admission_routes_keep_their_own_recovery(
 
 
 def m2_trajectory(native, source, consumer, output, *, block_rows, reverse=False, recover=False):
+    mode = consumer.predictor.local_control.config.mode
     run = open_session(native, source, consumer, output, block_rows=block_rows)
     previous, points, indices, scores, receipts = [], {}, [], [], []
+    controls, stores = [], []
     try:
         for index in (125, 126, 127, 128, 129, 130):
             batches = [] if index == 129 else source["batches"][index]
@@ -201,6 +204,13 @@ def m2_trajectory(native, source, consumer, output, *, block_rows, reverse=False
             receipts.append(bank.receipt)
             assert len(episodes) == bank.size <= 4
             assert bank.seen == run.snapshot()["applied"]
+            controls.append(capture_control(run, mode, 4 if batches else 0))
+            stores.append(
+                dict(
+                    bank=run._read(bundle["bank"], "bank"),
+                    pending=run._read(bundle["pending"], "pending"),
+                )
+            )
         final = run.snapshot()
         assert (final["issued"], final["applied"], run.diagnostics()["pending"]) == (20, 16, 4)
         fast = run._fast_store.gather(run.fast_state(), FLOWS)
@@ -214,7 +224,14 @@ def m2_trajectory(native, source, consumer, output, *, block_rows, reverse=False
     ) as restored:
         assert restored.snapshot() == final
     return dict(
-        points=points, indices=indices, scores=scores, receipts=receipts, fast=tensors, final=final
+        points=points,
+        indices=indices,
+        scores=scores,
+        receipts=receipts,
+        controls=controls,
+        stores=stores,
+        fast=tensors,
+        final=final,
     )
 
 
