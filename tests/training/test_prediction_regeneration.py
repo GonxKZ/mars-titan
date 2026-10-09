@@ -85,6 +85,19 @@ def test_a_neural_fit_regenerates_its_three_partitions_bit_for_bit(allowed, tmp_
     assert written["identical"] is True and written["optimizer_steps"] == 0
 
 
+def test_the_campaign_script_regenerates_a_job_and_reports_its_identity(allowed, tmp_path, capsys):
+    import runpy
+
+    script = runpy.run_path("scripts/run_masked_campaign.py", run_name="script")
+    job = jobs_of(allowed, model="neural", kind=engine.FIT)[0]
+    arguments = ["regenerate", "--campaign", str(allowed.campaign)]
+    arguments += ["--views", f"US={allowed.views['US']}", "--output", str(allowed.output)]
+    arguments += ["--job", job["id"], "--destination", str(tmp_path / "cli")]
+    assert script["main"](arguments) == 0
+    assert json.loads(capsys.readouterr().out) == dict(job=job["id"], identical=True)
+    assert json.loads((tmp_path / "cli" / "regeneration.json").read_text())["identical"]
+
+
 def test_regeneration_still_matches_after_the_rows_are_released(allowed, tmp_path):
     job = jobs_of(allowed, model="neural", kind=engine.FIT)[-1]
     receipt = json.loads((allowed.output / "jobs" / job["id"] / "receipt.json").read_text())
