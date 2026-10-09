@@ -283,6 +283,18 @@ def _carry(run):
     return carry_tabular(*sources, kind=run.job["model"], **options)
 
 
+def _titans_fit(run):
+    from .titans_walk_forward import titans_fit
+
+    return titans_fit(run)
+
+
+def _titans_carry(run):
+    from .titans_walk_forward import titans_carry
+
+    return titans_carry(run)
+
+
 # Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
 EXECUTORS = {
     ("neural", FIT): dict(run=_neural_fit, device="cuda", resumable=True, report="run.json"),
@@ -296,6 +308,10 @@ EXECUTORS = {
     ),
     ("episodic_gru", CARRY): dict(
         run=_episodic_gru, device="cuda", resumable=False, report="carry.json"
+    ),
+    ("titans_mac", FIT): dict(run=_titans_fit, device="cuda", resumable=True, report="run.json"),
+    ("titans_mac", CARRY): dict(
+        run=_titans_carry, device="cuda", resumable=False, report="carry.json"
     ),
 }
 
