@@ -1,0 +1,426 @@
+{
+  "schema_version": 4,
+  "kind": "walk_forward_comparison",
+  "name": "historical-masked-2000-joint",
+  "status": "declared_before_evaluation",
+  "input_policy": "historical_masked_2000_v1",
+  "partition": "evaluation",
+  "scopes": {
+    "US+CN": {
+      "protocols": {
+        "US": "historical-masked-us-walk-forward-v2.json",
+        "CN": "historical-masked-joint-cn-walk-forward-v3.json"
+      },
+      "windows": "all"
+    },
+    "US": {
+      "protocols": {
+        "US": "historical-masked-us-walk-forward-v2.json"
+      },
+      "windows": "all"
+    },
+    "CN": {
+      "protocols": {
+        "CN": "historical-masked-cn-walk-forward-v2.json"
+      },
+      "windows": "all"
+    }
+  },
+  "arms": {
+    "zero": {
+      "family": "control",
+      "output": "zero_control",
+      "seeds": []
+    },
+    "ridge": {
+      "family": "tabular_reference",
+      "output": "point",
+      "seeds": [
+        42
+      ]
+    },
+    "xgboost": {
+      "family": "tabular_reference",
+      "output": "point",
+      "seeds": [
+        42
+      ]
+    },
+    "rnn": {
+      "family": "neural_reference",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "lstm": {
+      "family": "neural_reference",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "gru": {
+      "family": "neural_reference",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "dlinear": {
+      "family": "neural_reference",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "transformer_compact": {
+      "family": "neural_reference",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "gru_episodic": {
+      "family": "episodic_gru",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "titans_transformer_direct": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "titans_mac_disabled": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "titans_mac_frozen": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "titans_mac_online": {
+      "family": "titans_mac",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_m0": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_m1": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_m2": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_m3": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_m1_k2": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "mars_titan_m1_k4": {
+      "family": "mars_titan",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "cm_v1_b": {
+      "family": "cm_v1",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "cm_v1_bc": {
+      "family": "cm_v1",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "cm_v1_bm": {
+      "family": "cm_v1",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    "cm_v1_bcm": {
+      "family": "cm_v1",
+      "output": "quantile_head_v1",
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    }
+  },
+  "metrics": {
+    "primary": "mae",
+    "market_weighting": "session",
+    "rank_ic_min_assets": 30,
+    "quantile_head": "quantile_head_v1"
+  },
+  "calibration": {
+    "method": "cqr_symmetric_score_v1",
+    "partition": "calibration",
+    "nominals": [
+      0.8,
+      0.95
+    ],
+    "groups": "market",
+    "min_rows": 1000,
+    "order_rule": "widen_to_median_and_inner_interval"
+  },
+  "comparison": {
+    "metrics": [
+      "mae",
+      "mse",
+      "direction_accuracy",
+      "rank_ic",
+      "pinball"
+    ],
+    "block_length": 16,
+    "sensitivity_block_lengths": [
+      5,
+      10,
+      40
+    ],
+    "replicates": 2000,
+    "seed": 20261009,
+    "confidence": 0.95,
+    "families": {
+      "references_vs_zero": {
+        "kind": "delta",
+        "base": "zero",
+        "variants": [
+          "ridge",
+          "xgboost",
+          "rnn",
+          "lstm",
+          "gru",
+          "dlinear",
+          "transformer_compact"
+        ]
+      },
+      "titans_controls": {
+        "kind": "delta",
+        "base": "titans_transformer_direct",
+        "variants": [
+          "titans_mac_disabled",
+          "titans_mac_frozen",
+          "titans_mac_online"
+        ]
+      },
+      "episodic_write_policies": {
+        "kind": "delta",
+        "base": "mars_titan_m0",
+        "variants": [
+          "mars_titan_m1",
+          "mars_titan_m2",
+          "mars_titan_m3"
+        ]
+      },
+      "refinements": {
+        "kind": "delta",
+        "base": "mars_titan_m1",
+        "variants": [
+          "mars_titan_m1_k2",
+          "mars_titan_m1_k4"
+        ]
+      },
+      "cm_v1_factorial": {
+        "kind": "factorial",
+        "base": "cm_v1_b",
+        "first": "cm_v1_bc",
+        "second": "cm_v1_bm",
+        "joint": "cm_v1_bcm"
+      },
+      "levels": {
+        "kind": "level",
+        "arms": [
+          "ridge",
+          "xgboost",
+          "rnn",
+          "lstm",
+          "gru",
+          "dlinear",
+          "transformer_compact",
+          "gru_episodic",
+          "titans_transformer_direct",
+          "titans_mac_disabled",
+          "titans_mac_frozen",
+          "titans_mac_online",
+          "mars_titan_m0",
+          "mars_titan_m1",
+          "mars_titan_m2",
+          "mars_titan_m3",
+          "mars_titan_m1_k2",
+          "mars_titan_m1_k4",
+          "cm_v1_b",
+          "cm_v1_bc",
+          "cm_v1_bm",
+          "cm_v1_bcm"
+        ]
+      }
+    }
+  },
+  "modality_strata": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-09",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "presence_source": "view_evaluation_labels_and_samples_presence_v1",
+    "always_present": [
+      "prices",
+      "charts",
+      "macro"
+    ],
+    "strata": {
+      "news_and_fundamentals": {
+        "news": true,
+        "fundamentals": true
+      },
+      "news_only": {
+        "news": true,
+        "fundamentals": false
+      },
+      "fundamentals_only": {
+        "news": false,
+        "fundamentals": true
+      },
+      "neither": {
+        "news": false,
+        "fundamentals": false
+      }
+    },
+    "focus": "news_and_fundamentals",
+    "metrics": [
+      "mae"
+    ],
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
+  },
+  "modality_ablation": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-09",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "variants": {
+      "mask_news": [
+        "news"
+      ],
+      "mask_fundamentals": [
+        "fundamentals"
+      ],
+      "mask_news_and_fundamentals": [
+        "news",
+        "fundamentals"
+      ]
+    },
+    "masking": "mask_contract_v1_presence_false_missing_fill_null_availability",
+    "missing_reason": "modality_ablation",
+    "state": "selected_state_of_each_arm_seed_and_window_without_refitting",
+    "memory": "warmup_and_measured_partition_read_the_same_masked_inputs",
+    "partition": "evaluation",
+    "rows": "evaluation_rows_with_any_masked_modality_present",
+    "metric": "session_mae_masked_minus_original",
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_variants_and_views_with_max_t_over_arms",
+    "does_not_measure": [
+      "economic_causal_effect_of_the_modality",
+      "usefulness_of_the_modality_for_the_forecast",
+      "performance_of_a_model_trained_without_the_modality"
+    ]
+  },
+  "joint_design": {
+    "declared_at": "2026-10-09",
+    "joint_scope": "US+CN",
+    "market_eligibility": {
+      "CN": "historical-masked-cn-walk-forward-v2.json"
+    },
+    "ineligible_rows": "predicted_and_kept_excluded_from_calibration_and_metrics",
+    "separate_controls": [
+      "transformer_compact",
+      "titans_mac_online",
+      "mars_titan_m1"
+    ],
+    "joint_suffix": "_joint",
+    "contrast_family": "joint_vs_separate",
+    "seeds": "summaries_per_seed_and_session_mean_series_for_contrasts"
+  }
+}

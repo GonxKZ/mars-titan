@@ -25,6 +25,16 @@ otro análisis secundario. Sus predicciones enmascaradas llegan en un manifiesto
 de la etapa de ablación y se comparan con las originales en las mismas filas, con el
 calibrador ya ajustado. Sin ese manifiesto, la sección queda pendiente y el resto del
 informe no cambia.
+
+La versión 4 añade el diseño conjunto (``joint_design``). El ámbito conjunto compara todos
+los brazos y un mercado solo cuenta en las ventanas en las que su propio protocolo, con su
+historia mínima, recorre los mismos tramos (``market_eligibility``). Las filas de ese
+mercado en las demás ventanas se predicen y se conservan, pero quedan fuera de la
+calibración y de las métricas, y el informe cuenta cuántas se excluyen. Cada ámbito de un
+solo mercado compara los controles separados con el mismo brazo conjunto restringido a
+las filas de su mercado (``<brazo><sufijo>``), en la ventana con los mismos tramos, con una
+familia de diferencias conjunto menos separado. Sin esta sección cada ámbito compara todos
+los brazos con todas sus filas, como antes.
 """
 
 import argparse
@@ -49,7 +59,7 @@ from mars_titan.evaluation import modality_ablation, modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import COVERAGE_ERROR, SessionScores, score_sessions
 from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction, level
-from mars_titan.evaluation.splits import build_folds
+from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.training.temporal_contract import temporal_contracts
 
@@ -91,8 +101,26 @@ _CONFIG_FIELDS = {
 }
 STRATA_FIELD = "modality_strata"
 ABLATION_FIELD = "modality_ablation"
-# Secciones secundarias que añade cada versión de la configuración.
-SECTIONS = {1: set(), 2: {STRATA_FIELD}, 3: {STRATA_FIELD, ABLATION_FIELD}}
+JOINT_FIELD = "joint_design"
+# Secciones que añade cada versión de la configuración.
+SECTIONS = {
+    1: set(),
+    2: {STRATA_FIELD},
+    3: {STRATA_FIELD, ABLATION_FIELD},
+    4: {STRATA_FIELD, ABLATION_FIELD, JOINT_FIELD},
+}
+_JOINT_FIELDS = {
+    "declared_at",
+    "joint_scope",
+    "market_eligibility",
+    "ineligible_rows",
+    "separate_controls",
+    "joint_suffix",
+    "contrast_family",
+    "seeds",
+}
+INELIGIBLE_ROWS = "predicted_and_kept_excluded_from_calibration_and_metrics"
+SEED_AGGREGATION = "summaries_per_seed_and_session_mean_series_for_contrasts"
 _METRIC_FIELDS = {"primary", "market_weighting", "rank_ic_min_assets", "quantile_head"}
 _CALIBRATION_FIELDS = {"method", "partition", "nominals", "groups", "min_rows", "order_rule"}
 _COMPARISON_FIELDS = {
@@ -222,6 +250,118 @@ def _families(families, arms):
     return resolved
 
 
+def _plain_scopes(resolved, arms, families):
+    """Sin diseño conjunto: cada ámbito compara todos los brazos con todas sus filas."""
+    for scope in resolved.values():
+        scope.update(
+            arms=dict(arms),
+            families=dict(families),
+            eligible={market: list(scope["windows"]) for market in scope["markets"]},
+            borrowed={},
+            joint_windows={},
+        )
+
+
+def _joint_design(declared, resolved, arms, families, folder):
+    """Ámbito conjunto con elegibilidad por mercado y controles separados por mercado.
+
+    Cada ventana de un ámbito de un mercado se empareja con la ventana conjunta que tiene
+    los mismos cuatro tramos y en la que ese mercado es elegible.
+    """
+    _require(
+        isinstance(declared, dict)
+        and set(declared) == _JOINT_FIELDS
+        and isinstance(declared["declared_at"], str)
+        and declared["ineligible_rows"] == INELIGIBLE_ROWS
+        and declared["seeds"] == SEED_AGGREGATION
+        and _name(declared["contrast_family"])
+        and declared["contrast_family"] not in families
+        and isinstance(declared["joint_suffix"], str)
+        and _name(f"x{declared['joint_suffix']}"),
+        "El diseño conjunto no cumple su contrato",
+    )
+    joint_name = declared["joint_scope"]
+    joint = resolved.get(joint_name)
+    _require(
+        joint is not None and len(joint["markets"]) > 1,
+        "El diseño conjunto necesita un ámbito con varios mercados",
+    )
+    _plain_scopes({joint_name: joint}, arms, families)
+    eligibility = declared["market_eligibility"]
+    _require(
+        isinstance(eligibility, dict) and eligibility and set(eligibility) <= set(joint["markets"]),
+        "La elegibilidad se declara para mercados del ámbito conjunto",
+    )
+    references = {}
+    for market, value in eligibility.items():
+        path = Path(value)
+        reference, digest = read_manifest(path if path.is_absolute() else folder / path, 1024**2)
+        allowed = eligible_folds(joint["protocols"][market], reference)
+        joint["eligible"][market] = [window for window in joint["windows"] if window in allowed]
+        references[market] = digest
+    joint["eligibility_sha256"] = references
+    controls = declared["separate_controls"]
+    suffix = declared["joint_suffix"]
+    _require(
+        isinstance(controls, list)
+        and controls
+        and len(set(controls)) == len(controls)
+        and all(arms.get(arm, {}).get("output") not in (None, ZERO_CONTROL) for arm in controls)
+        and not {f"{arm}{suffix}" for arm in controls} & set(arms)
+        and all(_name(f"{arm}{suffix}") for arm in controls),
+        "Los controles separados deben ser brazos con predicciones y su alias, un nombre libre",
+    )
+    zero = {name: arm for name, arm in arms.items() if arm["output"] == ZERO_CONTROL}
+    for name, scope in resolved.items():
+        if name == joint_name:
+            continue
+        (market,) = _require_single(scope, name, joint)
+        folds = {
+            window: tuple(
+                tuple(fold[part]) for part in ("train", "validation", "calibration", "evaluation")
+            )
+            for window, fold in joint["windows"].items()
+        }
+        pairs = {}
+        for window, fold in scope["windows"].items():
+            key = tuple(
+                tuple(fold[part]) for part in ("train", "validation", "calibration", "evaluation")
+            )
+            matches = [other for other, value in folds.items() if value == key]
+            _require(
+                len(matches) == 1 and matches[0] in joint["eligible"][market],
+                f"La ventana {window} de {name} no tiene una ventana conjunta elegible con los "
+                "mismos tramos",
+            )
+            pairs[window] = matches[0]
+        aliases = {f"{arm}{suffix}": arm for arm in controls}
+        scope.update(
+            arms={
+                **zero,
+                **{arm: arms[arm] for arm in controls},
+                **{alias: arms[arm] for alias, arm in aliases.items()},
+            },
+            families={
+                declared["contrast_family"]: {
+                    f"{alias}-{arm}": delta(arm, alias) for alias, arm in aliases.items()
+                }
+            },
+            eligible={market: list(scope["windows"])},
+            borrowed=dict(aliases),
+            joint_windows=pairs,
+            joint_scope=joint_name,
+        )
+
+
+def _require_single(scope, name, joint):
+    markets = scope["markets"]
+    _require(
+        len(markets) == 1 and markets[0] in joint["markets"],
+        f"El ámbito {name} debe ser de un solo mercado del ámbito conjunto",
+    )
+    return markets
+
+
 def load_config(path):
     """Validar la configuración declarada antes de abrir ninguna predicción."""
     path = Path(path)
@@ -313,7 +453,17 @@ def load_config(path):
     resolved = {
         scope: _protocols(path.parent, scope, declared) for scope, declared in scopes.items()
     }
+    if JOINT_FIELD in config:
+        _joint_design(config[JOINT_FIELD], resolved, arms, families, path.parent)
+    else:
+        _plain_scopes(resolved, arms, families)
     return dict(config, sha256=digest, resolved_scopes=resolved, resolved_families=families)
+
+
+def scope_config(config, scope):
+    """Configuración vista desde un ámbito: sus brazos y sus familias de contrastes."""
+    resolved = config["resolved_scopes"][scope]
+    return dict(config, arms=resolved["arms"], resolved_families=resolved["families"])
 
 
 def _file(folder, record, label):
@@ -381,11 +531,24 @@ def load_sources(path, config, scope_name):
         isinstance(sources["windows"], dict) and set(sources["windows"]) == set(windows),
         "Las fuentes no cubren exactamente las ventanas declaradas",
     )
-    views, view_paths, edition = {}, {}, None
+    # Un ámbito con brazos prestados del conjunto declara también la vista conjunta emparejada.
+    borrowed = scope["borrowed"]
+    fields = {"view", "joint_view"} if borrowed else {"view"}
+    views, view_paths, edition, joint_views = {}, {}, None, {}
     for window_id, window in windows.items():
         entry = sources["windows"][window_id]
-        _require(isinstance(entry, dict) and set(entry) == {"view"}, "La ventana necesita su vista")
+        _require(isinstance(entry, dict) and set(entry) == fields, "La ventana necesita su vista")
         views[window_id], current = _view(path.parent, entry["view"], window, scope, policy)
+        if borrowed:
+            joint = config["resolved_scopes"][scope["joint_scope"]]
+            pair = scope["joint_windows"][window_id]
+            joint_views[window_id], joint_edition = _view(
+                path.parent, entry["joint_view"], joint["windows"][pair], joint, policy
+            )
+            _require(
+                all(joint_edition[market] == current[market] for market in current),
+                f"La vista conjunta de {window_id} parte de otra edición",
+            )
         # La ruta solo se abre si se declaran estratos, y entonces se comprueba su huella.
         view_paths[window_id] = _file(path.parent, entry["view"], f"La vista de {window_id}")[
             "path"
@@ -394,7 +557,7 @@ def load_sources(path, config, scope_name):
             edition is None or current == edition, "Las ventanas no comparten la misma edición"
         )
         edition = current
-    declared = {name: arm for name, arm in config["arms"].items() if arm["output"] != ZERO_CONTROL}
+    declared = {name: arm for name, arm in scope["arms"].items() if arm["output"] != ZERO_CONTROL}
     arms = sources["arms"]
     _require(
         isinstance(arms, dict) and set(arms) == set(declared),
@@ -426,7 +589,8 @@ def load_sources(path, config, scope_name):
                     f"{where} no declara política, vista y predicciones de su salida",
                 )
                 _require(entry["input_policy"] == policy, f"{where} declara otra política")
-                _require(entry["view_sha256"] == views[window_id], f"{where} usa otra vista")
+                expected = (joint_views if name in borrowed else views)[window_id]
+                _require(entry["view_sha256"] == expected, f"{where} usa otra vista")
                 files[name, int(seed), window_id] = {
                     part: _file(path.parent, entry[part], f"{where} ({part})")
                     for part in ("calibration", "evaluation")
@@ -439,6 +603,7 @@ def load_sources(path, config, scope_name):
         view_paths=view_paths,
         edition=edition,
         files=files,
+        joint_views=joint_views,
         **scope,
     )
 
@@ -478,6 +643,30 @@ def _check_segment(table, window, partition, markets, label):
         f"{label}: {outside} filas fuera del tramo de {partition} {window[partition]}",
     )
     return market, times
+
+
+def _restricted(table, sources, window_id, arm=None):
+    """Quitar las filas que el diseño excluye de la ventana y contarlas por mercado.
+
+    En el ámbito conjunto salen las filas de los mercados no elegibles en la ventana. Un
+    brazo prestado del conjunto conserva solo las filas del mercado del ámbito. Cualquier
+    otro mercado sigue llegando a la comprobación del tramo, que lo rechaza.
+    """
+    excluded, counts = _excluded(table, sources, window_id, arm)
+    return (table, counts) if excluded is None else (table.filter(pa.array(~excluded)), counts)
+
+
+def _excluded(table, sources, window_id, arm=None):
+    """Máscara de las filas que el diseño excluye y su recuento por mercado."""
+    drop = [market for market in sources["markets"] if window_id not in sources["eligible"][market]]
+    if arm in sources["borrowed"]:
+        joint = sources["joint_scope"]
+        drop += [m for m in SCOPES[joint] if m not in sources["markets"]]
+    if not drop:
+        return None, {}
+    market = table["market"].to_numpy(zero_copy_only=False)
+    excluded = np.isin(market, drop)
+    return excluded, {name: int(np.count_nonzero(market == name)) for name in drop}
 
 
 def _row_id(table):
@@ -548,6 +737,9 @@ def _presence_bits(sources, config, window_id, reference):
     table, bits = modality_strata.view_presence(
         sources["view_paths"][window_id], config["input_policy"], sources["views"][window_id]
     )
+    excluded = _excluded(table, sources, window_id)[0]
+    if excluded is not None:
+        table, bits = table.filter(pa.array(~excluded)), bits[~excluded]
     label = f"La presencia de la vista de {window_id}"
     panel = _panel(
         table,
@@ -634,6 +826,7 @@ def _masked_scores(ablation, sources, window_id, arm, seed, original, calibrated
     for variant in modality_ablation.VARIANTS:
         label = f"{name} semilla {seed} en {window_id} con {variant}"
         table = _read_predictions(ablation["files"][variant, name, seed, window_id], columns)
+        table = _restricted(table, sources, window_id, name)[0]
         window = sources["windows"][window_id]
         masked = _panel(table, window, "evaluation", sources, label, output=output)
         _same_rows(reference, masked, label)
@@ -669,8 +862,10 @@ def _score_window(sources, config, window_id, ablation=None):
             label = f"{name} semilla {seed} en {window_id}"
             files = sources["files"][name, seed, window_id]
             entry = dict(calibrator=None, calibrated=None, calibrated_reason=None)
+            excluded = {}
             if quantile:
                 table = _read_predictions(files["calibration"], columns)
+                table, excluded["calibration"] = _restricted(table, sources, window_id, name)
                 fitted = _panel(table, window, "calibration", sources, label, output=QUANTILE_HEAD)
                 calibration_reference = calibration_reference or (label, fitted)
                 _same_rows(calibration_reference, fitted, f"La calibración de {label}")
@@ -685,6 +880,9 @@ def _score_window(sources, config, window_id, ablation=None):
                 # El registro queda congelado con su huella antes de abrir la evaluación.
                 entry["calibrator"] = dict(sha256=cqr.calibrator_sha256(record), record=record)
             table = _read_predictions(files["evaluation"], columns)
+            table, excluded["evaluation"] = _restricted(table, sources, window_id, name)
+            if any(excluded.values()):
+                entry["excluded_rows"] = excluded
             panel = _panel(table, window, "evaluation", sources, label, output=arm["output"])
             if reference is None:
                 reference = (label, panel)
@@ -865,6 +1063,7 @@ def _arm_summary(windows, views, calibrated_views, missing, weighting):
                 calibrated_reason=entry["calibrated_reason"],
                 calibrator=entry["calibrator"],
                 order_adjusted_rows=entry.get("order_adjusted_rows"),
+                **({"excluded_rows": entry["excluded_rows"]} if "excluded_rows" in entry else {}),
             )
             for window_id, entry in windows.items()
         },
@@ -1041,6 +1240,8 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
     started = time.perf_counter()
     config = load_config(config_path)
     sources = load_sources(sources_path, config, scope)
+    # Desde aquí, los brazos y las familias son los del ámbito evaluado.
+    config = scope_config(config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
     ablation = None
     if ablation_sources is not None:
@@ -1122,6 +1323,15 @@ def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=
             elapsed_seconds=time.perf_counter() - started,
         ),
     )
+    if JOINT_FIELD in config:
+        report[JOINT_FIELD] = dict(
+            declaration=config[JOINT_FIELD],
+            eligible_windows=sources["eligible"],
+            eligibility_sha256=sources.get("eligibility_sha256"),
+            borrowed=sources["borrowed"],
+            joint_windows=sources["joint_windows"],
+            joint_views=sources["joint_views"],
+        )
     if strata is not None:
         report[STRATA_FIELD] = strata
         for name in ("evaluation/modality_strata.py", "training/corpus_inputs.py"):
