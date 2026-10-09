@@ -34,7 +34,6 @@ from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 from mars_titan.models.titans.local_control import MACProjectionConfig
 
 CAP = 128 * 1024**2
-NATIVE_SHA = "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d"
 LABELS = {
     moment(125): (2.0, 8.0, 4.0, 6.0),
     moment(126): (3.0, 7.0, 5.0, 1.0),
@@ -192,7 +191,12 @@ def cuda_preflight():
 def test_cuda_m2_manual_parity_overflow_and_recovery(
     native, four_flow_source, tmp_path, monkeypatch
 ):
-    assert native.binary_sha256 == NATIVE_SHA
+    # No se fija una compilación concreta: el enlace incorpora rutas absolutas de include y
+    # solo se reproduce en su worktree. load_native ya comprueba contrato y runtime, y el
+    # recibo registra la huella del binario realmente cargado.
+    loaded = os.path.realpath(os.environ["MARS_TITAN_EPISODIC_NATIVE"])
+    with open(loaded, "rb") as handle:
+        assert native.binary_sha256 == hashlib.sha256(handle.read()).hexdigest()
     started = time.perf_counter()
     device, hardware, free = cuda_preflight()
     python_rng, numpy_rng = random.getstate(), np.random.get_state()
