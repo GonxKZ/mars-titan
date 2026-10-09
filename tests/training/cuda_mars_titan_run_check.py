@@ -156,6 +156,8 @@ def test_device_pass_matches_cpu_without_optimizer_steps(
     engines, seconds = {}, {}
     for name, device in (("cpu", "cpu"), ("device", DEVICE)):
         if cuda and name == "device":
+            # Sin inicializar CUDA antes, reset_peak_memory_stats rechaza el dispositivo 0.
+            torch.cuda.init()
             torch.cuda.reset_peak_memory_stats(0)
         start = time.perf_counter()
         engines[name] = engine(

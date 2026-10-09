@@ -6,6 +6,7 @@ objetivo exterior con `autograd.grad`. No crea optimizadores ni modifica paráme
 
 import argparse
 import math
+import os
 import platform
 import subprocess
 import time
@@ -185,6 +186,24 @@ def trajectory(candidate, stream, *, dim, flows, length, window, dtype, device):
     }
 
 
+ENVIRONMENT = ("CUDA_VISIBLE_DEVICES", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
+
+
+def provenance(script, args):
+    """Orden y entorno reales del recibo, con el dispositivo y las opciones utilizadas."""
+    options = " ".join(
+        f"--{name.replace('_', '-')} {value}"
+        for name, value in vars(args).items()
+        if name != "output"
+    )
+    return {
+        "command": f"uv run --no-sync python benchmarks/{script} {options} --output <recibo>",
+        "environment": ", ".join(
+            f"{name}={os.environ.get(name, '<sin definir>')}" for name in ENVIRONMENT
+        ),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
@@ -225,9 +244,8 @@ def main():
         "schema_version": 1,
         "recorded_at_utc": datetime.now(UTC).isoformat(),
         "commit": commit,
-        "command": "uv run --no-sync python benchmarks/titans_gate_retention.py --output <recibo>",
-        "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2",
-        "scope": "Dinámica técnica con fixtures aleatorios en CPU, sin optimizador ni datos",
+        **provenance("titans_gate_retention.py", args),
+        "scope": f"Dinámica técnica con fixtures aleatorios en {device}, sin optimizador ni datos",
         "hardware": {
             "machine": platform.machine(),
             "processor": platform.processor(),

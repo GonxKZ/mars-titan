@@ -1,0 +1,91 @@
+{
+  "device": "cuda:0",
+  "rehearsal_without_cuda": false,
+  "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 7194 MiB, 595.91.07",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "native_sha256": "144b7534f67ba4b95a8b075f0cd155efa32d7008cc69bb87c7172f85219bea8d",
+  "cases": [
+    {
+      "case": "torch.float32-k1-m1",
+      "rtol": 0.0002,
+      "atol": 2e-06,
+      "max_prediction_error": 2.2351741790771484e-08,
+      "seconds": {
+        "cpu": 0.42987904298934154,
+        "device": 0.738093828986166,
+        "device_recovered": 0.47608896999736317
+      },
+      "retained_ids": [
+        3,
+        4,
+        6,
+        8
+      ],
+      "exact_recovery_on_device": true,
+      "parameters_unchanged": true
+    },
+    {
+      "case": "torch.float64-k1-m1",
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_prediction_error": 1.1102230246251565e-16,
+      "seconds": {
+        "cpu": 0.3965837759897113,
+        "device": 0.42497690598247573,
+        "device_recovered": 0.5002897960075643
+      },
+      "retained_ids": [
+        3,
+        4,
+        6,
+        8
+      ],
+      "exact_recovery_on_device": true,
+      "parameters_unchanged": true
+    },
+    {
+      "case": "torch.float64-k4-m1",
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_prediction_error": 1.1102230246251565e-16,
+      "seconds": {
+        "cpu": 0.38766152801690623,
+        "device": 0.42226272099651396,
+        "device_recovered": 0.5339330169954337
+      },
+      "retained_ids": [
+        3,
+        4,
+        6,
+        8
+      ],
+      "exact_recovery_on_device": true,
+      "parameters_unchanged": true
+    },
+    {
+      "case": "torch.float64-k1-m0",
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_prediction_error": 1.249000902703301e-16,
+      "seconds": {
+        "cpu": 0.37690354499500245,
+        "device": 0.47163635698962025,
+        "device_recovered": 0.48578688301495276
+      },
+      "retained_ids": [],
+      "exact_recovery_on_device": true,
+      "parameters_unchanged": true
+    }
+  ],
+  "cap_torch_bytes": 134217728,
+  "peak_torch_bytes": 23007232,
+  "peak_reserved_bytes": 31457280,
+  "wall_seconds": 6.14542360798805,
+  "peak_rss_bytes": 1473249280,
+  "capacity": 4,
+  "labels": "manual_fixture_no_estimation",
+  "optimizer_steps": 0,
+  "target_estimation_calls": 0,
+  "scientific_evaluation": false
+}

@@ -1,0 +1,72 @@
+[
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "refinements": 1,
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.3421188349893782,
+      "device": 1.505584111000644
+    },
+    "peak_allocated_bytes": 47151104,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "refinements": 1,
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.5857611680112313,
+      "device": 1.4768232079804875
+    },
+    "peak_allocated_bytes": 67206144,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "refinements": 4,
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.4649763609922957,
+      "device": 1.4305681049881969
+    },
+    "peak_allocated_bytes": 47297024,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "device": "cuda:0",
+    "dtype": "torch.float64",
+    "refinements": 4,
+    "updates": 11,
+    "seconds": {
+      "cpu": 1.649394284002483,
+      "device": 1.7179256710223854
+    },
+    "peak_allocated_bytes": 67636224,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "check": "walk_forward",
+    "device": "cuda:0",
+    "dtype": "float32",
+    "seconds": {
+      "cpu": 0.8476381779764779,
+      "device": 0.7801937129988801
+    },
+    "peak_allocated_bytes": 55603712,
+    "torch": "2.14.0+cu130"
+  },
+  {
+    "check": "walk_forward",
+    "device": "cuda:0",
+    "dtype": "float64",
+    "seconds": {
+      "cpu": 0.9844448509975336,
+      "device": 0.8680414650007151
+    },
+    "peak_allocated_bytes": 84924928,
+    "torch": "2.14.0+cu130"
+  }
+]

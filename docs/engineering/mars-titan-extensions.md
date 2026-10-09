@@ -93,9 +93,9 @@ El aislamiento se comprueba registrando cada llamada a `prepare` del padre: con 
 
 Se aplicaron 16 mutaciones dirigidas en copias aisladas, comprobando que las pruebas importaban la copia. Catorce hicieron fallar las pruebas: admitir antes de predecir, M0 con lectura, el orden de admisión, el peso de cada bloque en la pérdida del tramo, la identidad con todo apagado, B6 con banco, la selección del consumidor, la semilla y el lector elegidos del padre, el codec trasladado, el ganador del finalista, el padre ausente, las dependencias de búsqueda y el motivo pendiente. El peso de bloque solo se detectó tras añadir la prueba que compara bloques de una fila con bloques de todo el instante. Las otras dos eran equivalentes. Invertir el signo del error M2 no cambia nada observable porque el banco solo usa su valor absoluto, y la comprobación explícita de K con episodios fijos repetía la regla `requires` de la declaración, así que se retiró.
 
-## Comprobaciones CUDA pendientes
+## Comprobaciones CUDA
 
-No se ha usado la GPU. `tests/training/cuda_mars_titan_run_check.py` compara en CPU y `cuda:0` un ajuste completo sin pasos y su validación, en FP32 y FP64, con M1 y K = 1, K = 4 por paso y K = 4 con episodios fijos, y con M3 y K = 1 y K = 4 con episodios fijos. Los casos M3 se describen en la [guía de M3](m3-write-policy.md#comprobaciones-cuda). Su lógica se ensayó en CPU con `MARS_TITAN_MARS_RUN_CHECK_DEVICE=cpu`, lo que no acredita CUDA. Cuando la GPU quede libre, desde la raíz del repositorio:
+`tests/training/cuda_mars_titan_run_check.py` compara en CPU y `cuda:0` un ajuste completo sin pasos y su validación, en FP32 y FP64, con M1 y K = 1, K = 4 por paso y K = 4 con episodios fijos, y con M3 y K = 1 y K = 4 con episodios fijos. Los casos M3 se describen en la [guía de M3](m3-write-policy.md#comprobaciones-cuda). Sus diez casos pasan en `cuda:0` desde el 9 de octubre ([recibo](../../reports/engineering/cuda-checks-20261009/mars-titan-readout-cuda.json)), una vez inicializada CUDA antes de reiniciar el pico de memoria. La orden, desde la raíz del repositorio:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \

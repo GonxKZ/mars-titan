@@ -51,9 +51,6 @@ La propuesta de adoptar `memory_residual_layer_norm: true` junto a `gate_bias` e
 
 Con residual y LayerNorm, el gradiente de la cabeza al inicio es unas trescientas veces mayor que con v1. La tasa de aprendizaje se declaró con v1, así que la receta de campaña la busca entre dos casos, 10⁻⁴ y 10⁻³, con el mismo número de casos, presupuesto y selección por validación que las referencias neuronales y sin usar el test. El recorte se mantiene en 1,0. La justificación de la rejilla está en el [entrenador cronológico](titans-chronological-trainer.md#receta-de-la-campaña-y-casos-de-búsqueda).
 
-Son medidas técnicas con entradas aleatorias en CPU. No indican qué memoria predice mejor ni sustituyen la comparación con datos. La comprobación CUDA queda pendiente:
+Son medidas técnicas con entradas aleatorias. No indican qué memoria predice mejor ni sustituyen la comparación con datos.
 
-```bash
-CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 uv run --no-sync python benchmarks/titans_mac_output_scale.py \
-  --device cuda:0 --output reports/engineering/titans-mac-output-scale-cuda-<fecha>.json
-```
+La misma medida se repitió en `cuda:0` el 9 de octubre ([recibo](../../reports/engineering/cuda-checks-20261009/titans-mac-output-scale-cuda.json), [resumen](../../reports/engineering/cuda-checks-20261009/README.md)). Tres ejecuciones CUDA dan los 612 valores idénticos bit a bit. Frente a CPU, en FP64, las escalas de `gate_bias` coinciden hasta 4·10⁻¹⁶ en todo el flujo. Con residual y LayerNorm las trayectorias se separan con el número de pasos. Con `gate_bias` la mayor diferencia relativa de las escalas es 4·10⁻¹⁵ hasta 256 pasos, 7·10⁻¹⁰ en 1.024, 1,7 % en 2.048 y 4,2 % en 4.096, y los gradientes exteriores difieren hasta un 5 %. Sin `gate_bias` la diferencia llega al 31 % en 64 pasos. En estos fixtures la memoria con residual amplifica el redondeo. Por eso no conviene esperar que una ejecución de la receta de campaña en CPU y otra en CUDA sigan la misma trayectoria, aunque partan del mismo estado.

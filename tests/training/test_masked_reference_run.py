@@ -97,8 +97,12 @@ def recording_optimizer(record):
 
 
 @pytest.fixture
-def cpu_runner(monkeypatch):
-    """Sustituir CUDA y AdamW solo en la prueba, sin aplicar actualizaciones."""
+def cpu_runner(monkeypatch, learning_doubles):
+    """Sustituir CUDA y AdamW solo en la prueba, sin aplicar actualizaciones.
+
+    `learning_doubles` deja pasar la entrada de run_reference_case, que la protección del
+    aprendizaje detendría. El sustituto de AdamW nunca modifica pesos.
+    """
     record = SimpleNamespace(calls=[], optimizers=0)
     RecordingOptimizer = recording_optimizer(record)
 
@@ -362,6 +366,8 @@ def test_strict_default_and_explicit_policy_produce_the_same_outputs(tmp_path, c
         )
 
 
+# Las opciones se rechazan antes de leer, sin ajuste. La protección se detendría antes.
+@pytest.mark.usefixtures("learning_doubles")
 @pytest.mark.parametrize(
     "change,options,message",
     [
