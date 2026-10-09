@@ -299,3 +299,134 @@ def test_series_carry_masks_and_loss_semantics():
     assert mae.loss and mae.metric == "mae" and mae.defined.all()
     with pytest.raises(ValueError, match="no admitida"):
         scores.series("rmse")
+
+
+def test_sign_precision_and_recall_by_hand_with_zero_targets_and_abstentions():
+    # Sesión 0: objetivos 1, 2, −1, −2, 0, 3 y predicciones 1, −1, −1, 0, 5, 2.
+    # El objetivo cero no se juzga aunque se prediga 5. La predicción cero es abstención.
+    # Sesión 1: objetivo 1 con predicción −1.
+    scores = score_sessions(
+        build([1, 2, -1, -2, 0, 3, 1], [1, -1, -1, 0, 5, 2, -1], [0, 0, 0, 0, 0, 0, 1])
+    )
+    assert scores.up_calls.tolist() == [2, 0] and scores.up_hits.tolist() == [2, 0]
+    assert scores.down_calls.tolist() == [2, 1] and scores.down_hits.tolist() == [1, 0]
+    assert scores.positive_targets.tolist() == [3, 1]
+    assert scores.negative_targets.tolist() == [2, 0]
+    assert np.array_equal(scores.up_hits + scores.down_hits, scores.direction_hits)
+    point = scores.summary()["point"]
+    # Precisión al alza: solo la sesión 0 afirma subidas (2 de 2).
+    assert point["up_precision"] == 1.0
+    # Exhaustividad al alza: 2 de 3 y 0 de 1.
+    assert point["up_recall"] == pytest.approx((2 / 3 + 0) / 2)
+    # Precisión a la baja: 1 de 2 y 0 de 1. Exhaustividad a la baja: solo la sesión 0.
+    assert point["down_precision"] == pytest.approx((1 / 2 + 0) / 2)
+    assert point["down_recall"] == 1 / 2
+    assert point["direction_accuracy_percent"] == pytest.approx(100 * (3 / 5 + 0) / 2)
+    assert point["conditional_direction_accuracy_percent"] == pytest.approx(100 * (3 / 4 + 0) / 2)
+    direction = scores.summary()["direction"]
+    assert (direction["up_calls"], direction["down_calls"]) == (2, 3)
+    assert (direction["up_hits"], direction["down_hits"]) == (2, 1)
+    table = scores.to_table()
+    assert table["up_calls"].to_pylist() == [2, 0]
+
+
+def test_sign_rates_without_any_call_or_signed_target_are_absent_not_zero():
+    point = score_sessions(build([0, 0, 1], [0, 0, 0], [0, 0, 0])).summary()["point"]
+    assert point["up_precision"] is None and point["down_precision"] is None
+    assert point["up_recall"] == 0.0 and point["down_recall"] is None
+    assert point["direction_accuracy_percent"] == 0.0
+    assert point["conditional_direction_accuracy_percent"] is None
+
+
+def test_quantile_calibration_errors_by_hand_flag_undercovered_intervals():
+    rows = [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]]
+    calibration = score_sessions(quantile_panel([1.0, -3.0], rows)).summary()["quantiles"][
+        "calibration"
+    ]
+    # Frecuencias 0,5, 0,5, 0,5, 1 y 1 frente a 0,025, 0,1, 0,5, 0,9 y 0,975.
+    assert calibration["level_mean_absolute_error"] == pytest.approx(
+        (0.475 + 0.4 + 0 + 0.1 + 0.025) / 5
+    )
+    assert calibration["level_max_absolute_error"] == pytest.approx(0.475)
+    # Coberturas 0,5 y 0,5 frente a 0,8 y 0,95.
+    assert calibration["interval_mean_absolute_error"] == pytest.approx((0.3 + 0.45) / 2)
+    assert calibration["undercovered_intervals"] == [0.8, 0.95]
+    covered = score_sessions(quantile_panel([0.0, 0.5], rows)).summary()["quantiles"]
+    assert covered["calibration"]["undercovered_intervals"] == []
+
+
+def test_coverage_error_series_is_observed_minus_nominal_by_session():
+    rows = [[-2, -1, 0, 1, 2]] * 3
+    panel = build(
+        [0.0, 5.0, 0.5], [0.0] * 3, [0, 0, 1], quantiles=np.asarray(rows, float), levels=LEVELS
+    )
+    scores = score_sessions(panel)
+    series = scores.series("coverage_error@0.8")
+    assert series.metric == "coverage_error@0.8" and not series.loss
+    assert series.values == pytest.approx([0.5 - 0.8, 1.0 - 0.8])
+    assert series.defined.all()
+    assert scores.series("coverage_error@0.95").values == pytest.approx([0.5 - 0.95, 0.05])
+    with pytest.raises(ValueError, match="intervalo central"):
+        scores.series("coverage_error@0.5")
+    with pytest.raises(ValueError, match="no emite intervalos"):
+        score_sessions(build([1.0], [1.0], [0])).series("coverage_error@0.8")
+
+
+def scored_fields(scores):
+    return {
+        name: getattr(scores, name)
+        for name in (*forecast_scores._PER_SESSION, "session_period")
+        if getattr(scores, name) is not None
+    }
+
+
+def split_panel(panel, mask):
+    rows = np.flatnonzero(mask)
+    return ForecastPanel.from_columns(
+        panel.row_id.take(rows),
+        np.asarray(panel.markets)[panel.market[rows]],
+        panel.prediction_at[rows],
+        panel.target[rows],
+        panel.prediction[rows],
+        quantiles=None if panel.quantiles is None else panel.quantiles[rows],
+        levels=panel.levels,
+    )
+
+
+def test_concatenated_windows_equal_the_pooled_panel_session_by_session():
+    rng = np.random.default_rng(11)
+    panel = random_panel(rng, rows=900, days=15)
+    early = panel.prediction_at < at(7, 0).astype(np.int64)
+    first, second = split_panel(panel, early), split_panel(panel, ~early)
+    pooled = score_sessions(panel)
+    joined = forecast_scores.SessionScores.concatenate(
+        [score_sessions(second), score_sessions(first)]
+    )
+    for name, value in scored_fields(pooled).items():
+        assert np.array_equal(getattr(joined, name), value), name
+    expected = {key: value for key, value in pooled.summary().items() if key != "cohort_sha256"}
+    actual = {key: value for key, value in joined.summary().items() if key != "cohort_sha256"}
+    assert actual == expected
+    reordered = forecast_scores.SessionScores.concatenate(
+        [score_sessions(first), score_sessions(second)]
+    )
+    assert reordered.cohort_sha256 == joined.cohort_sha256 != pooled.cohort_sha256
+    with pytest.raises(ValueError, match="dos ventanas"):
+        forecast_scores.SessionScores.concatenate([score_sessions(first), score_sessions(first)])
+    point = score_sessions(split_panel(random_panel(rng, quantiles=False), early[:600]))
+    with pytest.raises(ValueError, match="cuantiles comunes"):
+        forecast_scores.SessionScores.concatenate([score_sessions(first), point])
+
+
+def test_selected_market_equals_scoring_only_its_rows():
+    rng = np.random.default_rng(12)
+    panel = random_panel(rng, rows=800, days=10)
+    scores = score_sessions(panel)
+    us = scores.select_sessions(scores.session_market == panel.markets.index("US"), label="US")
+    only = score_sessions(split_panel(panel, panel.market == panel.markets.index("US")))
+    for name, value in scored_fields(only).items():
+        assert np.array_equal(getattr(us, name), value), name
+    assert us.summary()["point"]["mae"] == scores.summary()["by_market"]["US"]["mae"]
+    assert us.cohort_sha256 != scores.cohort_sha256
+    with pytest.raises(ValueError, match="no vacía"):
+        scores.select_sessions(np.zeros(scores.session_market.shape, bool), label="none")

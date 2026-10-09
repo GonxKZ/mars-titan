@@ -11,6 +11,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data.input_policy import HISTORICAL_MASKED, STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 
 
@@ -362,8 +363,8 @@ def test_cli_main_propagates_real_status_and_does_not_print_entries(tmp_path, ca
     assert reviewer().main(args) == 1
 
 
-def temporal_fixture(tmp_path):
-    from tests.evaluation.test_comparison_sources import strict_view
+def temporal_fixture(tmp_path, policy=STRICT_INPUTS):
+    from tests.evaluation.test_comparison_sources import masked_protocol, masked_view, strict_view
 
     source, report_path, prediction = fixture_run(tmp_path / "source")
     report = json.loads(report_path.read_text())
@@ -397,6 +398,9 @@ def temporal_fixture(tmp_path):
         primary_metric="session_mae",
         seeds=[42, 43, 44],
     )
+    masked = policy == HISTORICAL_MASKED
+    if masked:
+        protocol = masked_protocol("US", "2023-02-01", validation_months=2)
     manifest = tmp_path / "view" / "manifest.json"
     atomic_json(
         manifest,
@@ -404,7 +408,8 @@ def temporal_fixture(tmp_path):
             kind="corpus_supervision",
             cohort_complete=True,
             final_test_opened=False,
-            temporal_view=strict_view(protocol),
+            temporal_view=masked_view(protocol) if masked else strict_view(protocol),
+            **policy_identity(policy),
         ),
     )
     report["identity"] = dict(manifest_sha256=sha256(manifest))
@@ -413,7 +418,8 @@ def temporal_fixture(tmp_path):
     summary["identity"] = report["identity"]
     summary["runs"][0]["report_sha256"] = sha256(report_path)
     atomic_json(source, summary)
-    return dict(id="fold", summary=str(source), manifest=str(manifest))
+    declared = {"input_policy": policy} if masked else {}
+    return dict(id="fold", summary=str(source), manifest=str(manifest), **declared)
 
 
 def test_temporal_manifest_accepts_train_rows_in_2023_and_separate_validation(tmp_path):
@@ -520,8 +526,8 @@ def test_temporal_protocol_cannot_move_the_reserved_test_boundary(tmp_path):
     assert result["processed_jobs"] == 0
 
 
-def derived_temporal_fixture(tmp_path, defect=None):
-    source = temporal_fixture(tmp_path)
+def derived_temporal_fixture(tmp_path, defect=None, policy=STRICT_INPUTS):
+    source = temporal_fixture(tmp_path, policy)
     summary_path = Path(source["summary"])
     manifest = json.loads(Path(source["manifest"]).read_text())
     view = dict(
@@ -584,3 +590,54 @@ def test_malformed_temporal_objects_are_reported_without_losing_the_cycle(tmp_pa
     result = reviewer().review_campaigns([source], tmp_path / "review.json")
     assert result["source_errors"]
     assert result["processed_jobs"] == 0
+
+
+def test_strict_temporal_contract_keeps_its_previous_fields(tmp_path):
+    result = reviewer().review_campaigns([temporal_fixture(tmp_path)], tmp_path / "review.json")
+    for entry in result["entries"].values():
+        assert set(entry["temporal_contract"]) == {
+            "manifest_sha256",
+            "run_manifest_sha256",
+            "fold",
+            "bounds",
+        }
+
+
+@pytest.mark.parametrize("derived", [False, True])
+def test_masked_view_is_reviewed_only_under_its_declared_policy(tmp_path, derived):
+    source = (
+        derived_temporal_fixture(tmp_path, policy=HISTORICAL_MASKED)
+        if derived
+        else temporal_fixture(tmp_path, HISTORICAL_MASKED)
+    )
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert result["counts"] == dict(confirmed=2, verified=2, failed=0, pending=0)
+    entry = result["entries"]["fold/case/train"]
+    assert entry["temporal_contract"]["input_policy"] == HISTORICAL_MASKED
+    assert entry["temporal_contract"]["bounds"] == ["2000-01-01", "2023-02-01"]
+    undeclared = {key: value for key, value in source.items() if key != "input_policy"}
+    result = reviewer().review_campaigns([undeclared], tmp_path / "undeclared.json")
+    assert "política de entradas" in result["source_errors"]["fold"]
+    assert result["processed_jobs"] == 0
+
+
+def test_strict_view_is_not_reviewed_under_the_masked_policy(tmp_path):
+    source = dict(temporal_fixture(tmp_path), input_policy=HISTORICAL_MASKED)
+    result = reviewer().review_campaigns([source], tmp_path / "review.json")
+    assert "política de entradas" in result["source_errors"]["fold"]
+    assert result["processed_jobs"] == 0
+
+
+@pytest.mark.parametrize(
+    "change,message",
+    [
+        (dict(input_policy=HISTORICAL_MASKED), "requiere su manifiesto"),
+        (dict(input_policy="historical_masked"), "no está admitida"),
+    ],
+)
+def test_masked_policy_needs_a_known_name_and_a_temporal_manifest(tmp_path, change, message):
+    source, _, _ = fixture_run(tmp_path / "source")
+    with pytest.raises(ValueError, match=message):
+        reviewer().review_campaigns(
+            [{"id": "study", "summary": str(source), **change}], tmp_path / "review.json"
+        )

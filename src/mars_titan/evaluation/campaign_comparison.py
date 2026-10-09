@@ -16,6 +16,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import safe_destination
+from mars_titan.data.input_policy import INPUT_POLICIES, STRICT_INPUTS
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.comparison_sources import predictive_sources
 from mars_titan.evaluation.prediction_statistics import (
@@ -324,9 +325,20 @@ def _csv(path, rows):
 
 
 def compare_campaigns(
-    reference, completion, output, *, repetitions=2000, seed=42, initial_cache_bytes=8 * 1024**2
+    reference,
+    completion,
+    output,
+    *,
+    repetitions=2000,
+    seed=42,
+    initial_cache_bytes=8 * 1024**2,
+    input_policy=STRICT_INPUTS,
 ):
-    """Producir agregados independientes sin cambiar los recibos científicos."""
+    """Producir agregados independientes sin cambiar los recibos científicos.
+
+    La política de entradas se declara y la procedencia la conserva cuando no es
+    la estricta. Las vistas que no se adhieren a ella se rechazan.
+    """
     started = time.perf_counter()
     reference, completion, output = map(Path, (reference, completion, output))
     safe_destination(output)
@@ -334,7 +346,7 @@ def compare_campaigns(
     for path in (reference, completion):
         outside_source(path, output)
         _require(not path.resolve().is_relative_to(output.resolve()), "La salida contiene fuentes")
-    sources, provenance = predictive_sources(reference, completion)
+    sources, provenance = predictive_sources(reference, completion, input_policy=input_policy)
     _require(len(sources) <= 8192, "La comparación supera el presupuesto de archivos")
     folds = {fold["id"]: fold for fold in provenance["folds"]}
     initial_cache = InitialPolicyCache(initial_cache_bytes)
@@ -478,6 +490,12 @@ def main(argv=None):
     parser.add_argument("--repetitions", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--initial-cache-mib", type=int, default=8)
+    parser.add_argument(
+        "--input-policy",
+        choices=INPUT_POLICIES,
+        default=STRICT_INPUTS,
+        help="Política de entradas declarada por las vistas (estricta si no se indica).",
+    )
     args = parser.parse_args(argv)
     result = compare_campaigns(
         args.reference,
@@ -486,6 +504,7 @@ def main(argv=None):
         repetitions=args.repetitions,
         seed=args.seed,
         initial_cache_bytes=args.initial_cache_mib * 1024**2,
+        input_policy=args.input_policy,
     )
     print(f"Comparados {result['counts']['models']} modelos. Test final cerrado.")
     return 0

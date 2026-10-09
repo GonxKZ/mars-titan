@@ -157,7 +157,33 @@ una sesión puede alejarse de la mitad. Por eso la comparación se hace frente a
 controles con el mismo denominador. El control cero se abstiene siempre y
 obtiene $\operatorname{DA}=0$. Acertar el signo de un residuo no equivale a
 acertar la subida o bajada bruta del activo ni dice nada sobre el tamaño del
-error.
+error. El resumen lo da también en porcentaje (`direction_accuracy_percent` y
+`conditional_direction_accuracy_percent`), que es $100\cdot\operatorname{DA}$.
+
+### Precisión y exhaustividad del signo
+
+Con $P_s=\{i: y_i>0\}$, $N_s=\{i: y_i<0\}$, $U_s=\{i\in E_s: \hat y_i>0\}$ y
+$D_s=\{i\in E_s: \hat y_i<0\}$:
+
+$$
+\operatorname{Prec}^{\uparrow}_s=\frac{|U_s\cap P_s|}{|U_s|},\qquad
+\operatorname{Exh}^{\uparrow}_s=\frac{|U_s\cap P_s|}{|P_s|},\qquad
+\operatorname{Prec}^{\downarrow}_s=\frac{|D_s\cap N_s|}{|D_s|},\qquad
+\operatorname{Exh}^{\downarrow}_s=\frac{|D_s\cap N_s|}{|N_s|}.
+$$
+
+Un objetivo exactamente cero no entra en ningún numerador ni denominador,
+aunque el modelo afirme un signo para esa fila. Una predicción exactamente cero
+no afirma nada, así que no entra en la precisión y cuenta como fallo en la
+exhaustividad de la clase de su objetivo. Cada cociente se define solo con
+denominador positivo y se promedia entre sesiones como las demás métricas
+(`up_precision`, `up_recall`, `down_precision` y `down_recall`). El resumen
+conserva los recuentos por filas de objetivos positivos y negativos, llamadas y
+aciertos de cada signo. Por ejemplo, con objetivos 1, 2, −1, −2, 0 y 3 y
+predicciones 1, −1, −1, 0, 5 y 2, la precisión al alza es 2/2, la exhaustividad
+al alza 2/3, la precisión a la baja 1/2 y la exhaustividad a la baja 1/2. La
+predicción 5 sobre el objetivo cero no cuenta y la predicción cero sobre −2 es
+un fallo de exhaustividad.
 
 ## Correlación de rangos por sesión
 
@@ -236,6 +262,26 @@ La cobertura debe leerse junto con la anchura. Un intervalo enorme cubre casi
 siempre y no informa. Una anchura menor solo es mejor a igual cobertura. Un
 error de signo comprometido bajo con muy pocas afirmaciones tiene poco valor, por
 eso se informan también las filas afirmadas y fallidas.
+
+### Error de calibración y sobreconfianza
+
+`quantiles.calibration` resume la calibración marginal del panel con la media y
+el máximo de $|F_\tau-\tau|$ entre niveles, la media de
+$|\overline{\operatorname{Cov}}-(1-2\tau)|$ entre intervalos centrales y la lista
+`undercovered_intervals` de intervalos cuya cobertura agregada queda por debajo
+de la nominal. Esta lista es descriptiva y no tiene en cuenta la incertidumbre.
+
+Para juzgar la sobreconfianza con incertidumbre temporal se usa la serie
+`coverage_error@0.8` (o `@0.95`), que vale
+$\operatorname{Cov}_s-0{,}8$ en cada sesión. Su media con `level` en
+`compare_series` da un intervalo por bloques. Si el intervalo simultáneo queda
+entero por debajo de cero, el modelo cubre menos de lo que promete y se
+clasifica como `undercovers`. Si queda por encima, los intervalos son
+conservadores (`overcovers`). Si contiene el cero, el resultado es
+`inconclusive`. Esta es la forma medible de «no alucinar» con intervalos: la
+cobertura prometida frente a la observada, junto con el error de signo
+comprometido descrito arriba. Una cobertura correcta con intervalos muy anchos
+no informa, por eso se lee siempre con la anchura.
 
 ## Riesgo-cobertura selectiva
 
@@ -347,6 +393,122 @@ sean equivalentes. La familia, por ejemplo C, M, CM e I frente a B, debe
 declararse antes de evaluar. Esta corrección no cubre la búsqueda previa de
 configuraciones, que debe constar en el registro de ensayos.
 
+## Calibración común de intervalos
+
+`calibration/conformal_quantiles.py` implementa la corrección común de los
+modelos con `quantile_head_v1`. Sigue la regresión cuantílica conformalizada
+(CQR) de [Romano, Patterson y Candès (2019)](https://arxiv.org/abs/1905.03222v1)
+con su puntuación simétrica. Para el intervalo central de nivel nominal
+$1-\alpha$ con extremos $q_{\mathrm{bajo}}$ y $q_{\mathrm{alto}}$:
+
+$$
+E_i=\max\{q_{\mathrm{bajo},i}-y_i,\; y_i-q_{\mathrm{alto},i}\},\qquad
+Q=E_{(k)},\quad k=\lceil (n+1)(1-\alpha)\rceil,
+$$
+
+donde $E_{(k)}$ es el $k$-ésimo menor valor de las $n$ puntuaciones del tramo de
+calibración. El intervalo calibrado es $[q_{\mathrm{bajo}}-Q,\;q_{\mathrm{alto}}+Q]$.
+$Q>0$ ensancha un intervalo sobreconfiado y $Q<0$ estrecha uno demasiado
+amplio. El orden $k$ se calcula con fracciones exactas, así que $0{,}8$ y
+$0{,}95$ no dependen del redondeo binario. Si $k>n$ o el grupo no alcanza el
+mínimo declarado de filas, la corrección queda sin definir con su motivo. Por
+ejemplo, con nueve filas $k=\lceil 10\cdot 0{,}95\rceil=10$ y el intervalo del
+95 % no se calibra.
+
+La configuración declara las coberturas 0,8 y 0,95, el tramo `calibration`, un
+grupo por mercado y el mínimo de filas. Cada mercado recibe su propia
+corrección, porque una corrección común podría cubrir de más un mercado y de
+menos el otro. El registro guarda niveles, órdenes, correcciones, la cobertura
+en calibración sin corregir y corregida, y `coverage_guaranteed=False`. La
+garantía de CQR exige intercambiabilidad, que la dependencia temporal no
+asegura. Su huella SHA-256 se calcula antes de abrir las predicciones de
+evaluación y se conserva en el informe.
+
+La mediana no cambia, de modo que la predicción puntual y el MAE tampoco. Para
+conservar el orden de los cinco cuantiles, cada extremo corregido se ensancha
+como mucho hasta la mediana y el intervalo del 95 % hasta el del 80 %
+(`widen_to_median_and_inner_interval`). Solo se ensancha respecto a la
+corrección CQR, nunca se estrecha, así que la cobertura en calibración no baja
+de la nominal. El informe cuenta las filas en las que se aplicó esa regla.
+
+## Evaluación walk-forward de la edición desde 2000
+
+`evaluation/walk_forward_comparison.py` aplica estas métricas a las
+predicciones de la campaña desde 2000 sin abrir la reserva de 2024. Recibe dos
+documentos. La [configuración declarada](../../configs/evaluation/historical-masked-2000-comparison.json)
+fija antes de evaluar la política de entradas, los protocolos de cada ámbito
+(US, CN y US+CN), las ventanas, los brazos con su salida y semillas, las
+métricas, la calibración y las familias de contrastes. Un manifiesto de fuentes,
+que se generará cuando existan las predicciones, enlaza cada brazo, semilla y
+ventana con sus archivos del tramo de evaluación y, si emite cuantiles, del
+tramo de calibración.
+
+La política de entradas siempre se declara. Cada vista de ventana se valida con
+`temporal_contracts` bajo esa política, de modo que una vista estricta no pasa
+como vista con máscaras ni al revés. Además se rechaza cualquier mezcla entre
+brazos: otra política declarada en una fuente, otra vista, otro protocolo u otra
+ventana, otra edición (la huella del corpus padre de las vistas), semillas o
+ventanas ausentes o sobrantes y filas distintas. La identidad de una fila es
+(mercado, activo, instante) dentro de su ventana. Si dos brazos no evalúan las
+mismas filas con los mismos objetivos, el error indica cuántas filas solo están
+en cada brazo y cuántas tienen otro objetivo.
+
+Cada archivo de evaluación debe contener solo filas del tramo de evaluación que
+el protocolo asigna a su ventana, y el de calibración solo filas de su tramo.
+Una fila fuera de su tramo se rechaza y no se filtra en silencio. Cualquier fila
+con instante igual o posterior al 1 de enero de 2024 se rechaza con un mensaje
+propio, y ninguna ventana declarada termina después de esa fecha.
+
+La agregación sigue la definición de este documento:
+
+- Por ventana, cada brazo y semilla se puntúa con `score_sessions` sobre su
+  tramo de evaluación.
+- Sobre todas las ventanas, las sesiones se unen con `SessionScores.concatenate`
+  y cada sesión pesa lo mismo. El resultado coincide con el de un panel único con
+  todas las filas, como comprueban las pruebas. Las ventanas de evaluación son
+  años consecutivos y no repiten sesiones.
+- Por mercado, el ámbito conjunto informa US+CN con la ponderación declarada y
+  cada mercado por separado con `select_sessions`.
+- Por sesión, `sessions.parquet` conserva los estadísticos de cada sesión, brazo,
+  semilla, ventana y variante (cuantiles brutos o calibrados).
+
+Los resúmenes se dan por semilla. Los contrastes promedian primero las semillas
+sesión a sesión con `SessionSeries.average` y aplican `compare_series` a cada
+familia y métrica declaradas, con la longitud de bloque, réplicas y semilla de
+la configuración. Una familia con algún brazo sin cuantiles no recibe pinball y
+lo indica. El control cero se construye con las mismas filas y objetivo y
+predicción nula. Para cada brazo con cuantiles se informa el error de cobertura
+de los intervalos del 80 % y del 95 % con y sin calibración, con su intervalo
+por bloques y la diferencia entre ambos.
+
+Los modelos sin cuantiles, Ridge, XGBoost y el control cero, tienen las métricas
+de intervalo ausentes con su motivo, nunca a cero. La abstención usa las dos
+reglas ya definidas: la predicción nula como abstención (acierto condicionado y
+cobertura de llamadas) y el intervalo que excluye el cero como afirmación de
+signo (error de signo comprometido y fracción de afirmaciones). No existe una
+regla de abstención con umbral declarada y no se crea en esta evaluación.
+
+La configuración de la campaña declara el MAE como métrica primaria,
+ponderación por sesión, un mínimo de 30 activos para el Rank IC (con 30 activos
+el error típico de una correlación de rangos ronda $1/\sqrt{29}\approx 0{,}19$),
+1.000 filas por mercado para calibrar, bloques de 16 días con sensibilidad a 5,
+10 y 40, 2.000 réplicas y la semilla 20261009. Los 16 días se aproximan a
+$P^{1/3}$ con unos 4.800 días de evaluación en US y unos 3.300 en los otros
+ámbitos. Las familias son las referencias frente al control cero, los controles
+de Titans-MAC frente a `transformer_direct`, las políticas de escritura M1 a M3
+frente a M0, los refinamientos K = 2 y 4 sobre M1, el factorial CM-v1 y el nivel
+de cada brazo. Tomar M1 como base de K es una propuesta pendiente de revisión.
+M3 todavía no está definida en el código y su brazo exige esa definición antes
+de evaluar.
+
+Falta conectar los productores de predicciones. Las referencias neuronales con
+retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
+`sample_id`, `asset_id`, mercado, instante, objetivo, predicción y, con
+`quantile_head_v1`, sus cinco columnas. El entrenador cronológico de Titans-MAC
+todavía no exporta predicciones por fila y la GRU episódica, los tabulares y
+CM-v1 necesitan el mismo formato. El manifiesto de fuentes se generará a partir
+de sus recibos cuando existan.
+
 ## Coste medido
 
 El [informe de rendimiento](../../reports/resources/forecast-metrics-benchmark.json)
@@ -368,6 +530,17 @@ orden. La mayor parte del coste restante
 del panel es ordenar identidades de texto con Arrow, que no se ha sustituido
 porque las alternativas medidas (recuento de distintos más ordenación de tres
 claves) no mejoraron.
+
+La evaluación walk-forward se midió con una ventana anual sintética de 625.000
+filas de evaluación (2.500 activos y 250 sesiones) y 155.000 de calibración, un
+brazo puntual, uno con cuantiles calibrados y el control cero. Con dos hilos y
+la CPU compartida (carga media cercana a 14), tres repeticiones tardaron 4,7,
+2,8 y 2,8 s, incluidas lectura, huellas, validación, calibración, puntuación,
+contrastes con 2.000 réplicas y el informe. El pico de memoria del proceso,
+que también generó los datos, fue de 1,07 GiB. Con unos 1.250 pares de brazo,
+semilla y ventana en el ámbito US, la extrapolación lineal ronda la media hora
+en un proceso. Es una estimación, no una medida de la campaña real, y no
+justifica por ahora otra implementación.
 
 ## Qué no demuestran estas métricas
 

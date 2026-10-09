@@ -19,7 +19,7 @@ El bloqueo de aprendizaje sigue vigente hasta que la edición esté completa y v
 | 5. Entrenamiento base | Referencias, GRU episódica, Transformer compacto, núcleo Titans-MAC, MARS-TITAN con ampliaciones y CM-v1 | Runners en adaptación a la política con máscaras. El entrenador cronológico de Titans está en implementación | [#234](https://github.com/GonxKZ/mars-titan/issues/234), [#23](https://github.com/GonxKZ/mars-titan/issues/23), [#293](https://github.com/GonxKZ/mars-titan/issues/293) |
 | 6. Postentrenamiento | Padre congelado, continuación supervisada, corrección residual y adaptadores, solos y combinados | Implementado sobre la edición estricta. Falta la edición con máscaras y la matriz de combinaciones | [#364](https://github.com/GonxKZ/mars-titan/issues/364), [#128](https://github.com/GonxKZ/mars-titan/issues/128) |
 | 7. Refuerzo | Variantes de PPO, KLPO prioritario y Double DQN sobre entornos auditados | Controladores implementados sin ejecutar pasos. Auditoría de entornos en curso | [#137](https://github.com/GonxKZ/mars-titan/issues/137), [#365](https://github.com/GonxKZ/mars-titan/issues/365) |
-| 8. Evaluación | MAE residual por sesión y métricas secundarias con incertidumbre por bloques | Métricas principales y secundarias implementadas con pruebas técnicas, sin aplicar a esta edición | [#32](https://github.com/GonxKZ/mars-titan/issues/32), [#36](https://github.com/GonxKZ/mars-titan/issues/36) |
+| 8. Evaluación | MAE residual por sesión y métricas secundarias con incertidumbre por bloques | Métricas, calibración común CQR y [evaluación walk-forward](metrics.md#evaluación-walk-forward-de-la-edición-desde-2000) implementadas con pruebas técnicas y [configuración declarada](../../configs/evaluation/historical-masked-2000-comparison.json). Sin aplicar a esta edición. Falta que los productores escriban las predicciones por fila de cada ventana | [#32](https://github.com/GonxKZ/mars-titan/issues/32), [#36](https://github.com/GonxKZ/mars-titan/issues/36) |
 
 ## Población y equidad
 
@@ -59,7 +59,7 @@ Los entornos consumen únicamente predicciones fuera de muestra del walk-forward
 
 ## Métricas
 
-La métrica principal es el MAE residual por sesión. Primero se promedian los activos de un mismo mercado e instante y después se aplica la ponderación temporal y entre mercados. Se registran también MSE y RMSE, acierto de dirección con convención de empates, correlación de rangos por sesión y, cuando la salida lo permita, pérdida pinball y cobertura de cuantiles. La diferencia frente a una referencia se informa como Delta_error = MAE_variante − MAE_base y como porcentaje 100·(MAE_base − MAE_variante)/MAE_base, con intervalos del 95 % por bloques temporales. El detalle está en [métricas](metrics.md).
+La métrica principal es el MAE residual por sesión. Primero se promedian los activos de un mismo mercado e instante y después se aplica la ponderación temporal y entre mercados. Se registran también MSE y RMSE, acierto de dirección con convención de empates, correlación de rangos por sesión y, cuando la salida lo permita, pérdida pinball, cobertura y anchura de cuantiles con y sin calibración común. La diferencia frente a una referencia se informa como Delta_error = MAE_variante − MAE_base y como porcentaje 100·(MAE_base − MAE_variante)/MAE_base, con intervalos del 95 % por bloques temporales. El detalle está en [métricas](metrics.md).
 
 ## Cómputo
 
@@ -68,6 +68,6 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 ## Decisiones pendientes antes de entrenar
 
 - Número de ventanas con reentrenamiento completo y tratamiento de las restantes, entre las [alternativas de presupuesto](walk-forward-2000.md#coste-y-alternativas-de-presupuesto) ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
-- Calibración común de los modelos con cuantiles ([#22](https://github.com/GonxKZ/mars-titan/issues/22)). La [cabeza común](../engineering/quantile-head.md) se adoptó el 9 de octubre según la [propuesta](quantile-head-decision.md) y su control sobre el Transformer compacto está declarado sin ejecutar.
+- Revisar la configuración de evaluación declarada antes de ver resultados: familias de contrastes, base de los refinamientos K, mínimo de activos del Rank IC y longitud de bloque ([#32](https://github.com/GonxKZ/mars-titan/issues/32)). La [cabeza común](../engineering/quantile-head.md) y su calibración CQR ([#22](https://github.com/GonxKZ/mars-titan/issues/22)) están implementadas y el control de la cabeza sobre el Transformer compacto está declarado sin ejecutar.
 - Semillas fijas y margen mínimo relevante de error, registrados antes de ver resultados.
 - Política de retención de predicciones y checkpoints según el disco disponible.
