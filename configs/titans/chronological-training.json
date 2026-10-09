@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "propuesta_sin_ejecutar",
+  "variants": ["transformer_direct", "mac_disabled", "mac_frozen", "mac_online"],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1
+  },
+  "recipe": {
+    "truncation": 8,
+    "loss": "mae",
+    "huber_delta": 0.01,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {"metric": "session_mae", "patience": 5, "min_delta": 0.0, "stopping": "fixed_budget"},
+    "block_rows": 128,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0
+  },
+  "pending": [
+    "Las ventanas, el calentamiento y el número de épocas dependen del protocolo de #363.",
+    "La contracción inicial de la memoria online debe revisarse antes de fijar esta receta.",
+    "El caudal en cuda:0 se medirá antes de fijar el presupuesto común."
+  ]
+}
