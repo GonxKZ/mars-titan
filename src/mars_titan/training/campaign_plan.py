@@ -87,7 +87,23 @@ LATER_STAGES = {
         entry="mars_titan.posttraining.campaign_stage:run_stage",
         issue=364,
         pending=[],
-    )
+    ),
+    # Políticas financieras por ventana (`run_masked_campaign.py rl`). Las pendientes son
+    # capacidades de `simulation.campaign_stage.CAPABILITIES` que el motor aún no tiene.
+    "rl_policy_comparison": dict(
+        config="configs/simulation/historical-masked-rl-policies.json",
+        stages=dict(
+            A="configs/simulation/historical-masked-rl-stage-a.json",
+            B="configs/simulation/historical-masked-rl-stage-b.json",
+        ),
+        entry="mars_titan.simulation.campaign_stage:run_stage",
+        issue=137,
+        pending=[
+            "native_policy_reconstructed_tapes",
+            "native_klpo_financial_runner",
+            "native_cn_a_share_rules",
+        ],
+    ),
 }
 _FIELDS = {
     "schema_version",

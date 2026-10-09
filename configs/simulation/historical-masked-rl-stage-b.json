@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_rl_stage",
+  "status": "declared_not_executed",
+  "name": "historical-masked-2000-rl-b",
+  "campaign": "../baselines/historical-masked-campaign-b.json",
+  "policies": "historical-masked-rl-policies.json",
+  "scopes": ["US", "CN"],
+  "limits": {
+    "max_training_jobs": 240,
+    "max_evaluation_jobs": 624
+  },
+  "final_test_opened": false
+}
