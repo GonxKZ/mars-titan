@@ -4,8 +4,7 @@ Para cada caso compara FP32 estricto (la política de la campaña) frente a una 
 de los mismos pesos. FP32 con TF32 en cuDNN (el valor por defecto de PyTorch), TF32 y
 autocast BF16 se miden solo para documentar por qué se descartan: salida, pérdida pinball,
 gradiente de cada lote y gradiente acumulado en varios lotes sin optimizador. También
-comprueba cuDNN en las recurrentes, el backend de SDPA, el pico de memoria por lote y el
-coste de AdamW fused y foreach sobre tensores ajenos con las formas de los parámetros.
+comprueba cuDNN en las recurrentes, el backend de SDPA y el pico de memoria por lote.
 
     PYTHONPATH=src python benchmarks/reference_numerics.py VIEW --output numerica.json
 """
@@ -202,30 +201,6 @@ def peak_memory(model, batch, sizes):
     return peaks
 
 
-def adam_cost(model, steps=50):
-    """AdamW sobre tensores ajenos al modelo con las mismas formas. Ningún peso cambia."""
-    result = {}
-    for variant in ("foreach", "fused"):
-        torch.manual_seed(0)
-        tensors = [
-            torch.randn(p.shape, device=p.device, requires_grad=True) for p in model.parameters()
-        ]
-        for tensor in tensors:
-            tensor.grad = torch.randn_like(tensor)
-        optimizer = torch.optim.AdamW(tensors, lr=1e-3, **{variant: True})
-        for _ in range(5):
-            optimizer.step()
-        torch.cuda.synchronize()
-        start = time.perf_counter()
-        for _ in range(steps):
-            optimizer.step()
-        torch.cuda.synchronize()
-        result[f"{variant}_ms"] = (time.perf_counter() - start) / steps * 1e3
-    result["tensors"] = len(list(model.parameters()))
-    result["elements"] = sum(p.numel() for p in model.parameters())
-    return result
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("view", type=Path)
@@ -260,7 +235,6 @@ def main():
         if case["kind"] == "transformer":
             entry["sdpa"] = sdpa_report(model, batches)
         entry["peak_train_mib_by_batch"] = peak_memory(model, batches[0], args.memory_sizes)
-        entry["adamw_foreign_tensors"] = adam_cost(model)
         results[name] = entry
         print(name, json.dumps(entry), flush=True)
         del model
