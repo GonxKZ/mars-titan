@@ -8,6 +8,7 @@ se puede repetir se detecta en lugar de aceptarse.
 """
 
 import json
+import os
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -29,6 +30,7 @@ from tests.posttraining.campaign_fixture import CpuLease
 from tests.training.test_carried_predictions import PresenceCount, tabular_anchor
 from tests.training.test_carried_predictions import views as carried_views  # noqa: F401
 from tests.training.test_modality_ablation_carry import titans  # noqa: F401
+from tests.training.test_modality_ablation_native import episodic, readers  # noqa: F401
 from tests.training.test_modality_ablation_stage import RUNNING, base, on_cpu  # noqa: F401
 from tests.training.test_titans_walk_forward import unfused_attention
 
@@ -297,3 +299,51 @@ def test_strict_fits_and_tabular_reports_pass_the_numerics_check():
     )
     regeneration.require_strict(dict(identity=dict(kind="ridge")), "c")
     assert regeneration.recorded_numerics(dict(identity=dict(kind="ridge"))) == []
+
+
+native = pytest.mark.skipif(
+    not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"), reason="Falta el enlace nativo compilado"
+)
+
+
+@native
+def test_the_episodic_gru_window_regenerates_its_rows(episodic, tmp_path, monkeypatch):  # noqa: F811
+    from mars_titan.training import candidate_walk_forward as candidate
+
+    monkeypatch.setenv(HOLD_ENV, str(episodic.hold))
+    run = episodic.original
+    produced = candidate.carry_window(
+        run.output,
+        run.view,
+        run.view,
+        tmp_path / "again",
+        parent_id="US/fold-000/gru_episodic",
+        device="cpu",
+        regenerate=True,
+    )
+    assert produced["regenerated"] is True and produced["receipts"] == {}
+    report = json.loads((run.output / "window.json").read_text())
+    result = regeneration.compare(
+        regeneration.originals(run.output, report), tmp_path / "again", produced
+    )
+    assert set(result["partitions"]) == set(HELD_OUT)
+    assert result["identical"] is True, result
+
+
+@native
+def test_the_mars_titan_reader_regenerates_its_rows(readers, titans, tmp_path, monkeypatch):  # noqa: F811
+    from mars_titan.training import mars_titan_walk_forward as mw
+
+    monkeypatch.setenv(HOLD_ENV, str(titans.hold))
+    run = readers.original
+    with unfused_attention():
+        produced = mw.carry_mars_titan(
+            run.output, run.view, run.view, tmp_path / "again", device="cpu", regenerate=True
+        )
+    assert produced["regenerated"] is True
+    report = json.loads((run.output / "run.json").read_text())
+    result = regeneration.compare(
+        regeneration.originals(run.output, report), tmp_path / "again", produced
+    )
+    assert set(result["partitions"]) == set(HELD_OUT)
+    assert result["identical"] is True, result
