@@ -42,6 +42,9 @@ def test_cuda_presence_fusion_matches_cpu_and_isolates_absent_blocks(kind, monke
         assert torch.count_nonzero(leaves[name].grad[~mask[:, index].to(device)]) == 0
 
 
+# El sustituto de AdamW no actualiza pesos. Sin `learning_doubles`, la protección detiene
+# run_reference_case en su entrada y la ruta CUDA no llega a recorrerse.
+@pytest.mark.usefixtures("learning_doubles")
 @pytest.mark.parametrize("kind", ["gru", "transformer"])
 def test_cuda_masked_run_records_updates_without_changing_weights(tmp_path, monkeypatch, kind):
     record = SimpleNamespace(calls=[], optimizers=0)
