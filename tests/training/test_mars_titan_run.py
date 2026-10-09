@@ -407,6 +407,34 @@ def test_parent_fast_state_does_not_depend_on_the_bank_or_the_readout(shared, tm
             assert all(torch.equal(a, b) for a, b in zip(memory, other_memory, strict=True))
 
 
+def test_segment_gradient_is_the_mean_over_labels_whatever_the_block_size(
+    shared, tmp_path, native, learning_doubles
+):
+    """Repetir el tramo en bloques de una fila o de todo el instante da el mismo gradiente.
+
+    Cada bloque pondera su pérdida media por su fracción de etiquetas del tramo. Sin recorte,
+    otra ponderación cambiaría la escala del gradiente según el tamaño de bloque.
+    """
+    _, streams = shared
+    records = {}
+    for rows in (1, 4):
+        engine = build(
+            streams,
+            tmp_path / f"rows-{rows}",
+            native,
+            plan=recipe(block_rows=rows, max_grad_norm=None),
+        )
+        engine.run()
+        records[rows] = gradients(engine)
+    assert len(records[1]) == len(records[4]) > 3
+    for left, right in zip(records[1], records[4], strict=True):
+        for name, value in right.items():
+            if value is None:
+                assert left[name] is None
+            else:
+                torch.testing.assert_close(left[name], value, rtol=1e-9, atol=1e-12)
+
+
 def test_future_suffix_changes_neither_past_predictions_nor_past_gradients(
     tmp_path, native, learning_doubles
 ):
