@@ -55,8 +55,11 @@ M1 admite los resultados maduros y aplica la retención configurada.
 [M2](mature-error-write-policy.md) usa un reservorio, un índice selectivo por error
 maduro de la emisión y un índice reciente, con un único presupuesto 50/25/25.
 Sus pruebas de composición incluyen CPU y una comprobación CUDA focal en
-FP32/FP64, K=1, B_mem=4 y C apagado. M3 se rechaza. El factor de retención M
-permanece separado de estas reglas y está desactivado en M2.
+FP32/FP64, K=1, B_mem=4 y C apagado. [M3](m3-write-policy.md) usa los mismos
+índices con una puntuación de error, anomalía y relevancia. La sesión calcula
+anomalía y relevancia al madurar con los inputs retenidos de cada decisión.
+El factor de retención M permanece separado de estas reglas y está desactivado
+en M2 y M3.
 
 La sesión utiliza `memory_contract="causal_v2"`. El reservorio inicializa
 `mt19937_64` mediante `seed_seq` con las dos palabras de 32 bits de la semilla

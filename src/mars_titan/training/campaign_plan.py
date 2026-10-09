@@ -58,7 +58,7 @@ MARS = "mars_titan"
 MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
 MARS_SEARCHED = TITANS_SEARCHED
 # Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
-MARS_BANKS = ("m0_no_bank", "m1", "m2")
+MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
 # Factorial CM-v1. Repite los nombres de training.cm_v1_factorial sin importar PyTorch.
 CM = "cm_v1"
 CM_NAME = "mars_titan_cm_v1_factorial"
@@ -426,7 +426,8 @@ def _mars_titan(section, arms, rule, policy, base, count, titans):
     """Brazos de MARS-TITAN: combinación de componentes, receta del lector y padre.
 
     El padre es un brazo `mac_online` de la sección de Titans-MAC con las mismas semillas.
-    Los brazos declarados sin definición, como M3, quedan en `pending_arms` con su motivo.
+    Un brazo declarado sin productor queda en `pending_arms` con su motivo. M3 ya tiene
+    productor: estima sus escalas con el tramo de entrenamiento de cada ventana.
     `training.mars_titan_walk_forward` valida la combinación completa en cada ajuste.
     """
     if section is None:

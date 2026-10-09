@@ -1,9 +1,9 @@
 """MARS-TITAN dentro de la campaña con máscaras, en CPU y sin modificar pesos.
 
 El plan se comprueba sobre la comparación declarada. La ejecución registra
-`titans_mac_online` y `mars_titan_m1` en una campaña B reducida sobre US con los ejecutores
-reales y el optimizador que solo registra gradientes, y se detiene tras las tres primeras
-ventanas: una reentrenada y dos trasladadas. Los demás brazos son dobles.
+`titans_mac_online`, `mars_titan_m1` y `mars_titan_m3` en una campaña B reducida sobre US con
+los ejecutores reales y el optimizador que solo registra gradientes, y se detiene tras las
+tres primeras ventanas: una reentrenada y dos trasladadas. Los demás brazos son dobles.
 """
 
 import json
@@ -32,14 +32,15 @@ from tests.training.test_walk_forward_v2_views import fixture
 
 DECLARED = Path("configs/titans/episodic-readout-historical-masked.json")
 ARM = "mars_titan_m1"
+M3_ARM = "mars_titan_m3"
 ARMS = {
     "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
     "mars_titan_m1": {"episodic_bank": "m1"},
     "mars_titan_m2": {"episodic_bank": "m2"},
+    "mars_titan_m3": {"episodic_bank": "m3"},
     "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
     "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4},
 }
-M3 = "M3 no tiene a_norm, r_norm, escalas ni umbrales acreditados"
 
 
 @pytest.fixture(autouse=True)
@@ -54,7 +55,7 @@ def section(recipe=DECLARED, **changes):
     value = dict(
         recipe=str(Path(recipe).resolve()),
         arms=ARMS,
-        pending_arms={"mars_titan_m3": M3},
+        pending_arms={},
         parent_arm=TITANS_ARM,
         search_seed=42,
     )
@@ -110,14 +111,51 @@ def test_mars_arms_search_two_cases_per_window_after_their_titans_parent(tmp_pat
         assert counts["scopes"]["US"]["arms"][arm] == titans_counts
 
 
-def test_m3_stays_pending_with_its_motive_while_the_other_arms_connect(tmp_path):
+def test_m3_has_a_producer_and_no_mars_arm_stays_pending(tmp_path):
     report = plan.check_campaign(declared(tmp_path, "B"))
     pending = report["pending_families"]
-    assert pending["mars_titan"]["arms"] == ["mars_titan_m3"]
-    assert pending["mars_titan"]["motives"] == {"mars_titan_m3": M3}
-    assert "titans_mac" not in pending and "cm_v1" in pending
+    assert "mars_titan" not in pending and "titans_mac" not in pending and "cm_v1" in pending
+    jobs = plan.plan_campaign(plan.load_campaign(declared(tmp_path, "B")))
+    m3 = [job for job in jobs if job["arm"] == M3_ARM]
+    assert m3 and all(
+        job["case"]["components"] == {"episodic_bank": "m3"} for job in m3 if job.get("case")
+    )
+    counts = report["counts"]["scopes"]["US"]["arms"]
+    assert counts[M3_ARM] == counts["mars_titan_m2"] == counts[TITANS_ARM]
     plain = plan.check_campaign(CAMPAIGNS["B"])["pending_families"]
     assert len(plain["mars_titan"]["arms"]) == 6 and "motives" not in plain["mars_titan"]
+    # Un brazo sin productor puede seguir declarándose pendiente con su motivo.
+    motive = "Brazo retirado para una comprobación"
+    partial_arms = {k: v for k, v in ARMS.items() if k != M3_ARM}
+    report = plan.check_campaign(
+        declared(tmp_path, "B", arms=partial_arms, pending_arms={M3_ARM: motive})
+    )
+    assert report["pending_families"]["mars_titan"]["motives"] == {M3_ARM: motive}
+
+
+def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
+    """Las 23 armas de la comparación declarada tienen productor con las cuatro secciones."""
+    from tests.training.test_candidate_walk_forward import section as gru_section
+
+    cm = dict(declaration=str(Path("configs/titans/cm-v1-factorial.json").resolve()))
+    path = write_variant(
+        tmp_path,
+        "B",
+        episodic_gru=gru_section(),
+        mars_titan=section(),
+        cm_v1=cm | dict(search_seed=42),
+        limits=dict(max_training_jobs=100_000, max_prediction_jobs=100_000),
+    )
+    report = plan.check_campaign(path)
+    assert report["pending_families"] == {}
+    campaign = plan.load_campaign(path)
+    compared = campaign["comparison_config"]["arms"]
+    planned = {job["arm"] for job in plan.plan_campaign(campaign)}
+    assert len(compared) == 23
+    controls = {name for name, arm in compared.items() if arm["family"] == "control"}
+    # Los núcleos de CM-v1 se ajustan como trabajos propios y no son brazos comparados.
+    assert planned - set(compared) == set(plan.CM_CORES)
+    assert planned & set(compared) == set(compared) - controls and M3_ARM in planned
 
 
 def recipe_with(tmp_path, change):
@@ -132,12 +170,16 @@ def recipe_with(tmp_path, change):
     ("changes", "message"),
     [
         (dict(parent_arm="titans_mac_frozen"), "padre el brazo mac_online"),
-        (dict(pending_arms={}), "motivo pendiente"),
+        (
+            dict(arms={k: v for k, v in ARMS.items() if k != "mars_titan_m3"}, pending_arms={}),
+            "motivo pendiente",
+        ),
         (dict(pending_arms={"mars_titan_m3": ""}), "motivo pendiente"),
         (
-            dict(arms=ARMS | {"mars_titan_m3": {"episodic_bank": "m3"}}, pending_arms={}),
+            dict(arms=ARMS | {"mars_titan_m3": {"episodic_bank": "m4"}}, pending_arms={}),
             "banco episódico",
         ),
+        (dict(pending_arms={"mars_titan_m3": "motivo"}), "motivo pendiente"),
         (dict(arms=ARMS | {"mars_titan_m0": {"refinements": 2}}), "banco episódico"),
         (dict(arms=ARMS | {"mars_titan_m2": ARMS["mars_titan_m1"]}), "distinta"),
         (dict(search_seed=43), "semilla de búsqueda"),
@@ -183,11 +225,12 @@ def test_section_needs_the_titans_section_of_its_parent(tmp_path):
 
 
 def mars_campaign(folder):
-    """Campaña B reducida con Titans-MAC mac_online y MARS-TITAN M1, una semilla cada uno."""
+    """Campaña B reducida con Titans-MAC mac_online y MARS-TITAN M1 y M3, una semilla cada uno."""
     path = titans_campaign(folder)
     comparison = json.loads((folder / "comparison.json").read_text())
-    comparison["arms"][ARM] = dict(family="mars_titan", output="quantile_head_v1", seeds=[42])
-    comparison["comparison"]["families"]["references_vs_zero"]["variants"].append(ARM)
+    for arm in (ARM, M3_ARM):
+        comparison["arms"][arm] = dict(family="mars_titan", output="quantile_head_v1", seeds=[42])
+        comparison["comparison"]["families"]["references_vs_zero"]["variants"].append(arm)
     atomic_json(folder / "comparison.json", comparison)
     document = json.loads(DECLARED.read_text())
     titans = json.loads((folder / "titans.json").read_text())
@@ -200,7 +243,7 @@ def mars_campaign(folder):
     campaign = json.loads(path.read_text())
     campaign[plan.MARS] = dict(
         recipe="readout.json",
-        arms={ARM: ARMS[ARM]},
+        arms={arm: ARMS[arm] for arm in (ARM, M3_ARM)},
         pending_arms={},
         parent_arm=TITANS_ARM,
         search_seed=42,
@@ -229,7 +272,7 @@ def campaign_run(tmp_path_factory, permitted):
     views = {"US": root / "views" / "US"}
     jobs = plan.plan_campaign(plan.load_campaign(campaign))
     windows = list(prepared["US"]["windows"])[:3]
-    last = next(j for j in jobs if j["arm"] == ARM and j["window"] == windows[2])
+    last = [j for j in jobs if j["arm"] in (ARM, M3_ARM) and j["window"] == windows[2]][-1]
     factory = Factory()
     executors = doubles(Recorder())
     for model, fit, carry in (
@@ -264,7 +307,7 @@ def campaign_run(tmp_path_factory, permitted):
         summary=summary,
         factory=factory,
         windows=windows,
-        jobs=[j for j in jobs if j["arm"] in (ARM, TITANS_ARM) and j["window"] in windows],
+        jobs=[j for j in jobs if j["arm"] in (ARM, M3_ARM, TITANS_ARM) and j["window"] in windows],
     )
 
 
@@ -272,9 +315,10 @@ def receipt(run, job_id):
     return json.loads((run.output / "jobs" / job_id / "receipt.json").read_text())
 
 
-def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(campaign_run):
+@pytest.mark.parametrize("arm", [ARM, M3_ARM])
+def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(campaign_run, arm):
     assert campaign_run.summary["status"] == "paused"
-    mars = [job for job in campaign_run.jobs if job["arm"] == ARM]
+    mars = [job for job in campaign_run.jobs if job["arm"] == arm]
     assert [job["kind"] for job in mars] == ["fit", "fit", "carry", "carry"]
     assert campaign_run.factory.instances and all(
         item.calls == len(item.records) > 0 for item in campaign_run.factory.instances
@@ -303,7 +347,7 @@ def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(camp
             other = receipt(campaign_run, f"US/{job['window']}/{TITANS_ARM}/search-{name}")
         else:
             anchor = report["anchor"]
-            assert anchor["components"] == ARMS[ARM]
+            assert anchor["components"] == ARMS[arm]
             assert anchor["checkpoint_sha256"] == own["parent"]["sha256"]
             assert report["memory_policy"]["bank"].startswith("empty_at_each_pass")
             other = receipt(campaign_run, f"US/{job['window']}/{TITANS_ARM}/carry-s42")
@@ -311,6 +355,31 @@ def test_mars_jobs_start_from_the_selected_titans_window_and_share_its_rows(camp
             mine, theirs = own["predictions"][partition], other["predictions"][partition]
             assert mine["rows"] == theirs["rows"]
             assert mine["rows_sha256"] == theirs["rows_sha256"]
+
+
+def test_m3_fits_its_scalers_on_each_window_and_carries_those_of_its_anchor(campaign_run):
+    output = campaign_run.output
+    fitted = {}
+    for job in campaign_run.jobs:
+        if job["arm"] != M3_ARM:
+            continue
+        own = receipt(campaign_run, job["id"])
+        report = json.loads((output / own["report"]["path"]).read_text())
+        folder = (output / own["report"]["path"]).parent
+        if job["kind"] == "fit":
+            fit = json.loads((folder / "fit/run.json").read_text())
+            scalers = fit["identity"]["retention"]["scalers"]
+            # Las escalas proceden del índice de entrenamiento de la propia ventana.
+            assert scalers["source_sha256"] == report["identity"]["indices"]["train"]
+            fitted[job["window"]] = mw.WriteScalers.from_fields(scalers).fingerprint()
+        else:
+            anchor = receipt(campaign_run, own["identity"]["sources"]["source"])
+            anchor_fit = output / anchor["attempt"] / "fit/run.json"
+            scalers = json.loads(anchor_fit.read_text())["identity"]["retention"]["scalers"]
+            expected = mw.WriteScalers.from_fields(scalers).fingerprint()
+            assert report["memory_policy"]["write_scalers_sha256"] == expected
+            assert expected in fitted.values()
+    assert fitted
 
 
 def test_window_receipts_publish_the_mars_arm_with_its_selected_state(campaign_run):

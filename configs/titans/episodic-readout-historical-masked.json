@@ -33,7 +33,8 @@
     "Receta del lector episódico de MARS-TITAN sobre el Titans-MAC mac_online elegido en la misma ventana y semilla, con el padre congelado. Declarada sin ejecutar.",
     "Dos casos de búsqueda, como Titans-MAC y las referencias neuronales: solo cambia la tasa de aprendizaje (1e-4 y 1e-3), con 30 épocas, presupuesto fijo y selección con session_mae de validación.",
     "update_instants coincide con el truncamiento de la receta de Titans-MAC. El ajuste no usa BPTT entre instantes.",
-    "La capacidad física del banco es 1.024 episodios en M1 y M2. M0 usa el control no_bank sin banco.",
+    "La capacidad física del banco es 1.024 episodios en M1, M2 y M3. M0 usa el control no_bank sin banco.",
+    "M3 usa los tres índices de M2 con pesos fijos 1/3 sobre error, anomalía y relevancia. Sus escalas se estiman al empezar cada ventana con su tramo de entrenamiento y quedan en la identidad del ajuste. Los traslados aplican las del ancla. No añade casos de búsqueda.",
     "Memoria y caudal en cuda:0 sin medir. El bloqueo de aprendizaje impide cualquier ajuste hasta verificar la edición histórica desde 2000."
   ]
 }

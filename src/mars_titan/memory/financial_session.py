@@ -21,7 +21,13 @@ from mars_titan.models.titans.financial_inputs import (
 from mars_titan.training import prefix_eligibility
 from mars_titan.training.prefix_eligibility import PrefixEvidence, PrefixTargetVerifier
 
-from . import associative_memory, episodic_session, financial_consumers, financial_state_artifacts
+from . import (
+    associative_memory,
+    episodic_session,
+    financial_consumers,
+    financial_state_artifacts,
+    write_scores,
+)
 from .associative_memory import AssociativeMemory, MatureCorrection
 from .episodic_session import (
     EpisodicSession,
@@ -31,8 +37,11 @@ from .episodic_session import (
     _empty_pending,
     _row_key,
 )
-from .financial_consumers import ADMISSION_ERROR, SOURCE_ERROR, bind_consumer
+from .financial_consumers import ADMISSION_ERROR, SOURCE_ERROR, THREE_INDEX, bind_consumer
 from .session_artifacts import SessionArtifacts
+
+# Admisiones que escriben en el banco cada etiqueta madura aplicada.
+WRITING = {"m1", *THREE_INDEX}
 
 
 def _callback_signature(instance):
@@ -117,8 +126,9 @@ class FinancialSession(EpisodicSession):
     """Reutilizar almacenamiento, codec y banco. Executor publica la única generación.
 
     La preparación queda fijada a FrozenFinancialConsumer o FrozenCandidateConsumer
-    mediante su enlace cerrado. No se aceptan callbacks predictivos arbitrarios ni
-    reglas M3 incompletas. Los helpers heredados conservan la validación de inputs
+    mediante su enlace cerrado. No se aceptan callbacks predictivos arbitrarios. M3 calcula
+    sus rasgos de admisión con los inputs retenidos de cada pendiente, no con datos
+    posteriores a su decisión. Los helpers heredados conservan la validación de inputs
     y procedencia de la sesión v1.
     """
 
@@ -368,7 +378,7 @@ class FinancialSession(EpisodicSession):
                 pending=len(self._executor.pending()),
                 capacity=bank.config.capacity,
             )
-        if self.admission != "m2":
+        if self.admission not in THREE_INDEX:
             return super().diagnostics()
         bundle = self._bundle(self.snapshot()["state"])
         bank, _ = self._bank(bundle["bank"] if bundle else None)
@@ -651,7 +661,7 @@ class FinancialSession(EpisodicSession):
             if key not in positions or key in removed:
                 raise ValueError("El resultado no enlaza una predicción pendiente")
             index = positions[key]
-            if self.admission in {"m1", "m2"}:
+            if self.admission in WRITING:
                 metadata = pending["rows"][index]
                 identifier = bank.seen + len(admitted) + 1
                 admitted.append((identifier, index, item))
@@ -686,8 +696,19 @@ class FinancialSession(EpisodicSession):
                 raise ValueError("La finalización no corresponde al pendiente y cierre declarados")
             removed.add(key)
         if admitted:
+            extra = {}
+            if self.admission == "m3":
+                extra["features"] = self._admission_features(
+                    proposed["inputs"], pending, [index for _, index, _ in admitted]
+                )
             bank = self._binding.propose(
-                self.native, bank, pending, admitted, episodes, confirmed_at=proposed["cutoff"]
+                self.native,
+                bank,
+                pending,
+                admitted,
+                episodes,
+                confirmed_at=proposed["cutoff"],
+                **extra,
             )
         if self.associative is not None:
             memory, core = self._associative_state(proposed["associative"])
@@ -735,6 +756,25 @@ class FinancialSession(EpisodicSession):
         self.consumer.verify()
         self._proposal = bundle
         return _canonical(self._state(bundle["generation"], self._stage(bundle, "bundle")))
+
+    def _admission_features(self, references, pending, indices):
+        """Rasgos M3 de los pendientes que maduran, con los inputs de su propia decisión."""
+        wanted = {_row_key(pending["rows"][index]): index for index in indices}
+        rows = {}
+        for reference in references:
+            for row in self._input_rows(reference):
+                key = row.flow_id, row.prediction_at
+                if key in wanted:
+                    rows[wanted[key]] = row
+        if set(rows) != set(indices):
+            raise ValueError("Faltan los inputs de una decisión que madura en M3")
+        ordered = [rows[index] for index in indices]
+        features = write_scores.decision_features(
+            np.stack([row.inputs["prices"] for row in ordered]),
+            np.stack([row.presence for row in ordered]),
+            np.stack([row.inputs["fundamentals"] for row in ordered]),
+        )
+        return dict(zip(indices, features, strict=True))
 
     def _compact_inputs(self, references, pending):
         total = sum(r["bytes"] for r in references)
@@ -852,7 +892,7 @@ class FinancialSession(EpisodicSession):
             if proof is None or proof.fingerprint() != row["evidence"]["evidence_sha256"]:
                 raise ValueError("La resolución nativa no conserva la evidencia verificada")
         bank, _ = self._bank(bundle["bank"])
-        if bank.seen != (snapshot["applied"] if self.admission in {"m1", "m2"} else 0):
+        if bank.seen != (snapshot["applied"] if self.admission in WRITING else 0):
             raise ValueError("El banco no concilia con los labels maduros y la regla de admisión")
         if self.associative is not None:
             memory, _ = self._associative_state(bundle["associative"])

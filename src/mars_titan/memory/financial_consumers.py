@@ -17,15 +17,17 @@ from mars_titan.models.candidate.frozen_consumer import FrozenCandidateConsumer
 from mars_titan.models.titans.episodic_snapshot import EpisodeSnapshot
 from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
 
-from . import candidate_bank, flow_cursors, write_policy
+from . import candidate_bank, flow_cursors, write_policy, write_scores
 from .candidate_bank import CandidateBankConfig, CandidateEpisodeBank, CandidateEpisodes
 from .episodic_codec import FrozenEpisodeCodec
 from .financial_state_artifacts import FinancialStateArtifacts
 from .flow_cursors import FlowCursors
 from .retention_bank import RetentionBank, RetentionConfig
-from .write_policy import MatureErrorBank, MatureErrorConfig
+from .write_policy import CompositeScoreConfig, MatureErrorBank, MatureErrorConfig
 
-ADMISSION_ERROR = "La admisión requiere M0/M1 con retención original o M2 con sus tres índices"
+ADMISSION_ERROR = "La admisión requiere M0/M1 con retención original o M2/M3 con sus tres índices"
+# Configuración de cada admisión con banco de tres índices.
+THREE_INDEX = {"m2": MatureErrorConfig, "m3": CompositeScoreConfig}
 SOURCE_ERROR = "El predictor, codec y prefijo no comparten la fuente de inputs"
 
 
@@ -37,20 +39,27 @@ def _words(digest):
     return [int(digest[i : i + 8], 16) for i in range(0, 64, 8)]
 
 
-def bank_retention(admission, *, capacity, seed, policy="reservoir", **options):
-    """Retención de la admisión: M2 con sus tres índices y M0/M1 con la política declarada."""
-    if admission == "m2":
+def bank_retention(admission, *, capacity, seed, policy="reservoir", scalers=None, **options):
+    """Retención de la admisión: M2/M3 con sus tres índices y M0/M1 con la política declarada.
+
+    M3 necesita las escalas congeladas del tramo de entrenamiento de su ventana.
+    """
+    if admission in THREE_INDEX:
         if policy != "reservoir" or options:
-            raise ValueError("M2 conserva sus tres índices y no admite otra retención")
-        return MatureErrorConfig(capacity=capacity, seed=seed)
-    if admission not in ("m0", "m1"):
-        raise ValueError("M3 no tiene definición acreditada. Se admiten M0, M1 y M2")
+            raise ValueError("M2 y M3 conservan sus tres índices y no admiten otra retención")
+        if admission == "m2":
+            if scalers is not None:
+                raise ValueError("M2 no usa escalas de entrenamiento")
+            return MatureErrorConfig(capacity=capacity, seed=seed)
+        return CompositeScoreConfig(scalers, capacity=capacity, seed=seed)
+    if admission not in ("m0", "m1") or scalers is not None:
+        raise ValueError("La admisión debe ser M0, M1, M2 o M3, y solo M3 lleva escalas")
     return RetentionConfig(policy=policy, capacity=capacity, seed=seed, **options)
 
 
 def episodic_bank(native, retention, admission, **scope):
     """Banco nativo 64×64 de la admisión declarada, con el contrato causal v2 en M0/M1."""
-    if admission == "m2":
+    if admission in THREE_INDEX:
         return MatureErrorBank(native, retention, **scope)
     return RetentionBank(native, retention, memory_contract="causal_v2", **scope)
 
@@ -102,7 +111,7 @@ class TitansBinding:
     def __init__(self, consumer, codec, retention, admission):
         if type(codec) is not FrozenEpisodeCodec or not (
             (admission in {"m0", "m1"} and type(retention) is RetentionConfig)
-            or (admission == "m2" and type(retention) is MatureErrorConfig)
+            or (admission in THREE_INDEX and type(retention) is THREE_INDEX[admission])
         ):
             raise ValueError(ADMISSION_ERROR)
         self.consumer, self.codec, self.admission = consumer, codec, admission
@@ -110,6 +119,8 @@ class TitansBinding:
         self.input_spec, self.max_batch = predictor.config.inputs, predictor.config.max_batch
         self.device, self.dtype = predictor.head.weight.device, predictor.head.weight.dtype
         self.masked = predictor.masked
+        if admission == "m3" and not self.masked:
+            raise ValueError("M3 necesita la presencia y las edades de la edición con máscaras")
 
     def check(self):
         consumer = self.consumer
@@ -126,7 +137,14 @@ class TitansBinding:
             raise ValueError(SOURCE_ERROR)
 
     def code(self):
-        return {"write_policy": _file_digest(write_policy)} if self.admission == "m2" else {}
+        if self.admission == "m2":
+            return {"write_policy": _file_digest(write_policy)}
+        if self.admission == "m3":
+            return {
+                "write_policy": _file_digest(write_policy),
+                "write_scores": _file_digest(write_scores),
+            }
+        return {}
 
     def bank(self, native, retention, **scope):
         return episodic_bank(native, retention, self.admission, **scope)
@@ -146,6 +164,13 @@ class TitansBinding:
             ]
             if bank.selective_scores != {key: scores[key] for key in selected}:
                 raise ValueError("El índice selectivo M2 contradice los errores de las emisiones")
+        elif self.admission == "m3":
+            # El banco comprueba su selección. Aquí se ata su error a la emisión registrada.
+            features = bank.write_features
+            if set(features) != set(episodes) or any(
+                features[key][0] != abs(row["error"]) for key, row in episodes.items()
+            ):
+                raise ValueError("Los errores M3 del banco contradicen los de las emisiones")
 
     def snapshot(self, bank, context_id, cutoff):
         extension = self.consumer.readout
@@ -219,7 +244,7 @@ class TitansBinding:
         )
         return values, fast, control
 
-    def propose(self, native, bank, pending, admitted, episodes, *, confirmed_at):
+    def propose(self, native, bank, pending, admitted, episodes, *, confirmed_at, features=None):
         incoming = [
             mature_record(
                 native,
@@ -234,8 +259,12 @@ class TitansBinding:
             for identifier, index, item in admitted
         ]
         options = dict(confirmed_at=confirmed_at)
-        if self.admission == "m2":
+        if self.admission in THREE_INDEX:
             options["errors"] = {record.id: episodes[record.id]["error"] for record in incoming}
+        if self.admission == "m3":
+            options["features"] = {identifier: features[index] for identifier, index, _ in admitted}
+        elif features is not None:
+            raise ValueError("Solo M3 recibe rasgos de admisión")
         return bank.propose(incoming, **options)
 
 

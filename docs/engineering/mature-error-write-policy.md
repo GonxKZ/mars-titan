@@ -1,6 +1,6 @@
 # Escritura episódica por error maduro
 
-`MatureErrorBank` implementa la variante `episodic_m2_three_index_v1`. Compone tres bancos nativos v2 con cupos 50/25/25 y devuelve su unión deduplicada. `FinancialSession` la selecciona con `admission="m2"` y `MatureErrorConfig` en su argumento `retention`. M permanece desactivado y no se define la sorpresa completa M3.
+`MatureErrorBank` implementa la variante `episodic_m2_three_index_v1`. Compone tres bancos nativos v2 con cupos 50/25/25 y devuelve su unión deduplicada. `FinancialSession` la selecciona con `admission="m2"` y `MatureErrorConfig` en su argumento `retention`. M permanece desactivado. [M3](m3-write-policy.md) reutiliza este banco y solo cambia la puntuación del índice selectivo.
 
 `MatureErrorConfig.capacity` es el único presupuesto total de slots, denominado `B_mem`, entre 4 y 1.024. Los cupos parten de los cocientes enteros de `(2·B_mem, B_mem, B_mem)` entre cuatro. Las plazas restantes se asignan por mayor resto, con desempate reservorio, selectivo y reciente. Para 1.024 slots corresponden 512, 256 y 256.
 
@@ -18,7 +18,7 @@ El componente limita cada propuesta a 8.192 candidatos y estima conjuntamente re
 
 La sesión prepara todas las observaciones y emite las predicciones del evento sobre una instantánea común. Después resuelve los resultados maduros en orden canónico y propone los tres índices. El Executor publica banco, pendientes y estado rápido en una única generación. Un corte antes de `latest` recupera la generación anterior y no duplica ofertas ni sorteos. Los slots físicos pueden superar el número de episodios que recibe el lector, porque este consulta la unión deduplicada.
 
-M0 y M1 conservan `RetentionConfig` y su ruta. M3 y las combinaciones de configuración incompatibles se rechazan antes de crear la sesión. Las nuevas huellas de código forman parte de la identidad efectiva. Los checkpoints anteriores requieren su runtime identificado y no se reinterpretan como M2.
+M0 y M1 conservan `RetentionConfig` y su ruta. M3 usa `CompositeScoreConfig` sobre el mismo banco. Las combinaciones de configuración incompatibles se rechazan antes de crear la sesión. Las nuevas huellas de código forman parte de la identidad efectiva, así que el cambio de `write_policy.py` que introdujo M3 también cambia la huella de M2. Las selecciones de M2 no cambian. Los checkpoints anteriores requieren su runtime identificado y no se reinterpretan como M2.
 
 Las pruebas del banco usan registros y errores manuales. Las de integración usan cuatro flujos artificiales con parámetros congelados y etiquetas manuales, sin ejecutar los productores de objetivos residuales. Comprueban signos y empates, normalización FP32 no idempotente, reservorio frente al nativo, desbordamiento de capacidad, orden, partición física, recuperación y presupuestos. La paridad entre lotes de cuatro filas y de una fila usa tolerancias FP64 `rtol=atol=1e-12`. La continuación tras un corte exige igualdad exacta. No hay ajustes de parámetros, estimación de etiquetas ni evaluación financiera.
 
@@ -28,4 +28,4 @@ La [comprobación CUDA focal](../../reports/engineering/mature-error-cuda-202610
 
 El proceso CUDA duró 25,51 segundos. Torch alcanzó 19.209.728 bytes asignados y 25.165.824 reservados, con un límite de 128 MiB. Los parámetros y RNG globales permanecieron intactos. Los tiempos incluyen comprobaciones y publicación de artefactos y no estiman el rendimiento del corpus. La prueba reproducible está en [`cuda_mature_error_check.py`](../../tests/memory/cuda_mature_error_check.py). La revisión independiente final del preflight comprendió inspección estática y 23 casos válidos. No se atribuye a esa revisión una nueva ejecución de archivos alterados.
 
-Las posibles consolidaciones M sobre empates o fronteras de puntuación requieren contratos separados. No se han activado. M3 todavía necesita definir y acreditar `a_norm` y `r_norm`, además de sus escalas y umbrales. La sorpresa asociativa de Titans no sustituye esas señales.
+Las posibles consolidaciones M sobre empates o fronteras de puntuación requieren contratos separados. No se han activado. [M3](m3-write-policy.md) define `a_norm` y `r_norm` con las entradas de la decisión y escalas del tramo de entrenamiento, sin umbrales. La sorpresa asociativa de Titans no sustituye esas señales.
