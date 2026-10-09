@@ -4,7 +4,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
-from .config import MemoryConfig, bounded_integer, require_identity
+from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
 from .state import (
     NeuralMemoryState,
     check_differentiable,
@@ -152,16 +152,19 @@ class NeuralMemory(nn.Module):
             raise ValueError("La secuencia supera el presupuesto de tokens")
         check_finite(values, "La entrada")
 
-    @staticmethod
-    def _apply_memory(values: Tensor, weights: tuple[Tensor, ...]) -> Tensor:
+    def _apply_memory(self, values: Tensor, weights: tuple[Tensor, ...]) -> Tensor:
+        """Aplicar la red de memoria. Con residual_layer_norm, M(x) = x + LN(MLP(x))."""
+        result = values
         for index, weight in enumerate(weights):
-            values = torch.bmm(values, weight.transpose(1, 2))
+            result = torch.bmm(result, weight.transpose(1, 2))
             if index + 1 < len(weights):
-                values = F.gelu(values)
-        return values
+                result = F.gelu(result)
+        if self.config.residual_layer_norm:
+            result = values + F.layer_norm(result, (self.config.dim,), eps=LAYER_NORM_EPS)
+        return result
 
     def read(self, query: Tensor, state: NeuralMemoryState) -> Tensor:
-        """Lee sin normalizar ni escribir. La proyección de queries corresponde a MAC."""
+        """Lee sin escribir. La proyección y normalización de queries corresponden a MAC."""
         self.validate_input(query, state)
         result = self._apply_memory(query, state.weights)
         check_finite(result, "La lectura de memoria")

@@ -48,6 +48,8 @@ class FinancialConfig:
     refinements: int = 1
     head: str = SCALAR_HEAD
     gate_bias: GateBias | None = None
+    # Memoria M(x) = x + LN(MLP(x)) de la sección 3.3 de las actas. False conserva v1.
+    memory_residual_layer_norm: bool = False
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
@@ -63,6 +65,8 @@ class FinancialConfig:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
             self.gate_bias.logits(MemoryConfig.theta_max)
+        if type(self.memory_residual_layer_norm) is not bool:
+            raise ValueError("memory_residual_layer_norm debe ser booleano")
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
@@ -105,6 +109,9 @@ class FinancialConfig:
         # que el emparejamiento desde mac_online compare la misma configuración.
         if self.gate_bias is not None:
             result.update(memory_gate_bias=asdict(self.gate_bias))
+        # Igual que gate_bias: solo aparece si se declara y se registra en las cuatro variantes.
+        if self.memory_residual_layer_norm:
+            result.update(memory_residual_layer_norm=True)
         return result
 
 
@@ -192,6 +199,7 @@ class FinancialPredictor(nn.Module):
                         max_state_bytes=config.max_state_bytes,
                         parameter_seed=config.seed,
                         gate_bias=config.gate_bias,
+                        residual_layer_norm=config.memory_residual_layer_norm,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
