@@ -269,7 +269,15 @@ def run_cm_v1_window(
 
 
 def carry_cm_v1(
-    anchor, anchor_view, view, output, *, device="cuda:0", stop=None, modality_ablation=None
+    anchor,
+    anchor_view,
+    view,
+    output,
+    *,
+    device="cuda:0",
+    stop=None,
+    modality_ablation=None,
+    regenerate=False,
 ):
     """Predecir una ventana posterior con el núcleo y el lector elegidos en el ancla.
 
@@ -300,6 +308,7 @@ def carry_cm_v1(
         device=device,
         stop=stop,
         modality_ablation=modality_ablation,
+        regenerate=regenerate,
     )
 
 
@@ -386,8 +395,11 @@ def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
     return report
 
 
-def cm_v1_carry(run, *, device="cuda:0"):
-    """Ejecutor de predicción trasladada del brazo (variante B de la campaña)."""
+def cm_v1_carry(run, *, device="cuda:0", regenerate=False):
+    """Ejecutor de predicción trasladada del brazo (variante B de la campaña).
+
+    Con `regenerate`, `run.anchor` es el intento del propio ajuste.
+    """
     from .masked_campaign import Paused as CampaignPaused
 
     try:
@@ -399,6 +411,7 @@ def cm_v1_carry(run, *, device="cuda:0"):
                 run.folder,
                 device=device,
                 stop=run.stop,
+                regenerate=regenerate,
             )
     except Paused as error:
         raise CampaignPaused from error

@@ -303,10 +303,10 @@ def _episodic_gru(run, **options):
     return report
 
 
-def _carry(run):
+def _carry(run, *, regenerate=False):
     from .carried_predictions import carry_reference, carry_tabular
 
-    options = dict(batch_size=run.batch_size, input_policy=run.policy)
+    options = dict(batch_size=run.batch_size, input_policy=run.policy, regenerate=regenerate)
     sources = (run.anchor["folder"], run.anchor["view"], run.view, run.folder)
     if run.job["model"] == "neural":
         return carry_reference(*sources, stop=run.stop, **options)
@@ -319,10 +319,10 @@ def _titans_fit(run):
     return titans_fit(run)
 
 
-def _titans_carry(run):
+def _titans_carry(run, **options):
     from .titans_walk_forward import titans_carry
 
-    return titans_carry(run)
+    return titans_carry(run, **options)
 
 
 def _mars_titan_fit(run):
@@ -331,10 +331,10 @@ def _mars_titan_fit(run):
     return mars_titan_fit(run)
 
 
-def _mars_titan_carry(run):
+def _mars_titan_carry(run, **options):
     from .mars_titan_walk_forward import mars_titan_carry
 
-    return mars_titan_carry(run)
+    return mars_titan_carry(run, **options)
 
 
 def _cm_v1_core_fit(run):
@@ -349,10 +349,10 @@ def _cm_v1_fit(run):
     return cm_v1_fit(run)
 
 
-def _cm_v1_carry(run):
+def _cm_v1_carry(run, **options):
     from .cm_v1_factorial import cm_v1_carry
 
-    return cm_v1_carry(run)
+    return cm_v1_carry(run, **options)
 
 
 # Ejecutores por modelo y tipo, con su dispositivo y si reanudan el último intento.
@@ -411,6 +411,32 @@ def _releasing_tabular(run_function, model, kind):
 EXECUTORS = {
     key: dict(entry, run=_releasing_tabular(entry["run"], *key)) for key, entry in EXECUTORS.items()
 }
+
+
+def regenerators():
+    """Regeneración por modelo y tipo de trabajo, sin ajustar nada.
+
+    Un traslado se repite con su propio ejecutor desde el mismo ancla. Un ajuste se repite
+    con el traslado de su familia sobre su propia ventana y su intento como ancla. Los
+    núcleos auxiliares de CM-v1 no tienen traslado y sus tablas se conservan. Como los
+    traslados, la regeneración no usa la matriz ni la Gram compartidas de la ventana, así
+    que las libera antes de empezar.
+    """
+    from .prediction_regeneration import regenerator
+
+    result = {key: entry["run"] for key, entry in EXECUTORS.items() if key[1] == CARRY}
+    fits = dict(
+        neural=_carry,
+        ridge=_carry,
+        xgboost=_carry,
+        episodic_gru=_episodic_gru,
+        titans_mac=_titans_carry,
+        mars_titan=_mars_titan_carry,
+        cm_v1=_cm_v1_carry,
+    )
+    for model, run in fits.items():
+        result[model, FIT] = _releasing_tabular(regenerator(run), model, CARRY)
+    return result
 
 
 def _code():
