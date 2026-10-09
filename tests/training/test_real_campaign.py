@@ -56,7 +56,13 @@ def inputs(tmp_path, market="US"):
                 configuration=dict(source_manifest_sha256=sha256(encoded)),
                 counts=counts,
                 temporal_view=dict(
-                    protocol=protocol, fold=fold, admission_path=str(admission), **constants
+                    schema_version=1,
+                    protocol=protocol,
+                    fold=fold,
+                    macro_path=str(root / "macro.parquet"),
+                    admission_path=str(admission),
+                    parent_manifest=str(root / "parent/manifest.json"),
+                    **constants,
                 ),
             ),
         )
