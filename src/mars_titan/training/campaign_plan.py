@@ -560,13 +560,9 @@ def _cm_v1(section, arms, rule, policy, base, count):
         recipes[name] = (path.parent / value).resolve()
     core, core_sha = read_manifest(recipes["core_recipe"], 64 * 1024)
     readout, readout_sha = read_manifest(recipes["readout_recipe"], 64 * 1024)
+    # Los dos núcleos comparten receta, también `accumulation_rows`, que la penalización C
+    # admite porque su término se descompone por flujos.
     core_cases = _titans_cases(core, rule, count)
-    # Los dos núcleos comparten receta y la penalización C rechaza la acumulación por bloques.
-    _require(
-        core["recipe"].get("accumulation_rows") is None,
-        "La penalización C no admite acumulación por bloques: la receta del núcleo de "
-        "CM-v1 debe declarar accumulation_rows null",
-    )
     common = dict(declaration=str(path), declaration_sha256=digest, seed=seed)
     candidates = {
         name: [
