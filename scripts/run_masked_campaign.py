@@ -12,6 +12,9 @@ GPU, sin pasos de optimizador, el caudal de las familias declaradas y estima las
 variantes indicadas. `extensions` comprueba sin leer datos la declaración preparada de la GRU
 candidata, MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la campaña y de sus
 etapas con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
+`budget` proyecta las horas de una campaña con un caudal supuesto o medido y el factor de
+caudal necesario para un objetivo de horas. `schedule` muestra las fases de cada ventana de
+campaña con sus trabajos, en el orden en que se ejecutan.
 """
 
 import sys
@@ -19,7 +22,9 @@ import sys
 from mars_titan.posttraining import campaign_stage
 from mars_titan.simulation import campaign_stage as rl_stage
 from mars_titan.training import (
+    campaign_budget,
     campaign_extensions,
+    campaign_schedule,
     campaign_throughput,
     masked_campaign,
     modality_ablation_stage,
@@ -31,6 +36,10 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if argv[:1] == ["throughput"]:
         return campaign_throughput.main(argv[1:])
+    if argv[:1] == ["budget"]:
+        return campaign_budget.main(argv[1:])
+    if argv[:1] == ["schedule"]:
+        return campaign_schedule.main(argv[1:])
     if argv[:1] == ["extensions"]:
         return campaign_extensions.main(argv[1:])
     if argv[:1] == ["posttraining"]:

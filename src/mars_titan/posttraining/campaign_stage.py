@@ -39,7 +39,7 @@ from mars_titan.environments.walk_forward_receipt import (
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS, QUANTILE_HEAD
-from mars_titan.training import masked_campaign
+from mars_titan.training import campaign_schedule, masked_campaign
 from mars_titan.training.campaign_plan import (
     CARRY,
     DECLARED,
@@ -47,6 +47,7 @@ from mars_titan.training.campaign_plan import (
     load_campaign,
     plan_campaign,
     schedule,
+    scope_arms,
 )
 from mars_titan.training.carried_predictions import carried_window
 from mars_titan.training.corpus_inputs import CorpusDataset
@@ -131,6 +132,10 @@ def load_stage(path):
     )
     neural = campaign["neural"]["arms"]
     arms = _names(config["arms"], neural, "Los brazos neuronales")
+    _require(
+        all(set(arms) <= set(scope_arms(campaign, scope)) for scope in scopes),
+        "Cada brazo de la etapa debe ajustarse en todos sus ámbitos de la campaña",
+    )
     declared = campaign["comparison_config"]["arms"]
     _require(
         all(sorted(declared[arm]["seeds"]) == sorted(matrix["budget"]["seeds"]) for arm in arms),
@@ -285,10 +290,15 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def _base_receipts(base, campaign, stage):
-    """Confirmar los trabajos base de los ámbitos y brazos de la etapa, en orden del plan."""
+def _base_receipts(base, campaign, stage, pairs=None):
+    """Confirmar los trabajos base de los ámbitos y brazos de la etapa, en orden del plan.
+
+    `pairs` limita la confirmación a esos pares (ámbito, ventana) al ejecutar una ventana.
+    """
     for job in plan_campaign(campaign):
         if job["scope"] not in stage["scopes"] or job["arm"] not in stage["families"]:
+            continue
+        if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -723,8 +733,13 @@ def _gpu_lease():
     return GpuLease()
 
 
-def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, device="cuda:0"):
+def run_stage(
+    path, views, campaign_output, output, *, lease=None, stop=None, device="cuda:0", window=None
+):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
+
+    `window` limita la etapa a una ventana de campaña, que solo necesita la base confirmada
+    de esa ventana.
 
     `lease` sustituye la reserva de la GPU y `device="cpu"` limita la ejecución a los
     diagnósticos de hasta 5000 filas de `run_case`. La protección del aprendizaje se
@@ -737,6 +752,9 @@ def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, de
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
     campaign = stage["campaign"]
+    pairs = None
+    if window is not None:
+        jobs, pairs = campaign_schedule.stage_window(campaign, jobs, window)
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0")
     _require(
         isinstance(views, dict) and set(views) == set(campaign["scopes"]),
@@ -749,7 +767,7 @@ def run_stage(path, views, campaign_output, output, *, lease=None, stop=None, de
         outside_source(protected, output)
         outside_source(output, protected)
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
-    _base_receipts(base, campaign, stage)
+    _base_receipts(base, campaign, stage, pairs)
     identity = _identity(stage, base.views)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -812,12 +830,17 @@ def main(argv=None):
     execute.add_argument("--views", action="append", required=True)
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
     else:
         result = run_stage(
-            args.stage, _views_argument(args.views), args.campaign_output, args.output
+            args.stage,
+            _views_argument(args.views),
+            args.campaign_output,
+            args.output,
+            window=args.window,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

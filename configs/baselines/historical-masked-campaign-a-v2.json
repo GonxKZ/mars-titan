@@ -1,0 +1,86 @@
+{
+  "schema_version": 2,
+  "kind": "historical_masked_campaign",
+  "status": "declared_not_executed",
+  "name": "historical-masked-2000-a-v2",
+  "variant": "A",
+  "retrain_every_months": 12,
+  "comparison": "../evaluation/historical-masked-2000-joint-comparison.json",
+  "scopes": ["US+CN", "US", "CN"],
+  "neural": {
+    "arms": {
+      "rnn": "rnn",
+      "lstm": "lstm",
+      "gru": "gru",
+      "dlinear": "dlinear",
+      "transformer_compact": "transformer"
+    },
+    "case_indices": [0, 10],
+    "search_seed": 42,
+    "head": "quantile_head_v1",
+    "batch_size": 256,
+    "context_sessions": 64,
+    "checkpoint_seconds": 300,
+    "prediction_retention": "heldout_full_train_sessions_v1"
+  },
+  "tabular": {
+    "config": "tabular-historical-masked-v2.json",
+    "arms": {
+      "ridge": "ridge",
+      "xgboost": "xgboost"
+    },
+    "cpu_workers": 1
+  },
+  "titans_mac": {
+    "recipe": "../titans/chronological-training-historical-masked.json",
+    "arms": {
+      "titans_transformer_direct": "transformer_direct",
+      "titans_mac_disabled": "mac_disabled",
+      "titans_mac_frozen": "mac_frozen",
+      "titans_mac_online": "mac_online"
+    },
+    "search_seed": 42
+  },
+  "episodic_gru": {
+    "recipe": "../candidate/chronological-training.json",
+    "arms": {
+      "gru_episodic": "m1_k1"
+    },
+    "search_seed": 42
+  },
+  "mars_titan": {
+    "recipe": "../titans/episodic-readout-historical-masked.json",
+    "arms": {
+      "mars_titan_m0": {"episodic_bank": "m0_no_bank"},
+      "mars_titan_m1": {"episodic_bank": "m1"},
+      "mars_titan_m2": {"episodic_bank": "m2"},
+      "mars_titan_m3": {"episodic_bank": "m3"},
+      "mars_titan_m1_k2": {"episodic_bank": "m1", "refinements": 2},
+      "mars_titan_m1_k4": {"episodic_bank": "m1", "refinements": 4}
+    },
+    "pending_arms": {},
+    "parent_arm": "titans_mac_online",
+    "search_seed": 42
+  },
+  "cm_v1": {
+    "declaration": "../titans/cm-v1-factorial.json",
+    "search_seed": 42
+  },
+  "seed_policy": {
+    "search_seed": 42,
+    "selected_case_seeds": [43, 44],
+    "deterministic_arms": ["ridge", "xgboost"]
+  },
+  "stopping": {"mode": "protocol"},
+  "execution": {"order": "by_window"},
+  "memory_options": {
+    "titans_mac": {"accumulation_rows": "pending"},
+    "episodic_gru": {"accumulation_rows": "pending", "recompute": "pending"},
+    "cm_v1": {"accumulation_rows": "pending"}
+  },
+  "limits": {
+    "max_training_jobs": 2322,
+    "max_prediction_jobs": 0
+  },
+  "final_test_opened": false
+}

@@ -50,8 +50,8 @@ import numpy as np
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
-from mars_titan.training import masked_campaign
-from mars_titan.training.campaign_plan import plan_campaign
+from mars_titan.training import campaign_schedule, masked_campaign
+from mars_titan.training.campaign_plan import _arm_specs, plan_campaign
 from mars_titan.training.learning_hold import LearningHoldError, require_learning_allowed
 
 from . import native_policy_runs, window_tapes
@@ -478,11 +478,23 @@ def _code():
     return {name: sha256(root / name) for name in names}
 
 
-def _base_receipts(base, campaign, stage):
-    """Confirmar los trabajos base de los ámbitos y predictores de la etapa."""
+def _base_receipts(base, campaign, stage, pairs=None):
+    """Confirmar los trabajos base de los ámbitos y predictores de la etapa.
+
+    También los de los auxiliares de los que parten, como los núcleos de CM-v1, porque el
+    caso y la identidad de un brazo dependen de sus recibos. `pairs` limita la confirmación
+    a esos pares (ámbito, ventana) al ejecutar una ventana.
+    """
     predictors = set(stage["predictors"])
+    predictors |= {
+        spec["parent"]
+        for spec in _arm_specs(campaign)
+        if spec["arm"] in predictors and spec["parent"]
+    }
     for job in plan_campaign(campaign):
         if job["scope"] not in stage["scopes"] or job["arm"] not in predictors:
+            continue
+        if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -850,11 +862,21 @@ def check_stage(path, *, library=None):
 
 
 def run_stage(
-    path, views, campaign_output, edition, output, *, executors=None, capabilities=None, stop=None
+    path,
+    views,
+    campaign_output,
+    edition,
+    output,
+    *,
+    executors=None,
+    capabilities=None,
+    stop=None,
+    window=None,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por familia y `capabilities` el estado del motor.
+    `window` limita la etapa a una ventana de campaña y a la base confirmada de esa ventana.
     El bloqueo de aprendizaje se comprueba antes de todo y antes de cada trabajo pendiente.
     Las capacidades del plan se exigen antes de abrir fuentes o crear la salida.
     """
@@ -866,6 +888,9 @@ def run_stage(
     stage = load_stage(path)
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
+    pairs = None
+    if window is not None:
+        jobs, pairs = campaign_schedule.stage_window(stage["campaign"], jobs, window)
     executors = dict(EXECUTORS if executors is None else executors)
     _require(
         {job["engine"] for job in jobs} <= set(executors)
@@ -891,7 +916,7 @@ def run_stage(
         outside_source(output, protected)
     edition_id = read_edition(edition)["edition_id"]
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
-    _base_receipts(base, campaign, stage)
+    _base_receipts(base, campaign, stage, pairs)
     identity = _identity(stage, base.views, edition_id)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -943,6 +968,7 @@ def main(argv=None):
     execute.add_argument("--campaign-output", type=Path, required=True)
     execute.add_argument("--edition", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -953,6 +979,7 @@ def main(argv=None):
             args.campaign_output,
             args.edition,
             args.output,
+            window=args.window,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

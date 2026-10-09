@@ -39,7 +39,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation import modality_ablation as analysis
 from mars_titan.evaluation import walk_forward_comparison as comparison
 
-from . import masked_campaign
+from . import campaign_schedule, masked_campaign
 from .campaign_plan import (
     DECLARED,
     NEURAL,
@@ -141,8 +141,13 @@ def load_stage(path):
         and 0 <= limits["max_prediction_jobs"] <= 1_000_000,
         "El límite de predicciones debe ser un entero declarado",
     )
-    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan.
+    # Brazos comparados con productor en la campaña. Los auxiliares no se comparan. Cada
+    # ámbito vuelve a predecir solo los brazos que la campaña ajusta en él.
     specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
+    scope_specs = {
+        scope: [spec for spec in _arm_specs(campaign, scope) if not spec["helper"]]
+        for scope in scopes
+    }
     return dict(
         config,
         sha256=digest,
@@ -150,6 +155,7 @@ def load_stage(path):
         campaign=campaign,
         declaration=declared[comparison.ABLATION_FIELD],
         specs=specs,
+        scope_specs=scope_specs,
     )
 
 
@@ -159,7 +165,7 @@ def plan_stage(stage):
     for scope in stage["scopes"]:
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
         for row in schedule(folds, campaign["period"]):
-            for spec in stage["specs"]:
+            for spec in stage["scope_specs"][scope]:
                 for seed in spec["seeds"]:
                     for variant in VARIANTS:
                         jobs.append(
@@ -370,10 +376,15 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def _base_receipts(base, campaign, stage):
-    """Confirmar los trabajos base de los ámbitos de la etapa, en el orden del plan."""
+def _base_receipts(base, campaign, stage, pairs=None):
+    """Confirmar los trabajos base de los ámbitos de la etapa, en el orden del plan.
+
+    `pairs` limita la confirmación a esos pares (ámbito, ventana) al ejecutar una ventana.
+    """
     for job in plan_campaign(campaign):
         if job["scope"] not in stage["scopes"]:
+            continue
+        if pairs is not None and (job["scope"], job["window"]) not in pairs:
             continue
         case, _, sources = base.resolve(job)
         receipt = base.confirmed(job, base.job_identity(job, case, sources))
@@ -587,7 +598,7 @@ def _gpu_lease():
     return GpuLease()
 
 
-def _opened(path, views, campaign_output, output):
+def _opened(path, views, campaign_output, output, pairs=None):
     """Etapa, campaña base confirmada y destino comprobados, sin crear nada."""
     stage = load_stage(path)
     campaign = stage["campaign"]
@@ -602,15 +613,18 @@ def _opened(path, views, campaign_output, output):
         outside_source(protected, output)
         outside_source(output, protected)
     _, base = masked_campaign._confirmed_state(campaign["path"], views, campaign_output)
-    _base_receipts(base, campaign, stage)
+    _base_receipts(base, campaign, stage, pairs)
     return stage, base, output
 
 
-def run_stage(path, views, campaign_output, output, *, executors=None, lease=None, stop=None):
+def run_stage(
+    path, views, campaign_output, output, *, executors=None, lease=None, stop=None, window=None
+):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por modelo y `lease`, la reserva de la GPU. La
     protección se comprueba antes de abrir fuentes y antes de cada trabajo pendiente.
+    `window` limita la etapa a una ventana de campaña y a la base confirmada de esa ventana.
     """
     from .checkpoints import StopRequest
 
@@ -618,9 +632,12 @@ def run_stage(path, views, campaign_output, output, *, executors=None, lease=Non
     stage = load_stage(path)
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
+    pairs = None
+    if window is not None:
+        jobs, pairs = campaign_schedule.stage_window(stage["campaign"], jobs, window)
     executors = dict(EXECUTORS if executors is None else executors)
     _require(set(executors) == set(EXECUTORS), "Faltan ejecutores para algún modelo")
-    stage, base, output = _opened(path, views, campaign_output, output)
+    stage, base, output = _opened(path, views, campaign_output, output, pairs)
     identity = _identity(stage, base.views)
     output.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(output / ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
@@ -679,7 +696,8 @@ def write_sources(path, views, campaign_output, output, scope, *, comparison_pat
         validation.get(comparison.ABLATION_FIELD) == stage["declaration"],
         "La comparación de validación no declara la misma ablación",
     )
-    produced = {spec["arm"]: spec for spec in stage["specs"]}
+    produced = {spec["arm"]: spec for spec in stage["scope_specs"][scope]}
+    validation = comparison.scope_config(validation, scope)
     wanted = {
         name: arm
         for name, arm in validation["arms"].items()
@@ -746,6 +764,7 @@ def main(argv=None):
         command.add_argument("--views", action="append", required=True)
         command.add_argument("--campaign-output", type=Path, required=True)
         command.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--window", help="Ventana de campaña que se ejecuta")
     sources.add_argument("--scope", choices=tuple(comparison.SCOPES), required=True)
     sources.add_argument("--comparison", type=Path)
     args = parser.parse_args(argv)
@@ -753,7 +772,7 @@ def main(argv=None):
         result = check_stage(args.stage)
     elif args.command == "run":
         views = masked_campaign._views_argument(args.views)
-        result = run_stage(args.stage, views, args.campaign_output, args.output)
+        result = run_stage(args.stage, views, args.campaign_output, args.output, window=args.window)
         result.pop("jobs")
     else:
         destination = write_sources(

@@ -16,6 +16,19 @@ sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno 
 `extend_campaign` añade a una campaña cargada las secciones de una declaración preparada con
 las mismas reglas, para medir y contar sin cambiar su archivo.
 
+La versión 2 de la configuración declara además la política de semillas, la regla de parada,
+las opciones de memoria pendientes y el orden de ejecución. Con `by_window` el plan recorre
+cada ventana de campaña completa antes de la siguiente (`campaign_schedule`). Los brazos de
+cada ámbito salen de la comparación: con su diseño conjunto, el ámbito conjunto ajusta todos
+los brazos y cada ámbito de un mercado solo los controles separados, con los auxiliares que
+necesiten.
+
+Semillas: cada caso de búsqueda se ajusta con la semilla de búsqueda. El caso con menor MAE
+por sesión de validación (desempate por identificador) se repite con las demás semillas del
+brazo. Esos finalistas dependen de todas las búsquedas de su brazo y ventana y, si el brazo
+parte de otro, del finalista del padre con su semilla. Un brazo determinista tiene una sola
+semilla y su caso elegido no se repite.
+
 Variante A: cada ventana anual se reentrena desde cero. Variante B: se reentrena desde
 cero en la primera ventana y cada ``retrain_every_months`` meses. Las ventanas
 intermedias se predicen con el estado seleccionado en la última ventana reentrenada,
@@ -33,6 +46,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, masked_inputs
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 
+from . import campaign_schedule
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
 
 CAMPAIGN_KIND = "historical_masked_campaign"
@@ -115,6 +129,8 @@ EXTENSION_POINTS = {
 }
 # Etapas que parten de los padres seleccionados en cada ventana de una campaña base
 # confirmada. Se ejecutan con su propia orden (`run_masked_campaign.py posttraining`).
+# `stages` son las de las campañas A y B de tres ámbitos y `joint_stage`, la de la campaña
+# A v2 con el modelo conjunto y los controles separados.
 LATER_STAGES = {
     "posttraining_adapter_matrix": dict(
         config="configs/posttraining/adapter-matrix-v2.json",
@@ -122,6 +138,7 @@ LATER_STAGES = {
             A="configs/posttraining/historical-masked-adapter-stage-a.json",
             B="configs/posttraining/historical-masked-adapter-stage-b.json",
         ),
+        joint_stage="configs/posttraining/historical-masked-adapter-stage-a-v2.json",
         entry="mars_titan.posttraining.campaign_stage:run_stage",
         issue=364,
         pending=[],
@@ -134,6 +151,7 @@ LATER_STAGES = {
             A="configs/simulation/historical-masked-rl-stage-a.json",
             B="configs/simulation/historical-masked-rl-stage-b.json",
         ),
+        joint_stage="configs/simulation/historical-masked-rl-stage-a-v2.json",
         entry="mars_titan.simulation.campaign_stage:run_stage",
         issue=137,
         pending=[],
@@ -146,6 +164,7 @@ LATER_STAGES = {
             A="configs/evaluation/historical-masked-ablation-stage-a.json",
             B="configs/evaluation/historical-masked-ablation-stage-b.json",
         ),
+        joint_stage="configs/evaluation/historical-masked-ablation-stage-a-v2.json",
         entry="mars_titan.training.modality_ablation_stage:run_stage",
         issue=414,
         pending=[],
@@ -174,6 +193,19 @@ _NEURAL = {
     "context_sessions",
     "checkpoint_seconds",
     "prediction_retention",
+}
+# Campos que añade la versión 2 de la configuración.
+_FIELDS_V2 = {"seed_policy", "stopping", "memory_options", "execution"}
+_SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
+# Único modo de parada conectado: la regla del protocolo. La parada conjunta de los brazos
+# emparejados se añadirá aquí como otro modo, con sus grupos, cuando exista su ejecutor.
+STOPPING_MODES = ("protocol",)
+PENDING = "pending"
+# Familias con opciones de memoria en su receta, que fijan las medidas en cuda:0.
+MEMORY_OPTIONS = {
+    TITANS: ("accumulation_rows",),
+    EPISODIC: ("accumulation_rows", "recompute"),
+    CM: ("accumulation_rows",),
 }
 _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
@@ -624,10 +656,12 @@ def load_campaign(path):
     """Validar la campaña y resolver comparación, protocolos, regla y candidatos."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
+    version = config.get("schema_version") if isinstance(config, dict) else None
+    fields = _FIELDS | (_FIELDS_V2 if version == 2 else set())
     _require(
         isinstance(config, dict)
-        and _FIELDS <= set(config) <= _FIELDS | set(OPTIONAL)
-        and config["schema_version"] == 1
+        and fields <= set(config) <= fields | set(OPTIONAL)
+        and version in (1, 2)
         and config["kind"] == CAMPAIGN_KIND
         and config["status"] == DECLARED
         and config["final_test_opened"] is False
@@ -679,7 +713,19 @@ def load_campaign(path):
         "La comparación declara familias sin entrenador ni punto de extensión",
     )
     count = len(config["neural"]["case_indices"])
-    return dict(
+    if version == 2:
+        _require(
+            config["stopping"] == {"mode": STOPPING_MODES[0]},
+            "La campaña solo admite la regla de parada del protocolo. La parada conjunta se "
+            "conectará como otro modo cuando exista su ejecutor",
+        )
+        _require(
+            isinstance(config["execution"], dict)
+            and set(config["execution"]) == {"order"}
+            and config["execution"]["order"] in campaign_schedule.ORDERS,
+            "La campaña declara su orden de ejecución: by_scope o by_window",
+        )
+    campaign = dict(
         config,
         sha256=digest,
         path=str(path.resolve()),
@@ -693,6 +739,76 @@ def load_campaign(path):
         tabular=_tabular(config["tabular"], arms, policy, base),
         **_optional_sections(config, arms, rule, policy, base, count),
     )
+    for scope in scopes:
+        _arm_specs(campaign, scope)
+    if version == 2:
+        _seed_policy(config["seed_policy"], campaign)
+        campaign["memory_options"] = _memory_options(config["memory_options"], campaign)
+    return campaign
+
+
+def _seed_policy(policy, campaign):
+    """Exigir que cada brazo siga la política de semillas declarada."""
+    _require(
+        isinstance(policy, dict)
+        and set(policy) == _SEED_POLICY
+        and type(policy["search_seed"]) is int
+        and isinstance(policy["deterministic_arms"], list)
+        and len(set(policy["deterministic_arms"])) == len(policy["deterministic_arms"]),
+        "La política de semillas no cumple su contrato",
+    )
+    search = policy["search_seed"]
+    repeats = _seeds(policy["selected_case_seeds"], "La política de semillas")
+    _require(search not in repeats, "Las semillas del caso elegido no repiten la de búsqueda")
+    specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
+    deterministic = set(policy["deterministic_arms"])
+    _require(
+        deterministic <= {spec["arm"] for spec in specs},
+        "Los brazos deterministas deben tener productor en la campaña",
+    )
+    for spec in specs:
+        expected = [search] if spec["arm"] in deterministic else [search, *repeats]
+        _require(
+            spec["seed"] == search and sorted(spec["seeds"]) == sorted(expected),
+            f"{spec['arm']} no sigue la política de semillas: búsqueda con {search} y "
+            f"semillas {expected}",
+        )
+
+
+def _memory_options(declared, campaign):
+    """Opciones de memoria de cada receta: pendientes o iguales al valor de la receta."""
+    families = {family: options for family, options in MEMORY_OPTIONS.items() if campaign[family]}
+    _require(
+        isinstance(declared, dict)
+        and set(declared) == set(families)
+        and all(
+            isinstance(declared[family], dict) and set(declared[family]) == set(options)
+            for family, options in families.items()
+        ),
+        "La campaña declara las opciones de memoria de cada familia con receta",
+    )
+    resolved = {}
+    for family in families:
+        section = campaign[family]
+        path = section["recipes"]["core_recipe"] if family == CM else section["path"]
+        recipe = read_manifest(Path(path), 64 * 1024)[0]["recipe"]
+        for option, value in declared[family].items():
+            _require(
+                value == PENDING or (option in recipe and recipe[option] == value),
+                f"{family}.{option} debe estar pendiente o coincidir con su receta",
+            )
+        resolved[family] = dict(declared[family])
+    return resolved
+
+
+def launch_blockers(campaign):
+    """Motivos que impiden lanzar la campaña aunque su plan sea válido."""
+    return [
+        f"{family}.{option} sigue pendiente de la medida de memoria en cuda:0"
+        for family, options in (campaign.get("memory_options") or {}).items()
+        for option, value in options.items()
+        if value == PENDING
+    ]
 
 
 def _checked_limits(limits):
@@ -788,8 +904,41 @@ def _job(scope, window, arm, family, model, stage, seed, **fields):
     )
 
 
-def _arm_specs(campaign):
-    """Brazos con entrenador: familia, modelo, semilla de búsqueda y candidatos."""
+def scope_arms(campaign, scope):
+    """Brazos que la comparación evalúa en un ámbito con predicciones propias del ámbito."""
+    resolved = campaign["comparison_config"]["resolved_scopes"][scope]
+    return [
+        name
+        for name, arm in resolved["arms"].items()
+        if arm["output"] != "zero_control" and name not in resolved["borrowed"]
+    ]
+
+
+def _arm_specs(campaign, scope=None):
+    """Brazos con entrenador: familia, modelo, semilla de búsqueda y candidatos.
+
+    Con `scope`, solo los brazos que se ajustan en ese ámbito, con los auxiliares de los que
+    parten. Un padre que es un brazo comparado debe ajustarse también en el ámbito, porque
+    solo los auxiliares se incorporan sin declararlos.
+    """
+    specs = _all_arm_specs(campaign)
+    if scope is None:
+        return specs
+    wanted = set(scope_arms(campaign, scope))
+    helpers = {spec["arm"] for spec in specs if spec["helper"]}
+    parents = {spec["parent"] for spec in specs if spec["arm"] in wanted} & helpers
+    selected = [spec for spec in specs if spec["arm"] in wanted | parents]
+    names = {spec["arm"] for spec in selected}
+    missing = sorted(
+        f"{spec['arm']} sin {spec['parent']}"
+        for spec in selected
+        if spec["parent"] and spec["parent"] not in names
+    )
+    _require(not missing, f"En {scope} faltan padres: {', '.join(missing)}")
+    return selected
+
+
+def _all_arm_specs(campaign):
     specs = []
     arms = campaign["comparison_config"]["arms"]
     sections = [(NEURAL, campaign["neural"]), (TABULAR, campaign["tabular"])]
@@ -832,9 +981,9 @@ def arm_output(campaign, arm):
 def plan_campaign(campaign):
     """Enumerar todos los trabajos con sus dependencias sin leer vistas ni datos."""
     jobs = []
-    specs = _arm_specs(campaign)
-    names = {spec["arm"]: spec for spec in specs}
     for scope in campaign["scopes"]:
+        specs = _arm_specs(campaign, scope)
+        names = {spec["arm"]: spec for spec in specs}
         folds = list(campaign["comparison_config"]["resolved_scopes"][scope]["windows"].values())
         for row in schedule(folds, campaign["period"]):
             window = row["window"]
@@ -875,7 +1024,14 @@ def plan_campaign(campaign):
                     depends = searches if seed == spec["seed"] else [f"{prefix}/finalist-s{seed}"]
                     jobs.append(_job(*common, "carry", seed, anchor=row["anchor"], depends=depends))
     _require(len({job["id"] for job in jobs}) == len(jobs), "El plan contiene trabajos repetidos")
+    if execution_order(campaign) == "by_window":
+        return campaign_schedule.order_by_window(campaign, jobs)
     return jobs
+
+
+def execution_order(campaign):
+    """Orden declarado de la campaña. La versión 1 recorre los ámbitos uno tras otro."""
+    return (campaign.get("execution") or {"order": "by_scope"})["order"]
 
 
 def count_jobs(campaign, jobs=None):
@@ -945,6 +1101,12 @@ def check_campaign(path):
         stopping_rule=campaign["rule"],
         neural_loss=dict(head=QUANTILE_HEAD, loss=PINBALL),
         counts=count_jobs(campaign),
+        scope_arms={scope: scope_arms(campaign, scope) for scope in campaign["scopes"]},
+        seed_policy=campaign.get("seed_policy"),
+        stopping=campaign.get("stopping", {"mode": STOPPING_MODES[0]}),
+        execution_order=execution_order(campaign),
+        memory_options=campaign.get("memory_options"),
+        launch_blockers=launch_blockers(campaign),
         pending_families=pending_families(campaign),
         later_stages=LATER_STAGES,
         scientific_training_started=False,

@@ -13,6 +13,11 @@ productor en la campaña base, resueltos desde su configuración. Una familia qu
 registre más adelante entra así sin cambiar la etapa. El nivel `algorithms` compara las
 demás políticas aprendidas solo sobre los predictores que declara, porque cada brazo
 aprendido multiplica los ajustes y el contraste principal es KLPO.
+
+Un ámbito con varios mercados, como el conjunto US+CN, monta una cinta por mercado con las
+predicciones del modelo conjunto en ese mercado. Cada mercado solo recorre las ventanas en
+las que la comparación lo declara elegible, así que China empieza con su propia historia
+mínima aunque el modelo conjunto se ajuste con todo su pasado.
 """
 
 import math
@@ -21,7 +26,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.evaluation import walk_forward_comparison as comparison
-from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign
+from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaign, scope_arms
 
 from . import window_tapes
 from .environment import ACTIONS
@@ -301,7 +306,7 @@ def load_stage(path):
         and scopes == [scope for scope in campaign["scopes"] if scope in scopes],
         "Los ámbitos pertenecen a la campaña y siguen su orden",
     )
-    levels = resolve_levels(campaign, policies)
+    levels = resolve_levels(campaign, policies, scopes)
     limits = config["limits"]
     _require(
         isinstance(limits, dict)
@@ -323,11 +328,19 @@ def load_stage(path):
     )
 
 
-def resolve_levels(campaign, policies):
-    """Predictores y brazos de cada nivel, con los productores de la campaña en su orden."""
+def resolve_levels(campaign, policies, scopes=None):
+    """Predictores y brazos de cada nivel, con los productores de la campaña en su orden.
+
+    Con `scopes`, solo cuentan los brazos que la campaña ajusta en todos esos ámbitos.
+    """
     seed = policies["predictor"]["seed"]
     # Los auxiliares, como los núcleos de CM-v1, no publican recibo de ventana ni predicen.
-    specs = [spec for spec in _arm_specs(campaign) if not spec["helper"]]
+    planned = [set(scope_arms(campaign, scope)) for scope in scopes or ()]
+    specs = [
+        spec
+        for spec in _arm_specs(campaign)
+        if not spec["helper"] and all(spec["arm"] in arms for arms in planned)
+    ]
     produced = [spec["arm"] for spec in specs]
     _require(
         produced and all(seed in spec["seeds"] for spec in specs),
@@ -348,10 +361,18 @@ def resolve_levels(campaign, policies):
     }
 
 
-def scope_windows(stage, scope):
-    """Ventanas de política de un ámbito con su ancla, con el periodo de la campaña base."""
+def scope_windows(stage, scope, market=None):
+    """Ventanas de política de un ámbito con su ancla, con el periodo de la campaña base.
+
+    Con `market`, solo las ventanas del ámbito en las que ese mercado es elegible.
+    """
     campaign = stage["campaign"]
-    folds = campaign["comparison_config"]["resolved_scopes"][scope]["windows"]
+    resolved = campaign["comparison_config"]["resolved_scopes"][scope]
+    folds = resolved["windows"]
+    if market is not None:
+        folds = {
+            window: fold for window, fold in folds.items() if window in resolved["eligible"][market]
+        }
     rows = window_tapes.policy_windows(list(folds.values()), stage["policies"]["train_windows"])
     return window_tapes.policy_schedule(rows, campaign["period"], folds)
 
@@ -370,10 +391,10 @@ def plan_stage(stage):
     policies = stage["policies"]
     jobs = []
     for scope in stage["scopes"]:
-        rows = scope_windows(stage, scope)
-        anchors = {row["window"]: row for row in rows}
         markets = stage["campaign"]["comparison_config"]["resolved_scopes"][scope]["markets"]
         for market in markets:
+            rows = scope_windows(stage, scope, market)
+            anchors = {row["window"]: row for row in rows}
             for row in rows:
                 anchor = anchors[row["anchor"]]
                 for predictor in stage["predictors"]:
@@ -428,7 +449,11 @@ def count_stage(stage, jobs=None):
     jobs = plan_stage(stage) if jobs is None else jobs
     scopes = {}
     for scope in stage["scopes"]:
-        rows = scope_windows(stage, scope)
+        markets = stage["campaign"]["comparison_config"]["resolved_scopes"][scope]["markets"]
+        by_market = {market: scope_windows(stage, scope, market) for market in markets}
+        # Las ventanas de un ámbito son las de todos sus mercados, sin repetir y en orden.
+        rows = list({row["window"]: row for value in by_market.values() for row in value}.values())
+        rows.sort(key=lambda row: row["window"])
         selected = [job for job in jobs if job["scope"] == scope]
         arms = {}
         for job in selected:
@@ -440,6 +465,11 @@ def count_stage(stage, jobs=None):
             windows=[row["window"] for row in rows],
             anchors=[row["window"] for row in rows if row["trained"]],
             carried_windows=sum(not row["trained"] for row in rows),
+            **(
+                {}
+                if len(markets) == 1
+                else {"markets": {m: [row["window"] for row in v] for m, v in by_market.items()}}
+            ),
             training_jobs=kinds[FIT],
             carried_jobs=kinds[CARRY],
             reference_jobs=kinds[REFERENCE],
