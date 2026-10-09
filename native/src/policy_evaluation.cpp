@@ -55,6 +55,9 @@ Json episode(const PolicyTape& tape, double cost, const simulation::FinancialMet
     require(equity.nav.size() == metrics.steps + 1,
             "El patrimonio por sesión no cubre los pasos del episodio");
     if (metrics.completed) {
+        if (!metrics.net_return) {
+            throw std::invalid_argument("Un episodio completo necesita su retorno neto");
+        }
         const auto expected = tape.input.parameters.capital * (1 + *metrics.net_return);
         require(std::abs(equity.nav.back() - expected) <=
                     equity_tolerance * std::max(1.0, std::abs(expected)),
