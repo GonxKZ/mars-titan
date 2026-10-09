@@ -79,5 +79,22 @@
       6
     ],
     "verification_date": "2026-09-18"
+  },
+  {
+    "id": "dawes1979improper",
+    "title": "The robust beauty of improper linear models in decision making",
+    "authors": [
+      "Robyn M. Dawes"
+    ],
+    "year": 1979,
+    "url": "https://doi.org/10.1037/0003-066X.34.7.571",
+    "pdf_url": null,
+    "access": "Metadatos de Crossref para el DOI y primera página con el resumen consultados en una copia escaneada del sitio de Carnegie Mellon, que no es el editor. No se declara lectura integral.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente de pesos iguales sobre predictores en una escala común cuando no hay datos para estimarlos sin sobreajuste. Motiva fijar los pesos de M3 antes de ejecutar y no demuestra que sean buenos en este problema.",
+    "phase": [
+      4
+    ],
+    "verification_date": "2026-10-09"
   }
 ]
