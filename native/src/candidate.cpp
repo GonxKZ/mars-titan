@@ -3,6 +3,10 @@
 #include <ATen/ATen.h>
 #include <ATen/CPUGeneratorImpl.h>
 #include <ATen/core/grad_mode.h>
+#include <ATen/ops/_cudnn_rnn_flatten_weight.h>
+#include <ATen/ops/_use_cudnn_rnn_flatten_weight.h>
+#include <ATen/ops/cudnn_is_acceptable.h>
+#include <c10/core/DeviceGuard.h>
 
 #include <algorithm>
 #include <cmath>
@@ -171,6 +175,23 @@ Candidate::Linear Candidate::linear(const std::string& name, int64_t in, int64_t
 }
 at::Tensor Candidate::Linear::operator()(const at::Tensor& value) const {
     return at::linear(value, weight, bias);
+}
+void Candidate::pack_recurrent_weights() {
+#if defined(MARS_TITAN_LIBTORCH_CUDA)
+    if (!gru_.front().is_cuda() || !at::cudnn_is_acceptable(gru_.front()) ||
+        !at::_use_cudnn_rnn_flatten_weight()) {
+        return;
+    }
+    const c10::DeviceGuard device_guard(gru_.front().device());
+    const at::NoGradGuard no_grad;
+    constexpr int64_t weights_per_layer = 4;
+    constexpr int64_t cudnn_gru_mode = 3;
+    // Copia exacta de los valores. Los parámetros registrados pasan a ser vistas del bloque y
+    // `at::gru` lo usa sin compactarlo en cada llamada. Una copia en el sitio conserva las vistas.
+    static_cast<void>(at::_cudnn_rnn_flatten_weight(gru_, weights_per_layer,
+                                                    config_.dimensions.front(), cudnn_gru_mode,
+                                                    hidden_width, 0, 1, true, false));
+#endif
 }
 const Config& Candidate::config() const noexcept { return config_; }
 std::string Candidate::representation_id() const { return representation_id_; }
