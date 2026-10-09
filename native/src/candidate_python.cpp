@@ -61,6 +61,16 @@ void bind_candidate(py::module_& module) {
         .def_readonly("fused", &Encoded::fused)
         .def_readonly("episode_features", &Encoded::episode_features)
         .def_readonly("episode_keys", &Encoded::episode_keys);
+    py::class_<EpisodeEncoding>(module, "CandidateEpisodeEncoding")
+        .def_readonly("keys", &EpisodeEncoding::keys)
+        .def_readonly("values", &EpisodeEncoding::values);
+    py::class_<CpuEpisodeCodec, std::shared_ptr<CpuEpisodeCodec>>(module, "CandidateCPUCodec")
+        .def("encode", &CpuEpisodeCodec::encode)
+        .def("estimated_bytes", &CpuEpisodeCodec::estimated_bytes)
+        .def_property_readonly("projection_id", &CpuEpisodeCodec::projection_id)
+        .def_property_readonly("dtype", [](const CpuEpisodeCodec& codec) {
+            return codec.dtype() == at::kDouble ? "float64" : "float32";
+        });
     py::class_<Read>(module, "CandidateRead")
         .def_readonly("values", &Read::values)
         .def_readonly("weights", &Read::weights)
@@ -84,6 +94,9 @@ void bind_candidate(py::module_& module) {
         .def("train", &Candidate::train, py::arg("mode") = true)
         .def("eval", &Candidate::eval)
         .def("encode", &Candidate::encode)
+        .def("encode_context", &Candidate::encode_context)
+        .def("cpu_episode_codec", &Candidate::cpu_episode_codec,
+             py::arg("max_working_bytes") = maximum_codec_bytes)
         .def("empty_memory", &Candidate::empty_memory)
         .def("snapshot", &Candidate::snapshot)
         .def("forward", &Candidate::forward, py::arg("inputs"), py::arg("memory"),

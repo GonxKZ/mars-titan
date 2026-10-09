@@ -12,7 +12,7 @@ mars_titan_find_torch()
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 include(cmake/CandidateDependencies.cmake)
 mars_titan_find_candidate_zip()
-add_library(mars_titan_candidate STATIC src/candidate.cpp src/candidate_archive.cpp src/candidate_identity.cpp)
+add_library(mars_titan_candidate STATIC src/candidate.cpp src/candidate_archive.cpp src/candidate_identity.cpp src/candidate_codec.cpp)
 target_include_directories(mars_titan_candidate PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 # Resolver primero el lector privado, sin enlazar sus símbolos contra la copia de LibTorch.
 target_link_libraries(mars_titan_candidate PRIVATE miniz PUBLIC mars_titan::torch PRIVATE OpenSSL::Crypto)
@@ -32,6 +32,14 @@ add_executable(mars-titan-candidate src/candidate_main.cpp)
 target_link_libraries(mars-titan-candidate PRIVATE mars_titan_candidate)
 mars_titan_configure_target(mars-titan-candidate)
 if(BUILD_TESTING)
+    add_executable(candidate_codec_tests tests/candidate_codec_tests.cpp)
+    target_link_libraries(candidate_codec_tests PRIVATE mars_titan_candidate)
+    mars_titan_configure_target(candidate_codec_tests)
+    add_test(NAME candidate_codec COMMAND candidate_codec_tests)
+    set_tests_properties(candidate_codec PROPERTIES TIMEOUT 120 LABELS "unit;candidate;codec")
+    mars_titan_sanitizer_test_environment(candidate_codec)
+    set_property(TEST candidate_codec APPEND PROPERTY ENVIRONMENT
+        "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=2" "MKL_NUM_THREADS=2")
     add_executable(candidate_historical_tests tests/candidate_historical_tests.cpp)
     target_link_libraries(candidate_historical_tests PRIVATE mars_titan_candidate)
     mars_titan_configure_target(candidate_historical_tests)
@@ -114,6 +122,7 @@ if(MARS_TITAN_ENABLE_STATIC_ANALYZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_archive.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_identity.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_codec.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_main.cpp")
     if(TARGET _episodic_native)
         list(APPEND candidate_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/candidate_python.cpp")
