@@ -4,7 +4,8 @@
 // y del crítico con sus copias de vuelta, las ventajas GAE, la recogida completa de PPO con
 // `PpoTrainer::advance` antes de su primera actualización, una oleada de KLPO y el forward
 // y backward de un minilote PPO. Ninguna medida crea un paso de Adam: al terminar se exige
-// que los parámetros conserven su huella y que no haya pasos de optimizador.
+// que los parámetros conserven su huella y que no haya pasos de optimizador. Con `--repeat`
+// las recogidas PPO y KLPO se repiten para medir varios procesos simultáneos.
 
 #include "mars_titan/klpo_collection.hpp"
 #include "mars_titan/policy_tapes.hpp"
@@ -88,6 +89,8 @@ struct Options {
     std::size_t warmup = default_warmup;
     std::size_t workers = 1;
     int threads = 1;
+    // Repeticiones de las recogidas PPO y KLPO para medir procesos simultáneos en régimen estable.
+    std::size_t repeat = 1;
     // Fases omitidas: inference, gae, gradient, trainer, klpo o evaluation.
     std::set<std::string, std::less<>> skip;
 };
@@ -136,6 +139,8 @@ Options parse(std::span<char*> arguments) {
             result.skip.emplace(value);
         } else if (name == "--threads") {
             result.threads = static_cast<int>(count(value));
+        } else if (name == "--repeat") {
+            result.repeat = count(value);
         } else {
             throw std::invalid_argument("Argumento desconocido");
         }
@@ -507,6 +512,42 @@ Json measure_evaluation(const BatchInput& validation, std::size_t width, const O
     return summary(seconds, transitions);
 }
 
+// Las repeticiones parten de la misma semilla y deben reproducir todas las huellas de la primera.
+bool same_collection(const Json& first, const Json& other) {
+    for (const auto& [phase, values] : first.items()) {
+        for (const auto& [key, value] : values.items()) {
+            if (key.ends_with("_sha256") && other.at(phase).at(key) != value) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// Intervalo de reloj de pared de las repeticiones y tiempos de cada una, para sumar el caudal
+// de varios procesos simultáneos sobre su intervalo común.
+Json repeated(const std::vector<Json>& passes, std::chrono::system_clock::time_point first,
+              std::chrono::system_clock::time_point last) {
+    const auto unix_seconds = [](std::chrono::system_clock::time_point point) {
+        return std::chrono::duration<double>(point.time_since_epoch()).count();
+    };
+    Json trainer = Json::array();
+    Json waves = Json::array();
+    for (const auto& pass : passes) {
+        if (pass.contains("ppo_trainer_collection")) {
+            trainer.push_back(pass.at("ppo_trainer_collection").at("p50_us"));
+        }
+        if (pass.contains("klpo_wave")) {
+            waves.push_back(pass.at("klpo_wave").at("collection_wave_seconds"));
+        }
+    }
+    return Json{{"count", passes.size()},
+                {"start_unix_seconds", unix_seconds(first)},
+                {"end_unix_seconds", unix_seconds(last)},
+                {"trainer_p50_us", trainer},
+                {"klpo_wave_seconds", waves}};
+}
+
 void configure(const Options& options) {
     // Igual que los binarios de política: hilos acotados, algoritmos deterministas y FP32 IEEE.
     require(setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8", 0) == 0, "No se pudo fijar el espacio de cuBLAS");
@@ -609,13 +650,25 @@ int run(const Options& options) {
         RECORD_USER_SCOPE("phase_minibatch_gradient");
         report["ppo_minibatch"] = measure_gradient(environment, options);
     }
-    if (wanted("trainer")) {
-        RECORD_USER_SCOPE("phase_ppo_trainer");
-        report["ppo_trainer_collection"] = measure_trainer(inputs, options);
+    const auto first = std::chrono::system_clock::now();
+    std::vector<Json> passes;
+    for (std::size_t repeat = 0; repeat < options.repeat; ++repeat) {
+        Json pass = Json::object();
+        if (wanted("trainer")) {
+            RECORD_USER_SCOPE("phase_ppo_trainer");
+            pass["ppo_trainer_collection"] = measure_trainer(inputs, options);
+        }
+        if (wanted("klpo")) {
+            RECORD_USER_SCOPE("phase_klpo_wave");
+            pass["klpo_wave"] = measure_klpo(inputs, options);
+        }
+        require(passes.empty() || same_collection(passes.front(), pass),
+                "Una repetición cambió las huellas de la recogida");
+        passes.push_back(std::move(pass));
     }
-    if (wanted("klpo")) {
-        RECORD_USER_SCOPE("phase_klpo_wave");
-        report["klpo_wave"] = measure_klpo(inputs, options);
+    report.update(passes.front());
+    if (options.repeat > 1) {
+        report["repeats"] = repeated(passes, first, std::chrono::system_clock::now());
     }
     if (wanted("evaluation")) {
         RECORD_USER_SCOPE("phase_evaluation");
