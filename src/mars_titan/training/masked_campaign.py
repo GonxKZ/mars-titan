@@ -4,6 +4,8 @@ La ejecución comprueba el bloqueo de aprendizaje antes de cada trabajo, confirm
 recibo por trabajo con huellas, tramos y filas, no repite los trabajos confirmados con
 la misma identidad y rehace los incompletos. Los trabajos CUDA se ejecutan de uno en
 uno bajo una única reserva de la GPU y los trabajos CPU con la concurrencia declarada.
+Cuando una semilla de un brazo tiene su predictor elegido en una ventana, se escribe el
+recibo walk-forward de cada mercado con el contrato de ``environments.walk_forward_receipt``.
 Al final se escribe el manifiesto de fuentes de cada ámbito que consume
 ``evaluation.walk_forward_comparison``. El plan y sus variantes están en
 ``training.campaign_plan``.
@@ -27,6 +29,10 @@ import pyarrow as pa
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.environments.walk_forward_receipt import (
+    RECEIPT_KIND as WINDOW_RECEIPT_KIND,
+)
+from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import PARTITIONS
 
@@ -173,6 +179,26 @@ def _rows_digest(table):
     return digest.hexdigest()
 
 
+def _fingerprints(table, markets):
+    """Huella del recibo walk-forward de las predicciones de cada mercado con filas."""
+    market = table["market"].to_numpy(zero_copy_only=False).astype(str)
+    moment = table["prediction_at"].cast(pa.int64()).to_numpy()
+    asset = table["asset_id"].to_numpy(zero_copy_only=False).astype(str)
+    score = table["prediction"].to_numpy()
+    result = {}
+    for name in markets:
+        rows = market == name
+        if rows.any():
+            count, digest = prediction_fingerprint(moment[rows], asset[rows], score[rows])
+            result[name] = dict(rows=count, sha256=digest)
+    return result
+
+
+def _group(job):
+    """Brazo, semilla y ventana: la unidad que recibe un predictor elegido."""
+    return job["scope"], job["window"], job["arm"], job["seed"]
+
+
 @dataclass(frozen=True)
 class JobRun:
     """Lo que necesita un ejecutor: trabajo, caso resuelto, vista, destino y ancla."""
@@ -266,6 +292,7 @@ def _code():
         "training/campaign_plan.py",
         "training/carried_predictions.py",
         "training/reference_design.py",
+        "environments/walk_forward_receipt.py",
         "evaluation/walk_forward_comparison.py",
         "evaluation/splits.py",
     )
@@ -297,7 +324,7 @@ def _identity(campaign, views):
 class _Campaign:
     """Estado confirmado de la campaña y verificación de cada recibo."""
 
-    def __init__(self, campaign, views, output, identity, executors, stop):
+    def __init__(self, campaign, views, output, identity, executors, stop, jobs=()):
         self.campaign, self.views, self.output = campaign, views, output
         self.identity, self.executors, self.stop = identity, executors, stop
         self.identity_sha256 = hashlib.sha256(
@@ -306,6 +333,9 @@ class _Campaign:
         self.receipts = {}
         # Huella de filas y objetivos por ámbito, ventana y tramo, común a todos los brazos.
         self.rows = {}
+        self.groups = {}
+        for job in jobs:
+            self.groups.setdefault(_group(job), []).append(job["id"])
 
     def same_rows(self, job, receipt):
         """Exigir que cada trabajo de una ventana evalúe las mismas filas que el primero."""
@@ -451,6 +481,7 @@ class _Campaign:
                 sha256=record["sha256"],
                 rows=table.num_rows,
                 rows_sha256=_rows_digest(table),
+                markets=_fingerprints(table, resolved["markets"]),
             )
         score = None
         if job["kind"] == FIT:
@@ -461,6 +492,7 @@ class _Campaign:
             )
         report_path = run.folder / executor["report"]
         receipt = dict(
+            parent=self.parent(job, identity, report),
             schema_version=1,
             kind=RECEIPT_KIND,
             status="completed",
@@ -476,6 +508,63 @@ class _Campaign:
         path = self.folder(job) / "receipt.json"
         atomic_json(path, receipt)
         return dict(receipt, sha256=sha256(path))
+
+    def parent(self, job, identity, report):
+        """Predictor ajustado del que salen las predicciones: el propio o el del ancla."""
+        if job["kind"] == FIT:
+            checkpoint = report.get("checkpoint")
+            _require(isinstance(checkpoint, dict), f"{job['id']} no declara su estado elegido")
+            return dict(id=job["id"], sha256=checkpoint["sha256"])
+        source = identity["sources"]["source"]
+        parent = self.receipts[source]["parent"]
+        _require(
+            report.get("anchor", {}).get("checkpoint_sha256") == parent["sha256"],
+            f"{job['id']} no parte del estado elegido en {source}",
+        )
+        return dict(parent)
+
+    def record(self, job, receipt):
+        """Guardar el recibo y, si completa su grupo, publicar los recibos de ventana."""
+        self.receipts[job["id"]] = receipt
+        group = _group(job)
+        if all(key in self.receipts for key in self.groups[group]):
+            self.publish(*group)
+
+    def publish(self, scope, window, arm, seed):
+        """Recibo walk-forward por mercado del predictor elegido para la semilla y ventana.
+
+        La calibración común usa el tramo anterior a la evaluación y la purga obliga a que
+        sus etiquetas maduren antes del final del tramo. Por eso la última etiqueta usada se
+        acota con el microsegundo anterior a la evaluación, también en una ventana trasladada.
+        """
+        _, receipt = self.selected(scope, window, arm, seed)
+        resolved = self.campaign["comparison_config"]["resolved_scopes"][scope]
+        folder = self.output / "windows" / scope / window / arm / f"seed-{seed}"
+        for market in resolved["markets"]:
+            record = dict(
+                kind=WINDOW_RECEIPT_KIND,
+                schema_version=1,
+                protocol=resolved["protocols"][market],
+                fold=resolved["windows"][window],
+                parent=receipt["parent"],
+                labels_used_until=0,
+                predictions={
+                    partition: value["markets"][market]
+                    for partition, value in receipt["predictions"].items()
+                    if market in value["markets"]
+                },
+            )
+            start, _ = read_window_receipt(record).segment("evaluation")
+            record["labels_used_until"] = start - 1
+            read_window_receipt(record)
+            path = folder / f"{market}.json"
+            if path.is_file():
+                _require(
+                    read_manifest(path, 1024**2)[0] == record,
+                    f"El recibo de {path.relative_to(self.output)} no corresponde a sus trabajos",
+                )
+            else:
+                atomic_json(path, record)
 
 
 def _summary(output, identity, jobs, receipts, status, **extra):
@@ -535,7 +624,7 @@ def run_campaign(path, views, output, *, executors=None, lease=None, stop=None):
                 "La salida sin identidad contiene artefactos ajenos",
             )
             atomic_json(marker, identity)
-        state = _Campaign(campaign, checked, output, identity, executors, None)
+        state = _Campaign(campaign, checked, output, identity, executors, None, jobs)
         uses_gpu = any(executors[j["model"], j["kind"]]["device"] == "cuda" for j in jobs)
         reservation = (lease or _gpu_lease)() if uses_gpu else nullcontext()
         signals = StopRequest() if stop is None else nullcontext(stop)
@@ -570,7 +659,7 @@ def _execute(state, jobs, pool, workers):
     def collect(done):
         for future in done:
             job, run, identity = running.pop(future)
-            state.receipts[job["id"]] = state.confirm(job, run, identity, future.result())
+            state.record(job, state.confirm(job, run, identity, future.result()))
 
     for job in jobs:
         while any(dep not in state.receipts for dep in job["depends"]) and running:
@@ -579,7 +668,7 @@ def _execute(state, jobs, pool, workers):
             raise Paused
         prepared, receipt = state.prepare(job)
         if receipt is not None:
-            state.receipts[job["id"]] = receipt
+            state.record(job, receipt)
             continue
         require_learning_allowed(f"el trabajo {job['id']}")
         run, identity = prepared
@@ -589,7 +678,7 @@ def _execute(state, jobs, pool, workers):
                 collect(wait(running, return_when=FIRST_COMPLETED).done)
             running[pool.submit(executor["run"], run)] = (job, run, identity)
             continue
-        state.receipts[job["id"]] = state.confirm(job, run, identity, executor["run"](run))
+        state.record(job, state.confirm(job, run, identity, executor["run"](run)))
     while running:
         collect(wait(running, return_when=FIRST_COMPLETED).done)
     _require(len(state.receipts) == len(jobs), "La campaña no confirmó todos sus trabajos")

@@ -8,6 +8,7 @@ pruebas admiten la campaña con una protección temporal permitida (`learning_do
 las pruebas del bloqueo declaran la suya.
 """
 
+import hashlib
 import json
 import threading
 import time
@@ -22,6 +23,7 @@ import pytest
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.environments.walk_forward_receipt import prediction_fingerprint, read_window_receipt
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import masked_campaign as engine
@@ -165,8 +167,15 @@ class Recorder:
                 predictions[partition] = dict(path=path.name, sha256=sha256(path))
             predictions["validation"] = dict(metrics=dict(session_mae=scores(run.job)))
             report = dict(status="completed", final_test_opened=False, predictions=predictions)
-            name = "carry.json" if run.job["kind"] == "carry" else "run.json"
-            atomic_json(run.folder / name, report)
+            if run.job["kind"] == "carry":
+                anchor = json.loads((run.anchor["folder"] / "run.json").read_text())
+                report["anchor"] = dict(checkpoint_sha256=anchor["checkpoint"]["sha256"])
+                atomic_json(run.folder / "carry.json", report)
+                return report
+            # Estado elegido ficticio: su huella identifica el padre del recibo de ventana.
+            (run.folder / "model.bin").write_text(run.job["id"])
+            report["checkpoint"] = dict(path="model.bin", sha256=sha256(run.folder / "model.bin"))
+            atomic_json(run.folder / "run.json", report)
             return report
         finally:
             with self.lock:
@@ -421,6 +430,85 @@ def test_sources_feed_the_walk_forward_comparison_with_the_same_rows(prepared, t
     assert sessions.num_rows > 0
     years = pa.compute.year(sessions["prediction_at"]).to_numpy()
     assert years.max() <= 2023
+
+
+def selected_fit(jobs, scope, window, arm, seed):
+    """Ajuste elegido según las puntuaciones fijadas: gru-10 o el menor identificador."""
+    if seed != 42:
+        return f"{scope}/{window}/{arm}/finalist-s{seed}"
+    searches = [
+        job
+        for job in jobs
+        if (job["scope"], job["window"], job["arm"], job["stage"]) == (scope, window, arm, "search")
+    ]
+    return min(searches, key=lambda job: (scores(job), job["id"]))["id"]
+
+
+def test_window_receipts_follow_the_selected_predictor_of_each_seed(prepared, tmp_path):
+    scopes = ("US", "US+CN")
+    campaign = write_campaign(tmp_path / "config", scopes=scopes)
+    views = {scope: prepared.views[scope] for scope in scopes}
+    output = tmp_path / "out"
+    assert run(campaign, views, output, Recorder())["status"] == "completed"
+    jobs = plan_campaign(load_campaign(campaign))
+    groups = {}
+    for job in jobs:
+        groups.setdefault((job["scope"], job["window"], job["arm"], job["seed"]), []).append(job)
+    written = sorted((output / "windows").rglob("*.json"))
+    # 19 ventanas US y 13 conjuntas con dos mercados, por brazo y semilla (3 + 1 + 3).
+    assert len(groups) == (19 + 13) * 7
+    assert len(written) == (19 + 2 * 13) * 7
+    for (scope, window, arm, seed), members in groups.items():
+        anchor = members[0]["anchor"]
+        parent = selected_fit(jobs, scope, anchor, arm, seed)
+        carry = [job["id"] for job in members if job["kind"] == "carry"]
+        source = carry[0] if carry else parent
+        receipt = json.loads((output / "jobs" / source / "receipt.json").read_text())
+        rows = 0
+        for market in comparison.SCOPES[scope]:
+            path = output / "windows" / scope / window / arm / f"seed-{seed}" / f"{market}.json"
+            record = json.loads(path.read_text())
+            checked = read_window_receipt(record)
+            assert checked.market == market and checked.fold == window
+            assert record["parent"] == dict(
+                id=parent, sha256=hashlib.sha256(parent.encode()).hexdigest()
+            )
+            start = np.datetime64(record["fold"]["evaluation"][0], "us").astype(np.int64)
+            assert record["labels_used_until"] == int(start) - 1
+            assert set(record["predictions"]) == {"calibration", "evaluation"}
+            for partition, declared in record["predictions"].items():
+                table = pq.read_table(output / receipt["predictions"][partition]["path"])
+                table = table.filter(pa.compute.equal(table["market"], market))
+                expected = prediction_fingerprint(
+                    table["prediction_at"].cast(pa.int64()).to_numpy(),
+                    table["asset_id"].to_pylist(),
+                    table["prediction"].to_numpy(),
+                )
+                assert (declared["rows"], declared["sha256"]) == expected
+                rows += declared["rows"] * (partition == "evaluation")
+        assert rows == receipt["predictions"]["evaluation"]["rows"]
+
+
+def test_window_receipts_are_checked_on_resume_and_need_the_anchor_state(prepared, tmp_path):
+    campaign = write_campaign(tmp_path / "config")
+    views = {"US": prepared.views["US"]}
+    output = tmp_path / "out"
+    run(campaign, views, output, Recorder())
+    path = output / "windows/US/fold-001/gru/seed-43/US.json"
+    record = json.loads(path.read_text())
+    atomic_json(path, record | dict(labels_used_until=record["labels_used_until"] - 1))
+    with pytest.raises(ValueError, match="no corresponde a sus trabajos"):
+        run(campaign, views, output, Recorder())
+
+    class OtherAnchor(Recorder):
+        def __call__(self, run_):
+            report = super().__call__(run_)
+            if run_.job["kind"] == "carry":
+                report["anchor"] = dict(checkpoint_sha256="0" * 64)
+            return report
+
+    with pytest.raises(ValueError, match="no parte del estado elegido"):
+        run(campaign, views, tmp_path / "other", OtherAnchor())
 
 
 def test_sources_list_the_arms_without_a_connected_trainer(prepared, tmp_path):
