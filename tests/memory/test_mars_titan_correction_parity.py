@@ -92,7 +92,7 @@ def test_final_matrix_matches_the_session_generation(shared_native, four_flow_so
 
 
 def core_pass(inference, sequence, rows=None):
-    """Recorrido manual de la inferencia del núcleo con el mismo orden de evento."""
+    """Recorrer a mano la inferencia del núcleo con el mismo orden dentro de cada evento."""
     state = _Pass(rows=rows)
     with torch.no_grad():
         for event in sequence:
@@ -118,7 +118,7 @@ def test_zero_rate_reproduces_the_core_chronological_inference(four_flow_source)
 
 
 def shifted(source, index, *, label=0.0, inputs=0.0):
-    """Eventos con las etiquetas o las entradas del instante `index` desplazadas."""
+    """Copiar los eventos desplazando las etiquetas o las entradas del instante `index`."""
     sequence = []
     for event in events(source):
         if event.at != moment(index):

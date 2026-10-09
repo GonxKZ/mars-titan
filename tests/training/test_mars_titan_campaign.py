@@ -305,7 +305,7 @@ def test_section_needs_the_titans_section_of_its_parent(tmp_path):
 
 
 def mars_campaign(folder):
-    """Campaña B reducida con Titans-MAC mac_online y MARS-TITAN M1, M3 y B6, una semilla."""
+    """Preparar una campaña B reducida, con una semilla, con Titans-MAC y M1, M3 y B6."""
     path = titans_campaign(folder)
     comparison = json.loads((folder / "comparison.json").read_text())
     for arm in RUN_ARMS:

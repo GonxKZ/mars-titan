@@ -6,24 +6,25 @@ una memoria asociativa lineal escrita solo con resultados maduros
 búsqueda de su receta fijan η, la receta fija λ y la campaña elige el caso con el MAE por
 sesión de validación, igual que en los demás brazos.
 
-Contrato por ventana:
+Cada ventana recibe la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en
+la misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
+`associative_memory`, la semilla y el caso elegido.
 
-- Entradas: la vista, la carpeta de la ventana Titans-MAC `mac_online` completada en la
-  misma vista y semilla (el padre), la receta de la corrección, la regla y la clave de
-  `associative_memory`, la semilla y el caso elegido.
-- Recorrido: cada tramo medido repite la inferencia cronológica del padre con su receta, su
-  calentamiento y la memoria rápida inicial. A empieza en cero en cada recorrido. En cada
-  evento se emiten primero las predicciones con la A confirmada antes del evento y después
-  se escriben las etiquetas que maduran en él, con el valor etiqueta menos predicción del
-  núcleo y en el orden canónico de decisión y flujo. Es el contrato de `FinancialSession`.
-- Salida: `run.json`, `selected.json` con el padre y la corrección, y un Parquet por tramo
-  con las columnas y cuantiles de `training.titans_walk_forward`. La corrección desplaza
-  todos los cuantiles emitidos en la misma cantidad que el punto.
-- Sin tramo de ajuste: el índice de entrenamiento no se construye ni se lee. Los errores que
-  escriben A proceden siempre de predicciones emitidas en el propio tramo, fuera del ajuste
-  del padre.
-- Reanudación: un tramo interrumpido se repite desde su inicio, porque A y la memoria rápida
-  se reinician en cada recorrido. Los tramos confirmados conservan su huella.
+Cada tramo medido repite la inferencia cronológica del padre con su receta, su calentamiento
+y la memoria rápida inicial, y A empieza en cero en cada recorrido. Dentro de un evento se
+emiten primero las predicciones con la A confirmada antes del evento y después se escriben
+las etiquetas que maduran en él, con el valor etiqueta menos predicción del núcleo y en el
+orden canónico de decisión y flujo. Es el mismo contrato que `FinancialSession`, y por eso
+las dos rutas pueden compararse bit a bit.
+
+La ventana guarda `run.json`, `selected.json` con el padre y la corrección, y un Parquet por
+tramo con las columnas y cuantiles de `training.titans_walk_forward`. La corrección desplaza
+todos los cuantiles emitidos en la misma cantidad que el punto, así que no cambia su anchura.
+
+No hay tramo de ajuste, de modo que el índice de entrenamiento no se construye ni se lee.
+Los errores que escriben A proceden siempre de predicciones emitidas en el propio tramo,
+nunca del ajuste del padre. Un tramo interrumpido se repite desde su inicio, porque A y la
+memoria rápida se reinician en cada recorrido, y los tramos confirmados conservan su huella.
 """
 
 import hashlib
@@ -83,9 +84,11 @@ KIND = "mars_titan_correction_window"
 CARRY_KIND = "mars_titan_correction_carried_predictions"
 SELECTED_KIND = "mars_titan_correction_selected_state"
 RECIPE = "mars_titan_mature_correction_v1"
-# η y λ son los únicos valores de la corrección. La receta fija unos y los casos los demás.
+# La corrección solo depende de η y λ. Cada valor se declara una sola vez, en la receta o en
+# los casos de búsqueda, para que elegir un caso nunca contradiga a la receta.
 SEARCHED = ("rate", "forgetting")
-# La combinación de un brazo declara la regla y la clave. η y λ llegan con el caso.
+# Un brazo solo declara la regla y la clave. η y λ se añaden con el caso elegido, porque la
+# campaña los busca y no forman parte de la definición del brazo.
 ARM_FIELDS = ("rule", "key")
 CARRIED = ("calibration", "evaluation")
 _RECIPE_FIELDS = {"schema_version", "recipe_name", "status", "recipe", "walk_forward", "pending"}
@@ -106,10 +109,11 @@ def _code():
 
 
 def load_correction_recipe(path):
-    """Leer la receta de B6: λ y η repartidos entre la receta y sus casos, sin solaparse.
+    """Leer la receta de B6 y comprobar cómo reparte η y λ entre la base y sus casos.
 
-    Cada caso sustituye los mismos valores de `SEARCHED`, que entonces no aparecen en
-    `recipe`, y entre ambos se declaran los dos. No hay épocas ni optimizador.
+    Todos los casos sustituyen los mismos valores de `SEARCHED`, que por eso no pueden
+    aparecer también en `recipe`, y entre ambos deben declararse los dos. La receta no tiene
+    épocas ni optimizador porque B6 no ajusta parámetros.
     """
     path = Path(path)
     _require(
@@ -145,7 +149,7 @@ def load_correction_recipe(path):
 
 
 def case_values(document, search_case):
-    """η y λ del caso elegido."""
+    """Devolver η y λ del caso elegido y rechazar un caso que la receta no declare."""
     cases = document["walk_forward"]["search_cases"]
     _require(
         isinstance(search_case, str) and search_case in cases,
@@ -155,7 +159,11 @@ def case_values(document, search_case):
 
 
 def arm_components(components, values):
-    """Combinación completa de un brazo B6: su regla y su clave con el η y el λ del caso."""
+    """Completar la combinación de un brazo B6 con el η y el λ del caso.
+
+    El brazo solo puede declarar la memoria asociativa. Con un banco añadido la ventana
+    mezclaría dos vías de memoria y A5 dejaría de aislar el efecto de la corrección.
+    """
     memory = components.get("associative_memory") if isinstance(components, dict) else None
     _require(
         isinstance(components, dict)
@@ -173,7 +181,8 @@ class CorrectionInference(ChronologicalInference):
     El cálculo del núcleo es exactamente el de `ChronologicalInference`. Tras emitir cada
     bloque se suma kᵀA con la A del evento anterior y, después de las predicciones del
     evento, se escriben las etiquetas que maduran en él. La memoria rápida del padre no
-    recibe ninguna etiqueta.
+    recibe ninguna etiqueta, porque la sorpresa asociativa de Titans y el error financiero
+    maduro son señales distintas.
     """
 
     def __init__(self, predictor, recipe, correction, codec, *, audit=False):
@@ -193,7 +202,8 @@ class CorrectionInference(ChronologicalInference):
         super().__init__(predictor, recipe, audit=audit)
         self.correction, self.codec = correction, codec
         self.memory = AssociativeMemory(correction.memory)
-        # Por decisión pendiente: predicción del núcleo y entradas de clave del codec.
+        # Para cada decisión pendiente se guardan la predicción del núcleo y la clave del codec.
+        # Así A se escribe con el error del núcleo y no con el de la emisión corregida.
         self._core = {}
         self._staged = []
 
@@ -209,7 +219,8 @@ class CorrectionInference(ChronologicalInference):
             decisions.extend(zip(cpu.flow_ids, cpu.prediction_at, strict=True))
             keys.append(self.codec.encode(cpu).key_inputs)
         inputs = np.concatenate(keys)
-        # A de la generación anterior para todo el evento, como en FinancialSession.
+        # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
+        # Lo que se escriba en este evento solo puede afectar a los siguientes.
         corrections = self.memory.read(self.correction.keys(inputs))[:, 0].tolist()
         for decision, key, correction in zip(decisions, inputs, corrections, strict=True):
             if decision in self._core:
@@ -220,7 +231,8 @@ class CorrectionInference(ChronologicalInference):
             if decision in run.levels:
                 run.levels[decision] = [level + correction for level in run.levels[decision]]
             if self.audit is not None:
-                # La auditoría del núcleo ya registró `prediction`. Esta es la emisión.
+                # La auditoría del núcleo ya registró la predicción sin corregir. Esta entrada
+                # guarda la emisión corregida para poder comparar las dos.
                 self.audit.append(("emitted", source.phase.partition, *decision, core + correction))
 
     def _labels(self, run, event, *, train):
@@ -231,7 +243,11 @@ class CorrectionInference(ChronologicalInference):
             self._staged.append((decision_at, flow, value - core, key))
 
     def _write(self, at):
-        """Escribir en A las etiquetas del evento después de sus predicciones."""
+        """Escribir en A las etiquetas del evento cuando sus predicciones ya se han emitido.
+
+        Las filas se ordenan por decisión y flujo antes de escribir. La regla delta escribe
+        fila a fila, así que otro orden cambiaría A aunque las etiquetas fueran las mismas.
+        """
         if not self._staged:
             return
         staged, self._staged = sorted(self._staged, key=lambda item: item[:2]), []
@@ -250,7 +266,11 @@ class CorrectionInference(ChronologicalInference):
         self._core.clear()
 
     def evaluate(self, source, *, stop=None, rows=None):
-        """Recorrer un tramo medido con A en cero y la memoria rápida inicial."""
+        """Recorrer un tramo medido empezando con A en cero y la memoria rápida inicial.
+
+        El reinicio evita que un tramo dependa de los anteriores, y es lo que permite
+        repetirlo desde el principio tras una interrupción.
+        """
         if (
             type(source) is not FinancialObservationSource
             or source.phase.partition not in PREDICTED
@@ -261,7 +281,11 @@ class CorrectionInference(ChronologicalInference):
         return self._pass(source, events, stop=stop, rows=rows)
 
     def _pass(self, source, events, *, stop=None, rows=None):
-        """Recorrer eventos en orden. De `source` solo se usa su fase."""
+        """Recorrer los eventos en su orden temporal.
+
+        De `source` solo se usa la fase, así que las pruebas pueden entregar eventos
+        construidos a mano con el mismo contrato.
+        """
         run = _Pass(rows=rows)
         self.memory = AssociativeMemory(self.correction.memory)
         self._core, self._staged = {}, []
@@ -292,7 +316,11 @@ class CorrectionInference(ChronologicalInference):
 
 
 def correction_memory_policy(warmup_months):
-    """Política del padre ampliada con A, que también se reinicia en cada recorrido."""
+    """Describir la política de memoria del padre ampliada con A.
+
+    A también se reinicia en cada recorrido, y el informe lo deja escrito para que se vea
+    que calibración y evaluación no heredan el estado de validación.
+    """
     return dict(
         memory_policy(warmup_months),
         associative="zero_at_each_pass_then_mature_labels_after_the_event_predictions",
@@ -303,7 +331,11 @@ def correction_memory_policy(warmup_months):
 
 
 def _parent_recipe(parent_report):
-    """Receta cronológica del padre: los mismos bloques y truncamiento que sus predicciones."""
+    """Recuperar la receta cronológica con la que predijo el padre.
+
+    Bloques y truncamiento deben ser los mismos, porque con otros el núcleo de B6 dejaría de
+    coincidir con el del brazo Titans-MAC.
+    """
     identity, request = parent_report["identity"], parent_report["request"]
     return identity["recipe"], case_recipe(identity["recipe"], request.get("search_case"))
 
@@ -384,7 +416,8 @@ def run_correction_window(
     _require(type(seed) is int and 0 <= seed < 2**32, "La semilla no es válida")
     document = load_correction_recipe(recipe)
     combination = arm_components(components, case_values(document, search_case))
-    # La combinación se valida contra la declaración antes de abrir ninguna fuente.
+    # La combinación se valida contra la declaración antes de abrir ninguna fuente, para que
+    # un brazo mal declarado falle sin crear la carpeta de salida.
     checked, correction = check_components(load_declaration(), combination)
     _require(
         correction is not None and set(checked) == {"associative_memory"},
@@ -524,8 +557,9 @@ def run_correction_window(
 def carry_correction(anchor, anchor_view, view, output, *, device="cuda:0", stop=None):
     """Predecir una ventana posterior con el padre y el η y λ elegidos en el ancla.
 
-    Es la pieza de la variante B. No selecciona nada. Cada tramo trasladado empieza con A en
-    cero, la memoria rápida inicial y su propio calentamiento, como en el ancla.
+    Es la pieza de la variante B, así que no selecciona nada y usa el caso que eligió la
+    validación del ancla. Cada tramo trasladado empieza con A en cero, la memoria rápida
+    inicial y su propio calentamiento, como en el ancla.
     """
     from .carried_predictions import carried_window
     from .mars_titan_walk_forward import _cuda, _frozen_parent

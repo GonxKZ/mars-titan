@@ -170,7 +170,8 @@ def validated_job_seconds(job, rows, rate, epochs):
     if job["kind"] != FIT:
         return (rows["calibration"] + rows["evaluation"]) / inference
     if rate["train"] is None:
-        # Sin ajuste, como la corrección B6: una predicción de cada tramo medido.
+        # Un trabajo sin ajuste, como la corrección B6, predice una sola vez cada tramo medido,
+        # sin épocas ni validaciones repetidas.
         return (rows["validation"] + rows["calibration"] + rows["evaluation"]) / inference
     predicted = (epochs + 2) * rows["validation"] + rows["calibration"] + rows["evaluation"]
     return epochs * rows["train"] / rate["train"] + predicted / inference

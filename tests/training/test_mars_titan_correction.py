@@ -1,9 +1,9 @@
 """Ventana walk-forward de la corrección B6 sobre la ventana Titans-MAC elegida.
 
 El padre es una ventana `mac_online` ajustada con el registrador de gradientes, así que sus
-parámetros son los iniciales. B6 no tiene parámetros: se comprueban la paridad con el padre
-cuando η = 0, las filas, el estado elegido, la reanudación tras una parada, que el tramo de
-entrenamiento no se abre y los rechazos previos a leer fuentes.
+parámetros son los iniciales. Como B6 tampoco tiene parámetros, se comprueban la paridad con
+el padre cuando η = 0, las filas, el estado elegido, la reanudación tras una parada, que el
+tramo de entrenamiento no se abre y los rechazos previos a leer fuentes.
 """
 
 import json
@@ -120,7 +120,7 @@ def test_declared_recipe_shares_forgetting_and_searches_two_rates():
 
 
 def fresh_parent_rows(base, partition):
-    """Filas de la inferencia cronológica del padre recargado, sin corrección."""
+    """Obtener las filas de la inferencia cronológica del padre recargado, sin corrección."""
     report = json.loads((base["parent"] / "run.json").read_text())
     dataset = CorpusDataset(base["view"], input_policy=HISTORICAL_MASKED)
     titans, chronological = mc._parent_recipe(report)
@@ -205,7 +205,7 @@ def test_completed_window_is_returned_after_checking_its_rows(base):
 
 
 class StopAfter:
-    """Pedir la parada en la consulta número `calls`, dentro de un tramo."""
+    """Pedir la parada en la consulta número `calls`, es decir, en mitad de un tramo."""
 
     def __init__(self, calls):
         self.calls, self.seen = calls, 0
@@ -323,7 +323,7 @@ def test_changed_request_is_detected_on_resume(base, tmp_path):
 
 
 def macro_blocks(view, phase, root):
-    """Bloques macro de los eventos de un tramo leídos con un corpus recién abierto."""
+    """Leer con un corpus recién abierto los bloques macro de los eventos de un tramo."""
     dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
     (source,) = wf._sources(dataset, {phase.partition: phase}, root).values()
     return [
@@ -334,10 +334,10 @@ def macro_blocks(view, phase, root):
 
 
 def test_masked_reader_never_substitutes_the_macro_block(base, monkeypatch):
-    """Frontera 2: la edición con máscaras no sustituye macro con `TemporalInputs.lookup`.
+    """Comprobar la frontera 2, que la edición con máscaras no sustituya el bloque macro.
 
-    Se falsea la sustitución con valores imposibles. Si el lector la aplicara, los bloques
-    macro de las observaciones de la ventana cambiarían.
+    Se falsea la sustitución de `TemporalInputs.lookup` con valores imposibles. Si el lector
+    la aplicara, los bloques macro de las observaciones de la ventana cambiarían.
     """
     from mars_titan.training.temporal_corpus import TemporalInputs
 
@@ -359,5 +359,6 @@ def test_masked_reader_never_substitutes_the_macro_block(base, monkeypatch):
     assert len(observed) == len(expected) > 0
     assert all(np.array_equal(a, b) for a, b in zip(observed, expected, strict=True))
     assert all(not np.any(block == 1000.0) for block in observed)
-    # El contrato temporal sigue activo: se consulta para la elegibilidad de las etiquetas.
+    # El contrato temporal sigue activo, porque se consulta para decidir qué etiquetas son
+    # elegibles.
     assert calls

@@ -829,7 +829,8 @@ def mars_titan_carry(run, *, device="cuda:0"):
     from .masked_campaign import Paused as CampaignPaused
 
     report, _ = read_manifest(Path(run.anchor["folder"]) / "run.json", 16 * 1024**2)
-    # El ancla decide el recorrido: una ventana B6 no tiene lector que trasladar.
+    # El tipo del ancla decide el recorrido. Una ventana B6 no tiene lector que trasladar, así
+    # que se traslada con su propia función.
     carry = carry_correction if report.get("kind") == CORRECTION_KIND else carry_mars_titan
     try:
         with unfused_attention():

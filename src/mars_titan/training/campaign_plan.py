@@ -81,8 +81,9 @@ MARS_RECIPE = "mars_titan_episodic_readout_chronological_v1"
 MARS_SEARCHED = TITANS_SEARCHED
 # Escrituras con lector que ajustar. Las demás combinaciones se rechazan al ejecutar.
 MARS_BANKS = ("m0_no_bank", "m1", "m2", "m3")
-# Corrección B6 sin lector. Repite mars_titan_correction.RECIPE y SEARCHED y las reglas y
-# claves de memory.associative_memory sin importar PyTorch. Una prueba lo fija.
+# Nombres de la corrección B6, que no tiene lector. Repiten mars_titan_correction.RECIPE y
+# SEARCHED y las reglas y claves de memory.associative_memory porque el plan no debe importar
+# PyTorch. Una prueba comprueba que siguen coincidiendo.
 MARS_CORRECTION_RECIPE = "mars_titan_mature_correction_v1"
 MARS_CORRECTION_SEARCHED = ("rate", "forgetting")
 MARS_CORRECTION_RULES = ("delta", "proximal")
@@ -219,7 +220,8 @@ _TABULAR = {"config", "arms", "cpu_workers"}
 _EPISODIC = {"recipe", "arms", "search_seed"}
 _TITANS = {"recipe", "arms", "search_seed"}
 _MARS = {"recipe", "arms", "pending_arms", "parent_arm", "search_seed"}
-# Receta de la corrección B6, obligatoria solo si algún brazo la declara.
+# La receta de la corrección B6 solo se exige cuando algún brazo usa la memoria asociativa.
+# Sin ese brazo sobraría, y el plan la rechaza.
 _MARS_CORRECTION = "correction_recipe"
 _CM = {"declaration", "search_seed"}
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
@@ -603,12 +605,21 @@ def _mars_titan(section, arms, rule, policy, base, count, titans, rules=None):
 
 
 def _reader_arm(components):
-    """Brazo con lector: una escritura del banco y sin corrección B6, que no admite banco."""
+    """Decidir si el brazo ajusta un lector episódico sobre el padre.
+
+    Basta con que declare una escritura del banco y no use la corrección B6. B6 no admite
+    banco, así que una combinación con los dos no se trata como lector y la rechaza su propia
+    comprobación.
+    """
     return components.get("episodic_bank") in MARS_BANKS and "associative_memory" not in components
 
 
 def _correction_arm(components):
-    """Brazo B6: solo `associative_memory` con una regla y una clave declaradas."""
+    """Decidir si el brazo es una corrección B6.
+
+    Solo lo es si declara únicamente `associative_memory` con una regla y una clave
+    conocidas. Cualquier otro campo daría una combinación que la ventana B6 no sabe ejecutar.
+    """
     memory = components.get("associative_memory")
     return (
         set(components) == {"associative_memory"}
@@ -620,7 +631,11 @@ def _correction_arm(components):
 
 
 def _correction_cases(recipe, count):
-    """Casos de η y λ de la corrección B6, tantos como índices ajusta cada referencia."""
+    """Leer los casos de η y λ de la corrección B6.
+
+    Deben ser tantos como los índices que ajusta cada referencia neuronal, para que B6 no
+    disponga de más búsqueda que los brazos con los que se compara.
+    """
     cases = (
         (recipe.get("walk_forward") or {}).get("search_cases") if isinstance(recipe, dict) else None
     )

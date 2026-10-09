@@ -864,7 +864,8 @@ def test_mars_measurement_walks_the_correction_without_a_reader_or_steps(
     assert record["declared_option"] == "recipe"
     assert record["options"] == {"recipe": dict(train=None, peak_vram_allocated_bytes=0)}
     assert record["inference"] > 0 and record["measured_inference_rows"] > 0
-    # Los eventos de ajuste no calientan: A recibe etiquetas maduras durante la medida.
+    # Los eventos del tramo de ajuste no tienen calentamiento, así que A recibe etiquetas
+    # maduras durante toda la medida.
     assert record["associative_writes"] > 0
     assert record["measured_case"] == "eta5e-2"
     assert record["shared_by_cases"] == ["eta5e-2", "eta25e-2"]
