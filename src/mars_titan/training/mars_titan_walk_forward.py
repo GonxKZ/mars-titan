@@ -64,6 +64,7 @@ from .titans_walk_forward import (
     _verify,
     checked_tables,
     memory_policy,
+    unfused_attention,
     view_protocol,
     walk_forward_options,
     window_phases,
@@ -576,18 +577,20 @@ def mars_titan_fit(run, *, device="cuda:0", optimizer_factory=None):
     from .masked_campaign import Paused as CampaignPaused
 
     case = _campaign_case(run)
-    report = run_mars_titan_window(
-        run.view,
-        run.parent["folder"],
-        case["recipe"],
-        components=case["components"],
-        seed=case["seed"],
-        output=run.folder,
-        search_case=case["search_case"],
-        device=device,
-        stop=run.stop,
-        optimizer_factory=optimizer_factory,
-    )
+    # El recorrido cronológico exige fastpath=False solo mientras dura el trabajo.
+    with unfused_attention():
+        report = run_mars_titan_window(
+            run.view,
+            run.parent["folder"],
+            case["recipe"],
+            components=case["components"],
+            seed=case["seed"],
+            output=run.folder,
+            search_case=case["search_case"],
+            device=device,
+            stop=run.stop,
+            optimizer_factory=optimizer_factory,
+        )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
@@ -604,13 +607,14 @@ def mars_titan_carry(run, *, device="cuda:0"):
     from .masked_campaign import Paused as CampaignPaused
 
     try:
-        return carry_mars_titan(
-            run.anchor["folder"],
-            run.anchor["view"],
-            run.view,
-            run.folder,
-            device=device,
-            stop=run.stop,
-        )
+        with unfused_attention():
+            return carry_mars_titan(
+                run.anchor["folder"],
+                run.anchor["view"],
+                run.view,
+                run.folder,
+                device=device,
+                stop=run.stop,
+            )
     except Paused as error:
         raise CampaignPaused from error

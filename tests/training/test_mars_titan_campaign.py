@@ -242,8 +242,9 @@ def campaign_run(tmp_path_factory, permitted):
         executors[model, "carry"] = dict(
             executors[model, "carry"], run=partial(carry, device="cpu")
         )
+    # Los ejecutores declaran fastpath=False durante cada trabajo y restauran el del proceso.
     previous = torch.backends.mha.get_fastpath_enabled()
-    torch.backends.mha.set_fastpath_enabled(False)
+    torch.backends.mha.set_fastpath_enabled(True)
     try:
         summary = engine.run_campaign(
             campaign,
@@ -253,6 +254,7 @@ def campaign_run(tmp_path_factory, permitted):
             lease=nullcontext,
             stop=StopAfter(root / "out" / "jobs" / last["id"] / "receipt.json"),
         )
+        assert torch.backends.mha.get_fastpath_enabled()
     finally:
         torch.backends.mha.set_fastpath_enabled(previous)
     return SimpleNamespace(
