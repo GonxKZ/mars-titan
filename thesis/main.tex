@@ -141,7 +141,9 @@ prioridad como candidato separado. Su objetivo terminal y sus gradientes están
 comprobados. El colector conserva episodios completos, la política de recogida,
 el reloj original y la historia GRU, con recuperación contrastada. Un
 controlador optativo separa actor, optimizador y referencia, sin haber
-ejecutado ninguna actualización. La alternancia entre referencias ajustadas
+ejecutado ninguna actualización. La orden nativa \texttt{mars-titan-klpo}
+recoge oleadas completas sobre cintas de precios reconstruidos y selecciona en
+validación, comprobada sin pasos de optimizador. La alternancia entre referencias ajustadas
 sigue pendiente.
 El ajuste de una predicción y la política financiera secuencial necesitan
 objetivos distintos. La comparación científica sigue bloqueada y no hay un
@@ -225,9 +227,10 @@ brazos postentrenados \\
 Políticas & Dos niveles sobre cintas de precios reconstruidos. KLPO terminal
 y tres referencias sobre los 22 predictores de la declaración ampliada, y PPO
 y Double DQN sobre el Transformer compacto y \texttt{mac\_online}. En A,
-2.160 ajustes y 1.584 referencias &
-Cintas reconstruidas en \texttt{mars-titan-ppo} y \texttt{mars-titan-sim} y
-una orden financiera de KLPO \\
+2.160 ajustes y 1.584 referencias. Ejecutores nativos de PPO, Double DQN y
+KLPO sobre esas cintas, comprobados sin aprendizaje &
+Compilar los ejecutores con LibTorch CUDA y medir su rendimiento. Ningún
+ajuste ejecutado \\
 Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
 común por mercado y estratos descriptivos por presencia de noticias y
 fundamentales & Aplicarla a predicciones reales \\
