@@ -45,7 +45,7 @@ La caché de validación de la selección se escribe en el mismo disco. Ocupa `V
 
 La [configuración histórica](../../configs/baselines/tabular-historical-masked.json) mantiene la rejilla, la selección y las semillas de la configuración de convergencia estadounidense. Añade la política y un presupuesto de páginas de 32 GiB. Ese valor cubre la estimación densa con 256 bins incluso con la cota superior de filas, pero no la cota global. Si la hipótesis densa fuera falsa, la guardia detendría la construcción y habría que revisar el presupuesto con la medida real.
 
-El 9 de octubre `df` mostraba unos 100 GB libres en el disco del proyecto. Se espera que la codificación en curso ocupe unos 50 GB más. Con 32 GiB de páginas, unos 8,6 GB de validación, tres modelos de hasta 128 MiB y las predicciones en Parquet, el margen sería pequeño. La comprobación previa vuelve a medir el disco libre justo antes de cada intento.
+El 9 de octubre `df` mostraba unos 100 GB libres en el disco del proyecto, a la espera de que terminara la codificación. Esa edición terminó el mismo día y sus muestras ocupan 57,5 GB ([recibo](../../reports/data/historical-edition-v3-targets-20261009.json)). Con 32 GiB de páginas, unos 8,6 GB de validación, tres modelos de hasta 128 MiB y las predicciones en Parquet, el margen sería pequeño. La comprobación previa vuelve a medir el disco libre justo antes de cada intento, y el presupuesto de disco de la campaña A se está preparando en [#363](https://github.com/GonxKZ/mars-titan/issues/363).
 
 ### Memoria en modo disco y coste
 
