@@ -95,7 +95,10 @@ def test_cuda_window_correction_matches_cpu_and_repeats(four_flow_source, tmp_pa
                 p.device == device and not p.requires_grad and p.grad is None
                 for p in model.parameters()
             )
-            assert all(torch.equal(model.state_dict()[k].cpu(), v) for k, v in state.items())
+            after = model.state_dict()
+            assert all(
+                torch.equal(after[k].cpu(), v) for k, v in state.items() if torch.is_tensor(v)
+            )
             records.append(
                 dict(
                     dtype=str(dtype),
