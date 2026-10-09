@@ -18,6 +18,7 @@ from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.posttraining import campaign_stage
 from mars_titan.posttraining import chronological_matrix as cm
 from tests.posttraining.campaign_fixture import CpuLease
+from tests.posttraining.real_only import real_data_only
 from tests.training.test_titans_campaign import (
     ARM,
     campaign_run,  # noqa: F401
@@ -91,7 +92,7 @@ def stage_run(campaign_run, tmp_path_factory, two_cases):  # noqa: F811
     folder = tmp_path_factory.mktemp("chronological-stage")
     path = write_stage(campaign_run, folder / "config")
     StageRecorder.made.clear()
-    with pytest.MonkeyPatch.context() as patch:
+    with pytest.MonkeyPatch.context() as patch, real_data_only():
         patch.setattr(torch.optim, "AdamW", StageRecorder)
         summary = campaign_stage.run_stage(
             path,

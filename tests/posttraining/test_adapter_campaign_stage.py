@@ -25,6 +25,7 @@ from mars_titan.models.quantile_head import QUANTILE_COLUMNS, QUANTILE_HEAD
 from mars_titan.posttraining import adapter_matrix, campaign_stage, matrix_runs
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
+from tests.posttraining.real_only import real_data_only
 
 CONFIGS = Path("configs/posttraining")
 FINAL_TEST = int(np.datetime64("2024-01-01", "us").astype(np.int64))
@@ -146,15 +147,17 @@ def base_b(tmp_path_factory):
 
 
 def run(base, output, stop=None, stage=None):
-    return campaign_stage.run_stage(
-        stage or base.stage,
-        base.views,
-        base.output,
-        output,
-        lease=CpuLease,
-        stop=stop or SimpleNamespace(requested=False),
-        device="cpu",
-    )
+    # Sin cola, preparación, aumento ni mundos del postentrenamiento emparejado anterior.
+    with real_data_only():
+        return campaign_stage.run_stage(
+            stage or base.stage,
+            base.views,
+            base.output,
+            output,
+            lease=CpuLease,
+            stop=stop or SimpleNamespace(requested=False),
+            device="cpu",
+        )
 
 
 def receipts(output):

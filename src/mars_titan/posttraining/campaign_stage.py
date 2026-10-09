@@ -23,6 +23,11 @@ walk-forward de cada mercado. El padre congelado no genera trabajos: sus predicc
 son las de la campaña base. Los trabajos confirmados no se repiten y los pendientes se
 reanudan desde su punto de control.
 
+Solo se aprende con datos reales de la edición: las vistas de la campaña base, con su
+edición verificada por mercado, y la división walk-forward de cada ventana. La etapa
+rechaza cualquier declaración de condiciones remuestreadas o sintéticas, aumento o mundos
+de episodios, y no importa los módulos del postentrenamiento emparejado anterior.
+
 Con la matriz de versión 3, la etapa admite también los brazos con entrenador cronológico
 (Titans-MAC, MARS-TITAN, CM-v1 y la GRU candidata) cuya sección declara la campaña. Sus
 casos salen de `chronological_matrix` y se ajustan con los ejecutores de
@@ -47,6 +52,7 @@ from pathlib import Path
 import numpy as np
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.walk_forward_receipt import (
     RECEIPT_KIND as WINDOW_RECEIPT_KIND,
@@ -100,6 +106,27 @@ _FIELDS = {
 }
 _LIMITS = {"max_training_jobs", "max_prediction_jobs"}
 COMPARED = masked_campaign.COMPARED
+# Solo datos reales. Claves y condiciones del postentrenamiento emparejado de #128 (episodios
+# remuestreados o sintéticos, aumento y mundos generados) que la etapa rechaza.
+REAL, TRAINING_DATA = "real", "real_walk_forward_only"
+NOT_REAL_KEYS = frozenset(
+    {
+        "condition",
+        "conditions",
+        "augmentation",
+        "augmentations",
+        "resampling",
+        "synthetic",
+        "episodes",
+        "world",
+        "worlds",
+    }
+)
+NOT_REAL_VALUES = frozenset({"real_resampled", "real_synthetic"})
+REAL_ONLY = (
+    "La etapa de adaptadores solo aprende con datos reales de la edición: no admite "
+    "condiciones remuestreadas o sintéticas, aumento ni mundos de episodios"
+)
 
 
 class Paused(Exception):
@@ -109,6 +136,15 @@ class Paused(Exception):
 def _require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def declares_other_data(value):
+    """Si una declaración contiene condiciones, aumento o mundos ajenos a los datos reales."""
+    if isinstance(value, dict):
+        return any(key in NOT_REAL_KEYS or declares_other_data(v) for key, v in value.items())
+    if isinstance(value, list):
+        return any(declares_other_data(item) for item in value)
+    return isinstance(value, str) and value in NOT_REAL_VALUES
 
 
 def _names(values, allowed, label):
@@ -126,6 +162,7 @@ def load_stage(path):
     """Validar la etapa, su campaña y su matriz sin leer datos."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
+    _require(not declares_other_data(config), REAL_ONLY)
     _require(
         isinstance(config, dict)
         and set(config) == _FIELDS
@@ -140,7 +177,9 @@ def load_stage(path):
     _reading(config["cohort_reading"])
     base = path.parent
     campaign = load_campaign((base / config["campaign"]).resolve())
+    _require(campaign["input_policy"] == HISTORICAL_MASKED, REAL_ONLY)
     matrix_path = (base / config["matrix"]).resolve()
+    _require(not declares_other_data(read_manifest(matrix_path, 1024**2)[0]), REAL_ONLY)
     matrix, matrix_sha256 = adapter_matrix.read_matrix(matrix_path)
     # Todos los brazos neuronales de la campaña emiten cuantiles y se ajustan con pinball.
     adapter_matrix.objectives(matrix, QUANTILE_HEAD)
@@ -268,6 +307,7 @@ def plan_stage(stage):
                         bank=spec["bank"],
                     )
                 for item in cases:
+                    _require(item["case"].get("condition", REAL) == REAL, REAL_ONLY)
                     seed, point = item["case"]["seed"], item["id"].split("/", 1)[1]
                     arm = arm_name(base_arm, point)
                     kind = FIT if row["trained"] else CARRY
@@ -939,6 +979,22 @@ class _Stage:
         return "completed"
 
 
+def real_views(stage, views):
+    """Ediciones por mercado de las vistas reales que la campaña base ya verificó."""
+    resolved = stage["campaign"]["comparison_config"]["resolved_scopes"]
+    editions = {}
+    for scope in stage["scopes"]:
+        edition = views[scope].get("edition")
+        _require(
+            isinstance(edition, dict)
+            and set(edition) == set(resolved[scope]["markets"])
+            and all(isinstance(value, str) and len(value) == 64 for value in edition.values()),
+            f"Las vistas de {scope} no conservan la edición verificada de cada mercado",
+        )
+        editions[scope] = dict(edition)
+    return editions
+
+
 def _identity(stage, views):
     campaign = stage["campaign"]
     return dict(
@@ -948,7 +1004,9 @@ def _identity(stage, views):
         campaign_sha256=campaign["sha256"],
         matrix_sha256=stage["matrix_sha256"],
         input_policy=campaign["input_policy"],
+        training_data=TRAINING_DATA,
         variant=campaign["variant"],
+        editions=real_views(stage, views),
         views={
             scope: {window: value["sha256"] for window, value in record["windows"].items()}
             for scope, record in views.items()
