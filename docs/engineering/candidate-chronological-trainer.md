@@ -90,15 +90,48 @@ La GRU de ATen en CPU no produce los mismos bits cuando sus pesos requieren grad
 
 ## Coste y memoria medidos
 
-Medidas en CPU con dos hilos, FP32, dimensiones reales, 128 filas, 16 episodios y K = 1, con la codificación histórica y otros procesos en curso:
+Una sonda en CPU con dos hilos, FP32, dimensiones reales, 128 filas, 16 episodios y K = 1 midió 0,055 s de forward con grafo, de 0,074 a 0,079 s de backward y 264 KB de tensores guardados por fila (almacenamientos únicos sin parámetros). Con la receta de #389 cada predicción conserva su grafo hasta el paso del tramo, que llega tras `update_instants` instantes. El pico crece con los activos de cada instante multiplicados por esos 8 instantes.
 
-| Medida | Valor |
-| --- | --- |
-| Forward con grafo | 0,055 s |
-| Backward | 0,074 a 0,079 s |
-| Tensores guardados para el backward, almacenamientos únicos sin parámetros | 264 KB por fila |
+## Memoria del tramo: acumulación y recomputación
 
-Con 128 activos y 8 instantes por tramo, los grafos vivos ocupan unos 270 MB. Con el universo completo (unos 5.000 activos) serían unos 10,6 GB, que no caben en los 8 GB de la GPU. Antes de escalar habría que reducir la cadencia o recalcular cada predicción al madurar su etiqueta. Son cifras de una sonda, no un perfil del recorrido completo.
+La receta declara dos opciones, desactivadas por defecto para conservar la paridad exacta con #389:
+
+| Opción | Qué hace | Identidad y gradiente |
+| --- | --- | --- |
+| `accumulation_rows` | Al madurar las etiquetas de un evento calcula el backward de su pérdida sumada, por grupos de bloques de predicción completos de hasta ese número de filas (como mínimo `block_rows`). El paso del tramo divide el gradiente por el total de etiquetas, recorta y llama una vez al optimizador | Cambia `loss_reduction`. Solo cambian el orden de las sumas y la división final |
+| `recompute` | Ejecuta cada bloque de ajuste con `torch.utils.checkpoint` sin reentrada. Guarda sus entradas y repite el forward durante el backward con los mismos parámetros, la misma instantánea y el mismo K | Cambia la receta. En las comprobaciones el gradiente coincide bit a bit con #389 |
+
+En este entrenador el forward ocurre al predecir y la pérdida solo existe cuando madura la etiqueta, en un evento posterior. Por eso la acumulación agrupa al madurar los bloques formados al predecir, y el forward por bloques de `block_rows` filas no cambia. Cada grupo es una ponderación de sus filas sobre el total del tramo, que solo se conoce en el paso, así que la división se aplica una vez al gradiente acumulado. Un grupo nunca reparte un bloque, para no recorrer su grafo dos veces. Las predicciones, la instantánea de cada instante y la admisión al final del evento no cambian, y las pruebas lo comprueban sobre el registro de auditoría.
+
+Un bloque solo libera su grafo cuando han madurado todas sus filas. Mientras tanto se conserva con `retain_graph`, de modo que una etiqueta que madure más tarde sigue entrando en la pérdida. La contrapartida es que una fila sin etiqueta (varianza de mercado nula, sesión siguiente ausente o historia insuficiente) retiene su bloque completo hasta el paso del tramo. En el corpus técnico una sola fila sin etiqueta mantuvo vivo un bloque de 128 filas. Liberar antes el grafo exigiría saber al predecir si la etiqueta llegará, y eso depende de datos posteriores. La recomputación evita el problema, porque un bloque retenido solo conserva sus entradas.
+
+### Medidas en CPU
+
+[`candidate_memory_check.py`](../../tests/training/candidate_memory_check.py) recorre una época completa sin pasos sobre el corpus técnico sintético con dimensiones reales (precios 64×5, noticias 384, gráficos 512, 45 fundamentales y 420 macro), FP32, `update_instants` 8, `block_rows` 128 y un banco de 1.024 episodios. El pico es el máximo neto del asignador de ATen en CPU durante la ejecución, leído de los eventos de memoria del perfilador de PyTorch. Incluye activaciones, entradas, recomputaciones, gradientes y temporales, pero no la memoria de Arrow ni de NumPy.
+
+| Configuración | 128 activos | 256 activos | Pendiente por activo |
+| --- | --- | --- | --- |
+| Tramo completo (#389) | 293,5 MB | 564,5 MB | 2,12 MB |
+| Acumulación con 128 o 1.024 filas | 88,8 MB | 122,8 MB | 0,27 MB |
+| Recomputación | 74,1 MB | 82,4 MB | 65 KB |
+| Acumulación y recomputación | 59,3 MB | 60,4 MB | 8 KB |
+
+Los picos de la acumulación incluyen el bloque retenido por la fila sin etiqueta del corpus. El tamaño de grupo no cambia el pico, porque lo determinan los bloques vivos del instante. Frente al tramo completo, la mayor diferencia absoluta del gradiente fue 6,0e-8 con la acumulación, sobre un gradiente máximo de 0,1. Con la recomputación los gradientes coincidieron bit a bit en ambos tamaños.
+
+El coste de la recomputación se midió sobre un bloque de 128 filas, con la mediana de cinco repeticiones: 0,055 s de forward y backward sin recomputar frente a 0,095 s con ella, y 0,021 s de forward sin grafo. Una medición anterior dio 0,068 s frente a 0,093 s. Ambas se hicieron con otros procesos en curso, así que el sobrecoste del ajuste queda entre un 36 % y un 74 %. Los tiempos de la época completa (de 16 a 40 s según el tamaño) incluyen validación, predicciones y lectura, y su dispersión no permite atribuir diferencias.
+
+### Extrapolación a la GPU
+
+Con N filas por evento, las medidas anteriores dan aproximadamente:
+
+| Configuración | Memoria en CPU | N = 5.676 |
+| --- | --- | --- |
+| Tramo completo | 23 MB + 2,12 MB × N | 12,0 GB |
+| Acumulación sin bloques retenidos | 21 MB + 264 KB × N | 1,5 GB |
+| Recomputación | 66 MB + 65 KB × N | 0,43 GB |
+| Acumulación y recomputación | 58 MB + 8 KB × N | 0,11 GB |
+
+N = 5.676 es una cota superior, porque cada evento contiene un solo mercado. Es una estimación hasta medir en `cuda:0`. La GRU de cuDNN guarda sus propios búferes, el contexto CUDA y los espacios de trabajo de cuBLAS y cuDNN no se cuentan como tensores y el asignador con caché fragmenta la memoria. Con esas salvedades, el tramo completo no cabe en los 8 GB de la RTX 4070 Max-Q, la acumulación cabe si pocos bloques quedan retenidos y la recomputación cabe con margen cualquiera que sea el patrón de etiquetas.
 
 ## Comprobaciones
 
@@ -114,7 +147,15 @@ Las pruebas de `tests/training/test_candidate_run.py` usan el corpus técnico cr
 - Escritura de las predicciones de validación, calibración y evaluación con el fixture temporal histórico, cada una dentro de su partición.
 - Rechazo con la protección temporal bloqueada antes de crear salidas, con el optimizador de registro y con AdamW, y rechazo de políticas estrictas, vistas de otro corpus, particiones mal declaradas, parámetros congelados, ámbitos vacíos y cambios de receta al reanudar.
 
-El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [recibo técnico](../../reports/engineering/candidate-chronological-trainer-20261009.json).
+`tests/training/test_candidate_accumulation.py` comprueba las dos opciones de memoria:
+
+- Gradientes de la acumulación con 2, 4 y 1.024 filas iguales a los del tramo completo en FP64 (rtol 1e-12, atol 1e-15, con una diferencia máxima observada de 4,2e-17) y en FP32 (rtol 1e-5, atol 1e-7, con 7,5e-9), y gradientes de la recomputación iguales bit a bit. Las predicciones, etiquetas, admisiones y pasos del registro coinciden en todos los casos.
+- Un bloque cuyas filas maduran en eventos distintos conserva su grafo hasta la última, con y sin recomputación, y los grupos nunca reparten un bloque.
+- Las filas de un bloque no ven las demás: alterar otras filas no cambia ni la salida ni el gradiente de la primera, con la misma instantánea para todas.
+- La acumulación reduce el pico de tensores guardados y la recomputación deja fuera de los bloques solo la pila y la pérdida.
+- Reanudación de una ejecución con acumulación, con y sin recomputación, igual a la continua.
+
+El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [recibo técnico](../../reports/engineering/candidate-chronological-trainer-20261009.json) y en el [recibo de memoria](../../reports/engineering/candidate-trainer-memory-20261009.json).
 
 ## Pendiente
 
@@ -136,3 +177,16 @@ El recuento de pruebas, las mutaciones dirigidas y las versiones están en el [r
 - Calentamiento episódico con etiquetas anteriores al tramo medido, que necesita indexarlas en las observaciones financieras.
 - Predicciones de calibración y evaluación sobre vistas temporales reales. Solo se han comprobado con el fixture temporal histórico.
 - Presupuesto definitivo y alternativa de reentrenamiento por ventana en [#363](https://github.com/GonxKZ/mars-titan/issues/363), con el caudal medido.
+- Memoria en `cuda:0`. Con el enlace CUDA compilado como arriba, desde la raíz:
+
+  ```bash
+  CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 \
+    MARS_TITAN_EPISODIC_NATIVE=$PWD/build/native/candidate-trainer-cuda/_episodic_native.cpython-312-x86_64-linux-gnu.so \
+    MARS_TITAN_CANDIDATE_MEMORY_CHECK_DEVICE=cuda:0 \
+    MARS_TITAN_CANDIDATE_MEMORY_CHECK_ASSETS=128,256,512 \
+    MARS_TITAN_CANDIDATE_MEMORY_CHECK_REPORT=$PWD/candidate-memory-cuda.json \
+    UV_PROJECT_ENVIRONMENT=<entorno uv con PyTorch CUDA> \
+    uv run --no-sync python -m pytest -q tests/training/candidate_memory_check.py
+  ```
+
+  Con esa medida hay que decidir qué opción usa la campaña. La recomputación es la que acota la memoria con cualquier patrón de etiquetas sin cambiar el gradiente en las comprobaciones de CPU.
