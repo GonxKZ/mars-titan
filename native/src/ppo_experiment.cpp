@@ -1800,7 +1800,8 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
     const auto selection = closed_selection(options, config);
     preflight_memory(options, config);
     FrozenEvaluationRequest request{options.output, options.resume, nullptr, {},
-                                    config.learning, config.training.workers};
+                                    config.learning, config.training.workers,
+                                    frozen_costs(options.evaluation_costs)};
     Json tapes = Json::array();
     for (const auto& path : options.audit_tapes) {
         auto tape = load_policy_tape(path, PolicyTapeRole::evaluation, config.environment);
@@ -1823,7 +1824,7 @@ Json run_reconstructed_evaluation(const PpoExperimentOptions& options,
                             {"optimizer_steps", policy.optimizer_steps()},
                             {"transitions", selection.selected.metadata.at("transitions")},
                             {"tapes", tapes},
-                            {"cost_bps", frozen_evaluation_costs},
+                            {"cost_bps", request.costs},
                             {"seed", config.training.seed},
                             {"device", options.device},
                             {"diagnostic", options.diagnostic},

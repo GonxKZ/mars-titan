@@ -465,7 +465,7 @@ def test_stage_executors_fit_carry_and_pause_through_the_launcher(
     assert {record["reason"] for record in failed["evaluation"]} == {"universe_assets_excluded"}
     # Un ancla con otra huella o una carpeta fuera de la etapa no se evalúan.
     forged = dict(anchor, policy=dict(report["policy"], sha256="c" * 64))
-    with pytest.raises(ValueError, match="política elegida"):
+    with pytest.raises(ValueError, match="no corresponde a la política"):
         executor(carry_job, us, carry_folder, stage=stage, resume=True, stop=stop, anchor=forged)
     outside = tmp_path / "elsewhere" / "run"
     outside.mkdir(parents=True)
@@ -524,20 +524,73 @@ def test_stage_writes_chinese_tapes_with_their_a_share_rules(tapes, tmp_path):
     assert manifest["instruments"] == read(folder / "manifest.json")["instruments"]
 
 
-def test_stage_requires_the_engine_costs(tapes, tmp_path):
-    stage = diagnostic_stage()
-    stage["policies"]["evaluation_costs_bps"] = [0, 10]
-    executor = native_policy_runs.NativePolicyExecutor("native_ppo")
-    with pytest.raises(ValueError, match="costes de evaluación"):
-        executor(
-            job("double_dqn", "native_ppo"),
-            policy_tapes(tapes["US"]),
-            tmp_path,
-            stage=stage,
-            resume=False,
-            stop=None,
-            anchor=None,
+def test_declared_costs_and_session_equity_reach_the_frozen_evaluation(
+    binaries, tapes, tmp_path, learning_hold
+):
+    hold = learning_hold(True)
+    stage = diagnostic_stage(rollout_transitions=16)
+    stage["policies"]["evaluation_costs_bps"] = [0, 5, 10, 20]
+    executor = native_policy_runs.NativePolicyExecutor("native_ppo", diagnostic=True)
+    fit_job = job("double_dqn", "native_ppo")
+    folder = tmp_path / "jobs" / fit_job["id"] / "run"
+    folder.mkdir(parents=True)
+    us = policy_tapes(tapes["US"])
+    report = executor(fit_job, us, folder, stage=stage, resume=False, stop=None, anchor=None)
+    assert report["updates"] == 0
+    campaign_stage.check_report(stage, fit_job, report, us)
+    assert [record["cost_bps"] for record in report["evaluation"]] == [0, 5, 10, 20]
+    document = sealed(folder / "evaluation" / "evaluation.json")
+    assert document["identity"]["cost_bps"] == [0.0, 5.0, 10.0, 20.0]
+    capital = stage["policies"]["environment"]["capital"]
+    tape = us.evaluation
+    for record in report["evaluation"]:
+        equity = record["equity"]
+        assert equity["basis"] == "close_valuation_from_log_rewards"
+        assert equity["close_times"] == [int(t) for t in tape.close_times[: record["steps"] + 1]]
+        assert equity["nav"][0] == capital and len(equity["nav"]) == record["steps"] + 1
+        final = capital * (1 + record["net_return"])
+        assert equity["nav"][-1] == pytest.approx(final, rel=1e-12)
+    # Más coste nunca deja más patrimonio con las mismas decisiones deterministas.
+    finals = [record["equity"]["nav"][-1] for record in report["evaluation"]]
+    assert finals == sorted(finals, reverse=True)
+    # Una serie que no concilia con su retorno no se confirma.
+    broken = copy.deepcopy(report)
+    broken["evaluation"][1]["equity"]["nav"][-1] *= 1.001
+    with pytest.raises(ValueError, match="no concilia"):
+        campaign_stage.check_report(stage, fit_job, broken, us)
+    missing = copy.deepcopy(report)
+    missing["evaluation"][0]["equity"] = None
+    with pytest.raises(ValueError, match="patrimonio en cada cierre"):
+        campaign_stage.check_report(stage, fit_job, missing, us)
+    # El binario rechaza costes sin orden creciente o sin auditoría.
+    config = folder / "config.json"
+    evaluation = ["--audit-run", folder / "fit", "--audit-tape", us.paths["evaluation"]]
+    for costs in ([10, 5], [5, 5], [-1], [2000]):
+        arguments = [item for cost in costs for item in ("--evaluation-cost", cost)]
+        result = run(
+            binaries["native_ppo"],
+            hold,
+            "--config",
+            config,
+            "--output",
+            tmp_path / "rejected",
+            *evaluation,
+            *arguments,
         )
+        assert result.returncode == 1 and "costes de evaluación" in result.stderr, result.stderr
+        assert not (tmp_path / "rejected").exists()
+    result = run(
+        binaries["native_ppo"],
+        hold,
+        "--config",
+        config,
+        "--output",
+        tmp_path / "training",
+        *sources(tapes["US"]),
+        "--evaluation-cost",
+        5,
+    )
+    assert result.returncode == 1 and "--audit-run" in result.stderr
 
 
 def test_klpo_budget_counts_complete_waves_over_cycled_train_tapes(tapes):

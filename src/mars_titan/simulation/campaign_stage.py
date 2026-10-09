@@ -99,6 +99,22 @@ CAPABILITIES = {
             "sobre cintas reconstruidas, selecciona en validación y evalúa el estado elegido"
         ),
     ),
+    "native_ppo_equity_and_costs": dict(
+        probe="native_ppo",
+        capability=native_policy_runs.EQUITY_AND_COSTS,
+        pending=(
+            "Compilar mars-titan-ppo con la evaluación que publica el patrimonio por sesión "
+            "y acepta los costes declarados por la etapa"
+        ),
+    ),
+    "native_klpo_equity_and_costs": dict(
+        probe="native_klpo",
+        capability=native_policy_runs.EQUITY_AND_COSTS,
+        pending=(
+            "Compilar mars-titan-klpo con la evaluación que publica el patrimonio por sesión "
+            "y acepta los costes declarados por la etapa"
+        ),
+    ),
 }
 
 
@@ -152,7 +168,8 @@ def probe_capabilities(library=None):
                 FinancialEnv(tape, backend="native", native_library=library, instruments=rules)
                 reason = None
             elif entry["probe"] in native_policy_runs.BINARIES:
-                identity = native_policy_runs.probe_binary(entry["probe"], name)
+                capability = entry.get("capability", name)
+                identity = native_policy_runs.probe_binary(entry["probe"], capability)
                 reason = None
         except (ValueError, OSError, subprocess.SubprocessError) as error:
             reason = f"{entry['pending']}: {error}"
@@ -213,6 +230,7 @@ def episode(cost, result=None, *, failure=None):
         costs=None,
         turnover=None,
         steps=0,
+        equity=None,
     )
     if result is None:
         return record
@@ -229,6 +247,7 @@ def episode(cost, result=None, *, failure=None):
         costs=values["costs"],
         turnover=values["turnover"],
         steps=values["steps"],
+        equity=None if not completed else result["equity"],
     )
 
 
@@ -308,12 +327,16 @@ EXECUTORS = {
     ),
     "native_ppo": dict(
         run=native_policy_runs.NativePolicyExecutor("native_ppo"),
-        requires=("native_policy_reconstructed_tapes",),
+        requires=("native_policy_reconstructed_tapes", "native_ppo_equity_and_costs"),
         native=True,
     ),
     "native_klpo": dict(
         run=native_policy_runs.NativePolicyExecutor("native_klpo"),
-        requires=("native_policy_reconstructed_tapes", "native_klpo_financial_runner"),
+        requires=(
+            "native_policy_reconstructed_tapes",
+            "native_klpo_financial_runner",
+            "native_klpo_equity_and_costs",
+        ),
         native=True,
     ),
 }
@@ -338,8 +361,8 @@ def _record(record, cost, failure):
         )
     if record["status"] == "failed":
         _require(
-            isinstance(record["reason"], str) and record["reason"],
-            "Un episodio fallido conserva su motivo",
+            isinstance(record["reason"], str) and record["reason"] and record.get("equity") is None,
+            "Un episodio fallido conserva su motivo y no publica patrimonio",
         )
         return
     values = [record.get(key) for key in ("net_return", "liquidated_net_return", "max_drawdown")]
@@ -349,6 +372,40 @@ def _record(record, cost, failure):
     )
     if record["status"] == "completed":
         _require(record["liquidated_net_return"] > -1, "Un episodio sin ruina conserva patrimonio")
+    _equity(record)
+
+
+# Tolerancia relativa entre el patrimonio final de la serie y el retorno publicado. El motor
+# nativo reconstruye la serie con sus recompensas logarítmicas.
+EQUITY_TOLERANCE = 1e-9
+
+
+def _equity(record):
+    """Exigir el patrimonio por sesión de un episodio terminado, coherente con su retorno."""
+    equity = record.get("equity")
+    _require(
+        isinstance(equity, dict)
+        and set(equity) == {"basis", "close_times", "nav"}
+        and isinstance(equity["close_times"], list)
+        and isinstance(equity["nav"], list)
+        and len(equity["close_times"]) == len(equity["nav"]) == record["steps"] + 1
+        and all(type(value) is int for value in equity["close_times"])
+        and all(
+            a < b for a, b in zip(equity["close_times"], equity["close_times"][1:], strict=False)
+        )
+        and all(_number(value, 0) for value in equity["nav"]),
+        "Un episodio terminado conserva su patrimonio en cada cierre",
+    )
+    nav = equity["nav"]
+    ruined = record["status"] == "ruined"
+    expected = nav[0] * (1 + record["net_return"])
+    _require(
+        nav[0] > 0
+        and (nav[-1] == 0) is ruined
+        and all(value > 0 for value in nav[:-1])
+        and abs(nav[-1] - expected) <= EQUITY_TOLERANCE * max(1.0, abs(expected)),
+        "El patrimonio por sesión no concilia con el retorno del episodio",
+    )
 
 
 def check_report(stage, job, report, tapes, anchor=None):

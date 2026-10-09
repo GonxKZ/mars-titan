@@ -9,13 +9,14 @@ int main(int argc, char** argv) {
         "  Diagnóstico: --device cpu --diagnostic\n"
         "  CUDA: --device cuda:0 --gpu-lease-fd FD "
         "--vram-budget-bytes N --vram-total-bytes N\n"
-        "  Evaluación separada: --audit-run RUN --audit-tape DIR "
-        "(sin --train-tape ni --validation-tape).\n"
+        "  Evaluación separada: --audit-run RUN --audit-tape DIR [--evaluation-cost PB ...] "
+        "(sin --train-tape ni --validation-tape). Publica el patrimonio por sesión.\n"
         "  Vigilancia Linux: --parent-pid PID detiene el hijo si muere su padre.\n"
         "  Capacidades: --capabilities, sin leer datos.\n"
         "KLPO terminal sobre cintas reconstruidas por ventana, con selección en validación y "
         "sin abrir el test.\n",
-        {"native_policy_reconstructed_tapes", "native_klpo_financial_runner"},
+        {"native_policy_reconstructed_tapes", "native_klpo_financial_runner",
+         "native_policy_equity_and_costs"},
         [](const auto& options, const auto& stop) {
             return mars_titan::learning::run_klpo_experiment(options, stop);
         }};

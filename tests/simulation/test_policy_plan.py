@@ -149,9 +149,10 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
     waves, wave = native_policy_runs.klpo_waves(tapes.train, environments, budget)
     assert 0 < waves * wave <= budget
     selection = dict(metric="ruin_count_then_mean_liquidated_log_growth", partition="validation")
+    equity = dict(basis="close_valuation", close_times=[1, 2], nav=[1.0, 1.0])
     records = [
         dict(cost_bps=cost, status="completed", reason=None, steps=1, net_return=0.0)
-        | dict(liquidated_net_return=0.0, max_drawdown=0.0)
+        | dict(liquidated_net_return=0.0, max_drawdown=0.0, equity=equity)
         for cost in stage["policies"]["evaluation_costs_bps"]
     ]
     for predictor in PRODUCERS:

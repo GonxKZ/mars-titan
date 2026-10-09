@@ -6,6 +6,9 @@ import time
 # La venta hipotética al último cierre paga `cost_bps` y el impuesto de venta vigente en la
 # fecha de ese cierre, como `liquidated_nav` en el motor nativo.
 LIQUIDATION_BASIS = "final_close_minus_cost_bps_and_sell_taxes"
+# La serie de patrimonio valora cada cierre con la contabilidad de la cartera. El motor
+# nativo de políticas la reconstruye con sus recompensas logarítmicas y declara otra base.
+EQUITY_BASIS = "close_valuation"
 
 
 def _exit_costs(env):
@@ -29,11 +32,14 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
     initial = env.book.nav[env.tape.currency]
     peak, drawdown, steps, unfilled = initial, 0.0, 0, 0
     nav, reason, done = initial, None, False
+    # Patrimonio contable en cada cierre: None si falta una valoración, cero tras la ruina.
+    series = [initial]
     while not done:
         action = policy(observation.copy(), steps)
         observation, _, terminated, truncated, info = env.step(action)
         steps += 1
         nav = info["nav"][env.tape.currency]
+        series.append(nav)
         unfilled += len(info["unfilled"])
         reason = info["reason"]
         if nav is not None:
@@ -81,6 +87,11 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
             basis=LIQUIDATION_BASIS,
             estimated_costs=exit_costs,
             net_return=(nav - exit_costs) / initial - 1 if completed else None,
+        ),
+        equity=dict(
+            basis=EQUITY_BASIS,
+            close_times=[int(value) for value in env.tape.close_times[: steps + 1]],
+            nav=series,
         ),
         elapsed_seconds=time.perf_counter() - started,
     )

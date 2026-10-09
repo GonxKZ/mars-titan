@@ -648,6 +648,45 @@ def test_audit_uses_the_same_launcher_without_training_arguments(setup, document
     assert "--train-tape" not in actual and "--validation-tape" not in actual
 
 
+@pytest.mark.parametrize("document", CATALOGS)
+def test_audit_passes_the_declared_evaluation_costs_and_training_rejects_them(setup, document):
+    args = setup[0]
+    config = Path(args[args.index("--config") + 1])
+    config.write_text(json.dumps(document))
+    native = args[args.index("--binary") + 1]
+    training = list(args)
+    setup[0][:] = [
+        *args[:4],
+        "--binary",
+        native,
+        "--audit-run",
+        str(setup[2] / "frozen-run"),
+        "--audit-tape",
+        str(setup[2] / "audit-a"),
+        "--evaluation-cost",
+        "0",
+        "--evaluation-cost",
+        "5",
+        "--evaluation-cost",
+        "20",
+    ]
+    result = execute(setup, "--diagnostic")
+    assert result.returncode == 0, result.stderr
+    actual = record(setup)["args"]
+    costs = [actual[i + 1] for i, value in enumerate(actual) if value == "--evaluation-cost"]
+    assert costs == ["0.0", "5.0", "20.0"]
+    for invalid in (
+        ["--evaluation-cost", "5", "--evaluation-cost", "5"],
+        ["--evaluation-cost", "-1"],
+    ):
+        setup[0][:] = [*setup[0][:10], *invalid]
+        rejected = execute(setup, "--diagnostic")
+        assert rejected.returncode == 2 and "costes de evaluación" in rejected.stderr
+    setup[0][:] = [*training, "--evaluation-cost", "5"]
+    rejected = execute(setup, "--diagnostic")
+    assert rejected.returncode == 2 and "costes de evaluación" in rejected.stderr
+
+
 def test_relative_command_paths_do_not_reuse_watch_from_another_working_directory(setup):
     args, env, directory = setup
     watch = directory / "watch.json"

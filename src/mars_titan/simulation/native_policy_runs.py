@@ -4,9 +4,11 @@ PPO y Double DQN usan ``mars-titan-ppo`` con la configuración de esquema 4, y K
 usa ``mars-titan-klpo``. Un ajuste escribe su configuración junto al trabajo, lanza el
 binario con ``scripts/run_native_ppo.py`` (admisión GPU, carga única, pausa y vigilancia
 del padre), lee la selección en validación y evalúa la política elegida en la cinta de
-evaluación con los tres costes declarados. Un traslado evalúa sin ajuste la política de su
-ancla con la configuración de ese ajuste. Los binarios y el lanzador comprueban la
-protección local del aprendizaje antes de leer cintas o crear salidas, igual que la etapa.
+evaluación con los costes declarados por la etapa, que el binario recibe con
+``--evaluation-cost`` y sella en su identidad. Cada episodio conserva su patrimonio por
+sesión. Un traslado evalúa sin ajuste la política de su ancla con la configuración de ese
+ajuste. Los binarios y el lanzador comprueban la protección local del aprendizaje antes de
+leer cintas o crear salidas, igual que la etapa.
 
 KLPO solo consume oleadas completas: un episodio por entorno, que recorre en ciclo las
 cintas de ajuste. Usa las oleadas enteras que caben en el presupuesto de transiciones, así
@@ -31,8 +33,9 @@ BINARIES = {
     "native_ppo": ("MARS_TITAN_PPO_EXECUTABLE", "mars-titan-ppo"),
     "native_klpo": ("MARS_TITAN_KLPO_EXECUTABLE", "mars-titan-klpo"),
 }
-# Costes de `policy_evaluation.hpp`. La etapa debe declarar los mismos.
-EVALUATION_COSTS = [0, 10, 25]
+# Capacidad de los binarios que publican el patrimonio por sesión y aceptan los costes de
+# evaluación declarados por la etapa con --evaluation-cost.
+EQUITY_AND_COSTS = "native_policy_equity_and_costs"
 RECONSTRUCTED_SCHEMA = 4
 ROLLOUT_BYTES = 128 * 1024**2
 # Contrato klpo_terminal_token_full_v1: KL con peso uno y retorno terminal sin descuento.
@@ -168,6 +171,8 @@ def _record(row, cost, manifest):
         costs=row["costs"],
         turnover=row["turnover"],
         steps=row["steps"],
+        # Un episodio fallido no publica patrimonio. La etapa solo lo exige en los terminados.
+        equity=None if row["status"] == "failed" else row["equity"],
     )
 
 
@@ -191,7 +196,7 @@ class NativePolicyExecutor:
     def config(self, stage, job):
         return (ppo_config if self.engine == "native_ppo" else klpo_config)(stage, job)
 
-    def launch(self, config, output, *, train=(), validation=(), audit=None, tapes=()):
+    def launch(self, config, output, *, train=(), validation=(), audit=None, tapes=(), costs=()):
         command = [self.python, str(LAUNCHER), "--binary", str(binary_path(self.engine))]
         command += ["--config", str(config), "--output", str(output)]
         for option, paths in (
@@ -203,6 +208,8 @@ class NativePolicyExecutor:
                 command += [option, str(path)]
         if audit is not None:
             command += ["--audit-run", str(audit)]
+            for cost in costs:
+                command += ["--evaluation-cost", repr(float(cost))]
         elif self.stop_after is not None:
             command += ["--stop-after", str(self.stop_after)]
         if (output / "identity.json").is_file():
@@ -223,10 +230,6 @@ class NativePolicyExecutor:
 
     def __call__(self, job, tapes, folder, *, stage, resume, stop, anchor):
         policies = stage["policies"]
-        _require(
-            policies["evaluation_costs_bps"] == EVALUATION_COSTS,
-            "Los costes de evaluación de la etapa no coinciden con los del motor nativo",
-        )
         if job["kind"] == FIT:
             config = folder / "config.json"
             document = self.config(stage, job)
@@ -257,13 +260,17 @@ class NativePolicyExecutor:
             records = [episode(cost, failure=tapes.failure["reason"]) for cost in costs]
         else:
             output = folder / "evaluation"
-            if not self.launch(config, output, audit=fit, tapes=[tapes.paths["evaluation"]]):
+            launched = self.launch(
+                config, output, audit=fit, tapes=[tapes.paths["evaluation"]], costs=costs
+            )
+            if not launched:
                 return dict(status="paused")
             evaluation = _payload(output / "evaluation.json")
             _require(
                 evaluation["status"] == "completed"
-                and evaluation["identity"]["policy_sha256"] == report["policy"]["sha256"],
-                f"{job['id']}: la evaluación no corresponde a la política elegida",
+                and evaluation["identity"]["policy_sha256"] == report["policy"]["sha256"]
+                and evaluation["identity"]["cost_bps"] == [float(cost) for cost in costs],
+                f"{job['id']}: la evaluación no corresponde a la política o a los costes",
             )
             manifest = sha256(Path(tapes.paths["evaluation"]) / "manifest.json")
             records = [
