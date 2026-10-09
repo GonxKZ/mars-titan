@@ -302,8 +302,100 @@ def test_gate_bias_keeps_outer_gradients_finite_and_far_from_v1_collapse(length)
     _, v1_norms, v1_gradients = trajectory("v1")
     for name, value in gradients[length].items():
         # Cota técnica de este fixture: como mucho cuatro órdenes de caída en 960
-        # observaciones. v1 pierde más de treinta en las primeras 64.
+        # observaciones. v1 queda más de veinte órdenes por debajo en todas las ventanas.
         assert math.isfinite(value) and 1e-12 < value
         assert value >= 1e-4 * gradients[64][name]
         assert v1_gradients[length][name] < 1e-20 * value
     assert max(v1_norms[length]) < 1e-15
+
+
+# Adaptador financiero. Huellas de v1 capturadas en develop 9052fe6a con el fixture
+# `setup("mac_online")` de test_financial_adapter.py.
+V1_FINANCIAL_CONFIG_ID = "0fd7cee65d63623af6c4e6c064ad04d1eb35e21cf066e63822592d80be2ceb21"
+V1_FINANCIAL_PARAMETER_ID = "8d1f9cf76a3ce48a29137ddef2da5bc5a3bf1582cf39aaac0d4ca2857b7af781"
+DECLARED = {"alpha_half_life": 256.0, "eta": 0.5, "theta": 0.05}
+RECIPES = (
+    "configs/titans/chronological-training.json",
+    "configs/titans/chronological-training-quantile.json",
+)
+
+
+def financial(variant, **options):
+    from test_financial_adapter import specification
+
+    module = importlib.import_module("mars_titan.models.titans.financial")
+    config = module.FinancialConfig(
+        specification(), variant=variant, hidden_size=32, layers=1, seed=42, **options
+    )
+    return module, config, module.FinancialPredictor(config, dtype=torch.float64)
+
+
+def test_financial_default_keeps_the_v1_contract_and_parameters():
+    from test_financial_adapter import setup
+
+    model, _ = setup("mac_online")
+    assert "memory_gate_bias" not in model.config.identity()
+    assert model._config_id() == V1_FINANCIAL_CONFIG_ID
+    assert model._parameter_id == V1_FINANCIAL_PARAMETER_ID
+    assert all(getattr(model.mac.memory, name).bias is None for name in GATES)
+
+
+@pytest.mark.parametrize("declared", [DECLARED, api().GateBias(**DECLARED)])
+def test_financial_controls_build_the_declared_gate_bias_and_pair_from_mac_online(declared):
+    module, source_config, source = financial("mac_online", gate_bias=declared)
+    assert source_config.gate_bias == api().GateBias(**DECLARED)
+    assert source_config.identity()["memory_gate_bias"] == DECLARED
+    logits = source_config.gate_bias.logits(source.mac.memory.config.theta_max)
+    for name, logit in zip(GATES, logits, strict=True):
+        bias = getattr(source.mac.memory, name).bias
+        torch.testing.assert_close(bias, torch.full_like(bias, logit), rtol=0, atol=0)
+    v1 = financial("mac_online")[2]
+    shared = dict(v1.named_parameters())
+    for name, value in source.named_parameters():
+        if name in shared:
+            torch.testing.assert_close(value, shared[name], rtol=0, atol=0)
+        else:
+            assert name.removeprefix("mac.memory.").removesuffix(".bias") in GATES
+    for variant in ("transformer_direct", "mac_disabled", "mac_frozen"):
+        _, config, target = financial(variant, gate_bias=declared)
+        assert config.identity()["memory_gate_bias"] == DECLARED
+        receipt = module.copy_paired_parameters(source, target)
+        copied = set(receipt["copied_parameters"])
+        expected = {f"mac.memory.{name}.bias" for name in GATES}
+        assert expected <= copied if target.mac is not None else not expected & copied
+        assert receipt["initialized_only"] == []
+    with pytest.raises(ValueError, match="contrato|configuración"):
+        module.copy_paired_parameters(source, v1)
+
+
+@pytest.mark.parametrize(
+    "declared",
+    [
+        {"alpha_half_life": 256.0, "eta": 0.5},
+        {**DECLARED, "extra": 1},
+        {**DECLARED, "theta": 0.1},
+        {**DECLARED, "eta": 1.0},
+        "h256",
+    ],
+)
+def test_financial_configuration_rejects_incomplete_or_invalid_gate_bias(declared):
+    from test_financial_adapter import specification
+
+    module = importlib.import_module("mars_titan.models.titans.financial")
+    with pytest.raises(ValueError):
+        module.FinancialConfig(specification(), variant="mac_online", gate_bias=declared)
+
+
+@pytest.mark.parametrize("path", RECIPES)
+def test_chronological_recipes_declare_the_gate_bias_decided_in_issue_27(path):
+    from test_financial_adapter import specification
+
+    from mars_titan.training.financial_run import load_recipe
+
+    module = importlib.import_module("mars_titan.models.titans.financial")
+    _, document = load_recipe(path)
+    assert document["predictor"]["gate_bias"] == DECLARED
+    options = {k: v for k, v in document["predictor"].items() if k not in ("dtype", "hidden_size")}
+    for variant in document["variants"]:
+        config = module.FinancialConfig(specification(), variant=variant, hidden_size=32, **options)
+        assert config.gate_bias == api().GateBias(**DECLARED)

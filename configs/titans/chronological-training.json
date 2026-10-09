@@ -10,7 +10,8 @@
     "persistent_tokens": 4,
     "dtype": "float32",
     "bank_policy": "disabled",
-    "refinements": 1
+    "refinements": 1,
+    "gate_bias": {"alpha_half_life": 256.0, "eta": 0.5, "theta": 0.05}
   },
   "recipe": {
     "truncation": 8,
@@ -27,7 +28,7 @@
   },
   "pending": [
     "Las ventanas, el calentamiento y el número de épocas dependen del protocolo de #363.",
-    "La contracción inicial de la memoria online debe revisarse antes de fijar esta receta.",
+    "La inicialización de las puertas de la memoria usa gate_bias con semivida de 256 observaciones, decidida en #27 con fixtures técnicos. Su efecto con datos reales no se ha medido.",
     "El caudal en cuda:0 se medirá antes de fijar el presupuesto común."
   ]
 }

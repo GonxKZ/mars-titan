@@ -3,7 +3,7 @@
 import hashlib
 import re
 from contextlib import nullcontext
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 
 import torch
 from torch import nn
@@ -18,7 +18,14 @@ from mars_titan.models.baselines.multimodal import (
 )
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 
-from .config import MACConfig, MemoryConfig, bounded_integer, canonical, require_identity
+from .config import (
+    GateBias,
+    MACConfig,
+    MemoryConfig,
+    bounded_integer,
+    canonical,
+    require_identity,
+)
 from .financial_inputs import FINAL_TEST_US, HISTORICAL_START_US, DecisionBatch, FinancialInputSpec
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
@@ -40,12 +47,22 @@ class FinancialConfig:
     bank_policy: str = "disabled"
     refinements: int = 1
     head: str = SCALAR_HEAD
+    gate_bias: GateBias | None = None
 
     def __post_init__(self):
         if not isinstance(self.inputs, FinancialInputSpec) or self.variant not in VARIANTS:
             raise ValueError("El predictor necesita una entrada y un control identificados")
         if not isinstance(self.head, str) or self.head not in HEADS:
             raise ValueError("La cabeza de salida no pertenece al contrato del predictor")
+        if isinstance(self.gate_bias, dict):
+            # Las recetas JSON declaran los tres valores de forma explícita.
+            if set(self.gate_bias) != {field.name for field in fields(GateBias)}:
+                raise ValueError("gate_bias debe declarar alpha_half_life, eta y theta")
+            object.__setattr__(self, "gate_bias", GateBias(**self.gate_bias))
+        if self.gate_bias is not None:
+            if not isinstance(self.gate_bias, GateBias):
+                raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
+            self.gate_bias.logits(MemoryConfig.theta_max)
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
@@ -84,6 +101,10 @@ class FinancialConfig:
         # La identidad escalar no cambia. La cabeza de cuantiles sustituye la salida.
         if self.head == QUANTILE_HEAD:
             result.update(output=QUANTILE_HEAD, output_head=dict(CONTRACT))
+        # Sin bias declarado la identidad no cambia. Se registra en todas las variantes para
+        # que el emparejamiento desde mac_online compare la misma configuración.
+        if self.gate_bias is not None:
+            result.update(memory_gate_bias=asdict(self.gate_bias))
         return result
 
 
@@ -170,6 +191,7 @@ class FinancialPredictor(nn.Module):
                         max_tokens=1,
                         max_state_bytes=config.max_state_bytes,
                         parameter_seed=config.seed,
+                        gate_bias=config.gate_bias,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
