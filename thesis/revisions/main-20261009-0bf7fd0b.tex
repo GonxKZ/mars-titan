@@ -1,0 +1,156 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{csquotes}
+\usepackage[margin=2.8cm]{geometry}
+\usepackage[backend=biber,style=apa]{biblatex}
+\addbibresource{../docs/references/finance.bib}
+\addbibresource{../docs/references/neural.bib}
+\addbibresource{../docs/references/books.bib}
+\addbibresource{../docs/references/brain.bib}
+\addbibresource{../docs/references/macro.bib}
+\addbibresource{../docs/references/systems.bib}
+\addbibresource{../docs/references/frontier.bib}
+\addbibresource{../docs/references/deepseek.bib}
+\addbibresource{../docs/references/adversarial.bib}
+\usepackage[hidelinks]{hyperref}
+
+\title{MARS-TITAN\\\large Memoria causal adaptativa para predicción bursátil multimodal}
+\author{Gonzalo García Lama}
+\date{Revisión técnica, 9 de octubre de 2026}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+MARS-TITAN plantea una comparación experimental de modelos para predecir
+retornos residuales de activos financieros a partir de información multimodal.
+La pregunta es si la memoria neuronal y la selección de episodios aportan una
+mejora frente a referencias comparables cuando se controla la disponibilidad
+temporal y el presupuesto. La edición histórica adicional conserva todos los
+datos utilizables de FinMultiTime desde 2000, con ausencias explícitas. Se separa
+del control estricto y utiliza validación temporal, ablaciones e incertidumbre.
+Este documento es una base de redacción. La preparación de datos y los ensayos
+de referencia ya tienen informes separados. La integración de todas las variantes
+y la comparación confirmatoria siguen pendientes.
+\end{abstract}
+\tableofcontents
+
+\chapter{Introducción y objetivos}
+El problema de investigación combina predicción financiera, información
+heterogénea y adaptación a cambios de mercado. El valor del estudio reside en
+determinar qué componentes aportan información útil y bajo qué condiciones
+dejan de hacerlo. El estudio plantea una comparación de soluciones.
+
+Los seis objetivos son preparar datos multimodales con disponibilidad verificable,
+definir retornos residuales, diseñar una memoria adaptativa con incertidumbre,
+compararla con referencias y ablaciones, evaluar predicciones y simulaciones
+financieras y analizar críticamente resultados y restricciones. El protocolo y
+sus criterios de aceptación se conservan en la documentación del repositorio.
+
+\chapter{Estado del arte}
+FinMultiTime constituye el punto de partida de los datos
+\parencite{xu2025finmultitime}. Su alineación por periodos no sustituye una auditoría
+de disponibilidad. Titans y los mecanismos de aprendizaje durante inferencia
+aportan referencias para la memoria \parencite{behrouz2025titans,sun2025ttt}.
+La comparación requiere asimismo referencias sencillas y un control del proceso
+de selección \parencite{zeng2023dlinear,bailey2017pbo}.
+
+La revisión detallada se organiza en finanzas, memoria, incertidumbre y fundamentos.
+Antes de cerrar este capítulo se integrarán las lecturas con una discusión que
+relacione los métodos con la pregunta concreta, sin confundir resultados publicados
+con resultados reproducidos.
+
+\chapter{Datos y metodología}
+Cada muestra relacionará un activo con un instante de decisión, las modalidades
+disponibles y una etiqueta que solo podrá utilizarse después de madurar. La
+predicción se construirá con historia conocida y se evaluará mediante ventanas
+cronológicas. Ajuste, selección, calibración y evaluación tendrán tramos separados.
+
+Para la convención principal de apertura a cierre de la siguiente sesión,
+el retorno residual se define como
+\begin{equation}
+y_{i,t} = r^{OC}_{i,t+1} - \hat\alpha_{i,t}
+          - \hat\beta_{i,t} r^{OC}_{m,t+1}.
+\end{equation}
+Los coeficientes se estimarán con retornos ya conocidos en el instante de decisión.
+El retorno futuro del mercado pertenece a la etiqueta, nunca a las entradas.
+La residualización no identifica por sí misma un efecto causal económico.
+
+\chapter{Diseño de la comparativa}
+La comparación conserva el candidato GRU con banco episódico y añade una
+referencia Transformer compacta, una adaptación de Titans-MAC y MARS-TITAN con
+ampliaciones desactivables sobre ese núcleo. Las referencias ingenuas, lineales
+y de árboles mantienen sus propias identidades. El cambio de codificador,
+la memoria neuronal y el banco episódico requieren controles separados.
+
+Titans-MAC combina atención cercana, memoria neuronal con pérdida asociativa,
+gradientes, momentum y olvido dependientes de la entrada, y parámetros
+persistentes aprendidos independientes de ella. Los pesos rápidos y su momentum
+son distintos de los parámetros compartidos, de la memoria persistente del
+artículo, de los episodios y del estado de trabajo. La actualización asociativa
+utiliza entradas disponibles. El error financiero de escritura episódica espera
+a que madure el resultado de la predicción emitida. K cuenta los refinamientos
+del proyecto, no las actualizaciones internas de Titans.
+
+CM-v1 permanece independiente y desactivada. El contraste B, B+C, B+M y B+C+M
+fija una identidad concreta de B. Cambiar de arquitectura exige otro contraste.
+Los datos, filas, cortes y presupuestos pertinentes se mantienen comparables.
+No se presuponen superioridad ni reproducción de los resultados del artículo.
+Los entrenamientos y evaluaciones científicas siguen bloqueados hasta completar
+y verificar la edición histórica. Las pruebas técnicas no levantan esa condición.
+
+La revisión técnica del 9 de octubre recoge comprobaciones CPU/CUDA de la referencia GRU,
+el núcleo Titans-MAC, su adaptador financiero y el diagnóstico local de C.
+Este último utiliza una compresión del Jacobiano conjunto de pesos rápidos
+y momentum y puede omitir direcciones expansivas. El codec episódico conserva
+una representación fija de las entradas y sus máscaras. El consumidor
+cronológico conecta el banco, la lectura y los estados por bloques con
+parámetros compartidos congelados. M0/M1 y la recuperación conjunta están
+comprobados en CPU/CUDA. M2 añade tres índices con cupos 50/25/25 y error de la
+emisión original. Su comprobación CUDA focal comprende FP32/FP64, $K=1$,
+$B_{\mathrm{mem}}=4$ y C desactivado. M3, la consolidación M sobre M2 y la
+aceptación de las fases históricas completas siguen pendientes. No hay una
+mejora predictiva medida de estas variantes.
+
+La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
+controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
+parada por KL. Sus comprobaciones CPU/CUDA no ejecutan pasos de optimizador.
+La recuperación posterior a una actualización real sigue pendiente. KLPO tiene
+prioridad como candidato separado. Su objetivo terminal y sus gradientes están
+comprobados. El colector conserva episodios completos, la política de recogida,
+el reloj original y la historia GRU, con recuperación contrastada. Las
+actualizaciones del actor y la alternancia entre referencias ajustadas siguen pendientes.
+El ajuste de una predicción y la política financiera secuencial necesitan
+objetivos distintos. La comparación científica sigue bloqueada y no hay un
+algoritmo ganador seleccionado.
+
+Los benchmarks Silencio, Faro, Eco, Giro, Retorno, Contraste, Tormenta y Umbral
+reutilizan ocho mecanismos sintéticos existentes. Se han preparado 240 mundos,
+con ocho activos, perfiles de 64 y 256 sesiones y semillas separadas. Sus contratos
+se han comprobado sin ajustar modelos. La dificultad empírica y la comparación
+de algoritmos siguen pendientes. Su contexto técnico no sustituye las cuatro
+modalidades históricas de FinMultiTime.
+
+Se medirán error, dirección, ordenación, calibración y recursos. La simulación usará
+retornos de activos y un registro de operaciones con costes de apertura y cierre.
+El protocolo fijará las comparaciones principales antes de abrir el conjunto final.
+
+\chapter{Resultados y discusión}
+Los ensayos de GRU y DLinear están documentados en el informe de variantes del
+repositorio. Sus resultados pertenecen a una muestra dirigida de desarrollo,
+no a la comparación confirmatoria. Este capítulo integrará predicciones,
+métricas y artefactos identificados por configuración y revisión de código.
+Se informarán diferencias, incertidumbre, fallos y costes computacionales.
+Las figuras conceptuales no se utilizarán como evidencia de rendimiento.
+
+\chapter{Conclusiones y limitaciones}
+Las conclusiones quedan pendientes de la ejecución. Cada objetivo tendrá una
+respuesta apoyada en evidencia, o una limitación explícita cuando no pueda
+resolverse. El análisis distinguirá mejora observada, resultado inconcluso y
+ausencia de mejora, y justificará el trabajo futuro a partir de los límites medidos.
+
+\printbibliography
+\end{document}

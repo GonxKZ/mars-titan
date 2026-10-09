@@ -25,6 +25,7 @@ from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
 
 CONFIGS = Path("configs").resolve()
+REFERENCES = ["cash", "hold_initial", "rebalance_50"]
 HISTORY = "2019-09-01"
 
 
@@ -42,10 +43,14 @@ def write_edition(root, assets):
 
 
 def policies(**changes):
-    """Políticas reducidas: KLPO y Double DQN, las tres referencias y un año de ajuste."""
+    """Políticas reducidas: KLPO y Double DQN, las tres referencias y un año de ajuste.
+
+    La campaña reducida produce los brazos GRU y LSTM. Los dos entran en el nivel completo
+    y solo la GRU en el de algoritmos, que también fija el universo.
+    """
     value = json.loads((CONFIGS / "simulation/historical-masked-rl-policies.json").read_text())
+    value["levels"]["algorithms"].update(predictors=["gru"], arms=["double_dqn"])
     value.update(
-        predictor=dict(arms=["gru"], seed=42),
         train_windows=1,
         universe=dict(rule="median_traded_value_in_validation_v1", max_assets=4),
         budget=dict(
@@ -63,11 +68,18 @@ def policies(**changes):
 
 
 def write_configs(folder, variant):
-    """Campaña base de cuatro ventanas, políticas reducidas y etapa de la variante."""
+    """Campaña base de cuatro ventanas y dos brazos, políticas reducidas y etapa."""
     campaign, _ = campaign_fixture.write_configs(folder, variant)
     protocol = json.loads((folder / "us-protocol.json").read_text())
     protocol["first_validation_start"] = "2019-04-01"
     atomic_json(folder / "us-protocol.json", protocol)
+    # Un segundo predictor de la campaña para el nivel que recorre todos los productores.
+    comparison = json.loads((folder / "comparison.json").read_text())
+    comparison["arms"]["lstm"] = dict(comparison["arms"]["gru"])
+    atomic_json(folder / "comparison.json", comparison)
+    declared = json.loads(campaign.read_text())
+    declared["neural"]["arms"] = dict(gru="gru", lstm="lstm")
+    atomic_json(campaign, declared)
     atomic_json(folder / "rl-policies.json", policies())
     stage = json.loads(
         (CONFIGS / f"simulation/historical-masked-rl-stage-{variant.lower()}.json").read_text()
@@ -91,6 +103,9 @@ def base_campaign(root, variant):
     with pytest.MonkeyPatch.context() as patch:
         # La campaña base solo ejecuta dobles: ningún modelo se ajusta.
         patch.setenv(HOLD_ENV, str(hold))
+        # Puntuaciones de validación fijas de los candidatos LSTM, como las de la GRU.
+        patch.setitem(campaign_fixture.SCORES, "lstm-00", 0.03)
+        patch.setitem(campaign_fixture.SCORES, "lstm-10", 0.025)
         engine.prepare_views(campaign, data.parent, root / "views")
         views = {"US": root / "views" / "US"}
         summary = engine.run_campaign(

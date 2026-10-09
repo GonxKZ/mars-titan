@@ -28,6 +28,13 @@ constexpr std::size_t capacity_input = 8;
 constexpr std::size_t time_input = 9;
 constexpr double unknown = std::numeric_limits<double>::quiet_NaN();
 constexpr mt_account_v1 initial_account{1000, 0, 0, 0, 1000};
+constexpr std::size_t rules_input = 10;
+constexpr double minimum_step = 100;
+constexpr double band_step = 0.05;
+constexpr double tax_step = 0.001;
+constexpr uint32_t sell_tax_levels = 5;
+constexpr double round_lot = 100;
+constexpr double reference_ratio = 0.9;
 } // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
@@ -67,11 +74,28 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
                                (value(index + time_input) & 1) != 0 ? 1 : 4};
     }
     accounts.fill(initial_account);
-    const int result = mt_simulation_step_v1(
+    // Reglas opcionales con lotes de 100, mínimos, bandas y timbres derivados de la entrada.
+    std::array<mt_rules_v1, asset_capacity> rules{};
+    for (std::size_t index = 0; index < assets; ++index) {
+        const auto seed = value(index + rules_input);
+        const double close = prices.at(index * price_width + 3);
+        rules.at(index) = {static_cast<double>(seed % 3) * minimum_step,
+                           (seed & 1U) != 0 ? unknown : close * reference_ratio,
+                           static_cast<double>(seed % 4) * band_step,
+                           static_cast<double>(seed % 2) * tax_step,
+                           static_cast<double>(seed % sell_tax_levels) * tax_step,
+                           (seed & 2U) != 0 ? 1U : 0U,
+                           0};
+        if ((seed & 4U) != 0) {
+            lots.at(index) = round_lot;
+        }
+    }
+    const bool ruled = (value(2) & 1U) != 0;
+    const int result = mt_simulation_step_v2(
         (value(1) == 0 ? rejected_asset_count : assets), account_count, currencies.data(),
-        lots.data(), retired.data(), prices.data(), positions.data(), accounts.data(), rate,
-        participation, 1, 2, 3, next_positions.data(), next_accounts.data(), trades.data(),
-        error.data(), error.size());
+        lots.data(), ruled ? rules.data() : nullptr, retired.data(), prices.data(),
+        positions.data(), accounts.data(), rate, participation, 1, 2, 3, next_positions.data(),
+        next_accounts.data(), trades.data(), error.data(), error.size());
     if (result == MT_SIM_OK) {
         for (const auto& account : next_accounts) {
             if (!std::isfinite(account.cash) || account.cash < 0 || !std::isfinite(account.costs) ||

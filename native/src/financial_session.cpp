@@ -39,6 +39,8 @@ constexpr double quarter = 0.25;
 constexpr double half = 0.5;
 constexpr double three_quarters = 0.75;
 constexpr double unknown = std::numeric_limits<double>::quiet_NaN();
+constexpr std::size_t maximum_rule_periods = 64;
+constexpr std::size_t maximum_rule_name = 64;
 constexpr int64_t validation_start = 1'672'531'200'000'000;
 constexpr int64_t final_test_start = 1'704'067'200'000'000;
 constexpr std::array<double, 6> exposures{0, 0, quarter, half, three_quarters, 1};
@@ -320,6 +322,54 @@ void validate_snapshot(const SessionSnapshot& state, const MarketTape& tape,
         throw std::invalid_argument("El estado inicial contiene operaciones no confirmadas");
     }
 }
+
+bool rate_below_one(double value) noexcept {
+    return nonnegative(value) && value < 1;
+}
+
+// Periodos [start, end) ordenados y sin solapes, como _periods en Python.
+bool valid_periods(const std::vector<RulePeriod>& periods, bool bands) {
+    if (periods.size() > maximum_rule_periods) {
+        return false;
+    }
+    int64_t previous = -1;
+    for (const auto& period : periods) {
+        if (period.start < previous || period.start < 0 || period.end <= period.start ||
+            (bands ? !(rate_below_one(period.band) && period.band > 0)
+                   : !(rate_below_one(period.buy) && rate_below_one(period.sell)))) {
+            return false;
+        }
+        previous = period.end;
+    }
+    return true;
+}
+
+bool valid_instrument(const InstrumentRules& instrument) {
+    const bool named =
+        !instrument.rules.empty() && instrument.rules.size() <= maximum_rule_name &&
+        std::all_of(instrument.rules.begin(), instrument.rules.end(), [](char character) {
+            return (character >= 'a' && character <= 'z') ||
+                   (character >= '0' && character <= '9') || character == '_';
+        });
+    const bool plain = instrument.rules.empty() && instrument.minimum_order == 0 &&
+                       !instrument.odd_lot_exit && instrument.price_limits.empty() &&
+                       instrument.taxes.empty();
+    return (named || plain) && nonnegative(instrument.lot) && instrument.lot > 0 &&
+           nonnegative(instrument.minimum_order) && valid_periods(instrument.price_limits, true) &&
+           valid_periods(instrument.taxes, false);
+}
+
+const RulePeriod* period_at(const std::vector<RulePeriod>& periods, int64_t at) noexcept {
+    const auto found = std::find_if(periods.begin(), periods.end(), [at](const auto& period) {
+        return period.start <= at && at < period.end;
+    });
+    return found == periods.end() ? nullptr : &*found;
+}
+} // namespace
+
+bool MarketTape::has_market_rules() const noexcept {
+    return std::any_of(instruments.begin(), instruments.end(),
+                       [](const auto& instrument) { return !instrument.rules.empty(); });
 }
 
 void MarketTape::validate() const {
@@ -345,6 +395,11 @@ void MarketTape::validate() const {
             !asset_names.insert(asset).second) {
             throw std::invalid_argument("Los activos de la cinta deben ser únicos y acotados");
         }
+    }
+    if ((!instruments.empty() && instruments.size() != count) ||
+        !std::all_of(instruments.begin(), instruments.end(), valid_instrument)) {
+        throw std::invalid_argument(
+            "Las reglas de mercado no cubren cada activo con lotes, periodos y tasas válidos");
     }
     const int64_t low = partition == "train" ? 0 : validation_start;
     const int64_t high = partition == "train" ? validation_start : final_test_start;
@@ -457,6 +512,17 @@ FinancialSession::FinancialSession(std::shared_ptr<const MarketTape> tape, Param
     state_.receivables.reserve(tape_->actions.size());
     currencies_.assign(count, 0);
     lots_.assign(count, 1);
+    for (std::size_t asset = 0; asset < tape_->instruments.size(); ++asset) {
+        lots_[asset] = tape_->instruments[asset].lot;
+    }
+    if (tape_->has_market_rules()) {
+        rules_.assign(count, {0, unknown, 0, 0, 0, 0, 0});
+        for (std::size_t asset = 0; asset < count; ++asset) {
+            const auto& instrument = tape_->instruments[asset];
+            rules_[asset].minimum_order = instrument.minimum_order;
+            rules_[asset].odd_lot_exit = instrument.odd_lot_exit ? 1U : 0U;
+        }
+    }
     next_positions_.resize(count);
     trades_.resize(count);
     ranking_.reserve(count);
@@ -492,13 +558,28 @@ StepOutcome FinancialSession::prepare_step(uint8_t action) {
     settle(staged_, tape_->open_times[following]);
     mt_account_v1 next_account{};
     std::array<char, error_capacity> error{};
-    const int status = mt_simulation_step_v1(
-        static_cast<uint32_t>(state_.positions.size()), 1, currencies_.data(), lots_.data(),
-        staged_.retired.data(), prices.data(), staged_.positions.data(), &staged_.account,
-        parameters_.cost_bps / basis_point_denominator, parameters_.participation,
-        tape_->close_times[state_.cursor], tape_->open_times[following],
-        tape_->close_times[following], next_positions_.data(), &next_account, trades_.data(),
-        error.data(), error.size());
+    if (!rules_.empty()) {
+        prepare_rules(following);
+    }
+    // Sin reglas declaradas se conserva la llamada v1 y su aritmética.
+    const int status =
+        rules_.empty()
+            ? mt_simulation_step_v1(
+                  static_cast<uint32_t>(state_.positions.size()), 1, currencies_.data(),
+                  lots_.data(), staged_.retired.data(), prices.data(), staged_.positions.data(),
+                  &staged_.account, parameters_.cost_bps / basis_point_denominator,
+                  parameters_.participation, tape_->close_times[state_.cursor],
+                  tape_->open_times[following], tape_->close_times[following],
+                  next_positions_.data(), &next_account, trades_.data(), error.data(),
+                  error.size())
+            : mt_simulation_step_v2(
+                  static_cast<uint32_t>(state_.positions.size()), 1, currencies_.data(),
+                  lots_.data(), rules_.data(), staged_.retired.data(), prices.data(),
+                  staged_.positions.data(), &staged_.account,
+                  parameters_.cost_bps / basis_point_denominator, parameters_.participation,
+                  tape_->close_times[state_.cursor], tape_->open_times[following],
+                  tape_->close_times[following], next_positions_.data(), &next_account,
+                  trades_.data(), error.data(), error.size());
     check_native(status, error);
     staged_.positions.swap(next_positions_);
     staged_.account = next_account;
@@ -551,6 +632,35 @@ StepOutcome FinancialSession::prepare_step(uint8_t action) {
     staged_.cursor = following;
     staged_.done = result.terminated || result.truncated;
     return result;
+}
+
+void FinancialSession::prepare_rules(std::size_t following) {
+    const auto at = tape_->open_times[following];
+    const auto previous = tape_->frame(following - 1);
+    for (std::size_t asset = 0; asset < rules_.size(); ++asset) {
+        const auto& instrument = tape_->instruments[asset];
+        auto& rule = rules_[asset];
+        const auto* band = period_at(instrument.price_limits, at);
+        const auto* tax = period_at(instrument.taxes, at);
+        rule.reference = instrument.price_limits.empty()
+                             ? unknown
+                             : previous[asset * price_width + close_column];
+        rule.band = band == nullptr ? 0 : band->band;
+        rule.buy_tax = tax == nullptr ? 0 : tax->buy;
+        rule.sell_tax = tax == nullptr ? 0 : tax->sell;
+    }
+    // Precio de referencia del exdividendo y del exderecho: primero dividendos, después splits.
+    for (const auto kind : {CorporateKind::dividend, CorporateKind::split}) {
+        for (const auto index : actions_by_session_[following]) {
+            const auto& action = tape_->actions[index];
+            auto& reference = rules_[action.asset].reference;
+            if (action.kind != kind || std::isnan(reference)) {
+                continue;
+            }
+            reference = kind == CorporateKind::dividend ? reference - action.value
+                                                        : reference / action.value;
+        }
+    }
 }
 
 void FinancialSession::commit_step() noexcept {

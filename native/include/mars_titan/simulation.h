@@ -33,7 +33,9 @@ enum mt_order_reason_v1 {
     MT_ORDER_COMPLETE = 0,
     MT_ORDER_MISSING_OPEN = 1,
     MT_ORDER_UNKNOWN_LIQUIDITY = 2,
-    MT_ORDER_RESTRICTED = 3
+    MT_ORDER_RESTRICTED = 3,
+    MT_ORDER_LIMIT_UP = 4,
+    MT_ORDER_LIMIT_DOWN = 5
 };
 
 /* NaN en target indica ausencia de orden, en capacity indica liquidez desconocida. */
@@ -57,6 +59,22 @@ struct mt_trade_v1 {
     double price;
     double cost;
     int32_t reason;
+    uint32_t reserved;
+};
+
+/*
+ * Reglas de un activo vigentes en la apertura de una ejecución. reference es el cierre anterior
+ * ajustado por los eventos de esa apertura, NaN o no positivo sin límite diario, y band 0 indica
+ * que no hay banda en esa fecha. Los impuestos se cobran sobre el efectivo negociado además de
+ * cost_rate. odd_lot_exit admite vender de una vez el resto inferior al lote.
+ */
+struct mt_rules_v1 {
+    double minimum_order;
+    double reference;
+    double band;
+    double buy_tax;
+    double sell_tax;
+    uint32_t odd_lot_exit;
     uint32_t reserved;
 };
 
@@ -86,6 +104,31 @@ MT_SIM_API int mt_simulation_step_v1(
     int64_t previous_close, int64_t open_at, int64_t close_at,
     struct mt_position_v1 *next_positions, struct mt_account_v1 *next_accounts,
     struct mt_trade_v1 *trades, char *error, size_t error_capacity);
+
+MT_SIM_API uint32_t mt_simulation_rules_size_v1(void);
+
+/*
+ * Igual que v1 con reglas de mercado por activo. rules contiene asset_count filas o es NULL, y
+ * entonces el resultado es idéntico al de v1. Con reglas, una compra no se ejecuta si la apertura
+ * alcanza el límite superior y una venta tampoco si alcanza el inferior. Las compras se redondean
+ * al lote y descartan las inferiores al mínimo. Las ventas admiten el resto impar si se declara.
+ */
+MT_SIM_API int mt_simulation_step_v2(
+    uint32_t asset_count, uint32_t account_count, const uint32_t *currencies, const double *lots,
+    const struct mt_rules_v1 *rules, const uint8_t *retired, const double *prices,
+    const struct mt_position_v1 *previous_positions,
+    const struct mt_account_v1 *previous_accounts, double cost_rate, double participation,
+    int64_t previous_close, int64_t open_at, int64_t close_at,
+    struct mt_position_v1 *next_positions, struct mt_account_v1 *next_accounts,
+    struct mt_trade_v1 *trades, char *error, size_t error_capacity);
+
+/*
+ * Precios límite con la aritmética decimal de la referencia Python: la representación decimal
+ * más corta de reference por 1 ± band, redondeada a 0,01 por la mitad hacia arriba. Devuelve NaN
+ * en ambos límites si band es 0 o reference es NaN o no positiva.
+ */
+MT_SIM_API int mt_simulation_price_limits_v1(double reference, double band, double *upper,
+                                             double *lower, char *error, size_t error_capacity);
 
 /* Observación de una cuenta: seis valores por activo, seguidos de efectivo y derechos de cobro. */
 MT_SIM_API int mt_simulation_observation_v1(uint32_t asset_count, const double *prices,

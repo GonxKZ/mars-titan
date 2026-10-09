@@ -286,19 +286,24 @@ std::string_view error_type(const std::exception& error) {
 }
 
 Json run_identity(const MarketTape& tape, const RunOptions& options) {
-    return Json{{"manifest_sha256", tape.source_sha256},
-                {"parent_id", tape.parent_id},
-                {"native_version", MARS_TITAN_NATIVE_VERSION},
-                {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
-                {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
-                {"compiler_id", MARS_TITAN_NATIVE_COMPILER_ID},
-                {"compiler_version", MARS_TITAN_NATIVE_COMPILER_VERSION},
-                {"build_type", MARS_TITAN_NATIVE_BUILD_TYPE},
-                {"config", parameters_json(options.parameters)},
-                {"policy", policy_name(options.policy)},
-                {"diagnostic", options.diagnostic},
-                {"partition", tape.partition},
-                {"rng", "none_deterministic_policies"}};
+    Json identity{{"manifest_sha256", tape.source_sha256},
+                  {"parent_id", tape.parent_id},
+                  {"native_version", MARS_TITAN_NATIVE_VERSION},
+                  {"native_source_sha256", MARS_TITAN_NATIVE_SOURCE_SHA256},
+                  {"native_build_sha256", MARS_TITAN_NATIVE_BUILD_SHA256},
+                  {"compiler_id", MARS_TITAN_NATIVE_COMPILER_ID},
+                  {"compiler_version", MARS_TITAN_NATIVE_COMPILER_VERSION},
+                  {"build_type", MARS_TITAN_NATIVE_BUILD_TYPE},
+                  {"config", parameters_json(options.parameters)},
+                  {"policy", policy_name(options.policy)},
+                  {"diagnostic", options.diagnostic},
+                  {"partition", tape.partition},
+                  {"rng", "none_deterministic_policies"}};
+    // Una ejecución con reglas de mercado declara su contrato. Sin reglas la identidad no cambia.
+    if (tape.has_market_rules()) {
+        identity["market_rules"] = market_rules_contract;
+    }
+    return identity;
 }
 
 Json receipt_contract(const MarketTape& tape, const RunOptions& options, const Json& identity) {

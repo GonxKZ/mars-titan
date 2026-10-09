@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_episodic_readout_chronological_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "update_instants": 8,
+    "loss": "pinball",
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 128,
+    "neighbors": 8,
+    "temperature": 1.0,
+    "bank_capacity": 1024,
+    "bank_seed": 73,
+    "max_working_bytes": 134217728,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0
+  },
+  "walk_forward": {
+    "search_cases": {
+      "lr1e-4": {"learning_rate": 0.0001},
+      "lr1e-3": {"learning_rate": 0.001}
+    }
+  },
+  "pending": [
+    "Receta del lector episódico de MARS-TITAN sobre el Titans-MAC mac_online elegido en la misma ventana y semilla, con el padre congelado. Declarada sin ejecutar.",
+    "Dos casos de búsqueda, como Titans-MAC y las referencias neuronales: solo cambia la tasa de aprendizaje (1e-4 y 1e-3), con 30 épocas, presupuesto fijo y selección con session_mae de validación.",
+    "update_instants coincide con el truncamiento de la receta de Titans-MAC. El ajuste no usa BPTT entre instantes.",
+    "La capacidad física del banco es 1.024 episodios en M1 y M2. M0 usa el control no_bank sin banco.",
+    "Memoria y caudal en cuda:0 sin medir. El bloqueo de aprendizaje impide cualquier ajuste hasta verificar la edición histórica desde 2000."
+  ]
+}

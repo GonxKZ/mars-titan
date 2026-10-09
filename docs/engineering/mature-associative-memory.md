@@ -2,7 +2,7 @@
 
 `memory/associative_memory.py` implementa el comparador B6 de la [matriz de experimentos](../research/experiment-matrix.md): una matriz A de clave por valor que solo cambia al aplicar resultados ya maduros. Ofrece las dos reglas derivadas en las [condiciones matemáticas de memoria](../research/memory-mathematics.md), la regla delta con olvido escalar y la escritura proximal de una cohorte. La [revisión de integración](../research/system-integration.md) las sitúa en la actualización de estado maduro como alternativas identificadas.
 
-Es un componente aislado. No está conectado a `FinancialSession` ni a `FrozenFinancialConsumer`, no tiene parámetros entrenables y no se ha usado con datos del corpus. Su punto de inserción y sus controles se especifican en la [correspondencia de modificaciones](../research/titans-mac-architecture.md#correspondencia-de-las-modificaciones-de-integración).
+No tiene parámetros entrenables y no se ha usado con datos del corpus. `MatureCorrection` la conecta con `FinancialSession` como corrección escalar de Titans-MAC sin banco episódico: la emisión es la predicción del núcleo más la lectura de A de la generación anterior y la escritura usa la etiqueta madura menos la predicción del núcleo. Ese contrato, sus pruebas y el control de clave constante están en [MARS-TITAN con ampliaciones](mars-titan-extensions.md#corrección-asociativa-b6-en-la-sesión). Su punto de inserción y sus controles se especifican en la [correspondencia de modificaciones](../research/titans-mac-architecture.md#correspondencia-de-las-modificaciones-de-integración).
 
 ## Qué no es
 
@@ -68,8 +68,8 @@ Medida del 9 de octubre de 2026 en un AMD Ryzen 9 8945HS, Python 3.12.14, PyTorc
 | 1.024 | 16,416 | 17,306 | 1,068 | 1,455 | 0,200 a 0,248 |
 | 8.192 | 125,107 | 177,369 | 12,784 | 13,520 | 1,400 a 1,451 |
 
-La regla delta es secuencial por definición y su coste está dominado por el despacho de cada escritura de rango uno, unos 16 µs por resultado. No se optimiza porque no hay evidencia de que limite un recorrido: no está conectada y el resto de un evento de la sesión no se ha medido junto a ella. Si llegara a pesar en el recorrido completo, la primera alternativa sería agrupar las operaciones de cada evento antes de considerar código nativo. No se midieron energía ni memoria del proceso y no se usó GPU.
+La regla delta es secuencial por definición y su coste está dominado por el despacho de cada escritura de rango uno, unos 16 µs por resultado. No se optimiza porque no hay evidencia de que limite un recorrido: el resto de un evento de la sesión no se ha medido junto a ella. Si llegara a pesar en el recorrido completo, la primera alternativa sería agrupar las operaciones de cada evento antes de considerar código nativo. No se midieron energía ni memoria del proceso y no se usó GPU.
 
 ## Pendiente
 
-La conexión con el consumidor, su paridad dentro de la sesión, la elección de η y λ en desarrollo y cualquier comparación predictiva siguen pendientes. El bloqueo de aprendizaje impide elegir esos valores con datos y ejecutar la comparación. RLS con olvido, mencionado como control posible en la revisión de ampliaciones, no se implementa.
+La emisión de B6 en el recorrido cronológico por ventanas, la elección de η y λ en desarrollo, el coste medido dentro de la sesión y cualquier comparación predictiva siguen pendientes. El bloqueo de aprendizaje impide elegir esos valores con datos y ejecutar la comparación. RLS con olvido, mencionado como control posible en la revisión de ampliaciones, no se implementa.

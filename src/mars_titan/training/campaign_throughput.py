@@ -17,7 +17,8 @@ matriz de adaptadores.
 
 Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
 financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
-variante una estimación orientativa de esa etapa, separada de las horas de GPU.
+variante una estimación orientativa de esa etapa por nivel, ámbito, brazo y predictor,
+separada de las horas de GPU.
 
 Ridge y XGBoost no se miden: medir una ronda o una solución ya sería ajustarlos. Su
 coste queda como no medido en el informe.

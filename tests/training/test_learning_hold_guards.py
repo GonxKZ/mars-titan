@@ -346,6 +346,60 @@ ENTRY_POINTS = {
             out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
         ),
     ),
+    "mars_titan_walk_forward": _simple(
+        "mars_titan.training.mars_titan_walk_forward",
+        "_parent",
+        lambda m, out: m.run_mars_titan_window(
+            out.with_name("v.json"),
+            out.with_name("parent"),
+            out.with_name("r.json"),
+            components={"episodic_bank": "m1"},
+            seed=42,
+            output=out,
+            search_case="lr1e-4",
+            device="cpu",
+        ),
+    ),
+    "carry_mars_titan": _simple(
+        "mars_titan.training.mars_titan_walk_forward",
+        "read_manifest",
+        lambda m, out: m.carry_mars_titan(
+            out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
+        ),
+    ),
+    "cm_v1_core_window": _simple(
+        "mars_titan.training.cm_v1_factorial",
+        "load_declaration",
+        lambda m, out: m.run_cm_v1_core_window(
+            out.with_name("v.json"),
+            "fold-000",
+            core="cm_v1_core_c",
+            seed=42,
+            output=out,
+            search_case="lr1e-4",
+            device="cpu",
+        ),
+    ),
+    "cm_v1_window": _simple(
+        "mars_titan.training.cm_v1_factorial",
+        "load_declaration",
+        lambda m, out: m.run_cm_v1_window(
+            out.with_name("v.json"),
+            out.with_name("core"),
+            arm="cm_v1_bcm",
+            seed=42,
+            output=out,
+            search_case="lr1e-4",
+            device="cpu",
+        ),
+    ),
+    "carry_cm_v1": _simple(
+        "mars_titan.training.cm_v1_factorial",
+        "carry_readout",
+        lambda m, out: m.carry_cm_v1(
+            out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
+        ),
+    ),
 }
 
 
