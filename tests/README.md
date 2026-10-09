@@ -45,7 +45,7 @@ La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la r
 | Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py` y `run_financial_comparators.py` |
 | Ejecutables nativos | `mars-titan-ppo` en modo de entrenamiento, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
 
-`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` mantiene su propia comprobación.
+`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` mantiene su propia comprobación. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes.
 
 ### Lo que no se bloquea
 
