@@ -160,6 +160,47 @@ def test_penalty_gradient_is_linear_in_its_weight_and_leaves_the_head_alone(shar
     assert "control_groups" not in train_metrics(report_b)
 
 
+def test_objective_adds_the_mean_of_the_group_penalties_of_each_segment(
+    shared, tmp_path, monkeypatch
+):
+    """Objetivo = pérdida de la tarea + media de los términos de los grupos del tramo."""
+    _, streams = shared
+    trainer = engine(streams, tmp_path / "c", model(streams, control("penalty", 0.5)))
+    inner, segments, objectives = trainer._backward, [], []
+    backward = torch.Tensor.backward
+
+    def spy(tensor, *args, **kwargs):
+        objectives.append(float(tensor.detach()))
+        return backward(tensor, *args, **kwargs)
+
+    def recorded(run):
+        penalties = [float(term.detach()) for term in run.penalties]
+        loss = inner(run)
+        segments.append((float(loss.detach()), penalties))
+        return loss
+
+    monkeypatch.setattr(torch.Tensor, "backward", spy)
+    trainer._backward = recorded
+    trainer.run()
+    assert len(objectives) == len(segments) > 3
+    assert any(len(penalties) > 1 for _, penalties in segments)
+    for value, (loss, penalties) in zip(objectives, segments, strict=True):
+        expected = loss + (sum(penalties) / len(penalties) if penalties else 0.0)
+        assert value == pytest.approx(expected, rel=1e-12, abs=1e-15)
+
+
+def test_frequency_follows_the_observation_counter_of_each_flow(shared, tmp_path):
+    """Con frecuencia 2 se miden menos grupos que con 1, pero alguno."""
+    _, streams = shared
+    groups = {}
+    for frequency in (1, 2):
+        _, report = run(
+            streams, tmp_path / f"f{frequency}", control("penalty", 0.5, frequency=frequency)
+        )
+        groups[frequency] = train_metrics(report)["control_groups"]
+    assert 0 < groups[2] < groups[1]
+
+
 def test_logical_group_is_the_event_and_not_the_physical_block(shared, tmp_path):
     _, streams = shared
     reports, records = {}, {}
