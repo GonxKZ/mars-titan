@@ -12,9 +12,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.environments.cohorts import MAX_COHORT_ASSETS
 from mars_titan.environments.corpus_source import ParquetCohortSource
 
+from .reference_run import HELDOUT_FULL_TRAIN_SESSIONS
 from .run_receipts import initialize_receipt
 
 
@@ -44,12 +47,29 @@ def _verified_file(root, record, *, maximum_bytes=16 * 1024**3):
     return path, signature
 
 
+def _retained(source, report, identity):
+    """Partición de predicciones que acredita el recibo según su política de retención."""
+    if identity.get("prediction_retention") == HELDOUT_FULL_TRAIN_SESSIONS:
+        if not isinstance(report.get("train_summary"), dict):
+            raise ValueError("El padre no conserva el resumen de su ajuste")
+        return {name for name in source.get("counts", {}) if name != "train"}
+    return {"train", "validation"}
+
+
 def _parent(ordered, parent):
     source, source_hash = read_manifest(ordered)
     report, report_hash = read_manifest(parent, 8 * 1024**2)
     identity = report.get("identity", {})
     manifest_hash = identity.get("manifest_sha256", report.get("manifest_sha256"))
     kind = identity.get("case", {}).get("kind", report.get("model"))
+    policy = source.get("input_policy", STRICT_INPUTS)
+    declared = {
+        key: identity.get(key, report.get(key))
+        for key in ("input_policy", "mask_contract")
+        if key in identity or key in report
+    }
+    if declared != policy_identity(policy):
+        raise ValueError("El padre no comparte la política de entradas del corpus ordenado")
     if (
         source.get("kind") != "causal_prediction_corpus"
         or source.get("status") != "completed"
@@ -58,11 +78,20 @@ def _parent(ordered, parent):
         or source.get("final_test_opened") is not False
         or manifest_hash != source["source_sha256"]
         or kind
-        not in {"rnn", "lstm", "gru", "dlinear", "ridge", "boosting", "xgboost_external_cuda"}
+        not in {
+            "rnn",
+            "lstm",
+            "gru",
+            "dlinear",
+            "transformer",
+            "ridge",
+            "boosting",
+            "xgboost_external_cuda",
+        }
         or report.get("samples") != source["counts"]
         or report.get("scope") != source["scope"]
         or report.get("cohort_complete") != source["cohort_complete"]
-        or set(report.get("predictions", {})) != {"train", "validation"}
+        or set(report.get("predictions", {})) != _retained(source, report, identity)
     ):
         raise ValueError("El padre no es una referencia terminada de la misma población y objetivo")
     checkpoint, signature = _verified_file(
@@ -96,6 +125,12 @@ def _parent(ordered, parent):
         duckdb=duckdb.__version__,
         numpy=np.__version__,
     )
+    # Los campos de la edición con máscaras solo aparecen fuera de la ruta estricta.
+    contract.update(policy_identity(policy))
+    if masked_inputs(policy) and "mask_fusion" in identity:
+        contract["mask_fusion"] = identity["mask_fusion"]
+    if "prediction_retention" in identity:
+        contract["prediction_retention"] = identity["prediction_retention"]
     return source, report, contract, (checkpoint, signature)
 
 
@@ -213,6 +248,13 @@ def _align(source, parent, record, output):
 def prepare_parent_cache(ordered, parent, output, *, resume=False):
     ordered, parent, output = Path(ordered), Path(parent), Path(output)
     source, report, identity, checkpoint = _parent(ordered, parent)
+    if masked_inputs(identity.get("input_policy", STRICT_INPUTS)) or set(report["predictions"]) != {
+        "train",
+        "validation",
+    }:
+        # Las predicciones exportadas tras seleccionar el checkpoint no son pronósticos
+        # emitidos. La edición con máscaras recalcula el padre congelado en postentrenamiento.
+        raise ValueError("La caché alineada solo admite padres estrictos con ajuste completo")
     for protected in (ordered.parent, parent.parent):
         outside_source(protected, output)
         outside_source(output, protected)
@@ -314,7 +356,7 @@ class ParentPredictions:
             self.closed
             or type(start) is not int
             or type(size) is not int
-            or not 1 <= size <= 4096
+            or not 1 <= size <= MAX_COHORT_ASSETS
             or not 0 <= start <= len(self._array) - size
         ):
             raise ValueError("El tramo solicitado no pertenece a la caché abierta")

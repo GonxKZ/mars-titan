@@ -46,11 +46,11 @@ def supervision_bounds(source, *, market=None, input_policy=STRICT_INPUTS):
     }
 
 
-def ordered_bounds(metadata, *, market=None):
+def ordered_bounds(metadata, *, market=None, input_policy=STRICT_INPUTS):
     """Conservar el vínculo con la supervisión que produjo los Parquet ordenados."""
     record = metadata.get("source_manifest")
     if record is None:
-        return supervision_bounds(metadata, market=market)
+        return supervision_bounds(metadata, market=market, input_policy=input_policy)
     if not isinstance(record, dict) or set(record) != {"path", "sha256"}:
         raise ValueError("Falta el vínculo con la supervisión de origen")
     path = Path(record["path"])
@@ -60,7 +60,7 @@ def ordered_bounds(metadata, *, market=None):
         digest != record["sha256"]
         or digest != metadata["source_sha256"]
         or source.get("counts") != metadata["counts"]
-        or not temporal_contracts(source)
+        or not temporal_contracts(source, input_policy=input_policy)
     ):
         raise ValueError("La supervisión de origen no conserva su huella y población")
-    return supervision_bounds(source, market=market)
+    return supervision_bounds(source, market=market, input_policy=input_policy)

@@ -14,6 +14,7 @@ import numpy as np
 import torch
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import STRICT_INPUTS, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.models.klpo import MODES as KLPO
 from mars_titan.models.klpo import behavior_log_probabilities, token_loss
@@ -21,6 +22,7 @@ from mars_titan.models.predictive_adaptation import (
     LinearResidualPolicy,
     gaussian_log_probabilities,
     objective,
+    trainable_parameters,
 )
 from mars_titan.training.checkpoints import (
     StopRequest,
@@ -39,7 +41,8 @@ from .selection import select_epoch, selection_policy
 MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
 
 
-def code_identity():
+def code_identity(*, masked=False):
+    """Huellas del código. La edición con máscaras añade solo su contrato de entradas."""
     root = Path(__file__).parents[1]
     names = (
         "posttraining/run.py",
@@ -79,7 +82,12 @@ def code_identity():
         "data/storage.py",
         "profiling.py",
     )
+    names += ("data/input_policy.py",) if masked else ()
     return {name: sha256(root / name) for name in names}
+
+
+def case_code(case, dataset):
+    return code_identity(masked=getattr(dataset, "masked", False))
 
 
 def validate_case(case):
@@ -194,15 +202,26 @@ def _validate_run(
         or grid.training_samples != dataset.counts["train"]
     ):
         raise ValueError("La rejilla no se ha ajustado con el entrenamiento real")
+    masked = getattr(dataset, "masked", False)
+    policy = getattr(dataset, "input_policy", STRICT_INPUTS)
     expected_norm = dict(
-        train_sha256=dataset.train.manifest_sha256,
         parent_sha256=dataset.parent.parent_sha256,
         encoding=dataset.parent.encoding,
         samples=dataset.counts["train"],
         fit_partition="train",
     )
-    if any(normalization.get(k) != v for k, v in expected_norm.items()):
+    # Con máscaras, la escala se liga a la ventana de ajuste y no al manifiesto ordenado.
+    expected_norm |= (
+        dict(**policy_identity(policy), window=dataset.window)
+        if masked
+        else dict(train_sha256=dataset.train.manifest_sha256)
+    )
+    if any(normalization.get(k) != v for k, v in expected_norm.items()) or (
+        masked and "train_sha256" in normalization
+    ):
         raise ValueError("La normalización no corresponde a las filas reales de entrenamiento")
+    if parent is not None and parent.identity.get("input_policy", STRICT_INPUTS) != policy:
+        raise ValueError("El padre no comparte la política de entradas de los datos")
     if (
         len(normalization.get("mean", [])) != dataset.features
         or len(normalization.get("scale", [])) != dataset.features
@@ -235,7 +254,7 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
         budget=budget,
         device=device,
         diagnostic=diagnostic,
-        code=code_identity(),
+        code=case_code(case, dataset),
         numpy=np.__version__,
         torch=str(torch.__version__),
         python=platform.python_version(),
@@ -274,6 +293,15 @@ def _best_state(output, identity, selection, expected_sha256=None):
     ):
         raise ValueError("El checkpoint no corresponde a la época seleccionada")
     return selected
+
+
+def build_model(parent, case, grid, normalization):
+    """Construir la corrección lineal o la continuación completa del padre."""
+    if case["mode"].startswith("neural_"):
+        return parent.continuation()
+    return LinearResidualPolicy(
+        normalization["mean"], normalization["scale"], target_scale=grid.scale
+    )
 
 
 def run_case(
@@ -367,14 +395,9 @@ def run_case(
         torch.manual_seed(case["seed"])
         torch.use_deterministic_algorithms(True)
         torch.backends.cudnn.benchmark = False
-        model = (
-            parent.continuation()
-            if neural
-            else LinearResidualPolicy(
-                normalization["mean"], normalization["scale"], target_scale=grid.scale
-            )
-        )
-        model = model.to(device)
+        model = build_model(parent, case, grid, normalization).to(device)
+        if getattr(dataset, "masked", False):
+            report["trainable_parameters"] = trainable_parameters(model)
         optimizer = torch.optim.AdamW(
             model.parameters(), lr=case["learning_rate"], weight_decay=case["weight_decay"]
         )
@@ -415,7 +438,7 @@ def run_case(
 
         def save(best=False):
             nonlocal last_saved
-            if code_identity() != identity["code"]:
+            if case_code(case, dataset) != identity["code"]:
                 raise ValueError("El código ha cambiado durante el postentrenamiento")
             if any(not torch.isfinite(p).all() for p in model.parameters()):
                 raise ValueError("El optimizador ha producido pesos no finitos")
@@ -544,7 +567,7 @@ def run_case(
                 stop=stop,
                 destination=path,
             )
-            if code_identity() != identity["code"]:
+            if case_code(case, dataset) != identity["code"]:
                 raise ValueError("El código ha cambiado durante la evaluación final")
             report.update(
                 status="completed",

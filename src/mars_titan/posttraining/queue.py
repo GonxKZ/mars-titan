@@ -11,6 +11,7 @@ import torch
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.embeddings import FrozenEncoders
+from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
@@ -26,7 +27,7 @@ from .inputs import CONDITIONS, PairedInputs, fingerprint, fit_normalization
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import NEURAL, load_parent
 from .preparation import EpisodeFactory, encoder_contract, prepare_augmentation
-from .run import MODES, code_identity, run_case, validate_case
+from .run import MODES, case_code, code_identity, run_case, validate_case
 from .selection import selection_policy
 
 
@@ -62,6 +63,9 @@ def read_design(path):
     matching = plan.get("schema_version") == 2
     if matching:
         keys.add("parent_seed_policy")
+    # La edición con máscaras se declara en el diseño y solo admite continuaciones reales.
+    if "input_policy" in plan:
+        keys.add("input_policy")
     if (
         set(plan) != keys
         or type(plan["schema_version"]) is not int
@@ -72,6 +76,7 @@ def read_design(path):
         or plan["neural_controls"] != list(MODES[6:])
         or (not real_only and plan["fraction"] != 0.25)
         or plan["final_test_opened"] is not False
+        or ("input_policy" in plan and (plan["input_policy"] != HISTORICAL_MASKED or not real_only))
         or not isinstance(plan["seeds"], list)
         or not 1 <= len(plan["seeds"]) <= 10
         or any(type(s) is not int or not 0 <= s < 2**32 for s in plan["seeds"])
@@ -246,6 +251,8 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                 )
             )
             atomic_json(output / "summary.json", summary)
+            # La ruta estricta conserva sus llamadas sin argumentos nuevos.
+            policy = {"input_policy": plan["input_policy"]} if "input_policy" in plan else {}
             try:
                 ordered = output / "ordered"
                 prepared = prepare_causal_corpus(
@@ -254,6 +261,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                     batch_size=plan["batch_size"],
                     resume=ordered.exists(),
                     stop=stop,
+                    **policy,
                 )
                 if prepared["status"] != "completed":
                     raise InterruptedError
@@ -262,8 +270,10 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                 if prepared["source_sha256"] != binding["supervision_sha256"]:
                     raise ValueError("Los datos ordenados no corresponden a la supervisión")
                 with (
-                    ParquetCohortSource(ordered_path, partition="train") as train,
-                    ParquetCohortSource(ordered_path, partition="validation") as validation,
+                    ParquetCohortSource(ordered_path, partition="train", **policy) as train,
+                    ParquetCohortSource(
+                        ordered_path, partition="validation", **policy
+                    ) as validation,
                 ):
                     grid = ActionGrid.from_dict(prepared["grid"])
                     augmentations = _prepare_augmentations(
@@ -339,7 +349,7 @@ def run_queue(config, reference, tabular, encoded, output, *, arm="US", stop=Non
                                                 parent=parent.identity,
                                                 normalization=normalization,
                                                 batch_size=plan["batch_size"],
-                                                code=code_identity(),
+                                                code=case_code(item["case"], data),
                                             )
                                             if any(
                                                 fingerprint(result["identity"].get(k))

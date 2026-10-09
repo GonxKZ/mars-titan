@@ -7,16 +7,27 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs
 from mars_titan.data.storage import sha256
+from mars_titan.environments.cohorts import MAX_COHORT_ASSETS
 from mars_titan.models.baselines.inputs import MODALITIES
-from mars_titan.models.baselines.multimodal import MultimodalReference
+from mars_titan.models.baselines.multimodal import (
+    PRESENCE_FUSION,
+    STRICT_FUSION,
+    MultimodalReference,
+)
 from mars_titan.models.baselines.ridge import RidgeModel
 from mars_titan.profiling import CostProbe
 from mars_titan.training.experiment_resources import GpuLease
 from mars_titan.training.predictive_parents import _parent, _signature
 from mars_titan.training.reference_run import _confirmed_state
 
-NEURAL = ("rnn", "lstm", "gru", "dlinear")
+NEURAL = ("rnn", "lstm", "gru", "dlinear", "transformer")
+# Orden de los bits de presencia, el mismo de data.input_policy y de los padres tabulares.
+PRESENCE_BITS = len(MODALITIES)
+# Una cohorte completa de 8.192 filas con las 1.714 columnas float32 de la edición ocupa
+# unos 56 MB. El padre la recorre en bloques de 256 filas y no copia más entradas.
+MAX_INPUT_BYTES = 64 * 1024**2
 
 
 def require_device(device, diagnostic, lease):
@@ -40,34 +51,56 @@ class FrozenParent:
     def __init__(self, model, identity, shapes, device):
         self.model, self.identity, self.device = model, identity, device
         self.kind = identity["model"]
+        self.input_policy = identity.get("input_policy", STRICT_INPUTS)
+        self.masked = masked_inputs(self.input_policy)
         self.shapes = {key: tuple(shape) for key, shape in shapes.items()}
         if self.kind in NEURAL:
             self.model.to(device).eval().requires_grad_(False)
 
-    def predict(self, inputs):
+    def _presence(self, inputs, presence, count):
+        if not self.masked:
+            if presence is not None:
+                raise ValueError("Un padre estricto no admite bits de presencia")
+            return None
+        if (
+            not isinstance(presence, np.ndarray)
+            or presence.dtype != np.bool_
+            or presence.shape != (count, PRESENCE_BITS)
+            or not presence[:, [MODALITIES.index("prices"), MODALITIES.index("charts")]].all()
+        ):
+            raise ValueError("El padre con máscaras necesita cinco bits válidos por fila")
+        for index, name in enumerate(MODALITIES):
+            if np.any(inputs[name].reshape(count, -1)[~presence[:, index]] != 0):
+                raise ValueError("Un bloque ausente del padre contiene valores distintos de cero")
+        return presence
+
+    def predict(self, inputs, presence=None):
         if not isinstance(inputs, dict) or set(inputs) != set(MODALITIES):
             raise ValueError("El padre necesita todas las modalidades")
         count = len(inputs["prices"])
         if (
-            not 1 <= count <= 4096
-            or sum(np.asarray(v).nbytes for v in inputs.values()) > 64 * 1024**2
+            not 1 <= count <= MAX_COHORT_ASSETS
+            or sum(np.asarray(v).nbytes for v in inputs.values()) > MAX_INPUT_BYTES
             or any(
                 v.shape != (count, *self.shapes[k]) or not np.isfinite(v).all()
                 for k, v in inputs.items()
             )
         ):
             raise ValueError("Las dimensiones o valores no coinciden con el padre")
+        presence = self._presence(inputs, presence, count)
         predictions = []
         with torch.inference_mode():
             for start in range(0, count, 256):
                 chunk = {k: v[start : start + 256] for k, v in inputs.items()}
+                bits = None if presence is None else presence[start : start + 256]
                 if self.kind in NEURAL:
                     tensors = {k: torch.tensor(v, device=self.device) for k, v in chunk.items()}
-                    prediction = self.model(tensors).double().cpu().numpy()
+                    extra = () if bits is None else (torch.tensor(bits, device=self.device),)
+                    prediction = self.model(tensors, *extra).double().cpu().numpy()
                 else:
-                    matrix = np.concatenate(
-                        [chunk[k].reshape(len(chunk[k]), -1) for k in MODALITIES], axis=1
-                    )
+                    # Mismo orden que la matriz tabular: modalidades y, al final, los bits.
+                    blocks = [chunk[k].reshape(len(chunk[k]), -1) for k in MODALITIES]
+                    matrix = np.concatenate(blocks + ([] if bits is None else [bits]), axis=1)
                     prediction = self.model.predict(matrix)
                 predictions.append(np.asarray(prediction, dtype=np.float64))
         result = np.concatenate(predictions)
@@ -81,9 +114,9 @@ class FrozenParent:
         return copy.deepcopy(self.model).requires_grad_(True)
 
 
-def _inference_contract(report, kind):
+def _inference_contract(report, kind, *, masked=False):
     contract = report.get("identity", {})
-    names = ["training/corpus_inputs.py"]
+    names = ["training/corpus_inputs.py"] + (["data/input_policy.py"] if masked else [])
     if set(report.get("samples", {})) == {"train", "validation", "calibration", "evaluation"}:
         names.extend(
             ("training/temporal_corpus.py", "evaluation/splits.py", "evaluation/split_readiness.py")
@@ -97,6 +130,8 @@ def _inference_contract(report, kind):
                 else "profiling.py",
             )
         )
+        if kind == "transformer":
+            names.append("models/baselines/transformer.py")
     elif kind in {"ridge", "xgboost_external_cuda"}:
         implementation = "ridge" if kind == "ridge" else "external_boosting"
         names.extend(("models/baselines/inputs.py", f"models/baselines/{implementation}.py"))
@@ -116,9 +151,16 @@ def _neural_parent(report, source, report_path):
         raise ValueError("Las dimensiones del padre no corresponden al corpus")
     case = contract["case"]
     family = contract.get("model_family")
+    fusion = contract.get("mask_fusion", STRICT_FUSION)
+    if (fusion == PRESENCE_FUSION) != masked_inputs(contract.get("input_policy", STRICT_INPUTS)):
+        raise ValueError("La fusión del padre no corresponde a su política de entradas")
     if family == "scientific_multimodal_reference" and "architecture" in case:
         model = MultimodalReference(
-            kind, dimensions, context=contract["context"], **case["architecture"]
+            kind,
+            dimensions,
+            context=contract["context"],
+            mask_fusion=fusion,
+            **case["architecture"],
         )
     elif family == "legacy_cost_probe" and "architecture" not in case:
         model = CostProbe(kind, dimensions, context=contract["context"])
@@ -134,7 +176,10 @@ def _neural_parent(report, source, report_path):
     ):
         raise ValueError("El checkpoint del padre no confirma una época completa")
     model.load_state_dict(state["model"], strict=True)
-    if any(not torch.isfinite(value).all() for value in model.state_dict().values()):
+    if any(
+        torch.is_tensor(value) and not torch.isfinite(value).all()
+        for value in model.state_dict().values()
+    ):
         raise ValueError("El padre contiene pesos no finitos")
     return model
 
@@ -149,15 +194,21 @@ def load_parent(ordered, report_path, *, device="cuda:0", diagnostic=False, leas
     if identity["weighting"] != "natural":
         raise ValueError("El diseño emparejado fija la ponderación natural")
     shapes, kind = source["shapes"], identity["model"]
-    _inference_contract(report, kind)
-    features = sum(math.prod(shape) for shape in shapes.values())
+    masked = masked_inputs(identity.get("input_policy", STRICT_INPUTS))
+    _inference_contract(report, kind, masked=masked)
+    # Los padres tabulares con máscaras reciben los cinco bits después de las modalidades.
+    features = sum(math.prod(shape) for shape in shapes.values()) + (PRESENCE_BITS if masked else 0)
     if diagnostic and max(source["counts"].values()) > 5000:
         raise ValueError("El diagnóstico CPU supera el presupuesto de 5000 filas")
     if kind in NEURAL:
         model = _neural_parent(report, source, report_path)
     elif kind == "ridge" and not diagnostic:
         model = RidgeModel.load(checkpoint)
-        if len(model.mean) != features or report.get("features") != features:
+        if (
+            len(model.mean) != features
+            or report.get("features") != features
+            or (masked and report.get("feature_order") != [*MODALITIES, "presence"])
+        ):
             raise ValueError("Las dimensiones tabulares del padre no coinciden")
     elif kind == "xgboost_external_cuda" and not diagnostic:
         from mars_titan.models.baselines.external_boosting import ExternalBoostingModel

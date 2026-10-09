@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
+from mars_titan.data.input_policy import STRICT_INPUTS, masked_inputs, policy_identity
 from mars_titan.environments.cohorts import (
     read_cohort,
     shapes_contract,
@@ -20,6 +21,24 @@ from mars_titan.training.partition_contract import LEGACY_BOUNDS
 
 CONDITIONS = ("real", "real_resampled", "real_synthetic")
 MAX_BYTES = 64 * 1024**2
+PRESENCE_BITS = len(MODALITIES)
+
+
+def feature_order(masked):
+    """Orden de las columnas del adaptador lineal, con los bits antes del padre."""
+    return [*MODALITIES, *(["presence"] if masked else []), "parent_prediction"]
+
+
+def adapter_features(inputs, presence, parent):
+    """Concatenar modalidades, bits de presencia si existen y la predicción del padre."""
+    count = len(parent)
+    blocks = [inputs[name].reshape(count, -1) for name in MODALITIES]
+    if presence is not None:
+        if presence.dtype != np.bool_ or presence.shape != (count, PRESENCE_BITS):
+            raise ValueError("La presencia necesita cinco booleanos por fila")
+        blocks.append(presence.astype(np.float32))
+    with np.errstate(over="raise", invalid="raise"):
+        return np.concatenate(blocks + [parent[:, None].astype(np.float32)], axis=1)
 
 
 def fingerprint(value):
@@ -55,13 +74,24 @@ class PairedInputs:
         self.shapes = shapes_contract(train.shapes, train.max_assets, MAX_BYTES)
         if self.shapes != validation.shapes or not len(train) or not len(validation):
             raise ValueError("Las fuentes no comparten dimensiones o están vacías")
+        self.input_policy = getattr(train, "input_policy", STRICT_INPUTS)
+        if getattr(validation, "input_policy", STRICT_INPUTS) != self.input_policy:
+            raise ValueError("Las fuentes no comparten la política de entradas")
+        self.masked = masked_inputs(self.input_policy)
+        if self.masked and (windows or synthetic is not None or synthetic_identity is not None):
+            # Los episodios sintéticos no tienen bits de presencia ni causas de ausencia.
+            raise ValueError("La edición con máscaras solo admite la condición real")
         if len(windows) > 100_000:
             raise ValueError("El número de episodios excede el presupuesto")
         for window in windows:
             EpisodeView(train, window)
         self.train, self.validation, self.parent = train, validation, parent
         self.windows, self.synthetic = tuple(windows), synthetic
-        self.features = 1 + sum(math.prod(shape) for shape in self.shapes.values())
+        self.features = (
+            1
+            + sum(math.prod(shape) for shape in self.shapes.values())
+            + (PRESENCE_BITS if self.masked else 0)
+        )
         if self.features > 16384:
             raise ValueError("Las dimensiones exceden el presupuesto del adaptador")
         self.identity = dict(
@@ -72,11 +102,26 @@ class PairedInputs:
             windows=[asdict(window) for window in windows],
             synthetic=synthetic_identity,
             shapes={name: list(shape) for name, shape in self.shapes.items()},
+            **policy_identity(self.input_policy),
         )
         self.sha256 = fingerprint(self.identity)
         self.counts = {
             source.partition: sum(row[1] for row in source.index) for source in (train, validation)
         }
+        # La ventana se identifica solo por su tramo de ajuste. Validación y evaluación
+        # pueden cambiar sin alterar el normalizador que depende de ella.
+        self.window = (
+            dict(
+                train_partition_sha256=train.partition_sha256,
+                train_rows=self.counts["train"],
+                train_cohorts=len(train.index),
+                train_bounds={
+                    market: list(bounds) for market, bounds in sorted(train.market_bounds.items())
+                },
+            )
+            if self.masked
+            else None
+        )
         self.population_counts = dict(getattr(train, "population_counts", self.counts))
         if (
             getattr(validation, "population_counts", self.population_counts)
@@ -87,6 +132,8 @@ class PairedInputs:
     def _visits(self, partition, condition, epoch, seed):
         if partition not in {"train", "validation"} or condition not in CONDITIONS:
             raise ValueError("La partición o la condición no pertenece al diseño")
+        if self.masked and condition != "real":
+            raise ValueError("La edición con máscaras solo admite la condición real")
         if partition == "validation":
             if condition != "real":
                 raise ValueError("La validación principal solo admite datos reales")
@@ -164,7 +211,13 @@ class PairedInputs:
                     view = self._episode(source, visit.episode, condition)
                     current_episode = visit.episode
                 raw = view(visit.cohort - self.windows[visit.episode].decision_start)
+            presence = None
+            if self.masked:
+                presence = raw["presence"][np.argsort(raw["asset_ids"])]
+                raw = {key: value for key, value in raw.items() if key != "presence"}
             raw = read_cohort(raw, self.shapes, source.max_assets, MAX_BYTES)
+            if presence is not None:
+                raw["presence"] = presence
             low, high, cutoff = getattr(source, "bounds", LEGACY_BOUNDS[partition])
             if (
                 not low <= raw["prediction_at"] < cutoff
@@ -179,12 +232,8 @@ class PairedInputs:
                 end = min(offset + batch_size, len(inherited))
                 inputs = {k: v[offset:end].copy() for k, v in raw["inputs"].items()}
                 prediction = inherited[offset:end].copy()
-                with np.errstate(over="raise", invalid="raise"):
-                    features = np.concatenate(
-                        [inputs[k].reshape(end - offset, -1) for k in MODALITIES]
-                        + [prediction[:, None].astype(np.float32)],
-                        axis=1,
-                    )
+                bits = None if presence is None else presence[offset:end].copy()
+                features = adapter_features(inputs, bits, prediction)
                 final = end == len(inherited)
                 confirmed = identity | dict(
                     visit=position + int(final),
@@ -192,7 +241,7 @@ class PairedInputs:
                     consumed=int(offsets[position]) + end,
                 )
                 ids = raw["asset_ids"][offset:end]
-                yield dict(
+                batch = dict(
                     inputs=inputs,
                     features=features,
                     parent=prediction,
@@ -203,11 +252,19 @@ class PairedInputs:
                     origin="real" if visit.arm == "real" else condition.removeprefix("real_"),
                     confirmed_cursor=confirmed,
                 )
+                if bits is not None:
+                    batch["presence"] = bits
+                yield batch
 
 
 @threadpool_limits.wrap(limits=2)
 def fit_normalization(dataset, *, batch_size=256, stop=None):
-    """Fijar la escala con todas las filas reales de train, antes de cualquier aumento."""
+    """Fijar la escala con todas las filas reales de train, antes de cualquier aumento.
+
+    Solo se recorre la partición de ajuste. Con la edición con máscaras la escala se
+    liga a la ventana por la huella de su Parquet de ajuste y sus límites, no al
+    manifiesto ordenado que también describe validación.
+    """
     scaler, count = StandardScaler(), 0
     for batch in dataset.batches(partition="train", condition="real", batch_size=batch_size):
         if stop is not None and stop.requested:
@@ -218,13 +275,15 @@ def fit_normalization(dataset, *, batch_size=256, stop=None):
         raise ValueError("La normalización no concilia todas las filas de entrenamiento")
     if not np.isfinite(scaler.mean_).all() or not np.isfinite(scaler.scale_).all():
         raise ValueError("La normalización contiene estadísticas no finitas")
-    return dict(
-        train_sha256=dataset.train.manifest_sha256,
+    statistics = dict(
         parent_sha256=dataset.parent.parent_sha256,
         encoding=dataset.parent.encoding,
         mean=scaler.mean_.tolist(),
         scale=scaler.scale_.tolist(),
         samples=count,
         fit_partition="train",
-        feature_order=[*MODALITIES, "parent_prediction"],
+        feature_order=feature_order(dataset.masked),
     )
+    if dataset.masked:
+        return dict(**policy_identity(dataset.input_policy), window=dataset.window, **statistics)
+    return dict(train_sha256=dataset.train.manifest_sha256, **statistics)
