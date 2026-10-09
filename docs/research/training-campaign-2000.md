@@ -144,10 +144,10 @@ Cuando una semilla de un brazo ya tiene su predictor elegido en una ventana (el 
 | --- | --- |
 | `protocol`, `fold` | Protocolo v2 del mercado y ventana de la comparación declarada |
 | `parent` | Trabajo que ajustó el estado elegido y huella de ese estado. En una ventana trasladada es el trabajo del ancla, y la campaña comprueba que la predicción trasladada partió de ese mismo estado |
-| `labels_used_until` | Microsegundo anterior al inicio de la evaluación |
+| `labels_used_until` | Mayor maduración de las etiquetas aceptadas de ajuste, validación y calibración de la vista en que se fijó el predictor elegido, y de la calibración de la propia ventana |
 | `predictions` | Filas y `prediction_fingerprint` de la mediana emitida en calibración y evaluación, solo con las filas de ese mercado |
 
-`labels_used_until` es una cota y no la maduración exacta de la última etiqueta. La calibración común usa el tramo anterior a la evaluación y la purga por intervalo de etiqueta obliga a que todas sus etiquetas maduren antes del final del tramo, así que ninguna etiqueta usada en ajuste, selección o calibración madura después. En una ventana trasladada el modelo dejó de aprender antes, pero su calibración también usa ese tramo. Al reanudar, un recibo de ventana ya escrito debe coincidir con el que se deriva de los trabajos confirmados. No hay recibos reales porque la campaña no se ha ejecutado.
+`labels_used_until` se deriva de las etiquetas que el predictor pudo leer, no de las fechas del protocolo. `training/label_maturity.py` comprueba la huella de cada archivo de etiquetas de la vista y toma la mayor `target_available_at` de los tramos de ajuste, validación y calibración. En una ventana trasladada lee esos tramos en la vista del ancla, donde se fijaron los parámetros, y añade la calibración de la propia ventana, que también usa la calibración común. La purga por intervalo de etiqueta hace que ese instante sea anterior a la evaluación. Si una etiqueta madurase dentro de ella, `read_window_receipt` rechaza el recibo, la ventana no se publica y la etapa de políticas no tiene cinta que construir. Al reanudar, un recibo de ventana ya escrito debe coincidir con el que se deriva de los trabajos confirmados. No hay recibos reales porque la campaña no se ha ejecutado.
 
 `sources` publica el manifiesto de un ámbito para `evaluation.walk_forward_comparison`. Elige para cada brazo, semilla y ventana el ganador de la búsqueda, el finalista o la predicción trasladada, vuelve a exigir las mismas filas en todos ellos y valida el manifiesto con `load_sources` antes de publicarlo. Con la comparación declarada de 23 brazos falla y nombra los brazos sin productor. Para evaluar antes solo las referencias haría falta declarar, antes de ver resultados, una comparación con esos brazos.
 
@@ -227,10 +227,10 @@ La etapa de adaptadores no cambia, porque solo parte de las referencias neuronal
 
 | Etapa de políticas | Predictores | Ajustes | Traslados | Referencias | `max_training_jobs` | `max_evaluation_jobs` |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| A declarada | 11 | 1.368 | 0 | 792 | 1.368 | 792 |
-| A ampliada | 22 | 2.160 | 0 | 1.584 | 2.160 | 1.584 |
-| B declarada | 11 | 456 | 912 | 792 | 456 | 1.704 |
-| B ampliada | 22 | 720 | 1.440 | 1.584 | 720 | 3.024 |
+| A declarada | 11 | 1.368 | 0 | 1.221 | 1.368 | 1.221 |
+| A ampliada | 22 | 2.160 | 0 | 2.442 | 2.160 | 2.442 |
+| B declarada | 11 | 456 | 912 | 1.221 | 456 | 2.133 |
+| B ampliada | 22 | 720 | 1.440 | 2.442 | 720 | 3.882 |
 
 Activar la declaración consiste en copiar las tres secciones y los límites de cada variante a `historical-masked-campaign-{a,b}.json` y los límites de políticas a `historical-masked-rl-stage-{a,b}.json`. Las pruebas comprueban que ampliar una campaña cargada produce el mismo plan, los mismos recuentos y las mismas secciones que declararlas en su archivo. Los núcleos de CM-v1 comparten la receta de Titans-MAC. Si la medida confirma que `mac_online` necesita 128, B y B+C la conservan, porque la penalización C acumula por bloques con el mismo gradiente.
 
@@ -260,10 +260,10 @@ El objetivo del trabajo exige medir el resultado financiero de todos los modelos
 
 | Nivel | Predictores | Brazos |
 | --- | --- | --- |
-| `all_predictors` | Todos los brazos con productor en la campaña base, con la semilla 42 | KLPO terminal y las tres referencias |
+| `all_predictors` | Todos los brazos con productor en la campaña base, con la semilla 42 | KLPO terminal y las cinco referencias |
 | `algorithms` | Transformer compacto y Titans-MAC en línea | Las tres variantes PPO y Double DQN |
 
-El primer nivel no usa una lista fija. Se resuelve desde la configuración de la campaña, en su orden: hoy son rnn, lstm, gru, dlinear, el Transformer compacto, Ridge, XGBoost y las cuatro variantes de Titans-MAC. La GRU candidata entra en cuanto su sección `episodic_gru` se declare en la campaña, y lo mismo ocurrirá con MARS-TITAN ampliado y CM-v1 (B, B+C, B+M y B+C+M) cuando se registren sus productores, sin cambiar la etapa. Las referencias dependen de la predicción, porque el entorno invierte en el cuartil superior de puntuaciones positivas, así que también miden cada predictor sin aprendizaje. El segundo nivel compara algoritmos solo sobre la referencia y el núcleo que la propuesta contrasta, por dos motivos. Cada brazo aprendido multiplica los ajustes (con los cinco brazos sobre los 11 predictores, A necesitaría 3.960 ajustes en lugar de 1.368) y el contraste principal es KLPO, que ya cubre a todos los predictores. Para esos dos predictores la comparación de algoritmos usa los ajustes de KLPO y las referencias del primer nivel, sin repetirlos.
+El primer nivel no usa una lista fija. Se resuelve desde la configuración de la campaña, en su orden: hoy son rnn, lstm, gru, dlinear, el Transformer compacto, Ridge, XGBoost y las cuatro variantes de Titans-MAC. La GRU candidata entra en cuanto su sección `episodic_gru` se declare en la campaña, y lo mismo ocurrirá con MARS-TITAN ampliado y CM-v1 (B, B+C, B+M y B+C+M) cuando se registren sus productores, sin cambiar la etapa. La compra inicial y la regla del 50 % dependen de la predicción, porque invierten en el cuartil superior de puntuaciones positivas, así que también miden cada predictor sin aprendizaje. La cartera 1/N y el índice de mercado no usan la predicción y dan el mismo patrimonio con cualquier predictor sobre la misma cinta. Se repiten por predictor para que cada familia del informe tenga sus controles en las mismas ventanas, y las pruebas comprueban esa igualdad. El segundo nivel compara algoritmos solo sobre la referencia y el núcleo que la propuesta contrasta, por dos motivos. Cada brazo aprendido multiplica los ajustes (con los cinco brazos sobre los 11 predictores, A necesitaría 3.960 ajustes en lugar de 1.368) y el contraste principal es KLPO, que ya cubre a todos los predictores. Para esos dos predictores la comparación de algoritmos usa los ajustes de KLPO y las referencias del primer nivel, sin repetirlos.
 
 El universo de un ancla sigue la regla `median_traded_value_in_validation_v1`: activos admitidos en todas las cintas de ajuste y validación, con alguna predicción en validación, ordenados por la mediana de cierre por volumen de la validación y con desempate por identificador, hasta 128. La evaluación no interviene en esa elección. El universo es común a todos los predictores, porque la campaña base exige las mismas filas a todos sus brazos en cada ventana, y lo fija el primer predictor del nivel de algoritmos, el Transformer compacto. Si la cinta de evaluación excluye un activo del universo, por ejemplo por filas sin verificar, el trabajo registra sus episodios como fallidos con el motivo `universe_assets_excluded` en lugar de reducir el universo en silencio.
 
@@ -279,17 +279,20 @@ Los brazos comparten entorno, observaciones, las seis acciones y las semillas 42
 | `ppo_clip_kl_epoch_stop` | `algorithms` | `native_ppo` | `ppo_clip_kl_epoch_stop_v1` con KL objetivo 0,01 |
 | `double_dqn` | `algorithms` | `native_ppo` | Double DQN |
 | `cash`, `hold_initial`, `rebalance_50` | `all_predictors` | Contabilidad nativa | Sin aprendizaje: efectivo, compra inicial y regla fija del 50 % sobre la predicción |
+| `equal_weight_monthly`, `market_index` | `all_predictors` | Contabilidad nativa | Sin aprendizaje ni predicción: 1/N sobre todos los activos valorados reequilibrada cada 21 sesiones y compra inicial de SPY en EE. UU. En China el índice CSI 300 se calcula en el informe con sus niveles diarios, sin dividendos |
 
-El presupuesto se fija antes de evaluar: 262.144 transiciones por ajuste con 16 entornos, recorridos de 1.024 transiciones, cuatro épocas de minilotes de 64 y una validación cada 16.384 transiciones. La selección usa `ruin_count_then_mean_liquidated_log_growth` sobre la validación, con mejora mínima de 0,0001, paciencia 5 y sin parada temprana, así que todos los brazos y todos los predictores consumen el mismo presupuesto por ajuste. El MAE del predictor nunca interviene. Cada trabajo se evalúa con costes de 0, 10 y 25 pb. El capital es 1.000.000 en la moneda del mercado. Con los 10.000 de configuraciones anteriores, el cuartil superior de 128 activos recibía unos 78 por activo con la menor exposición, menos que un lote de 100 acciones A a cualquier precio por encima de 0,78 CNY y menos que una acción de muchas empresas estadounidenses.
+El presupuesto se fija antes de evaluar: 262.144 transiciones por ajuste con 16 entornos, recorridos de 1.024 transiciones, cuatro épocas de minilotes de 64 y una validación cada 16.384 transiciones. La selección usa `ruin_count_then_mean_liquidated_log_growth` sobre la validación, con mejora mínima de 0,0001, paciencia 5 y sin parada temprana, así que todos los brazos y todos los predictores consumen el mismo presupuesto por ajuste. La paciencia queda declarada pero no detiene el ajuste. Parar cada brazo por su cuenta rompería la igualdad de presupuesto emparejada, porque KLPO consume oleadas completas y PPO y Double DQN transiciones, y una parada conjunta exigiría coordinar trabajos que se ejecutan por separado. El mejor estado en validación sigue protegiendo frente a las actualizaciones posteriores que empeoran. El MAE del predictor nunca interviene. Cada trabajo se evalúa con costes de 0, 5, 10 y 20 pb, y el informe toma 10 pb como coste principal. El capital es 1.000.000 en la moneda del mercado. Con los 10.000 de configuraciones anteriores, el cuartil superior de 128 activos recibía unos 78 por activo con la menor exposición, menos que un lote de 100 acciones A a cualquier precio por encima de 0,78 CNY y menos que una acción de muchas empresas estadounidenses.
 
 | Variante | Nivel | Ajustes | Traslados | Referencias | Episodios de evaluación |
 | --- | --- | --- | --- | --- | --- |
-| A | `all_predictors` | 792 | 0 | 792 | 4.752 |
-| A | `algorithms` | 576 | 0 | 0 | 1.728 |
-| A | Total | 1.368 | 0 | 792 | 6.480 |
-| B | `all_predictors` | 264 | 528 | 792 | 4.752 |
-| B | `algorithms` | 192 | 384 | 0 | 1.728 |
-| B | Total | 456 | 912 | 792 | 6.480 |
+| A | `all_predictors` | 792 | 0 | 1.221 | 8.052 |
+| A | `algorithms` | 576 | 0 | 0 | 2.304 |
+| A | Total | 1.368 | 0 | 1.221 | 10.356 |
+| B | `all_predictors` | 264 | 528 | 1.221 | 8.052 |
+| B | `algorithms` | 192 | 384 | 0 | 2.304 |
+| B | Total | 456 | 912 | 1.221 | 10.356 |
+
+Las referencias son 111 por predictor: cinco en cada una de las 15 ventanas de EE. UU. y cuatro en las 9 de China, donde el índice no se ejecuta en el motor.
 
 En B la política se ajusta en la primera ventana de política y cada tres, como la campaña base. EE. UU. ajusta en 2009, 2012, 2015, 2018 y 2021 y China en 2015, 2018 y 2021. Las ventanas intermedias evalúan sin ajuste la política elegida en su ancla, sobre el universo del ancla.
 
