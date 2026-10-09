@@ -2,18 +2,22 @@
 
 La medición recorre datos reales de la primera ventana. Las referencias neuronales y los
 adaptadores de la matriz de postentrenamiento calculan forward, pinball y backward por
-lotes. Titans-MAC y la GRU candidata recorren su ajuste cronológico real por tramos,
-con un optimizador que solo cuenta los pasos pedidos y libera los gradientes, y su
-inferencia por eventos con los parámetros congelados. Un gancho global rechaza cualquier
-paso de un optimizador de PyTorch y al terminar se exige que los pesos no hayan cambiado.
-Solo se registran tiempos y memoria, nunca pérdidas ni errores, así que no es una
-evaluación.
+lotes. Titans-MAC, la GRU candidata, el lector episódico de MARS-TITAN y los núcleos y
+lectores de CM-v1 recorren su ajuste cronológico real por tramos, con un optimizador que
+solo cuenta los pasos pedidos y libera los gradientes, y su inferencia por eventos con los
+parámetros congelados. Un gancho global rechaza cualquier paso de un optimizador de
+PyTorch y al terminar se exige que los pesos no hayan cambiado, también los del padre
+congelado de un lector. Solo se registran tiempos, memoria y contadores, nunca pérdidas
+ni errores, así que no es una evaluación.
 
 Titans-MAC compara `accumulation_rows` y la GRU candidata `accumulation_rows` y
-`recompute` con la misma medida. Una opción que no cabe en la memoria reservada queda
-registrada como tal. Las horas se estiman aplicando los caudales a las filas de cada
-ventana de las variantes A y B, por familia y por opción, incluida la etapa de la
-matriz de adaptadores.
+`recompute` con la misma medida. Los lectores no tienen opciones de memoria y los núcleos
+de CM-v1 solo admiten la de su receta, porque la penalización C no acumula por bloques.
+Una opción que no cabe en la memoria reservada queda registrada como tal. Las horas se
+estiman aplicando los caudales a las filas de cada ventana de las variantes A y B, por
+familia y por opción, incluida la etapa de la matriz de adaptadores. Con una declaración
+preparada (`campaign_extensions`), las familias que A y B todavía no declaran se miden y
+se estiman como si lo estuvieran.
 
 Con las etapas de políticas, `simulation.policy_throughput` mide además el entorno
 financiero y la red de las políticas por lotes, sin pasos de optimizador, y añade a cada
@@ -30,14 +34,27 @@ import json
 import os
 import resource
 import time
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 
-from .campaign_plan import EPISODIC, FIT, NEURAL, TITANS, load_campaign, plan_campaign
+from .campaign_plan import (
+    CM,
+    CM_ARMS,
+    CM_CORES,
+    EPISODIC,
+    FIT,
+    MARS,
+    NEURAL,
+    TITANS,
+    _arm_specs,
+    extend_campaign,
+    load_campaign,
+    plan_campaign,
+)
 
 TRAINING_PARTITIONS = ("validation", "calibration", "evaluation", "train")
 POSTTRAINING = "posttraining_adapter_matrix"
@@ -52,6 +69,15 @@ CANDIDATE_OPTIONS = (
     {"accumulation_rows": None, "recompute": True},
     {"accumulation_rows": 128, "recompute": True},
 )
+# Única opción de los lectores y de los núcleos de CM-v1: la de su receta.
+RECIPE_ONLY = ({},)
+# Familias que recorren el ajuste cronológico y sus fases con calentamiento.
+CHRONOLOGICAL = (TITANS, EPISODIC, MARS, CM)
+# Familias que la orden puede añadir para medir con `with_candidate` o `campaign_extensions`.
+PREPARED = (EPISODIC, MARS, CM)
+# Contadores de la ventana medida: flujos de C en el núcleo y episodios en el banco del lector.
+CONTROL_COUNTERS = ("control_groups", "control_flows")
+BANK_COUNTERS = ("admitted",)
 _LIMITS = dict(
     batches=(1, 10_000),
     warmup=(0, 1000),
@@ -90,8 +116,11 @@ def _bounded(**values):
 
 
 def option_name(option):
-    """Nombre estable de una opción de memoria, por ejemplo `accumulation_rows=128`."""
-    return ",".join(f"{key}={json.dumps(value)}" for key, value in option.items())
+    """Nombre estable de una opción de memoria, por ejemplo `accumulation_rows=128`.
+
+    La opción vacía es la de la receta, sin alternativas que comparar.
+    """
+    return ",".join(f"{key}={json.dumps(value)}" for key, value in option.items()) or "recipe"
 
 
 def _options(recipe, alternatives):
@@ -179,12 +208,18 @@ def _hours(jobs, seconds):
 
 
 def _chronological_rows(campaign, family, counts):
+    """Filas por ventana de una familia cronológica, con el calentamiento de su receta Titans.
+
+    Los lectores de MARS-TITAN usan las fases de su padre Titans-MAC y los núcleos y
+    lectores de CM-v1 las de la receta del núcleo. La GRU candidata no calienta.
+    """
     if family == EPISODIC:
         return counts
     from .financial_run import load_recipe
     from .titans_walk_forward import walk_forward_options
 
-    months = walk_forward_options(load_recipe(campaign[TITANS]["path"])[1])["warmup_months"]
+    path = campaign[CM]["recipes"]["core_recipe"] if family == CM else campaign[TITANS]["path"]
+    months = walk_forward_options(load_recipe(path)[1])["warmup_months"]
     resolved = campaign["comparison_config"]["resolved_scopes"]
     return {
         scope: {
@@ -278,7 +313,7 @@ def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None):
     epochs = campaign["rule"]["max_epochs"]
     jobs = plan_campaign(campaign)
     families = {}
-    for family in (NEURAL, TITANS, EPISODIC):
+    for family in (NEURAL, *CHRONOLOGICAL):
         selected = [job for job in jobs if job["family"] == family]
         if not selected:
             continue
@@ -294,10 +329,22 @@ def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None):
             )
         else:
             families[family] = _option_hours(campaign, family, selected, counts, measured, epochs)
-    if campaign.get(EPISODIC) and EPISODIC in families:
-        families[EPISODIC]["declared_in_campaign"] = campaign[EPISODIC].get(
-            "declared_in_campaign", True
-        )
+    specs = {spec["arm"]: spec for spec in _arm_specs(campaign)}
+    # Familias que A y B todavía no declaran: el informe dice de dónde viene su sección.
+    for family in PREPARED:
+        if campaign.get(family) and family in families:
+            families[family]["declared_in_campaign"] = campaign[family].get(
+                "declared_in_campaign", True
+            )
+            # Cada lector parte del padre elegido en su ventana. Sus horas se suman en la
+            # familia del padre: Titans-MAC para MARS-TITAN y los núcleos dentro de CM-v1.
+            parents = {
+                arm: dict(parent=spec["parent"], counted_in=specs[spec["parent"]]["family"])
+                for arm, spec in specs.items()
+                if spec["family"] == family and spec["parent"]
+            }
+            if parents:
+                families[family]["parents"] = parents
     if stage is not None:
         _require(
             stage["campaign"]["path"] == campaign["path"],
@@ -334,6 +381,10 @@ def estimate_hours(campaign, counts, rates, *, stage=None, policy_stage=None):
             "Los casos de búsqueda de Titans-MAC solo cambian hiperparámetros del optimizador "
             "y comparten el caudal de su control",
             "El calentamiento de Titans-MAC se estima con la densidad del tramo que precede",
+            "Los lectores de MARS-TITAN y CM-v1 se miden sobre un padre con pesos iniciales, "
+            "con la misma arquitectura y el mismo cálculo que el padre elegido",
+            "Las horas de un lector no incluyen el ajuste de su padre, que se cuenta en la "
+            "familia del padre, y los núcleos de CM-v1 se cuentan en CM-v1",
             "Con presupuesto fijo, cada ajuste recorre todas sus épocas",
             "No incluye esperas de disco, índices, normalizadores, reanudaciones ni otras "
             "cargas en la GPU",
@@ -357,13 +408,15 @@ class _NoStepOptimizer:
     """Optimizador de la medición: cuenta los pasos pedidos y solo libera los gradientes.
 
     No hereda de `torch.optim.Optimizer`, así que el recorrido llega hasta el paso sin
-    modificar ningún peso. `unchanged` lo comprueba frente a una copia inicial.
+    modificar ningún peso. `unchanged` lo comprueba frente a una copia inicial de los
+    parámetros ajustables y de los `frozen`, como el padre congelado de un lector.
     """
 
-    def __init__(self, groups):
+    def __init__(self, groups, frozen=()):
         self.param_groups = [dict(group, params=list(group["params"])) for group in groups]
         self.calls = 0
         self.initial = [value.detach().clone() for value in self.parameters()]
+        self.frozen = [(value, value.detach().clone()) for value in frozen]
 
     def parameters(self):
         return [value for group in self.param_groups for value in group["params"]]
@@ -379,7 +432,9 @@ class _NoStepOptimizer:
         import torch
 
         current = self.parameters()
-        return all(torch.equal(a, b.detach()) for a, b in zip(self.initial, current, strict=True))
+        return all(
+            torch.equal(a, b.detach()) for a, b in zip(self.initial, current, strict=True)
+        ) and all(torch.equal(value.detach(), initial) for value, initial in self.frozen)
 
 
 class _Budget:
@@ -607,16 +662,21 @@ def _event_inputs(source):
     return [found.get(at, 0) for at, _ in source.metadata["groups"]]
 
 
-def _train_option(trainer, run, paused, settings):
-    """Filas por segundo del ajuste entre dos barreras posteriores a un paso."""
+def _train_option(trainer, run, paused, settings, counters=()):
+    """Filas por segundo del ajuste entre dos barreras posteriores a un paso.
+
+    `counters` son contadores del recorrido que se registran al empezar y al terminar la
+    ventana medida, por ejemplo los flujos de C, para saber qué cálculo recorrió la medida.
+    """
     import torch
 
-    budget = _Budget(
-        settings["segment_warmup"],
-        settings["segments"],
-        lambda _: run.counters["observations"],
-        _synchronize,
-    )
+    marks = []
+
+    def rows(_):
+        marks.append({key: run.counters.get(key, 0) for key in counters})
+        return run.counters["observations"]
+
+    budget = _Budget(settings["segment_warmup"], settings["segments"], rows, _synchronize)
     cursor = dict(epoch=0, phase="train", event=0, stage="start")
     try:
         trainer._train_pass(run, cursor, budget, _no_save)
@@ -624,8 +684,12 @@ def _train_option(trainer, run, paused, settings):
         pass
     except torch.cuda.OutOfMemoryError as error:
         return dict(status=OUT_OF_MEMORY, error=str(error).splitlines()[0])
-    rate, rows = budget.rate("El tramo de ajuste")
-    return dict(train=rate, measured_train_rows=rows)
+    rate, measured = budget.rate("El tramo de ajuste")
+    result = dict(train=rate, measured_train_rows=measured)
+    if counters:
+        start, end = marks
+        result["window_counters"] = dict(start=start, end=end)
+    return result
 
 
 def _inference(trainer, inputs, paused, settings):
@@ -649,7 +713,7 @@ def _inference(trainer, inputs, paused, settings):
     )
 
 
-def _chronological(build, fresh, paused, options, inputs, settings):
+def _chronological(build, fresh, paused, options, inputs, settings, counters=()):
     """Medir el ajuste con cada opción y la inferencia de un control cronológico.
 
     `build(opción)` construye el entrenador con `_NoStepOptimizer` y `fresh(entrenador)` el
@@ -663,7 +727,7 @@ def _chronological(build, fresh, paused, options, inputs, settings):
     for index, option in enumerate(options):
         trainer = build(option)
         torch.cuda.reset_peak_memory_stats(0)
-        result = _train_option(trainer, fresh(trainer), paused, settings)
+        result = _train_option(trainer, fresh(trainer), paused, settings, counters)
         gc.collect()
         result.update(
             option,
@@ -681,6 +745,66 @@ def _chronological(build, fresh, paused, options, inputs, settings):
     return record
 
 
+def _chronological_sources(view, document, work):
+    """Ventana, fuentes de ajuste y validación y observaciones por evento de una receta Titans.
+
+    Las fases llevan el calentamiento de la receta. Titans-MAC, los lectores sobre su padre
+    y los núcleos de CM-v1 comparten así las fases y reutilizan el mismo índice por fase.
+    """
+    from . import titans_walk_forward as titans
+    from .corpus_inputs import CorpusDataset
+
+    dataset = CorpusDataset(Path(view), input_policy=HISTORICAL_MASKED)
+    fold = _view_fold(dataset)
+    phases = titans.window_phases(fold, titans.walk_forward_options(document)["warmup_months"])
+    sources = titans._sources(
+        dataset,
+        {name: phases[name] for name in ("train", "validation")},
+        Path(work) / "titans-indices",
+    )
+    return fold, sources, _event_inputs(sources["train"])
+
+
+def _core_builder(document, recipe, sources, work, *, variant, seed, device, local_control=None):
+    """Constructor del ajuste cronológico de Titans-MAC con el optimizador de la medición.
+
+    `local_control` es el contrato del control C de un núcleo de CM-v1, como en
+    `run_titans_window`. Con `penalty`, cada tramo suma los flujos medidos de C.
+    """
+    from mars_titan.budget_training import seed_run
+
+    from . import titans_walk_forward as titans
+    from .financial_run import ChronologicalTrainer
+
+    specification = sources["train"].specification()
+
+    def build(option):
+        seed_run(seed)
+        predictor, pairing = titans._predictor(
+            document, specification, variant, seed, device, local_control
+        )
+        return ChronologicalTrainer(
+            predictor,
+            replace(recipe, **option),
+            train=sources["train"],
+            validation=sources["validation"],
+            output=Path(work) / "titans-unused",
+            optimizer_factory=_NoStepOptimizer,
+            pairing=pairing,
+        )
+
+    return build
+
+
+def _shared(candidates, inputs):
+    """Caso medido de un brazo y los casos que comparten su medida."""
+    return dict(
+        measured_case=candidates[0][0],
+        shared_by_cases=[name for name, _ in candidates],
+        max_event_inputs=max(inputs),
+    )
+
+
 def measure_titans(
     campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
 ):
@@ -691,12 +815,10 @@ def measure_titans(
     mide con su primer caso de búsqueda: los casos solo cambian hiperparámetros del
     optimizador, que no intervienen en forward ni backward. `work` guarda los índices.
     """
-    from mars_titan.budget_training import seed_run
     from mars_titan.data.embeddings import require_cuda
 
     from . import titans_walk_forward as titans
-    from .corpus_inputs import CorpusDataset
-    from .financial_run import ChronologicalTrainer, Paused, _Pass, load_recipe
+    from .financial_run import Paused, _Pass, load_recipe
 
     settings = dict(
         segments=segments, segment_warmup=segment_warmup, events=events, event_warmup=event_warmup
@@ -705,39 +827,23 @@ def measure_titans(
     section = campaign.get(TITANS)
     _require(section, "La campaña no declara Titans-MAC")
     device = str(require_cuda())
-    work = Path(work)
-    dataset = CorpusDataset(Path(view), input_policy=HISTORICAL_MASKED)
     _, document = load_recipe(section["path"])
-    phases = titans.window_phases(
-        _view_fold(dataset), titans.walk_forward_options(document)["warmup_months"]
-    )
-    sources = titans._sources(
-        dataset, {name: phases[name] for name in ("train", "validation")}, work / "titans-indices"
-    )
-    inputs = _event_inputs(sources["train"])
-    specification = sources["train"].specification()
+    _, sources, inputs = _chronological_sources(view, document, work)
     rates, guard = {}, _forbid_steps()
     try:
         with titans.unfused_attention():
             for arm, candidates in section["candidates"].items():
-                name, case = candidates[0]
+                _, case = candidates[0]
                 recipe = titans.case_recipe(document, case["search_case"])
-
-                def build(option, case=case, recipe=recipe):
-                    seed_run(case["seed"])
-                    predictor, pairing = titans._predictor(
-                        document, specification, case["variant"], case["seed"], device
-                    )
-                    return ChronologicalTrainer(
-                        predictor,
-                        replace(recipe, **option),
-                        train=sources["train"],
-                        validation=sources["validation"],
-                        output=work / "titans-unused",
-                        optimizer_factory=_NoStepOptimizer,
-                        pairing=pairing,
-                    )
-
+                build = _core_builder(
+                    document,
+                    recipe,
+                    sources,
+                    work,
+                    variant=case["variant"],
+                    seed=case["seed"],
+                    device=device,
+                )
                 record = _chronological(
                     build,
                     lambda _: _Pass(),
@@ -746,12 +852,251 @@ def measure_titans(
                     inputs,
                     settings,
                 )
+                rates[arm] = dict(record, variant=case["variant"], **_shared(candidates, inputs))
+    finally:
+        guard.remove()
+    return rates
+
+
+def _readout_record(family, parent, document, case, window, work, device, settings):
+    """Medir el lector de una familia sobre un padre `mac_online` con pesos iniciales.
+
+    Los padres elegidos todavía no existen y su coste no depende de sus pesos. El padre se
+    construye como en `_frozen_parent`: congelado y, si su núcleo se ajustó con C en
+    `penalty`, como su gemelo `disabled`, porque C no interviene al predecir. `parent` da la
+    receta del padre, su huella y su caso de búsqueda, que solo entran en la identidad de la
+    variante. `window` es la ventana, sus fuentes y sus observaciones por evento. El recorrido
+    es `ReadoutTrainer._train_pass` hasta el paso, con el banco de la escritura declarada y
+    su retención, y se exige que no cambien ni el lector ni el padre.
+    """
+    from functools import partial
+
+    from mars_titan.budget_training import seed_run
+    from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
+
+    from . import mars_titan_walk_forward as readouts
+    from . import titans_walk_forward as titans
+    from .financial_run import Paused
+    from .mars_titan_run import ReadoutTrainer, _Pass, case_recipe
+
+    fold, sources, inputs = window
+    recipe = case_recipe(document, case["search_case"])
+    specification = sources["train"].specification()
+    control = titans.control_config(family.control)
+    if control is not None and control.mode != "disabled":
+        control = replace(control, mode="disabled", weight=0.0)
+    request = dict(
+        recipe_sha256=parent["sha256"],
+        search_case=parent["search_case"],
+        window=fold["id"],
+        local_control=family.control,
+    )
+
+    def build(option):
+        seed_run(case["seed"])
+        predictor, _ = titans._predictor(
+            parent["document"],
+            specification,
+            "mac_online",
+            case["seed"],
+            device,
+            None if control is None else asdict(control),
+        )
+        predictor = predictor.eval().requires_grad_(False)
+        variant = family.variant(predictor, dict(request=request))
+        codec = FrozenEpisodeCodec(specification)
+        readout = readouts._readout(variant, codec, predictor, recipe, case["seed"])
+        return ReadoutTrainer(
+            predictor,
+            readout,
+            replace(recipe, **option),
+            admission=variant.admission,
+            retention=family.retention(recipe, variant),
+            native=readouts._native(variant.admission),
+            codec=codec,
+            train=sources["train"],
+            validation=sources["validation"],
+            output=Path(work) / "readout-unused",
+            world=family.world,
+            fold=fold["id"],
+            optimizer_factory=partial(_NoStepOptimizer, frozen=list(predictor.parameters())),
+        )
+
+    record = _chronological(
+        build,
+        lambda trainer: _Pass(bank=trainer._new_bank("train")),
+        Paused,
+        RECIPE_ONLY,
+        inputs,
+        settings,
+        BANK_COUNTERS,
+    )
+    return dict(record, bank_capacity=recipe.bank_capacity)
+
+
+def measure_mars_titan(
+    campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8
+):
+    """Medir el lector de cada brazo de MARS-TITAN sobre su padre `titans_mac_online`.
+
+    Cada brazo se mide por separado porque la escritura (M0, M1 o M2) y K cambian el
+    cálculo. Los casos de búsqueda solo cambian la tasa de aprendizaje y comparten la
+    medida. Las fases son las del padre, con su calentamiento. `work` guarda los índices.
+    """
+    from mars_titan.data.embeddings import require_cuda
+
+    from . import mars_titan_walk_forward as readouts
+    from . import titans_walk_forward as titans
+    from .financial_run import load_recipe
+    from .mars_titan_run import load_recipe as load_readout
+
+    settings = dict(
+        segments=segments, segment_warmup=segment_warmup, events=events, event_warmup=event_warmup
+    )
+    _bounded(**settings)
+    section = campaign.get(MARS)
+    _require(section, "La campaña no declara MARS-TITAN")
+    device = str(require_cuda())
+    titans_section = campaign[TITANS]
+    _, document = load_recipe(titans_section["path"])
+    parent = dict(
+        document=document,
+        sha256=titans_section["sha256"],
+        search_case=titans_section["candidates"][section["parent_arm"]][0][0],
+    )
+    readout = load_readout(section["path"])
+    window = _chronological_sources(view, document, work)
+    rates, guard = {}, _forbid_steps()
+    try:
+        with titans.unfused_attention():
+            for arm, candidates in section["candidates"].items():
+                _, case = candidates[0]
+                family = readouts._mars_family(case["components"])
+                record = _readout_record(
+                    family, parent, readout, case, window, work, device, settings
+                )
                 rates[arm] = dict(
                     record,
-                    variant=case["variant"],
-                    measured_case=name,
-                    shared_by_cases=[case_name for case_name, _ in candidates],
-                    max_event_inputs=max(inputs),
+                    components=case["components"],
+                    parent_arm=section["parent_arm"],
+                    **_shared(candidates, window[2]),
+                )
+    finally:
+        guard.remove()
+    return rates
+
+
+def _check_cm_v1(campaign, segments):
+    """Exigir antes de medir que la ventana medida alcance los flujos que mide C.
+
+    C mide un flujo cuando su número de observaciones es múltiplo de `frequency`, así que
+    la ventana necesita al menos `frequency` instantes: `segments` tramos de `truncation`.
+    """
+    section = campaign.get(CM)
+    if not section:
+        return
+    declaration, _ = read_manifest(Path(section["path"]), 64 * 1024)
+    core, _ = read_manifest(Path(section["recipes"]["core_recipe"]), 64 * 1024)
+    frequency = declaration["control"]["frequency"]
+    instants = segments * core["recipe"]["truncation"]
+    _require(
+        instants >= frequency,
+        f"La medición de C recorre {instants} instantes y necesita al menos frequency="
+        f"{frequency} para incluir flujos medidos. Aumenta los tramos medidos",
+    )
+
+
+def measure_cm_v1(campaign, view, work, *, segments=8, segment_warmup=2, events=64, event_warmup=8):
+    """Medir los dos núcleos de CM-v1 y el lector de cada brazo, sin pasos ni cambios de pesos.
+
+    Los núcleos recorren `ChronologicalTrainer._train_pass` con la receta del núcleo:
+    `cm_v1_core_b` con C en `disabled` (SDPA Math) y `cm_v1_core_c` con la penalización,
+    que en cada evento elige los flujos medidos y calcula su término de RᵀJR con su JVP. Se
+    registran los grupos y flujos de C de la ventana medida. Solo se mide la opción de la
+    receta: C no admite acumulación por bloques y los dos núcleos comparten receta. Cada
+    brazo mide su lector M1 con K = 1 sobre el gemelo `disabled` de su núcleo, con la
+    retención reservoir en B y B+C y con centros fijos en B+M y B+C+M.
+    """
+    from mars_titan.data.embeddings import require_cuda
+
+    from . import cm_v1_factorial as cm
+    from . import titans_walk_forward as titans
+    from .financial_run import Paused, _Pass, load_recipe
+    from .mars_titan_run import load_recipe as load_readout
+
+    settings = dict(
+        segments=segments, segment_warmup=segment_warmup, events=events, event_warmup=event_warmup
+    )
+    _bounded(**settings)
+    section = campaign.get(CM)
+    _require(section, "La campaña no declara CM-v1")
+    _check_cm_v1(campaign, segments)
+    declaration = cm.load_declaration(section["path"])
+    _require(
+        declaration["sha256"] == section["sha256"],
+        "La declaración de CM-v1 cambió después de planificar la campaña",
+    )
+    device = str(require_cuda())
+    _, document = load_recipe(declaration["recipes"]["core_recipe"])
+    readout = load_readout(declaration["recipes"]["readout_recipe"])
+    window = _chronological_sources(view, document, work)
+    _, sources, inputs = window
+    candidates = section["candidates"]
+    rates, guard = {}, _forbid_steps()
+    try:
+        with titans.unfused_attention():
+            for core in CM_CORES:
+                _, case = candidates[core][0]
+                contract = cm.control_contract(declaration, cm.CORES[core])
+                recipe = titans.case_recipe(document, case["search_case"])
+                build = _core_builder(
+                    document,
+                    recipe,
+                    sources,
+                    work,
+                    variant="mac_online",
+                    seed=case["seed"],
+                    device=device,
+                    local_control=contract,
+                )
+                record = _chronological(
+                    build,
+                    lambda _: _Pass(),
+                    Paused,
+                    RECIPE_ONLY,
+                    inputs,
+                    settings,
+                    CONTROL_COUNTERS if contract["mode"] == "penalty" else (),
+                )
+                rates[core] = dict(
+                    record,
+                    control_mode=contract["mode"],
+                    accumulation_rows=recipe.accumulation_rows,
+                    **_shared(candidates[core], inputs),
+                )
+            for arm, core in CM_ARMS.items():
+                _, case = candidates[arm][0]
+                parent = dict(
+                    document=document,
+                    sha256=candidates[core][0][1]["recipe_sha256"],
+                    search_case=candidates[core][0][0],
+                )
+                record = _readout_record(
+                    cm.readout_family(declaration, arm),
+                    parent,
+                    readout,
+                    case,
+                    window,
+                    work,
+                    device,
+                    settings,
+                )
+                rates[arm] = dict(
+                    record,
+                    parent_arm=core,
+                    control=cm.ARMS[arm][0],
+                    consolidation=cm.ARMS[arm][1],
+                    **_shared(candidates[arm], inputs),
                 )
     finally:
         guard.remove()
@@ -835,8 +1180,6 @@ def with_candidate(campaign, recipe, variant=None):
     variante principal de la receta y la semilla de búsqueda neuronal. No cambia la
     configuración de la campaña ni sus límites.
     """
-    from .campaign_plan import _episodic
-
     _require(not campaign.get(EPISODIC), "La campaña ya declara la GRU candidata")
     recipe = Path(recipe).resolve()
     document, _ = read_manifest(recipe, 64 * 1024)
@@ -851,8 +1194,7 @@ def with_candidate(campaign, recipe, variant=None):
         search_seed=campaign["neural"]["search_seed"],
     )
     _require(section["arms"], "La comparación no declara la GRU candidata")
-    resolved = _episodic(section, arms, campaign["rule"], campaign["input_policy"], recipe.parent)
-    return dict(campaign, **{EPISODIC: dict(resolved, declared_in_campaign=False)})
+    return extend_campaign(campaign, {EPISODIC: section})
 
 
 def _candidates(campaign, family):
@@ -895,15 +1237,18 @@ def measure_campaigns(
     stages=(),
     rl_stages=(),
     candidate=None,
+    extensions=None,
     work=None,
     output=None,
     **settings,
 ):
     """Medir una vez en `cuda:0` y estimar las horas de cada variante declarada.
 
-    Mide las referencias neuronales, Titans-MAC si la campaña lo declara, la GRU candidata
-    si la campaña la declara o `candidate` da su receta, la matriz de adaptadores si se
-    pasan sus etapas y el entorno y la red de las políticas si se pasan `rl_stages`.
+    Mide las referencias neuronales y cada familia cronológica que la campaña declara
+    (Titans-MAC, GRU candidata, MARS-TITAN y CM-v1), la matriz de adaptadores si se pasan
+    sus etapas y el entorno y la red de las políticas si se pasan `rl_stages`. `candidate`
+    añade solo la GRU candidata y `extensions`, la declaración preparada de
+    `campaign_extensions` con sus tres familias y los límites de sus etapas de políticas.
     `work` guarda los índices de la primera vista y `output`, el informe.
     """
     from mars_titan.data.storage import atomic_json
@@ -919,6 +1264,13 @@ def measure_campaigns(
         "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",
     )
     campaigns = [load_campaign(path) for path in paths]
+    prepared = None
+    if extensions is not None:
+        from .campaign_extensions import extended_campaign, extended_policies, load_extensions
+
+        _require(candidate is None, "La declaración preparada ya incluye la GRU candidata")
+        prepared = load_extensions(extensions)
+        campaigns = [extended_campaign(prepared, c) for c in campaigns]
     if candidate is not None:
         campaigns = [c if c.get(EPISODIC) else with_candidate(c, **candidate) for c in campaigns]
     reference = campaigns[0]
@@ -926,10 +1278,11 @@ def measure_campaigns(
         all(
             _candidates(c, family) == _candidates(reference, family)
             for c in campaigns
-            for family in (NEURAL, TITANS, EPISODIC)
+            for family in (NEURAL, *CHRONOLOGICAL)
         ),
         "Las variantes comparadas deben declarar los mismos candidatos",
     )
+    _check_cm_v1(reference, settings["segments"])
     loaded = [load_stage(path) for path in stages]
     by_campaign = {stage["campaign"]["path"]: stage for stage in loaded}
     _require(
@@ -946,6 +1299,14 @@ def measure_campaigns(
         and len({stage["policies"]["sha256"] for stage in policies}) <= 1,
         "Cada etapa de políticas parte de una campaña medida, con las mismas políticas",
     )
+    if prepared is not None:
+        # Con la declaración preparada, la etapa resuelve sus predictores en la campaña ampliada.
+        measured = {c["path"]: c for c in campaigns}
+        by_policies = {
+            path: extended_policies(prepared, stage, measured[path])
+            for path, stage in by_policies.items()
+        }
+        policies = list(by_policies.values())
     batched = {key: settings[key] for key in ("batches", "warmup")}
     stepped = dict(steps=settings["policy_steps"], warmup=settings["policy_warmup"])
     chronological = {
@@ -954,8 +1315,8 @@ def measure_campaigns(
         if key not in batched and not key.startswith("policy_")
     }
     _require(
-        work is not None or not (reference.get(TITANS) or reference.get(EPISODIC)),
-        "Titans-MAC y la GRU candidata necesitan un directorio de trabajo para sus índices",
+        work is not None or not any(reference.get(family) for family in CHRONOLOGICAL),
+        "Las familias cronológicas necesitan un directorio de trabajo para sus índices",
     )
     started = time.perf_counter()
     with GpuLease() as lease:
@@ -964,6 +1325,10 @@ def measure_campaigns(
             rates[TITANS] = measure_titans(reference, first_view, work, **chronological)
         if reference.get(EPISODIC):
             rates[EPISODIC] = measure_candidate(reference, first_view, work, **chronological)
+        if reference.get(MARS):
+            rates[MARS] = measure_mars_titan(reference, first_view, work, **chronological)
+        if reference.get(CM):
+            rates[CM] = measure_cm_v1(reference, first_view, work, **chronological)
         if loaded:
             rates[POSTTRAINING] = measure_posttraining(loaded[0], first_view, **batched)
         if policies:
@@ -985,6 +1350,9 @@ def measure_campaigns(
         measured_at_utc=datetime.now(UTC).isoformat(),
         view=str(Path(first_view).resolve()),
         settings=settings,
+        extensions=None
+        if prepared is None
+        else dict(path=prepared["path"], sha256=prepared["sha256"], status=prepared["status"]),
         rates=rates,
         estimates=estimates,
         comparison=_comparison(estimates),
@@ -1011,6 +1379,7 @@ def main(argv=None):
     parser.add_argument("--rl-stage", type=Path, action="append", default=[])
     parser.add_argument("--candidate-recipe", type=Path)
     parser.add_argument("--candidate-variant")
+    parser.add_argument("--extensions", type=Path)
     parser.add_argument("--work", type=Path)
     parser.add_argument("--output", type=Path)
     for name, value in SETTINGS.items():
@@ -1021,6 +1390,8 @@ def main(argv=None):
         candidate = dict(recipe=args.candidate_recipe, variant=args.candidate_variant)
     elif args.candidate_variant is not None:
         parser.error("--candidate-variant necesita --candidate-recipe")
+    if candidate is not None and args.extensions is not None:
+        parser.error("--extensions ya incluye la GRU candidata. Usa una de las dos")
     report = measure_campaigns(
         args.campaign,
         _views_argument(args.views),
@@ -1028,6 +1399,7 @@ def main(argv=None):
         stages=args.stage,
         rl_stages=args.rl_stage,
         candidate=candidate,
+        extensions=args.extensions,
         work=args.work,
         output=args.output,
         **{name: getattr(args, name) for name in SETTINGS},
