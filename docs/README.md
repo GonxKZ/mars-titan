@@ -6,6 +6,8 @@ La [dirección arquitectónica vigente](research/titans-mac-architecture.md) dis
 
 La [referencia GRU](../native/candidate.md), el [adaptador financiero de MAC](engineering/titans-financial-adapter.md) y su [control local C](experiments/mars_titan_cm_v1/mac_local_control.md) tienen comprobaciones CPU/CUDA en los alcances documentados. El [consumidor financiero](engineering/financial-session-v2.md) conecta el codec, el banco, las lecturas y la recuperación conjunta bajo M0/M1. La [GRU histórica con máscaras](../native/candidate_historical.md) tiene pruebas CPU/CUDA del módulo, pero aún necesita su conexión cronológica y su banco 128×256.
 
+[M2 por error maduro](engineering/mature-error-write-policy.md) conecta tres índices 50/25/25 con la sesión existente. Tiene pruebas CPU y una comprobación CUDA focal en FP32/FP64, K=1, B_mem=4 y C apagado. M3 y la consolidación M sobre M2 siguen pendientes.
+
 | Para qué | Documento |
 | --- | --- |
 | Preparar datos y conocer su cobertura | [Preparación ejecutada](data/preparation.md), [cobertura histórica de 2000 a 2023](data/historical-coverage.md), [esquema](data/schema.md) y [permisos](data/permissions.md). |

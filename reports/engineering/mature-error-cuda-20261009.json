@@ -1,0 +1,435 @@
+{
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "rtol": 5e-05,
+      "atol": 3e-06,
+      "max_prediction_error": 9.313225746154785e-10,
+      "synchronized_walk_seconds": {
+        "cpu": 1.4046943459979957,
+        "cpu_recovered": 1.5657645409955876,
+        "cuda": 4.028243207998457,
+        "cuda_recovered": 3.080743252998218
+      },
+      "minimum_selective_error_margin": {
+        "cpu": 1.0,
+        "cpu_recovered": 1.0,
+        "cuda": 1.0,
+        "cuda_recovered": 1.0
+      },
+      "parameter_digest": "285efe179ba343e6a24eed609b1ed1af476932e4137b67a1bf543e956d8f32eb",
+      "retained_ids": [
+        {
+          "reservoir": [],
+          "selective": [],
+          "recent": []
+        },
+        {
+          "reservoir": [
+            1,
+            3
+          ],
+          "selective": [
+            2
+          ],
+          "recent": [
+            4
+          ]
+        },
+        {
+          "reservoir": [
+            6,
+            8
+          ],
+          "selective": [
+            2
+          ],
+          "recent": [
+            8
+          ]
+        },
+        {
+          "reservoir": [
+            6,
+            8
+          ],
+          "selective": [
+            9
+          ],
+          "recent": [
+            12
+          ]
+        },
+        {
+          "reservoir": [
+            8,
+            15
+          ],
+          "selective": [
+            9
+          ],
+          "recent": [
+            16
+          ]
+        },
+        {
+          "reservoir": [
+            8,
+            15
+          ],
+          "selective": [
+            9
+          ],
+          "recent": [
+            16
+          ]
+        }
+      ],
+      "final_receipt": {
+        "after_seen": 16,
+        "before_ids": [
+          6,
+          8,
+          9,
+          12
+        ],
+        "before_seen": 12,
+        "confirmed_at": 1625861100000000,
+        "duplicate_slots": 0,
+        "estimated_peak_bytes": 16826368,
+        "evicted_ids": [
+          6,
+          12
+        ],
+        "index_ids": {
+          "recent": [
+            16
+          ],
+          "reservoir": [
+            8,
+            15
+          ],
+          "selective": [
+            9
+          ]
+        },
+        "index_offers": 12,
+        "last_id": 16,
+        "native_archive_bytes": {
+          "recent": 10027,
+          "reservoir": 10603,
+          "selective": 10027
+        },
+        "new_unique_ids": [
+          15,
+          16
+        ],
+        "offered_ids": [
+          13,
+          14,
+          15,
+          16
+        ],
+        "physical_slots": 4,
+        "retained_ids": [
+          8,
+          9,
+          15,
+          16
+        ],
+        "score_evaluations": 4,
+        "unique_episodes": 4
+      },
+      "exact_recovery_each_device": true,
+      "parameters_unchanged": true,
+      "paired_copy_summary": {
+        "source_parameter_id": "01b2a0a53afa06aa30fb1703700a46c24db9432b13bd5e1f6595d21110bdd6c3",
+        "target_parameter_id": "01b2a0a53afa06aa30fb1703700a46c24db9432b13bd5e1f6595d21110bdd6c3",
+        "predictor_parameter_tensors": 39,
+        "all_predictor_tensor_hashes_equal": true,
+        "readout_parameter_tensors": 7,
+        "runtime_state_transferred": false,
+        "episodic_snapshot_transferred": false,
+        "local_control": {
+          "source_id": "bc42490da60cb6b1332338dc423301cc5d46117c7ecd92ea08e4d9f202ce4fc1",
+          "target_id": "bc42490da60cb6b1332338dc423301cc5d46117c7ecd92ea08e4d9f202ce4fc1",
+          "basis_sha256": "f828e674f95e14b5b7f5b3c892e3e72ce532e008b1c22588770e9a65606c4ba1",
+          "basis_transferred": false,
+          "mac_sdpa_backend": "math"
+        },
+        "full_pairing_receipt_sha256": "4d6ff7ee6f4a9fe724acb7e6d3ddc8a3cc28239a7aaf9bb14b24e84104605830"
+      }
+    },
+    {
+      "dtype": "torch.float64",
+      "rtol": 2e-09,
+      "atol": 2e-10,
+      "max_prediction_error": 3.469446951953614e-18,
+      "synchronized_walk_seconds": {
+        "cpu": 2.160473644005833,
+        "cpu_recovered": 2.6709387169976253,
+        "cuda": 3.151367164013209,
+        "cuda_recovered": 3.0476225250022253
+      },
+      "minimum_selective_error_margin": {
+        "cpu": 1.0,
+        "cpu_recovered": 1.0,
+        "cuda": 1.0,
+        "cuda_recovered": 1.0
+      },
+      "parameter_digest": "fe5d8857b91280400740dff52ee16cb5e7fd20508a4b6786e52ce5f56cfe0be5",
+      "retained_ids": [
+        {
+          "reservoir": [],
+          "selective": [],
+          "recent": []
+        },
+        {
+          "reservoir": [
+            1,
+            3
+          ],
+          "selective": [
+            2
+          ],
+          "recent": [
+            4
+          ]
+        },
+        {
+          "reservoir": [
+            6,
+            8
+          ],
+          "selective": [
+            2
+          ],
+          "recent": [
+            8
+          ]
+        },
+        {
+          "reservoir": [
+            6,
+            8
+          ],
+          "selective": [
+            9
+          ],
+          "recent": [
+            12
+          ]
+        },
+        {
+          "reservoir": [
+            8,
+            15
+          ],
+          "selective": [
+            9
+          ],
+          "recent": [
+            16
+          ]
+        },
+        {
+          "reservoir": [
+            8,
+            15
+          ],
+          "selective": [
+            9
+          ],
+          "recent": [
+            16
+          ]
+        }
+      ],
+      "final_receipt": {
+        "after_seen": 16,
+        "before_ids": [
+          6,
+          8,
+          9,
+          12
+        ],
+        "before_seen": 12,
+        "confirmed_at": 1625861100000000,
+        "duplicate_slots": 0,
+        "estimated_peak_bytes": 16826368,
+        "evicted_ids": [
+          6,
+          12
+        ],
+        "index_ids": {
+          "recent": [
+            16
+          ],
+          "reservoir": [
+            8,
+            15
+          ],
+          "selective": [
+            9
+          ]
+        },
+        "index_offers": 12,
+        "last_id": 16,
+        "native_archive_bytes": {
+          "recent": 10027,
+          "reservoir": 10603,
+          "selective": 10027
+        },
+        "new_unique_ids": [
+          15,
+          16
+        ],
+        "offered_ids": [
+          13,
+          14,
+          15,
+          16
+        ],
+        "physical_slots": 4,
+        "retained_ids": [
+          8,
+          9,
+          15,
+          16
+        ],
+        "score_evaluations": 4,
+        "unique_episodes": 4
+      },
+      "exact_recovery_each_device": true,
+      "parameters_unchanged": true,
+      "paired_copy_summary": {
+        "source_parameter_id": "2daf1f2cd04a26764149a6f5928dbb2f04dc86fa7535e0789ccb438f6e1dbd49",
+        "target_parameter_id": "2daf1f2cd04a26764149a6f5928dbb2f04dc86fa7535e0789ccb438f6e1dbd49",
+        "predictor_parameter_tensors": 39,
+        "all_predictor_tensor_hashes_equal": true,
+        "readout_parameter_tensors": 7,
+        "runtime_state_transferred": false,
+        "episodic_snapshot_transferred": false,
+        "local_control": {
+          "source_id": "91657b11709abdefa9f0018bec6a06fdc36badfe8d9d5b916f524526f171f6ea",
+          "target_id": "91657b11709abdefa9f0018bec6a06fdc36badfe8d9d5b916f524526f171f6ea",
+          "basis_sha256": "9bebd2ee36e50d047d122de087f34fb7d370424eca5f03b9b731ad954569dedc",
+          "basis_transferred": false,
+          "mac_sdpa_backend": "math"
+        },
+        "full_pairing_receipt_sha256": "67317936155bf579fe4c4be819618702de85eb26c28bcee079f2fe3fd9261c85"
+      }
+    }
+  ],
+  "hardware": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 1090 MiB, 595.91.07",
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "cap_torch_bytes": 134217728,
+  "peak_torch_bytes": 19209728,
+  "peak_reserved_bytes": 25165824,
+  "wall_seconds": 22.613224592991173,
+  "B_mem": 4,
+  "quotas": [
+    2,
+    1,
+    1
+  ],
+  "K": 1,
+  "C": "disabled",
+  "cm_m": "disabled",
+  "admission": "m2",
+  "mac_backend": "math",
+  "mha_fastpath": false,
+  "tf32": false,
+  "global_rng_unchanged": true,
+  "fixture_flows": 4,
+  "trajectories_per_dtype": 4,
+  "emitted_per_trajectory": 20,
+  "matured_per_trajectory": 16,
+  "pending_per_trajectory": 4,
+  "labels": "manual_fixture_no_estimation",
+  "input_digests": [
+    "446ffb83178c03b90e056944453b173193c9ca56bb38676e86b8ef2a8dede6a5",
+    "f0ae4b780ffe0afe3fb1ee0210ad5cec5f83d79cfbe831d067c93f64771ead63",
+    "3049318a693d8177ff14301bebccefd25f06ba74bdfd6706bd5e3d7d76efac94",
+    "ba717ac0355dcbaf284909bfb2fa15e8e7f94ef3ef66822bdb51d0bca9b92ba8",
+    "88fdb2e18fe0c12c24599c245cae2d7cedf4b1f5d7f03c133e372f00a1744d3b",
+    "cc6c7c3b03c8786553013d1df31bf48aa005280ef47bb548472177ae0a7e2e4d",
+    "8f7915f5019016402cf389cf174b52b4eefd2f3a416c4e3a9428ac8bee91b5f7",
+    "ba5a143a06016695e06da3e616e7bd40d60aa12ffbd742c0d17b2097a74c943a",
+    "1047f133d3cb25ed0d7e8b80d7e4e4780814bd8158b3c403cbbe614c6d8b08ff",
+    "a19e2d06514a665a2f716ae7dbcc8c9f3a8b58ef3d7ca65370e779ac87c32e7f",
+    "69bc3781bbe897458a7cbc1f2c71e2acc3503bbf4fc8165c99cfac97bb7154ca",
+    "16fa286fbe3b9de5704c6911b5eb244a83152017076b005ecb428856d0bbd3b9",
+    "79c84345ce836948d9b676e1c4ee2fd1348b9f05ad28352b140eb3a07dbd996f",
+    "1633a3db14cf08dd5879e489eb5ea64d3af5435c08d28517080e2c3455f6a295",
+    "10d64d3c91a41cfa51692b6d810b07f038348212e63cd273692a61c1e7b679b4",
+    "3c3f2c0cf4e7520184f6433516eae7a8e691f5231163b5d83a9e42d6d1c41fb5",
+    "fc392d38be6507232b2b363168a0d218bb080990cfd7aec2453ce08e2d633e62",
+    "5c100b7ef5e6c2971eae04e73f2f09b2c28676f1ba911ef772f527a8f9db76df",
+    "8962b1e492d3cb9411cfec7e87f0faed3e5d4d558a4e82d7c047d38d70d9bfce",
+    "45b371f224eb28618c736a9bff54edde001c62b56f7283952929939cc50d52af"
+  ],
+  "common_fp32_parameter_digest": "b8441e26a3f3459cb40273c4aa594d4b512dafbffc7d86f5b109084565a0284f",
+  "parameter_recipe": "Inicialización FP32 común y conversión explícita antes del sellado",
+  "target_estimation_calls": 0,
+  "optimizer_steps": 0,
+  "transfer_bytes_measured": false,
+  "scientific_evaluation": false,
+  "scope": "Composición técnica con parámetros congelados, sin evaluar utilidad predictiva.",
+  "schema_version": 1,
+  "tested_runtime_commit": "4e62049cd80f1159362d64cc60d5960f9721660e",
+  "recorded_at_utc": "2026-10-09T01:39:19.837431+00:00",
+  "run_finished_at_utc": "2026-10-09T01:34:11.329031+00:00",
+  "issues": [
+    19,
+    23
+  ],
+  "pytest_passed": 1,
+  "dtype_cases": 2,
+  "total_trajectories": 8,
+  "pytest_seconds": 24.41,
+  "process_seconds": 25.51,
+  "process_peak_rss_bytes": 1691725824,
+  "peak_rss_inside_fixture_bytes": 1622142976,
+  "process_swaps": 0,
+  "cpu_quota_percent": 200,
+  "memory_max_bytes": 3221225472,
+  "memory_swap_max_bytes": 0,
+  "blas_openmp_threads": 2,
+  "host_exclusive": false,
+  "sources": {
+    "src/mars_titan/memory/write_policy.py": "2facfaa3eaba4850be77ada56f9c5089ded79b3b7be78151636a96085cdee3ff",
+    "src/mars_titan/memory/financial_session.py": "ccae791f749b3f3740b8fe034c7cbb569060fc99c04746c5e7c4f8066fad0d7b",
+    "tests/memory/test_write_policy.py": "76669349789e60ba59cd3497f4eff4ceee5035bdcd09501e40d1eacb7fdf7c6a",
+    "tests/memory/test_financial_session_m2.py": "08e997072e40b1bf73bf879c647291943c7f2d7334aff1ddd278fef5e4221532",
+    "tests/memory/test_financial_session_controls.py": "7cff0ce1645d86369fc5cafe992644755ea283d0f6af7a5815fd1b58f9a30c42",
+    "src/mars_titan/memory/native_memory_archive.py": "0090ebfc1e7a25e50ecdb9def824bcea349eedeacd71b06acfe79ad30c5a4d23",
+    "tests/memory/test_native_memory_archive.py": "8c0025740ddfd0c62f25e07e60470f0a90e6a9128bd7d3b618c4805e1a8e2e9e",
+    "tests/memory/cuda_mature_error_check.py": "28cd341d1ae624bde4424a1a45c46eddfea2a22cf4d21c47dcc3e8dda506a002"
+  },
+  "executed_harness_sha256": "f584fb6f4bc1cdf79212f6ca5253c5d4013f0b7e91e7b93b96ceeae1a40236bb",
+  "function_ast_equivalence": true,
+  "evidence_sha256": {
+    "report.json": "aecff7961695c1fd37d2f67533b6680c281e963db65dc6c48951563fdc3a68b1",
+    "preflight.json": "d9ca96dba95a03cc2b3f86ad61cfaf1a463d15b984dab1c6c345f8ddf8a5f2cc",
+    "run.log": "ea3c95e673f3387840a9da1e8e0effad9f0c81cb229233cf8fdf9afaed1d024d",
+    "case-torch.float32.json": "0d080fcd5f9a7e5cbaad187985553cc906ac150302e7ffae7711d6faa83cf62b",
+    "case-torch.float64.json": "a06d1b4f05cd0f26073e0e1394abbd624a8b1b25afaf1bda4a455035fa0313de"
+  },
+  "equivalence_receipt_sha256": "63c19538bb4f78a9ee7b83e6027f1c2485aa63a758fe719f4886c3285766ad94",
+  "independent_review": {
+    "receipt_sha256": "4b664baa503be56271e3c4fbddd035f8d76460cd5b47dd29038ffb06e2ec0796",
+    "valid_cases_passed": 23,
+    "scope": "Inspección estática final y archivos válidos. El rechazo adversarial del archivo expandido no se repitió como revisión independiente."
+  },
+  "limits": [
+    "Un fixture de cuatro flujos, B_mem=4, K=1 y C desactivado con backend Math. No acredita el factorial C por M2 ni otras capacidades CUDA.",
+    "Las etiquetas son manuales y los parámetros compartidos permanecen congelados. La memoria rápida sigue la transición declarada de MAC.",
+    "Los tiempos incluyen validación, lectura, escritura y sincronización. Una trayectoria por variante no estima latencia estable ni rendimiento del corpus.",
+    "El máximo de memoria Torch no incluye toda la memoria del contexto CUDA y el controlador. No se midieron bytes de transferencias ni energía.",
+    "Las tolerancias no se ampliaron. Los IDs usan igualdad exacta y el menor margen selectivo observado fue 1,0.",
+    "La ampliación M3 y la consolidación M no están activadas. El aprendizaje sigue bloqueado."
+  ]
+}
