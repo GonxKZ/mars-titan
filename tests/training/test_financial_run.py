@@ -507,10 +507,11 @@ def test_constructor_rejects_unsafe_or_mismatched_inputs(shared, tmp_path):
     specification = streams["train"].specification()
     control = FinancialPredictor(
         FinancialConfig(specification, variant="mac_online", hidden_size=32),
-        local_control=MACProjectionConfig(),
+        local_control=MACProjectionConfig(mode="diagnostic"),
         dtype=torch.float64,
     )
-    with pytest.raises(ValueError, match="CM-v1"):
+    # B y la penalización C se ajustan aquí. El diagnóstico pertenece a la sesión congelada.
+    with pytest.raises(ValueError, match="diagnóstico"):
         ChronologicalTrainer(
             control, recipe, train=streams["train"], validation=streams["validation"], **options
         )
