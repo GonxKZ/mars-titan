@@ -4,8 +4,10 @@ La etapa parte de una campaña base confirmada (`training.masked_campaign`). En 
 de política, todos los brazos de un predictor observan las mismas cintas, montadas con sus
 predicciones congeladas y sus recibos de ventana (`simulation.window_tapes`), y todos los
 predictores comparten el universo del ancla. KLPO terminal, brazo principal del contraste, y
-tres referencias sin aprendizaje (efectivo, comprar y mantener y la regla fija sobre la
-predicción) se aplican a todos los predictores con productor en la campaña. Las variantes
+cinco referencias sin aprendizaje se aplican a todos los predictores con productor en la
+campaña. Tres usan la predicción (efectivo, comprar y mantener y la regla fija del 50 %) y
+dos no la usan: la cartera 1/N reequilibrada cada 21 sesiones, con los mismos costes y
+reglas, y el índice de mercado comprado y mantenido en su propia cinta de un activo. Las variantes
 PPO identificadas y Double DQN se comparan sobre los predictores del nivel de algoritmos.
 Comparten seis acciones, las semillas 42, 43 y 44 y el presupuesto de transiciones
 declarado antes de evaluar. La selección usa el criterio de cartera declarado sobre la
@@ -58,6 +60,7 @@ from . import native_policy_runs, window_tapes
 from .policy_plan import (
     CARRY,
     FIT,
+    MARKET_INDEX,
     REFERENCE,
     _number,
     _require,
@@ -260,9 +263,9 @@ def market_rules(tape, market):
     return {asset: china_a_share_instrument(asset) for asset in tape.assets}
 
 
-def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42):
+def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42, allocation=None):
     """Evaluar una política fija o congelada en la cinta de evaluación con cada coste."""
-    from .environment import FinancialEnv
+    from .environment import ALLOCATIONS, FinancialEnv
     from .evaluation import evaluate
 
     policies = stage["policies"]
@@ -280,6 +283,7 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42):
             tapes.evaluation,
             backend=backend,
             instruments=market_rules(tapes.evaluation, market),
+            allocation=ALLOCATIONS[0] if allocation is None else allocation,
             **dict(environment, cost_bps=cost),
         )
         records.append(episode(cost, evaluate(env, policy, seed=seed)))
@@ -288,11 +292,16 @@ def evaluate_policy(tapes, policy, stage, market, *, backend, seed=42):
 
 def reference_executor(backend):
     """Ejecutor de las referencias sin aprendizaje con la contabilidad indicada."""
-    from .evaluation import fixed_policy
+    from .evaluation import REFERENCE_ALLOCATIONS, fixed_policy
 
     def run(job, tapes, folder, *, stage, resume, stop, anchor):
         records = evaluate_policy(
-            tapes, fixed_policy(job["arm"]), stage, job["market"], backend=backend
+            tapes,
+            fixed_policy(job["arm"]),
+            stage,
+            job["market"],
+            backend=backend,
+            allocation=REFERENCE_ALLOCATIONS[job["arm"]],
         )
         return dict(
             status="completed",
@@ -641,18 +650,19 @@ class _Tapes:
         atomic_json(path, dict(identity=identity, assets=assets))
         return tuple(assets)
 
-    def tape(self, job, role, window, universe):
+    def tape(self, job, role, window, universe, *, name=None):
         """Cinta de un tramo restringida al universo, confirmada en disco o construida.
 
         Devuelve carpeta, cinta, fallo y tramo del recibo. La cinta es None si el predictor
         no tiene predicciones del mercado en el tramo o si la evaluación excluye un activo del
-        universo, y el fallo guarda el motivo.
+        universo, y el fallo guarda el motivo. `name` separa la carpeta de una cinta con otros
+        activos del mismo tramo, como la del índice de mercado.
         """
         from .storage import read_tape, write_tape
 
         receipt, values = self.source(job, window, job["predictor"])
         folder = self.output / "tapes" / job["scope"] / job["market"] / job["predictor"]
-        folder = folder / job["anchor"] / f"{role}-{window}"
+        folder = folder / job["anchor"] / (name or f"{role}-{window}")
         safe_destination(folder)
         bounds = receipt.segment(window_tapes.SEGMENT)
         expected = dict(receipt_sha256=receipt.sha256, universe_sha256=_digest(list(universe)))
@@ -705,11 +715,15 @@ class _Tapes:
             validation = self.tape(job, "validation", job["validation"], universe)
             self.current, self.key = (universe, train, validation), key
         universe, train, validation = self.current
-        if job["window"] not in self.evaluations:
-            self.evaluations = {
-                job["window"]: self.tape(job, "evaluation", job["window"], universe)
-            }
-        evaluation = self.evaluations[job["window"]]
+        # El índice de mercado se evalúa en su propia cinta de un activo, del mismo tramo y
+        # con el mismo recibo. No usa sus predicciones: reparte por igual entre lo valorado.
+        symbol = self.policies[MARKET_INDEX][job["market"]] if job["arm"] == MARKET_INDEX else None
+        key = (job["window"], symbol)
+        if key not in self.evaluations:
+            assets = universe if symbol is None else (f"{job['market']}/{symbol}",)
+            name = None if symbol is None else f"index-{symbol}-{job['window']}"
+            self.evaluations = {key: self.tape(job, "evaluation", job["window"], assets, name=name)}
+        evaluation = self.evaluations[key]
         segments = [item[3] for item in (*train, validation, evaluation)]
         _require(
             all(a[1] <= b[0] for a, b in zip(segments, segments[1:], strict=False)),

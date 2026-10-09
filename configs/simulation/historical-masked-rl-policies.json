@@ -1,12 +1,19 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "historical_masked_rl_policies",
   "status": "declared_not_executed",
   "predictor": {"seed": 42},
   "levels": {
     "all_predictors": {
       "predictors": "campaign_producers",
-      "arms": ["klpo_terminal", "cash", "hold_initial", "rebalance_50"]
+      "arms": [
+        "klpo_terminal",
+        "cash",
+        "hold_initial",
+        "rebalance_50",
+        "equal_weight_monthly",
+        "market_index"
+      ]
     },
     "algorithms": {
       "predictors": ["transformer_compact", "titans_mac_online"],
@@ -26,7 +33,7 @@
     "ruin_penalty": -20,
     "dividend_payment_lag_sessions": 0
   },
-  "evaluation_costs_bps": [0, 10, 25],
+  "evaluation_costs_bps": [0, 5, 10, 20],
   "seeds": [42, 43, 44],
   "budget": {
     "transitions": 262144,
@@ -87,7 +94,22 @@
       "policy_objective": null
     }
   },
-  "references": ["cash", "hold_initial", "rebalance_50"],
+  "references": ["cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index"],
+  "market_index": {"US": "SPY"},
+  "report": {
+    "primary_cost_bps": 10,
+    "block_length": 21,
+    "block_length_sensitivity": [5, 63],
+    "replicates": 2000,
+    "seed": 20261009,
+    "confidence": 0.95,
+    "benchmarks": {"CN": "csi300_price_index_v1"}
+  },
+  "survival_sensitivity": {
+    "role": "secondary",
+    "applies_to": "universe_assets_whose_series_ends_in_evaluation",
+    "exit_returns": [0.0, -0.3, -1.0]
+  },
   "contrasts": {
     "primary": "klpo_terminal",
     "controls": [
@@ -97,7 +119,9 @@
       "double_dqn",
       "cash",
       "hold_initial",
-      "rebalance_50"
+      "rebalance_50",
+      "equal_weight_monthly",
+      "market_index"
     ]
   },
   "final_test_opened": false

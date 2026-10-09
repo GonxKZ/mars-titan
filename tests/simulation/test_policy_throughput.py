@@ -38,10 +38,10 @@ def sessions(stage, scope, window):
 
 
 def fit_seconds(stage, job, step, single):
-    """Ajuste: presupuesto con 16 entornos, minilotes, 17 validaciones y tres costes."""
+    """Ajuste: presupuesto con 16 entornos, minilotes, 17 validaciones y cuatro costes."""
     seconds = 262_144 * (step + 1 / 16000) + 256 * 4 * 16 / 100
     seconds += 17 * sessions(stage, job["scope"], job["validation"]) * (step + single)
-    return seconds + 3 * sessions(stage, job["scope"], job["window"]) * (step + single)
+    return seconds + 4 * sessions(stage, job["scope"], job["window"]) * (step + single)
 
 
 @pytest.mark.parametrize("variant", "AB")
@@ -49,12 +49,14 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     stage = policy_plan.load_stage(STAGES[variant])
     estimate = policy_throughput.policy_hours(stage, RATES)
     assert estimate["status"] == "approximate" and estimate["not_measured"]
-    expected_jobs = dict(A=dict(fit=1368, reference=792), B=dict(fit=456, carry=912, reference=792))
+    expected_jobs = dict(
+        A=dict(fit=1368, reference=1221), B=dict(fit=456, carry=912, reference=1221)
+    )
     assert estimate["jobs"] == expected_jobs[variant]
     levels = dict(
-        A=dict(all_predictors=dict(fit=792, reference=792), algorithms=dict(fit=576)),
+        A=dict(all_predictors=dict(fit=792, reference=1221), algorithms=dict(fit=576)),
         B=dict(
-            all_predictors=dict(fit=264, carry=528, reference=792),
+            all_predictors=dict(fit=264, carry=528, reference=1221),
             algorithms=dict(fit=192, carry=384),
         ),
     )
@@ -74,11 +76,11 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     china = [job for job in plan if job["scope"] == "CN" and job["arm"] == "klpo_terminal"]
     expected = 0.0
     for job in china:
-        evaluated = 3 * sessions(stage, "CN", job["window"]) * (1 / 400 + single)
+        evaluated = 4 * sessions(stage, "CN", job["window"]) * (1 / 400 + single)
         expected += fit_seconds(stage, job, 1 / 400, single) if job["kind"] == "fit" else evaluated
     assert estimate["scopes"]["CN"]["arms"]["klpo_terminal"] * 3600 == pytest.approx(expected)
     cash = [job for job in plan if job["scope"] == "US" and job["arm"] == "cash"]
-    expected = math.fsum(3 * sessions(stage, "US", job["window"]) / 1000 for job in cash)
+    expected = math.fsum(4 * sessions(stage, "US", job["window"]) / 1000 for job in cash)
     assert estimate["scopes"]["US"]["arms"]["cash"] * 3600 == pytest.approx(expected)
     total = math.fsum(scope["hours"] for scope in estimate["scopes"].values())
     assert estimate["hours"] == pytest.approx(total)

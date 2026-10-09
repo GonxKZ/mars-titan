@@ -4,11 +4,18 @@ La etapa se declara en dos archivos. Las políticas comunes fijan antes de evalu
 semilla del predictor, los dos niveles de la comparación, las ventanas de ajuste, el
 universo, el entorno, los costes, las semillas, el presupuesto de transiciones, el criterio
 de selección de cartera, los brazos aprendidos con su motor, las referencias sin
-aprendizaje y el contraste con KLPO como brazo principal. Cada variante nombra su campaña
-base, sus ámbitos y sus límites. El plan enumera cada ajuste, traslado y referencia sin
-leer datos. Este módulo no lee cintas ni ejecuta ningún ajuste.
+aprendizaje, el contraste con KLPO como brazo principal, el informe financiero y la
+sensibilidad secundaria a la supervivencia. Cada variante nombra su campaña base, sus
+ámbitos y sus límites. El plan enumera cada ajuste, traslado y referencia sin leer datos.
+Este módulo no lee cintas ni ejecuta ningún ajuste.
 
-El nivel `all_predictors` aplica KLPO y las tres referencias a todos los brazos con
+La versión 2 añade dos referencias que no usan predicciones: la cartera 1/N reequilibrada
+cada 21 sesiones y el índice de mercado comprado y mantenido. El índice se ejecuta en el
+motor con el instrumento que declara cada mercado (SPY en EE. UU.). Un mercado sin
+instrumento en la edición no planifica ese trabajo y el informe lo sustituye por el
+benchmark de niveles declarado (el CSI 300 en China, `simulation.index_benchmark`).
+
+El nivel `all_predictors` aplica KLPO y las referencias a todos los brazos con
 productor en la campaña base, resueltos desde su configuración. Una familia que la campaña
 registre más adelante entra así sin cambiar la etapa. El nivel `algorithms` compara las
 demás políticas aprendidas solo sobre los predictores que declara, porque cada brazo
@@ -25,6 +32,9 @@ from mars_titan.training.campaign_plan import DECLARED, _arm_specs, load_campaig
 
 from . import window_tapes
 from .environment import ACTIONS
+from .evaluation import REFERENCE_ALLOCATIONS
+from .index_benchmark import BENCHMARKS
+from .market import CURRENCIES
 
 STAGE_KIND = "historical_masked_rl_stage"
 POLICIES_KIND = "historical_masked_rl_policies"
@@ -34,7 +44,12 @@ ALL_PREDICTORS, ALGORITHMS = "all_predictors", "algorithms"
 CAMPAIGN_PRODUCERS = "campaign_producers"
 SEEDS = [42, 43, 44]
 # Referencias sin aprendizaje de `simulation.evaluation.fixed_policy`.
-REFERENCES = ("cash", "hold_initial", "rebalance_50")
+REFERENCES = tuple(REFERENCE_ALLOCATIONS)
+MARKET_INDEX = "market_index"
+POLICIES_SCHEMA = 2
+# Límite de costes de evaluación que acepta el motor nativo (`frozen_costs`).
+MAX_EVALUATION_COSTS = 16
+SURVIVAL_RULE = "universe_assets_whose_series_ends_in_evaluation"
 # Criterios de cartera del ejecutor nativo. Ninguno usa el error del predictor.
 SELECTION_METRICS = (
     "ruin_count_then_mean_liquidated_log_growth",
@@ -80,8 +95,20 @@ _POLICIES = {
     "hyperparameters",
     "policies",
     "references",
+    "market_index",
+    "report",
+    "survival_sensitivity",
     "contrasts",
     "final_test_opened",
+}
+_REPORT = {
+    "primary_cost_bps",
+    "block_length",
+    "block_length_sensitivity",
+    "replicates",
+    "seed",
+    "confidence",
+    "benchmarks",
 }
 _ENVIRONMENT = {
     "capital",
@@ -167,7 +194,7 @@ def _read_policies(path):
     _require(
         isinstance(config, dict)
         and set(config) == _POLICIES
-        and config["schema_version"] == 1
+        and config["schema_version"] == POLICIES_SCHEMA
         and config["kind"] == POLICIES_KIND
         and config["status"] == DECLARED
         and config["final_test_opened"] is False
@@ -190,11 +217,11 @@ def _read_policies(path):
         and environment["ruin_penalty"] < 0
         and _integer(environment["dividend_payment_lag_sessions"], 0, 252)
         and isinstance(costs, list)
-        and costs
-        and len(set(costs)) == len(costs)
+        and 1 <= len(costs) <= MAX_EVALUATION_COSTS
         and all(_number(cost, 0, 1000) for cost in costs)
+        and all(a < b for a, b in zip(costs, costs[1:], strict=False))
         and environment["cost_bps"] in costs,
-        "El entorno y los costes de evaluación deben declararse antes de evaluar",
+        "El entorno y los costes de evaluación, crecientes, deben declararse antes de evaluar",
     )
     _require(
         isinstance(budget, dict)
@@ -235,7 +262,7 @@ def _read_policies(path):
         and sorted(references) == sorted(REFERENCES)
         and len(set(references)) == len(references)
         and not set(policies) & set(REFERENCES),
-        "Los brazos aprendidos y las tres referencias deben ser distintos",
+        "Los brazos aprendidos y las cinco referencias deben ser distintos",
     )
     engines = {name: _policy(name, entry) for name, entry in policies.items()}
     contrasts = config["contrasts"]
@@ -272,7 +299,58 @@ def _read_policies(path):
         and _integer(config["train_windows"], 1, 12),
         "El predictor, el universo y las ventanas de ajuste deben estar declarados",
     )
+    _read_report(config)
     return dict(config, sha256=digest, path=str(Path(path).resolve()), engines=engines)
+
+
+def _read_report(config):
+    """Validar el índice de mercado, el informe financiero y la sensibilidad de supervivencia."""
+    index, report = config["market_index"], config["report"]
+    _require(
+        isinstance(index, dict)
+        and set(index) <= set(CURRENCIES)
+        and all(
+            isinstance(symbol, str) and symbol.isascii() and symbol.isalnum() and len(symbol) <= 16
+            for symbol in index.values()
+        ),
+        "El índice de mercado declara un instrumento de la edición por mercado",
+    )
+    sensitivity = report.get("block_length_sensitivity") if isinstance(report, dict) else None
+    benchmarks = report.get("benchmarks") if isinstance(report, dict) else None
+    _require(
+        isinstance(report, dict)
+        and set(report) == _REPORT
+        and report["primary_cost_bps"] in config["evaluation_costs_bps"]
+        and _integer(report["block_length"], 1, 252)
+        and isinstance(sensitivity, list)
+        and all(_integer(length, 1, 252) for length in sensitivity)
+        and report["block_length"] not in sensitivity
+        and all(a < b for a, b in zip(sensitivity, sensitivity[1:], strict=False))
+        and _integer(report["replicates"], 100, 100_000)
+        and _integer(report["seed"], 0, 2**63 - 1)
+        and type(report["confidence"]) is float
+        and 0.5 <= report["confidence"] < 1
+        and isinstance(benchmarks, dict)
+        and all(
+            BENCHMARKS.get(name, {}).get("market") == market for market, name in benchmarks.items()
+        )
+        and not set(benchmarks) & set(index),
+        "El informe declara coste principal, bootstrap por bloques y benchmarks antes de "
+        "ver resultados, con un único índice por mercado",
+    )
+    survival = config["survival_sensitivity"]
+    returns = survival.get("exit_returns") if isinstance(survival, dict) else None
+    _require(
+        isinstance(survival, dict)
+        and set(survival) == {"role", "applies_to", "exit_returns"}
+        and survival["role"] == "secondary"
+        and survival["applies_to"] == SURVIVAL_RULE
+        and isinstance(returns, list)
+        and returns
+        and all(type(value) is float and -1 <= value <= 0 for value in returns)
+        and len(set(returns)) == len(returns),
+        "La sensibilidad de supervivencia es secundaria y declara retornos de salida entre -1 y 0",
+    )
 
 
 def load_stage(path):
@@ -407,6 +485,9 @@ def plan_stage(stage):
                                 )
                             )
                     for reference in policies["references"]:
+                        if reference == MARKET_INDEX and market not in policies[MARKET_INDEX]:
+                            # Sin instrumento en la edición, el informe usa el benchmark.
+                            continue
                         jobs.append(
                             dict(
                                 common,

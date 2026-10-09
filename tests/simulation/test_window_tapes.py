@@ -27,6 +27,7 @@ JOB = dict(
     scope="US",
     market="US",
     predictor="parent",
+    arm="cash",
     anchor="fold-018",
     window="fold-018",
     train=["fold-016"],

@@ -3,6 +3,8 @@
 import math
 import time
 
+from .environment import ALLOCATIONS
+
 # La venta hipotética al último cierre paga `cost_bps` y el impuesto de venta vigente en la
 # fecha de ese cierre, como `liquidated_nav` en el motor nativo.
 LIQUIDATION_BASIS = "final_close_minus_cost_bps_and_sell_taxes"
@@ -97,13 +99,29 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
     )
 
 
+# Sesiones entre dos reequilibrios de la cartera 1/N, unas cuatro semanas de mercado.
+REBALANCE_SESSIONS = 21
+# Regla de composición de cada referencia. Efectivo, comprar y mantener y la regla fija del
+# 50 % usan el cuartil superior de puntuaciones del predictor. La cartera 1/N y el índice de
+# mercado reparten por igual entre los activos valorados de su cinta y no usan predicciones.
+REFERENCE_ALLOCATIONS = dict(
+    cash=ALLOCATIONS[0],
+    hold_initial=ALLOCATIONS[0],
+    rebalance_50=ALLOCATIONS[0],
+    equal_weight_monthly=ALLOCATIONS[1],
+    market_index=ALLOCATIONS[1],
+)
+
+
 def fixed_policy(name):
     if name == "cash":
         return lambda _observation, _step: 1
-    if name == "hold_initial":
+    if name in ("hold_initial", "market_index"):
         return lambda _observation, step: 5 if step == 0 else 0
     if name == "rebalance_50":
         return lambda _observation, _step: 3
+    if name == "equal_weight_monthly":
+        return lambda _observation, step: 5 if step % REBALANCE_SESSIONS == 0 else 0
     raise ValueError("La referencia financiera no está definida")
 
 

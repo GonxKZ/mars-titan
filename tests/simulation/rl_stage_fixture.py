@@ -25,7 +25,7 @@ from tests.simulation import unadjusted_edition_fixture as edition_fixture
 from tests.training.test_walk_forward_v2_views import fixture
 
 CONFIGS = Path("configs").resolve()
-REFERENCES = ["cash", "hold_initial", "rebalance_50"]
+REFERENCES = ["cash", "hold_initial", "rebalance_50", "equal_weight_monthly", "market_index"]
 HISTORY = "2019-09-01"
 
 
@@ -43,7 +43,7 @@ def write_edition(root, assets):
 
 
 def policies(**changes):
-    """Políticas reducidas: KLPO y Double DQN, las tres referencias y un año de ajuste.
+    """Políticas reducidas: KLPO y Double DQN, las cinco referencias y un año de ajuste.
 
     La campaña reducida produce los brazos GRU y LSTM. Los dos entran en el nivel completo
     y solo la GRU en el de algoritmos, que también fija el universo.
@@ -60,7 +60,7 @@ def policies(**changes):
         policies={key: value["policies"][key] for key in ("klpo_terminal", "double_dqn")},
         contrasts=dict(
             primary="klpo_terminal",
-            controls=["double_dqn", "cash", "hold_initial", "rebalance_50"],
+            controls=["double_dqn", *REFERENCES],
         ),
     )
     value["hyperparameters"]["minibatch_size"] = 16
@@ -122,6 +122,8 @@ def base_campaign(root, variant):
         "US": [
             edition_fixture.Asset("A0000", base=20.0),
             edition_fixture.Asset("B0001", base=30.0),
+            # Instrumento del índice de mercado. Sin predicciones, no entra en el universo.
+            edition_fixture.Asset("SPY", base=300.0),
         ]
     }
     write_edition(root / "edition", assets)

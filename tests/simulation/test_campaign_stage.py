@@ -59,20 +59,25 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
     summary = fixture.run(base_a, tmp_path / "stage", learner)
     assert summary["status"] == "completed"
     # KLPO y referencias sobre GRU y LSTM, y Double DQN solo sobre la GRU.
-    assert summary["planned"] == summary["completed"] == dict(fit=18, reference=12)
+    assert summary["planned"] == summary["completed"] == dict(fit=18, reference=20)
     found = receipts(tmp_path / "stage")
-    assert len(found) == 30
+    assert len(found) == 38
     stage = campaign_stage.load_stage(base_a.stage)
     folds = stage["campaign"]["comparison_config"]["resolved_scopes"]["US"]["windows"]
-    by_window, universes = {}, {}
+    by_window, universes, index = {}, {}, {}
     for receipt in found.values():
         identity = receipt["identity"]
         # Todas las políticas y referencias de un predictor y una ventana ven las mismas
-        # cintas, y todos los predictores de la ventana comparten el universo.
+        # cintas, y todos los predictores de la ventana comparten el universo. El índice de
+        # mercado solo cambia la cinta evaluada por la de su instrumento.
         key = (identity["window"], identity["predictor"])
-        by_window.setdefault(key, set()).add(json.dumps(identity["tapes"]))
+        tapes = dict(identity["tapes"])
+        if identity["arm"] == "market_index":
+            index[key] = tapes.pop("evaluation")
+            tapes["evaluation"] = None
+        by_window.setdefault(key, set()).add(json.dumps(tapes))
         universes.setdefault(identity["window"], set()).add(identity["tapes"]["universe_sha256"])
-        assert len(receipt["evaluation"]) == 3 and receipt["final_test_opened"] is False
+        assert len(receipt["evaluation"]) == 4 and receipt["final_test_opened"] is False
         if identity["kind"] == "fit":
             assert receipt["selection"] == dict(
                 metric="ruin_count_then_mean_liquidated_log_growth", partition="validation"
@@ -86,10 +91,13 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
         else:
             assert receipt["policy"] is None and receipt["transitions"] == 0
     assert {key: len(values) for key, values in by_window.items()} == {
-        (window, predictor): 1
+        (window, predictor): 2
         for window in ("fold-002", "fold-003")
         for predictor in ("gru", "lstm")
     }
+    for key, values in by_window.items():
+        evaluated = {json.loads(value)["evaluation"] for value in values}
+        assert None in evaluated and index[key] not in evaluated
     assert {window: len(values) for window, values in universes.items()} == {
         "fold-002": 1,
         "fold-003": 1,
@@ -102,7 +110,12 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
         "fold-003": ["train-fold-001", "validation-fold-002", "evaluation-fold-003"],
     }
     for anchor, names in expected.items():
-        assert sorted(p.name for p in (roots / anchor).iterdir()) == sorted(names)
+        # El índice de mercado tiene su propia cinta de un activo en el tramo evaluado.
+        index = f"index-SPY-{anchor}"
+        assert sorted(p.name for p in (roots / anchor).iterdir()) == sorted([*names, index])
+        spy, evaluated = read_tape(roots / anchor / index), read_tape(roots / anchor / names[-1])
+        assert spy.assets == ["US/SPY"] and "US/SPY" not in evaluated.assets
+        assert np.array_equal(spy.close_times, evaluated.close_times)
         ends = []
         for name in names:
             tape = read_tape(roots / anchor / name)
@@ -122,7 +135,20 @@ def test_variant_a_runs_every_policy_on_the_same_causal_tapes(base_a, tmp_path, 
     for predictor in ("gru", "lstm"):
         assert metrics[predictor]["klpo_terminal"]["10"]["episodes"] == 6
         assert metrics[predictor]["cash"]["0"]["episodes"] == 2
-        assert metrics[predictor]["cash"]["25"]["mean_liquidated_log_growth"] == 0.0
+        assert metrics[predictor]["cash"]["20"]["mean_liquidated_log_growth"] == 0.0
+    # La cartera 1/N y el índice no usan predicciones: su patrimonio es el mismo con la GRU
+    # y con la LSTM, mientras que comprar y mantener depende del cuartil de cada predictor.
+    for arm in ("equal_weight_monthly", "market_index"):
+        for window in ("fold-002", "fold-003"):
+            series = [
+                found[f"US/US/{window}/{predictor}/{arm}/reference"]["evaluation"]
+                for predictor in ("gru", "lstm")
+            ]
+            assert series[0] == series[1]
+            assert all(record["status"] == "completed" for record in series[0])
+            nav = [record["equity"]["nav"] for record in series[0]]
+            # Con más coste, menos patrimonio final en cada referencia invertida.
+            assert all(a[-1] > b[-1] for a, b in zip(nav, nav[1:], strict=False))
     assert all(
         entry["denominator"] == "completed"
         for arms in metrics.values()
@@ -136,7 +162,7 @@ def test_variant_b_carries_the_anchor_policy_on_the_anchor_universe(
 ):
     learner = fixture.ScriptedLearner()
     summary = fixture.run(base_b, tmp_path / "stage", learner)
-    assert summary["planned"] == summary["completed"] == dict(fit=9, carry=9, reference=12)
+    assert summary["planned"] == summary["completed"] == dict(fit=9, carry=9, reference=20)
     found = receipts(tmp_path / "stage")
     for job_id, receipt in found.items():
         identity = receipt["identity"]
@@ -631,8 +657,8 @@ def test_references_with_native_accounting_match_the_python_accounting(
     assert python["status"] == native["status"] == "completed"
     found = {name: receipts(tmp_path / name) for name in ("python", "native")}
     references = [job for job, r in found["python"].items() if r["identity"]["kind"] == "reference"]
-    # Tres referencias en dos ventanas para cada uno de los dos predictores.
-    assert len(references) == 12
+    # Cinco referencias en dos ventanas para cada uno de los dos predictores.
+    assert len(references) == 20
     for job in references:
         for ours, theirs in zip(
             found["python"][job]["evaluation"], found["native"][job]["evaluation"], strict=True
