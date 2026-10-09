@@ -167,3 +167,44 @@ def test_parent_cache_keys_include_the_presence_bits(tmp_path):
         assert len(calls) == 3
         with pytest.raises(ValueError, match="cinco"):
             cache.predict(dict(raw, presence=np.ones((2, 4), bool)))
+
+
+def test_quantile_parent_contributes_its_median_and_rejects_scalar_fits(tmp_path):
+    from mars_titan.models.quantile_head import QUANTILE_HEAD, median
+
+    _, ordered, _ = masked_ordered(tmp_path)
+    path, model = masked_parent(ordered, tmp_path / "parent", "transformer", head=QUANTILE_HEAD)
+    parent = load_parent(ordered, path, device="cpu", diagnostic=True)
+    assert parent.quantiles and parent.identity["output_head"]["name"] == QUANTILE_HEAD
+    model.eval()
+    for raw in cohort(ordered):
+        with torch.inference_mode():
+            expected = median(
+                model(
+                    {name: torch.tensor(value) for name, value in raw["inputs"].items()},
+                    torch.tensor(raw["presence"]),
+                )
+            )
+        np.testing.assert_array_equal(
+            parent.predict(raw["inputs"], raw["presence"]), expected.double().numpy()
+        )
+    with pytest.raises(ValueError, match="cuantiles"):
+        parent.continuation()
+
+
+@pytest.mark.parametrize("change", ["contract", "head", "code"])
+def test_quantile_parent_needs_a_consistent_output_contract(tmp_path, change):
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+
+    _, ordered, _ = masked_ordered(tmp_path)
+    path, _ = masked_parent(ordered, tmp_path / "parent", head=QUANTILE_HEAD)
+    report = json.loads(path.read_text())
+    if change == "contract":
+        report["identity"].pop("output_head")
+    elif change == "head":
+        report["identity"]["case"].pop("head")
+    else:
+        report["identity"]["code"]["models/quantile_head.py"] = "0" * 64
+    atomic_json(path, report)
+    with pytest.raises(ValueError, match="inferencia" if change == "code" else "cabeza"):
+        load_parent(ordered, path, device="cpu", diagnostic=True)

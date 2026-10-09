@@ -12,6 +12,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, policy_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.environments.corpus_source import ParquetCohortSource, prepare_causal_corpus
 from mars_titan.models.baselines.multimodal import PRESENCE_FUSION, MultimodalReference
+from mars_titan.models.quantile_head import CONTRACT
 from mars_titan.training.checkpoints import save_training_state
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
 from tests.training.historical_temporal_fixture import historical_temporal_fixture
@@ -62,12 +63,16 @@ def architecture(kind):
     return value
 
 
-def masked_parent(ordered, folder, kind="gru", *, seed=3, policy=True, fusion=PRESENCE_FUSION):
+def masked_parent(
+    ordered, folder, kind="gru", *, seed=3, policy=True, fusion=PRESENCE_FUSION, head=None
+):
     """Escribir un recibo completo de referencia con fusión de presencia y pesos aleatorios."""
     source = json.loads(Path(ordered).read_text())
     shapes = source["shapes"]
     dimensions = {name: shape[-1] for name, shape in shapes.items()}
     case = dict(kind=kind, architecture=architecture(kind), epochs=1)
+    if head is not None:
+        case["head"] = head
     names = [
         "training/corpus_inputs.py",
         "training/temporal_corpus.py",
@@ -77,6 +82,7 @@ def masked_parent(ordered, folder, kind="gru", *, seed=3, policy=True, fusion=PR
         "models/baselines/multimodal.py",
         "models/baselines/transformer.py",
         "data/input_policy.py",
+        *(["models/quantile_head.py"] if head is not None else []),
     ]
     identity = dict(
         manifest_sha256=source["source_sha256"],
@@ -91,12 +97,15 @@ def masked_parent(ordered, folder, kind="gru", *, seed=3, policy=True, fusion=PR
     )
     if policy:
         identity.update(policy_identity(HISTORICAL_MASKED), mask_fusion=fusion)
+    if head is not None:
+        identity["output_head"] = dict(CONTRACT)
     torch.manual_seed(seed)
     model = MultimodalReference(
         kind,
         dimensions,
         context=shapes["prices"][0],
         mask_fusion=fusion,
+        **({"head": head} if head is not None else {}),
         **case["architecture"],
     )
     folder = Path(folder)

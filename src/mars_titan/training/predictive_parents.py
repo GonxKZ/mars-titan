@@ -131,6 +131,8 @@ def _parent(ordered, parent):
         contract["mask_fusion"] = identity["mask_fusion"]
     if "prediction_retention" in identity:
         contract["prediction_retention"] = identity["prediction_retention"]
+    if "output_head" in identity:
+        contract["output_head"] = identity["output_head"]
     return source, report, contract, (checkpoint, signature)
 
 

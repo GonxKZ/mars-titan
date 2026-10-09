@@ -13,10 +13,12 @@ from mars_titan.environments.cohorts import MAX_COHORT_ASSETS
 from mars_titan.models.baselines.inputs import MODALITIES
 from mars_titan.models.baselines.multimodal import (
     PRESENCE_FUSION,
+    SCALAR_HEAD,
     STRICT_FUSION,
     MultimodalReference,
 )
 from mars_titan.models.baselines.ridge import RidgeModel
+from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, median
 from mars_titan.profiling import CostProbe
 from mars_titan.training.experiment_resources import GpuLease
 from mars_titan.training.predictive_parents import _parent, _signature
@@ -54,6 +56,10 @@ class FrozenParent:
         self.input_policy = identity.get("input_policy", STRICT_INPUTS)
         self.masked = masked_inputs(self.input_policy)
         self.shapes = {key: tuple(shape) for key, shape in shapes.items()}
+        # Un padre de cuantiles aporta su mediana como predicción puntual del padre.
+        self.quantiles = bool(getattr(model, "emits_quantiles", False))
+        if self.quantiles != ("output_head" in identity):
+            raise ValueError("La cabeza del padre no coincide con su identidad")
         if self.kind in NEURAL:
             self.model.to(device).eval().requires_grad_(False)
 
@@ -96,7 +102,9 @@ class FrozenParent:
                 if self.kind in NEURAL:
                     tensors = {k: torch.tensor(v, device=self.device) for k, v in chunk.items()}
                     extra = () if bits is None else (torch.tensor(bits, device=self.device),)
-                    prediction = self.model(tensors, *extra).double().cpu().numpy()
+                    output = self.model(tensors, *extra)
+                    output = median(output) if self.quantiles else output
+                    prediction = output.double().cpu().numpy()
                 else:
                     # Mismo orden que la matriz tabular: modalidades y, al final, los bits.
                     blocks = [chunk[k].reshape(len(chunk[k]), -1) for k in MODALITIES]
@@ -108,9 +116,17 @@ class FrozenParent:
             raise ValueError("El padre no produce una predicción finita por fila")
         return result
 
-    def continuation(self):
+    def _require_scalar_weights(self):
         if self.kind not in NEURAL:
             raise ValueError("La continuación neuronal requiere pesos de un padre neuronal")
+        if self.quantiles:
+            # Sus objetivos actúan sobre un centro escalar. La pinball de cinco niveles no.
+            raise ValueError(
+                "Un padre de cuantiles solo admite controles sobre su mediana congelada"
+            )
+
+    def continuation(self):
+        self._require_scalar_weights()
         return copy.deepcopy(self.model).requires_grad_(True)
 
 
@@ -132,6 +148,8 @@ def _inference_contract(report, kind, *, masked=False):
         )
         if kind == "transformer":
             names.append("models/baselines/transformer.py")
+        if contract.get("case", {}).get("head") == QUANTILE_HEAD:
+            names.append("models/quantile_head.py")
     elif kind in {"ridge", "xgboost_external_cuda"}:
         implementation = "ridge" if kind == "ridge" else "external_boosting"
         names.extend(("models/baselines/inputs.py", f"models/baselines/{implementation}.py"))
@@ -154,12 +172,18 @@ def _neural_parent(report, source, report_path):
     fusion = contract.get("mask_fusion", STRICT_FUSION)
     if (fusion == PRESENCE_FUSION) != masked_inputs(contract.get("input_policy", STRICT_INPUTS)):
         raise ValueError("La fusión del padre no corresponde a su política de entradas")
+    head = case.get("head", SCALAR_HEAD)
+    if (head == QUANTILE_HEAD) != ("output_head" in contract) or (
+        "output_head" in contract and contract["output_head"] != CONTRACT
+    ):
+        raise ValueError("La cabeza del padre no corresponde a su contrato de salida")
     if family == "scientific_multimodal_reference" and "architecture" in case:
         model = MultimodalReference(
             kind,
             dimensions,
             context=contract["context"],
             mask_fusion=fusion,
+            head=head,
             **case["architecture"],
         )
     elif family == "legacy_cost_probe" and "architecture" not in case:
