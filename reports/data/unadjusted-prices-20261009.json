@@ -1,0 +1,4042 @@
+{
+ "issue": 379,
+ "generated_from": "estado privado unadjusted-prices-20261009",
+ "method_identity": {
+  "schema_version": 1,
+  "policy": {
+   "method": "provider_inverse_factor_terminal_constant_v1",
+   "cutoff": "2023-12-31",
+   "fit_windows": [
+    60,
+    125,
+    250,
+    500
+   ],
+   "gamma_max": 1.25,
+   "relative_tolerance": 2e-06,
+   "min_fit_share": 0.9,
+   "min_fit_margin": 0.1,
+   "fit_relative_tolerance": 3e-07,
+   "fit_min_share": 0.6,
+   "segment_min_rows": 5,
+   "segment_min_rate": 0.9,
+   "post_cutoff_reads": "split_ratios_only"
+  },
+  "code": {
+   "unadjusted_prices.py": "fd3168af412c161ed7e3f7730db9b8207fb365e525bd2862787b22ec71a30ab3",
+   "unadjusted_edition.py": "8e5caa14367c197e678abda2406be7d61cecb2bdfc6e4f716b157e93c94b88b8"
+  }
+ },
+ "captures": [
+  {
+   "capture_id": "sec-aapl-dividends-declared",
+   "url": "https://data.sec.gov/api/xbrl/companyconcept/CIK0000320193/us-gaap/CommonStockDividendsPerShareDeclared.json",
+   "source": "SEC EDGAR XBRL companyconcept",
+   "terms": "SEC: datos públicos del Gobierno de EE. UU.; acceso justo con User-Agent declarado y máximo 10 peticiones/s (https://www.sec.gov/os/accessing-edgar-data)",
+   "requested_at_utc": "2026-10-09T04:32:32.287024+00:00",
+   "status": 403,
+   "bytes": 4819,
+   "sha256": "375d9e996be75d92098bb37abbb9eb8ddfe277bae5d7d5b6e31ae683c84fb255"
+  },
+  {
+   "capture_id": "nasdaq-aapl-historical-202008",
+   "url": "https://api.nasdaq.com/api/quote/AAPL/historical?assetclass=stocks&fromdate=2020-08-24&todate=2020-09-04&limit=20",
+   "source": "Nasdaq.com quote API",
+   "terms": "Nasdaq.com Terms of Use: uso personal y no comercial, sin redistribución (https://www.nasdaq.com/nasdaq-terms-of-use)",
+   "requested_at_utc": "2026-10-09T04:32:35.457940+00:00",
+   "status": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "capture_id": "nasdaq-aapl-dividends",
+   "url": "https://api.nasdaq.com/api/quote/AAPL/dividends?assetclass=stocks",
+   "source": "Nasdaq.com quote API",
+   "terms": "Nasdaq.com Terms of Use: uso personal y no comercial, sin redistribución (https://www.nasdaq.com/nasdaq-terms-of-use)",
+   "requested_at_utc": "2026-10-09T04:33:02.522070+00:00",
+   "status": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "capture_id": "sse-yunhq-600519-dayk-probe",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600519?begin=-5&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial. Aviso legal de sse.com.cn: información de referencia, reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:33:38.565367+00:00",
+   "status": 200,
+   "bytes": 300,
+   "sha256": "c99cf9e09ed4ee02bbc783329176ad37fc4dd65469236ebab224ed888d0f8878"
+  },
+  {
+   "capture_id": "szse-kline-000001-probe",
+   "url": "https://www.szse.cn/api/market/ssjjhq/getHistoryData?random=0.5&cycleType=32&marketId=1&code=000001",
+   "source": "SZSE getHistoryData",
+   "terms": "Bolsa de Shenzhen (SZSE), datos de mercado del sitio oficial. Aviso legal de szse.cn: reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:33:43.964561+00:00",
+   "status": 200,
+   "bytes": 22763,
+   "sha256": "bbea437e45fb48a0833a8f3b771a82cd70afb03c123ff452f75f32e4c8642ee3"
+  },
+  {
+   "capture_id": "szse-snapshot-20231229-probe",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1815_stock_snapshot&TABKEY=tab1&txtBeginDate=2023-12-29&txtEndDate=2023-12-29&archiveDate=2023-12-29&random=0.5",
+   "source": "SZSE ShowReport 1815_stock_snapshot",
+   "terms": "Bolsa de Shenzhen (SZSE), datos de mercado del sitio oficial. Aviso legal de szse.cn: reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:33:48.677745+00:00",
+   "status": 200,
+   "bytes": 3375,
+   "sha256": "91b1c2e44905ba5f308084a5e5d91cb966627f3ab10d4cd8b32787f8e86537d6"
+  },
+  {
+   "capture_id": "szse-snapshot-000001-20231225-29",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1815_stock_snapshot&TABKEY=tab1&txtDMorJC=000001&txtBeginDate=2023-12-25&txtEndDate=2023-12-29&archiveDate=2023-12-29&random=0.5",
+   "source": "SZSE ShowReport 1815_stock_snapshot",
+   "terms": "Bolsa de Shenzhen (SZSE), datos de mercado del sitio oficial. Aviso legal de szse.cn: reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:34:07.005993+00:00",
+   "status": 200,
+   "bytes": 3381,
+   "sha256": "8e738cce83788da2f0c33873488eab3e8cb83470686b621a76eeaea9d2fe68af"
+  },
+  {
+   "capture_id": "szse-snapshot-000001-20100104-08",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1815_stock_snapshot&TABKEY=tab1&txtDMorJC=000001&txtBeginDate=2010-01-04&txtEndDate=2010-01-08&archiveDate=2010-01-08&random=0.5",
+   "source": "SZSE ShowReport 1815_stock_snapshot",
+   "terms": "Bolsa de Shenzhen (SZSE), datos de mercado del sitio oficial. Aviso legal de szse.cn: reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:34:10.130178+00:00",
+   "status": 200,
+   "bytes": 3381,
+   "sha256": "f60a4f647984253a11bd3c58957ffc21c31c2e4a06160aa44a889153297688f8"
+  },
+  {
+   "capture_id": "sse-yunhq-600519-dayk-fields-probe",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600519?begin=0&end=3&select=date,open,high,low,close,volume,amount,prev_close",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial. Aviso legal de sse.com.cn: información de referencia, reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:34:54.782841+00:00",
+   "status": 200,
+   "bytes": 259,
+   "sha256": "a20cfae754bc55229fc32a14d7171532a1cc1137e90d3552170e9b1b0f1462fa"
+  },
+  {
+   "capture_id": "nasdaq-datalink-wiki-aapl-20140606",
+   "url": "https://data.nasdaq.com/api/v3/datatables/WIKI/PRICES.json?ticker=AAPL&date.gte=2014-06-05&date.lte=2014-06-10",
+   "source": "Nasdaq Data Link WIKI/PRICES",
+   "terms": "Nasdaq Data Link: WIKI Prices, conjunto comunitario descontinuado en 2018; condiciones de Nasdaq Data Link (https://data.nasdaq.com/terms-of-use)",
+   "requested_at_utc": "2026-10-09T04:34:58.032749+00:00",
+   "status": 403,
+   "bytes": 188,
+   "sha256": "26af25ed0734916aa549e1293cb610c3e12a1c564e94164496f53983dd44ea8d"
+  },
+  {
+   "capture_id": "alphavantage-demo-ibm-daily",
+   "url": "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&outputsize=full&apikey=demo",
+   "source": "Alpha Vantage demo",
+   "terms": "Alpha Vantage: clave demo documentada para IBM; Terms of Service de Alpha Vantage (https://www.alphavantage.co/terms_of_service/)",
+   "requested_at_utc": "2026-10-09T04:35:00.622741+00:00",
+   "status": 200,
+   "bytes": 1417538,
+   "sha256": "741571b0124d3f40263384d9554b1fedcf1e222f1a5d58851726c84a87ba46fb"
+  },
+  {
+   "capture_id": "eodhd-demo-aapl-splits",
+   "url": "https://eodhd.com/api/splits/AAPL.US?api_token=demo&fmt=json",
+   "source": "EODHD demo",
+   "terms": "EODHD: clave demo documentada para AAPL.US y otros; Terms and Conditions de EODHD (https://eodhd.com/financial-apis/terms-conditions)",
+   "requested_at_utc": "2026-10-09T04:35:03.596739+00:00",
+   "status": 200,
+   "bytes": 256,
+   "sha256": "323f936a0805a83bfedf17626e83c780cf8c7eddd6699ca5937cc20e43c1412e"
+  },
+  {
+   "capture_id": "szse-snapshot-000001-20250324-28",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1815_stock_snapshot&TABKEY=tab1&txtDMorJC=000001&txtBeginDate=2025-03-24&txtEndDate=2025-03-28&archiveDate=2025-03-28&random=0.5",
+   "source": "SZSE ShowReport 1815_stock_snapshot",
+   "terms": "Bolsa de Shenzhen (SZSE), datos de mercado del sitio oficial. Aviso legal de szse.cn: reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:35:31.325234+00:00",
+   "status": 200,
+   "bytes": 3381,
+   "sha256": "badcde8591bbe36fbfa836578e8015e1571eac423c91c32c9a5ff66828b21b6a"
+  },
+  {
+   "capture_id": "eodhd-demo-aapl-eod-202008",
+   "url": "https://eodhd.com/api/eod/AAPL.US?api_token=demo&fmt=json&from=2020-08-26&to=2020-09-02",
+   "source": "EODHD demo",
+   "terms": "EODHD: clave demo documentada para AAPL.US y otros; Terms and Conditions de EODHD (https://eodhd.com/financial-apis/terms-conditions)",
+   "requested_at_utc": "2026-10-09T04:35:34.376742+00:00",
+   "status": 200,
+   "bytes": 728,
+   "sha256": "b5332606dcec2c429a843c6d59cff9d627fee255cdc75efe07e2fd46cb97f641"
+  },
+  {
+   "capture_id": "worldbank-wdi-listed-domestic-us-cn",
+   "url": "https://api.worldbank.org/v2/country/USA;CHN/indicator/CM.MKT.LDOM.NO?format=json&date=1995:2024&per_page=200",
+   "source": "World Bank WDI API",
+   "terms": "Banco Mundial, World Development Indicators: CC BY 4.0 (https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets); fuente original WFE",
+   "requested_at_utc": "2026-10-09T04:37:50.214474+00:00",
+   "status": 200,
+   "bytes": 12813,
+   "sha256": "f4c945f3729da6206153f1d3c675f09d71cd71f21194b4fe385a052f16309dd3"
+  },
+  {
+   "capture_id": "alphavantage-demo-listing-status-delisted",
+   "url": "https://www.alphavantage.co/query?function=LISTING_STATUS&state=delisted&apikey=demo",
+   "source": "Alpha Vantage demo LISTING_STATUS",
+   "terms": "Alpha Vantage: clave demo documentada; Terms of Service de Alpha Vantage (https://www.alphavantage.co/terms_of_service/)",
+   "requested_at_utc": "2026-10-09T04:37:52.594541+00:00",
+   "status": 200,
+   "bytes": 2,
+   "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  {
+   "capture_id": "sse-yunhq-600087-dayk-delisted-probe",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600087?begin=-5&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial. Aviso legal de sse.com.cn: información de referencia, reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:37:54.758654+00:00",
+   "status": 200,
+   "bytes": 257,
+   "sha256": "7e1fe34c12af4edc95660e17accefb5e252043ac3a03331021533f54544f2d1a"
+  },
+  {
+   "capture_id": "sse-delisted-list-probe",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=1&pageHelp.pageSize=25&pageHelp.pageNo=1",
+   "source": "SSE commonQuery lista de valores",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial. Aviso legal de sse.com.cn: información de referencia, reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:37:57.936860+00:00",
+   "status": 200,
+   "bytes": 27226,
+   "sha256": "fb18ccb68f28949540f3a9e7e39010898b29366785b38eb4d53bf4cdd3044080"
+  },
+  {
+   "capture_id": "alphavantage-demo-listing-status-delisted-20140710",
+   "url": "https://www.alphavantage.co/query?function=LISTING_STATUS&date=2014-07-10&state=delisted&apikey=demo",
+   "source": "Alpha Vantage demo LISTING_STATUS",
+   "terms": "Alpha Vantage: clave demo documentada; Terms of Service de Alpha Vantage (https://www.alphavantage.co/terms_of_service/)",
+   "requested_at_utc": "2026-10-09T04:38:34.388126+00:00",
+   "status": 200,
+   "bytes": 30533,
+   "sha256": "ced1164998742bc50863f60485d012c74171e37de651b72a35df055447e83900"
+  },
+  {
+   "capture_id": "szse-delisted-list-probe",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs",
+   "terms": "Bolsa de Shenzhen (SZSE), datos de mercado del sitio oficial. Aviso legal de szse.cn: reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:38:36.693743+00:00",
+   "status": 200,
+   "bytes": 3893,
+   "sha256": "b2dcdfd538b604a676a94173506ef7043334ff8990eb4194e6c281c3ac998774"
+  },
+  {
+   "capture_id": "sse-delisted-list-a-shares-all",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=1&pageHelp.pageSize=200&pageHelp.pageNo=1",
+   "source": "SSE commonQuery lista de valores",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial. Aviso legal de sse.com.cn: información de referencia, reproducción sujeta a permiso; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:38:39.630290+00:00",
+   "status": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "capture_id": "sse-yunhq-601919-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/601919?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:59:53.446696+00:00",
+   "status": 200,
+   "bytes": 224850,
+   "sha256": "a77a9ac0da2e7cfb1fa11c6f51cde792222ddc6eebf6f4cc0760657daf2c76ca"
+  },
+  {
+   "capture_id": "sse-yunhq-601225-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/601225?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T04:59:57.751814+00:00",
+   "status": 200,
+   "bytes": 154032,
+   "sha256": "62a2e9a63dcccd06be8ffe05583fdb313ffb54753706d88c2d4ea1c537f76a1b"
+  },
+  {
+   "capture_id": "sse-yunhq-601369-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/601369?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:02.446381+00:00",
+   "status": 200,
+   "bytes": 190631,
+   "sha256": "a521e0e88b1c71ef8fc2c7babf0c6df01f9a6d6aabd6632c89bc28628eabc41e"
+  },
+  {
+   "capture_id": "sse-yunhq-601689-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/601689?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:06.821973+00:00",
+   "status": 200,
+   "bytes": 144163,
+   "sha256": "06494469b7cb50fcf153c9c8a10e1ee39d20ff55f31fb6db88c8ddfc0b840b8e"
+  },
+  {
+   "capture_id": "sse-yunhq-601155-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/601155?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:11.866016+00:00",
+   "status": 200,
+   "bytes": 135333,
+   "sha256": "71f691d3de982c1f9653894782583467bcf61e6fa7e3ffee1802be019f48c384"
+  },
+  {
+   "capture_id": "sse-yunhq-688599-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/688599?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:15.907611+00:00",
+   "status": 200,
+   "bytes": 79713,
+   "sha256": "b27a302ceb3ba8f4fff9f78b5e0aae03e406b5d6f96eec404f4271dce1028cff"
+  },
+  {
+   "capture_id": "sse-yunhq-600332-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600332?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:19.683038+00:00",
+   "status": 200,
+   "bytes": 301170,
+   "sha256": "3f4c5223d417f498f353e153354682e5cd873643f69dded41e9c08903455342e"
+  },
+  {
+   "capture_id": "sse-yunhq-600239-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600239?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:24.020576+00:00",
+   "status": 200,
+   "bytes": 287303,
+   "sha256": "29a211771b6eb3f0c833941637bd5572cd69e4e97ecd96934f0618aa18a5f044"
+  },
+  {
+   "capture_id": "sse-yunhq-600428-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600428?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:30.042229+00:00",
+   "status": 200,
+   "bytes": 279574,
+   "sha256": "41dc58515870cb336cd5444178b38b242e9eb8f21c464dad5e0f8e7b2bbd5e6f"
+  },
+  {
+   "capture_id": "sse-yunhq-600519-dayk-full",
+   "url": "https://yunhq.sse.com.cn:32042/v1/sh1/dayk/600519?begin=0&end=-1&select=date,open,high,low,close,volume",
+   "source": "SSE yunhq dayk",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:35.680162+00:00",
+   "status": 200,
+   "bytes": 331682,
+   "sha256": "fcfef5a5974b4b3778a8e5b1a576cf4e2f35cf6fc97e7437e1ac594630da84e6"
+  },
+  {
+   "capture_id": "eodhd-demo-aapl-eod-2000-2023",
+   "url": "https://eodhd.com/api/eod/AAPL.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo eod",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:41.208347+00:00",
+   "status": 200,
+   "bytes": 747623,
+   "sha256": "e090ea1d2c516eba079accd8c12f6c3e724e82f08a34a8e31bf4c464dfedf7e8"
+  },
+  {
+   "capture_id": "eodhd-demo-aapl-div-2000-2023",
+   "url": "https://eodhd.com/api/div/AAPL.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo div",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:44.753180+00:00",
+   "status": 200,
+   "bytes": 8367,
+   "sha256": "c3784f8ee8e44200c30674a7601fd253143d4a1802c0bd4e04ee0931a23c8999"
+  },
+  {
+   "capture_id": "eodhd-demo-aapl-splits-2000-2023",
+   "url": "https://eodhd.com/api/splits/AAPL.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo splits",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:47.367145+00:00",
+   "status": 200,
+   "bytes": 205,
+   "sha256": "744c2fa07ed885bbf13ed05b9f48e5f1b6eec16e61f18c1658bd9af2560772f6"
+  },
+  {
+   "capture_id": "eodhd-demo-amzn-eod-2000-2023",
+   "url": "https://eodhd.com/api/eod/AMZN.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo eod",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:49.959968+00:00",
+   "status": 200,
+   "bytes": 717404,
+   "sha256": "406ae59c2398af28c676e38f45af183369f2f2527cc4213364eae449e2027e8c"
+  },
+  {
+   "capture_id": "eodhd-demo-amzn-div-2000-2023",
+   "url": "https://eodhd.com/api/div/AMZN.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo div",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:53.471559+00:00",
+   "status": 200,
+   "bytes": 2,
+   "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  {
+   "capture_id": "eodhd-demo-amzn-splits-2000-2023",
+   "url": "https://eodhd.com/api/splits/AMZN.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo splits",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:56.049165+00:00",
+   "status": 200,
+   "bytes": 53,
+   "sha256": "dfdb188c7a68ac81225e67d1f4156208d074211e438cf4acee9413b3988bc387"
+  },
+  {
+   "capture_id": "eodhd-demo-tsla-eod-2000-2023",
+   "url": "https://eodhd.com/api/eod/TSLA.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo eod",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:00:58.619638+00:00",
+   "status": 200,
+   "bytes": 421950,
+   "sha256": "3b2edf6d3a66127a2964308f6d06373d257693acaaf016a8d8f45b6bbf1b6947"
+  },
+  {
+   "capture_id": "eodhd-demo-tsla-div-2000-2023",
+   "url": "https://eodhd.com/api/div/TSLA.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo div",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:02.084085+00:00",
+   "status": 200,
+   "bytes": 2,
+   "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  {
+   "capture_id": "eodhd-demo-tsla-splits-2000-2023",
+   "url": "https://eodhd.com/api/splits/TSLA.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo splits",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:04.669009+00:00",
+   "status": 200,
+   "bytes": 103,
+   "sha256": "4c287cb711c40c27460d61bda1c9cff7f205a090dfd4c889a4987901679cd1df"
+  },
+  {
+   "capture_id": "eodhd-demo-vti-eod-2000-2023",
+   "url": "https://eodhd.com/api/eod/VTI.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo eod",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:07.563757+00:00",
+   "status": 200,
+   "bytes": 671334,
+   "sha256": "0ae61a7eb73f58c03f52feff1a93e7bdb4e5ef6fc1b5466d904993bbfec2f541"
+  },
+  {
+   "capture_id": "eodhd-demo-vti-div-2000-2023",
+   "url": "https://eodhd.com/api/div/VTI.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo div",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:12.152826+00:00",
+   "status": 200,
+   "bytes": 16216,
+   "sha256": "1fdfd8c5711c7307a21821c955116598064b606eb088d94a75b095cbca728609"
+  },
+  {
+   "capture_id": "eodhd-demo-vti-splits-2000-2023",
+   "url": "https://eodhd.com/api/splits/VTI.US?api_token=demo&fmt=json&from=2000-01-01&to=2023-12-31",
+   "source": "EODHD demo splits",
+   "terms": "EODHD, clave pública demo documentada para AAPL.US, TSLA.US, VTI.US y AMZN.US. Términos de EODHD; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:14.871518+00:00",
+   "status": 200,
+   "bytes": 52,
+   "sha256": "f2e82ea1b20707ecbad89e608eb52d4144b1839eb701136045e80cd9c9e84099"
+  },
+  {
+   "capture_id": "alphavantage-demo-ibm-dividends",
+   "url": "https://www.alphavantage.co/query?function=DIVIDENDS&symbol=IBM&apikey=demo",
+   "source": "Alpha Vantage demo DIVIDENDS",
+   "terms": "Alpha Vantage, clave pública demo documentada para IBM. Terms of Service de Alpha Vantage; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:17.425435+00:00",
+   "status": 200,
+   "bytes": 23420,
+   "sha256": "49c7178089ee452f4afb56f2214f169494ee680ba1f085d0193876023c52c4d4"
+  },
+  {
+   "capture_id": "alphavantage-demo-ibm-splits",
+   "url": "https://www.alphavantage.co/query?function=SPLITS&symbol=IBM&apikey=demo",
+   "source": "Alpha Vantage demo SPLITS",
+   "terms": "Alpha Vantage, clave pública demo documentada para IBM. Terms of Service de Alpha Vantage; uso privado de validación sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:19.732458+00:00",
+   "status": 200,
+   "bytes": 247,
+   "sha256": "e2c0de31a1b0c5ceab7ea037c0dd7d5292bbc502184519373777cd2f1652d2dd"
+  },
+  {
+   "capture_id": "terms-alphavantage-tos",
+   "url": "https://www.alphavantage.co/terms_of_service/",
+   "source": "Alpha Vantage Terms of Service",
+   "terms": "Página de condiciones o documentación del proveedor capturada como evidencia de licencia",
+   "requested_at_utc": "2026-10-09T05:01:21.899197+00:00",
+   "status": 200,
+   "bytes": 156583,
+   "sha256": "88ed3d22fe0f3624e76e53a210db3498b4a90712ab0d934356cc84b19ed1468a"
+  },
+  {
+   "capture_id": "terms-eodhd-demo-documentation",
+   "url": "https://eodhd.com/financial-apis/api-for-historical-data-and-volumes",
+   "source": "EODHD documentación de la API EOD",
+   "terms": "Página de condiciones o documentación del proveedor capturada como evidencia de licencia",
+   "requested_at_utc": "2026-10-09T05:01:24.166479+00:00",
+   "status": 200,
+   "bytes": 181983,
+   "sha256": "a40d57463437a9cce392e3f0b6b77b10a9bc52eeda465df7a3d6098a57607802"
+  },
+  {
+   "capture_id": "terms-worldbank-datasets",
+   "url": "https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets",
+   "source": "World Bank Terms of Use for Datasets",
+   "terms": "Página de condiciones o documentación del proveedor capturada como evidencia de licencia",
+   "requested_at_utc": "2026-10-09T05:01:27.749624+00:00",
+   "status": 200,
+   "bytes": 46882,
+   "sha256": "311ca0289be902a262cc2e084abd2a3b3037e6e319c8a4205059a357634959fe"
+  },
+  {
+   "capture_id": "sse-delisted-a-shares-page1",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=1&pageHelp.pageSize=25&pageHelp.pageNo=1",
+   "source": "SSE commonQuery lista de valores con cotización terminada",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:29.934124+00:00",
+   "status": 200,
+   "bytes": 27226,
+   "sha256": "fb18ccb68f28949540f3a9e7e39010898b29366785b38eb4d53bf4cdd3044080"
+  },
+  {
+   "capture_id": "sse-delisted-a-shares-page2",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=2&pageHelp.pageSize=25&pageHelp.pageNo=2",
+   "source": "SSE commonQuery lista de valores con cotización terminada",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:40.523593+00:00",
+   "status": 200,
+   "bytes": 27280,
+   "sha256": "30f86da640062ef4d5c87750e81c0157bfa984609c195536f99fdf24086929c8"
+  },
+  {
+   "capture_id": "sse-delisted-a-shares-page3",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=3&pageHelp.pageSize=25&pageHelp.pageNo=3",
+   "source": "SSE commonQuery lista de valores con cotización terminada",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:48.240995+00:00",
+   "status": 200,
+   "bytes": 27092,
+   "sha256": "adb39ccbb5152f9f65285293235168d91d04e8649a68e3956b39001767e80269"
+  },
+  {
+   "capture_id": "sse-delisted-a-shares-page4",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=4&pageHelp.pageSize=25&pageHelp.pageNo=4",
+   "source": "SSE commonQuery lista de valores con cotización terminada",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:01:56.029738+00:00",
+   "status": 200,
+   "bytes": 27854,
+   "sha256": "f4dc0476933959ece82e4a7f7006ad6c5f5e79edc0fa411b4cb1cff3e768aee7"
+  },
+  {
+   "capture_id": "sse-delisted-a-shares-page5",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=5&pageHelp.pageSize=25&pageHelp.pageNo=5",
+   "source": "SSE commonQuery lista de valores con cotización terminada",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:02.612554+00:00",
+   "status": 200,
+   "bytes": 27676,
+   "sha256": "917a7089dd5b71ffa3ba2ee6f2fe91d23eee167b4f9079ad3e11de129751623b"
+  },
+  {
+   "capture_id": "sse-delisted-a-shares-page6",
+   "url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&REG_PROVINCE=&CSRC_CODE=&STOCK_CODE=&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=3&type=inParams&isPagination=true&pageHelp.cacheSize=1&pageHelp.beginPage=6&pageHelp.pageSize=25&pageHelp.pageNo=6",
+   "source": "SSE commonQuery lista de valores con cotización terminada",
+   "terms": "Bolsa de Shanghái (SSE), datos de mercado del sitio oficial yunhq.sse.com.cn. Condiciones de reutilización no capturadas; se trata como uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:10.848598+00:00",
+   "status": 200,
+   "bytes": 19644,
+   "sha256": "86261f3012d12cf1e2b2654ffd8a5f59ef49071dc147fcb3cb72dfcbf8d0a8d2"
+  },
+  {
+   "capture_id": "szse-delisted-page1",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=1&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:18.303449+00:00",
+   "status": 200,
+   "bytes": 3893,
+   "sha256": "b2dcdfd538b604a676a94173506ef7043334ff8990eb4194e6c281c3ac998774"
+  },
+  {
+   "capture_id": "szse-delisted-page2",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=2&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:21.773639+00:00",
+   "status": 200,
+   "bytes": 3906,
+   "sha256": "b8f7f558acf3bf9e639c949c39a32dfe03aaf0feaa72bee82d16f517dd595e86"
+  },
+  {
+   "capture_id": "szse-delisted-page3",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=3&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:24.840975+00:00",
+   "status": 200,
+   "bytes": 3903,
+   "sha256": "97dcca16c9fe5f835e95f7e658ce9d7c18e3bc7b1640f04d79f67651916d9a1f"
+  },
+  {
+   "capture_id": "szse-delisted-page4",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=4&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:27.792704+00:00",
+   "status": 200,
+   "bytes": 3906,
+   "sha256": "1085622a698cd78e6677298fc22a3f0c00846a5228cd282aaa1383c7964e9251"
+  },
+  {
+   "capture_id": "szse-delisted-page5",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=5&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:31.279713+00:00",
+   "status": 200,
+   "bytes": 3863,
+   "sha256": "ff829daebfc6bc7b5fcad6799cb81564358f808e5f7fc8081c094cc2998ee583"
+  },
+  {
+   "capture_id": "szse-delisted-page6",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=6&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:34.350742+00:00",
+   "status": 200,
+   "bytes": 3844,
+   "sha256": "31dfd3a2d5c9d49a1bb8f2623cb3a32c8df7dda7e3976840813539cd0ad5c4f4"
+  },
+  {
+   "capture_id": "szse-delisted-page7",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=7&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:37.316248+00:00",
+   "status": 200,
+   "bytes": 3847,
+   "sha256": "88cb24b87af532d220f9b73adb94308972a9deda293b7fd4627d1b90f8a30178"
+  },
+  {
+   "capture_id": "szse-delisted-page8",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=8&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:40.424247+00:00",
+   "status": 200,
+   "bytes": 3886,
+   "sha256": "11f0f0d67f2114e4ad0d33f07a22320cdf929ebb1a946417aa1217977939138e"
+  },
+  {
+   "capture_id": "szse-delisted-page9",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=9&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:43.530380+00:00",
+   "status": 200,
+   "bytes": 3870,
+   "sha256": "33226a8715fb6fbf7819155629bef76cd6e128b140016f0cbf8a0deba23ec921"
+  },
+  {
+   "capture_id": "szse-delisted-page10",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=10&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:46.609169+00:00",
+   "status": 200,
+   "bytes": 3849,
+   "sha256": "7c1b596088702ade7a076e06692097f932dbe1aec74fd0c484a72614876aaf2e"
+  },
+  {
+   "capture_id": "szse-delisted-page11",
+   "url": "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1793_ssgs&TABKEY=tab2&PAGENO=11&random=0.5",
+   "source": "SZSE ShowReport 1793_ssgs tab2",
+   "terms": "Bolsa de Shenzhen (SZSE), informe oficial de valores con cotización terminada. Condiciones de reutilización no capturadas; uso privado sin redistribución",
+   "requested_at_utc": "2026-10-09T05:02:49.865717+00:00",
+   "status": 200,
+   "bytes": 2925,
+   "sha256": "64c621f6ed7470a39e74b146582aa3f69d62ae73625ac1eaa644c63bac4b4989"
+  }
+ ],
+ "exploration": {
+  "note": "Diagnóstico previo al método final. Leyó filas y eventos de 2024 y 2025 del CSV. Motivó la constante terminal y fijó las tolerancias. No forma parte de la edición.",
+  "US": {
+   "assets": 4202,
+   "row_rate": 0.8350883513960997,
+   "row_chance": 0.016432371692319724,
+   "assets_rate_at_least_0_9": 3153,
+   "assets_rate_below_0_1": 579
+  },
+  "CN": {
+   "assets": 810,
+   "row_rate": 0.941709984053679,
+   "row_chance": 0.008090232037679836,
+   "assets_rate_at_least_0_9": 726,
+   "assets_rate_below_0_1": 5
+  },
+  "hit_residual_quantiles": {
+   "quantiles": [
+    0.5,
+    0.9,
+    0.99,
+    0.999,
+    0.9999
+   ],
+   "US": {
+    "hits": 660020,
+    "values": [
+     8.11e-08,
+     3.09e-07,
+     6.26e-07,
+     9.79e-07,
+     1.33e-06
+    ]
+   },
+   "CN": {
+    "hits": 544561,
+    "values": [
+     5.76e-08,
+     1.74e-07,
+     4.1e-07,
+     9.44e-07,
+     1.58e-06
+    ]
+   },
+   "selection": "150 activos por mercado con validación > 0,99 y azar < 0,05, semilla 1"
+  }
+ },
+ "audit_sample": {
+  "seed": "mars-titan-unadjusted-20261009",
+  "per_stratum": {
+   "US::start_2000": 10,
+   "US::2000s": 10,
+   "US::2010s": 10,
+   "US::late": 10,
+   "CN:SS:start_2006": 3,
+   "CN:SS:2007_2014": 3,
+   "CN:SS:late": 3,
+   "CN:SZ:start_2006": 3,
+   "CN:SZ:2007_2014": 3,
+   "CN:SZ:late": 3
+  },
+  "excluded_before_sampling": [
+   "US:AAPL",
+   "US:KO",
+   "US:XOM",
+   "US:IBM",
+   "US:ABT",
+   "US:A",
+   "US:ACM",
+   "US:NVR",
+   "US:AZO",
+   "US:AMZN",
+   "US:TSLA",
+   "US:VTI",
+   "CN:000001.SZ",
+   "CN:000002.SZ",
+   "CN:000009.SZ",
+   "CN:000021.SZ",
+   "CN:000027.SZ",
+   "CN:000031.SZ",
+   "CN:000039.SZ",
+   "CN:000060.SZ",
+   "CN:000061.SZ",
+   "CN:000063.SZ",
+   "CN:000066.SZ",
+   "CN:000069.SZ",
+   "CN:000088.SZ",
+   "CN:600519.SS"
+  ],
+  "summary": {
+   "CN": {
+    "assets": 18,
+    "status": {
+     "verified": 17,
+     "partial": 1
+    },
+    "rows": 54651,
+    "verified_rows": 53279,
+    "validation_rows": 53571,
+    "validation_rate": 0.9773011517425473,
+    "validation_chance": 0.008040563487947754,
+    "median_asset_validation_rate": 1.0,
+    "zero_volume_rows": 2912,
+    "controls": {
+     "assets": 18,
+     "method_affected_rate": 0.9751547718774901,
+     "no_dividends": {
+      "fit_failed": 2,
+      "affected_rate": 0.007897215446663608
+     },
+     "ex_date_plus_one": {
+      "fit_failed": 2,
+      "affected_rate": 0.004950853720385442
+     },
+     "ex_date_minus_one": {
+      "fit_failed": 2,
+      "affected_rate": 0.00596517497041563
+     }
+    }
+   },
+   "US": {
+    "assets": 40,
+    "status": {
+     "verified": 27,
+     "fit_failed": 7,
+     "partial": 5,
+     "unverified": 1
+    },
+    "rows": 139158,
+    "verified_rows": 110666,
+    "validation_rows": 119040,
+    "validation_rate": 0.9422463037634409,
+    "validation_chance": 0.016957979687406578,
+    "median_asset_validation_rate": 1.0,
+    "zero_volume_rows": 2939,
+    "controls": {
+     "assets": 24,
+     "method_affected_rate": 0.9236430851957654,
+     "no_dividends": {
+      "fit_failed": 19,
+      "affected_rate": 0.005614035087719298
+     },
+     "ex_date_plus_one": {
+      "fit_failed": 20,
+      "affected_rate": 0.015106555165902346
+     },
+     "ex_date_minus_one": {
+      "fit_failed": 18,
+      "affected_rate": 0.020796807931805817
+     }
+    }
+   }
+  },
+  "assets": [
+   {
+    "market": "CN",
+    "symbol": "000571.SZ",
+    "status": "verified",
+    "rows": 4372,
+    "verified_rows": 4372,
+    "verified_since": "2006-01-04",
+    "events": 7,
+    "zero_volume_rows": 403,
+    "dividends_before_fit": 6,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 0.9999999871125094,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 22
+    },
+    "validation": {
+     "rows": 4312,
+     "rate": 1.0,
+     "chance": 0.001962495352266407,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2827,
+     "rate": 1.0,
+     "chance": 0.002349642724370886,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.002476,
+     "ex_date_plus_one": 0.0,
+     "ex_date_minus_one": 0.000354
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "000723.SZ",
+    "status": "verified",
+    "rows": 4372,
+    "verified_rows": 4372,
+    "verified_since": "2006-01-04",
+    "events": 8,
+    "zero_volume_rows": 558,
+    "dividends_before_fit": 7,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000229110952,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 8
+    },
+    "validation": {
+     "rows": 4312,
+     "rate": 1.0,
+     "chance": 0.0046534589169932306,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3989,
+     "rate": 1.0,
+     "chance": 0.004730242873273518,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.00376,
+     "ex_date_plus_one": 0.001504,
+     "ex_date_minus_one": 0.000752
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "000738.SZ",
+    "status": "verified",
+    "rows": 4372,
+    "verified_rows": 4372,
+    "verified_since": "2006-01-04",
+    "events": 12,
+    "zero_volume_rows": 125,
+    "dividends_before_fit": 11,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0086171237701074,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 17
+    },
+    "validation": {
+     "rows": 4312,
+     "rate": 1.0,
+     "chance": 0.006160278512150254,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 4241,
+     "rate": 1.0,
+     "chance": 0.006110997627032382,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.004716,
+     "ex_date_plus_one": 0.0,
+     "ex_date_minus_one": 0.0
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "002236.SZ",
+    "status": "verified",
+    "rows": 3804,
+    "verified_rows": 3804,
+    "verified_since": "2008-05-08",
+    "events": 16,
+    "zero_volume_rows": 41,
+    "dividends_before_fit": 15,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0356704792839964,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 10
+    },
+    "validation": {
+     "rows": 3744,
+     "rate": 1.0,
+     "chance": 0.012949253440386973,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3663,
+     "rate": 1.0,
+     "chance": 0.013050787037906015,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "002252.SZ",
+    "status": "verified",
+    "rows": 3783,
+    "verified_rows": 3783,
+    "verified_since": "2008-06-11",
+    "events": 18,
+    "zero_volume_rows": 500,
+    "dividends_before_fit": 14,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0092949957371566,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 11
+    },
+    "validation": {
+     "rows": 3723,
+     "rate": 1.0,
+     "chance": 0.009763298636272578,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3647,
+     "rate": 1.0,
+     "chance": 0.009906478975534034,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.007678,
+     "ex_date_plus_one": 0.002194,
+     "ex_date_minus_one": 0.00329
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "002958.SZ",
+    "status": "verified",
+    "rows": 1157,
+    "verified_rows": 1157,
+    "verified_since": "2019-03-26",
+    "events": 4,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 4,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0387597206399526,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 2
+    },
+    "validation": {
+     "rows": 1097,
+     "rate": 1.0,
+     "chance": 0.001789600726859549,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 795,
+     "rate": 1.0,
+     "chance": 0.002026641506119403,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.007547,
+     "ex_date_plus_one": 0.0,
+     "ex_date_minus_one": 0.001258
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "300146.SZ",
+    "status": "verified",
+    "rows": 3168,
+    "verified_rows": 3168,
+    "verified_since": "2010-12-15",
+    "events": 13,
+    "zero_volume_rows": 172,
+    "dividends_before_fit": 13,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.058139518402435,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 4
+    },
+    "validation": {
+     "rows": 3108,
+     "rate": 1.0,
+     "chance": 0.013878277644464037,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2998,
+     "rate": 1.0,
+     "chance": 0.014075125728875924,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.01034,
+     "ex_date_plus_one": 0.014009,
+     "ex_date_minus_one": 0.016344
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "300763.SZ",
+    "status": "verified",
+    "rows": 1163,
+    "verified_rows": 1163,
+    "verified_since": "2019-03-19",
+    "events": 7,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 4,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0034752567933047,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 18
+    },
+    "validation": {
+     "rows": 1103,
+     "rate": 1.0,
+     "chance": 0.055493146170160046,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 1043,
+     "rate": 1.0,
+     "chance": 0.056722677065648264,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.069032,
+     "ex_date_plus_one": 0.049856,
+     "ex_date_minus_one": 0.09396
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "300979.SZ",
+    "status": "verified",
+    "rows": 653,
+    "verified_rows": 653,
+    "verified_since": "2021-04-26",
+    "events": 3,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 3,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0179292144233845,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 9
+    },
+    "validation": {
+     "rows": 593,
+     "rate": 1.0,
+     "chance": 0.02764056600785942,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 503,
+     "rate": 1.0,
+     "chance": 0.028987601646201663,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.017893,
+     "ex_date_plus_one": 0.013917,
+     "ex_date_minus_one": 0.013917
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "600239.SS",
+    "status": "verified",
+    "rows": 4370,
+    "verified_rows": 4370,
+    "verified_since": "2006-01-04",
+    "events": 10,
+    "zero_volume_rows": 492,
+    "dividends_before_fit": 9,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000295712976,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 9
+    },
+    "validation": {
+     "rows": 4310,
+     "rate": 1.0,
+     "chance": 0.0031926197529807123,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3287,
+     "rate": 1.0,
+     "chance": 0.003873197172267843,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.005172,
+     "ex_date_plus_one": 0.001825,
+     "ex_date_minus_one": 0.0
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "600332.SS",
+    "status": "verified",
+    "rows": 4371,
+    "verified_rows": 4371,
+    "verified_since": "2006-01-04",
+    "events": 17,
+    "zero_volume_rows": 229,
+    "dividends_before_fit": 17,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0395854757898286,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 9
+    },
+    "validation": {
+     "rows": 4311,
+     "rate": 1.0,
+     "chance": 0.00944647377493756,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 4238,
+     "rate": 1.0,
+     "chance": 0.009394035985781184,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.007315,
+     "ex_date_plus_one": 0.006607,
+     "ex_date_minus_one": 0.005427
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "600428.SS",
+    "status": "partial",
+    "rows": 4372,
+    "verified_rows": 3000,
+    "verified_since": "2011-08-24",
+    "events": 13,
+    "zero_volume_rows": 130,
+    "dividends_before_fit": 13,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0434173136545066,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 8
+    },
+    "validation": {
+     "rows": 4312,
+     "rate": 0.7179962894248608,
+     "chance": 0.003181028630369711,
+     "excess": 0.7170963648618507
+    },
+    "affected": {
+     "rows": 4238,
+     "rate": 0.7130722038697499,
+     "chance": 0.003194574671947096,
+     "excess": 0.7121526540289235
+    },
+    "controls": {
+     "no_dividends": 0.006135,
+     "ex_date_plus_one": 0.002832,
+     "ex_date_minus_one": 0.00118
+    },
+    "failed_segments": [
+     {
+      "start": "2009-07-06",
+      "rows": 522,
+      "rate": 0.29118773946360155
+     }
+    ]
+   },
+   {
+    "market": "CN",
+    "symbol": "601155.SS",
+    "status": "verified",
+    "rows": 1961,
+    "verified_rows": 1961,
+    "verified_since": "2015-12-04",
+    "events": 6,
+    "zero_volume_rows": 11,
+    "dividends_before_fit": 6,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000133731721,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 13
+    },
+    "validation": {
+     "rows": 1901,
+     "rate": 1.0,
+     "chance": 0.010418668264349274,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 1360,
+     "rate": 1.0,
+     "chance": 0.010812464921113601,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.013971,
+     "ex_date_plus_one": 0.011029,
+     "ex_date_minus_one": 0.011765
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "601225.SS",
+    "status": "verified",
+    "rows": 2410,
+    "verified_rows": 2410,
+    "verified_since": "2014-01-28",
+    "events": 9,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 9,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0613876449497341,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 2350,
+     "rate": 1.0,
+     "chance": 0.0038504732512314845,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2293,
+     "rate": 1.0,
+     "chance": 0.0037765181545485163,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.002181,
+     "ex_date_plus_one": 0.003925,
+     "ex_date_minus_one": 0.001308
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "601369.SS",
+    "status": "verified",
+    "rows": 3319,
+    "verified_rows": 3319,
+    "verified_since": "2010-04-28",
+    "events": 13,
+    "zero_volume_rows": 47,
+    "dividends_before_fit": 13,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0695442269296171,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 11
+    },
+    "validation": {
+     "rows": 3259,
+     "rate": 1.0,
+     "chance": 0.003664883701278496,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3186,
+     "rate": 1.0,
+     "chance": 0.003670728180402349,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.002511,
+     "ex_date_plus_one": 0.002511,
+     "ex_date_minus_one": 0.00408
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "601689.SS",
+    "status": "verified",
+    "rows": 2138,
+    "verified_rows": 2138,
+    "verified_since": "2015-03-19",
+    "events": 7,
+    "zero_volume_rows": 10,
+    "dividends_before_fit": 7,
+    "split_ratio_after_cutoff": 1.45,
+    "fit": {
+     "gamma": 1.014172706360981,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 24
+    },
+    "validation": {
+     "rows": 2078,
+     "rate": 1.0,
+     "chance": 0.01383666589821163,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2024,
+     "rate": 1.0,
+     "chance": 0.013433503843623037,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.011364,
+     "ex_date_plus_one": 0.001482,
+     "ex_date_minus_one": 0.0
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "601919.SS",
+    "status": "verified",
+    "rows": 4000,
+    "verified_rows": 4000,
+    "verified_since": "2007-06-26",
+    "events": 8,
+    "zero_volume_rows": 194,
+    "dividends_before_fit": 6,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0514585109470775,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 3940,
+     "rate": 1.0,
+     "chance": 0.003998330643967386,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3873,
+     "rate": 1.0,
+     "chance": 0.003999732186256127,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "CN",
+    "symbol": "688599.SS",
+    "status": "verified",
+    "rows": 866,
+    "verified_rows": 866,
+    "verified_since": "2020-06-10",
+    "events": 4,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 4,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0335328621726476,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 4
+    },
+    "validation": {
+     "rows": 806,
+     "rate": 1.0,
+     "chance": 0.01813593594378533,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 738,
+     "rate": 1.0,
+     "chance": 0.018512157690707166,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.01355,
+     "ex_date_plus_one": 0.012195,
+     "ex_date_minus_one": 0.02168
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "ADAP",
+    "status": "verified",
+    "rows": 2179,
+    "verified_rows": 2179,
+    "verified_since": "2015-05-06",
+    "events": 0,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000216470846,
+     "reason": null,
+     "window_rows": 250,
+     "hits": 248,
+     "runner_up": 157
+    },
+    "validation": {
+     "rows": 1929,
+     "rate": 0.9963711767755313,
+     "chance": 0.002982535062294619,
+     "excess": 0.9963603213062117
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "AEG",
+    "status": "verified",
+    "rows": 6005,
+    "verified_rows": 6005,
+    "verified_since": "2000-01-03",
+    "events": 41,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 39,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0598831685355776,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 10
+    },
+    "validation": {
+     "rows": 5945,
+     "rate": 1.0,
+     "chance": 0.00662706598865934,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5919,
+     "rate": 1.0,
+     "chance": 0.006647517368246379,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.003886,
+     "ex_date_plus_one": 0.00642,
+     "ex_date_minus_one": 0.005068
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "AMRN",
+    "status": "fit_failed",
+    "rows": 6037,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 1,
+    "zero_volume_rows": 74,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "ambiguous",
+     "window_rows": 500,
+     "hits": 500,
+     "runner_up": 500
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "ARKG",
+    "status": "partial",
+    "rows": 2304,
+    "verified_rows": 1512,
+    "verified_since": "2017-12-27",
+    "events": 5,
+    "zero_volume_rows": 3,
+    "dividends_before_fit": 5,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 0.9999999581441342,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 2244,
+     "rate": 0.8689839572192514,
+     "chance": 0.014589818074580388,
+     "excess": 0.8670441556380584
+    },
+    "affected": {
+     "rows": 1800,
+     "rate": 0.8394444444444444,
+     "chance": 0.014707392235141652,
+     "excess": 0.8370478431582099
+    },
+    "controls": {
+     "no_dividends": 0.012778,
+     "ex_date_plus_one": 0.008889,
+     "ex_date_minus_one": 0.016667
+    },
+    "failed_segments": [
+     {
+      "start": "2014-10-31",
+      "rows": 792,
+      "rate": 0.7007575757575758
+     }
+    ]
+   },
+   {
+    "market": "US",
+    "symbol": "AVB",
+    "status": "verified",
+    "rows": 6024,
+    "verified_rows": 6024,
+    "verified_since": "2000-01-03",
+    "events": 96,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 95,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0421617787006972,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 7
+    },
+    "validation": {
+     "rows": 5964,
+     "rate": 1.0,
+     "chance": 0.05178057794808064,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5959,
+     "rate": 1.0,
+     "chance": 0.051767181554137676,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "BGI",
+    "status": "verified",
+    "rows": 4561,
+    "verified_rows": 4561,
+    "verified_since": "2005-11-15",
+    "events": 0,
+    "zero_volume_rows": 658,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 0.999999987799476,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 11
+    },
+    "validation": {
+     "rows": 4501,
+     "rate": 1.0,
+     "chance": 0.009228893014178766,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "BHE",
+    "status": "verified",
+    "rows": 6032,
+    "verified_rows": 6032,
+    "verified_since": "2000-01-03",
+    "events": 26,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 23,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0220551480049982,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 5972,
+     "rate": 1.0,
+     "chance": 0.011407582404167093,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5967,
+     "rate": 1.0,
+     "chance": 0.011408974378672403,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "BNR",
+    "status": "verified",
+    "rows": 894,
+    "verified_rows": 894,
+    "verified_since": "2020-06-12",
+    "events": 0,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 0.1,
+    "fit": {
+     "gamma": 0.9999999794908753,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 59,
+     "runner_up": 45
+    },
+    "validation": {
+     "rows": 834,
+     "rate": 0.9916067146282974,
+     "chance": 0.006018378309777569,
+     "excess": 0.991555894808769
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "BUI",
+    "status": "verified",
+    "rows": 3029,
+    "verified_rows": 3029,
+    "verified_since": "2011-11-23",
+    "events": 121,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 118,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0934723092563485,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 57,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 2969,
+     "rate": 1.0,
+     "chance": 0.008283924589311426,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2954,
+     "rate": 1.0,
+     "chance": 0.008285096850278664,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "CCZ",
+    "status": "partial",
+    "rows": 994,
+    "verified_rows": 567,
+    "verified_since": "2021-09-29",
+    "events": 13,
+    "zero_volume_rows": 578,
+    "dividends_before_fit": 12,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0455453427556896,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 18
+    },
+    "validation": {
+     "rows": 934,
+     "rate": 0.9122055674518201,
+     "chance": 0.023960252488488324,
+     "excess": 0.9100503511542245
+    },
+    "affected": {
+     "rows": 866,
+     "rate": 0.9064665127020786,
+     "chance": 0.024078954815596115,
+     "excess": 0.9041587557113825
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": 0.15127
+    },
+    "failed_segments": [
+     {
+      "start": "2021-03-31",
+      "rows": 126,
+      "rate": 0.7777777777777778
+     }
+    ]
+   },
+   {
+    "market": "US",
+    "symbol": "CFA",
+    "status": "fit_failed",
+    "rows": 2380,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 93,
+    "zero_volume_rows": 94,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "no_grid_solution",
+     "window_rows": 60,
+     "hits": 33,
+     "runner_up": 5
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "CNMD",
+    "status": "verified",
+    "rows": 6034,
+    "verified_rows": 6034,
+    "verified_since": "2000-01-03",
+    "events": 49,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 47,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0141249054845727,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 5
+    },
+    "validation": {
+     "rows": 5974,
+     "rate": 1.0,
+     "chance": 0.019236750837543184,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5959,
+     "rate": 1.0,
+     "chance": 0.01918197574817336,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "CQP",
+    "status": "verified",
+    "rows": 4217,
+    "verified_rows": 4217,
+    "verified_since": "2007-03-21",
+    "events": 67,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 66,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0859252868346547,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 5
+    },
+    "validation": {
+     "rows": 4157,
+     "rate": 1.0,
+     "chance": 0.011602803210502142,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 4114,
+     "rate": 1.0,
+     "chance": 0.011504295801574806,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "CRL",
+    "status": "verified",
+    "rows": 5917,
+    "verified_rows": 5917,
+    "verified_since": "2000-06-23",
+    "events": 0,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000258185946,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 12
+    },
+    "validation": {
+     "rows": 5857,
+     "rate": 1.0,
+     "chance": 0.03583329332818073,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "DCTH",
+    "status": "verified",
+    "rows": 1425,
+    "verified_rows": 1425,
+    "verified_since": "2018-05-03",
+    "events": 1,
+    "zero_volume_rows": 50,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000366797828,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 59,
+     "runner_up": 10
+    },
+    "validation": {
+     "rows": 1365,
+     "rate": 0.9772893772893773,
+     "chance": 0.004216667705308462,
+     "excess": 0.9771932086287404
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "DSL",
+    "status": "verified",
+    "rows": 2680,
+    "verified_rows": 2680,
+    "verified_since": "2013-04-26",
+    "events": 126,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 123,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.1395175031665175,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 2
+    },
+    "validation": {
+     "rows": 2620,
+     "rate": 1.0,
+     "chance": 0.007240757130595245,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2604,
+     "rate": 1.0,
+     "chance": 0.007256391581839009,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "EOT",
+    "status": "verified",
+    "rows": 3633,
+    "verified_rows": 3633,
+    "verified_since": "2009-05-27",
+    "events": 180,
+    "zero_volume_rows": 5,
+    "dividends_before_fit": 177,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0649366877916444,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 3573,
+     "rate": 1.0,
+     "chance": 0.008236816199151084,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3563,
+     "rate": 1.0,
+     "chance": 0.008241763759284974,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "EQH",
+    "status": "verified",
+    "rows": 1420,
+    "verified_rows": 1420,
+    "verified_since": "2018-05-10",
+    "events": 22,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 21,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0286960321399632,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 9
+    },
+    "validation": {
+     "rows": 1360,
+     "rate": 1.0,
+     "chance": 0.010191318308883406,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 1317,
+     "rate": 1.0,
+     "chance": 0.01015575769354867,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "ERC",
+    "status": "verified",
+    "rows": 5123,
+    "verified_rows": 5123,
+    "verified_since": "2003-06-25",
+    "events": 248,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 245,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.1255991778062262,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 50,
+     "runner_up": 2
+    },
+    "validation": {
+     "rows": 5063,
+     "rate": 1.0,
+     "chance": 0.005608147827075558,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5045,
+     "rate": 1.0,
+     "chance": 0.005614928927629231,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "FEMB",
+    "status": "unverified",
+    "rows": 2197,
+    "verified_rows": 0,
+    "verified_since": null,
+    "events": 108,
+    "zero_volume_rows": 234,
+    "dividends_before_fit": 105,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0748537953417705,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 53,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 2137,
+     "rate": 0.772110435189518,
+     "chance": 0.014745095553682855,
+     "excess": 0.768699893010379
+    },
+    "affected": {
+     "rows": 2128,
+     "rate": 0.7716165413533834,
+     "chance": 0.014761894363673478,
+     "excess": 0.7681946553426162
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": [
+     {
+      "start": "2023-12-22",
+      "rows": 5,
+      "rate": 0.8
+     }
+    ]
+   },
+   {
+    "market": "US",
+    "symbol": "FNDA",
+    "status": "verified",
+    "rows": 2612,
+    "verified_rows": 2612,
+    "verified_since": "2013-08-15",
+    "events": 29,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 28,
+    "split_ratio_after_cutoff": 2.0,
+    "fit": {
+     "gamma": 1.0109455209915656,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 4
+    },
+    "validation": {
+     "rows": 2552,
+     "rate": 1.0,
+     "chance": 0.015106134569890683,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2416,
+     "rate": 1.0,
+     "chance": 0.01484571664232599,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "FUTY",
+    "status": "verified",
+    "rows": 2563,
+    "verified_rows": 2563,
+    "verified_since": "2013-10-24",
+    "events": 39,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 38,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0398224559515767,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 4
+    },
+    "validation": {
+     "rows": 2503,
+     "rate": 1.0,
+     "chance": 0.014463759859104136,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 2489,
+     "rate": 1.0,
+     "chance": 0.014456730784901459,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "GFL",
+    "status": "verified",
+    "rows": 965,
+    "verified_rows": 965,
+    "verified_since": "2020-03-03",
+    "events": 15,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 14,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0015253767625603,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 15
+    },
+    "validation": {
+     "rows": 905,
+     "rate": 1.0,
+     "chance": 0.011774308581482438,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 847,
+     "rate": 1.0,
+     "chance": 0.011657932887712486,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.01889,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": 0.146399
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "GSEW",
+    "status": "fit_failed",
+    "rows": 1583,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 25,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "no_grid_solution",
+     "window_rows": 60,
+     "hits": 40,
+     "runner_up": 12
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "GSK",
+    "status": "partial",
+    "rows": 6025,
+    "verified_rows": 363,
+    "verified_since": "2022-07-22",
+    "events": 96,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 93,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0508942056962787,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 4
+    },
+    "validation": {
+     "rows": 5965,
+     "rate": 0.07292539815590947,
+     "chance": 0.019704932075648676,
+     "excess": 0.05429025180443709
+    },
+    "affected": {
+     "rows": 5931,
+     "rate": 0.06761085820266396,
+     "chance": 0.019735261481457662,
+     "excess": 0.0488394561591187
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": [
+     {
+      "start": "2022-05-19",
+      "rows": 40,
+      "rate": 0.025
+     },
+     {
+      "start": "2022-07-19",
+      "rows": 3,
+      "rate": 0.0
+     }
+    ]
+   },
+   {
+    "market": "US",
+    "symbol": "HBM",
+    "status": "verified",
+    "rows": 3745,
+    "verified_rows": 3745,
+    "verified_since": "2009-02-13",
+    "events": 25,
+    "zero_volume_rows": 21,
+    "dividends_before_fit": 25,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0020122025109945,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 10
+    },
+    "validation": {
+     "rows": 3685,
+     "rate": 1.0,
+     "chance": 0.003035922971390265,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3661,
+     "rate": 1.0,
+     "chance": 0.0030433499454305566,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.001639,
+     "ex_date_plus_one": 0.020213,
+     "ex_date_minus_one": 0.000546
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "HELE",
+    "status": "verified",
+    "rows": 6037,
+    "verified_rows": 6037,
+    "verified_since": "2000-01-03",
+    "events": 0,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.000000020208644,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 5
+    },
+    "validation": {
+     "rows": 5977,
+     "rate": 1.0,
+     "chance": 0.026209721179211106,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "IBDU",
+    "status": "partial",
+    "rows": 1078,
+    "verified_rows": 271,
+    "verified_since": "2022-12-01",
+    "events": 51,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 48,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0610540322130704,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 4
+    },
+    "validation": {
+     "rows": 1018,
+     "rate": 0.6905697445972495,
+     "chance": 0.009963979496763139,
+     "excess": 0.6874555581871995
+    },
+    "affected": {
+     "rows": 1015,
+     "rate": 0.6896551724137931,
+     "chance": 0.009967833626446793,
+     "excess": 0.6865305612008678
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": [
+     {
+      "start": "2022-11-01",
+      "rows": 21,
+      "rate": 0.8571428571428571
+     }
+    ]
+   },
+   {
+    "market": "US",
+    "symbol": "ICE",
+    "status": "verified",
+    "rows": 4559,
+    "verified_rows": 4559,
+    "verified_since": "2005-11-16",
+    "events": 42,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 40,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0152055462952059,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 5
+    },
+    "validation": {
+     "rows": 4499,
+     "rate": 1.0,
+     "chance": 0.05048772621301804,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 4484,
+     "rate": 1.0,
+     "chance": 0.050507352409059535,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "KOSS",
+    "status": "verified",
+    "rows": 5906,
+    "verified_rows": 5906,
+    "verified_since": "2000-01-03",
+    "events": 54,
+    "zero_volume_rows": 671,
+    "dividends_before_fit": 52,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.000000028467891,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 16
+    },
+    "validation": {
+     "rows": 5846,
+     "rate": 1.0,
+     "chance": 0.0053318765811744846,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 3448,
+     "rate": 1.0,
+     "chance": 0.007566601609744928,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": 0.0058,
+     "ex_date_plus_one": 0.027842,
+     "ex_date_minus_one": 0.007831
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "KROS",
+    "status": "verified",
+    "rows": 939,
+    "verified_rows": 939,
+    "verified_since": "2020-04-08",
+    "events": 0,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0000000422149613,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 9
+    },
+    "validation": {
+     "rows": 879,
+     "rate": 0.9920364050056882,
+     "chance": 0.018413147097258352,
+     "excess": 0.9918870195023886
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "MYRG",
+    "status": "verified",
+    "rows": 3872,
+    "verified_rows": 3872,
+    "verified_since": "2008-08-13",
+    "events": 0,
+    "zero_volume_rows": 4,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 0.9999999662392841,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 8
+    },
+    "validation": {
+     "rows": 3812,
+     "rate": 1.0,
+     "chance": 0.015601186254982866,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "NAC",
+    "status": "verified",
+    "rows": 5996,
+    "verified_rows": 5996,
+    "verified_since": "2000-01-03",
+    "events": 293,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 290,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.096700172709389,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 59,
+     "runner_up": 2
+    },
+    "validation": {
+     "rows": 5936,
+     "rate": 1.0,
+     "chance": 0.006210366681835306,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5921,
+     "rate": 1.0,
+     "chance": 0.006216071714785609,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "NCZ",
+    "status": "verified",
+    "rows": 5092,
+    "verified_rows": 5092,
+    "verified_since": "2003-07-29",
+    "events": 129,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 128,
+    "split_ratio_after_cutoff": 0.25,
+    "fit": {
+     "gamma": 1.1053178438821152,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 3
+    },
+    "validation": {
+     "rows": 5032,
+     "rate": 1.0,
+     "chance": 0.0034055612910348083,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 4972,
+     "rate": 1.0,
+     "chance": 0.0034324650884947528,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "NOVA",
+    "status": "verified",
+    "rows": 1117,
+    "verified_rows": 1117,
+    "verified_since": "2019-07-25",
+    "events": 0,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 12
+    },
+    "validation": {
+     "rows": 1057,
+     "rate": 1.0,
+     "chance": 0.009273017976232147,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "RESD",
+    "status": "fit_failed",
+    "rows": 1802,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 18,
+    "zero_volume_rows": 129,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "no_grid_solution",
+     "window_rows": 60,
+     "hits": 4,
+     "runner_up": 3
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "TPIF",
+    "status": "fit_failed",
+    "rows": 1026,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 43,
+    "zero_volume_rows": 2,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "no_grid_solution",
+     "window_rows": 60,
+     "hits": 3,
+     "runner_up": 3
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "TSCO",
+    "status": "partial",
+    "rows": 6036,
+    "verified_rows": 5377,
+    "verified_since": "2002-08-20",
+    "events": 32,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 27,
+    "split_ratio_after_cutoff": 5.0,
+    "fit": {
+     "gamma": 1.0081705966823933,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 7
+    },
+    "validation": {
+     "rows": 5976,
+     "rate": 0.9807563587684069,
+     "chance": 0.03190249819510558,
+     "excess": 0.9801222075300104
+    },
+    "affected": {
+     "rows": 5886,
+     "rate": 0.9804621134896364,
+     "chance": 0.031067776672952723,
+     "excess": 0.9798356520301535
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": [
+     {
+      "start": "2000-01-03",
+      "rows": 659,
+      "rate": 0.8254931714719271
+     }
+    ]
+   },
+   {
+    "market": "US",
+    "symbol": "ULTR",
+    "status": "fit_failed",
+    "rows": 1114,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 53,
+    "zero_volume_rows": 5,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "no_grid_solution",
+     "window_rows": 60,
+     "hits": 27,
+     "runner_up": 6
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "USAS",
+    "status": "fit_failed",
+    "rows": 4006,
+    "verified_rows": null,
+    "verified_since": null,
+    "events": 1,
+    "zero_volume_rows": 411,
+    "dividends_before_fit": null,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": null,
+     "reason": "ambiguous",
+     "window_rows": 500,
+     "hits": 500,
+     "runner_up": 470
+    },
+    "failed_segments": []
+   }
+  ]
+ },
+ "external_group": {
+  "summary": {
+   "CN": {
+    "assets": 1,
+    "status": {
+     "verified": 1
+    },
+    "rows": 4371,
+    "verified_rows": 4371,
+    "validation_rows": 4311,
+    "validation_rate": 0.9997680352586407,
+    "validation_chance": 0.23838591199996093,
+    "median_asset_validation_rate": 0.9997680352586407,
+    "zero_volume_rows": 68,
+    "controls": {
+     "assets": 1,
+     "method_affected_rate": 0.9997644842204427,
+     "no_dividends": {
+      "fit_failed": 1,
+      "affected_rate": null
+     },
+     "ex_date_plus_one": {
+      "fit_failed": 1,
+      "affected_rate": null
+     },
+     "ex_date_minus_one": {
+      "fit_failed": 1,
+      "affected_rate": null
+     }
+    }
+   },
+   "US": {
+    "assets": 5,
+    "status": {
+     "verified": 5
+    },
+    "rows": 27151,
+    "verified_rows": 27151,
+    "validation_rows": 26851,
+    "validation_rate": 0.9999627574392015,
+    "validation_chance": 0.10383095278072633,
+    "median_asset_validation_rate": 1.0,
+    "zero_volume_rows": 0,
+    "controls": {
+     "assets": 3,
+     "method_affected_rate": 0.9999426802705491,
+     "no_dividends": {
+      "fit_failed": 3,
+      "affected_rate": null
+     },
+     "ex_date_plus_one": {
+      "fit_failed": 3,
+      "affected_rate": null
+     },
+     "ex_date_minus_one": {
+      "fit_failed": 3,
+      "affected_rate": null
+     }
+    }
+   }
+  },
+  "assets": [
+   {
+    "market": "CN",
+    "symbol": "600519.SS",
+    "status": "verified",
+    "rows": 4371,
+    "verified_rows": 4371,
+    "verified_since": "2006-01-04",
+    "events": 21,
+    "zero_volume_rows": 68,
+    "dividends_before_fit": 20,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0366758549131017,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 54
+    },
+    "validation": {
+     "rows": 4311,
+     "rate": 0.9997680352586407,
+     "chance": 0.23838591199996093,
+     "excess": 0.9996954300806482
+    },
+    "affected": {
+     "rows": 4246,
+     "rate": 0.9997644842204427,
+     "chance": 0.23096620532741263,
+     "excess": 0.9996937510663526
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "AAPL",
+    "status": "verified",
+    "rows": 6037,
+    "verified_rows": 6037,
+    "verified_since": "2000-01-03",
+    "events": 50,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 45,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0060039085201227,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 9
+    },
+    "validation": {
+     "rows": 5977,
+     "rate": 0.9998326919859462,
+     "chance": 0.07180930774703166,
+     "excess": 0.9998197482312091
+    },
+    "affected": {
+     "rows": 5939,
+     "rate": 0.9998316214850985,
+     "chance": 0.07181424151989795,
+     "excess": 0.9998185939469948
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "AMZN",
+    "status": "verified",
+    "rows": 6037,
+    "verified_rows": 6037,
+    "verified_since": "2000-01-03",
+    "events": 1,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 0.9999999839317743,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 5
+    },
+    "validation": {
+     "rows": 5977,
+     "rate": 1.0,
+     "chance": 0.22466596544413237,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "IBM",
+    "status": "verified",
+    "rows": 6008,
+    "verified_rows": 6008,
+    "verified_since": "2000-01-03",
+    "events": 97,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 95,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.0430530167380305,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 8
+    },
+    "validation": {
+     "rows": 5948,
+     "rate": 1.0,
+     "chance": 0.0565770719703033,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5908,
+     "rate": 1.0,
+     "chance": 0.05656850440156924,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "TSLA",
+    "status": "verified",
+    "rows": 3400,
+    "verified_rows": 3400,
+    "verified_since": "2010-06-29",
+    "events": 2,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 0,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.000000017194386,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 16
+    },
+    "validation": {
+     "rows": 3340,
+     "rate": 1.0,
+     "chance": 0.12377534698995118,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 0,
+     "rate": null,
+     "chance": null,
+     "excess": null
+    },
+    "failed_segments": []
+   },
+   {
+    "market": "US",
+    "symbol": "VTI",
+    "status": "verified",
+    "rows": 5669,
+    "verified_rows": 5669,
+    "verified_since": "2001-06-15",
+    "events": 92,
+    "zero_volume_rows": 0,
+    "dividends_before_fit": 90,
+    "split_ratio_after_cutoff": 1.0,
+    "fit": {
+     "gamma": 1.016994550804427,
+     "reason": null,
+     "window_rows": 60,
+     "hits": 60,
+     "runner_up": 8
+    },
+    "validation": {
+     "rows": 5609,
+     "rate": 1.0,
+     "chance": 0.047424161566392314,
+     "excess": 1.0
+    },
+    "affected": {
+     "rows": 5599,
+     "rate": 1.0,
+     "chance": 0.04735723205701952,
+     "excess": 1.0
+    },
+    "controls": {
+     "no_dividends": null,
+     "ex_date_plus_one": null,
+     "ex_date_minus_one": null
+    },
+    "failed_segments": []
+   }
+  ]
+ },
+ "external_comparison": {
+  "closes": {
+   "CN/601919.SS": {
+    "capture": "sse-yunhq-601919-dayk-full",
+    "capture_sha256": "a77a9ac0da2e7cfb1fa11c6f51cde792222ddc6eebf6f4cc0760657daf2c76ca",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 3813,
+     "defined": 3813,
+     "exact": 3799,
+     "within_half_tick": 3799,
+     "rate": 0.996328350380278,
+     "median_relative_difference": 1.1018602734447762e-07,
+     "max_relative_difference": 0.07959483649326066,
+     "mismatch_sessions": 14,
+     "provider_only_sessions": 187,
+     "reference_only_sessions": 19
+    },
+    "verified_rows": {
+     "common_sessions": 3813,
+     "defined": 3813,
+     "exact": 3799,
+     "within_half_tick": 3799,
+     "rate": 0.996328350380278,
+     "median_relative_difference": 1.1018602734447762e-07,
+     "max_relative_difference": 0.07959483649326066,
+     "mismatch_sessions": 14,
+     "provider_only_sessions": 187,
+     "reference_only_sessions": 19
+    }
+   },
+   "CN/601225.SS": {
+    "capture": "sse-yunhq-601225-dayk-full",
+    "capture_sha256": "62a2e9a63dcccd06be8ffe05583fdb313ffb54753706d88c2d4ea1c537f76a1b",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 2410,
+     "defined": 2410,
+     "exact": 2405,
+     "within_half_tick": 2405,
+     "rate": 0.9979253112033195,
+     "median_relative_difference": 5.393174210788118e-08,
+     "max_relative_difference": 0.005084664387814577,
+     "mismatch_sessions": 5,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 6
+    },
+    "verified_rows": {
+     "common_sessions": 2410,
+     "defined": 2410,
+     "exact": 2405,
+     "within_half_tick": 2405,
+     "rate": 0.9979253112033195,
+     "median_relative_difference": 5.393174210788118e-08,
+     "max_relative_difference": 0.005084664387814577,
+     "mismatch_sessions": 5,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 6
+    }
+   },
+   "CN/601369.SS": {
+    "capture": "sse-yunhq-601369-dayk-full",
+    "capture_sha256": "a521e0e88b1c71ef8fc2c7babf0c6df01f9a6d6aabd6632c89bc28628eabc41e",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 3276,
+     "defined": 3276,
+     "exact": 3229,
+     "within_half_tick": 3229,
+     "rate": 0.9856532356532357,
+     "median_relative_difference": 5.5712285544492873e-08,
+     "max_relative_difference": 0.06782755837200764,
+     "mismatch_sessions": 47,
+     "provider_only_sessions": 43,
+     "reference_only_sessions": 5
+    },
+    "verified_rows": {
+     "common_sessions": 3276,
+     "defined": 3276,
+     "exact": 3229,
+     "within_half_tick": 3229,
+     "rate": 0.9856532356532357,
+     "median_relative_difference": 5.5712285544492873e-08,
+     "max_relative_difference": 0.06782755837200764,
+     "mismatch_sessions": 47,
+     "provider_only_sessions": 43,
+     "reference_only_sessions": 5
+    }
+   },
+   "CN/601689.SS": {
+    "capture": "sse-yunhq-601689-dayk-full",
+    "capture_sha256": "06494469b7cb50fcf153c9c8a10e1ee39d20ff55f31fb6db88c8ddfc0b840b8e",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 2128,
+     "defined": 2128,
+     "exact": 2122,
+     "within_half_tick": 2122,
+     "rate": 0.9971804511278195,
+     "median_relative_difference": 4.3700430110552635e-08,
+     "max_relative_difference": 0.0030608595230865723,
+     "mismatch_sessions": 6,
+     "provider_only_sessions": 10,
+     "reference_only_sessions": 3
+    },
+    "verified_rows": {
+     "common_sessions": 2128,
+     "defined": 2128,
+     "exact": 2122,
+     "within_half_tick": 2122,
+     "rate": 0.9971804511278195,
+     "median_relative_difference": 4.3700430110552635e-08,
+     "max_relative_difference": 0.0030608595230865723,
+     "mismatch_sessions": 6,
+     "provider_only_sessions": 10,
+     "reference_only_sessions": 3
+    }
+   },
+   "CN/601155.SS": {
+    "capture": "sse-yunhq-601155-dayk-full",
+    "capture_sha256": "71f691d3de982c1f9653894782583467bcf61e6fa7e3ffee1802be019f48c384",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 1951,
+     "defined": 1951,
+     "exact": 1945,
+     "within_half_tick": 1945,
+     "rate": 0.9969246540235777,
+     "median_relative_difference": 3.253047175289677e-08,
+     "max_relative_difference": 0.11092668255039809,
+     "mismatch_sessions": 6,
+     "provider_only_sessions": 10,
+     "reference_only_sessions": 3
+    },
+    "verified_rows": {
+     "common_sessions": 1951,
+     "defined": 1951,
+     "exact": 1945,
+     "within_half_tick": 1945,
+     "rate": 0.9969246540235777,
+     "median_relative_difference": 3.253047175289677e-08,
+     "max_relative_difference": 0.11092668255039809,
+     "mismatch_sessions": 6,
+     "provider_only_sessions": 10,
+     "reference_only_sessions": 3
+    }
+   },
+   "CN/688599.SS": {
+    "capture": "sse-yunhq-688599-dayk-full",
+    "capture_sha256": "b27a302ceb3ba8f4fff9f78b5e0aae03e406b5d6f96eec404f4271dce1028cff",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 866,
+     "defined": 866,
+     "exact": 866,
+     "within_half_tick": 866,
+     "rate": 1.0,
+     "median_relative_difference": 3.862362814296676e-08,
+     "max_relative_difference": 2.438589126554945e-07,
+     "mismatch_sessions": 0,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    },
+    "verified_rows": {
+     "common_sessions": 866,
+     "defined": 866,
+     "exact": 866,
+     "within_half_tick": 866,
+     "rate": 1.0,
+     "median_relative_difference": 3.862362814296676e-08,
+     "max_relative_difference": 2.438589126554945e-07,
+     "mismatch_sessions": 0,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    }
+   },
+   "CN/600332.SS": {
+    "capture": "sse-yunhq-600332-dayk-full",
+    "capture_sha256": "3f4c5223d417f498f353e153354682e5cd873643f69dded41e9c08903455342e",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 4143,
+     "defined": 4143,
+     "exact": 4129,
+     "within_half_tick": 4129,
+     "rate": 0.9966208061790973,
+     "median_relative_difference": 8.841044586450653e-08,
+     "max_relative_difference": 0.012300114638071175,
+     "mismatch_sessions": 14,
+     "provider_only_sessions": 228,
+     "reference_only_sessions": 3
+    },
+    "verified_rows": {
+     "common_sessions": 4143,
+     "defined": 4143,
+     "exact": 4129,
+     "within_half_tick": 4129,
+     "rate": 0.9966208061790973,
+     "median_relative_difference": 8.841044586450653e-08,
+     "max_relative_difference": 0.012300114638071175,
+     "mismatch_sessions": 14,
+     "provider_only_sessions": 228,
+     "reference_only_sessions": 3
+    }
+   },
+   "CN/600239.SS": {
+    "capture": "sse-yunhq-600239-dayk-full",
+    "capture_sha256": "29a211771b6eb3f0c833941637bd5572cd69e4e97ecd96934f0618aa18a5f044",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 3882,
+     "defined": 3882,
+     "exact": 3869,
+     "within_half_tick": 3869,
+     "rate": 0.9966512107161257,
+     "median_relative_difference": 5.814580993137029e-08,
+     "max_relative_difference": 0.11229945482396905,
+     "mismatch_sessions": 13,
+     "provider_only_sessions": 488,
+     "reference_only_sessions": 4
+    },
+    "verified_rows": {
+     "common_sessions": 3882,
+     "defined": 3882,
+     "exact": 3869,
+     "within_half_tick": 3869,
+     "rate": 0.9966512107161257,
+     "median_relative_difference": 5.814580993137029e-08,
+     "max_relative_difference": 0.11229945482396905,
+     "mismatch_sessions": 13,
+     "provider_only_sessions": 488,
+     "reference_only_sessions": 4
+    }
+   },
+   "CN/600428.SS": {
+    "capture": "sse-yunhq-600428-dayk-full",
+    "capture_sha256": "41dc58515870cb336cd5444178b38b242e9eb8f21c464dad5e0f8e7b2bbd5e6f",
+    "status": "partial",
+    "all_rows": {
+     "common_sessions": 4242,
+     "defined": 4242,
+     "exact": 3044,
+     "within_half_tick": 3044,
+     "rate": 0.7175860443187175,
+     "median_relative_difference": 6.209834341741779e-08,
+     "max_relative_difference": 0.0807054678388129,
+     "mismatch_sessions": 1198,
+     "provider_only_sessions": 130,
+     "reference_only_sessions": 2
+    },
+    "verified_rows": {
+     "common_sessions": 2903,
+     "defined": 2903,
+     "exact": 2896,
+     "within_half_tick": 2896,
+     "rate": 0.9975887013434378,
+     "median_relative_difference": 3.933722312308744e-08,
+     "max_relative_difference": 0.011290316045883658,
+     "mismatch_sessions": 7,
+     "provider_only_sessions": 97,
+     "reference_only_sessions": 1341
+    }
+   },
+   "CN/600519.SS": {
+    "capture": "sse-yunhq-600519-dayk-full",
+    "capture_sha256": "fcfef5a5974b4b3778a8e5b1a576cf4e2f35cf6fc97e7437e1ac594630da84e6",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 4304,
+     "defined": 4304,
+     "exact": 4288,
+     "within_half_tick": 4288,
+     "rate": 0.9962825278810409,
+     "median_relative_difference": 7.035823293804436e-08,
+     "max_relative_difference": 0.11111083211695583,
+     "mismatch_sessions": 16,
+     "provider_only_sessions": 67,
+     "reference_only_sessions": 3
+    },
+    "verified_rows": {
+     "common_sessions": 4304,
+     "defined": 4304,
+     "exact": 4288,
+     "within_half_tick": 4288,
+     "rate": 0.9962825278810409,
+     "median_relative_difference": 7.035823293804436e-08,
+     "max_relative_difference": 0.11111083211695583,
+     "mismatch_sessions": 16,
+     "provider_only_sessions": 67,
+     "reference_only_sessions": 3
+    }
+   },
+   "US/AAPL": {
+    "capture": "eodhd-demo-aapl-eod-2000-2023",
+    "capture_sha256": "e090ea1d2c516eba079accd8c12f6c3e724e82f08a34a8e31bf4c464dfedf7e8",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 6037,
+     "defined": 6037,
+     "exact": 3383,
+     "within_half_tick": 6032,
+     "rate": 0.9991717740599636,
+     "median_relative_difference": 9.461605096055975e-07,
+     "max_relative_difference": 0.00020721520370267784,
+     "mismatch_sessions": 5,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    },
+    "verified_rows": {
+     "common_sessions": 6037,
+     "defined": 6037,
+     "exact": 3383,
+     "within_half_tick": 6032,
+     "rate": 0.9991717740599636,
+     "median_relative_difference": 9.461605096055975e-07,
+     "max_relative_difference": 0.00020721520370267784,
+     "mismatch_sessions": 5,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    }
+   },
+   "US/AMZN": {
+    "capture": "eodhd-demo-amzn-eod-2000-2023",
+    "capture_sha256": "406ae59c2398af28c676e38f45af183369f2f2527cc4213364eae449e2027e8c",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 6037,
+     "defined": 6037,
+     "exact": 5955,
+     "within_half_tick": 6030,
+     "rate": 0.998840483683949,
+     "median_relative_difference": 2.256107620471052e-08,
+     "max_relative_difference": 0.003820950677290638,
+     "mismatch_sessions": 7,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    },
+    "verified_rows": {
+     "common_sessions": 6037,
+     "defined": 6037,
+     "exact": 5955,
+     "within_half_tick": 6030,
+     "rate": 0.998840483683949,
+     "median_relative_difference": 2.256107620471052e-08,
+     "max_relative_difference": 0.003820950677290638,
+     "mismatch_sessions": 7,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    }
+   },
+   "US/TSLA": {
+    "capture": "eodhd-demo-tsla-eod-2000-2023",
+    "capture_sha256": "3b2edf6d3a66127a2964308f6d06373d257693acaaf016a8d8f45b6bbf1b6947",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 3400,
+     "defined": 3400,
+     "exact": 2328,
+     "within_half_tick": 3400,
+     "rate": 1.0,
+     "median_relative_difference": 2.520177543333496e-07,
+     "max_relative_difference": 3.138912326862617e-05,
+     "mismatch_sessions": 0,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    },
+    "verified_rows": {
+     "common_sessions": 3400,
+     "defined": 3400,
+     "exact": 2328,
+     "within_half_tick": 3400,
+     "rate": 1.0,
+     "median_relative_difference": 2.520177543333496e-07,
+     "max_relative_difference": 3.138912326862617e-05,
+     "mismatch_sessions": 0,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 0
+    }
+   },
+   "US/VTI": {
+    "capture": "eodhd-demo-vti-eod-2000-2023",
+    "capture_sha256": "0ae61a7eb73f58c03f52feff1a93e7bdb4e5ef6fc1b5466d904993bbfec2f541",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 5669,
+     "defined": 5669,
+     "exact": 5598,
+     "within_half_tick": 5655,
+     "rate": 0.9975304286470277,
+     "median_relative_difference": 1.1292144381368494e-07,
+     "max_relative_difference": 0.002585868881108509,
+     "mismatch_sessions": 14,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 2
+    },
+    "verified_rows": {
+     "common_sessions": 5669,
+     "defined": 5669,
+     "exact": 5598,
+     "within_half_tick": 5655,
+     "rate": 0.9975304286470277,
+     "median_relative_difference": 1.1292144381368494e-07,
+     "max_relative_difference": 0.002585868881108509,
+     "mismatch_sessions": 14,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 2
+    }
+   },
+   "US/IBM": {
+    "capture": "alphavantage-demo-ibm-daily",
+    "capture_sha256": "741571b0124d3f40263384d9554b1fedcf1e222f1a5d58851726c84a87ba46fb",
+    "status": "verified",
+    "all_rows": {
+     "common_sessions": 6008,
+     "defined": 6008,
+     "exact": 5852,
+     "within_half_tick": 5993,
+     "rate": 0.997503328894807,
+     "median_relative_difference": 1.2640826874093947e-07,
+     "max_relative_difference": 0.010006053865435821,
+     "mismatch_sessions": 15,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 29
+    },
+    "verified_rows": {
+     "common_sessions": 6008,
+     "defined": 6008,
+     "exact": 5852,
+     "within_half_tick": 5993,
+     "rate": 0.997503328894807,
+     "median_relative_difference": 1.2640826874093947e-07,
+     "max_relative_difference": 0.010006053865435821,
+     "mismatch_sessions": 15,
+     "provider_only_sessions": 0,
+     "reference_only_sessions": 29
+    }
+   }
+  },
+  "events": {
+   "AAPL": {
+    "dividends": {
+     "provider_events": 46,
+     "reference_events": 46,
+     "same_date": 46,
+     "same_value": 46,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "splits": {
+     "provider_events": 4,
+     "reference_events": 4,
+     "same_date": 4,
+     "same_value": 4,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "captures": {
+     "eodhd-demo-aapl-div-2000-2023": "c3784f8ee8e44200c30674a7601fd253143d4a1802c0bd4e04ee0931a23c8999",
+     "eodhd-demo-aapl-splits-2000-2023": "744c2fa07ed885bbf13ed05b9f48e5f1b6eec16e61f18c1658bd9af2560772f6"
+    }
+   },
+   "AMZN": {
+    "dividends": {
+     "provider_events": 0,
+     "reference_events": 0,
+     "same_date": 0,
+     "same_value": 0,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "splits": {
+     "provider_events": 1,
+     "reference_events": 1,
+     "same_date": 1,
+     "same_value": 1,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "captures": {
+     "eodhd-demo-amzn-div-2000-2023": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "eodhd-demo-amzn-splits-2000-2023": "dfdb188c7a68ac81225e67d1f4156208d074211e438cf4acee9413b3988bc387"
+    }
+   },
+   "TSLA": {
+    "dividends": {
+     "provider_events": 0,
+     "reference_events": 0,
+     "same_date": 0,
+     "same_value": 0,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "splits": {
+     "provider_events": 2,
+     "reference_events": 2,
+     "same_date": 2,
+     "same_value": 2,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "captures": {
+     "eodhd-demo-tsla-div-2000-2023": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "eodhd-demo-tsla-splits-2000-2023": "4c287cb711c40c27460d61bda1c9cff7f205a090dfd4c889a4987901679cd1df"
+    }
+   },
+   "VTI": {
+    "dividends": {
+     "provider_events": 91,
+     "reference_events": 91,
+     "same_date": 90,
+     "same_value": 90,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [
+      "2009-06-24"
+     ],
+     "reference_only_dates": [
+      "2009-06-25"
+     ]
+    },
+    "splits": {
+     "provider_events": 1,
+     "reference_events": 1,
+     "same_date": 1,
+     "same_value": 1,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "captures": {
+     "eodhd-demo-vti-div-2000-2023": "1fdfd8c5711c7307a21821c955116598064b606eb088d94a75b095cbca728609",
+     "eodhd-demo-vti-splits-2000-2023": "f2e82ea1b20707ecbad89e608eb52d4144b1839eb701136045e80cd9c9e84099"
+    }
+   },
+   "IBM": {
+    "dividends": {
+     "provider_events": 96,
+     "reference_events": 96,
+     "same_date": 96,
+     "same_value": 96,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "splits": {
+     "provider_events": 1,
+     "reference_events": 1,
+     "same_date": 1,
+     "same_value": 1,
+     "value_mismatch_dates": [],
+     "provider_only_dates": [],
+     "reference_only_dates": []
+    },
+    "captures": {
+     "alphavantage-demo-ibm-dividends": "49c7178089ee452f4afb56f2214f169494ee680ba1f085d0193876023c52c4d4",
+     "alphavantage-demo-ibm-splits": "e2c0de31a1b0c5ceab7ea037c0dd7d5292bbc502184519373777cd2f1652d2dd"
+    }
+   }
+  }
+ },
+ "edition": {
+  "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+  "assets": 5012,
+  "elapsed_seconds": 203.62936264900782,
+  "summary": {
+   "CN": {
+    "assets": 810,
+    "status": {
+     "verified": 705,
+     "partial": 97,
+     "fit_failed": 7,
+     "unverified": 1
+    },
+    "rows": 2891924,
+    "verified_rows": 2703487,
+    "validation_rows": 2824818,
+    "validation_rate": 0.9501419206476311,
+    "validation_chance": 0.007980078027217433,
+    "median_asset_validation_rate": 1.0,
+    "zero_volume_rows": 110565,
+    "controls": {
+     "assets": 787,
+     "method_affected_rate": 0.9447018110753695,
+     "no_dividends": {
+      "fit_failed": 19,
+      "affected_rate": 0.007670475565463839
+     },
+     "ex_date_plus_one": {
+      "fit_failed": 20,
+      "affected_rate": 0.011794845391510994
+     },
+     "ex_date_minus_one": {
+      "fit_failed": 19,
+      "affected_rate": 0.012149341698177378
+     }
+    }
+   },
+   "US": {
+    "assets": 4202,
+    "status": {
+     "verified": 3377,
+     "fit_failed": 506,
+     "partial": 278,
+     "unverified": 41
+    },
+    "rows": 16090522,
+    "verified_rows": 14704394,
+    "validation_rows": 14887451,
+    "validation_rate": 0.9899913020704485,
+    "validation_chance": 0.016627197246098305,
+    "median_asset_validation_rate": 1.0,
+    "zero_volume_rows": 405403,
+    "controls": {
+     "assets": 2648,
+     "method_affected_rate": 0.9902661500491626,
+     "no_dividends": {
+      "fit_failed": 2149,
+      "affected_rate": 0.013924824738634156
+     },
+     "ex_date_plus_one": {
+      "fit_failed": 2134,
+      "affected_rate": 0.020038966227726697
+     },
+     "ex_date_minus_one": {
+      "fit_failed": 2129,
+      "affected_rate": 0.022341997252878724
+     }
+    }
+   }
+  },
+  "price_basis": "unadjusted_reconstructed",
+  "corporate_actions_complete": false,
+  "prepared_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407"
+ },
+ "delisting": {
+  "captures": {
+   "sse-delisted-a-shares-page1": "fb18ccb68f28949540f3a9e7e39010898b29366785b38eb4d53bf4cdd3044080",
+   "sse-delisted-a-shares-page2": "30f86da640062ef4d5c87750e81c0157bfa984609c195536f99fdf24086929c8",
+   "sse-delisted-a-shares-page3": "adb39ccbb5152f9f65285293235168d91d04e8649a68e3956b39001767e80269",
+   "sse-delisted-a-shares-page4": "f4dc0476933959ece82e4a7f7006ad6c5f5e79edc0fa411b4cb1cff3e768aee7",
+   "sse-delisted-a-shares-page5": "917a7089dd5b71ffa3ba2ee6f2fe91d23eee167b4f9079ad3e11de129751623b",
+   "sse-delisted-a-shares-page6": "86261f3012d12cf1e2b2654ffd8a5f59ef49071dc147fcb3cb72dfcbf8d0a8d2",
+   "szse-delisted-page1": "b2dcdfd538b604a676a94173506ef7043334ff8990eb4194e6c281c3ac998774",
+   "szse-delisted-page2": "b8f7f558acf3bf9e639c949c39a32dfe03aaf0feaa72bee82d16f517dd595e86",
+   "szse-delisted-page3": "97dcca16c9fe5f835e95f7e658ce9d7c18e3bc7b1640f04d79f67651916d9a1f",
+   "szse-delisted-page4": "1085622a698cd78e6677298fc22a3f0c00846a5228cd282aaa1383c7964e9251",
+   "szse-delisted-page5": "ff829daebfc6bc7b5fcad6799cb81564358f808e5f7fc8081c094cc2998ee583",
+   "szse-delisted-page6": "31dfd3a2d5c9d49a1bb8f2623cb3a32c8df7dda7e3976840813539cd0ad5c4f4",
+   "szse-delisted-page7": "88cb24b87af532d220f9b73adb94308972a9deda293b7fd4627d1b90f8a30178",
+   "szse-delisted-page8": "11f0f0d67f2114e4ad0d33f07a22320cdf929ebb1a946417aa1217977939138e",
+   "szse-delisted-page9": "33226a8715fb6fbf7819155629bef76cd6e128b140016f0cbf8a0deba23ec921",
+   "szse-delisted-page10": "7c1b596088702ade7a076e06692097f932dbe1aec74fd0c484a72614876aaf2e",
+   "szse-delisted-page11": "64c621f6ed7470a39e74b146582aa3f69d62ae73625ac1eaa644c63bac4b4989",
+   "worldbank-wdi-listed-domestic-us-cn": "f4c945f3729da6206153f1d3c675f09d71cd71f21194b4fe385a052f16309dd3"
+  },
+  "sse_a_share_delisted_total": 143,
+  "szse_delisted_total": 208,
+  "szse_a_share_delisted_total": 187,
+  "delisted_codes_present_in_dataset": [
+   "000627",
+   "600190",
+   "600200",
+   "600705",
+   "600804",
+   "600811",
+   "601989"
+  ],
+  "sse_delisted_2000_2023": 101,
+  "szse_a_delisted_2000_2023": 129,
+  "us_assets_ending_before_2023_12": 1,
+  "coverage_by_year": {
+   "2000": {
+    "us_assets": 1352,
+    "us_operating_companies": 1310,
+    "us_listed_domestic_wdi": 6917,
+    "cn_assets": 0,
+    "cn_listed_domestic_wdi": 1086,
+    "sse_a_delisted": 0,
+    "szse_a_delisted": 0
+   },
+   "2001": {
+    "us_assets": 1403,
+    "us_operating_companies": 1353,
+    "us_listed_domestic_wdi": 6177,
+    "cn_assets": 0,
+    "cn_listed_domestic_wdi": 1154,
+    "sse_a_delisted": 1,
+    "szse_a_delisted": 2
+   },
+   "2002": {
+    "us_assets": 1468,
+    "us_operating_companies": 1413,
+    "us_listed_domestic_wdi": 5685,
+    "cn_assets": 0,
+    "cn_listed_domestic_wdi": 1223,
+    "sse_a_delisted": 1,
+    "szse_a_delisted": 6
+   },
+   "2003": {
+    "us_assets": 1562,
+    "us_operating_companies": 1495,
+    "us_listed_domestic_wdi": 5295,
+    "cn_assets": 0,
+    "cn_listed_domestic_wdi": 1285,
+    "sse_a_delisted": 2,
+    "szse_a_delisted": 2
+   },
+   "2004": {
+    "us_assets": 1650,
+    "us_operating_companies": 1562,
+    "us_listed_domestic_wdi": 5226,
+    "cn_assets": 0,
+    "cn_listed_domestic_wdi": 1373,
+    "sse_a_delisted": 4,
+    "szse_a_delisted": 6
+   },
+   "2005": {
+    "us_assets": 1760,
+    "us_operating_companies": 1640,
+    "us_listed_domestic_wdi": 5145,
+    "cn_assets": 0,
+    "cn_listed_domestic_wdi": 1377,
+    "sse_a_delisted": 6,
+    "szse_a_delisted": 4
+   },
+   "2006": {
+    "us_assets": 1892,
+    "us_operating_companies": 1702,
+    "us_listed_domestic_wdi": 5133,
+    "cn_assets": 466,
+    "cn_listed_domestic_wdi": 1421,
+    "sse_a_delisted": 5,
+    "szse_a_delisted": 7
+   },
+   "2007": {
+    "us_assets": 2098,
+    "us_operating_companies": 1799,
+    "us_listed_domestic_wdi": 5109,
+    "cn_assets": 508,
+    "cn_listed_domestic_wdi": 1530,
+    "sse_a_delisted": 7,
+    "szse_a_delisted": 3
+   },
+   "2008": {
+    "us_assets": 2189,
+    "us_operating_companies": 1830,
+    "us_listed_domestic_wdi": 4666,
+    "cn_assets": 521,
+    "cn_listed_domestic_wdi": 1604,
+    "sse_a_delisted": 2,
+    "szse_a_delisted": 0
+   },
+   "2009": {
+    "us_assets": 2270,
+    "us_operating_companies": 1860,
+    "us_listed_domestic_wdi": 4401,
+    "cn_assets": 543,
+    "cn_listed_domestic_wdi": 1700,
+    "sse_a_delisted": 3,
+    "szse_a_delisted": 2
+   },
+   "2010": {
+    "us_assets": 2408,
+    "us_operating_companies": 1932,
+    "us_listed_domestic_wdi": 4279,
+    "cn_assets": 601,
+    "cn_listed_domestic_wdi": 2063,
+    "sse_a_delisted": 4,
+    "szse_a_delisted": 0
+   },
+   "2011": {
+    "us_assets": 2520,
+    "us_operating_companies": 1985,
+    "us_listed_domestic_wdi": 4171,
+    "cn_assets": 636,
+    "cn_listed_domestic_wdi": 2342,
+    "sse_a_delisted": 2,
+    "szse_a_delisted": 1
+   },
+   "2012": {
+    "us_assets": 2660,
+    "us_operating_companies": 2069,
+    "us_listed_domestic_wdi": 4102,
+    "cn_assets": 652,
+    "cn_listed_domestic_wdi": 2494,
+    "sse_a_delisted": 3,
+    "szse_a_delisted": 0
+   },
+   "2013": {
+    "us_assets": 2819,
+    "us_operating_companies": 2163,
+    "us_listed_domestic_wdi": 4180,
+    "cn_assets": 654,
+    "cn_listed_domestic_wdi": 2489,
+    "sse_a_delisted": 1,
+    "szse_a_delisted": 5
+   },
+   "2014": {
+    "us_assets": 3013,
+    "us_operating_companies": 2287,
+    "us_listed_domestic_wdi": 4369,
+    "cn_assets": 666,
+    "cn_listed_domestic_wdi": 2613,
+    "sse_a_delisted": 1,
+    "szse_a_delisted": 0
+   },
+   "2015": {
+    "us_assets": 3202,
+    "us_operating_companies": 2392,
+    "us_listed_domestic_wdi": 4381,
+    "cn_assets": 687,
+    "cn_listed_domestic_wdi": 2827,
+    "sse_a_delisted": 3,
+    "szse_a_delisted": 4
+   },
+   "2016": {
+    "us_assets": 3341,
+    "us_operating_companies": 2460,
+    "us_listed_domestic_wdi": 4331,
+    "cn_assets": 707,
+    "cn_listed_domestic_wdi": 3052,
+    "sse_a_delisted": 1,
+    "szse_a_delisted": 0
+   },
+   "2017": {
+    "us_assets": 3544,
+    "us_operating_companies": 2579,
+    "us_listed_domestic_wdi": 4336,
+    "cn_assets": 731,
+    "cn_listed_domestic_wdi": 3485,
+    "sse_a_delisted": 1,
+    "szse_a_delisted": 4
+   },
+   "2018": {
+    "us_assets": 3787,
+    "us_operating_companies": 2721,
+    "us_listed_domestic_wdi": 4013,
+    "cn_assets": 748,
+    "cn_listed_domestic_wdi": 3584,
+    "sse_a_delisted": 3,
+    "szse_a_delisted": 2
+   },
+   "2019": {
+    "us_assets": 4039,
+    "us_operating_companies": 2857,
+    "us_listed_domestic_wdi": 3910,
+    "cn_assets": 774,
+    "cn_listed_domestic_wdi": 12730,
+    "sse_a_delisted": 3,
+    "szse_a_delisted": 7
+   },
+   "2020": {
+    "us_assets": 4163,
+    "us_operating_companies": 2913,
+    "us_listed_domestic_wdi": 4104,
+    "cn_assets": 795,
+    "cn_listed_domestic_wdi": 12341,
+    "sse_a_delisted": 5,
+    "szse_a_delisted": 11
+   },
+   "2021": {
+    "us_assets": 4178,
+    "us_operating_companies": 2922,
+    "us_listed_domestic_wdi": 4774,
+    "cn_assets": 804,
+    "cn_listed_domestic_wdi": 11629,
+    "sse_a_delisted": 13,
+    "szse_a_delisted": 7
+   },
+   "2022": {
+    "us_assets": 4190,
+    "us_operating_companies": 2926,
+    "us_listed_domestic_wdi": 4642,
+    "cn_assets": 810,
+    "cn_listed_domestic_wdi": 11497,
+    "sse_a_delisted": 18,
+    "szse_a_delisted": 25
+   },
+   "2023": {
+    "us_assets": 4201,
+    "us_operating_companies": 2930,
+    "us_listed_domestic_wdi": 4317,
+    "cn_assets": 810,
+    "cn_listed_domestic_wdi": 11348,
+    "sse_a_delisted": 12,
+    "szse_a_delisted": 31
+   }
+  },
+  "wdi_cn_series_break": "El recuento chino pasa de 3.584 en 2018 a 12.730 en 2019. Se usa solo hasta 2018."
+ },
+ "costs": {
+  "audit-sample-build": "wall 2.98 s, user 2.41 s, sys 0.57 s, maxrss 269452 KB",
+  "edition-v1-build": "wall 204.30 s, user 177.86 s, sys 12.74 s, maxrss 383272 KB"
+ }
+}

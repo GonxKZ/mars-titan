@@ -36,6 +36,8 @@ referencias ajustadas sobre los mismos datos de entrenamiento.
 
 El piloto propone hasta 64 activos estadounidenses y la comparación principal hasta 128, con frecuencia diaria y un único horizonte principal de una sesión. El número final y las fechas se fijarán con la auditoría de cobertura y el tiempo medido, sin seleccionar por rentabilidad futura ni por disponibilidad durante todo el test. La selección se basará en información del periodo inicial y una regla determinista registrada. Conservará altas, bajas, cambios de símbolo y fechas de exclusión cuando existan. Se inventariará toda la copia y se prepara el recorrido por bloques. Ampliar a 256 activos, al universo completo o a China requiere una decisión de presupuesto registrada.
 
+La [revisión de precios sin ajustar y bajas](../data/unadjusted-prices.md) mide el sesgo de supervivencia de la población desde 2000. Casi todos los activos siguen cotizando en marzo de 2025 y no hay una fuente libre y verificable de retornos de salida en EE. UU. Mientras no se incorporen bajas, los resultados predictivos y financieros se declaran condicionados a esa supervivencia y se acompañan del análisis de sensibilidad descrito en ese documento.
+
 El universo de FinMultiTime no equivale a una lista de constituyentes históricos del S&P 500. Si no se reconstruye la pertenencia temporal, las conclusiones se limitarán explícitamente al universo retrospectivo disponible. No se impondrá como requisito que un activo sobreviva hasta el último día. Un manifiesto recogerá la versión, los archivos utilizados, los hashes, la regla de selección y cada motivo de exclusión. Véase la [ficha inicial](../data/finmultitime-card.md).
 
 ## Reloj de decisión y objetivo
