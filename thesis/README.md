@@ -11,6 +11,6 @@ cd thesis
 latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Antes de revisar una versión publicada, su fuente se conserva en `revisions/` con la fecha y el commit de origen en el nombre. `revisions/main-20261009-0bf7fd0b.tex` es la versión publicada en `main` antes de añadir el estado técnico de la campaña desde 2000. Las copias mantienen las rutas bibliográficas relativas a `thesis/`, así que para compilarlas hay que situarlas en esa carpeta.
+Antes de revisar una versión publicada, su fuente se conserva en `revisions/` con la fecha y el commit de origen en el nombre. `revisions/main-20261009-0bf7fd0b.tex` es la versión publicada en `main` antes de añadir el estado técnico de la campaña desde 2000. `revisions/main-20261009-7e717cb7.tex` es la publicada después, antes de incorporar la edición verificada, los objetivos residuales, la elección de la variante A y las comprobaciones CUDA. Las copias mantienen las rutas bibliográficas relativas a `thesis/`, así que para compilarlas hay que situarlas en esa carpeta.
 
 No se ha instalado una distribución LaTeX como parte de la preparación. La compilación se comprobará cuando esté disponible ese entorno. La documentación Markdown y el repositorio sí tienen controles ejecutables propios.

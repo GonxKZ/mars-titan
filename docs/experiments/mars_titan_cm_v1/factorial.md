@@ -103,7 +103,7 @@ El contraejemplo de la issue pasa por las tres. A1 y A2 tienen radio numérico 0
 
 La ventana del lector es común con MARS-TITAN. `ReadoutFamily` reúne lo que distingue a cada familia: control esperado en el padre, variante, retención e identidad. MARS-TITAN rechaza ahora cualquier padre con control C.
 
-La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un brazo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de los cuatro brazos son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos brazos, nunca los núcleos auxiliares. Las campañas A y B no declaran todavía la sección. Declararla añadiría 1.080 ajustes en A (360 de núcleos) y 408 ajustes con 336 traslados en B (136 de núcleos).
+La sección opcional `cm_v1` de la campaña solo declara la ruta de la declaración y la semilla de búsqueda. Los dos núcleos son trabajos auxiliares: se ajustan en las ventanas reentrenadas con sus casos y finalistas, no tienen traslado y no publican recibo de ventana. Cada búsqueda de un brazo depende de las búsquedas de su núcleo en la ventana y cada finalista del finalista del núcleo con su semilla. Los ejecutores declaran `fastpath=False` mientras dura cada trabajo. Los nombres de los cuatro brazos son los de la comparación declarada y no cambian. La etapa de políticas solo puede usar como predictores esos brazos, nunca los núcleos auxiliares. Las configuraciones A y B no declaran todavía la sección. La campaña elegida, la A, la incluye en su [declaración ampliada](../../research/training-campaign-2000.md#declaración-preparada-de-las-familias-pendientes), donde añade 1.080 ajustes (360 de núcleos). En B añadiría 408 ajustes con 336 traslados (136 de núcleos).
 
 ## Comprobaciones
 
@@ -124,9 +124,9 @@ Antes de cambiar el entrenador se guardaron las huellas de los gradientes regist
 
 Con el registrador no hay pasos, así que el núcleo de C conserva los parámetros de B. La campaña reducida comprueba entonces que B y B+C, y B+M y B+C+M, emiten exactamente las mismas filas en cada ventana. Es la paridad del factorial con C sin efecto, no una medida de su efecto.
 
-## Comprobaciones CUDA pendientes
+## Comprobaciones CUDA
 
-No se ha usado la GPU. `tests/training/cuda_cm_v1_control_check.py` compara en CPU y `cuda:0` un ajuste del núcleo sin pasos y su validación con C `disabled` y `penalty`, en FP32 y FP64, sin acumulación y con bloques de dos flujos. Su lógica se ensayó en CPU con `MARS_TITAN_CM_CONTROL_CHECK_DEVICE=cpu`, lo que no acredita CUDA:
+`tests/training/cuda_cm_v1_control_check.py` compara en CPU y `cuda:0` un ajuste del núcleo sin pasos y su validación con C `disabled` y `penalty`, en FP32 y FP64, sin acumulación y con bloques de dos flujos. Sus ocho casos pasaron en `cuda:0` el 9 de octubre ([recibo](../../../reports/engineering/cuda-checks-20261009/cm-v1-control-cuda.json)), después de inicializar CUDA antes de reiniciar el pico de memoria, que antes los hacía fallar sin comparar nada. Con estos fixtures pequeños el recorrido tarda más en CUDA que en CPU porque lo dominan los lanzamientos, así que esos tiempos no estiman la campaña. La orden:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
@@ -137,11 +137,11 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
 
 El lector de los brazos usa la comprobación CUDA de MARS-TITAN (`tests/training/cuda_mars_titan_run_check.py`). La retención con centros fijos se calcula en CPU por diseño.
 
-La memoria y el caudal de los dos núcleos con `accumulation_rows` en `null` y en 128 se miden con la [orden de caudal de la campaña](../../research/training-campaign-2000.md#medición-de-caudal) y la declaración preparada (`--extensions`).
+La memoria y el caudal de los dos núcleos con `accumulation_rows` en `null` y en 128 pueden medirse con la [orden de caudal de la campaña](../../research/training-campaign-2000.md#medición-de-caudal) y la declaración preparada (`--extensions`), que necesita las vistas reales. Los núcleos comparten la receta de `mac_online`, cuya estimación en `cuda:0` es de 14,74 GiB por tramo con 5.023 flujos sin acumulación y 1,24 GiB con `accumulation_rows=128` ([resumen](../../../reports/engineering/cuda-checks-20261009/README.md)).
 
 ## Pendiente
 
-- Ajustar y comparar los cuatro brazos cuando la edición histórica desde 2000 esté verificada.
-- Medir memoria y caudal de la penalización C y del lector en `cuda:0` antes de declarar la sección en A y B. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada brazo.
+- Ajustar y comparar los cuatro brazos en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
+- Copiar la sección a la configuración de A con la opción de memoria que se fije para la receta de Titans-MAC. El caudal de la penalización C y del lector en `cuda:0` sigue sin medir. La orden de medición recorre ya los dos núcleos con `accumulation_rows` en `null` y en 128 y el lector de cada brazo.
 - Una condición de contracción común a todos los Jacobianos admisibles, si se quiere una garantía para productos variables. Ninguna lectura actual la aporta.
 - La comparación con MAE residual por sesión, diferencias emparejadas, incertidumbre por bloques y la interacción `MAE_CM − MAE_C − MAE_M + MAE_B`, descritas en el [protocolo](protocol.md).

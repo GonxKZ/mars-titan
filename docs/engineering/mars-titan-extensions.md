@@ -73,7 +73,7 @@ La ventana y el traslado son comunes con el [factorial CM-v1](../experiments/mar
 
 `campaign_plan` acepta una sección opcional `mars_titan` con la receta del lector, la combinación de cada brazo, `pending_arms` con el motivo de los brazos sin definición, el brazo padre y la semilla de búsqueda. El padre debe ser el brazo `mac_online` de la sección `titans_mac`, con la misma semilla de búsqueda y semillas que cubran las de cada brazo. Cada búsqueda depende de las búsquedas del padre en su ventana y cada finalista, además de sus búsquedas, del finalista del padre con su semilla. `masked_campaign` resuelve ese padre y lo entrega al ejecutor en `JobRun.parent`, y la identidad del trabajo incluye su recibo. El finalista elige ganador solo entre sus propias búsquedas.
 
-Las campañas A y B no declaran todavía la sección, igual que la GRU episódica. `mars_titan_m3` ya tiene productor. Con los seis brazos (M0, M1, M2, M3, M1 con K = 2 y M1 con K = 4) añadiría 1.080 ajustes en A y 408 ajustes con 504 traslados en B. La [declaración preparada](../../configs/baselines/historical-masked-campaign-extensions.json) incluye los seis brazos, y la medida de caudal estima las escalas de M3 con la regla de la campaña sobre el tramo de entrenamiento de la ventana medida. Antes hay que medir memoria y caudal del lector en `cuda:0`.
+Las configuraciones A y B no declaran todavía la sección, igual que la GRU episódica. La campaña elegida, la A, la incluye en su declaración ampliada. `mars_titan_m3` ya tiene productor. Con los seis brazos (M0, M1, M2, M3, M1 con K = 2 y M1 con K = 4) añadiría 1.080 ajustes en A y 408 ajustes con 504 traslados en B. La [declaración preparada](../../configs/baselines/historical-masked-campaign-extensions.json) incluye los seis brazos, y la medida de caudal estima las escalas de M3 con la regla de la campaña sobre el tramo de entrenamiento de la ventana medida. Antes hay que medir memoria y caudal del lector en `cuda:0`.
 
 `tests/training/test_mars_titan_campaign.py` comprueba el plan sobre la comparación declarada y ejecuta una campaña B reducida sobre US con `titans_mac_online`, `mars_titan_m1` y `mars_titan_m3` con los ejecutores reales en CPU hasta la tercera ventana: un ajuste por caso y dos traslados, con las mismas filas que Titans-MAC, el padre elegido en la identidad y los recibos de ventana publicados. M3 estima sus escalas en la ventana ajustada y traslada las del ancla. Con las cuatro secciones declaradas, los 23 brazos de la comparación tienen productor.
 
@@ -109,7 +109,7 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 CUBLAS_WORKSPACE_CONFIG=:4096:8 \
 
 ## Pendiente
 
-- Ejecutar ajustes y comparaciones cuando la edición histórica desde 2000 esté verificada.
-- Declarar la sección `mars_titan` en las campañas A y B tras medir en `cuda:0`.
+- Ejecutar ajustes y comparaciones en la campaña A. La edición histórica desde 2000 y sus objetivos ya están verificados, pero el bloqueo de aprendizaje sigue activo.
+- Copiar la sección `mars_titan` a la configuración de A. El caudal del lector en `cuda:0` sigue sin medir.
 - Emitir B6 en el recorrido por ventanas y elegir η y λ en desarrollo.
 - Conectar los seis componentes declarados sin conexión, cada uno con su control de descarte.

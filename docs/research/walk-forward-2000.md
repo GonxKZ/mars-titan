@@ -137,11 +137,11 @@ Cada alternativa responde a una pregunta algo distinta:
 - **C** parte en cada ventana del estado seleccionado en la anterior, que solo ha visto datos previos a su propia validación. No hay fuga, pero el resultado de una ventana depende del camino anterior y las ventanas dejan de ser ajustes independientes. Las memorias se siguen reiniciando por ventana. El padre debe ser elegible como época 0 y el presupuesto de continuación es igual para todos los brazos. Es otra comparación y debe presentarse como tal.
 - **D** mantiene ajustes independientes con el mismo número de actualizaciones en todas las ventanas, muestreando de toda la historia disponible. En la última ventana US equivale a 1,6 pasadas y en las primeras de CN a muchas más, así que su valor debe fijarse por comparación.
 
-La elección no se toma en este documento. Antes del primer entrenamiento se registrará en [#363](https://github.com/GonxKZ/mars-titan/issues/363) la alternativa, el caudal medido en la primera ventana, los brazos y semillas incluidos y, si procede, el archivo del protocolo reducido con su huella. Como orientación, B con paso de 36 meses conserva la semántica del diseño con un tercio del coste de A y cabe en el límite de trabajos, y C solo tendría sentido como comparación separada si el caudal medido no permite B para todas las familias.
+La orientación inicial era B con paso de 36 meses, que conserva la semántica del diseño con un tercio del coste de A y cabe en el límite de trabajos. El 9 de octubre de 2026 se eligió A con todas las familias, registrada en [#363](https://github.com/GonxKZ/mars-titan/issues/363), sin esperar al caudal medido: se prefirió que cada ventana entrene con todo su pasado disponible. Las cifras de coste de esta sección siguen siendo hipótesis. La duración real se medirá con los primeros trabajos y se registrará en la misma tarea, sin cambiar a B ni recortar filas en silencio.
 
 ## Uso
 
-La preparación necesita la supervisión histórica verificada, que todavía no existe. Cuando esté disponible:
+La preparación necesita la supervisión histórica verificada. La edición v3 y sus objetivos residuales se verificaron el 9 de octubre ([recibo](../../reports/data/historical-edition-v3-targets-20261009.json)) y las [vistas de la campaña A](#vistas-de-la-campaña-a) se prepararon y verificaron ese mismo día con `run_masked_campaign.py prepare`, descrito en el [plan de la campaña](training-campaign-2000.md#ejecución-y-recuperación). Para unas vistas conjuntas sueltas:
 
 ```bash
 uv run --no-sync python -m mars_titan.training.joint_temporal_corpus \
@@ -156,10 +156,32 @@ uv run --no-sync python -m mars_titan.training.temporal_search \
 
 `--check` valida informes, ventanas, población, política y regla de parada, y devuelve la identidad y el número de trabajos previstos sin reservar la GPU ni entrenar. La búsqueda lee la política de entradas del plan, como hace la búsqueda de referencias, y exige que las vistas declaren la misma. Un plan estricto no puede leer vistas con máscaras ni al revés. El plan debe usar `arms=["US+CN"]` con las vistas conjuntas y el mercado correspondiente con las vistas de un solo mercado.
 
+## Vistas de la campaña A
+
+Las vistas reales de la campaña A se prepararon el 9 de octubre sobre los objetivos `targets-v3`, con la [configuración de A](../../configs/baselines/historical-masked-campaign-a.json) y el runtime `7a9e93e3`. Cada ámbito se preparó en un proceso de un hilo que repite el cuerpo del bucle de `prepare_views`, y los tres procesos terminaron con código 0. Después, `run_masked_campaign.py prepare` con la campaña A sobre `targets-v3/manifest.json` validó los tres destinos con su comprobación oficial y también terminó con código 0. El [recibo](../../reports/data/campaign-a-views-20261009.json) conserva las huellas de los informes, los recuentos de cada ventana, las filas purgadas y los tiempos.
+
+| Ámbito | Ventanas | Entrenamiento | Validación | Calibración | Evaluación | Purgadas en fronteras | Preparación |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| US | 19 | 108.111.890 | 6.084.968 | 3.087.269 | 12.826.460 | 194.849 | 50 min |
+| CN | 13 | 16.903.888 | 1.015.019 | 525.177 | 2.105.339 | 34.300 | 16 min |
+| US+CN | 13 | 113.180.071 | 5.899.203 | 2.999.327 | 12.357.256 | 189.557 | 52 min |
+
+Los recuentos suman todas las ventanas de cada ámbito, así que una fila cuenta una vez por cada ventana que la usa. Las filas de entrenamiento quedan alrededor del 97 % de la cota nominal de la [tabla anterior](#ventanas-y-filas-nominales) (111,1, 17,4 y 116,1 millones). La evaluación de la última ventana, el año 2023, coincide en los tres ámbitos con las filas de validación de `targets-v3`: 1.027.173 en US, 194.649 en CN y 1.221.822 en US+CN. Las vistas ocupan 12,9 GB de datos y 13,9 GB en disco contando sus directorios. Los tiempos son de reloj, con los tres procesos ejecutándose a la vez.
+
+Una verificación independiente, escrita sin reutilizar el código que preparó las vistas, recorrió los 5.008 activos con objetivos y las 45 ventanas. Comprobó:
+
+- las fronteras de cada ventana, recalculadas desde los protocolos, y la purga por el intervalo de cada etiqueta,
+- que ningún objetivo queda fuera de su ventana y que ninguna decisión ni maduración llega a 2024,
+- que cada objetivo es idéntico bit a bit al de `targets-v3`,
+- que no se pierde ninguna fila elegible y que los recuentos coinciden con los manifiestos de cada ventana,
+- que US+CN reproduce exactamente las vistas por mercado con las mismas fronteras.
+
+Terminó sin fallos en 8 minutos con cinco procesos. Las vistas, el verificador y su informe son locales, y el recibo guarda la huella de los dos últimos. Ninguna de estas pasadas ajustó modelos ni abrió 2024. La campaña no se ha lanzado.
+
 ## Comprobaciones técnicas
 
 Las pruebas de `tests/evaluation/test_walk_forward_v2.py` comprueban los límites de cada ventana, el primer año con tres años de etiquetas, la coincidencia entre ventanas conjuntas y US, la purga en cada frontera, la frontera exacta, la ausencia de filas de 2024 en tramos de desarrollo, la invariancia al cambiar o reordenar el sufijo futuro, la equivalencia con el margen anterior para etiquetas de la sesión siguiente, la regla de parada con secuencias fijadas en los dos modos y la paridad de los seis protocolos v1 mediante huellas calculadas antes del cambio.
 
 Las pruebas de `tests/training/test_walk_forward_v2_views.py` preparan vistas sobre un corpus técnico con filas en todos los años, desde febrero de 2000 en US y julio de 2006 en CN. Comparan los recuentos por ventana, tramo, mercado y año con una derivación independiente, comprueban `purged_by_boundary`, el rechazo de una ventana conjunta con CN vacío, la comprobación de la búsqueda sin GPU, la lectura de la política desde un plan de versión 4, el rechazo de planes estrictos o con otra parada y la paridad de las vistas v1. La invariancia del objetivo residual ante cambios futuros ya la cubre `tests/data/test_budget_targets.py`.
 
-Nada de esto ejecuta modelos, pasos de optimizador ni evaluaciones científicas, ni genera objetivos reales. Los recuentos reales por ventana y mercado se registrarán cuando exista la supervisión histórica verificada.
+Nada de esto ejecuta modelos, pasos de optimizador ni evaluaciones científicas, ni genera objetivos reales. Los recuentos reales por ventana y mercado están en el [recibo de las vistas de la campaña A](../../reports/data/campaign-a-views-20261009.json).

@@ -33,11 +33,10 @@ temporal y el presupuesto. La edición histórica adicional conserva todos los
 datos utilizables de FinMultiTime desde 2000, con ausencias explícitas. Se separa
 del control estricto y utiliza validación temporal, ablaciones e incertidumbre.
 Este documento es una base de redacción. La preparación de datos y los ensayos
-de referencia ya tienen informes separados. La edición desde 2000, sus
-objetivos residuales y las vistas walk-forward de la campaña están
-verificados. Las etapas de la campaña están implementadas y comprobadas sin
-aprendizaje, pero ningún modelo se ha entrenado sobre la edición y la
-comparación confirmatoria sigue pendiente.
+de referencia ya tienen informes separados. Las etapas de la campaña sobre la
+edición desde 2000 están implementadas y comprobadas sin aprendizaje, pero
+ningún modelo se ha entrenado sobre ella y la comparación confirmatoria sigue
+pendiente.
 \end{abstract}
 \tableofcontents
 
@@ -111,9 +110,8 @@ CM-v1 permanece independiente y desactivada. El contraste B, B+C, B+M y B+C+M
 fija una identidad concreta de B. Cambiar de arquitectura exige otro contraste.
 Los datos, filas, cortes y presupuestos pertinentes se mantienen comparables.
 No se presuponen superioridad ni reproducción de los resultados del artículo.
-La edición histórica y sus objetivos residuales ya están verificados. Los
-entrenamientos y evaluaciones científicas siguen sin ejecutarse y la protección
-del aprendizaje continúa activa. Las pruebas técnicas no la levantan.
+Los entrenamientos y evaluaciones científicas siguen bloqueados hasta completar
+y verificar la edición histórica. Las pruebas técnicas no levantan esa condición.
 
 La revisión técnica del 9 de octubre recoge comprobaciones CPU/CUDA de la referencia GRU,
 el núcleo Titans-MAC, su adaptador financiero y el diagnóstico local de C.
@@ -124,12 +122,7 @@ cronológico conecta el banco, la lectura y los estados por bloques con
 parámetros compartidos congelados. M0/M1 y la recuperación conjunta están
 comprobados en CPU/CUDA. M2 añade tres índices con cupos 50/25/25 y error de la
 emisión original. Su comprobación CUDA focal comprende FP32/FP64, $K=1$,
-$B_{\mathrm{mem}}=4$ y C desactivado, y pasa en \texttt{cuda:0} con el binario
-nativo realmente cargado. M3 conserva esos índices y ordena el selectivo con
-el error maduro, una anomalía del último rendimiento y una relevancia según la
-frescura contable y la presencia de noticias, normalizados con escalas del
-tramo de entrenamiento de cada ventana y con pesos fijos de un tercio. Sus
-comprobaciones coinciden en CPU y CUDA. La consolidación M sobre M2 y la
+$B_{\mathrm{mem}}=4$ y C desactivado. M3, la consolidación M sobre M2 y la
 aceptación de las fases históricas completas siguen pendientes. No hay una
 mejora predictiva medida de estas variantes.
 
@@ -141,9 +134,7 @@ prioridad como candidato separado. Su objetivo terminal y sus gradientes están
 comprobados. El colector conserva episodios completos, la política de recogida,
 el reloj original y la historia GRU, con recuperación contrastada. Un
 controlador optativo separa actor, optimizador y referencia, sin haber
-ejecutado ninguna actualización. La orden nativa \texttt{mars-titan-klpo}
-recoge oleadas completas sobre cintas de precios reconstruidos y selecciona en
-validación, comprobada sin pasos de optimizador. La alternancia entre referencias ajustadas
+ejecutado ninguna actualización. La alternancia entre referencias ajustadas
 sigue pendiente.
 El ajuste de una predicción y la política financiera secuencial necesitan
 objetivos distintos. La comparación científica sigue bloqueada y no hay un
@@ -162,23 +153,13 @@ El protocolo fijará las comparaciones principales antes de abrir el conjunto fi
 
 \section{Estado técnico de la campaña desde 2000}
 La campaña reentrenará desde cero todos los brazos con las mismas filas de la
-edición histórica con máscaras. La edición recorre 5.676 candidatos y codifica
-5.023 activos, 4.213 de Estados Unidos y 810 de China, con 17.076.024 muestras
-de 64 sesiones, el mismo número que el censo de ventanas. Cada muestra conserva
-cuatro modalidades, 140 indicadores macroeconómicos con nivel, presencia y
-antigüedad y un bit de presencia por modalidad. Precios, gráficos y macro
-están en todas las filas. Los fundamentales aparecen en el 34,4~\% (40,6~\% en
-Estados Unidos y 0,8~\% en China) y las noticias en el 17,9~\% (18,6~\% y
-13,7~\%). La verificación independiente de la edición terminó el 9 de octubre
-con el corpus completo.
-
-Los objetivos residuales dejan 15.560.197 filas de entrenamiento hasta 2022 y
-1.221.822 de validación en 2023. Se excluyen 294.005 filas con su motivo:
-265.880 por historia insuficiente, 18.237 por falta de la sesión siguiente,
-4.962 porque el objetivo madura después del corte y 4.926 purgadas por cruzar
-la frontera entre particiones. Una verificación independiente recalculó
-190.830 etiquetas de 60 activos con otra implementación y no encontró
-diferencias.
+edición histórica con máscaras. Parte de 5.676 candidatos y de un censo de
+17.076.024 ventanas de 64 sesiones, con cuatro modalidades, 140 indicadores
+macroeconómicos con nivel, presencia y antigüedad y un bit de presencia por
+modalidad. La codificación continúa por fragmentos. El último prefijo
+verificado y versionado contiene 512 activos y 1.773.121 muestras. Los
+objetivos residuales se calcularán sobre la edición completa, con etiquetas
+hasta 2023.
 
 El protocolo walk-forward v2 evalúa cada año con un modelo ajustado con todo el
 pasado desde 2000 hasta abril del año anterior, seleccionado con los seis meses
@@ -189,51 +170,35 @@ La regla común de parada usa un presupuesto fijo de 30 épocas y conserva el
 mejor estado según el MAE residual de validación. El año 2024 permanece
 sellado.
 
-Las vistas de la campaña A se prepararon y verificaron el 9 de octubre. Sumadas
-sobre sus ventanas, dan 108.111.890 filas de entrenamiento y 12.826.460 de
-evaluación en Estados Unidos, 16.903.888 y 2.105.339 en China y 113.180.071 y
-12.357.256 en la unión de ambos mercados, y ocupan 12,9~GB. Una verificación
-independiente, que no reutiliza el código de preparación, recalculó las
-fronteras desde los protocolos y comprobó la purga por intervalo de etiqueta,
-que ningún objetivo queda fuera de su ventana ni llega a 2024, que los
-objetivos coinciden bit a bit con los generados, que no se pierde ninguna fila
-elegible y que la unión de mercados reproduce las vistas por mercado. No se
-entrenará ningún modelo hasta terminar el código y las implementaciones
-pendientes y revisar un resumen de su estado.
-
 \begin{table}[htbp]
 \centering
 \small
 \caption{Estado de las etapas de la campaña a 9 de octubre de 2026. Ninguna se
-ha ejecutado con aprendizaje y la campaña no se ha lanzado.}
+ha ejecutado con aprendizaje.}
 \begin{tabular}{p{3cm}p{5.4cm}p{4.4cm}}
 \toprule
 Etapa & Implementado y comprobado sin aprendizaje & Pendiente \\
 \midrule
-Edición y objetivos & Edición v3 codificada y verificada, objetivos
-residuales generados y recalculados de forma independiente & Ninguno antes
-del lanzamiento \\
-Protocolo & Ventanas v2, purga por intervalo y regla de parada común. Vistas
-de la campaña A preparadas y verificadas & Ninguno antes del lanzamiento \\
-Campaña base & Variante A elegida, con 2.385 ajustes en su configuración y
-4.680 con la declaración ampliada de todas las familias. Recibos por trabajo y
-reanudación & Fijar las opciones de memoria, copiar a la configuración la GRU
-episódica, MARS-TITAN y CM-v1 y revisar un resumen del código antes de
-entrenar \\
+Edición y objetivos & Política con máscaras, verificador por prefijos y
+preparación de objetivos con cerrojo & Completar la codificación, verificar la
+edición y generar los objetivos \\
+Protocolo & Ventanas v2, purga por intervalo y regla de parada común &
+Preparar las vistas reales \\
+Campaña base & Variante A con 2.385 ajustes y variante B con 901 ajustes y
+868 traslados, recibos por trabajo y reanudación & Medir el caudal en
+\texttt{cuda:0}, elegir la variante y declarar la GRU episódica, MARS-TITAN y
+CM-v1 \\
 Adaptadores & Matriz v2 por ventana con pinball para padres de cuantiles,
-con 3.915 ajustes en A. Pruebas CUDA de adaptadores y cuantiles superadas &
-Recorrido de la etapa en \texttt{cuda:0} y comparación declarada de los
-brazos postentrenados \\
+con 3.915 ajustes en A y 1.479 ajustes y 2.436 traslados en B & Comprobaciones
+CUDA y comparación declarada de los brazos postentrenados \\
 Políticas & Dos niveles sobre cintas de precios reconstruidos. KLPO terminal
-y tres referencias sobre los 22 predictores de la declaración ampliada, y PPO
-y Double DQN sobre el Transformer compacto y \texttt{mac\_online}. En A,
-2.160 ajustes y 1.584 referencias. Ejecutores nativos de PPO, Double DQN y
-KLPO sobre esas cintas, comprobados sin aprendizaje &
-Compilar los ejecutores con LibTorch CUDA y medir su rendimiento. Ningún
-ajuste ejecutado \\
-Evaluación & Métricas por sesión, contrastes por bloques, calibración CQR
-común por mercado y estratos descriptivos por presencia de noticias y
-fundamentales & Aplicarla a predicciones reales \\
+y tres referencias sobre los 11 predictores declarados, y PPO y Double DQN
+sobre el Transformer compacto y \texttt{mac\_online}. A con 1.368 ajustes y B
+con 456 ajustes y 912 traslados, con 792 referencias en cada una &
+Cintas reconstruidas en \texttt{mars-titan-ppo} y \texttt{mars-titan-sim} y
+una orden financiera de KLPO \\
+Evaluación & Métricas por sesión, contrastes por bloques y calibración CQR
+común por mercado & Aplicarla a predicciones reales \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -252,23 +217,14 @@ de ese padre. El factorial de CM-v1 ajusta dos núcleos \texttt{mac\_online}
 auxiliares, uno con C desactivado y otro con C como penalización, y aplica M
 como retención con centros fijos del banco del lector, de modo que B, B+C, B+M
 y B+C+M tienen identidades propias. La GRU episódica, MARS-TITAN y CM-v1
-tienen sección opcional en la orquestación. La variante A elegida las incluye
-en su declaración ampliada, todavía sin copiar a su configuración, y con ellas
-el primer nivel de la etapa de políticas cubre 22 predictores. La penalización
-C acumula por bloques de flujos con el mismo gradiente que el tramo completo,
-así que los núcleos de CM-v1 conservan la receta de Titans-MAC.
+tienen sección opcional en la orquestación, pero las campañas A y B no la
+declaran todavía. Cuando lo hagan, sus predictores se sumarán al primer nivel
+de la etapa de políticas, que hoy cubre los 11 predictores declarados.
 
 Estas comprobaciones recorren el ajuste hasta el paso del optimizador sin
-aplicarlo, casi siempre en CPU. El 9 de octubre se repitieron en
-\texttt{cuda:0}, también sin pasos de optimizador, 21 comprobaciones de estas
-rutas, y pasaron 20. La de M2 fallaba porque fijaba la huella de una
-compilación anterior. Tras sustituir esa huella por la del binario realmente
-cargado, M2 y M3 pasan con el enlace nativo de la rama de integración. Según
-las medidas de memoria en \texttt{cuda:0}, un tramo de
-\texttt{mac\_online} con 5.023 flujos necesitaría unos 14,7~GiB sin acumulación
-y 1,24~GiB con bloques de 128 filas, así que la campaña necesitará esa
-acumulación en una GPU de 8~GB. Ninguna cifra de este apartado procede de un
-entrenamiento ni de una evaluación.
+aplicarlo, casi siempre en CPU. Las comprobaciones CUDA quedan pendientes porque
+la GPU está dedicada a la codificación histórica. Ninguna cifra de este
+apartado procede de un entrenamiento ni de una evaluación.
 
 \chapter{Resultados y discusión}
 Los ensayos de GRU y DLinear están documentados en el informe de variantes del

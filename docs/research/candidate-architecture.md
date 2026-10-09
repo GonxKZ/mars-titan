@@ -30,11 +30,11 @@ La referencia GRU con banco episódico es el brazo `gru_episodic` de la [campañ
 
 | Parte de la especificación | Implementación | Comprobación y límite |
 | --- | --- | --- |
-| Representación y claves fijas | Codec CPU con las proyecciones fijas del componente nativo y banco tensorial de claves 128 y valores 256 ([sesiones GRU](../engineering/gru-financial-sessions.md)) | Pruebas CPU y ASan/UBSan. Las sesiones de Titans-MAC conservan exactamente sus salidas tras añadir la GRU. Falta la comprobación CUDA |
+| Representación y claves fijas | Codec CPU con las proyecciones fijas del componente nativo y banco tensorial de claves 128 y valores 256 ([sesiones GRU](../engineering/gru-financial-sessions.md)) | Pruebas CPU y ASan/UBSan. Las sesiones de Titans-MAC conservan exactamente sus salidas tras añadir la GRU. La comprobación CUDA de la sesión pasó el 9 de octubre con recuperación exacta ([recibo](../../reports/engineering/cuda-checks-20261009/gru-session-cuda.json)) |
 | Escritura con error emitido | M1 admite la fila emitida con el error de la predicción realmente emitida sobre el reservorio causal. M0 conserva el refinador con lectura vacía | M2, M3 y C/M se rechazan en esta ruta. Los cupos 50/25/25 descritos arriba existen en la ruta de Titans-MAC, no en la GRU |
-| Refinamiento K = 1, 2 o 4 | Repetición de lectura y refinamiento sobre la misma instantánea, sin contar actualizaciones de memoria | Gradientes finitos en los tres valores de K, solo en CPU |
-| Ajuste cronológico | [Entrenador](../engineering/candidate-chronological-trainer.md) con pinball de la cabeza común, selección por MAE de la mediana y presupuesto fijo de 30 épocas | Reanudación idéntica a la ejecución continua. La acumulación por bloques y la recomputación acotan la memoria medida en CPU |
-| Ventanas walk-forward | Ajuste por ventana y traslado de la variante B con el banco vacío al empezar cada tramo | Filas iguales a las de la vista. Sin declarar en las campañas A y B hasta medir memoria y caudal en `cuda:0` |
+| Refinamiento K = 1, 2 o 4 | Repetición de lectura y refinamiento sobre la misma instantánea, sin contar actualizaciones de memoria | Gradientes finitos en los tres valores de K en CPU. K = 1 y 4 coinciden además entre CPU y `cuda:0` en la sesión y en el entrenador |
+| Ajuste cronológico | [Entrenador](../engineering/candidate-chronological-trainer.md) con pinball de la cabeza común, selección por MAE de la mediana y presupuesto fijo de 30 épocas | Reanudación idéntica a la ejecución continua. La acumulación por bloques y la recomputación acotan la memoria, medida en CPU y en `cuda:0` con 128, 256 y 512 activos ([recibo](../../reports/engineering/cuda-checks-20261009/candidate-memory-cuda.json)) |
+| Ventanas walk-forward | Ajuste por ventana y traslado de la variante B con el banco vacío al empezar cada tramo | Filas iguales a las de la vista. Incluida en la declaración ampliada de la campaña A y sin copiar a su configuración hasta fijar la opción de memoria |
 
 ## Referencia GRU con banco episódico
 
