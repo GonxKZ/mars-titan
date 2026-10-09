@@ -1,0 +1,423 @@
+{
+  "schema_version": 1,
+  "kind": "rl_environment_integrity_audit",
+  "recorded_at_utc": "2026-10-09T03:41:12.652938+00:00",
+  "base_revision": "48860dab",
+  "code_revision": "a465250e",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/365",
+  "scope": "Entornos de refuerzo predictivo y financiero en CPU con fixtures sintéticos identificados como tales. Controladores PPO, Double DQN y KLPO revisados por lectura. No se ejecutan entrenamientos, ajustes de políticas ni evaluaciones científicas.",
+  "limits": "Superar esta batería no demuestra la ausencia de cualquier trampa. Los datos reales, las predicciones walk-forward y las rutas CUDA de las políticas quedan fuera de la comprobación.",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "gpu_used": false,
+    "cuda_visible_devices": "-1"
+  },
+  "toolchain": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "gymnasium": "1.3.0",
+    "torch": "2.14.0+cu130",
+    "pyarrow": "25.0.1",
+    "clang": "21.1.8",
+    "cmake": "4.2.3",
+    "native_target": "mars_titan_simulation (native-release)"
+  },
+  "source_sha256": {
+    "src/mars_titan/environments/prediction.py": "94233a41527c63e7409d51c0287426ee9ca53eb0f0b71cce6f2b4a45f0ba6de5",
+    "src/mars_titan/simulation/market.py": "8764e0503b0217987f959e70bf367ac60661d6789eaf5a480fd0cf577c3d3e29",
+    "src/mars_titan/simulation/environment.py": "cbc8fc0ace79d8d4d58d30177b45b56d28fcd844c6c13eae171326ad79351815",
+    "src/mars_titan/simulation/evaluation.py": "339d7dbc1ea621e5ad422b7577b9aa3650d7dc2a44f1a02db74903c7ed3b022e",
+    "tests/environments/test_prediction_adversarial.py": "190ea04e7a8e4321dc8115f0312b260abf063aeabfb22cf13d63622e4c9eda66",
+    "tests/simulation/test_financial_adversarial.py": "8404f8f872c73b194604eefc9a56fced457a85fe8ca7e89b4bd14ea29bc3977c"
+  },
+  "attempts": [
+    {
+      "id": "P1",
+      "environment": "CausalPredictionEnv",
+      "vector": "Agente oráculo que busca objetivos inmaduros en observación, info, snapshot y render",
+      "result": "Corregido. La versión 1 del snapshot contenía los objetivos pendientes. El esquema 2 no los contiene y render no está implementado",
+      "test": "tests/environments/test_prediction_adversarial.py::test_oracle_cannot_read_immature_targets_from_observation_info_or_snapshot",
+      "status": "corrected"
+    },
+    {
+      "id": "P2",
+      "environment": "CausalPredictionEnv",
+      "vector": "Inyectar o alterar objetivos, maduraciones y orígenes en un checkpoint",
+      "result": "Corregido. Se rechazan campos extra, el esquema 1, posiciones ajenas, huellas de origen distintas y maduraciones cambiadas. Las recompensas restauradas coinciden",
+      "test": "tests/environments/test_prediction_adversarial.py::test_snapshot_cannot_inject_or_keep_targets_and_rereads_source_labels",
+      "status": "corrected"
+    },
+    {
+      "id": "P3",
+      "environment": "CausalPredictionEnv",
+      "vector": "Perturbar etiquetas pendientes, cohortes futuras y entradas futuras",
+      "result": "Comprobado. Observaciones, recompensas, créditos e info emitidos antes de revelar el cambio son idénticos",
+      "test": "tests/environments/test_prediction_adversarial.py::test_future_perturbations_do_not_change_emitted_history",
+      "status": "checked"
+    },
+    {
+      "id": "P4",
+      "environment": "CausalPredictionEnv",
+      "vector": "Fuente de validación walk-forward de diciembre de 2022 usada como entrenamiento",
+      "result": "Corregido. La partición declarada por la fuente debe coincidir con la del entorno",
+      "test": "tests/environments/test_prediction_adversarial.py::test_source_partition_must_match_environment_partition",
+      "status": "corrected"
+    },
+    {
+      "id": "P5",
+      "environment": "CausalPredictionEnv",
+      "vector": "Reiniciar para descartar créditos pendientes y arrastrar estado",
+      "result": "Corregido. El reinicio no emite recompensa, contabiliza episodios abandonados y créditos perdidos y no arrastra estado",
+      "test": "tests/environments/test_prediction_adversarial.py::test_reset_discards_pending_credits_explicitly_and_carries_no_state",
+      "status": "corrected"
+    },
+    {
+      "id": "P6",
+      "environment": "CausalPredictionEnv",
+      "vector": "Acciones NaN, flotantes, booleanas, de forma errónea, fuera de rango o de texto",
+      "result": "Comprobado. Fallan con ValueError sin cambiar el estado confirmado",
+      "test": "tests/environments/test_prediction_adversarial.py::test_invalid_or_non_integer_actions_fail_before_any_transition",
+      "status": "checked"
+    },
+    {
+      "id": "P7",
+      "environment": "CausalPredictionEnv",
+      "vector": "Acciones sobre filas de relleno y políticas guionizadas",
+      "result": "Comprobado. El relleno no cambia resultados, toda recompensa es no positiva y cada activo recibe un único crédito",
+      "test": "tests/environments/test_prediction_adversarial.py::test_padding_actions_and_scripted_policies_cannot_create_positive_reward",
+      "status": "checked"
+    },
+    {
+      "id": "F1",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Rotación máxima, efectivo permanente, exposición máxima, conservar y comprar en la última sesión sobre un mercado plano",
+      "result": "Comprobado. Ninguna obtiene recompensa positiva con el coste por defecto de 10 pb. La inactividad vale exactamente cero",
+      "test": "tests/simulation/test_financial_adversarial.py::test_scripted_policies_cannot_earn_on_a_flat_market_with_default_costs",
+      "status": "checked"
+    },
+    {
+      "id": "F2",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Bonificación por terminar, truncar o reiniciar",
+      "result": "Comprobado. La suma de recompensas coincide con log(NAV final / capital) con tolerancia absoluta 1e-12 y un reinicio reproduce la trayectoria",
+      "test": "tests/simulation/test_financial_adversarial.py::test_rewards_telescope_without_terminal_or_reset_bonus",
+      "status": "checked"
+    },
+    {
+      "id": "F3",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Precios, volúmenes y predicciones futuras alterados",
+      "result": "Comprobado. Observaciones hasta el cursor del corte y recompensas anteriores idénticas",
+      "test": "tests/simulation/test_financial_adversarial.py::test_future_perturbation_does_not_change_past_observations_or_rewards",
+      "status": "checked"
+    },
+    {
+      "id": "F4",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Ejecutar al cierre de la barra que generó la señal",
+      "result": "Comprobado. La compra se ejecuta a la apertura siguiente con efectivo suficiente",
+      "test": "tests/simulation/test_financial_adversarial.py::test_orders_fill_at_the_next_open_not_at_the_decision_close",
+      "status": "checked"
+    },
+    {
+      "id": "F5",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Dimensionar órdenes con cierre, volumen o predicciones de la barra de ejecución",
+      "result": "Comprobado. Operaciones y órdenes no ejecutadas idénticas si solo cambia la barra de ejecución o el futuro",
+      "test": "tests/simulation/test_financial_adversarial.py::test_order_quantities_do_not_depend_on_the_execution_bar_or_later",
+      "status": "checked"
+    },
+    {
+      "id": "F6",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Apalancamiento, cortos y exposición superior al patrimonio en secuencias aleatorias",
+      "result": "Comprobado en seis semillas. Efectivo y posiciones no negativos y exposición acotada",
+      "test": "tests/simulation/test_financial_adversarial.py::test_random_action_sequences_never_borrow_short_or_exceed_net_worth",
+      "status": "checked"
+    },
+    {
+      "id": "F7",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Acciones NaN, flotantes, booleanas, fuera de rango, matrices, texto, None y enteros mayores que int64",
+      "result": "Corregido. El entero mayor que int64 lanzaba OverflowError. Todas fallan con ValueError sin cambiar el estado",
+      "test": "tests/simulation/test_financial_adversarial.py::test_invalid_actions_fail_without_changing_the_confirmed_state",
+      "status": "corrected"
+    },
+    {
+      "id": "F8",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Cierre ausente de una posición para ocultar una pérdida",
+      "result": "Limitación. Recompensa inválida, truncamiento y evaluación incompleta. Una baja acreditada sí produce la pérdida. La transición censurada no entra en el ajuste",
+      "test": "tests/simulation/test_financial_adversarial.py::test_missing_close_of_a_held_asset_is_invalid_and_cannot_hide_a_loss",
+      "status": "limitation"
+    },
+    {
+      "id": "F9",
+      "environment": "MarketTape",
+      "vector": "Cinta real con predicciones dentro de muestra",
+      "result": "Corregido. Se exige prediction_fit_ends por sesión, anterior a cada predicción",
+      "test": "tests/simulation/test_financial_adversarial.py::test_real_tapes_reject_predictions_fitted_after_the_decision",
+      "status": "corrected"
+    },
+    {
+      "id": "F10",
+      "environment": "FinancialEnv (python)",
+      "vector": "Terminar invertido para no pagar la salida",
+      "result": "Limitación informada. La evaluación añade terminal_liquidation sin cambiar recompensas",
+      "test": "tests/simulation/test_financial_adversarial.py::test_ending_invested_reports_the_unpaid_exit_cost_without_changing_rewards",
+      "status": "limitation_reported"
+    },
+    {
+      "id": "F11",
+      "environment": "MarketTape",
+      "vector": "Acción corporativa en la primera apertura, aplicada por native e ignorada por python",
+      "result": "Corregido. La cinta la rechaza",
+      "test": "tests/simulation/test_financial_adversarial.py::test_corporate_action_before_the_first_decision_is_rejected",
+      "status": "corrected"
+    },
+    {
+      "id": "F12",
+      "environment": "FinancialEnv (python y native)",
+      "vector": "Ventas sin coste",
+      "result": "Comprobado. Cada operación paga 10 pb y el coste acumulado coincide con la rotación",
+      "test": "tests/simulation/test_financial_adversarial.py::test_costs_are_charged_on_every_buy_and_sell",
+      "status": "checked"
+    }
+  ],
+  "reading_review": [
+    {
+      "vector": "Selección nativa sin coste de salida",
+      "status": "limitation",
+      "evidence": [
+        "native/src/ppo_training.cpp:1072-1079",
+        "native/src/ppo_experiment.cpp:1349-1353"
+      ],
+      "note": "La diferencia puede alcanzar 0,001 con 10 pb y exposición completa frente a min_delta=0,0001"
+    },
+    {
+      "vector": "Evaluación incompleta con mean_log_growth=0",
+      "status": "latent",
+      "evidence": [
+        "native/src/ppo_training.cpp:926",
+        "native/src/ppo_training.cpp:1066-1069",
+        "native/src/ppo_experiment.cpp:1351-1353"
+      ]
+    },
+    {
+      "vector": "Censura de transiciones con cierre ausente",
+      "status": "limitation",
+      "evidence": [
+        "native/src/financial_session.cpp:521-526",
+        "native/src/ppo_training.cpp:525-526",
+        "src/mars_titan/simulation/training.py:290-313"
+      ]
+    },
+    {
+      "vector": "Validación nativa rechaza reutilizar datos o semillas de entrenamiento",
+      "status": "checked_by_reading",
+      "evidence": [
+        "native/src/ppo_experiment.cpp:723-727"
+      ]
+    },
+    {
+      "vector": "Dominio real rechazado por el lector nativo",
+      "status": "checked_by_reading",
+      "evidence": [
+        "native/src/financial_parquet.cpp:230-233"
+      ]
+    },
+    {
+      "vector": "Pasos forzados de calentamiento",
+      "status": "checked_by_reading",
+      "evidence": [
+        "native/src/ppo_training.cpp:504",
+        "native/src/ppo_training.cpp:525-526",
+        "native/src/ppo_training.cpp:604",
+        "native/src/klpo_episodes.cpp:224-231"
+      ]
+    },
+    {
+      "vector": "RNG del entrenador Python igual al del generador del mundo con la misma semilla",
+      "status": "limitation",
+      "evidence": [
+        "src/mars_titan/simulation/training.py:151",
+        "src/mars_titan/episodes/worlds.py:251"
+      ]
+    },
+    {
+      "vector": "Estado completed en evaluaciones incompletas de la campaña Python",
+      "status": "limitation",
+      "evidence": [
+        "src/mars_titan/simulation/campaign.py:113-118"
+      ]
+    },
+    {
+      "vector": "Validador de step_checked capaz de descartar un paso tras ver su resultado",
+      "status": "harness_trust",
+      "evidence": [
+        "native/src/financial_batch.cpp:295-302"
+      ]
+    },
+    {
+      "vector": "Mundos de adaptación sin salto nocturno",
+      "status": "sim_to_real_gap",
+      "evidence": [
+        "src/mars_titan/simulation/adaptation_scenarios.py:164"
+      ]
+    },
+    {
+      "vector": "Predicciones dentro de muestra en el postentrenamiento",
+      "status": "documented_outside_scope",
+      "evidence": [
+        "docs/research/predictive-adaptation.md:91-95"
+      ]
+    },
+    {
+      "vector": "Límite de 4.096 activos por cohorte y 1.048.576 celdas por cinta",
+      "status": "pending_real_data",
+      "evidence": [
+        "src/mars_titan/environments/cohorts.py:20",
+        "src/mars_titan/simulation/market.py:69"
+      ],
+      "note": "El censo anual registra 4.200 activos estadounidenses con precios en 2023. El máximo por sesión no está medido"
+    }
+  ],
+  "mutations": [
+    {
+      "name": "snapshot_with_targets",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_partition_check",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_origin_digest",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_abandoned_count",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "count_reset_without_steps",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_maturity_match",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed_after_adding_delayed_maturity_case"
+    },
+    {
+      "name": "keep_all_origins",
+      "tests": "tests/environments/test_prediction_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_range_check",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "allow_session_zero_action",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_fit_end_check",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "no_fit_length_check",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "zero_exit_cost",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "observation_reads_next_close",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "sizing_reads_next_scores",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed_after_adding_execution_bar_case"
+    },
+    {
+      "name": "zero_default_cost",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "sell_without_cost",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed_after_adding_two_sided_cost_case"
+    },
+    {
+      "name": "terminal_bonus",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "missing_close_as_valid",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "killed"
+    },
+    {
+      "name": "allow_short_sales",
+      "tests": "tests/simulation/test_financial_adversarial.py",
+      "result": "survived_equivalent: los objetivos negativos ya se rechazan en Portfolio.submit, por lo que el mínimo con la posición no es alcanzable desde el entorno"
+    }
+  ],
+  "parity": {
+    "method": "Mundo sintético de 6 activos, 60 sesiones y semilla 11. Acciones aleatorias fijas en ambos motores, tres referencias fijas y el entorno predictivo. Revisión base frente a esta rama",
+    "tape_sha256": "e0f17ef61fbe95f950b43ebb7fa0ec4cfc9875dc0f462b85c6ec5532fef02d96",
+    "financial_python_trajectory_sha256": "a7b90b59f3951a8f0b60f991614505a9eacb4f82c3e8ecad12a9b15b6755e91f",
+    "financial_native_trajectory_sha256": "e798ee5f41801602a91d817c78d5311c0e3d76ec14ffdb248e22b20148bb6f1e",
+    "prediction_trajectory_sha256": "c70cc480d08f1e5f9b3d74d583867190e20cbe11b805fc30ef6d348ed059f7a5",
+    "identical": [
+      "tape_sha256",
+      "financial_python",
+      "financial_native",
+      "identities",
+      "eval_cash",
+      "eval_hold_initial",
+      "eval_rebalance_50",
+      "prediction",
+      "prediction_identity"
+    ]
+  },
+  "tests": {
+    "new": {
+      "files": [
+        "tests/environments/test_prediction_adversarial.py",
+        "tests/simulation/test_financial_adversarial.py"
+      ],
+      "passed": 87
+    },
+    "command": "CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 PYTHONPATH=src uv run --no-sync python -m pytest <archivos>"
+  },
+  "optimizer_steps_in_new_tests": 0,
+  "incidents": [
+    {
+      "description": "Durante la verificación se ejecutó dos veces la prueba existente test_rejected_checkpoint_preserves_complete_trainer_state de tests/simulation/test_recovery_atomicity.py, cuyo filtro de selección no la excluía. Sus diez casos crean FinancialTrainer en CPU en modo diagnóstico y avanzan ocho transiciones, lo que incluye actualizaciones Adam en memoria sobre una cinta sintética de 17 sesiones",
+      "estimated_optimizer_steps": "Del orden de 50 por ejecución, sin medir. PPO actualiza cada cuatro transiciones y Double DQN desde la segunda",
+      "artifacts": "Ninguno. Los entrenadores existen solo en memoria y no escriben checkpoints",
+      "corrective_action": "Las ejecuciones posteriores usan identificadores explícitos de prueba y excluyen los archivos que entrenan"
+    }
+  ],
+  "not_executed": [
+    "tests/simulation/test_training.py, test_campaign.py, test_native_environment.py, test_native_ppo_runner.py, test_native_ppo_launcher.py, test_ppo_objective_config.py, test_adaptive_campaign.py, test_benchmark_adaptive_rl.py y test_episodic_cuda.py, porque ejecutan o pueden ejecutar pasos de optimizador o CUDA",
+    "Pruebas CTest nativas, porque el código C++ no cambia y la GPU está ocupada"
+  ]
+}
