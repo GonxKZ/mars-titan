@@ -43,10 +43,11 @@ La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la r
 | Sondas y mediciones | `train_budget_grid`, `run_temporal_probe`, `profile_case`, `run_reference_probe` y `models/baselines/campaign.run_campaign` |
 | Primitivas de ajuste | `fit_ridge_blocks`, `fit_boosting_batches`, `fit_external_boosting` y `fit_hmm` |
 | Simulación y refuerzo | `FinancialTrainer.run`, `simulation/campaign.run_campaign`, `run_adaptive_campaign` y `prepare_adaptation_scenarios` con `fit_markov=True` |
-| Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py` y `run_financial_comparators.py` |
+| Titans-MAC | `titans_walk_forward.run_titans_window` y `ChronologicalTrainer.run` cuando recibe un optimizador de `torch.optim` |
+| Scripts | `run_native_ppo.py` en modo de entrenamiento, `benchmark_native_ppo.py`, `benchmark_adaptive_rl.py`, `run_financial_comparators.py` y `run_titans_walk_forward.py` |
 | Ejecutables nativos | `mars-titan-ppo` en modo de entrenamiento, después de validar argumentos y antes de leer fuentes, y `mars-titan-adapter-control` |
 
-`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` mantiene su propia comprobación. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes. `carry_window` también comprueba la protección aunque no ajusta, porque produce las predicciones de una ventana de la campaña.
+`ChronologicalTrainer.run` en `src/mars_titan/training/financial_run.py` solo aplica la protección con un optimizador de `torch.optim`. Así sus pruebas recorren el bucle con un optimizador propio que registra llamadas sin modificar pesos. `CandidateChronologicalTrainer.run` en `src/mars_titan/training/candidate_run.py` llama a `require_learning_allowed()` con cualquier optimizador, y sus pruebas usan `learning_doubles` porque el suyo solo registra gradientes. `carry_window` también comprueba la protección aunque no ajusta, porque produce las predicciones de una ventana de la campaña.
 
 ### Lo que no se bloquea
 
