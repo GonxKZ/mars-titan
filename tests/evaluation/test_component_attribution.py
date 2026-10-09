@@ -39,7 +39,7 @@ def lineage(**changes):
 
 
 def value(members, weights, pair=0.0):
-    """Valor de un conjunto: suma de pesos más una interacción entre a y c."""
+    """Valor conocido de un conjunto, que suma los pesos y añade una interacción entre a y c."""
     total = sum(weights[c] for c in members)
     return total + (pair if {"a", "c"} <= set(members) else 0.0)
 
@@ -97,7 +97,7 @@ def test_conditional_effects_cover_every_named_pair_that_differs_in_one_componen
     assert set(effects) == set(expected)
     for name, (smaller, larger) in expected.items():
         assert attribution.resolve(toy, effects[name])[0] == {larger: 1.0, smaller: -1.0}
-    # El efecto de c depende de que esté a: la interacción aparece en la diferencia.
+    # El efecto de c depende de que esté a, y la diferencia entre contextos es la interacción.
     assert apply(toy, effects["c@with_a"], WEIGHTS, pair=0.4) - apply(
         toy, effects["c@base"], WEIGHTS, pair=0.4
     ) == pytest.approx(0.4)

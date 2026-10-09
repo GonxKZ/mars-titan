@@ -66,7 +66,8 @@ def test_the_declared_matrix_compiles_every_question_and_lineage(declared):
     for entry in families.values():
         assert 1 <= len(entry["contrasts"]) <= 64
         for contrast in entry["contrasts"].values():
-            # Toda la matriz son efectos entre brazos: los coeficientes suman cero.
+            # Toda la matriz compara brazos entre sí, así que los coeficientes de cada
+            # contraste suman cero.
             assert sum(contrast["coefficients"].values()) == pytest.approx(0.0, abs=1e-12)
             assert contrast["unnamed"] == []
 
@@ -410,7 +411,8 @@ def test_matrix_contrasts_equal_the_walk_forward_family_with_the_same_arms(publi
                 expected = walk_report["contrasts"][view][theirs][metric]
                 actual = report["views"]["forecast"][view][metric][ours]
                 if "reason" in expected:
-                    # El control cero no emite cuantiles: la familia entera queda sin estimar.
+                    # El control cero no emite cuantiles, así que la familia entera queda
+                    # sin estimar.
                     assert "cuantiles" in expected["reason"] and "reason" in actual, (view, metric)
                     continue
                 assert actual["contrasts"] == expected["contrasts"], (view, metric, ours)

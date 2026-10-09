@@ -93,13 +93,23 @@ def _conditions(value, label):
 
 
 class Arms:
-    """Clase de cada brazo nombrado en la matriz, sin datos."""
+    """Clasifica cada brazo que nombra la matriz según quién lo produce.
+
+    Un brazo puede ser de la campaña declarada, condicionado a otra tarea, derivado de uno
+    declarado con un sufijo conocido o candidato. La clase decide si un contraste se puede
+    estimar con la campaña o qué le falta, sin consultar ningún dato.
+    """
 
     def __init__(self, declared, conditional, suffixes, candidates):
         self.declared, self.conditional = set(declared), conditional
         self.suffixes, self.candidates = suffixes, candidates
 
     def kind(self, arm):
+        """Devuelve la clase del brazo, o None si la matriz no lo conoce.
+
+        Un derivado solo se reconoce si su base es un brazo declarado, para que un sufijo
+        no convierta en válido un nombre inventado.
+        """
         if arm in self.declared:
             return "declared"
         if arm in self.conditional:
@@ -112,6 +122,7 @@ class Arms:
         return None
 
     def require(self, arm, label):
+        """Rechaza un brazo sin clase, porque daría un contraste que nunca podría estimarse."""
         _require(
             tables.is_arm_name(arm) and self.kind(arm) is not None,
             f"{label} usa el brazo {arm} sin declarar",
@@ -159,7 +170,12 @@ def _pair_contrasts(pairs, label):
 
 
 def _question(name, question, groups, arms):
-    """Familias de una pregunta declarada, una por miembro si la pregunta tiene ``each``."""
+    """Compila las familias de una pregunta declarada.
+
+    Si la pregunta tiene ``each``, cada miembro forma su propia familia. Así la corrección
+    múltiple se aplica a las comparaciones de un mismo brazo y no mezcla variantes que
+    responden a preguntas distintas.
+    """
     kind = question.get("kind") if isinstance(question, dict) else None
     fields = _QUESTION_FIELDS.get(kind)
     _require(
@@ -313,7 +329,11 @@ def _lineage_families(lineage, arms):
 
 
 def load_matrix(path):
-    """Validar la declaración, cargar su comparación y compilar todas las familias."""
+    """Valida la declaración, carga su comparación y compila todas las familias.
+
+    La matriz se compila completa antes de leer ningún informe, de modo que el número de
+    familias y contrastes queda fijado por la declaración y no por los resultados.
+    """
     path = Path(path)
     declaration, digest = read_manifest(path, 4 * 1024**2)
     _require(
@@ -369,7 +389,11 @@ def _items(value, label):
 
 
 def split(family, available):
-    """Contrastes estimables con los brazos disponibles y los pendientes con lo que falta."""
+    """Separa los contrastes estimables con los brazos disponibles de los pendientes.
+
+    Un contraste al que le falta algún brazo no se estima con los términos que sí existen,
+    porque cambiaría su significado. Queda pendiente con la lista de lo que falta.
+    """
     ready, pending = {}, []
     for name, contrast in family["contrasts"].items():
         missing = sorted(arm for arm in contrast["coefficients"] if arm not in available)
@@ -381,7 +405,12 @@ def split(family, available):
 
 
 def evaluate(matrix_path, sources_path, scope):
-    """Calcular el informe de la matriz para un ámbito sin escribir nada."""
+    """Calcula el informe de la matriz para un ámbito sin escribir nada.
+
+    Las familias se reducen a sus contrastes estimables antes de calcular las vistas, y cada
+    familia conserva su corrección por máximo estudentizado con esos contrastes. El informe
+    guarda las huellas de la matriz, las fuentes y el código para poder reproducirlo.
+    """
     started = time.perf_counter()
     matrix = load_matrix(matrix_path)
     config = matrix["comparison_config"]
@@ -487,7 +516,11 @@ def evaluate(matrix_path, sources_path, scope):
 
 
 def write(matrix_path, sources_path, scope, output):
-    """Publicar el informe en un directorio nuevo fuera de las fuentes."""
+    """Publica el informe en un directorio nuevo y separado de las fuentes.
+
+    La salida no puede existir ni solaparse con la declaración o los informes leídos, para
+    que una evaluación no sobrescriba nunca lo que consume.
+    """
     output = Path(output)
     safe_destination(output)
     _require(not output.exists(), "La salida debe ser nueva")
@@ -505,12 +538,13 @@ def write(matrix_path, sources_path, scope, output):
 
 
 def missing_arms(matrix, hours=None):
-    """Brazos necesarios para cada contraste que la campaña declarada no produce.
+    """Calcula qué brazos faltan para cada contraste que la campaña declarada no produce.
 
     Los brazos condicionados y derivados tienen su propio plan en otra tarea y se suponen
     disponibles al calcular lo que desbloquea cada candidato. Un candidato desbloquea solo
-    un contraste si es el único brazo que le falta. Los demás contrastes necesitan un
-    conjunto de candidatos y aparecen como lotes con su coste conjunto.
+    un contraste si es el único brazo que le falta. Los demás contrastes necesitan varios
+    candidatos y aparecen como lotes con su coste conjunto. El informe sirve para decidir
+    qué brazos añadir y no declara ninguno en la campaña.
     """
     arms = matrix["arms"]
     conditional = {
@@ -546,6 +580,8 @@ def missing_arms(matrix, hours=None):
                 totals["planned_elsewhere"] += 1
 
     def own(arm):
+        # Las horas de un candidato son las propias del brazo declarado al que se parece,
+        # porque sus padres ya existen en la campaña y no se vuelven a contar.
         if hours is None:
             return None
         return hours["own"].get(matrix["candidates"][arm]["cost_like"])
@@ -622,7 +658,10 @@ def missing_arms(matrix, hours=None):
 
 
 def summary(matrix):
-    """Recuento de familias y contrastes por origen, sin datos."""
+    """Resume cuántas familias y contrastes aporta cada origen de la declaración.
+
+    Permite revisar el tamaño de la matriz y sus limitaciones antes de tener resultados.
+    """
     origins = {}
     for entry in matrix["families"].values():
         kind = entry["origin"].split(":")[0]
@@ -643,6 +682,7 @@ def summary(matrix):
 
 
 def main(argv=None):
+    """Ofrece las órdenes ``check``, ``missing`` y ``evaluate`` desde la línea de órdenes."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="Validar la matriz y contar sus contrastes")
