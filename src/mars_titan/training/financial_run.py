@@ -22,7 +22,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.models.titans.config import canonical
-from mars_titan.models.titans.financial import FinancialPredictor, FinancialState
+from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batch
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.state import MACState, NeuralMemoryState
@@ -114,6 +114,25 @@ class ChronologicalRecipe:
             fast_state="reset_each_pass_then_warmup",
             selection_metric_definition="SessionErrors.session_mae_on_issued_predictions",
         )
+
+
+def load_recipe(path):
+    """Leer la receta declarada antes de ejecutar, con sus variantes y su estado."""
+    path = Path(path)
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024:
+        raise ValueError("La receta no es un archivo regular de hasta 64 KiB")
+    document = json.loads(path.read_text(encoding="utf-8"))
+    fields = {"schema_version", "recipe_name", "status", "variants", "pairing_source"}
+    if (
+        not isinstance(document, dict)
+        or set(document) != fields | {"predictor", "recipe", "pending"}
+        or document["schema_version"] != 1
+        or document["recipe_name"] != RECIPE
+        or tuple(document["variants"]) != VARIANTS
+        or document["pairing_source"] not in VARIANTS
+    ):
+        raise ValueError("La receta no conserva su esquema, variantes y emparejamiento")
+    return ChronologicalRecipe(**document["recipe"]), document
 
 
 def parameter_roles(predictor):

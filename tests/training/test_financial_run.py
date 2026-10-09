@@ -560,3 +560,38 @@ def test_real_optimizer_is_refused_while_the_learning_hold_blocks(shared, tmp_pa
     with pytest.raises(RuntimeError, match="bloqueo"):
         engine.run()
     assert not (tmp_path / "run").exists()
+
+
+def test_declared_recipe_builds_the_four_paired_controls(shared):
+    from mars_titan.training.financial_run import load_recipe
+
+    recipe, document = load_recipe("configs/titans/chronological-training.json")
+    assert recipe.budget == "fixed_updates" and recipe.selection["patience"] > recipe.epochs
+    assert document["status"] == "propuesta_sin_ejecutar"
+    _, streams = shared
+    specification = streams["train"].specification()
+    options = {k: v for k, v in document["predictor"].items() if k != "dtype"}
+    for variant in document["variants"]:
+        FinancialConfig(specification, variant=variant, **options)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requiere cuda:0 explícito")
+def test_cuda_pass_matches_cpu_without_optimizer_steps(shared, tmp_path):
+    _, streams = shared
+    engines = {}
+    for device in ("cpu", "cuda:0"):
+        model = predictor(streams).to(device)
+        engines[device] = trainer(streams, tmp_path / device.replace(":", ""), model=model)
+        assert engines[device].run()["status"] == "completed"
+    cpu, cuda = engines.values()
+    left = entries(cpu.audit, "prediction")
+    right = entries(cuda.audit, "prediction")
+    assert [e[:4] for e in left] == [e[:4] for e in right]
+    for a, b in zip(left, right, strict=True):
+        assert a[4] == pytest.approx(b[4], rel=1e-9, abs=1e-12)
+    for a, b in zip(named_records(cpu), named_records(cuda), strict=True):
+        for key, value in a.items():
+            if value is None:
+                assert b[key] is None
+            else:
+                torch.testing.assert_close(value, b[key].cpu(), rtol=1e-7, atol=1e-10)
