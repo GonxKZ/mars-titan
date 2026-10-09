@@ -116,9 +116,13 @@ def test_plateau_of_a_joint_fit_keeps_its_states_and_indices_and_writes_no_table
     assert plateau["retained"]["predictions"] == plateau["transient"]["writing"] == 0
     assert plateau["retained"]["states"] == kept * state
     assert plateau["transient"]["recovery"] == 0
+    # La meseta conserva su índice como un ajuste sin liberación.
+    unreleased = storage.job_footprint(job("titans_mac"), COUNTS, value, release=False)
+    assert plateau["retained"]["indices"] == unreleased["retained"]["indices"] > 0
+    assert plateau["transient"]["indices"] == unreleased["transient"]["indices"]
     assert (
-        plateau["retained"]["indices"]
-        == fit["transient"]["indices"] - (plateau["transient"]["indices"])
+        plateau["retained"]["indices"] + plateau["transient"]["indices"]
+        == (fit["transient"]["indices"])
     )
     final = storage.job_footprint(job("titans_mac", phase="joint"), COUNTS, value, release=True)
     assert final == fit
