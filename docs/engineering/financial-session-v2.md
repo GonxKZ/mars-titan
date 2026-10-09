@@ -6,6 +6,11 @@ sola generación por evento. La implementación admite comprobaciones técnicas
 con fixtures. No levanta el bloqueo de aprendizaje ni acredita una ejecución
 sobre el corpus histórico completo.
 
+La sesión delega lo que depende del consumidor en un enlace cerrado. `TitansBinding`
+conserva el recorrido de Titans descrito aquí y `CandidateBinding` conecta la
+[GRU episódica](gru-financial-sessions.md) con su codec 128×256, banco tensorial y
+cursores sin estado neural. Fases, prefijos, pendientes y publicación son comunes.
+
 `FrozenFinancialConsumer` exige parámetros y buffers sin gradiente y todos los
 submódulos en `eval`. Su identidad incluye configuración, bytes de parámetros,
 código, precisión, dispositivo y opciones numéricas. Rechaza hooks y métodos
