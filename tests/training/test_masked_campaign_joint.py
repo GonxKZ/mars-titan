@@ -6,6 +6,7 @@ Se comprueban orden, carpetas, recibos de meseta, identidades, reanudación y re
 """
 
 import json
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -20,7 +21,7 @@ from mars_titan.training.campaign_plan import (
     plan_campaign,
 )
 from mars_titan.training.selection import AWAIT, JOINT_PLATEAU
-from tests.training.test_masked_campaign import Recorder, run, write_campaign
+from tests.training.test_masked_campaign import Recorder, doubles, run, write_campaign
 from tests.training.test_masked_campaign import prepared as prepared
 
 pytestmark = pytest.mark.usefixtures("learning_doubles")
@@ -182,3 +183,50 @@ def test_joint_epoch_needs_every_plateau_of_the_group(prepared, tmp_path):
     state.receipts[final["joint_group"][-1]] = dict(status="completed", sha256="1" * 64)
     with pytest.raises(ValueError, match="mesetas sin confirmar"):
         state.joint_epoch(final)
+
+
+class CheckpointingJoint(JointRecorder):
+    """Meseta con estados reales de recuperación y continuación que los cuenta al empezar."""
+
+    def __init__(self, **options):
+        super().__init__(**options)
+        self.found = {}
+
+    def __call__(self, run):
+        from tests.training.test_campaign_storage import _states
+
+        if run.job.get("phase") == PLATEAU:
+            report = super().__call__(run)
+            _states(run.folder / "checkpoints")
+            return report
+        if run.job.get("phase") == JOINT:
+            self.found[run.job["id"]] = len(list((run.folder / "checkpoints").glob("state-*.pt")))
+        return super().__call__(run)
+
+
+def test_storage_release_keeps_the_plateau_states_until_the_continuation(
+    prepared, tmp_path, monkeypatch
+):
+    from mars_titan.training import campaign_storage as storage
+    from tests.training.test_campaign_storage import _storage_file
+
+    monkeypatch.setattr(storage, "free_bytes", lambda *_: 10 * 1024**4)
+    campaign = joint_campaign(tmp_path / "config")
+    recorder = CheckpointingJoint()
+    summary = engine.run_campaign(
+        campaign,
+        {"US": prepared.views["US"]},
+        tmp_path / "out",
+        executors=doubles(recorder),
+        lease=nullcontext,
+        stop=SimpleNamespace(requested=False),
+        storage=_storage_file(tmp_path),
+    )
+    assert summary["status"] == "completed"
+    # Cada continuación encuentra los estados de recuperación de su meseta y los libera al
+    # confirmar su recibo.
+    assert recorder.found and set(recorder.found.values()) == {3}
+    for job_id, _ in recorder.found.items():
+        folder = tmp_path / "out" / receipt(tmp_path / "out", job_id)["attempt"]
+        assert len(list((folder / "checkpoints").glob("state-*.pt"))) == 1
+        assert (folder / "released.json").is_file()

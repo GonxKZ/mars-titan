@@ -26,6 +26,8 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json
 
+from .campaign_plan import PLATEAU
+
 STORAGE_KIND = "historical_masked_campaign_storage"
 HELD_OUT = ("validation", "calibration", "evaluation")
 # Escritor de predicciones de cada modelo de `masked_campaign.EXECUTORS`.
@@ -179,20 +181,27 @@ def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
     `prediction_bytes(job, partition)` sustituye los bytes por fila declarados por una
     medida exacta. `release` usa por defecto la política declarada. Un traslado solo
     escribe calibración y evaluación y no tiene estados propios ni caché de XGBoost.
+
+    La meseta de un ajuste con parada conjunta no escribe tablas y conserva sus índices y
+    todos sus estados de recuperación, porque su continuación reanuda en la misma carpeta.
+    La continuación se cuenta como un ajuste completo, así que sus estados e índices se
+    cuentan dos veces y la proyección es una cota superior.
     """
     release = storage["release_on_confirmation"] if release is None else release
     model = job["model"]
     _require(model in WRITERS, f"No hay huella declarada para el modelo {model}")
     writer = WRITERS[model]
     carry = job.get("kind") == "carry"
+    plateau = job.get("phase") == PLATEAU
     partitions = HELD_OUT[1:] if carry else HELD_OUT
     measured = prediction_bytes or (
         lambda _, partition: counts[partition] * storage["prediction_row_bytes"][writer][partition]
     )
-    tables = {partition: int(measured(job, partition)) for partition in partitions}
+    predicted = () if plateau else partitions
+    tables = {partition: int(measured(job, partition)) for partition in predicted}
     state = 0 if carry else storage["state_bytes"][model]
     kept = storage["retained_states"][model]
-    releasable = release and model in CHECKPOINTS
+    releasable = release and model in CHECKPOINTS and not plateau
     retained = dict(
         predictions=sum(tables.values()),
         reports=storage["job_report_bytes"],
@@ -203,18 +212,18 @@ def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
     transient = dict(
         recovery=state * max(kept - 1, 0) if releasable else 0,
         mid_epoch=0 if carry else storage["recovery_state_extra_bytes"][model],
-        writing=max(tables.values()),
+        writing=max(tables.values(), default=0),
         indices=0,
         cache=0,
     )
     if model in INDEXED:
         index = storage["index"]
-        warmup = None if model == "episodic_gru" else index["warmup_partition"]
-        rows = index_rows(counts, warmup, partitions=partitions, train=not carry)
+        # Todas las familias con índice calientan con el mismo tramo declarado.
+        rows = index_rows(counts, index["warmup_partition"], partitions=partitions, train=not carry)
         built = int(rows * index["bytes_per_row"])
         largest = max(2 * counts[p] for p in ((*partitions, "train") if not carry else partitions))
         transient["indices"] = int(largest * index["build_bytes_per_row"])
-        if release:
+        if release and not plateau:
             transient["indices"] += built
         else:
             retained["indices"] = built

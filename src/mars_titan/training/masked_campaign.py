@@ -763,7 +763,8 @@ class _Campaign:
         """Liberar lo que nadie vuelve a leer de un intento con su recibo ya escrito."""
         if self.disk is None:
             return
-        if self.disk[2]["release_on_confirmation"]:
+        # La continuación de una meseta reanuda en su carpeta: se libera al confirmarla.
+        if self.disk[2]["release_on_confirmation"] and job.get("phase") != PLATEAU:
             release_confirmed(self.output / receipt["attempt"], job["model"])
         self.disk[0].settle(job["id"])
 
