@@ -1,6 +1,6 @@
 # Referencia episódica y recurrencia de MARS-TITAN
 
-Esta especificación conserva la referencia GRU con banco episódico y sus reglas de escritura. La [dirección arquitectónica vigente](titans-mac-architecture.md) añade Transformer compacto, Titans-MAC y ampliaciones de MARS-TITAN sobre ese núcleo. El banco no sustituye la memoria neuronal de Titans. El [componente nativo](../../native/candidate.md) y la [variante histórica con máscaras](../../native/candidate_historical.md) tienen comprobaciones CPU/CUDA, con recibos y alcances separados. El estado revisado el 9 de octubre mantiene pendientes la integración cronológica de la GRU y su evaluación científica.
+Esta especificación conserva la referencia GRU con banco episódico y sus reglas de escritura. La [dirección arquitectónica vigente](titans-mac-architecture.md) añade Transformer compacto, Titans-MAC y ampliaciones de MARS-TITAN sobre ese núcleo. El banco no sustituye la memoria neuronal de Titans. El [componente nativo](../../native/candidate.md) y la [variante histórica con máscaras](../../native/candidate_historical.md) tienen comprobaciones CPU/CUDA, con recibos y alcances separados. La sección [estado de implementación](#estado-de-implementación-a-9-de-octubre) resume qué partes de esta especificación existen ya en el código. La evaluación científica sigue pendiente.
 
 ## Separar memoria persistente y cálculo interno
 
@@ -23,6 +23,18 @@ flowchart LR
 ```
 
 La flecha de escritura solo afecta a decisiones posteriores. El gráfico no autoriza un ciclo que conozca el retorno futuro antes de predecirlo.
+
+## Estado de implementación a 9 de octubre
+
+La referencia GRU con banco episódico es el brazo `gru_episodic` de la [campaña desde 2000](training-campaign-2000.md). Las piezas siguientes están integradas en `develop` y se han comprobado sin pasos de optimizador. No se ha entrenado ningún estado con ellas.
+
+| Parte de la especificación | Implementación | Comprobación y límite |
+| --- | --- | --- |
+| Representación y claves fijas | Codec CPU con las proyecciones fijas del componente nativo y banco tensorial de claves 128 y valores 256 ([sesiones GRU](../engineering/gru-financial-sessions.md)) | Pruebas CPU y ASan/UBSan. Las sesiones de Titans-MAC conservan exactamente sus salidas tras añadir la GRU. Falta la comprobación CUDA |
+| Escritura con error emitido | M1 admite la fila emitida con el error de la predicción realmente emitida sobre el reservorio causal. M0 conserva el refinador con lectura vacía | M2, M3 y C/M se rechazan en esta ruta. Los cupos 50/25/25 descritos arriba existen en la ruta de Titans-MAC, no en la GRU |
+| Refinamiento K = 1, 2 o 4 | Repetición de lectura y refinamiento sobre la misma instantánea, sin contar actualizaciones de memoria | Gradientes finitos en los tres valores de K, solo en CPU |
+| Ajuste cronológico | [Entrenador](../engineering/candidate-chronological-trainer.md) con pinball de la cabeza común, selección por MAE de la mediana y presupuesto fijo de 30 épocas | Reanudación idéntica a la ejecución continua. La acumulación por bloques y la recomputación acotan la memoria medida en CPU |
+| Ventanas walk-forward | Ajuste por ventana y traslado de la variante B con el banco vacío al empezar cada tramo | Filas iguales a las de la vista. Sin declarar en las campañas A y B hasta medir memoria y caudal en `cuda:0` |
 
 ## Referencia GRU con banco episódico
 

@@ -1,6 +1,6 @@
 # Integración de memoria, atención y aprendizaje en MARS-TITAN
 
-La auditoría original del 4 de octubre de 2026 inspeccionó `96cab3616f78e6713b451b01437c816ba7bd010b`. La corrección arquitectónica del 8 de octubre conserva ese inventario y adopta la [separación entre GRU, Transformer, Titans-MAC y ampliaciones](titans-mac-architecture.md). La revisión del 9 de octubre distingue el inventario histórico que sigue del estado actual: la [GRU histórica](../../native/candidate_historical.md) tiene comprobaciones CPU/CUDA del módulo y el [consumidor financiero](../engineering/financial-session-v2.md) integra Titans-MAC, banco y recuperación bajo M0/M1. La conexión cronológica de la GRU y la trayectoria histórica completa siguen pendientes. No se han entrenado estas nuevas variantes.
+La auditoría original del 4 de octubre de 2026 inspeccionó `96cab3616f78e6713b451b01437c816ba7bd010b`. La corrección arquitectónica del 8 de octubre conserva ese inventario y adopta la [separación entre GRU, Transformer, Titans-MAC y ampliaciones](titans-mac-architecture.md). La revisión del 9 de octubre distingue el inventario histórico que sigue del [estado tras las integraciones de ese día](#estado-tras-las-integraciones-del-9-de-octubre). La [GRU histórica](../../native/candidate_historical.md) tiene comprobaciones CPU/CUDA del módulo y el [consumidor financiero](../engineering/financial-session-v2.md) integra Titans-MAC, banco y recuperación. Titans-MAC, la GRU episódica, MARS-TITAN y el factorial de CM-v1 tienen ya entrenadores cronológicos con entrada por ventana walk-forward, comprobados sin pasos de optimizador. No se han entrenado estas variantes y la trayectoria sobre la edición histórica completa sigue pendiente.
 
 La [correspondencia de modificaciones](titans-mac-architecture.md#correspondencia-de-las-modificaciones-de-integración) del 9 de octubre relaciona cada propuesta de esta revisión con su punto de inserción sobre Titans-MAC, su nivel de implementación, su control y su evidencia. La [variante con ampliaciones](titans-mac-architecture.md#variante-mars-titan-con-ampliaciones) las declara como componentes desactivables, todos apagados y sin ejecutar.
 
@@ -26,6 +26,21 @@ Esta es la integración recomendada por los contratos encontrados. No se afirma 
 | Candidato | Especificación de memoria global, pesos rápidos y K = 1, 2 o 4. | No existe todavía su entrenador ni una evaluación propia. |
 
 La inspección cubre responsabilidades y conexiones relevantes. No certifica ausencia de defectos en todo el repositorio. No se han abierto pesos ni datos experimentales para obtener estas conclusiones.
+
+## Estado tras las integraciones del 9 de octubre
+
+El inventario anterior describe el código del 4 de octubre. Las PR integradas en `develop` el 9 de octubre, hasta `0ac197ce`, cubren ya las seis responsabilidades del recorrido temporal para la [campaña desde 2000](training-campaign-2000.md). Todas se han comprobado con pruebas que llegan hasta el paso del optimizador sin aplicarlo, casi siempre en CPU. Ninguna se ha ejecutado con aprendizaje ni sobre datos reales de la edición.
+
+| Responsabilidad | Implementación integrada | Pendiente |
+| --- | --- | --- |
+| Resolver la vista | Política `historical_masked_2000_v1` con cinco bits de presencia en todas las familias ([#372](https://github.com/GonxKZ/mars-titan/pull/372), [#373](https://github.com/GonxKZ/mars-titan/pull/373), [#386](https://github.com/GonxKZ/mars-titan/pull/386)) y vistas del [protocolo walk-forward v2](walk-forward-2000.md) ([#375](https://github.com/GonxKZ/mars-titan/pull/375)) | Preparar las vistas reales. La vista reducida todavía no llega a la ruta de Titans-MAC |
+| Cohortes cronológicas | Lector de observaciones por bloques de activos e instante ([#377](https://github.com/GonxKZ/mars-titan/pull/377)), índices por tramo de la GRU episódica ([#395](https://github.com/GonxKZ/mars-titan/pull/395)) y entorno predictivo con ventanas walk-forward ([#390](https://github.com/GonxKZ/mars-titan/pull/390)) | Medir el caudal con la ventana más poblada en `cuda:0` |
+| Predicción sin efectos ocultos | Inferencia cronológica congelada y política de memoria común: cada tramo parte del estado inicial y calienta con 12 meses de entradas sin etiquetas ([#396](https://github.com/GonxKZ/mars-titan/pull/396)) | Comprobación CUDA de la ventana y del traslado |
+| Conservar decisiones | Predicciones por fila de validación, calibración y evaluación con cinco cuantiles, recibos por trabajo y recibos de ventana con la cota de la última etiqueta usada ([#381](https://github.com/GonxKZ/mars-titan/pull/381), [#390](https://github.com/GonxKZ/mars-titan/pull/390), [#391](https://github.com/GonxKZ/mars-titan/pull/391)) | Recibos reales, que solo existirán al ejecutar la campaña |
+| Resultados maduros | Etiquetas aplicadas al madurar, error de la predicción emitida en M1 y M2 y corrección asociativa B6 escrita solo con resultados maduros ([#376](https://github.com/GonxKZ/mars-titan/pull/376), [#389](https://github.com/GonxKZ/mars-titan/pull/389), [#399](https://github.com/GonxKZ/mars-titan/pull/399)) | Definir M3 y emitir B6 en el recorrido por ventanas |
+| Confirmar el estado completo | Checkpoints con modelo, optimizador, RNG, cursor, pesos rápidos, cola, banco y selección, con el mejor estado aparte de dos de recuperación ([#377](https://github.com/GonxKZ/mars-titan/pull/377), [#389](https://github.com/GonxKZ/mars-titan/pull/389), [#399](https://github.com/GonxKZ/mars-titan/pull/399)) | Recuperación tras pasos reales, bloqueada por la protección del aprendizaje |
+
+La [correspondencia de modificaciones](titans-mac-architecture.md#correspondencia-de-las-modificaciones-de-integración) detalla cada propuesta de esta revisión con su punto de inserción. La columna de estado de la [tabla de variantes](#variantes-y-orden-de-contraste) resume la misma situación.
 
 ## Recorrido actual y fronteras que cambian la decisión
 
@@ -258,17 +273,17 @@ El entrenador nativo actual no deshace en general un paso parcial de Adam. Ante 
 
 ## Variantes y orden de contraste
 
-| Variante | Cambio aislado | Dónde actúa |
-| --- | --- | --- |
-| Referencias actuales | Sin memoria persistente entre ventanas | Recorridos existentes, conservados |
-| MARS-TITAN original | Banco global y lectura K fija, según especificación | Nuevo ciclo cronológico con barrera |
-| Memoria asociativa | Delta o proximal, como alternativas identificadas | Actualización de estado maduro |
-| Atención documental | Selección de artículos frente a media | Índice de documentos antes de agregar |
-| Replay programado | Orden o prioridad con presupuesto comparable | Planificador de entrenamiento |
-| Adaptador de consulta/salida | Actualización pequeña con claves estables | Modelo y versión de estado compatibles |
-| Eventos auxiliares | Cabezas separadas o compartidas | Representación, etiquetas y pérdidas por objetivo |
-| Vista reducida | Fuentes o variables eliminadas en todas las rutas | Datos, padre, memoria, HMM y calibrador |
-| Cálculo adaptativo | Elección de K tras referencias fijas | Estado de trabajo y asignación por cohorte |
+| Variante | Cambio aislado | Dónde actúa | Estado a 9 de octubre |
+| --- | --- | --- | --- |
+| Referencias actuales | Sin memoria persistente entre ventanas | Recorridos existentes, conservados | Preparadas para la edición con máscaras y declaradas en las campañas A y B, sin ejecutar |
+| MARS-TITAN original | Banco global y lectura K fija, según especificación | Nuevo ciclo cronológico con barrera | GRU episódica y lector de MARS-TITAN con entrenador y ventana walk-forward, sin declarar en las campañas |
+| Memoria asociativa | Delta o proximal, como alternativas identificadas | Actualización de estado maduro | Conectada como corrección B6 sobre Titans-MAC sin banco. Falta emitirla por ventanas |
+| Atención documental | Selección de artículos frente a media | Índice de documentos antes de agregar | [Índice documental](../engineering/document-index.md) implementado. Falta la selección dentro del modelo |
+| Replay programado | Orden o prioridad con presupuesto comparable | Planificador de entrenamiento | `ReplaySchedule` sin enlace Python ni conexión con Titans-MAC |
+| Adaptador de consulta/salida | Actualización pequeña con claves estables | Modelo y versión de estado compatibles | Matriz v2 de adaptadores por ventana registrada en la campaña, sin ejecutar |
+| Eventos auxiliares | Cabezas separadas o compartidas | Representación, etiquetas y pérdidas por objetivo | No incorporada |
+| Vista reducida | Fuentes o variables eliminadas en todas las rutas | Datos, padre, memoria, HMM y calibrador | Controles existentes en las referencias. No llega a Titans-MAC |
+| Cálculo adaptativo | Elección de K tras referencias fijas | Estado de trabajo y asignación por cohorte | Solo K fijo 1, 2 o 4, con un modo que reutiliza los episodios de la primera lectura |
 
 No se ejecutará su producto cartesiano. Primero se comprueban identidad, cronología y recuperación con una referencia sencilla. Después se integra el candidato original y se estudia un mecanismo cada vez. Una combinación ampliada se justifica por resultados individuales y una interacción pequeña previamente registrada, no por acumular componentes recientes.
 
