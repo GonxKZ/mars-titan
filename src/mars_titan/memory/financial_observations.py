@@ -247,12 +247,12 @@ class ObservationEvent:
     close_phase: bool
 
 
-def _observation(dataset, asset, decoded, row, at):
+def _observation(dataset, asset, decoded, row, at, prices):
     """Seleccionar una fila decodificada con las mismas operaciones en ambas lecturas."""
     stamps, ends, vectors, presence, known, valid = decoded
     if not 0 <= row < len(stamps) or stamps[row] != at:
         raise ValueError("La posición no corresponde a la observación indexada")
-    prices, price_at = dataset._prices(asset)
+    prices, price_at = prices
     rows = np.array([row], dtype=np.int64)
     return dict(
         vectors=vectors,
@@ -282,10 +282,13 @@ class _BlockReader:
             raise ValueError("La caché de grupos debe estar entre 1 MiB y 8 GiB")
         self.source, self.block_rows, self.limit = source, block_rows, max_cached_bytes
         self.groups, self.cached_bytes, self.decoded_groups = OrderedDict(), 0, 0
-        self._labels = {}
+        self._labels, self._prices = {}, {}
 
     def labels(self, identity):
-        """Las etiquetas de una fase se leen una vez por activo y recorrido."""
+        """Las etiquetas y los precios se leen una vez por activo y recorrido.
+
+        El índice confirma de nuevo todos los archivos al terminar el recorrido.
+        """
         if identity not in self._labels:
             self._labels[identity] = self.source._label_arrays(identity)
         return self._labels[identity]
@@ -323,7 +326,9 @@ class _BlockReader:
                     raise ValueError("Las dimensiones cambian entre activos")
                 widths = shape
                 asset = self.source._assets[identity]
-                block = _observation(dataset, asset, decoded, row, at)
+                if identity not in self._prices:
+                    self._prices[identity] = dataset._prices(asset)
+                block = _observation(dataset, asset, decoded, row, at, self._prices[identity])
                 if batch is None:
                     batch = _new_batch(
                         decoded[2], dataset.context, len(chunk), masked=True, supervised=False
@@ -405,7 +410,7 @@ class FinancialObservationSource:
             if not 0 <= group < file.num_row_groups:
                 raise ValueError("El grupo de origen no existe")
             _, *decoded = self.dataset._sample_group(asset, file, group)
-            block = _observation(self.dataset, asset, decoded, row, at)
+            block = _observation(self.dataset, asset, decoded, row, at, self.dataset._prices(asset))
             batch = _new_batch(decoded[2], self.dataset.context, 1, masked=True, supervised=False)
             _fill_batch(batch, 0, block, 0, 1)
             return batch

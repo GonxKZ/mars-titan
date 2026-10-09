@@ -80,25 +80,33 @@ def test_cursor_resumes_the_same_suffix(tmp_path):
         )
 
 
-def test_each_group_and_label_file_is_decoded_once_per_pass(tmp_path, monkeypatch):
+def test_each_group_price_and_label_file_is_decoded_once_per_pass(tmp_path, monkeypatch):
     dataset, streams = sources(tmp_path, group_size=4)
     stream = streams["validation"]
-    calls, labels = [], []
-    decode, read = dataset._sample_group, dataset._labels
+    calls = dict(groups=[], labels=[], prices=[])
+    original = dataset._sample_group, dataset._labels, dataset._prices
     monkeypatch.setattr(
-        dataset, "_sample_group", lambda a, f, g: calls.append((a["symbol"], g)) or decode(a, f, g)
+        dataset,
+        "_sample_group",
+        lambda a, f, g: calls["groups"].append((a["symbol"], g)) or original[0](a, f, g),
     )
     monkeypatch.setattr(
-        dataset, "_labels", lambda a, p, n: labels.append(a["symbol"]) or read(a, p, n)
+        dataset,
+        "_labels",
+        lambda a, p, n: calls["labels"].append(a["symbol"]) or original[1](a, p, n),
+    )
+    monkeypatch.setattr(
+        dataset, "_prices", lambda a: calls["prices"].append(a["symbol"]) or original[2](a)
     )
     events = list(stream.batched_events(block_rows=3))
-    assert len(calls) == len(set(calls))
     rows = sum(len(b["sample_ids"]) for e in events for b in e.inputs)
-    assert len(calls) < rows
-    assert sorted(labels) == sorted(set(labels))
-    calls.clear()
+    assert len(calls["groups"]) == len(set(calls["groups"])) < rows
+    for name in ("labels", "prices"):
+        assert sorted(calls[name]) == sorted(set(calls[name])) == ["A0000", "A0001", "A0002"]
+    for values in calls.values():
+        values.clear()
     list(stream.events())
-    assert len(calls) == rows
+    assert len(calls["groups"]) == len(calls["prices"]) == rows
 
 
 def test_eviction_redecodes_without_changing_the_stream(tmp_path):
