@@ -139,7 +139,6 @@ LATER_STAGES = {
         pending=[
             "native_policy_reconstructed_tapes",
             "native_klpo_financial_runner",
-            "native_cn_a_share_rules",
         ],
     ),
 }

@@ -413,9 +413,11 @@ def test_later_stage_registers_both_variants_with_their_pending_capabilities():
     assert Path(declared["config"]).resolve() == POLICIES.resolve()
     assert declared["issue"] == 137 and set(declared["stages"]) == set(plan.VARIANTS)
     assert set(declared["pending"]) <= set(campaign_stage.CAPABILITIES)
-    # Las piezas sin sonda siguen pendientes hasta que exista su ejecutor.
+    # Pendientes son justo las piezas sin sonda, que aún no existen. Una capacidad con sonda
+    # ya está implementada y se comprueba con el motor instalado, como las reglas A (#406).
     unprobed = {k for k, v in campaign_stage.CAPABILITIES.items() if v["probe"] is None}
-    assert unprobed <= set(declared["pending"])
+    assert set(declared["pending"]) == unprobed
+    assert len(declared["pending"]) == len(unprobed)
     module, _, function = declared["entry"].partition(":")
     assert getattr(importlib.import_module(module), function) is campaign_stage.run_stage
     for variant, path in declared["stages"].items():
