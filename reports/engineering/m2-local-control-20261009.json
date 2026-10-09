@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T03:08:07+00:00",
+  "kind": "mature_error_local_diagnostic_technical_composition",
+  "issues": [
+    293,
+    19
+  ],
+  "baseline_code_commit": "0bf7fd0bbde59724ab8d11387700fdf623488707",
+  "production_code_changed": false,
+  "source_sha256": {
+    "src/mars_titan/memory/financial_session.py": "ccae791f749b3f3740b8fe034c7cbb569060fc99c04746c5e7c4f8066fad0d7b",
+    "src/mars_titan/memory/write_policy.py": "2facfaa3eaba4850be77ada56f9c5089ded79b3b7be78151636a96085cdee3ff",
+    "src/mars_titan/models/titans/local_control.py": "60db5f09e0fdc1693977afa811cc33cae1c2bc09a61388e6bd5b26d465855d19",
+    "tests/memory/test_m2_local_control.py": "5adc70463de962c0a00c67a94f97aacabce5ce1973dfc1a11786705542232550",
+    "tests/memory/test_financial_session_m2.py": "9a7e87d4d434fbf2bdd28895c8e27d287014a11c188941044348b8a866b12ccb",
+    "tests/memory/test_financial_session_controls.py": "7cff0ce1645d86369fc5cafe992644755ea283d0f6af7a5815fd1b58f9a30c42",
+    "pyproject.toml": "6893938bc963f7d7ff8b1b226b96c7400f613d07e06053f7ad897ec4219dd6ca"
+  },
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "native_build": {
+    "type": "Release",
+    "compiler": "clang++ 21.1.8",
+    "CUDA": false
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pytest": "9.1.1",
+    "uv": "0.12.16",
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "logical_cpus": 16,
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "CUDA_used": false,
+    "cpu_quota_percent": 200,
+    "memory_max_bytes": 3221225472,
+    "memory_swap_max_bytes": 0,
+    "blas_openmp_threads": 2,
+    "host_exclusive": false,
+    "concurrent_loads": "Codificación histórica CPU, recolector del observatorio y aplicaciones de escritorio activas"
+  },
+  "test_command": "CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MARS_TITAN_EPISODIC_NATIVE=<binario nativo> uv run --no-sync --offline pytest -q -p no:cacheprovider tests/memory/test_m2_local_control.py",
+  "configuration": {
+    "flows": 4,
+    "C_modes": [
+      "disabled",
+      "diagnostic"
+    ],
+    "dtype": "float64",
+    "device": "cpu",
+    "K": 1,
+    "admission": "m2",
+    "B_mem": 4,
+    "quota_values": [
+      2,
+      1,
+      1
+    ],
+    "C_projection": {
+      "rank": 1,
+      "grid_size": 4,
+      "frequency": 1,
+      "max_flows": 2,
+      "seed": 91
+    },
+    "M_consolidation": false,
+    "paths_per_mode": {
+      "reference": {
+        "block_rows": 4,
+        "reversed_assets_and_labels": false,
+        "recovery": false
+      },
+      "reordered": {
+        "block_rows": 4,
+        "reversed_assets_and_labels": true,
+        "recovery": false
+      },
+      "permuted": {
+        "block_rows": 1,
+        "reversed_assets_and_labels": true,
+        "recovery": false
+      },
+      "recovered": {
+        "block_rows": 4,
+        "reversed_assets_and_labels": false,
+        "recovery": "before_commit"
+      }
+    },
+    "trajectories": 8,
+    "decision_events_per_trajectory": 5,
+    "settlement_events_per_trajectory": 1,
+    "issued_per_trajectory": 20,
+    "matured_per_trajectory": 16,
+    "pending_per_trajectory": 4,
+    "labels": "manual_fixture_no_estimation"
+  },
+  "checks": {
+    "passed": 1,
+    "C_diagnostic_vs_disabled_exact": [
+      "predicciones",
+      "estado rápido",
+      "IDs U/S/R por evento",
+      "recibos y puntuaciones selectivas",
+      "snapshot del banco con archivos nativos",
+      "episodios salvo model_id y prediction_id",
+      "filas, claves y valores pendientes"
+    ],
+    "excluded_identity_fields": [
+      "model_id",
+      "prediction_id"
+    ],
+    "reordered_exact": true,
+    "recovery_exact": true,
+    "partition_rtol": 1e-12,
+    "partition_atol": 1e-12,
+    "partition_ids_exact": true,
+    "control_measurements_compared_per_event": true,
+    "measured_flows_per_decision": 2,
+    "selection_fixed_for_logical_group": true,
+    "global_rng_unchanged": [
+      "torch",
+      "numpy",
+      "python"
+    ],
+    "shared_parameters_unchanged": true,
+    "parameter_gradients": null,
+    "optimizer_and_backward_guard": true,
+    "residual_estimation_guard": true,
+    "cuda_initialization_unchanged": true
+  },
+  "measured": {
+    "repetitions": [
+      {
+        "pytest_seconds": 15.88,
+        "process_seconds": 16.84,
+        "peak_rss_kib": 774368,
+        "cpu_percent": 98,
+        "swaps": 0
+      },
+      {
+        "pytest_seconds": 16.5,
+        "process_seconds": 17.53,
+        "peak_rss_kib": 774812,
+        "cpu_percent": 98,
+        "swaps": 0
+      },
+      {
+        "pytest_seconds": 18.49,
+        "process_seconds": 19.43,
+        "peak_rss_kib": 765756,
+        "cpu_percent": 87,
+        "swaps": 0
+      }
+    ],
+    "warmup": false,
+    "note": "Tiempos de comprobación con otras cargas activas, no una medida de rendimiento."
+  },
+  "mutations": {
+    "target": "src/mars_titan/memory/financial_session.py",
+    "temporary": true,
+    "source_restored_sha256": "ccae791f749b3f3740b8fe034c7cbb569060fc99c04746c5e7c4f8066fad0d7b",
+    "unmutated_control_passed": true,
+    "detected_by_current_test": 7,
+    "detected_by_previous_test": 5,
+    "previous_test_sha256": "3c0d0a4cb32fd0164a73180e17cac130011d697a24deaa810a97308bfd138585",
+    "cases": [
+      {
+        "name": "omit_diagnostic_measurement",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": true,
+        "current_failure": null,
+        "mutant_sha256": "e84b07542c8de5ab48ab806bf33aa1060968eeb94c51500dc693d1efb027b569",
+        "current_log_sha256": "1b5f2dcfad9054434dd9e4d8e1ad422eea9404c7ab889311b1f64c486484f218",
+        "previous_log_sha256": "fc8f686e2fa095bc5a5e81205fb5313049c8df01a6dd5eacfb916be3d682dd22"
+      },
+      {
+        "name": "diagnostic_changes_emission",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": true,
+        "current_failure": "AssertionError",
+        "mutant_sha256": "35be30bd1cc9f456f3776ce69d3d994b6584fa1cf2d5d7c2a16cb0c8da9bffe6",
+        "current_log_sha256": "c690a8903b1a7a98f01077bc0f1b2c52f1ac41b65a622257c36c316e56d9057c",
+        "previous_log_sha256": "dec184e711f9037e6b48b2841490c9e2736e9647260ed0d53f1860d85a3140b8"
+      },
+      {
+        "name": "selection_per_physical_block",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": true,
+        "current_failure": null,
+        "mutant_sha256": "9104082cd7ddc8f04a733ae3dd72970a60388100a02a4c7e8821f0bb032217b8",
+        "current_log_sha256": "e74d815ea43a4618a46b9c4d1d5551695fdeeff2260e2ecabbfa5e7ec5d9c667",
+        "previous_log_sha256": "ad4ed88f828dcd8061dbf7751e386173c04e47b0f8472bbe57f195aa1758af9f"
+      },
+      {
+        "name": "diagnostic_consumes_torch_rng",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": true,
+        "current_failure": "AssertionError",
+        "mutant_sha256": "2a19797a7c91112fc33b9b8b9c56411741630efbf5f11a1f4347d89815d01350",
+        "current_log_sha256": "e55970d8ee70fb89142ccb18c3e36cbcf55ecaffe0a057384520021d2053c7d1",
+        "previous_log_sha256": "1a0199ee0437e122754f0e9bc800fb0a3dfc01cb1475415ee57ecbdbb004d327"
+      },
+      {
+        "name": "diagnostic_consumes_numpy_rng",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": false,
+        "current_failure": "AssertionError",
+        "mutant_sha256": "acb85a430e3fec9edc335c9251c6b52fcbba93bb31da67e11206bb36cc45515a",
+        "current_log_sha256": "c35ee823ac37f790c0271dec5e0d3afbe25ebe946528270d88145d8b18caefa9",
+        "previous_log_sha256": "85d8db8091ae21fd8999a5e896a7f55e516cf6d73623bea93c5940e906f93f3c"
+      },
+      {
+        "name": "diagnostic_constructs_optimizer",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": false,
+        "current_failure": "AssertionError",
+        "mutant_sha256": "4566be6d785a75ec2db7f24e6ab3dbe9581e33b33b7de8465a605b10b2e6305c",
+        "current_log_sha256": "285e910c9bee4cf6663040421ecfef3def5696f57ce643d0fb73420f53d2dd8e",
+        "previous_log_sha256": "c2a04d04654c1fb84f3419714676e02898bab91e6f79373dbf5d32653a94dcd7"
+      },
+      {
+        "name": "diagnostic_perturbs_pending_keys",
+        "detected_by_current_test": true,
+        "detected_by_previous_test": true,
+        "current_failure": "ValueError",
+        "mutant_sha256": "d42daa87ff7bf1a85f5f4bda74623ac6d4665eec3269ea3ce2ed25745e3c9587",
+        "current_log_sha256": "6675a2d82b3077fbbd6a19d29bc7bee04399c311774b539f53d07697fe40ed26",
+        "previous_log_sha256": "482e4407eceb99dd3102198079b0a2403521311ce321de6cdcf5fcabbb295760"
+      }
+    ],
+    "notes": "diagnostic_perturbs_pending_keys falla por la validación de producción de la cola pendiente en ambas versiones. No acredita por sí sola la comparación nueva del banco. diagnostic_constructs_optimizer solo construye el objeto y la guarda lo intercepta antes de cualquier paso."
+  },
+  "related_checks": {
+    "pytest_scope": [
+      "tests/memory",
+      "tests/models/titans",
+      "tests/cm"
+    ],
+    "pytest_passed": 743,
+    "pytest_failed": 0,
+    "pytest_skipped": 0,
+    "pytest_seconds": 73.35,
+    "process_seconds": 74.38,
+    "peak_rss_kib": 839012,
+    "full_suite_collected": 5242,
+    "full_suite_collection_errors": 0,
+    "full_suite_executed": false,
+    "full_suite_reason": "Otras carpetas incluyen pasos de optimizador sobre datos sintéticos y quedan fuera durante el bloqueo de aprendizaje.",
+    "ruff_check": true,
+    "ruff_format": true
+  },
+  "collection_fix": "Sin tests/models/titans en pythonpath, seis módulos de tests/memory fallaban al recogerse con uv run pytest. pyproject.toml añade esa ruta.",
+  "evidence_sha256": {
+    "mutations.json": "ed81c38f5c74248b92abb91e180f45fcfc58e74604d9135b2a1c83960811d8f2",
+    "run_mutations.py": "bfc82a9588865fcbcb7ea1ddfdb032b6c9177f1c5cb09ddefe0780ac96602d5a",
+    "affected.log": "8c570f9b1f9ee5a4c6dac89774c49659f536a2179031316172d981abe876639c",
+    "timed/run1.log": "77240e0a99be4354a640f0191f005d9c5d94942f0a3e411858f097d6f7cd1b6b",
+    "timed/run2.log": "22cc9cfc5ddac80e6dbc41d9e82ddb4515c24c4c91c22980ec188ba283a0c03f",
+    "timed/run3.log": "16b8ad5846a1e5f1f7d7a9355b7906aa24729feb23c3125d2bd329f08a1b8ac5"
+  },
+  "superseded_unpublished_check": {
+    "test_sha256": "3c0d0a4cb32fd0164a73180e17cac130011d697a24deaa810a97308bfd138585",
+    "trajectories": 6,
+    "pytest_seconds": 12.9,
+    "process_seconds": 13.82,
+    "peak_rss_bytes": 791293952,
+    "mutations_detected": 2,
+    "initial_fixture_failure": "El primer intento trataba el extra_state del state_dict como tensor. Se corrigió la captura recursiva del fixture, sin cambios de producción.",
+    "reason": "La revisión añadió comparaciones por evento, orden inverso con lotes completos, RNG de NumPy y Python, la guarda de aprendizaje y cinco mutaciones."
+  },
+  "limits": [
+    "Una prueba CPU con dimensiones reducidas. No acredita CUDA de la combinación C diagnóstico con M2.",
+    "Diagnóstico no equivale a penalización durante aprendizaje. M permanece desactivada.",
+    "No se recalculó cobertura. El código de producción es idéntico al del recibo de M2 ya publicado.",
+    "No hay datos financieros reales, entrenamiento ni mejora predictiva medida."
+  ]
+}
