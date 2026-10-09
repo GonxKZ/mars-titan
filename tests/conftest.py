@@ -10,6 +10,47 @@ from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, insta
 from tests.suite_support import python_shebang as _python_shebang
 from tests.suite_support import strict_problems
 
+# Modo estricto de la comprobación local: con valor 1, las pruebas marcadas con
+# `native_binding` deben ejecutarse con el enlace de MARS_TITAN_EPISODIC_NATIVE. Sin el
+# modo, la suite CPU las sigue omitiendo con su motivo cuando falta el enlace.
+REQUIRE_NATIVE_ENV = "MARS_TITAN_REQUIRE_NATIVE"
+NATIVE_MARKER = "native_binding"
+
+
+def native_required():
+    value = os.environ.get(REQUIRE_NATIVE_ENV, "")
+    if value not in ("", "0", "1"):
+        raise pytest.UsageError(f"{REQUIRE_NATIVE_ENV} solo admite 0 o 1")
+    return value == "1"
+
+
+def pytest_sessionstart(session):
+    """En modo estricto, cargar el enlace antes de recoger ninguna prueba."""
+    if not native_required():
+        return
+    from mars_titan.memory.native_backend import load_native
+
+    try:
+        load_native()
+    except Exception as error:
+        raise pytest.UsageError(
+            f"{REQUIRE_NATIVE_ENV}=1 exige un enlace válido en MARS_TITAN_EPISODIC_NATIVE: {error}"
+        ) from error
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    """En modo estricto, una prueba del enlace nativo omitida cuenta como fallo."""
+    report = yield
+    if report.skipped and item.get_closest_marker(NATIVE_MARKER) and native_required():
+        reason = report.longrepr[-1] if isinstance(report.longrepr, tuple) else report.longrepr
+        reason = str(reason).removeprefix("Skipped: ")
+        report.outcome = "failed"
+        report.longrepr = (
+            f"{REQUIRE_NATIVE_ENV}=1 y la prueba del enlace nativo se omitió: {reason}"
+        )
+    return report
+
 
 def _skip(reason: str) -> None:
     pytest.skip(reason)

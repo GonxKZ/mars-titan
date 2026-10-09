@@ -23,6 +23,15 @@ Las pruebas que requieren CUDA, un binario nativo o Node.js comprueban su dispon
 uv run --locked pytest tests/tooling tests/native
 ```
 
+Las pruebas que necesitan el enlace episódico nativo leen su ruta en `MARS_TITAN_EPISODIC_NATIVE` y, sin ella, se omiten con su motivo para que la suite CPU siga funcionando. Las paridades de MARS-TITAN llevan además la marca `native_binding`. La comprobación local debe exigirlas con el modo estricto, que carga el enlace antes de recoger ninguna prueba y convierte en fallo cualquier omisión de una prueba marcada:
+
+```bash
+MARS_TITAN_REQUIRE_NATIVE=1 MARS_TITAN_EPISODIC_NATIVE=<enlace episódico nativo compilado> \
+  uv run --locked pytest tests/memory/test_mars_titan_session_parity.py tests/memory/test_mars_titan_variant.py
+```
+
+Sin el enlace, o con una ruta que no carga, el modo estricto termina con un error de uso. Con `MARS_TITAN_REQUIRE_NATIVE=0` o sin la variable, el comportamiento es el de la suite CPU.
+
 Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutación ayudan a localizar lógica poco comprobada, pero no sustituyen los casos de comportamiento ni acreditan por sí solas la reproducibilidad de un entrenamiento.
 
 ## Protección del aprendizaje
