@@ -89,6 +89,8 @@ def write_configs(folder, variant):
     )
     campaign["neural"].update(arms={"gru": "gru"}, batch_size=BATCH)
     campaign["tabular"].update(config="tabular.json", arms={})
+    # La comparación reducida no declara los brazos de Titans-MAC.
+    campaign.pop("titans_mac")
     atomic_json(folder / "campaign.json", campaign)
     matrix = json.loads((CONFIGS / "posttraining/adapter-matrix-v2.json").read_text())
     matrix["budget"].update(seeds=[42], epochs=1, batch_size=BATCH)
