@@ -1,14 +1,12 @@
 """Comprobación CUDA de los adaptadores de Titans-MAC, sin pasos de optimizador.
 
 Se ejecuta de forma explícita (por ejemplo con `memslot gpu`). Usa float64, como los brazos
-de la campaña con máscaras, y el registrador de gradientes que no modifica pesos:
-
-- en el dispositivo, cada brazo con correcciones nulas emite exactamente las predicciones y
-  el registro del padre congelado en ese mismo dispositivo;
-- las predicciones del brazo con todos sus puntos coinciden entre CPU y el dispositivo con
-  tolerancias declaradas;
-- el ajuste recorre los mismos pasos en los dos dispositivos, con gradiente solo en los
-  adaptadores y valores iguales dentro de esas tolerancias.
+de la campaña con máscaras, y el registrador de gradientes que no modifica pesos. En el
+dispositivo, cada brazo con correcciones nulas debe emitir exactamente las predicciones y el
+registro del padre congelado en ese mismo dispositivo. Las predicciones del brazo con todos
+sus puntos deben coincidir entre CPU y el dispositivo dentro de las tolerancias declaradas,
+y el ajuste debe recorrer los mismos pasos en los dos, con gradiente solo en los adaptadores
+y valores iguales dentro de esas tolerancias.
 
 `MARS_TITAN_TITANS_ADAPTERS_CHECK_DEVICE=cpu` ensaya la lógica sin GPU y no acredita CUDA.
 """
