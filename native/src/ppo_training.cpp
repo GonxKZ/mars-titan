@@ -897,6 +897,7 @@ PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::B
         require(learning.environments > 0, "La evaluación necesita un lote positivo");
         PpoEvaluation combined;
         simulation::AccurateSum growth;
+        simulation::AccurateSum liquidated;
         uint64_t decision_id = 0;
         const PpoDecisionObserver chunk_observer = !observer ? PpoDecisionObserver{} :
             [&](std::span<const DecisionRecord> records) {
@@ -920,10 +921,18 @@ PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::B
             combined.incomplete += result.incomplete;
             combined.ruined += result.ruined;
             combined.metrics.insert(combined.metrics.end(), result.metrics.begin(), result.metrics.end());
-            require(growth.add(result.mean_log_growth * static_cast<double>(result.episodes)),
-                    "El agregado de evaluación no es finito");
+            if (result.incomplete == 0) {
+                const auto weight = static_cast<double>(result.episodes);
+                require(growth.add(result.mean_log_growth * weight) &&
+                            liquidated.add(result.mean_liquidated_log_growth * weight),
+                        "El agregado de evaluación no es finito");
+            }
         }
-        combined.mean_log_growth = combined.incomplete == 0 ? growth.value() / static_cast<double>(combined.episodes) : 0;
+        if (combined.incomplete == 0) {
+            const auto episodes = static_cast<double>(combined.episodes);
+            combined.mean_log_growth = growth.value() / episodes;
+            combined.mean_liquidated_log_growth = liquidated.value() / episodes;
+        }
         return combined;
     }
     simulation::FinancialBatch batch(inputs, workers);
@@ -1064,19 +1073,26 @@ PpoEvaluation evaluate_policy(const PpoPolicy& policy, std::vector<simulation::B
             }
         }
     }
-    // Una evaluación incompleta no tiene puntuación utilizable para seleccionar modelos.
-    if (result.incomplete != 0) {
-        result.mean_log_growth = 0;
-    } else {
+    // Una evaluación incompleta no tiene puntuación utilizable y conserva NaN en sus medias.
+    if (result.incomplete == 0) {
         const auto final_state = batch.snapshot();
         simulation::AccurateSum log_growth;
+        simulation::AccurateSum liquidated_growth;
         for (std::size_t lane = 0; lane < inputs.size(); ++lane) {
-            const auto nav = final_state.sessions[lane].account.nav;
-            const auto growth = nav == 0 ? inputs[lane].parameters.ruin_penalty
-                                        : std::log(nav) - std::log(inputs[lane].parameters.capital);
-            require(log_growth.add(growth), "La evaluación produjo un crecimiento no finito");
+            const auto& session = final_state.sessions[lane];
+            const auto& parameters = inputs[lane].parameters;
+            const auto nav = session.account.nav;
+            const auto sold = simulation::liquidated_nav(session, *inputs[lane].tape);
+            const auto growth = nav == 0 ? parameters.ruin_penalty
+                                        : std::log(nav) - std::log(parameters.capital);
+            const auto net = nav == 0 || sold == 0 ? parameters.ruin_penalty
+                                                   : std::log(sold) - std::log(parameters.capital);
+            require(log_growth.add(growth) && liquidated_growth.add(net),
+                    "La evaluación produjo un crecimiento no finito");
         }
-        result.mean_log_growth = log_growth.value() / static_cast<double>(result.episodes);
+        const auto episodes = static_cast<double>(result.episodes);
+        result.mean_log_growth = log_growth.value() / episodes;
+        result.mean_liquidated_log_growth = liquidated_growth.value() / episodes;
     }
     return result;
 }
