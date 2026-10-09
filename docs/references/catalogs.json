@@ -10,5 +10,6 @@
   {"sources": "adversarial-sources.json", "bibliography": "adversarial.bib"},
   {"sources": "markov-sources.json", "bibliography": "markov.bib"},
   {"sources": "neuroarchitecture-sources.json", "bibliography": "neuroarchitecture.bib"},
-  {"sources": "attention-replay-sources.json", "bibliography": "attention-replay.bib"}
+  {"sources": "attention-replay-sources.json", "bibliography": "attention-replay.bib"},
+  {"sources": "post-titans-sources.json", "bibliography": "post-titans.bib"}
 ]
