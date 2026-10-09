@@ -4,6 +4,11 @@ Cada brazo combina uno, dos o tres puntos de inserción con la misma población,
 mismas semillas, el mismo número de actualizaciones y la misma validación temporal.
 El padre congelado, la corrección lineal residual y la continuación completa son
 controles de todos los brazos. La matriz no añade combinaciones después de leerse.
+
+La versión 1 solo declara objetivos para padres de salida escalar. La versión 2 los
+declara por cabeza del padre: los escalares conservan los de la versión 1 y los de
+`quantile_head_v1` optimizan la pinball de sus cinco niveles. Un control que no tiene
+objetivo para una cabeza se excluye con su motivo, no se reinterpreta.
 """
 
 import itertools
@@ -13,6 +18,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_policy import INPUT_POLICIES
 from mars_titan.models.predictive_adaptation import ADAPTER_FORMS, AdapterTarget
+from mars_titan.models.quantile_head import QUANTILE_HEAD
 
 from .inputs import fingerprint
 from .selection import selection_policy
@@ -41,6 +47,13 @@ BUDGET = {
     "auxiliary_samples",
 }
 MAX_ARMS = 12
+KIND = "posttraining_adapter_matrix"
+SCALAR = "scalar"
+HEADS = (SCALAR, QUANTILE_HEAD)
+# Objetivos admitidos por cabeza. Una pinball de cinco niveles no tiene corrección
+# lineal definida sobre la predicción escalar que guarda la caché del padre.
+ADAPTER_OBJECTIVES = {SCALAR: ("neural_mae", "neural_mse"), QUANTILE_HEAD: ("neural_pinball",)}
+LINEAR_OBJECTIVES = {SCALAR: ("mae", "expected"), QUANTILE_HEAD: ()}
 
 
 def _require(condition, message):
@@ -97,8 +110,9 @@ def validate_matrix(matrix):
     _require(
         isinstance(matrix, dict)
         and set(matrix) == keys
-        and matrix["schema_version"] == 1
-        and matrix["kind"] == "posttraining_adapter_matrix"
+        and matrix["schema_version"] in (1, 2)
+        and type(matrix["schema_version"]) is int
+        and matrix["kind"] == KIND
         and matrix["input_policy"] in INPUT_POLICIES
         and matrix["final_test_opened"] is False,
         "La matriz de adaptadores no cumple su contrato",
@@ -110,15 +124,14 @@ def validate_matrix(matrix):
     points = {name: _point(spec) for name, spec in matrix["points"].items()}
     _require(points["head"]["form"] == "residual", "La cabeza usa una corrección completa")
     _require(matrix["controls"] == list(CONTROLS), "Faltan los controles comunes")
-    objectives = matrix["objectives"]
+    version_one = matrix["schema_version"] == 1
+    declared = {SCALAR: matrix["objectives"]} if version_one else matrix["objectives"]
     _require(
-        isinstance(objectives, dict)
-        and set(objectives) == {"adapters", "full_continuation", "linear_residual"}
-        and objectives["adapters"] in {"neural_mae", "neural_mse"}
-        and objectives["full_continuation"] == objectives["adapters"]
-        and objectives["linear_residual"] in {"mae", "expected"},
-        "Los adaptadores y la continuación comparten objetivo",
+        isinstance(declared, dict) and set(declared) == ({SCALAR} if version_one else set(HEADS)),
+        "La versión 1 declara objetivos escalares y la 2 uno por cada cabeza del padre",
     )
+    for head, value in declared.items():
+        _objectives_for(head, value)
     budget = matrix["budget"]
     _require(
         isinstance(budget, dict)
@@ -181,9 +194,53 @@ def validate_matrix(matrix):
     from .run import validate_case
 
     # Los casos derivados deben pertenecer al diseño emparejado del ajuste.
-    for item in cases(matrix, "0" * 64, READOUT_FAMILIES[0]):
-        validate_case(item["case"])
+    for head in declared:
+        for item in cases(matrix, "0" * 64, READOUT_FAMILIES[0], head=head):
+            validate_case(item["case"])
     return matrix
+
+
+def _objectives_for(head, value):
+    """Exigir el mismo objetivo en adaptadores y continuación y explicar cada exclusión."""
+    excluded = value.get("linear_residual") if isinstance(value, dict) else None
+    _require(
+        isinstance(value, dict)
+        and set(value) == {"adapters", "full_continuation", "linear_residual"}
+        and value["adapters"] in ADAPTER_OBJECTIVES[head]
+        and value["full_continuation"] == value["adapters"]
+        and (
+            value["linear_residual"] in LINEAR_OBJECTIVES[head]
+            or (
+                not LINEAR_OBJECTIVES[head]
+                and isinstance(excluded, dict)
+                and set(excluded) == {"excluded"}
+                and isinstance(excluded["excluded"], str)
+                and len(excluded["excluded"].strip()) >= 20
+            )
+        ),
+        "Los adaptadores y la continuación comparten el objetivo de la cabeza del padre",
+    )
+    return value
+
+
+def objectives(matrix, head):
+    """Objetivos declarados para la cabeza del padre."""
+    _require(head in HEADS, "La cabeza del padre no pertenece al contrato")
+    if matrix["schema_version"] == 1:
+        _require(head == SCALAR, "La matriz versión 1 solo declara objetivos de salida escalar")
+        return matrix["objectives"]
+    return matrix["objectives"][head]
+
+
+def excluded_controls(matrix, head):
+    """Controles sin objetivo para la cabeza, con el motivo declarado antes de ajustar."""
+    linear = objectives(matrix, head)["linear_residual"]
+    return {"linear_residual": linear["excluded"]} if isinstance(linear, dict) else {}
+
+
+def model_head(model):
+    """Cabeza de un padre neuronal: cinco cuantiles o un centro escalar."""
+    return QUANTILE_HEAD if getattr(model, "emits_quantiles", False) else SCALAR
 
 
 def _architectures(declared):
@@ -231,15 +288,6 @@ def _family(family):
     return family
 
 
-def _scalar(model):
-    # Los objetivos de la matriz actúan sobre un centro escalar, no sobre cinco cuantiles.
-    _require(
-        not getattr(model, "emits_quantiles", False),
-        "La matriz de adaptadores requiere un padre de salida escalar",
-    )
-    return model
-
-
 def arms(matrix, family):
     """Brazos aplicables a la familia, con la forma resuelta de cada punto."""
     _family(family)
@@ -266,23 +314,29 @@ def _case(matrix, seed, mode, adapter=None):
     return case
 
 
-def cases(matrix, digest, family):
-    """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones."""
+def cases(matrix, digest, family, *, head=SCALAR):
+    """Casos del ajuste, en orden fijo. El padre congelado se evalúa sin actualizaciones.
+
+    Los objetivos dependen de la cabeza del padre. Un control excluido para esa cabeza
+    no genera caso.
+    """
     _family(family)
+    declared = objectives(matrix, head)
     result = []
     for seed in matrix["budget"]["seeds"]:
-        result.append(
-            dict(
-                id=f"seed-{seed}/linear_residual",
-                control="linear_residual",
-                case=_case(matrix, seed, matrix["objectives"]["linear_residual"]),
+        if not isinstance(declared["linear_residual"], dict):
+            result.append(
+                dict(
+                    id=f"seed-{seed}/linear_residual",
+                    control="linear_residual",
+                    case=_case(matrix, seed, declared["linear_residual"]),
+                )
             )
-        )
         result.append(
             dict(
                 id=f"seed-{seed}/full_continuation",
                 control="full_continuation",
-                case=_case(matrix, seed, matrix["objectives"]["full_continuation"]),
+                case=_case(matrix, seed, declared["full_continuation"]),
             )
         )
         for arm in arms(matrix, family):
@@ -296,7 +350,7 @@ def cases(matrix, digest, family):
                 dict(
                     id=f"seed-{seed}/{arm['id']}",
                     control=None,
-                    case=_case(matrix, seed, matrix["objectives"]["adapters"], adapter),
+                    case=_case(matrix, seed, declared["adapters"], adapter),
                 )
             )
     return result
@@ -323,7 +377,7 @@ def validate_adapter(adapter):
 def targets(adapter, model):
     """Traducir los puntos del brazo a tensores del padre, sin tocar sus pesos."""
     validate_adapter(adapter)
-    family = _family(getattr(_scalar(model), "kind", None))
+    family = _family(getattr(model, "kind", None))
     hidden = model.architecture["hidden_size"]
     result = []
     for name, spec in adapter["points"].items():
@@ -390,7 +444,8 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
         and linear_features >= 1,
         "Las actualizaciones por época o la anchura lineal no son válidas",
     )
-    itemsize = next(_scalar(model).parameters()).element_size()
+    head = model_head(model)
+    itemsize = next(model.parameters()).element_size()
     updates = matrix["budget"]["epochs"] * updates_per_epoch
     # La continuación completa invalida todo lo que invalida cualquier punto aplicable.
     every = sorted({state for arm in arms(matrix, family) for state in _states(arm["points"])})
@@ -405,7 +460,7 @@ def plan(matrix, digest, family, model, *, updates_per_epoch, linear_features):
             case=None,
         )
     ]
-    for item in cases(matrix, digest, family):
+    for item in cases(matrix, digest, family, head=head):
         case = item["case"]
         if item["control"] == "linear_residual":
             # Una capa lineal float32 sobre modalidades, bits y predicción del padre.

@@ -169,7 +169,7 @@ def test_parent_cache_keys_include_the_presence_bits(tmp_path):
             cache.predict(dict(raw, presence=np.ones((2, 4), bool)))
 
 
-def test_quantile_parent_contributes_its_median_and_rejects_scalar_fits(tmp_path):
+def test_quantile_parent_contributes_its_median_and_rejects_scalar_matrices(tmp_path):
     from mars_titan.models.quantile_head import QUANTILE_HEAD, median
     from mars_titan.posttraining import adapter_matrix
 
@@ -189,10 +189,11 @@ def test_quantile_parent_contributes_its_median_and_rejects_scalar_fits(tmp_path
         np.testing.assert_array_equal(
             parent.predict(raw["inputs"], raw["presence"]), expected.double().numpy()
         )
-    with pytest.raises(ValueError, match="cuantiles"):
-        parent.continuation()
-    with pytest.raises(ValueError, match="cuantiles"):
-        parent.adapted([], seed=1)
+    # Continuación y adaptadores conservan la cabeza ordenada. El objetivo lo fija el caso.
+    assert parent.continuation().emits_quantiles
+    assert all(value.requires_grad for value in parent.continuation().parameters())
+    assert not any(value.requires_grad for value in parent.model.parameters())
+    # La versión 1 solo declara objetivos escalares y no se reinterpreta para cuantiles.
     declared, digest = adapter_matrix.read_matrix("configs/posttraining/adapter-matrix-v1.json")
     with pytest.raises(ValueError, match="escalar"):
         adapter_matrix.plan(

@@ -24,6 +24,7 @@ from mars_titan.models.predictive_adaptation import (
     objective,
     trainable_parameters,
 )
+from mars_titan.models.quantile_head import LEVELS, PINBALL, QUANTILE_HEAD, median, pinball_loss
 from mars_titan.training.checkpoints import (
     StopRequest,
     capture_rng,
@@ -41,10 +42,13 @@ from .parents import require_device
 from .selection import select_epoch, selection_policy
 
 MODES = ("reinforce", "expected", "mae", *KLPO, "neural_mae", "neural_mse")
+# Continuación o adaptador de un padre `quantile_head_v1`: pinball media de sus cinco niveles.
+# No pertenece a los ocho objetivos de los diseños de #128.
+PINBALL_MODE = "neural_pinball"
 
 
-def code_identity(*, masked=False, adapters=False):
-    """Huellas del código. Máscaras y adaptadores añaden solo sus propios módulos."""
+def code_identity(*, masked=False, adapters=False, quantiles=False):
+    """Huellas del código. Máscaras, adaptadores y pinball añaden solo sus propios módulos."""
     root = Path(__file__).parents[1]
     names = (
         "posttraining/run.py",
@@ -86,11 +90,17 @@ def code_identity(*, masked=False, adapters=False):
     )
     names += ("data/input_policy.py",) if masked else ()
     names += ("posttraining/adapter_matrix.py",) if adapters else ()
+    names += ("models/quantile_head.py",) if quantiles else ()
     return {name: sha256(root / name) for name in names}
 
 
-def case_code(case, dataset):
-    return code_identity(masked=getattr(dataset, "masked", False), adapters="adapter" in case)
+def case_code(case, dataset=None, *, masked=None):
+    """Huellas de un caso. Sin datos, la política se indica con `masked`."""
+    return code_identity(
+        masked=getattr(dataset, "masked", False) if masked is None else masked,
+        adapters="adapter" in case,
+        quantiles=case["mode"] == PINBALL_MODE,
+    )
 
 
 def validate_case(case):
@@ -109,7 +119,7 @@ def validate_case(case):
     if (
         not isinstance(case, dict)
         or not required <= set(case) <= required | {"selection", "adapter"}
-        or case["mode"] not in MODES
+        or case["mode"] not in (*MODES, PINBALL_MODE)
         or case["condition"] not in CONDITIONS
         or type(case["seed"]) is not int
         or not 0 <= case["seed"] < 2**32
@@ -147,7 +157,10 @@ def _loss(prediction, batch, grid, case, generators, device):
     values = torch.tensor(grid.values, dtype=torch.float64, device=device)
     target = torch.as_tensor(batch["target"], dtype=torch.float64, device=device)
     mode = case["mode"]
-    if mode.startswith("neural_"):
+    if mode == PINBALL_MODE:
+        # Media de pinball por fila de los cinco niveles ordenados, la pérdida del padre.
+        loss = pinball_loss(prediction, target, reduction="none")
+    elif mode.startswith("neural_"):
         error = prediction - target
         loss = error.square() if mode == "neural_mse" else error.abs()
     elif mode in KLPO:
@@ -237,6 +250,10 @@ def _validate_run(
     ):
         raise ValueError("Las dimensiones de normalización no coinciden con el adaptador")
     neural = case["mode"].startswith("neural_")
+    if neural and (case["mode"] == PINBALL_MODE) != getattr(parent, "quantiles", False):
+        raise ValueError(
+            "Un padre de cuantiles se ajusta con su pinball y uno escalar con su objetivo puntual"
+        )
     if (neural or not diagnostic) and (
         parent is None or parent.identity["checkpoint_sha256"] != dataset.parent.parent_sha256
     ):
@@ -293,6 +310,15 @@ def _identity(dataset, parent, case, grid, normalization, budget, batch_size, de
     if adapter is not None:
         # Destinos, formas, rangos y parámetros entrenables forman la identidad del brazo.
         identity["adapter"] = adapter
+    if case["mode"] == PINBALL_MODE:
+        # Solo los casos de cuantiles añaden el campo. Los demás conservan su identidad.
+        identity["objective"] = dict(
+            loss=PINBALL,
+            head=QUANTILE_HEAD,
+            levels=list(LEVELS),
+            reduction="mean_over_levels_and_rows",
+            selection_point="median",
+        )
     # Los recibos y checkpoints usan el mismo árbol de tipos JSON.
     return json.loads(json.dumps(identity, allow_nan=False))
 
@@ -539,7 +565,9 @@ def run_case(
                         model.parameters(), case["clip_norm"], error_if_nonfinite=True
                     )
                     optimizer.step()
-                    error = prediction.detach().cpu().numpy() - batch["target"]
+                    # Con cuantiles, las estadísticas del ajuste usan la mediana.
+                    point = median(prediction) if prediction.ndim == 2 else prediction
+                    error = point.detach().cpu().numpy() - batch["target"]
                     stats = state["statistics"]
                     stats["samples"] += len(error)
                     stats["real_rows" if batch["origin"] == "real" else "extra_rows"] += len(error)

@@ -222,3 +222,118 @@ def test_pending_targets_exist_and_avoid_memory_states():
         for path in declared["frozen"]:
             assert any(key == path or key.startswith(path + ".") for key in names), path
     assert pending["episodic_gru_candidate"]["targets"] == {}
+
+
+SECOND = Path("configs/posttraining/adapter-matrix-v2.json")
+REASON = "Motivo declarado antes de ajustar, con más de veinte caracteres."
+
+
+def quantile_parent(kind):
+    torch.manual_seed(1)
+    return MultimodalReference(
+        kind,
+        DIMENSIONS,
+        context=8,
+        hidden_size=32,
+        layers=2,
+        dropout=0.1,
+        transformer=dict(heads=2, feedforward_multiplier=2) if kind == "transformer" else None,
+        mask_fusion=PRESENCE_FUSION,
+        head="quantile_head_v1",
+    ).requires_grad_(False)
+
+
+def test_second_version_only_adds_objectives_for_quantile_parents():
+    first, _ = matrix()
+    second, digest = adapter_matrix.read_matrix(SECOND)
+    ignored = {"schema_version", "objectives"}
+    assert {k: v for k, v in first.items() if k not in ignored} == {
+        k: v for k, v in second.items() if k not in ignored
+    }
+    assert second["schema_version"] == 2
+    assert adapter_matrix.objectives(second, "scalar") == first["objectives"]
+    assert adapter_matrix.objectives(second, "quantile_head_v1")["adapters"] == "neural_pinball"
+    with pytest.raises(ValueError, match="escalar"):
+        adapter_matrix.objectives(first, "quantile_head_v1")
+    for family in adapter_matrix.FAMILIES:
+        scalar = adapter_matrix.cases(second, digest, family)
+        quantile = adapter_matrix.cases(second, digest, family, head="quantile_head_v1")
+        assert [item["id"] for item in quantile] == [
+            item["id"] for item in scalar if item["control"] != "linear_residual"
+        ]
+        for left, right in zip(
+            [item for item in scalar if item["control"] != "linear_residual"],
+            quantile,
+            strict=True,
+        ):
+            assert {k: v for k, v in left["case"].items() if k != "mode"} == {
+                k: v for k, v in right["case"].items() if k != "mode"
+            }
+
+
+@pytest.mark.parametrize("family", ["gru", "transformer"])
+def test_quantile_plan_keeps_equal_updates_without_the_excluded_control(family):
+    second, digest = adapter_matrix.read_matrix(SECOND)
+    first, first_digest = matrix()
+    model = quantile_parent(family)
+    with pytest.raises(ValueError, match="escalar"):
+        adapter_matrix.plan(
+            first, first_digest, family, model, updates_per_epoch=13, linear_features=1734
+        )
+    rows = adapter_matrix.plan(
+        second, digest, family, model, updates_per_epoch=13, linear_features=1734
+    )
+    assert rows[0]["control"] == "frozen_parent" and rows[0]["updates"] == 0
+    assert {row["updates"] for row in rows[1:]} == {second["budget"]["epochs"] * 13}
+    assert all(row["control"] != "linear_residual" for row in rows)
+    assert {row["case"]["mode"] for row in rows[1:]} == {"neural_pinball"}
+    arms = 8 if family == "transformer" else 4
+    assert len(rows) == 1 + len(second["budget"]["seeds"]) * (arms + 1)
+    by_arm = {row["id"]: row["trainable_parameters"] for row in rows[1:]}
+    # La cabeza de cuantiles tiene cinco salidas: 5 × 32 pesos y cinco sesgos.
+    assert by_arm["seed-42/head"] == 5 * 32 + 5
+    assert by_arm["seed-42/full_continuation"] == sum(v.numel() for v in model.parameters())
+
+
+def mutate_second(change):
+    declared = copy.deepcopy(json.loads(SECOND.read_text()))
+    change(declared["objectives"])
+    return declared
+
+
+INVALID_SECOND = {
+    "quantile_mae": lambda o: o["quantile_head_v1"].__setitem__("adapters", "neural_mae"),
+    "quantile_continuation": lambda o: o["quantile_head_v1"].__setitem__(
+        "full_continuation", "neural_mae"
+    ),
+    "quantile_point": lambda o: o["quantile_head_v1"].update(
+        adapters="neural_mae", full_continuation="neural_mae"
+    ),
+    "scalar_pinball": lambda o: o["scalar"].update(
+        adapters="neural_pinball", full_continuation="neural_pinball"
+    ),
+    "quantile_linear": lambda o: o["quantile_head_v1"].__setitem__("linear_residual", "mae"),
+    "short_reason": lambda o: o["quantile_head_v1"].__setitem__(
+        "linear_residual", {"excluded": "no"}
+    ),
+    "scalar_excluded": lambda o: o["scalar"].__setitem__("linear_residual", {"excluded": REASON}),
+    "missing_head": lambda o: o.pop("quantile_head_v1"),
+    "unknown_head": lambda o: o.__setitem__("median_head", dict(o["scalar"])),
+    "flat": lambda o: o.update(adapters="neural_mae"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(INVALID_SECOND))
+def test_second_version_rejects_objectives_that_do_not_fit_the_head(name):
+    with pytest.raises(ValueError):
+        adapter_matrix.validate_matrix(mutate_second(INVALID_SECOND[name]))
+
+
+def test_versions_do_not_mix_objective_layouts():
+    nested = copy.deepcopy(json.loads(SECOND.read_text()))
+    nested["schema_version"] = 1
+    flat = copy.deepcopy(json.loads(CONFIG.read_text()))
+    flat["schema_version"] = 2
+    for value in (nested, flat):
+        with pytest.raises(ValueError, match="versión|objetivo"):
+            adapter_matrix.validate_matrix(value)
