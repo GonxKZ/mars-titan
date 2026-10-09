@@ -11,6 +11,14 @@ HOLD_ENV = "MARS_TITAN_TRAINING_HOLD"
 DEFAULT_HOLD = Path.home() / ".local/state/mars-titan/training-hold-2000.json"
 
 
+class LearningHoldError(Exception):
+    """Ajuste rechazado por la protección local.
+
+    No hereda de RuntimeError para que los lanzadores que capturan errores operativos
+    (OSError, ValueError o RuntimeError) no lo conviertan en un fallo ordinario del intento.
+    """
+
+
 def hold_path() -> Path:
     return Path(os.environ.get(HOLD_ENV, DEFAULT_HOLD))
 
@@ -24,6 +32,16 @@ def learning_blocked(path: Path | None = None) -> bool:
     if type(value) is not bool:
         raise ValueError("La protección del aprendizaje no declara training_allowed como booleano")
     return not value
+
+
+def require_learning_allowed(action: str) -> None:
+    """Detener un punto de entrada que ajusta parámetros antes de abrir fuentes o crear salidas."""
+    path = hold_path()
+    if learning_blocked(path):
+        raise LearningHoldError(
+            f"Bloqueo de aprendizaje vigente: {action} no se ejecuta mientras {path} "
+            "no declare training_allowed verdadero"
+        )
 
 
 def install_optimizer_guard(on_block: Callable[[str], None], path: Path | None = None):
