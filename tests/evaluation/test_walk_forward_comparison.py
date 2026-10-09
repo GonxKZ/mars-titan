@@ -713,3 +713,13 @@ def test_the_ece_interval_resamples_days_and_averages_the_seeds():
     assert result["interval"] == pytest.approx([expected, expected])
     short = walk._ece([first], dict(options, block_length=6))
     assert short["interval"] is None and "bloque" in short["reason"]
+
+
+def test_a_loaded_configuration_gives_the_same_report_and_must_be_validated(joint):
+    study, report, sessions = joint
+    loaded = walk.load_config(study.config_path)
+    again, table = walk.evaluate_walk_forward(loaded, study.sources_path, study.scope)
+    assert again["contrasts"] == report["contrasts"] and again["arms"] == report["arms"]
+    assert table.equals(sessions)
+    with pytest.raises(ValueError, match="llegar validada"):
+        walk.resolve_config(json.loads(study.config_path.read_text()))

@@ -266,6 +266,21 @@ def load_config(path):
     return validate_config(config, digest, path.parent)
 
 
+def resolve_config(config):
+    """Ruta de una configuración declarada o configuración ya validada por ``validate_config``.
+
+    Una configuración derivada (por ejemplo, la de los brazos postentrenados de un padre)
+    llega ya validada, con su huella y sus ámbitos resueltos.
+    """
+    if isinstance(config, dict):
+        _require(
+            {"sha256", "resolved_scopes", "resolved_families"} <= set(config),
+            "La configuración en memoria debe llegar validada",
+        )
+        return config
+    return load_config(config)
+
+
 def validate_config(config, digest, folder):
     """Validar una configuración ya leída. ``folder`` resuelve las rutas de los protocolos.
 
@@ -1176,11 +1191,12 @@ def _strata_report(config, scored, overall, markets):
 def evaluate_walk_forward(config_path, sources_path, scope, *, ablation_sources=None):
     """Calcular el informe y la tabla por sesión de un ámbito sin escribir nada.
 
+    `config_path` es la ruta de la configuración o una configuración ya validada.
     `ablation_sources` es el manifiesto de la etapa de ablación de modalidades. Solo se
     admite si la configuración declara la ablación.
     """
     started = time.perf_counter()
-    config = load_config(config_path)
+    config = resolve_config(config_path)
     sources = load_sources(sources_path, config, scope)
     weighting, markets = config["metrics"]["market_weighting"], sources["markets"]
     ablation = None

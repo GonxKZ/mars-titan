@@ -1,6 +1,6 @@
 """Comparar la cartera larga y corta por cuartiles de los brazos de una comparación walk-forward.
 
-Lee la configuración declarada (versión 3, sección ``long_short``) y el mismo manifiesto
+Lee la configuración declarada (versión 4, sección ``long_short``) y el mismo manifiesto
 de fuentes que ``walk_forward_comparison``, con sus comprobaciones: política, vistas,
 ventanas, tramo de evaluación, reserva de 2024 cerrada y mismas filas y objetivos en todos
 los brazos. Las predicciones se leen con ``_read_predictions``, la única lectura por fila.
@@ -235,9 +235,12 @@ def _view(config, declared, keys, books, mask, market):
 
 
 def evaluate_long_short(config_path, sources_path, scope, edition):
-    """Calcular el informe y la tabla por sesión de la cartera sin escribir nada."""
+    """Calcular el informe y la tabla por sesión de la cartera sin escribir nada.
+
+    `config_path` es la ruta de la configuración o una configuración ya validada.
+    """
     started = time.perf_counter()
-    config = walk.load_config(config_path)
+    config = walk.resolve_config(config_path)
     _require(SECTION in config, "La configuración no declara la cartera larga y corta")
     declared = config[SECTION]
     sources = walk.load_sources(sources_path, config, scope)
