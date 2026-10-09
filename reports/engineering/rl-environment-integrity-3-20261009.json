@@ -1,0 +1,493 @@
+{
+  "schema_version": 1,
+  "kind": "rl_environment_integrity_third_phase",
+  "recorded_at_utc": "2026-10-09T06:06:43Z",
+  "base_revision": "1e79dd37",
+  "code_revision": "9f77dd66",
+  "issue": "https://github.com/GonxKZ/mars-titan/issues/365",
+  "scope": "Cinta real desde la edición de precios negociados reconstruidos (#379) y cortes walk-forward v2 en los entornos. Pruebas CPU con una edición sintética del formato real y lectura de la edición real. Sin aprendizaje, sin pasos de optimizador y sin GPU.",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "gpu_used": false,
+    "cuda_visible_devices": "-1",
+    "threads": 2
+  },
+  "toolchain": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "exchange_calendars": "4.13.2",
+    "gymnasium": "1.3.0",
+    "clang": "21.1.8",
+    "cmake": "4.2.3",
+    "native_preset": "native-release, objetivo mars_titan_simulation con -j2"
+  },
+  "measurements": {
+    "edition": {
+      "path": "~/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1",
+      "edition_id": "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c",
+      "access": "solo lectura"
+    },
+    "verified_rows_scan": {
+      "method": "Recorrido de los 5.012 activos con pyarrow, dos hilos, 55 s",
+      "zero_volume_rows": {
+        "US": 315342,
+        "CN": 97556
+      },
+      "zero_volume_rows_with_moved_close": {
+        "US": 36050,
+        "CN": 627
+      },
+      "calendar_sessions_without_row_inside_verified_span": {
+        "US": 57188,
+        "CN": 4868
+      },
+      "rows_outside_calendar": {
+        "US": 0,
+        "CN": 0
+      },
+      "same_day_split_and_dividend": {
+        "US": {
+          "events": 105,
+          "assets": 65
+        },
+        "CN": {
+          "events": 1286,
+          "assets": 498
+        }
+      },
+      "fractional_splits": {
+        "US": 932,
+        "CN": 1336
+      },
+      "assets_without_verified_rows": {
+        "US": 547,
+        "CN": 8
+      }
+    },
+    "full_market_tapes": {
+      "method": "build_reconstructed_tape sobre todos los activos del mercado con puntuaciones sintéticas constantes de 0,01, plazo de pago 0. Memoria residente máxima 379 MB",
+      "US_2023": {
+        "assets": 3581,
+        "requested": 4202,
+        "sessions": 250,
+        "exclusions": {
+          "no_verified_rows": 547,
+          "unverified_rows_in_tape": 70,
+          "no_verified_traded_close_at_start": 1,
+          "missing_last_session": 3
+        },
+        "zero_volume_sessions": 4610,
+        "missing_rows": 216,
+        "off_grid_opens": 3067,
+        "off_grid_closes": 2391,
+        "zero_volume_moved_closes": 428,
+        "ambiguous_same_day_events": 0,
+        "dividends": 11123,
+        "splits": 131,
+        "seconds": 36.6,
+        "missing_last_session_assets": [
+          "GEM",
+          "IBDO",
+          "PREF"
+        ]
+      },
+      "CN_2023": {
+        "assets": 799,
+        "requested": 810,
+        "sessions": 242,
+        "exclusions": {
+          "no_verified_rows": 8,
+          "unverified_rows_in_tape": 3
+        },
+        "zero_volume_sessions": 96,
+        "missing_rows": 11,
+        "off_grid_opens": 0,
+        "off_grid_closes": 0,
+        "ambiguous_same_day_events": 31,
+        "dividends": 656,
+        "splits": 34,
+        "seconds": 7.8
+      },
+      "US_2008": {
+        "assets": 2026,
+        "requested": 4202,
+        "sessions": 253,
+        "exclusions": {
+          "no_verified_rows": 547,
+          "unverified_rows_in_tape": 24,
+          "no_verified_traded_close_at_start": 1595,
+          "missing_last_session": 10
+        },
+        "zero_volume_sessions": 14571,
+        "missing_rows": 2861,
+        "off_grid_opens": 49,
+        "off_grid_closes": 63,
+        "zero_volume_moved_closes": 1937,
+        "ambiguous_same_day_events": 4,
+        "dividends": 6049,
+        "splits": 52,
+        "seconds": 42.6
+      },
+      "CN_2011": {
+        "assets": 532,
+        "requested": 810,
+        "sessions": 244,
+        "exclusions": {
+          "no_verified_rows": 8,
+          "unverified_rows_in_tape": 69,
+          "no_verified_traded_close_at_start": 200,
+          "missing_last_session": 1
+        },
+        "zero_volume_sessions": 6160,
+        "missing_rows": 289,
+        "off_grid_opens": 0,
+        "off_grid_closes": 0,
+        "ambiguous_same_day_events": 116,
+        "dividends": 399,
+        "splits": 137,
+        "seconds": 9.0
+      }
+    }
+  },
+  "items": [
+    {
+      "id": 1,
+      "title": "Cinta real desde la edición reconstruida",
+      "status": "implemented",
+      "change": "simulation/reconstructed_tape.py con filas verificadas, exclusiones con motivo, huellas de artefactos e identidad de la edición",
+      "attempts": [
+        "filas sin verificar dentro de la cinta",
+        "arrastre desde filas sin verificar",
+        "serie que termina dentro de la cinta",
+        "artefacto alterado",
+        "fila posterior al corte",
+        "manifiesto con otra base o identidad"
+      ],
+      "result": "rechazados o excluidos con motivo"
+    },
+    {
+      "id": 2,
+      "title": "Sesiones sin negociación",
+      "status": "implemented",
+      "change": "Volumen cero y filas ausentes sin apertura ejecutable y con el último cierre negociado",
+      "attempts": [
+        "compra para ejecutar en suspensión",
+        "compra decidida en una sesión sin volumen",
+        "compra en filas ausentes"
+      ],
+      "result": "sin ejecución, motivos missing_open y cash_liquidity_or_lot_limit"
+    },
+    {
+      "id": 3,
+      "title": "Rejilla de cotización y límites diarios",
+      "status": "implemented",
+      "change": "Precios en rejilla llevados a su múltiplo exacto y aperturas fuera de rejilla sin ejecución",
+      "attempts": [
+        "compra en apertura en el límite superior con residuo 5e-7",
+        "venta en el límite inferior",
+        "compra en apertura fuera de rejilla"
+      ],
+      "result": "sin ejecución. Sin la normalización, la compra en el límite superior se ejecutaba por 900 acciones"
+    },
+    {
+      "id": 4,
+      "title": "Acciones corporativas",
+      "status": "implemented",
+      "change": "Eventos del proveedor posteriores a la primera sesión. Split y dividendo el mismo día con el menor importe y sin ejecución. Plazo de pago declarado",
+      "attempts": [
+        "captura de dividendo",
+        "cobro del importe mayor en un evento ambiguo",
+        "operar en la sesión ambigua"
+      ],
+      "result": "la captura solo paga costes y el evento ambiguo abona el menor importe"
+    },
+    {
+      "id": 5,
+      "title": "Contrato reconstruido de MarketTape",
+      "status": "implemented",
+      "change": "RECONSTRUCTED_CONTRACT fijo, cierre valorado en cada sesión, prediction_fit_ends derivado de los tramos y tramos acotados por 2024",
+      "attempts": [
+        "declarar acciones completas",
+        "declarar retornos de salida",
+        "otra valoración o mercado",
+        "ajuste posterior",
+        "sesión fuera de tramo",
+        "tramo en 2024",
+        "cierre ausente"
+      ],
+      "result": "rechazados"
+    },
+    {
+      "id": 6,
+      "title": "Recibo de ventana walk-forward",
+      "status": "implemented",
+      "change": "environments/walk_forward_receipt.py con protocolo v2, ventana del protocolo, padre, labels_used_until y huellas por tramo",
+      "attempts": [
+        "límites escritos a mano",
+        "protocolo v1",
+        "etiquetas hasta la evaluación",
+        "predicciones alteradas o fuera de su decisión",
+        "predicciones de calibración en una cinta"
+      ],
+      "result": "rechazados"
+    },
+    {
+      "id": 7,
+      "title": "Entorno predictivo con ventana",
+      "status": "implemented",
+      "change": "CausalPredictionEnv(window=...) con los cuatro tramos y purga por intervalo",
+      "attempts": [
+        "cohorte anterior o posterior al tramo",
+        "etiqueta que madura en la frontera",
+        "fuente con otros cortes",
+        "restaurar con otra ventana",
+        "alterar cohortes futuras"
+      ],
+      "result": "rechazados o sin cambio en lo emitido"
+    },
+    {
+      "id": 8,
+      "title": "Reglas chinas obligatorias",
+      "status": "implemented",
+      "change": "FinancialEnv rechaza cintas chinas reconstruidas sin china_a_share_instrument",
+      "attempts": [
+        "sin reglas",
+        "lote alterado",
+        "motor nativo"
+      ],
+      "result": "rechazados"
+    }
+  ],
+  "tests": {
+    "python_new": 81,
+    "python_files": [
+      "tests/simulation/test_reconstructed_tape.py",
+      "tests/environments/test_walk_forward_receipt.py",
+      "tests/environments/test_prediction_walk_forward.py"
+    ],
+    "local_only": {
+      "file": "tests/simulation/test_reconstructed_tape_edition.py",
+      "variable": "MARS_TITAN_UNADJUSTED_EDITION",
+      "result": "2 correctas con la edición real"
+    },
+    "python_regression": {
+      "passed": 384,
+      "skipped": 2,
+      "files": "16 archivos de simulation, environments, evaluation y training sin entrenadores, con la variante nativa compilada"
+    }
+  },
+  "mutations": [
+    {
+      "name": "tape_without_grid_snapping",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_prices_on_the_quote_grid_are_exact_and_off_grid_opens_do_not_execute"
+    },
+    {
+      "name": "zero_volume_is_traded",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_only_verified_assets_enter_and_every_exclusion_has_a_reason"
+    },
+    {
+      "name": "provider_close_in_suspensions",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_orders_at_reconstructed_daily_limit_opens_do_not_fill"
+    },
+    {
+      "name": "off_grid_open_executes",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_prices_on_the_quote_grid_are_exact_and_off_grid_opens_do_not_execute"
+    },
+    {
+      "name": "ambiguous_event_executes",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_same_day_split_and_dividend_pays_the_lower_amount_without_execution"
+    },
+    {
+      "name": "ambiguous_event_pays_the_higher_cash",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_same_day_split_and_dividend_pays_the_lower_amount_without_execution"
+    },
+    {
+      "name": "split_before_dividend",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_same_day_split_and_dividend_pays_the_lower_amount_without_execution"
+    },
+    {
+      "name": "unverified_rows_admitted",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_only_verified_assets_enter_and_every_exclusion_has_a_reason"
+    },
+    {
+      "name": "carry_from_unverified_rows",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_only_verified_assets_enter_and_every_exclusion_has_a_reason"
+    },
+    {
+      "name": "missing_last_session_admitted",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_only_verified_assets_enter_and_every_exclusion_has_a_reason"
+    },
+    {
+      "name": "event_on_first_session_kept",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_only_verified_assets_enter_and_every_exclusion_has_a_reason"
+    },
+    {
+      "name": "dividend_lag_ignored",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_corporate_actions_come_from_verified_events_with_declared_payment"
+    },
+    {
+      "name": "predictions_without_fingerprint",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_predictions_must_match_the_receipt_and_their_decisions"
+    },
+    {
+      "name": "edition_identity_unchecked",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_editions_that_change_their_declaration_are_rejected[<lambda>-identidad]"
+    },
+    {
+      "name": "cutoff_unchecked",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_altered_or_post_cutoff_artifacts_are_rejected"
+    },
+    {
+      "name": "softened_contract_accepted",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_tape_contract_rejects_a_softened_reconstructed_declaration"
+    },
+    {
+      "name": "segments_need_not_cover_sessions",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_tape_contract_rejects_a_softened_reconstructed_declaration"
+    },
+    {
+      "name": "unvalued_closes_accepted",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_tape_contract_rejects_a_softened_reconstructed_declaration"
+    },
+    {
+      "name": "fit_ends_not_derived",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_tape_contract_rejects_a_softened_reconstructed_declaration"
+    },
+    {
+      "name": "segments_reach_2024",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_tape_contract_rejects_a_softened_reconstructed_declaration"
+    },
+    {
+      "name": "receipt_fold_unchecked",
+      "tests": "test_walk_forward_receipt.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_walk_forward_receipt.py::test_receipts_without_a_v2_protocol_and_2024_reserve_are_rejected[<lambda>6]"
+    },
+    {
+      "name": "labels_until_evaluation_start",
+      "tests": "test_walk_forward_receipt.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_walk_forward_receipt.py::test_labels_used_on_or_after_the_evaluation_start_are_rejected[1672531200000000]"
+    },
+    {
+      "name": "v1_protocol_accepted",
+      "tests": "test_walk_forward_receipt.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_walk_forward_receipt.py::test_a_v1_protocol_with_a_fixed_session_gap_is_rejected",
+      "note": "Sobrevivía porque el caso existente también fallaba por campos ausentes. Se añadió una prueba con el protocolo v1 versionado"
+    },
+    {
+      "name": "fingerprint_depends_on_order",
+      "tests": "test_walk_forward_receipt.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_walk_forward_receipt.py::test_fingerprint_ignores_row_order_but_not_values_or_keys"
+    },
+    {
+      "name": "fingerprint_accepts_duplicates",
+      "tests": "test_walk_forward_receipt.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_walk_forward_receipt.py::test_fingerprint_rejects_duplicates_non_finite_scores_and_ambiguous_keys[values0]"
+    },
+    {
+      "name": "window_labels_cross_end",
+      "tests": "test_prediction_walk_forward.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_prediction_walk_forward.py::test_cohorts_before_after_or_with_labels_crossing_the_segment_end_are_rejected[train]"
+    },
+    {
+      "name": "source_bounds_unchecked",
+      "tests": "test_prediction_walk_forward.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_prediction_walk_forward.py::test_the_source_cannot_declare_other_cuts_or_partition_than_the_receipt"
+    },
+    {
+      "name": "window_uses_fixed_cuts",
+      "tests": "test_prediction_walk_forward.py",
+      "result": "killed",
+      "first_failure": "tests/environments/test_prediction_walk_forward.py::test_each_window_segment_admits_its_own_cohorts[train]"
+    },
+    {
+      "name": "china_rules_optional",
+      "tests": "test_reconstructed_tape.py",
+      "result": "killed",
+      "first_failure": "tests/simulation/test_reconstructed_tape.py::test_reconstructed_chinese_tapes_require_the_a_share_rules"
+    }
+  ],
+  "parity": {
+    "base_revisions": [
+      "b02bcb9a",
+      "1e79dd37"
+    ],
+    "method": "Mundo sintético de 6 activos, 60 sesiones y semilla 11 con acciones aleatorias fijas en Python y nativo, cinta china sintética con reglas de acciones A y entorno predictivo sin ventana con estado guardado",
+    "identical": true,
+    "sha256": {
+      "tape_sha256": "eac757056e02acd3e98334c564c6097f9a2a09cc21c86d35950d68e091eba35f",
+      "python": "077b38e935acac0c17a75b6e0702ce2ed0735f1a5e393ddf9b71b9cf8464b0e0",
+      "identity": "5969cc3e5a97ef9b4657f2d921855dc3327f9c79c111d4f7bb5beff27fa18418",
+      "native": "a0771a77d5bbb9da316e2d4d750fbcbfa876c00350cbb6619f5485d7fbaf32b2",
+      "china": "6b6cc00353eb6fcd8a121774d24db41190619e3ffee469a5d6380b95bdfbf56f",
+      "prediction": "02fe748d1daba302484d54aa686f14d1e7d20582daf625eaf3012829af63c071"
+    }
+  },
+  "source_sha256": {
+    "src/mars_titan/environments/walk_forward_receipt.py": "0e06fd919103dae8d9de27b227b035e2c57b852dcaf1e1c45a9d19b60899c8c4",
+    "src/mars_titan/environments/prediction.py": "d2746c4d73c329068ca18099fa3ce56d47dd4804953c5aaf43225cd6e40b3334",
+    "src/mars_titan/simulation/reconstructed_tape.py": "a1ddc9e0349c5cedc8b18cc6cd711aab44d6d7a551d6faa6d21e299de1a7512e",
+    "src/mars_titan/simulation/market.py": "08bb701d71df20a35b768bbb239d0e263e1a4d23d83d2531850796053d60e58d",
+    "src/mars_titan/simulation/environment.py": "643498a43198a37da42e13f303c9bd0173a050b7bc7e99ab21c006c78e308ec6",
+    "src/mars_titan/data/temporal.py": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+    "tests/simulation/test_reconstructed_tape.py": "410f3eef35fcbb79d4dd9ec52abddc763c6d3cbae1cb48a0a67fa743f44b04ec",
+    "tests/simulation/unadjusted_edition_fixture.py": "a061ab4e7b6b7d1c578828ccdeda94b2d0ea15e66430e002a6f27b5cf9d979d3",
+    "tests/simulation/test_reconstructed_tape_edition.py": "08a2600c51aec8122cdc0bf5ae439ea5383ebef486e170843c38f5ccb5cbfa76",
+    "tests/environments/test_walk_forward_receipt.py": "43f51a71f6ee0a13216b8867a6c1237a10e6a48cf15f7f6d5819f4600e8e0f9d",
+    "tests/environments/test_prediction_walk_forward.py": "75ec20b83b80a1d2038669022e6d200d823131a95ae84a06cb559ad6a64c2aad",
+    "tests/environments/walk_forward_fixture.py": "67f29deeadacdffa6295f4a8b776e74e70be8ec8307ce93ddfe26e6094505374"
+  },
+  "not_executed": [
+    "Entrenamiento, postentrenamiento, RL, pilotos, evaluación científica y pasos de optimizador",
+    "Recibos reales de la campaña con máscaras, que debe escribir su orquestador",
+    "Rutas CUDA, que no existen en estos entornos",
+    "Reglas chinas en el motor nativo"
+  ]
+}

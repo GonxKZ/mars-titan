@@ -110,6 +110,103 @@ Los puntos abiertos de la primera revisión tienen ahora una corrección o una p
 
 **Paridad de la segunda fase.** Frente a `d03229b2`, un mundo sintético de 6 activos y 60 sesiones produce las mismas observaciones, recompensas, `info`, instantáneas contables y métricas de referencia en los motores Python y nativo, y la misma trayectoria predictiva. Cambian las huellas de cinta y de entorno, porque `SyntheticWorld` incluye en su identidad la huella de `environments/cohorts.py`, que contiene el contrato de capacidad. También cambian las identidades de `FinancialTrainer`, de la campaña Python y del PPO nativo, que dependen de su código. Una ejecución pausada con el código anterior no se reanuda con este.
 
+## Tercera fase: cinta real reconstruida y cortes walk-forward
+
+La [edición de precios negociados reconstruidos](../data/unadjusted-prices.md) de #379 no satisface por sí sola `MarketTape`. Esta fase la conecta con los entornos sin relajar el contrato anterior y lleva el entorno predictivo a las ventanas walk-forward de 2000. Nada se entrena ni se evalúa. Las pruebas avanzan los entornos con acciones fijas o aleatorias declaradas y no ejecutan pasos de optimizador. El [recibo de la tercera fase](../../reports/engineering/rl-environment-integrity-3-20261009.json) conserva medidas, intentos, mutaciones y paridad.
+
+### Cinta desde la edición reconstruida
+
+`simulation/reconstructed_tape.py` construye una cinta de un mercado con `build_reconstructed_tape(edition, windows, predictions, market=..., partition=..., dividend_payment_lag_sessions=...)`. Antes de leer un activo comprueba la identidad del manifiesto (`edition_id` recalculada), la base `unadjusted_reconstructed`, el corte de 2023 y la huella de cada Parquet, que se interpreta desde los mismos bytes que se han comprobado. Las reglas son estas:
+
+- **Filas verificadas.** Un activo entra solo si todas sus filas dentro de la cinta están verificadas, tiene un cierre negociado verificado no posterior a la primera sesión, sin filas dudosas entre ambos, y tiene fila en la última sesión. Si no, se excluye con uno de estos motivos: `no_verified_rows`, `unverified_rows_in_tape`, `row_outside_calendar`, `no_verified_traded_close_at_start`, `missing_last_session`, `event_outside_calendar` o `invalid_event`. Ninguna fila se rellena con precios inventados.
+- **Sesiones sin negociación.** Una fila con volumen cero y una sesión del calendario sin fila no tienen apertura ejecutable. El volumen queda en cero o ausente y el cierre conserva el último cierre negociado verificado. El cierre que el proveedor mueve en algunas suspensiones se ignora.
+- **Rejilla de cotización.** Los precios que la edición sitúa en la rejilla se llevan a su múltiplo exacto (0,01, 1/256 o 0,0001 según mercado, fecha y precio) con la tolerancia relativa de la edición, 2e-6. Sin ese paso, en la prueba de la edición sintética, una apertura guardada como 10,9999945 sobre un cierre anterior guardado como 10,000004 quedaba por debajo del límite de 11,00 y la simulación compraba 900 acciones en una sesión bloqueada al alza. Una apertura fuera de la rejilla no es ejecutable.
+- **Acciones corporativas.** Splits y dividendos proceden de los eventos del proveedor posteriores a la primera sesión. El dividendo usa el importe por acción negociada de la edición. Cuando split y dividendo coinciden en la misma sesión, la edición no permite saber si ese importe se refiere a la acción anterior o a la posterior al split. Se abona el menor de los dos importes y esa apertura no es ejecutable, de modo que ni el pago ni el precio de referencia del límite diario pueden aprovecharse. El dividendo se aplica antes que el split, como en el precio de referencia de `Portfolio`.
+- **Pago de dividendos.** La edición no tiene fechas de pago. `dividend_payment_lag_sessions` es un supuesto obligatorio y declarado. El cobro llega en la apertura de esa sesión posterior, o queda como derecho pendiente si cae fuera de la cinta.
+- **Calendario.** Las aperturas son las oficiales de XNYS o XSHG (`MarketClock.opens`) y las decisiones son las del proyecto, cinco minutos después del cierre. Así las predicciones emitidas en la decisión cumplen `prediction_times <= close_times`.
+- **Predicciones.** Cada ventana aporta sus predicciones, que deben coincidir con la huella del recibo y caer en una decisión de su tramo. Las de activos excluidos se descartan y se cuentan.
+
+`MarketTape` admite esta base solo con el tratamiento fijo `RECONSTRUCTED_CONTRACT` en su auditoría. Una cinta que declare acciones completas, retornos de salida, otra valoración o otro mercado se rechaza. Además exige un cierre valorado en cada sesión y activo, deriva `prediction_fit_ends` de los tramos walk-forward declarados y rechaza sesiones fuera de esos tramos o tramos que alcancen 2024. `FinancialEnv` rechaza una cinta china reconstruida sin las reglas de acciones A de `market_rules`, y el motor nativo sigue sin aplicarlas.
+
+| Garantía de `MarketTape` | Cinta reconstruida | Cómo se cumple o se declara |
+| --- | --- | --- |
+| Precios negociados | Parcial | Precios reconstruidos y verificados por tramos, no capturas de la época. Con precios altos la rejilla apenas discrimina |
+| Acciones corporativas completas | No | `corporate_actions_complete=false`. Escisiones registradas como splits fraccionarios o ausentes. Las ampliaciones chinas no publicadas suelen dejar sin verificar las filas anteriores. Si su fecha cae dentro de un tramo verificado, la caída exderecho aparece sin el derecho que la compensa, lo que penaliza mantener la posición pero no permite ganar |
+| Retornos de salida | No | `exit_returns="unavailable"` y `population="listed_through_2025_03"`. Ningún activo puede quedar sin valorar, así que una serie que termina dentro de la cinta se excluye |
+| Calendario de aperturas | Sí | Calendarios de `exchange_calendars` y decisión del proyecto |
+| Predicciones fuera de muestra | Sí, según el recibo | El último dato de ajuste de cada sesión es `labels_used_until` de su ventana, anterior a la evaluación |
+| Ninguna fila de 2024 | Sí | Tramos acotados por el test reservado y rechazo de filas posteriores al corte de la edición |
+| Sin ejecución en suspensiones | Sí | Apertura ausente y volumen cero o ausente en la sesión |
+| Elegibilidad sin información futura | No | La verificación de cada fila usa una constante ajustada al final de 2023 y los tramos posteriores. Exigir fila en la última sesión condiciona además el universo a llegar al final de la cinta |
+
+### Recibo de ventana walk-forward
+
+`environments/walk_forward_receipt.py` define el contrato que leerán los entornos. El orquestador de la campaña con máscaras escribirá un recibo por ventana y mercado. Los entornos no dependen de su código.
+
+| Campo | Contenido | Comprobación |
+| --- | --- | --- |
+| `kind`, `schema_version` | `walk_forward_window_receipt`, 1 | Exactos |
+| `protocol` | Configuración completa del protocolo | Versión 2, purga por intervalo y test reservado desde 2024-01-01. `build_folds` la valida |
+| `fold` | Ventana con sus cuatro tramos | Debe ser una de las ventanas que produce el protocolo. Unos límites escritos a mano no se aceptan |
+| `parent` | `id` y `sha256` del predictor ajustado en la ventana | Identificador acotado y huella hexadecimal |
+| `labels_used_until` | Última maduración de etiqueta usada en ajuste, selección y calibración, en microsegundos UTC | Anterior al inicio de la evaluación |
+| `predictions` | Por tramo, `rows` y `sha256` de las predicciones emitidas | Huella canónica de `prediction_fingerprint` |
+
+La huella ordena por instante y activo, rechaza claves repetidas y puntuaciones no finitas, y resume los instantes `int64`, los identificadores y las puntuaciones `float64`. No depende del formato en que el productor guarde las predicciones. Las predicciones de validación o calibración de un predictor seleccionado con esas etiquetas no pueden alimentar una cinta, porque su sesión sería anterior a `labels_used_until`.
+
+`CausalPredictionEnv(..., window=...)` toma los cortes del recibo y admite los cuatro tramos. Cada decisión debe caer dentro del tramo y cada etiqueta debe madurar antes de su final. Si la fuente declara límites por mercado deben coincidir. La ventana entra en la identidad, así que un estado de otra ventana no se restaura. Sin `window`, el entorno conserva sus cortes fijos y su identidad.
+
+### Costes y ejecución con datos reconstruidos
+
+| Elemento | Situación | Fuente o supuesto |
+| --- | --- | --- |
+| Comisión y diferencial | `cost_bps`, 10 pb por defecto en compras y ventas, configurable y en la identidad del entorno | Supuesto sin fuente. No varía por mercado ni por fecha |
+| Deslizamiento e impacto | Sin modelo propio más allá de `cost_bps` y del límite de participación | Supuesto declarado |
+| Límite de volumen | 1 % del volumen de la sesión de decisión, en acciones negociadas (`V/K` en la edición) | Supuesto configurable. Una decisión tomada en una sesión sin volumen no tiene capacidad |
+| Suspensiones y filas ausentes | Sin ejecución ni precio nuevo | Edición y calendario |
+| Lotes y resto impar | 100 acciones en el tablero principal y ChiNext, mínimo de 200 en STAR | [Reglas chinas](china-market-rules.md), obligatorias en cintas chinas reconstruidas |
+| Límites diarios | Banda por tablero y fecha sobre precios en la rejilla, con referencia exderecho | Reglas chinas. Sin estado ST ni días posteriores a la salida a bolsa |
+| T+1 | Una ejecución por sesión, en la apertura siguiente a la decisión | Por construcción |
+| Impuesto de timbre | Por fechas | Reglas chinas |
+| Retenciones sobre dividendos | No se modelan | Pendiente |
+| EE. UU. | Sin límites diarios ni interrupciones intradía | No representables con barras diarias |
+
+### Medidas sobre la edición real
+
+Todas las lecturas fueron de solo lectura, con dos hilos y sin GPU. Un primer recorrido de los 5.012 activos (55 s) contó en filas verificadas 315.342 sesiones US y 97.556 chinas con volumen cero, de las que 36.050 y 627 tienen un cierre distinto del anterior. Dentro de los tramos verificados faltan 57.188 sesiones US y 4.868 chinas del calendario, y no hay filas fuera del calendario. Split y dividendo coinciden en 105 eventos US de 65 activos y en 1.286 eventos chinos de 498 activos. Excluir los activos afectados habría retirado entre 31 y 116 casos por año en las cintas chinas medidas y habría condicionado el universo de la cinta a un evento posterior a su inicio. Por eso se usa la regla del menor importe sin ejecución.
+
+Después construí cintas completas con puntuaciones sintéticas constantes, que no proceden de ningún modelo:
+
+| Cinta | Activos | Sin filas verificadas | Filas sin verificar | Sin cierre al empezar | Sin última sesión | Sesiones sin volumen | Filas ausentes | Aperturas fuera de rejilla | Eventos ambiguos | Tiempo |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| US 2023 | 3.581 de 4.202 | 547 | 70 | 1 | 3 | 4.610 | 216 | 3.067 | 0 | 36,6 s |
+| CN 2023 | 799 de 810 | 8 | 3 | 0 | 0 | 96 | 11 | 0 | 31 | 7,8 s |
+| US 2008 | 2.026 de 4.202 | 547 | 24 | 1.595 | 10 | 14.571 | 2.861 | 49 | 4 | 42,6 s |
+| CN 2011 | 532 de 810 | 8 | 69 | 200 | 1 | 6.160 | 289 | 0 | 116 | 9,0 s |
+
+La memoria residente máxima fue de 379 MB. En 2008 y 2011 la mayoría de los activos sin cierre al empezar todavía no cotizaba. Los tres activos US de 2023 sin última sesión son GEM, IBDO y PREF, cuya serie termina entre el 21 y el 26 de diciembre. Son exactamente los casos en los que haría falta un retorno de salida.
+
+### Pruebas, mutación y paridad
+
+- `tests/simulation/test_reconstructed_tape.py` usa una edición sintética con el formato real: filas verificadas y sin verificar, volumen cero con cierre movido, filas ausentes, splits, dividendos, evento en la primera sesión, split y dividendo el mismo día, apertura fuera de la rejilla y aperturas en los límites diarios con el residuo de la reconstrucción. Comprueba exclusiones, identidad, ausencia de 2024, causalidad frente a filas y predicciones futuras, integridad de la edición y las huellas, y políticas guionizadas que intentan operar en suspensiones, filas ausentes, aperturas fuera de rejilla, sesiones ambiguas y límites diarios, o capturar un dividendo. La variante nativa coincide con la de Python en observaciones, recompensas e `info` sobre una cinta US reconstruida.
+- `tests/environments/test_walk_forward_receipt.py` y `test_prediction_walk_forward.py` cubren el contrato del recibo, la huella y los cuatro tramos del entorno predictivo.
+- `tests/simulation/test_reconstructed_tape_edition.py` es una prueba de humo con la edición real, cinco activos por mercado, 2023 y acciones fijas. Solo se ejecuta con `MARS_TITAN_UNADJUSTED_EDITION`.
+- Mutación dirigida: 29 mutantes sobre la cinta, el contrato, el recibo, el entorno predictivo y la exigencia de reglas chinas. Todos fallan alguna prueba. El que acepta un protocolo v1 sobrevivía porque el caso de prueba también fallaba por campos ausentes, así que añadí una prueba con el protocolo v1 versionado.
+- Paridad frente a `b02bcb9a`: la cinta sintética, las trayectorias Python y nativa, la identidad del entorno, una trayectoria con reglas chinas y la trayectoria y el estado del entorno predictivo sin ventana producen las mismas huellas.
+
+### Lo que sigue sin cubrir
+
+- La elegibilidad depende de la verificación retrospectiva y de la presencia al final de la cinta. Es un sesgo de selección declarado, no una fuga de precios, pero un resultado sobre estas cintas está condicionado a ello.
+- Retornos de salida, estado ST, días posteriores a la salida a bolsa, ampliaciones de capital, retenciones y fechas reales de pago siguen sin datos.
+- La regla del menor importe subestima el cobro cuando el importe de la edición se refiere a la acción posterior al split. En 600239.SS, en junio de 2015, 0,046154 por 1,3 da 0,06, lo que sugiere ese caso. No lo he contrastado con el anuncio de la empresa.
+- El motor nativo no aplica las reglas chinas. No hay ruta CUDA en estos entornos.
+- No existen todavía recibos reales. El orquestador de la campaña con máscaras debe escribirlos con este contrato.
+
+```bash
+MARS_TITAN_UNADJUSTED_EDITION=~/.local/state/mars-titan/unadjusted-prices-20261009/edition-v1 \
+  CUDA_VISIBLE_DEVICES=-1 uv run pytest tests/simulation/test_reconstructed_tape_edition.py
+```
+
 ## Hallazgos sobre la población preparada
 
 **Supervivencia.** De los 4.202 activos US con precios, solo 2 terminan antes de diciembre de 2023 (el primero el 13 de marzo de 2017). Los 810 activos chinos tienen datos hasta el 29 de diciembre de 2023. La población crece de 1.343 activos US en 2000 a 4.200 en 2023 sin bajas apreciables. Es una población de empresas que existían al final del periodo. Cualquier resultado sobre ella, predictivo o financiero, hereda un sesgo de supervivencia que los entornos no pueden corregir. Hace falta una lista histórica de cotizadas y bajas, con retornos de salida, o declarar el resultado como condicionado a la supervivencia hasta 2023.
@@ -134,12 +231,12 @@ Los puntos abiertos de la primera revisión tienen ahora una corrección o una p
 
 ## Comprobaciones que esperan datos reales
 
-| Comprobación | Motivo | Propuesta |
+| Comprobación | Motivo | Propuesta o estado |
 | --- | --- | --- |
-| Precios sin ajustar, splits, dividendos y bajas | Una cinta con precios ajustados y splits declarados crearía saltos falsos de patrimonio | Conciliar precios brutos y ajustados del proveedor con las acciones acreditadas, y rechazar la cinta si un split explica un salto ya ajustado |
-| Retornos de salida de activos dados de baja | Sin ellos, las bajas aparecen como cierres ausentes y las fuentes de ajuste se rechazan | Convertir cada baja en una acción acreditada con su valor de recuperación, también cero |
-| Calendario de aperturas | La ejecución depende de `open_times` reales | Derivarlo del calendario de cada bolsa y comprobar que cada apertura sigue al cierre de decisión |
-| Predicciones fuera de muestra | La cinta real exige `prediction_fit_ends` | Generar las puntuaciones con las ventanas walk-forward y copiar cada corte de sus recibos |
+| Precios sin ajustar, splits, dividendos y bajas | Una cinta con precios ajustados y splits declarados crearía saltos falsos de patrimonio | La tercera fase construye la cinta desde la edición reconstruida, solo con filas verificadas y acciones del proveedor declaradas como incompletas. Las bajas siguen sin datos |
+| Retornos de salida de activos dados de baja | Sin ellos, las bajas aparecen como cierres ausentes y las fuentes de ajuste se rechazan | Pendiente. La cinta reconstruida lo declara y excluye las series que terminan dentro de ella |
+| Calendario de aperturas | La ejecución depende de `open_times` reales | Cubierto en la tercera fase con las aperturas oficiales de XNYS y XSHG |
+| Predicciones fuera de muestra | La cinta real exige `prediction_fit_ends` | Contrato del recibo definido en la tercera fase. Faltan los recibos reales de la campaña |
 | Supervivencia | La población preparada apenas contiene bajas | Incorporar listas históricas de cotizadas y bajas con retornos de salida, o declarar los resultados como condicionados a sobrevivir hasta 2023 |
 | Estado ST y salidas a bolsa | Cambian la banda diaria de un activo | Incorporar el historial de advertencias de riesgo y fechas de admisión con su fuente |
 | Codificadores congelados | Su preentrenamiento puede ser posterior a la decisión | Registrar la fecha de corte de cada codificador y contrastar con la modalidad enmascarada |
