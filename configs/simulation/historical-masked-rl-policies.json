@@ -2,9 +2,16 @@
   "schema_version": 1,
   "kind": "historical_masked_rl_policies",
   "status": "declared_not_executed",
-  "predictor": {
-    "arms": ["transformer_compact", "titans_mac_online"],
-    "seed": 42
+  "predictor": {"seed": 42},
+  "levels": {
+    "all_predictors": {
+      "predictors": "campaign_producers",
+      "arms": ["klpo_terminal", "cash", "hold_initial", "rebalance_50"]
+    },
+    "algorithms": {
+      "predictors": ["transformer_compact", "titans_mac_online"],
+      "arms": ["ppo_clip_full_kl", "ppo_kl_penalty_adaptive", "ppo_clip_kl_epoch_stop", "double_dqn"]
+    }
   },
   "train_windows": 3,
   "universe": {

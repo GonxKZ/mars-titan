@@ -49,8 +49,19 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     stage = policy_plan.load_stage(STAGES[variant])
     estimate = policy_throughput.policy_hours(stage, RATES)
     assert estimate["status"] == "approximate" and estimate["not_measured"]
-    expected_jobs = dict(A=dict(fit=720, reference=144), B=dict(fit=240, carry=480, reference=144))
+    expected_jobs = dict(A=dict(fit=1368, reference=792), B=dict(fit=456, carry=912, reference=792))
     assert estimate["jobs"] == expected_jobs[variant]
+    levels = dict(
+        A=dict(all_predictors=dict(fit=792, reference=792), algorithms=dict(fit=576)),
+        B=dict(
+            all_predictors=dict(fit=264, carry=528, reference=792),
+            algorithms=dict(fit=192, carry=384),
+        ),
+    )
+    assert {name: value["jobs"] for name, value in estimate["levels"].items()} == levels[variant]
+    assert estimate["hours"] == pytest.approx(
+        math.fsum(value["hours"] for value in estimate["levels"].values())
+    )
     # 262 144 transiciones en recorridos de 1024, cuatro épocas de 16 minilotes de 64 y
     # 17 validaciones: al inicio y cada 16 384 transiciones.
     assert estimate["per_fit"] == dict(
@@ -71,6 +82,11 @@ def test_policy_hours_follow_budget_validations_costs_and_backends(variant):
     assert estimate["scopes"]["US"]["arms"]["cash"] * 3600 == pytest.approx(expected)
     total = math.fsum(scope["hours"] for scope in estimate["scopes"].values())
     assert estimate["hours"] == pytest.approx(total)
+    # Cada predictor del nivel completo tiene sus horas. Los comparados suman además PPO y DQN.
+    us_hours = estimate["scopes"]["US"]["predictors"]
+    assert len(us_hours) == 11 and us_hours["titans_mac_online"] > us_hours["titans_mac_frozen"]
+    assert us_hours["rnn"] == pytest.approx(us_hours["lstm"])
+    assert math.fsum(us_hours.values()) == pytest.approx(estimate["scopes"]["US"]["hours"])
 
 
 def test_variant_b_costs_less_than_a_with_the_same_rates():

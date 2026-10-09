@@ -16,6 +16,7 @@ from mars_titan.environments.walk_forward_receipt import WalkForwardWindow
 from mars_titan.evaluation.splits import build_folds
 from mars_titan.simulation import campaign_stage, window_tapes
 from mars_titan.simulation.environment import FinancialEnv
+from mars_titan.simulation.evaluation import fixed_policy
 from tests.environments import walk_forward_fixture as receipts
 from tests.simulation import unadjusted_edition_fixture as editions
 from tests.simulation.unadjusted_edition_fixture import Asset
@@ -33,10 +34,10 @@ JOB = dict(
 )
 POLICIES = dict(
     environment=dict(dividend_payment_lag_sessions=0),
-    predictor=dict(arms=["parent"]),
     universe=dict(max_assets=3),
 )
 STAGE = dict(
+    predictors=["parent"],
     policies=dict(
         environment=dict(
             capital=10000,
@@ -49,7 +50,7 @@ STAGE = dict(
         evaluation_costs_bps=[0, 10, 25],
         policies={},
         references=["cash"],
-    )
+    ),
 )
 # Liquidez decreciente por precio. DDD no tiene predicciones en la validación, EEE empieza
 # a cotizar en 2023 y CCC tiene una fila sin verificar en la evaluación de 2023.
@@ -96,7 +97,7 @@ def tapes(root, assets, *, source=None, output="stage"):
         edition(root / "edition", assets) if not (root / "edition").exists() else root / "edition"
     )
     return campaign_stage._Tapes(
-        POLICIES, source or source_for(assets), path, "edition", root / output
+        POLICIES, source or source_for(assets), path, "edition", root / output, "parent"
     )
 
 
@@ -166,9 +167,9 @@ def test_tapes_share_one_universe_and_record_an_excluded_asset_as_failed_episode
     assert [r["status"] for r in records] == ["failed"] * 3
     assert {r["reason"] for r in records} == {"universe_assets_excluded"}
     summary = campaign_stage.summarize(
-        STAGE, {"job": dict(identity=dict(arm="cash"), evaluation=records)}
+        STAGE, {"job": dict(identity=dict(predictor="parent", arm="cash"), evaluation=records)}
     )
-    assert summary["cash"]["10"] == dict(
+    assert summary["parent"]["cash"]["10"] == dict(
         episodes=1,
         completed=0,
         ruined=0,
@@ -260,6 +261,88 @@ def test_a_later_receipt_renamed_as_an_earlier_window_is_rejected_by_its_segment
 
     with pytest.raises(ValueError, match="tramos posteriores a su evaluación"):
         tapes(tmp_path, assets, source=renamed).open(JOB)
+
+
+def without(assets, missing):
+    """Fuente en la que algunos predictores no emitieron filas del mercado en un tramo."""
+    honest = source_for(assets)
+
+    def source(scope, market, window, predictor):
+        if (predictor, window) in missing:
+            return receipts.window(market, index=list(FOLDS).index(window)), None
+        return honest(scope, market, window, predictor)
+
+    return source
+
+
+def test_a_predictor_without_evaluation_predictions_fails_its_episodes(tmp_path):
+    assets = LIQUID[1:3]
+    other = dict(JOB, predictor="other")
+    store = tapes(tmp_path, assets, source=without(assets, {("other", "fold-018")}))
+    opened = store.open(other)
+    reason = window_tapes.NO_PREDICTIONS
+    assert opened.unfit is None and opened.evaluation is None
+    assert opened.failure == dict(reason=reason, window="fold-018")
+    records = campaign_stage.evaluate_policy(opened, None, STAGE, "US", backend="python")
+    assert [(r["status"], r["reason"]) for r in records] == [("failed", reason)] * 3
+    # El predictor del universo conserva su evaluación y el universo es el mismo.
+    assert store.open(JOB).evaluation is not None
+    assert store.open(JOB).universe == opened.universe
+
+
+def test_a_predictor_without_training_predictions_has_no_policy_to_fit(tmp_path):
+    assets = LIQUID[1:3]
+    other = dict(JOB, predictor="other")
+    opened = tapes(tmp_path, assets, source=without(assets, {("other", "fold-016")})).open(other)
+    reason = window_tapes.NO_PREDICTIONS
+    assert opened.unfit == dict(reason=reason, window="fold-016") and opened.failure is None
+    assert opened.train == (None,) and opened.evaluation is not None
+    fit = dict(id="fit", kind="fit")
+    report = campaign_stage.unfit_report(STAGE, opened)
+    assert [(r["status"], r["reason"]) for r in report["evaluation"]] == [("failed", reason)] * 3
+    campaign_stage.check_report(STAGE, fit, report, opened)
+    # Un ejecutor que presentara una política ajustada sin datos de ajuste se rechaza.
+    forged = dict(report, policy=dict(id="fit", sha256="a" * 64), transitions=64)
+    with pytest.raises(ValueError, match="no hay política"):
+        campaign_stage.check_report(STAGE, fit, forged, opened)
+    # Las referencias solo necesitan la evaluación y la conservan.
+    cash = fixed_policy("cash")
+    records = campaign_stage.evaluate_policy(opened, cash, STAGE, "US", backend="python")
+    assert all(r["status"] != "failed" for r in records)
+
+
+def test_the_universe_predictor_must_have_training_and_validation_predictions(tmp_path):
+    assets = LIQUID[1:3]
+    store = tapes(tmp_path, assets, source=without(assets, {("parent", "fold-017")}))
+    with pytest.raises(ValueError, match="predictor parent del universo"):
+        store.open(dict(JOB, predictor="other"))
+
+
+class Base:
+    """Campaña base mínima con el trabajo elegido de una ventana."""
+
+    def __init__(self, markets):
+        self.record = dict(path="p.parquet", sha256="c" * 64, markets=markets)
+
+    def selected(self, scope, window, predictor, seed):
+        parent = dict(receipts.PARENT)
+        return "job", dict(parent=parent, predictions=dict(evaluation=self.record))
+
+
+def test_campaign_source_reports_a_market_without_rows_as_no_predictions(tmp_path):
+    from mars_titan.data.storage import atomic_json
+
+    folder = tmp_path / "windows/US/fold-016/other/seed-42"
+    index = list(FOLDS).index("fold-016")
+    atomic_json(folder / "US.json", receipts.receipt("US", index=index))
+    receipt, values = campaign_stage.campaign_source(Base({}), tmp_path, 42)(
+        "US", "US", "fold-016", "other"
+    )
+    assert values is None and receipt.fold == "fold-016"
+    # Si la campaña declara filas del mercado, el recibo sin predicciones no le corresponde.
+    declared = Base({"US": dict(rows=10, sha256="d" * 64)})
+    with pytest.raises(ValueError, match="no corresponde al predictor elegido"):
+        campaign_stage.campaign_source(declared, tmp_path, 42)("US", "US", "fold-016", "other")
 
 
 def test_tapes_from_another_market_are_rejected(tmp_path):
