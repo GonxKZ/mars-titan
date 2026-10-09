@@ -9,7 +9,7 @@ Se revisaron las actas de [NeurIPS 2025](https://proceedings.neurips.cc/paper_fi
 | Elemento | Fuente | Estado en el proyecto |
 | --- | --- | --- |
 | Combinación de MAC `o_t = y_t ⊗ M(y_t)` | Ecuación (10) de las actas y (25) del preprint | Implementada como producto de Hadamard sin normalización ni no linealidad adicional |
-| Memoria `M(x) = x + LN(W₁σ(W₂x))`, con residual y LayerNorm | Sección 3.3 de las actas | Omitida en v1. Ahora disponible como componente desactivable |
+| Memoria `M(x) = x + LN(W₁σ(W₂x))`, con residual y LayerNorm | Sección 3.3 de las actas | Omitida en v1. Componente desactivable, activo en la receta de la campaña desde 2000 |
 | «⊗ puede ser cualquier puerta no lineal», con salidas normalizadas por pesos vectoriales aprendidos y una no linealidad | Sección de MAG, ecuación (13) de las actas y (28) del preprint | No implementada |
 | Normalización y puerta con una capa lineal antes de la proyección final | Detalles de arquitectura de ambas versiones | No implementada |
 | Expansión 4 de la memoria, convolución tras q, k y v, residual en todos los bloques | Detalles de arquitectura | No implementadas |
@@ -47,9 +47,9 @@ La combinación de residual y LayerNorm sin `gate_bias` no es aceptable. La lect
 
 ## Decisión y límites
 
-Las recetas no cambian en esta PR. Siguen con la memoria v1 y `gate_bias`, de modo que sus identidades y huellas se conservan. Propongo en #27 adoptar `memory_residual_layer_norm: true` junto a `gate_bias` para la campaña desde 2000. Como cambia la arquitectura de la memoria, necesita una identidad nueva en los cuatro brazos y su registro antes de entrenar.
+La propuesta de adoptar `memory_residual_layer_norm: true` junto a `gate_bias` en la campaña desde 2000 quedó decidida en [#27](https://github.com/GonxKZ/mars-titan/issues/27). Como cambia la arquitectura de la memoria, se declaró en una receta nueva, [`chronological-training-historical-masked.json`](../../configs/titans/chronological-training-historical-masked.json), con la memoria residual en los cuatro brazos. Las recetas v1 (`chronological-training.json` y `chronological-training-quantile.json`) conservan la memoria v1 con `gate_bias`, su contenido y sus identidades.
 
-Con residual y LayerNorm, el gradiente de la cabeza al inicio es unas trescientas veces mayor que con v1. La tasa de aprendizaje y el recorte se declararon con v1 y habría que revisarlos con la misma búsqueda que las demás variantes, sin usar el test.
+Con residual y LayerNorm, el gradiente de la cabeza al inicio es unas trescientas veces mayor que con v1. La tasa de aprendizaje se declaró con v1, así que la receta de campaña la busca entre dos casos, 10⁻⁴ y 10⁻³, con el mismo número de casos, presupuesto y selección por validación que las referencias neuronales y sin usar el test. El recorte se mantiene en 1,0. La justificación de la rejilla está en el [entrenador cronológico](titans-chronological-trainer.md#receta-de-la-campaña-y-casos-de-búsqueda).
 
 Son medidas técnicas con entradas aleatorias en CPU. No indican qué memoria predice mejor ni sustituyen la comparación con datos. La comprobación CUDA queda pendiente:
 

@@ -42,6 +42,8 @@ NEURAL, TABULAR = "neural_reference", "tabular_reference"
 TITANS = "titans_mac"
 TITANS_VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 TITANS_RECIPE = "titans_financial_chronological_v1"
+# Repite titans_walk_forward.SEARCHED sin importar PyTorch. Una prueba lo fija.
+TITANS_SEARCHED = ("learning_rate", "max_grad_norm")
 FIT, CARRY = "fit", "carry"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
@@ -63,9 +65,9 @@ EXTENSION_POINTS = {
     TITANS: dict(
         issue=23,
         pending=(
-            "El ajuste por ventana y la predicción trasladada existen y se conectan con la "
-            "sección titans_mac. Falta declararla en las campañas A y B con su presupuesto, "
-            "después de medir memoria y caudal en cuda:0 y elegir accumulation_rows"
+            "El ajuste por ventana y la predicción trasladada se conectan con la sección "
+            "titans_mac y una receta con tantos casos de búsqueda como índices neuronales. "
+            "Esta campaña no la declara"
         ),
     ),
     "mars_titan": dict(
@@ -284,10 +286,13 @@ def _episodic(section, arms, rule, policy, base):
     return dict(section, path=str(path), sha256=digest, seed=seed, candidates=candidates)
 
 
-def _titans(section, arms, rule, policy, base):
+def _titans(section, arms, rule, policy, base, count):
     """Brazos de Titans-MAC con su receta común y su control, sin importar PyTorch.
 
-    `training.titans_walk_forward` vuelve a validar la receta completa en cada ajuste.
+    Para que la búsqueda sea equitativa, la receta declara tantos casos como índices del
+    diseño ajusta cada referencia neuronal (`count`), con el mismo presupuesto y la misma
+    selección por validación. `training.titans_walk_forward` vuelve a validar la receta
+    completa en cada ajuste.
     """
     if section is None:
         return None
@@ -323,12 +328,30 @@ def _titans(section, arms, rule, policy, base):
         and isinstance(recipe.get("walk_forward"), dict),
         "La receta de Titans no aplica la cabeza común ni la regla de parada del protocolo",
     )
+    cases = recipe["walk_forward"].get("search_cases")
+    _require(
+        isinstance(cases, dict)
+        and len(cases) == count
+        and all(
+            isinstance(case, dict) and case and set(case) <= set(TITANS_SEARCHED)
+            for case in cases.values()
+        ),
+        f"La receta de Titans necesita {count} casos de búsqueda del optimizador, tantos "
+        "como índices ajusta cada referencia neuronal",
+    )
     candidates = {
         name: [
             (
-                "recipe",
-                dict(recipe=str(path), recipe_sha256=digest, variant=variant, seed=seed),
+                case,
+                dict(
+                    recipe=str(path),
+                    recipe_sha256=digest,
+                    variant=variant,
+                    seed=seed,
+                    search_case=case,
+                ),
             )
+            for case in cases
         ]
         for name, variant in mapping.items()
     }
@@ -413,7 +436,14 @@ def load_campaign(path):
         tabular=_tabular(config["tabular"], arms, policy, base),
         **{
             EPISODIC: _episodic(config.get(EPISODIC), arms, rule, policy, base),
-            TITANS: _titans(config.get(TITANS), arms, rule, policy, base),
+            TITANS: _titans(
+                config.get(TITANS),
+                arms,
+                rule,
+                policy,
+                base,
+                len(config["neural"]["case_indices"]),
+            ),
         },
     )
 

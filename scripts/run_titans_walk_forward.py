@@ -27,6 +27,7 @@ def main(argv=None):
     parser.add_argument("--recipe", type=Path, required=True)
     parser.add_argument("--variant", choices=VARIANTS, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--search-case", help="Caso de búsqueda, si la receta los declara")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--indices", type=Path, help="Índices compartidos por la ventana")
     parser.add_argument("--device", choices=("cpu", "cuda:0"), default="cuda:0")
@@ -47,6 +48,7 @@ def main(argv=None):
             device=args.device,
             indices=args.indices,
             stop=stop,
+            search_case=args.search_case,
         )
     summary = dict(status=report["status"], run_id=report.get("run_id"), output=str(args.output))
     print(json.dumps(summary, ensure_ascii=False))

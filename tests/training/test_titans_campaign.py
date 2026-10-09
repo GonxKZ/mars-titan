@@ -24,6 +24,7 @@ from mars_titan.training import masked_campaign as engine
 from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.campaign_plan import (
     TITANS,
+    TITANS_SEARCHED,
     _titans,
     check_campaign,
     load_campaign,
@@ -35,6 +36,8 @@ from tests.training.test_titans_walk_forward import Factory, ShiftFirstTarget
 from tests.training.test_walk_forward_v2_views import fixture
 
 ARM = "titans_mac_online"
+RECIPE = "configs/titans/chronological-training-historical-masked.json"
+CASES = {"lr1e-4": 1e-4, "lr1e-3": 1e-3}
 
 
 @pytest.fixture(scope="module")
@@ -57,13 +60,13 @@ def permitted(tmp_path_factory):
 
 
 def titans_campaign(folder):
-    """Campaña B reducida con un brazo Titans de una semilla y una receta técnica."""
+    """Campaña B reducida con un brazo Titans de una semilla y la receta de campaña reducida."""
     path = write_campaign(folder, arms=("gru", "ridge"))
     declared = json.loads((folder / "comparison.json").read_text())
     declared["arms"][ARM] = dict(family="titans_mac", output="quantile_head_v1", seeds=[42])
     declared["comparison"]["families"]["references_vs_zero"]["variants"].append(ARM)
     atomic_json(folder / "comparison.json", declared)
-    recipe = json.loads(Path("configs/titans/chronological-training-quantile.json").read_text())
+    recipe = json.loads(Path(RECIPE).read_text())
     recipe["predictor"].update(hidden_size=32, dtype="float64")
     recipe["recipe"].update(truncation=3, block_rows=2)
     atomic_json(folder / "titans.json", recipe)
@@ -114,8 +117,8 @@ def campaign_run(tmp_path_factory, unfused, permitted):
 def test_titans_jobs_follow_the_plan_with_the_same_rows_as_the_other_arms(campaign_run):
     summary, jobs = campaign_run.summary, campaign_run.jobs
     assert summary["status"] == "completed" and summary["completed"] == summary["planned"]
-    # B sobre US: 7 ventanas reentrenadas con un ajuste y 12 trasladadas.
-    assert sum(job["kind"] == "fit" for job in jobs) == 7
+    # B sobre US: 7 ventanas reentrenadas con dos casos de búsqueda y 12 trasladadas.
+    assert sum(job["kind"] == "fit" for job in jobs) == 7 * len(CASES)
     assert sum(job["kind"] == "carry" for job in jobs) == 12
     assert all(job["model"] == job["family"] == TITANS for job in jobs)
     assert campaign_run.factory.instances and all(
@@ -135,6 +138,14 @@ def test_titans_jobs_follow_the_plan_with_the_same_rows_as_the_other_arms(campai
                 / "receipt.json"
             ).read_text()
         )
+        if job["kind"] == "fit":
+            # Cada búsqueda ajusta con la tasa de su caso y la declara en la petición.
+            attempt = campaign_run.output / receipt["attempt"]
+            report = json.loads((attempt / "run.json").read_text())
+            fit = json.loads((attempt / "fit/run.json").read_text())
+            assert report["request"]["search_case"] == job["candidate"]
+            assert job["case"]["search_case"] == job["candidate"]
+            assert fit["identity"]["recipe"]["learning_rate"] == CASES[job["candidate"]]
         for partition in ("calibration", "evaluation"):
             record = receipt["predictions"][partition]
             assert record["rows"] == windows[job["window"]]["counts"][partition]
@@ -152,12 +163,11 @@ def test_carried_windows_use_the_anchor_state_and_declare_their_memory_policy(ca
             report = json.loads((output / receipt["report"]["path"]).read_text())
             assert receipt["parent"] == dict(id=job["id"], sha256=report["checkpoint"]["sha256"])
             continue
-        anchor = json.loads(
-            (output / "jobs" / f"US/{job['anchor']}/{ARM}/search-recipe/receipt.json").read_text()
-        )
+        name, anchor = selected_search(output, job["anchor"])
         carry = json.loads((output / receipt["report"]["path"]).read_text())
         assert receipt["parent"] == anchor["parent"]
         assert carry["anchor"]["checkpoint_sha256"] == anchor["parent"]["sha256"]
+        assert carry["anchor"]["search_case"] == name.removeprefix("search-")
         assert carry["months_since_anchor_information"] > 0
         policy = carry["memory_policy"]
         assert policy["name"] == wf.MEMORY_POLICY and policy["warmup_months"] == 12
@@ -172,7 +182,12 @@ def test_window_receipts_and_sources_include_the_titans_arm(campaign_run):
         record = json.loads(path.read_text())
         checked = read_window_receipt(record)
         assert checked.fold == job["window"]
-        receipt = json.loads((output / "jobs" / job["id"] / "receipt.json").read_text())
+        # Una ventana reentrenada publica el caso de búsqueda elegido, no los dos.
+        if job["kind"] == "fit":
+            name, receipt = selected_search(output, job["window"])
+            assert record["parent"]["id"].endswith(f"/{name}")
+        else:
+            receipt = json.loads((output / "jobs" / job["id"] / "receipt.json").read_text())
         assert record["parent"] == receipt["parent"]
     destination = engine.write_sources(campaign_run.campaign, campaign_run.views, output, "US")
     manifest = json.loads(destination.read_text())
@@ -185,7 +200,7 @@ def test_check_lists_titans_as_connected_only_when_the_campaign_declares_it(tmp_
     path = titans_campaign(tmp_path / "config")
     checked = check_campaign(path)
     assert "titans_mac" not in checked["pending_families"]
-    assert checked["counts"]["scopes"]["US"]["arms"][ARM] == {"42": dict(fit=7, carry=12)}
+    assert checked["counts"]["scopes"]["US"]["arms"][ARM] == {"42": dict(fit=14, carry=12)}
     jobs = [job for job in plan_campaign(load_campaign(path)) if job["arm"] == ARM]
     assert {(job["family"], job["model"]) for job in jobs} == {(TITANS, TITANS)}
     plain = load_campaign(path) | {TITANS: None}
@@ -216,24 +231,28 @@ def test_campaign_rejects_a_titans_recipe_without_the_protocol_rule(tmp_path):
     } == {ARM: "mac_online", "titans_mac_frozen": "mac_frozen"}
 
 
+def test_campaign_plan_repeats_the_searched_hyperparameters():
+    assert TITANS_SEARCHED == wf.SEARCHED
+
+
 def test_titans_section_requires_the_masked_input_policy(tmp_path):
     path = titans_campaign(tmp_path / "config")
     campaign = load_campaign(path)
     section = json.loads(path.read_text())[TITANS]
     arms, rule = campaign["comparison_config"]["arms"], campaign["rule"]
-    assert _titans(section, arms, rule, HISTORICAL_MASKED, path.parent) == campaign[TITANS]
+    count = len(campaign["neural"]["case_indices"])
+    assert _titans(section, arms, rule, HISTORICAL_MASKED, path.parent, count) == campaign[TITANS]
     with pytest.raises(ValueError, match="política con máscaras"):
-        _titans(section, arms, rule, STRICT_INPUTS, path.parent)
+        _titans(section, arms, rule, STRICT_INPUTS, path.parent, count)
 
 
 def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_run):
     job = next(job for job in campaign_run.jobs if job["kind"] == "fit")
     receipt = json.loads((campaign_run.output / "jobs" / job["id"] / "receipt.json").read_text())
     view = campaign_run.prepared["US"]["windows"][job["window"]]
-    case = load_campaign(campaign_run.campaign)[TITANS]["candidates"][ARM][0][1]
     run = SimpleNamespace(
         job=job,
-        case=case,
+        case=job["case"],
         view=Path(view["path"]),
         view_sha256=view["sha256"],
         folder=campaign_run.output / receipt["attempt"],
@@ -247,13 +266,20 @@ def test_fit_executor_returns_the_completed_window_only_for_its_view(campaign_ru
         wf.titans_fit(SimpleNamespace(**vars(run) | dict(view_sha256="0" * 64)), device="cpu")
 
 
+def selected_search(output, window):
+    """Búsqueda elegida en una ventana: menor MAE de validación y, si empatan, el nombre."""
+    receipts = {
+        path.parent.name: json.loads(path.read_text())
+        for path in (output / "jobs" / f"US/{window}/{ARM}").glob("search-*/receipt.json")
+    }
+    assert len(receipts) == len(CASES)
+    name = min(receipts, key=lambda key: (receipts[key]["score"], key))
+    return name, receipts[name]
+
+
 def carry_job(campaign_run):
     job = next(job for job in campaign_run.jobs if job["kind"] == "carry")
-    receipt = json.loads(
-        (
-            campaign_run.output / "jobs" / f"US/{job['anchor']}/{ARM}/search-recipe/receipt.json"
-        ).read_text()
-    )
+    _, receipt = selected_search(campaign_run.output, job["anchor"])
     windows = campaign_run.prepared["US"]["windows"]
     return (
         campaign_run.output / receipt["attempt"],

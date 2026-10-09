@@ -200,7 +200,9 @@ def main():
         "recorded_at_utc": datetime.now(UTC).isoformat(),
         "commit": commit,
         "command": (
-            "uv run --no-sync python benchmarks/titans_chronological_memory.py --output <recibo>"
+            "uv run --no-sync python benchmarks/titans_chronological_memory.py "
+            f"--recipe {args.recipe} --device {args.device} --rows {args.rows} "
+            f"--accumulation-rows {args.accumulation_rows} --output <recibo>"
         ),
         "environment": "CUDA_VISIBLE_DEVICES=-1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2"
         if device.type == "cpu"
