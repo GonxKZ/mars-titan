@@ -187,6 +187,7 @@ if(MARS_TITAN_BUILD_SIMULATION)
     if(MARS_TITAN_BUILD_PPO)
         include(cmake/TorchDependencies.cmake)
         mars_titan_find_torch()
+        include(cmake/LearningHold.cmake)
         add_library(mars_titan_ppo STATIC src/ppo_policy.cpp src/ppo_training.cpp
             src/episodic_memory.cpp src/policy_context.cpp src/learning_replay.cpp)
         target_include_directories(mars_titan_ppo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -209,7 +210,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
         target_link_libraries(mars_titan_klpo_learning PUBLIC mars_titan_klpo_collection)
         mars_titan_configure_target(mars_titan_klpo_learning)
         add_executable(mars-titan-ppo src/ppo_main.cpp src/ppo_experiment.cpp)
-        target_link_libraries(mars-titan-ppo PRIVATE mars_titan_ppo mars_titan_ppo_files)
+        target_link_libraries(mars-titan-ppo PRIVATE mars_titan_ppo mars_titan_ppo_files
+            mars_titan_learning_hold)
         mars_titan_configure_target(mars-titan-ppo)
         list(APPEND mars_analysis_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_policy.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/klpo_collection.cpp"
@@ -222,7 +224,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_inputs.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/decision_trace.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_main.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp")
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/ppo_experiment.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/learning_hold.cpp")
         if(BUILD_TESTING)
             add_executable(klpo_reference_tests tests/klpo_reference_tests.cpp)
             target_link_libraries(klpo_reference_tests PRIVATE mars_titan_klpo_collection)
@@ -368,6 +371,8 @@ if(MARS_TITAN_BUILD_SIMULATION)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_checkpoints.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_inputs.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/ppo_experiment.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/learning_hold.hpp"
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/LearningHold.cmake"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/episodic_memory.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/policy_context.hpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/mars_titan/learning_replay.hpp"

@@ -1,5 +1,6 @@
 #include "mars_titan/ppo_experiment.hpp"
 #include "mars_titan/decision_trace.hpp"
+#include "mars_titan/learning_hold.hpp"
 #include "mars_titan/ppo_checkpoints.hpp"
 #include "mars_titan/ppo_inputs.hpp"
 #include "mars_titan/ppo_training.hpp"
@@ -1893,6 +1894,9 @@ Json run_ppo_experiment(const PpoExperimentOptions& options,
     if (options.audit_run) {
         return run_audit(options, config, stop_requested, started);
     }
+    // La auditoría congelada no ajusta parámetros. El entrenamiento se detiene antes de leer
+    // fuentes o crear la salida si la protección local no lo permite.
+    require_learning_allowed("el entrenamiento PPO nativo");
     preflight_memory(options, config);
     auto inputs = load_inputs(options, config);
     require_ram_budget();
