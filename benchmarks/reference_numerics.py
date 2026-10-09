@@ -6,7 +6,7 @@ autocast BF16 se miden solo para documentar por qué se descartan: salida, pérd
 gradiente de cada lote y gradiente acumulado en varios lotes sin optimizador. También
 comprueba cuDNN en las recurrentes, el backend de SDPA y el pico de memoria por lote.
 
-    PYTHONPATH=src python benchmarks/reference_numerics.py VIEW --output numerica.json
+    PYTHONPATH=src python benchmarks/reference_numerics.py lotes.pt --output numerica.json
 """
 
 import argparse
@@ -23,10 +23,15 @@ import torch
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 sys.path.insert(0, str(Path(__file__).parent))
-from reference_kernels import CASES, INPUT_POLICY, apply_precision, build, resident  # noqa: E402
+from reference_kernels import (  # noqa: E402
+    CASES,
+    apply_precision,
+    build,
+    resident,
+    stored_batches,
+)
 
 from mars_titan.models.quantile_head import pinball_loss  # noqa: E402
-from mars_titan.training import reference_run  # noqa: E402
 
 MODES = {
     "fp32_strict": dict(matmul=False, cudnn=False, autocast=False),
@@ -131,9 +136,10 @@ def precision_study(model, batches, kind):
 
 def cudnn_report(model, batch):
     """Comprobar `_cudnn_rnn` y que los pesos recurrentes formen un único bloque."""
+    activities = [torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA]
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CUDA]) as prof:
+        with torch.profiler.profile(activities=activities) as prof:
             emitted = model(batch["inputs"], batch["presence"])
             pinball_loss(emitted, batch["target"]).backward()
             torch.cuda.synchronize()
@@ -141,8 +147,9 @@ def cudnn_report(model, batch):
     names = {event.key for event in prof.key_averages()}
     return dict(
         cudnn_enabled=torch.backends.cudnn.enabled,
-        cudnn_rnn_forward=any("_cudnn_rnn" in name and "backward" not in name for name in names),
-        cudnn_rnn_backward=any("_cudnn_rnn_backward" in name for name in names),
+        cudnn_rnn_forward="aten::_cudnn_rnn" in names,
+        cudnn_rnn_backward="aten::_cudnn_rnn_backward" in names,
+        rnn_kernels=sorted(name[:80] for name in names if "rnn" in name.lower())[:8],
         noncontiguous_weight_warnings=sum(
             "contiguous chunk" in str(item.message) for item in caught
         ),
@@ -203,7 +210,7 @@ def peak_memory(model, batch, sizes):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("view", type=Path)
+    parser.add_argument("batches_file", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--batches", type=int, default=8)
@@ -214,12 +221,8 @@ def main():
         raise RuntimeError("Se necesita CUDA")
     device = torch.device("cuda:0")
     apply_precision("strict")
-    dataset = reference_run.configured_corpus(args.view, input_policy=INPUT_POLICY)
-    loaded = []
-    for batch in dataset.batches(partition="train", batch_size=args.batch_size, epoch=0, seed=42):
-        loaded.append(batch)
-        if len(loaded) == args.batches:
-            break
+    saved, loaded = stored_batches(args.batches_file, args.batch_size)
+    loaded = loaded[: args.batches]
     batches = [resident(batch, device) for batch in loaded]
     dimensions = {name: value.shape[-1] for name, value in loaded[0]["inputs"].items()}
     results = {}
@@ -227,7 +230,7 @@ def main():
         if args.cases and name not in args.cases:
             continue
         size = max(args.batch_size, max(args.memory_sizes))
-        model = build(case, dimensions, dataset.context, size).to(device).train()
+        model = build(case, dimensions, saved["context"], size).to(device).train()
         entry = dict(kind=case["kind"], architecture=case["architecture"])
         entry["precision"] = precision_study(model, batches, case["kind"])
         if case["kind"] in ("rnn", "lstm", "gru"):
