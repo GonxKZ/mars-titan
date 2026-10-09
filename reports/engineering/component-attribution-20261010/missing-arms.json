@@ -3,7 +3,7 @@
   "kind": "comparison_matrix_missing_arms",
   "matrix": {
     "name": "campaign-a-comparison-matrix",
-    "sha256": "9865d05280fb8bb2a316e6a994fddc392478ec17cebd5925eb43c0c57382cb59"
+    "sha256": "ba0868921d9065f1b468c4b8aed7593e9a103cf1a4cba418fc840cc3e1044368"
   },
   "hours": {
     "basis": "projected",
@@ -35,7 +35,7 @@
       "contrasts": 15
     },
     "titans_reference_mac": {
-      "condition": "Brazo con la implementaci\u00f3n p\u00fablica de referencia de Titans-MAC. Solo existe si el contraste de implementaciones lo recomienda y se aprueba su ajuste en la campa\u00f1a",
+      "condition": "Brazo ajustado con una implementaci\u00f3n p\u00fablica de Titans-MAC. La revisi\u00f3n de #434 recomend\u00f3 conservar el n\u00facleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su c\u00f3digo, as\u00ed que no hay brazo previsto. Solo existir\u00eda con una aprobaci\u00f3n expresa",
       "issue": 434,
       "contrasts": 2
     },

@@ -12,7 +12,7 @@
       "issue": 363
     },
     "titans_reference_mac": {
-      "condition": "Brazo con la implementación pública de referencia de Titans-MAC. Solo existe si el contraste de implementaciones lo recomienda y se aprueba su ajuste en la campaña",
+      "condition": "Brazo ajustado con una implementación pública de Titans-MAC. La revisión de #434 recomendó conservar el núcleo, que coincide en FP64 con la memoria de lucidrains/titans-pytorch, y no incorporar su código, así que no hay brazo previsto. Solo existiría con una aprobación expresa",
       "issue": 434
     },
     "mars_titan_m1_k4_first_read": {

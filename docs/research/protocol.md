@@ -131,7 +131,7 @@ La [matriz de comparaciones](metrics.md#matriz-de-comparaciones-y-atribución-po
 | Entre familias | ¿Qué familia predice mejor que cada una de las demás con las mismas filas? | En la campaña |
 | MARS-TITAN frente a cada familia | ¿Cada variante de MARS-TITAN (M0 a M3, K = 2 y 4, primera lectura y B6) mejora a cada referencia, y cuánto? | En la campaña, salvo la primera lectura y B6, que entran con los componentes de integración |
 | CM-v1 frente a cada familia | ¿B, B+C, B+M y B+C+M mejoran a cada referencia? | En la campaña |
-| Núcleo frente a la referencia pública | ¿Nuestro Titans-MAC predice como la implementación pública de referencia, y cuánto añaden nuestras ampliaciones sobre ella? | Pendiente de #434 y de su aprobación |
+| Núcleo frente a la referencia pública | ¿Nuestro Titans-MAC predice como la implementación pública de referencia, y cuánto añaden nuestras ampliaciones sobre ella? | Sin brazo previsto. La revisión de implementaciones de #434 recomendó conservar el núcleo, cuya memoria coincide en FP64 con la referencia |
 | Cadena por etapas | ¿Posentrenar el padre del año anterior mejora a reentrenar desde cero, a trasladarlo sin cambios o a continuarlo entero? | Pendiente del plan por etapas |
 | Control en línea | ¿La ventaja de MARS-TITAN viene solo de seguir aprendiendo con etiquetas maduras? Un Transformer recibe las mismas etiquetas en el mismo instante | Pendiente del plan por etapas |
 | Escalera de Titans | ¿Cuánto añade cada pieza, en un orden fijado, del Transformer compacto a MARS-TITAN con M3? | En la campaña |

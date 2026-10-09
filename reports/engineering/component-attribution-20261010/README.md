@@ -37,7 +37,7 @@ sin brazo con nombre.
 | Brazos con plan propio | Contrastes que esperan |
 | --- | ---: |
 | `transformer_compact_online` (control en línea) | 15 |
-| `titans_reference_mac` (referencia pública, #434) | 2 |
+| `titans_reference_mac` (referencia pública, sin brazo previsto tras #434) | 2 |
 | `mars_titan_m1_k4_first_read` (integración) | 11 |
 | `mars_titan_b6` (integración) | 11 |
 | `mars_titan_b6_bias` (integración) | 3 |
@@ -81,9 +81,11 @@ Los lotes que solo sirven juntos son tres:
   congelado (unas 189 h proyectadas) y cambiar el padre que admite el lector, que hoy solo
   acepta `mac_online`.
 - Los dos brazos con plan propio que más contrastes esperan son el control en línea y los
-  de la integración. La referencia pública de Titans costaría, como un ajuste de
-  `titans_mac_online`, unas 94 h proyectadas más el arnés de #434. El control en línea no
-  tiene coste estimado porque su regla de actualización aún no está fijada.
+  de la integración. El control en línea no tiene coste estimado porque su regla de
+  actualización aún no está fijada. La referencia pública de Titans costaría, como un
+  ajuste de `titans_mac_online`, unas 94 h proyectadas, pero la revisión de #434
+  recomendó conservar el núcleo y no hay brazo previsto. Sus dos contrastes quedan
+  declarados con esa condición.
 - El juego de Shapley con las ocho piezas de Titans no se puede completar con ningún
   brazo: 236 de sus 256 coaliciones activan una pieza sin aquella de la que depende.
 
