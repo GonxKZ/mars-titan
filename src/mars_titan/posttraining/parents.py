@@ -117,22 +117,19 @@ class FrozenParent:
             raise ValueError("El padre no produce una predicción finita por fila")
         return result
 
-    def _require_scalar_weights(self):
+    def _require_neural(self):
+        # Un padre de cuantiles conserva su cabeza ordenada. El caso declara su pinball y
+        # `run._validate_run` rechaza un objetivo que no corresponda a la cabeza.
         if self.kind not in NEURAL:
             raise ValueError("La continuación y los adaptadores requieren un padre neuronal")
-        if self.quantiles:
-            # Sus objetivos actúan sobre un centro escalar. La pinball de cinco niveles no.
-            raise ValueError(
-                "Un padre de cuantiles solo admite controles sobre su mediana congelada"
-            )
 
     def continuation(self):
-        self._require_scalar_weights()
+        self._require_neural()
         return copy.deepcopy(self.model).requires_grad_(True)
 
     def adapted(self, targets, *, seed):
         """Copiar el padre congelado con correcciones nulas en los destinos declarados."""
-        self._require_scalar_weights()
+        self._require_neural()
         return adapted_copy(self.model, targets, seed=seed)
 
 

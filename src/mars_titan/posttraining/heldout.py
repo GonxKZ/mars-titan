@@ -20,6 +20,7 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.environments.actions import ActionGrid
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.models.predictive_adaptation import gaussian_log_probabilities
+from mars_titan.models.quantile_head import MEDIAN_INDEX, QUANTILE_COLUMNS
 from mars_titan.training.checkpoints import StopRequest
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.experiment_resources import GpuLease
@@ -31,7 +32,7 @@ from .evaluation import centers
 from .inputs import adapter_features
 from .parent_selection import matching_parents, matching_seeds, parent_for_seed
 from .parents import load_parent
-from .run import _best_state, build_model, code_identity
+from .run import _best_state, build_model, case_code, code_identity
 
 PARTITIONS = ("calibration", "evaluation")
 
@@ -50,7 +51,11 @@ def evaluate_partition(
     batch_size=256,
     predictor=None,
 ):
-    """Recorrer un bloque posterior con el estado ya seleccionado y acumuladores acotados."""
+    """Recorrer un bloque posterior con el estado ya seleccionado y acumuladores acotados.
+
+    Un modelo de cuantiles escribe sus cinco niveles con las columnas de la cabeza y su
+    mediana como predicción, el esquema común de la comparación walk-forward.
+    """
     if partition not in PARTITIONS or dataset.temporal is None:
         raise ValueError("Solo se admiten calibración y evaluación de una vista temporal")
     if (
@@ -80,6 +85,7 @@ def evaluate_partition(
                 predictions = dict(
                     prediction=inherited, parent=inherited, zero=np.zeros(len(inherited))
                 )
+                levels = {}
                 if predictor is not None:
                     predictions["prediction"] = predictor.predict(batch["inputs"], *extra)
                 if model is not None:
@@ -90,12 +96,21 @@ def evaluate_partition(
                         neural=neural,
                         device=device,
                     )
-                    probability = (
-                        gaussian_log_probabilities(center, values, grid.scale).exp().cpu().numpy()
-                    )
-                    predictions.update(
-                        prediction=grid.median(probability), center=center.cpu().numpy()
-                    )
+                    if center.ndim == 2:
+                        quantiles = center.cpu().numpy()
+                        point = quantiles[:, MEDIAN_INDEX]
+                        predictions.update(prediction=point, center=point)
+                        levels = dict(zip(QUANTILE_COLUMNS, quantiles.T, strict=True))
+                    else:
+                        probability = (
+                            gaussian_log_probabilities(center, values, grid.scale)
+                            .exp()
+                            .cpu()
+                            .numpy()
+                        )
+                        predictions.update(
+                            prediction=grid.median(probability), center=center.cpu().numpy()
+                        )
                 for name, prediction in predictions.items():
                     errors[name].update(
                         batch["market"], batch["prediction_at"], prediction - batch["target"]
@@ -110,6 +125,7 @@ def evaluate_partition(
                         ),
                         target=batch["target"],
                         **predictions,
+                        **levels,
                     )
                 )
 
@@ -212,7 +228,7 @@ def _jobs(reference, tabular, adjustments, *, arm="US"):
 def _adjustment(path, report, parent, device):
     identity = report["identity"]
     case = identity["case"]
-    code = code_identity(masked=parent.masked, adapters="adapter" in case)
+    code = case_code(case, masked=parent.masked)
     if identity["parent"] != parent.identity or identity["code"] != code:
         raise ValueError("El ajuste no conserva la identidad del padre o su implementación")
     grid = ActionGrid.from_dict(identity["grid"])
