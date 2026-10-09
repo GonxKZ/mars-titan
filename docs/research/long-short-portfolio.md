@@ -126,6 +126,14 @@ defectos introducidos, después de añadir pruebas para los que sobrevivieron en
 primera pasada (redondeo de $k$, drawdown sin capital inicial, réplicas desordenadas
 y primera semilla en lugar de la media).
 
+## Coste
+
+Con datos sintéticos de las formas del ámbito US de la campaña A (19 ventanas,
+12.826.460 filas de evaluación, 23 brazos, 64 series y una edición sintética de
+4.126 activos), la cartera tardó 860 s con un pico de 1,96 GiB en un proceso con dos
+hilos y la CPU compartida. El [informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
+detalla las condiciones.
+
 ## Qué no permite afirmar
 
 El rendimiento de una cartera con costes ilustrativos no es una estimación de lo que

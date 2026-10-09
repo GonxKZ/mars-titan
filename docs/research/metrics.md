@@ -948,6 +948,15 @@ semilla y ventana en el ámbito US, la extrapolación lineal ronda la media hora
 en un proceso. Es una estimación, no una medida de la campaña real, y no
 justifica por ahora otra implementación.
 
+La versión 4 se midió después a la escala del ámbito US de la campaña A, con datos
+sintéticos de las mismas formas: 19 ventanas, 12.826.460 filas de evaluación,
+3.087.269 de calibración, 23 brazos y 64 series de brazo y semilla. La comparación
+sin estratos tardó 1.678 s con un pico de 1,90 GiB y la cartera larga y corta 860 s
+con 1,96 GiB, en un proceso con dos hilos y la CPU compartida (carga media de 14 a
+18). El tiempo crece casi linealmente con las filas leídas, unos 2 µs por fila y
+serie. El [informe de escala](../../reports/engineering/evaluation-scale-20261009/README.md)
+recoge las cuatro medidas, sus condiciones y la extrapolación al diseño conjunto.
+
 ## Qué no demuestran estas métricas
 
 Ninguna de estas cifras procede todavía de datos de mercado. El bloqueo de
