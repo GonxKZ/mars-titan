@@ -214,6 +214,8 @@ public:
     void restore_random_state(const PpoRandomState& state);
 
     [[nodiscard]] std::size_t observation_width() const noexcept;
+    [[nodiscard]] std::size_t memory_budget() const noexcept;
+    [[nodiscard]] std::string critic_fingerprint() const;
     [[nodiscard]] const PpoHyperparameters& hyperparameters() const noexcept;
     [[nodiscard]] const std::string& device() const noexcept;
     [[nodiscard]] uint64_t seed() const;

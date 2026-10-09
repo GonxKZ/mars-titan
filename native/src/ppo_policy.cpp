@@ -1369,6 +1369,15 @@ void PpoPolicy::restore_random_state(const PpoRandomState& state) {
 }
 
 std::size_t PpoPolicy::observation_width() const noexcept { return impl_->width; }
+std::size_t PpoPolicy::memory_budget() const noexcept { return impl_->budget; }
+std::string PpoPolicy::critic_fingerprint() const {
+    require(!impl_->terminal_failed && !impl_->architecture.double_dqn,
+            "La política no conserva una fila de valor válida");
+    const auto bits = impl_->critic_bits().to(at::kCPU);
+    std::string material(static_cast<std::size_t>(bits.numel()) * sizeof(int32_t), '\0');
+    std::memcpy(material.data(), bits.const_data_ptr<int32_t>(), material.size());
+    return simulation::content_sha256(material);
+}
 const PpoHyperparameters& PpoPolicy::hyperparameters() const noexcept {
     return impl_->parameters;
 }
