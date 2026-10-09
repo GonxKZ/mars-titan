@@ -28,7 +28,11 @@ deduce una fecha de publicación a partir de un periodo contable.
 Las entradas deben estar disponibles en la decisión. Las etiquetas deben madurar
 después. Los datos de entrenamiento no pueden cruzar el inicio de 2023. La
 validación usa decisiones y etiquetas de 2023. Las fechas de 2024 en adelante
-se rechazan antes de decidir.
+se rechazan antes de decidir. Si la fuente declara `partition`, debe coincidir
+con la del entorno. Así, la validación walk-forward que empieza en diciembre de
+2022 no puede recorrerse como entrenamiento aunque sus fechas sean anteriores
+a 2023. Los cortes fijos todavía rechazan esa validación, que necesitará los
+límites de su supervisión y otra identidad del entorno.
 
 Una llamada a `step` registra todas las acciones de la cohorte. Después avanza
 al siguiente instante y devuelve únicamente los créditos cuya etiqueta ya ha
@@ -86,12 +90,21 @@ el estado del entorno. El cálculo de percentiles de la rejilla admite hasta
 Los temporales del cálculo y la memoria del llamador son adicionales. Ese
 cálculo no necesita cargar las modalidades completas en RAM.
 
-`snapshot` exporta tipos JSON simples con identidad, cursor, reloj, cohorte
-actual, etiquetas pendientes y generadores aleatorios. `restore` comprueba
-la identidad y la huella de la cohorte actual antes de cambiar el estado.
-El contenedor de checkpoint del entrenamiento debe verificar la integridad
-del archivo completo. El entorno no incorpora pesos, optimizador ni el corpus
-dentro de su estado.
+`snapshot` exporta, con el esquema 2, tipos JSON simples con identidad,
+cursor, reloj, cohorte actual, decisiones pendientes, huellas de sus cohortes
+de origen, reinicios abandonados y generadores aleatorios. Las decisiones
+pendientes no incluyen su objetivo. `restore` comprueba la identidad y la
+huella de la cohorte actual, vuelve a leer cada cohorte de origen, verifica su
+huella, activo y maduración y recupera desde ella los objetivos. Un checkpoint
+no puede revelar ni sustituir etiquetas inmaduras. El esquema 1, que sí las
+contenía, se rechaza.
+
+Un reinicio con decisiones tomadas no emite sus créditos pendientes. El estado
+acumula los episodios abandonados y los créditos perdidos para que los informes
+puedan declararlos. El contenedor de checkpoint del entrenamiento debe verificar
+la integridad del archivo completo. El entorno no incorpora pesos, optimizador
+ni el corpus dentro de su estado. La [auditoría adversarial](rl-environment-integrity.md)
+recoge los intentos de trampa sobre este entorno y sus límites.
 
 La comprobación de Gymnasium avisa de que el espacio numérico no tiene cotas
 estadísticas fijadas. Las entradas reales sí deben ser finitas y representables

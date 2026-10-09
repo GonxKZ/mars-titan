@@ -27,6 +27,17 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
     state = env.book.snapshot()["state"]
     completed = nav is not None
     net_return = nav / initial - 1 if completed else None
+    # La recompensa valora al cierre sin pagar la salida. Se informa aparte, sin cambiarla.
+    exit_costs = (
+        math.fsum(
+            quantity * env.tape.prices[env.cursor, env.tape.assets.index(asset), 3]
+            for asset, quantity in env.book.positions.items()
+        )
+        * env.cost_bps
+        / 10000
+        if completed
+        else None
+    )
     if completed and (not math.isfinite(net_return) or net_return < -1 or not 0 <= drawdown <= 1):
         raise ValueError("La valoración no conserva los límites de una cartera sin deuda")
     return dict(
@@ -57,6 +68,11 @@ def evaluate(env, policy, *, seed=42, check_resources=None):
         ending_positions=env.book.positions,
         pending_orders=env.book.orders,
         ruin_reward_penalty=env.ruin_penalty if reason == "ruin" else None,
+        terminal_liquidation=dict(
+            basis="final_close_minus_cost_bps",
+            estimated_costs=exit_costs,
+            net_return=(nav - exit_costs) / initial - 1 if completed else None,
+        ),
         elapsed_seconds=time.perf_counter() - started,
     )
 
