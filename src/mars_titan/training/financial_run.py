@@ -285,27 +285,15 @@ class _Pass:
     starts: dict = field(default_factory=dict)
 
 
-class ChronologicalTrainer:
-    """Ajustar un control de Titans-MAC recorriendo instantes de decisión en orden.
+class ChronologicalInference:
+    """Recorrer las fases de un predictor por instantes con la política de memoria declarada.
 
-    En cada evento se aplican primero las etiquetas maduras de ese instante. Si el
-    tramo diferenciable ya contiene `truncation` instantes de decisión, se actualiza
-    con esas etiquetas y se cortan los grafos. Después se predicen las entradas del
-    instante con los parámetros vigentes.
+    Cada recorrido empieza con el estado inicial de cada flujo, observa el calentamiento de
+    la fase sin etiquetas y emite cada predicción antes de conocer su resultado. El ajuste
+    añade a este recorrido el grafo, la pérdida y el paso del optimizador.
     """
 
-    def __init__(
-        self,
-        predictor,
-        recipe,
-        *,
-        train,
-        validation,
-        output,
-        optimizer_factory=None,
-        pairing=None,
-        audit=False,
-    ):
+    def __init__(self, predictor, recipe, *, audit=False):
         if type(predictor) is not FinancialPredictor or type(recipe) is not ChronologicalRecipe:
             raise ValueError("El entrenador necesita el predictor financiero y su receta")
         if predictor.local_control is not None:
@@ -316,20 +304,6 @@ class ChronologicalTrainer:
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
-            type(train) is not FinancialObservationSource
-            or type(validation) is not FinancialObservationSource
-            or train.phase.partition != "train"
-            or validation.phase.partition != "validation"
-            or train.dataset.identity != validation.dataset.identity
-            or validation.phase.decision_start < train.phase.decision_end
-        ):
-            raise ValueError("Se necesitan fases de ajuste y validación ordenadas del mismo corpus")
-        specification = predictor.config.inputs
-        if any(
-            not _compatible(specification, source.specification()) for source in (train, validation)
-        ):
-            raise ValueError("Las vistas no conservan la entrada del predictor")
-        if (
             recipe.block_rows > predictor.config.max_batch
             or (recipe.accumulation_rows or 0) > predictor.config.max_batch
         ):
@@ -337,81 +311,8 @@ class ChronologicalTrainer:
         self.device = predictor.head.weight.device
         if str(self.device) not in {"cpu", "cuda:0"}:
             raise ValueError("El recorrido admite cpu o cuda:0 explícitos")
-        if pairing is not None and (
-            not isinstance(pairing, dict)
-            or pairing.get("target_after") != predictor._parameter_id
-            or pairing.get("target_variant") != predictor.config.variant
-            or pairing.get("runtime_state_transferred") is not False
-        ):
-            raise ValueError("El recibo de emparejamiento no corresponde a estos parámetros")
         self.predictor, self.recipe = predictor, recipe
-        self.train, self.validation = train, validation
-        self.output, self.audit = Path(output), [] if audit else None
-        for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
-            outside_source(protected, self.output)
-            outside_source(self.output, protected)
-        self.roles = parameter_roles(predictor)
-        named = dict(predictor.named_parameters())
-        groups = [
-            dict(params=[named[name] for name in names], role=role)
-            for role, names in self.roles.items()
-            if names
-        ]
-        factory = optimizer_factory or (
-            lambda values: torch.optim.AdamW(
-                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
-            )
-        )
-        self.optimizer = factory(groups)
-        listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in named.values()}:
-            raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
-        self.identity = dict(
-            schema_version=1,
-            recipe=recipe.identity(),
-            predictor=predictor.config.identity(),
-            dtype=str(predictor.head.weight.dtype),
-            device=str(self.device),
-            initial_parameters_sha256=predictor._parameter_id,
-            pairing_sha256=None
-            if pairing is None
-            else hashlib.sha256(canonical(pairing).encode()).hexdigest(),
-            parameter_roles=self.roles,
-            optimizer=type(self.optimizer).__module__ + "." + type(self.optimizer).__qualname__,
-            dataset_sha256=train.dataset.identity,
-            sources={
-                name: dict(index_sha256=source.identity, phase=asdict(source.phase))
-                for name, source in (("train", train), ("validation", validation))
-            },
-            implementation=self._code(),
-            numerics=_numerics(),
-            final_test_opened=False,
-        )
-        self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
-        self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
-
-    @staticmethod
-    def _code():
-        own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-        return {**_implementation(), **own}
-
-    def _check_runtime(self):
-        if (
-            self._code() != self.identity["implementation"]
-            or _numerics() != self.identity["numerics"]
-        ):
-            raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
-
-    def _loss(self, prediction, target):
-        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5]."""
-        functional = torch.nn.functional
-        if self.recipe.loss == PINBALL:
-            return pinball_loss(prediction, target)
-        if self.recipe.loss == "mae":
-            return functional.l1_loss(prediction, target)
-        if self.recipe.loss == "mse":
-            return functional.mse_loss(prediction, target)
-        return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
+        self.audit = [] if audit else None
 
     def _observe(self, run, source, event, *, differentiable):
         """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados."""
@@ -518,6 +419,177 @@ class ChronologicalTrainer:
                 errors[start : start + 4096],
             )
 
+    def _close(self, run):
+        run.counters["unresolved"] = len(run.pending)
+        run.flows.clear()
+        run.pending.clear()
+        run.graphs.clear()
+        run.levels.clear()
+        run.segment.clear()
+        run.starts.clear()
+
+    @staticmethod
+    def _metrics(run):
+        summary = run.errors.summary()
+        counters = dict(run.counters)
+        labels = counters["labels_in_loss"]
+        counters["mean_loss"] = counters.pop("loss_sum") / labels if labels else None
+        return dict(
+            samples=summary["samples"],
+            session_count=summary["session_count"],
+            session_mae=summary["session_mae"],
+            session_mse=summary["session_mse"],
+            **counters,
+        )
+
+    def evaluate(self, source, *, stop=None, rows=None):
+        """Validación temporal con parámetros congelados y memoria rápida reiniciada.
+
+        Con `rows`, cada etiqueta resuelta añade su predicción emitida y sus cuantiles.
+        """
+        predictor, run = self.predictor, _Pass(rows=rows)
+        predictor.eval()
+        with torch.no_grad():
+            for event in source.batched_events(block_rows=self.recipe.block_rows):
+                if stop is not None and stop.requested:
+                    raise Paused
+                self._labels(run, event, train=False)
+                if event.inputs:
+                    self._observe(run, source, event, differentiable=False)
+                if event.close_phase:
+                    self._close(run)
+        if run.counters["labels"] == 0:
+            raise ValueError("La validación no contiene etiquetas maduras")
+        return self._metrics(run)
+
+    def predict(self, source, rows, *, stop=None):
+        """Predecir un tramo medido con la misma regla que la validación del ajuste.
+
+        La memoria rápida empieza en su estado inicial, observa el calentamiento de la fase
+        sin etiquetas y avanza en orden. Las etiquetas solo se comparan con lo emitido.
+        """
+        if (
+            type(source) is not FinancialObservationSource
+            or source.phase.partition not in ("validation", "calibration", "evaluation")
+            or not _compatible(self.predictor.config.inputs, source.specification())
+        ):
+            raise ValueError("El tramo no pertenece a la entrada del predictor")
+        if not hasattr(rows, "append"):
+            raise ValueError("La inferencia necesita un destino de filas")
+        return self.evaluate(source, stop=stop, rows=rows)
+
+
+class ChronologicalTrainer(ChronologicalInference):
+    """Ajustar un control de Titans-MAC recorriendo instantes de decisión en orden.
+
+    En cada evento se aplican primero las etiquetas maduras de ese instante. Si el
+    tramo diferenciable ya contiene `truncation` instantes de decisión, se actualiza
+    con esas etiquetas y se cortan los grafos. Después se predicen las entradas del
+    instante con los parámetros vigentes.
+    """
+
+    def __init__(
+        self,
+        predictor,
+        recipe,
+        *,
+        train,
+        validation,
+        output,
+        optimizer_factory=None,
+        pairing=None,
+        audit=False,
+    ):
+        super().__init__(predictor, recipe, audit=audit)
+        if (
+            type(train) is not FinancialObservationSource
+            or type(validation) is not FinancialObservationSource
+            or train.phase.partition != "train"
+            or validation.phase.partition != "validation"
+            or train.dataset.identity != validation.dataset.identity
+            or validation.phase.decision_start < train.phase.decision_end
+        ):
+            raise ValueError("Se necesitan fases de ajuste y validación ordenadas del mismo corpus")
+        specification = predictor.config.inputs
+        if any(
+            not _compatible(specification, source.specification()) for source in (train, validation)
+        ):
+            raise ValueError("Las vistas no conservan la entrada del predictor")
+        if pairing is not None and (
+            not isinstance(pairing, dict)
+            or pairing.get("target_after") != predictor._parameter_id
+            or pairing.get("target_variant") != predictor.config.variant
+            or pairing.get("runtime_state_transferred") is not False
+        ):
+            raise ValueError("El recibo de emparejamiento no corresponde a estos parámetros")
+        self.train, self.validation = train, validation
+        self.output = Path(output)
+        for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
+            outside_source(protected, self.output)
+            outside_source(self.output, protected)
+        self.roles = parameter_roles(predictor)
+        named = dict(predictor.named_parameters())
+        groups = [
+            dict(params=[named[name] for name in names], role=role)
+            for role, names in self.roles.items()
+            if names
+        ]
+        factory = optimizer_factory or (
+            lambda values: torch.optim.AdamW(
+                values, lr=recipe.learning_rate, weight_decay=recipe.weight_decay
+            )
+        )
+        self.optimizer = factory(groups)
+        listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
+        if len(listed) != len(set(listed)) or set(listed) != {id(p) for p in named.values()}:
+            raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
+        self.identity = dict(
+            schema_version=1,
+            recipe=recipe.identity(),
+            predictor=predictor.config.identity(),
+            dtype=str(predictor.head.weight.dtype),
+            device=str(self.device),
+            initial_parameters_sha256=predictor._parameter_id,
+            pairing_sha256=None
+            if pairing is None
+            else hashlib.sha256(canonical(pairing).encode()).hexdigest(),
+            parameter_roles=self.roles,
+            optimizer=type(self.optimizer).__module__ + "." + type(self.optimizer).__qualname__,
+            dataset_sha256=train.dataset.identity,
+            sources={
+                name: dict(index_sha256=source.identity, phase=asdict(source.phase))
+                for name, source in (("train", train), ("validation", validation))
+            },
+            implementation=self._code(),
+            numerics=_numerics(),
+            final_test_opened=False,
+        )
+        self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
+        self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+
+    @staticmethod
+    def _code():
+        own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        return {**_implementation(), **own}
+
+    def _check_runtime(self):
+        if (
+            self._code() != self.identity["implementation"]
+            or _numerics() != self.identity["numerics"]
+        ):
+            raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+
+    def _loss(self, prediction, target):
+        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5]."""
+        functional = torch.nn.functional
+        if self.recipe.loss == PINBALL:
+            return pinball_loss(prediction, target)
+        if self.recipe.loss == "mae":
+            return functional.l1_loss(prediction, target)
+        if self.recipe.loss == "mse":
+            return functional.mse_loss(prediction, target)
+        return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
+
     def _backward(self, run):
         """Gradiente de la pérdida media del tramo con los grafos conservados."""
         prediction = torch.stack(run.predictions)
@@ -609,66 +681,15 @@ class ChronologicalTrainer:
         run.instants = 0
         run.counters["segments"] += 1
 
-    def _close(self, run):
-        run.counters["unresolved"] = len(run.pending)
-        run.flows.clear()
-        run.pending.clear()
-        run.graphs.clear()
-        run.levels.clear()
-        run.segment.clear()
-        run.starts.clear()
-
-    @staticmethod
-    def _metrics(run):
-        summary = run.errors.summary()
-        counters = dict(run.counters)
-        labels = counters["labels_in_loss"]
-        counters["mean_loss"] = counters.pop("loss_sum") / labels if labels else None
-        return dict(
-            samples=summary["samples"],
-            session_count=summary["session_count"],
-            session_mae=summary["session_mae"],
-            session_mse=summary["session_mse"],
-            **counters,
-        )
-
-    def evaluate(self, source, *, stop=None, rows=None):
-        """Validación temporal con parámetros congelados y memoria rápida reiniciada.
-
-        Con `rows`, cada etiqueta resuelta añade su predicción emitida y sus cuantiles.
-        """
-        predictor, run = self.predictor, _Pass(rows=rows)
-        predictor.eval()
-        with torch.no_grad():
-            for event in source.batched_events(block_rows=self.recipe.block_rows):
-                if stop is not None and stop.requested:
-                    raise Paused
-                self._labels(run, event, train=False)
-                if event.inputs:
-                    self._observe(run, source, event, differentiable=False)
-                if event.close_phase:
-                    self._close(run)
-        if run.counters["labels"] == 0:
-            raise ValueError("La validación no contiene etiquetas maduras")
-        return self._metrics(run)
-
     def predict_partition(self, source, rows, *, stop=None):
-        """Recorrer un tramo posterior al ajuste con la misma regla que la validación.
-
-        La memoria rápida empieza en su estado inicial, observa el calentamiento de la fase
-        sin etiquetas y avanza en orden. Las etiquetas solo se comparan con lo emitido.
-        """
+        """Predecir un tramo posterior al ajuste del mismo corpus con `predict`."""
         if (
             type(source) is not FinancialObservationSource
-            or source.phase.partition not in ("validation", "calibration", "evaluation")
             or source.dataset.identity != self.train.dataset.identity
             or source.phase.decision_start < self.train.phase.decision_end
-            or not _compatible(self.predictor.config.inputs, source.specification())
         ):
             raise ValueError("El tramo no pertenece al corpus y la entrada del ajuste")
-        if not hasattr(rows, "append"):
-            raise ValueError("La inferencia necesita un destino de filas")
-        return self.evaluate(source, stop=stop, rows=rows)
+        return self.predict(source, rows, stop=stop)
 
     def _train_pass(self, run, cursor, stop, save):
         predictor, source = self.predictor, self.train
