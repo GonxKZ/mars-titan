@@ -192,7 +192,8 @@ def job_footprint(job, counts, storage, *, release=None, prediction_bytes=None):
     tables = {partition: int(measured(job, partition)) for partition in partitions}
     state = 0 if carry else storage["state_bytes"][model]
     kept = storage["retained_states"][model]
-    releasable = release and model in CHECKPOINTS
+    # XGBoost también libera tras el recibo sus boosters de recuperación (`_release_boosters`).
+    releasable = release and (model in CHECKPOINTS or model == "xgboost")
     retained = dict(
         predictions=sum(tables.values()),
         reports=storage["job_report_bytes"],

@@ -108,7 +108,7 @@ def test_indexed_models_keep_their_index_only_without_release():
     assert gru["retained"]["indices"] == int(no_warmup * index["bytes_per_row"])
 
 
-def test_xgboost_keeps_its_models_and_needs_its_pages_while_running():
+def test_xgboost_keeps_its_selected_model_and_needs_its_pages_while_running():
     value = declared()
     boosting = value["xgboost"]
     search = storage.job_footprint(
@@ -116,7 +116,11 @@ def test_xgboost_keeps_its_models_and_needs_its_pages_while_running():
     )
     # Páginas densas de 6 bits con 64 contenedores. La validación no ocupa disco.
     assert search["transient"]["cache"] == -(-COUNTS["train"] * boosting["features"] * 6 // 8)
-    assert search["retained"]["states"] == 3 * value["state_bytes"]["xgboost"]
+    # Tras el recibo solo queda el elegido. Los de recuperación existen mientras corre.
+    assert search["retained"]["states"] == value["state_bytes"]["xgboost"]
+    assert search["transient"]["recovery"] == 2 * value["state_bytes"]["xgboost"]
+    kept = storage.job_footprint(job("xgboost"), COUNTS, value, release=False)
+    assert kept["retained"]["states"] == 3 * value["state_bytes"]["xgboost"]
     finalist = storage.job_footprint(job("xgboost", case=None), COUNTS, value)
     assert finalist["transient"]["cache"] == COUNTS["train"] * boosting["features"]
     larger = dict(COUNTS, validation=10**9)
