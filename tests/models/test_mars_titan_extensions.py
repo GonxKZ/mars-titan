@@ -9,6 +9,7 @@ import pytest
 from mars_titan.memory.associative_memory import RULES
 from mars_titan.models.titans.episodic_readout import EpisodicReadoutConfig
 from mars_titan.models.titans.financial import VARIANTS
+from mars_titan.training.campaign_plan import MARS_BANKS
 
 CONFIG = Path("configs/titans/mars-titan-extensions.json")
 FIELDS = {
@@ -73,7 +74,13 @@ def test_refinements_match_the_readout_and_do_not_count_memory_updates(declarati
         EpisodicReadoutConfig("a" * 64, refinements=k)
     with pytest.raises(ValueError):
         EpisodicReadoutConfig("a" * 64, refinements=3)
-    assert "m3" not in declaration["components"]["episodic_bank"]["allowed"]
+
+
+def test_episodic_banks_match_the_campaign_plan(declaration):
+    # M3 forma parte de la declaración desde que su política de escritura está definida (#410).
+    bank = declaration["components"]["episodic_bank"]
+    assert bank["allowed"] == list(MARS_BANKS)
+    assert bank["m3"]["recipe"] == "episodic_m3_three_index_v1"
 
 
 def test_associative_rules_match_the_implemented_component(declaration):
