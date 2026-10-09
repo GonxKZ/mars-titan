@@ -107,8 +107,6 @@ def check_components(declaration, components):
         required = component.get("requires")
         if required is not None and required not in components:
             raise ValueError(f"{name} necesita {required} activo")
-    if "refinement_episodes" in components and components.get("refinements", 1) == 1:
-        raise ValueError("Los episodios fijos solo cambian el cálculo con K mayor que 1")
     components, correction = dict(sorted(components.items())), None
     if "associative_memory" in components:
         if "episodic_bank" in components:
