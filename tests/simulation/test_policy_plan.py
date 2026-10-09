@@ -195,18 +195,48 @@ def test_first_policy_windows_follow_three_training_years_and_one_validation_yea
         "fold-016",
     ]
     assert {row["anchor"] for row in us_rows[1:3]} == {"fold-004"}
-    # Las anclas posteriores se ajustan con todas las evaluaciones fuera de muestra previas.
+    # Cada ancla se ajusta con las tres evaluaciones fuera de muestra anteriores a su validación.
     assert us_rows[-3]["window"] == "fold-016" and us_rows[-3]["trained"]
-    assert us_rows[-3]["train"] == [f"fold-{i:03d}" for i in range(15)]
+    assert us_rows[-3]["train"] == ["fold-012", "fold-013", "fold-014"]
     cn = policy_plan.scope_windows(stage, "CN")
     assert cn[-1]["window"] == "fold-012" and cn[-1]["anchor"] == "fold-010"
-    assert cn[-1]["train"] == [f"fold-{i:03d}" for i in range(11)]
+    assert cn[-1]["train"] == ["fold-008", "fold-009", "fold-010"]
     stage = campaign_stage.load_stage(STAGES["A"])
     us_rows = policy_plan.scope_windows(stage, "US")
-    # Con 16 entornos la última ancla de EE. UU. deja fuera la evaluación más antigua.
+    assert us_rows[-1]["train"] == ["fold-014", "fold-015", "fold-016"]
+    assert {
+        len(row["train"])
+        for scope in ("US", "CN")
+        for row in policy_plan.scope_windows(stage, scope)
+    } == {3}
+    # La sensibilidad declarada usa todas las evaluaciones previas, con 16 como máximo, de modo
+    # que la última ancla de EE. UU. deja fuera la más antigua.
+    expanding = policy_plan.window_sensitivity(stage)
+    us_rows = policy_plan.scope_windows(expanding, "US")
     assert us_rows[-1]["train"] == [f"fold-{i:03d}" for i in range(1, 17)]
     assert [len(row["train"]) for row in us_rows] == [*range(3, 17), 16]
-    assert [len(row["train"]) for row in policy_plan.scope_windows(stage, "CN")] == [*range(3, 12)]
+    assert [len(row["train"]) for row in policy_plan.scope_windows(expanding, "CN")] == [
+        *range(3, 12)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("variant", "main", "sensitivity"),
+    [("A", (75, 45), (179, 81)), ("B", (35, 21), (65, 30))],
+)
+def test_tapes_per_predictor_follow_the_training_rule(variant, main, sensitivity):
+    stage = campaign_stage.load_stage(STAGES[variant])
+    counted = policy_plan.count_tapes(stage)
+    assert (counted["US"]["total"], counted["CN"]["total"]) == main
+    # Una cinta de evaluación por ventana y una de validación por ancla, con las dos reglas.
+    assert counted["US"]["evaluation"] == 15 and counted["CN"]["evaluation"] == 9
+    expanded = policy_plan.count_tapes(policy_plan.window_sensitivity(stage))
+    assert (expanded["US"]["total"], expanded["CN"]["total"]) == sensitivity
+    # La sensibilidad no cambia los trabajos, solo las cintas de ajuste.
+    assert policy_plan.count_stage(
+        policy_plan.window_sensitivity(stage)
+    ) == policy_plan.count_stage(stage)
+    assert stage["policies"]["window_sensitivity"]["enabled"] is False
 
 
 @pytest.mark.parametrize("variant", "AB")
@@ -374,11 +404,26 @@ INVALID_POLICIES = {
     "unknown_training_rule": lambda v: v["train_windows"].update(rule="every_window_v1"),
     "training_without_minimum": lambda v: v["train_windows"].pop("minimum"),
     "training_without_maximum": lambda v: v["train_windows"].pop("maximum"),
-    "training_beyond_environments": lambda v: v["train_windows"].update(maximum=17),
-    "training_maximum_below_minimum": lambda v: v["train_windows"].update(maximum=2),
-    "fixed_training_with_other_maximum": lambda v: v["train_windows"].update(
-        rule="fixed_prior_evaluations_v1"
+    "training_beyond_environments": lambda v: v["train_windows"].update(
+        rule="expanding_prior_evaluations_v1", maximum=17
     ),
+    "expanding_training_without_room": lambda v: v["train_windows"].update(
+        rule="expanding_prior_evaluations_v1"
+    ),
+    "training_maximum_below_minimum": lambda v: v["train_windows"].update(maximum=2),
+    "fixed_training_with_other_maximum": lambda v: v["train_windows"].update(maximum=4),
+    "sensitivity_same_rule": lambda v: v["window_sensitivity"].update(
+        train_windows=dict(v["train_windows"])
+    ),
+    "sensitivity_primary": lambda v: v["window_sensitivity"].update(role="primary"),
+    "sensitivity_always_launched": lambda v: v["window_sensitivity"].update(launch="always"),
+    "sensitivity_enabled_as_text": lambda v: v["window_sensitivity"].update(enabled="false"),
+    "sensitivity_without_identity": lambda v: v["window_sensitivity"].update(id="expanding"),
+    "sensitivity_extra_field": lambda v: v["window_sensitivity"].update(cost=1),
+    "sensitivity_beyond_environments": lambda v: v["window_sensitivity"]["train_windows"].update(
+        maximum=17
+    ),
+    "no_window_sensitivity": lambda v: v.pop("window_sensitivity"),
     "synthetic_domain": lambda v: v["data"].update(policy="synthetic_allowed"),
     "other_edition_kind": lambda v: v["data"].update(edition="episode_worlds"),
     "edition_without_identity": lambda v: v["data"].update(edition_id="fixture"),
@@ -459,6 +504,15 @@ REASONS = {
     "training_beyond_environments": "ventanas de ajuste",
     "training_maximum_below_minimum": "ventanas de ajuste",
     "fixed_training_with_other_maximum": "ventanas de ajuste",
+    "expanding_training_without_room": "ventanas de ajuste",
+    "sensitivity_same_rule": "sensibilidad de ventanas",
+    "sensitivity_primary": "sensibilidad de ventanas",
+    "sensitivity_always_launched": "sensibilidad de ventanas",
+    "sensitivity_enabled_as_text": "sensibilidad de ventanas",
+    "sensitivity_without_identity": "sensibilidad de ventanas",
+    "sensitivity_extra_field": "sensibilidad de ventanas",
+    "sensitivity_beyond_environments": "sensibilidad de ventanas",
+    "no_window_sensitivity": "no cumplen su contrato",
     "synthetic_domain": "edición real",
     "other_edition_kind": "edición real",
     "edition_without_identity": "edición real",

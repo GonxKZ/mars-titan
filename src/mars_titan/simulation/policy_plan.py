@@ -52,6 +52,9 @@ POLICIES_SCHEMA = 2
 # Límite de costes de evaluación que acepta el motor nativo (`frozen_costs`).
 MAX_EVALUATION_COSTS = 16
 SURVIVAL_RULE = "universe_assets_whose_series_ends_in_evaluation"
+# La ventana de ajuste alternativa es una sensibilidad secundaria. Queda declarada con su
+# identidad y su coste, pero solo se lanza si sobra presupuesto y alguien la activa.
+WINDOW_SENSITIVITY_LAUNCH = "only_if_budget_remains"
 # Criterios de cartera del ejecutor nativo. Ninguno usa el error del predictor.
 SELECTION_METRICS = (
     "ruin_count_then_mean_liquidated_log_growth",
@@ -120,6 +123,7 @@ _POLICIES = {
     "market_index",
     "report",
     "survival_sensitivity",
+    "window_sensitivity",
     "contrasts",
     "final_test_opened",
 }
@@ -328,6 +332,20 @@ def _read_policies(path):
         "Cada entorno recorre una sola cinta de ajuste: el máximo de ventanas de ajuste no "
         "supera los entornos",
     )
+    rule, window = window_tapes.train_rule(config["train_windows"]), config["window_sensitivity"]
+    _require(
+        isinstance(window, dict)
+        and set(window) == {"id", "role", "enabled", "launch", "train_windows"}
+        and isinstance(window["id"], str)
+        and re.fullmatch(r"[a-z0-9_]+_v[0-9]+", window["id"]) is not None
+        and window["role"] == "secondary"
+        and type(window["enabled"]) is bool
+        and window["launch"] == WINDOW_SENSITIVITY_LAUNCH
+        and window_tapes.train_rule(window["train_windows"]) != rule
+        and window["train_windows"]["maximum"] <= budget["environments"],
+        "La sensibilidad de ventanas es secundaria, tiene identidad propia, otra regla de "
+        "ajuste con tantas cintas como entornos como máximo y se lanza solo si se activa",
+    )
     data = config["data"]
     _require(
         isinstance(data, dict)
@@ -463,6 +481,41 @@ def resolve_levels(campaign, policies):
             arms=declared[ALGORITHMS]["arms"],
         ),
     }
+
+
+def window_sensitivity(stage):
+    """Etapa de la sensibilidad de ventanas, con la regla de ajuste alternativa declarada.
+
+    Comparte políticas, presupuesto, semillas y predictores con la etapa principal y solo
+    cambia las ventanas de ajuste. Lleva su propia identidad para que sus salidas nunca se
+    mezclen con las principales. Mientras la configuración la declare desactivada no se
+    puede lanzar, aunque sí contarla.
+    """
+    entry = stage["policies"]["window_sensitivity"]
+    policies = dict(stage["policies"], train_windows=entry["train_windows"])
+    return dict(stage, policies=policies, sensitivity=dict(entry))
+
+
+def count_tapes(stage):
+    """Cintas que monta cada predictor por ámbito, sin contar las del índice de mercado.
+
+    Cada ancla monta sus cintas de ajuste y su validación, y cada ventana de política su
+    evaluación. Todas se reutilizan entre brazos, semillas y referencias del predictor.
+    """
+    result = {}
+    for scope in stage["scopes"]:
+        rows = scope_windows(stage, scope)
+        markets = stage["campaign"]["comparison_config"]["resolved_scopes"][scope]["markets"]
+        anchors = [row for row in rows if row["trained"]]
+        train = sum(len(row["train"]) for row in anchors) * len(markets)
+        validation, evaluation = len(anchors) * len(markets), len(rows) * len(markets)
+        result[scope] = dict(
+            train=train,
+            validation=validation,
+            evaluation=evaluation,
+            total=train + validation + evaluation,
+        )
+    return result
 
 
 def scope_windows(stage, scope):

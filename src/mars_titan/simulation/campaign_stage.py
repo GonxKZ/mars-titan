@@ -65,8 +65,10 @@ from .policy_plan import (
     _number,
     _require,
     count_stage,
+    count_tapes,
     load_stage,
     plan_stage,
+    window_sensitivity,
 )
 from .reconstructed_tape import NoAdmittedAssets
 
@@ -999,6 +1001,9 @@ def _identity(stage, views, edition_id):
         campaign_sha256=campaign["sha256"],
         edition_id=edition_id,
         variant=campaign["variant"],
+        # La sensibilidad de ventanas comparte archivos con la etapa principal, así que su
+        # identidad es lo único que separa sus salidas.
+        sensitivity=stage.get("sensitivity"),
         views={
             scope: {window: value["sha256"] for window, value in record["windows"].items()}
             for scope, record in views.items()
@@ -1056,6 +1061,11 @@ def check_stage(path, *, library=None):
         seeds=policies["seeds"],
         contrasts=policies["contrasts"],
         counts=count_stage(stage, jobs),
+        tapes_per_predictor=count_tapes(stage),
+        window_sensitivity=dict(
+            policies["window_sensitivity"],
+            tapes_per_predictor=count_tapes(window_sensitivity(stage)),
+        ),
         capabilities=available,
         missing_capabilities=missing_capabilities(jobs, EXECUTORS, available),
         scientific_training_started=False,
@@ -1074,12 +1084,15 @@ def run_stage(
     capabilities=None,
     stop=None,
     chain_output=None,
+    sensitivity=False,
 ):
     """Ejecutar o reanudar la etapa sobre una campaña base confirmada.
 
     `executors` sustituye los ejecutores por familia y `capabilities` el estado del motor.
     El bloqueo de aprendizaje se comprueba antes de todo y antes de cada trabajo pendiente.
-    Las capacidades del plan se exigen antes de abrir fuentes o crear la salida.
+    Las capacidades del plan se exigen antes de abrir fuentes o crear la salida. Con
+    `sensitivity` se ejecuta la sensibilidad de ventanas declarada, que debe estar activada
+    en la configuración y escribe en una salida con su propia identidad.
     """
     from mars_titan.training.checkpoints import StopRequest
 
@@ -1087,6 +1100,13 @@ def run_stage(
 
     require_learning_allowed("la etapa de políticas financieras de la campaña")
     stage = load_stage(path)
+    if sensitivity:
+        stage = window_sensitivity(stage)
+        _require(
+            stage["sensitivity"]["enabled"],
+            f"La sensibilidad {stage['sensitivity']['id']} está declarada y desactivada. Solo "
+            "se lanza si sobra presupuesto y se activa en la configuración de las políticas",
+        )
     jobs = plan_stage(stage)
     count_stage(stage, jobs)
     executors = dict(EXECUTORS if executors is None else executors)
@@ -1175,6 +1195,9 @@ def main(argv=None):
     execute.add_argument("--edition", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
     execute.add_argument("--chain-output", type=Path)
+    execute.add_argument(
+        "--sensitivity", action="store_true", help="Ejecutar la sensibilidad de ventanas activada"
+    )
     args = parser.parse_args(argv)
     if args.command == "check":
         result = check_stage(args.stage)
@@ -1186,6 +1209,7 @@ def main(argv=None):
             args.edition,
             args.output,
             chain_output=args.chain_output,
+            sensitivity=args.sensitivity,
         )
         result.pop("jobs")
     print(json.dumps(result, ensure_ascii=False, indent=2))

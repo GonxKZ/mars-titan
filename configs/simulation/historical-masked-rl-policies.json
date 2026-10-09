@@ -21,9 +21,9 @@
     }
   },
   "train_windows": {
-    "rule": "expanding_prior_evaluations_v1",
+    "rule": "fixed_prior_evaluations_v1",
     "minimum": 3,
-    "maximum": 16
+    "maximum": 3
   },
   "universe": {
     "rule": "median_traded_value_in_validation_v1",
@@ -118,6 +118,13 @@
     "role": "secondary",
     "applies_to": "universe_assets_whose_series_ends_in_evaluation",
     "exit_returns": [0.0, -0.3, -1.0]
+  },
+  "window_sensitivity": {
+    "id": "expanding_train_windows_v1",
+    "role": "secondary",
+    "enabled": false,
+    "launch": "only_if_budget_remains",
+    "train_windows": {"rule": "expanding_prior_evaluations_v1", "minimum": 3, "maximum": 16}
   },
   "contrasts": {
     "primary": "klpo_terminal",

@@ -48,7 +48,9 @@ def policies(**changes):
     """Políticas reducidas: KLPO y Double DQN, las cinco referencias y ajuste en expansión.
 
     Cada ancla se ajusta con todas sus evaluaciones anteriores a la validación, como mínimo
-    una y como máximo dos, tantas como entornos.
+    una y como máximo dos, tantas como entornos. Así la etapa reducida recorre la regla en
+    expansión, que en la configuración real es la sensibilidad, y la sensibilidad de la
+    prueba es la regla fija de una evaluación.
 
     La campaña reducida produce los brazos GRU y LSTM. Los dos entran en el nivel completo
     y solo la GRU en el de algoritmos, que también fija el universo.
@@ -57,6 +59,10 @@ def policies(**changes):
     value["levels"]["algorithms"].update(predictors=["gru"], arms=["double_dqn"])
     value.update(
         train_windows=dict(rule="expanding_prior_evaluations_v1", minimum=1, maximum=2),
+        window_sensitivity=dict(
+            value["window_sensitivity"],
+            train_windows=dict(rule="fixed_prior_evaluations_v1", minimum=1, maximum=1),
+        ),
         universe=dict(rule="median_traded_value_in_validation_v1", max_assets=4),
         # Caben dos oleadas KLPO de dos episodios anuales.
         budget=dict(
@@ -296,7 +302,7 @@ def executors(learner, backend="python"):
     }
 
 
-def run(base, output, learner, *, stop=None, backend="python", chain_output=None):
+def run(base, output, learner, *, stop=None, backend="python", chain_output=None, **options):
     return campaign_stage.run_stage(
         base.stage,
         base.views,
@@ -307,4 +313,5 @@ def run(base, output, learner, *, stop=None, backend="python", chain_output=None
         capabilities={},
         stop=stop or SimpleNamespace(requested=False),
         chain_output=chain_output,
+        **options,
     )

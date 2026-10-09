@@ -56,7 +56,14 @@ from mars_titan.evaluation.financial_metrics import (
 
 from . import index_benchmark
 from .campaign_stage import RUN_KIND, _digest, _record, summarize
-from .policy_plan import MARKET_INDEX, _require, load_stage, plan_stage, scope_windows
+from .policy_plan import (
+    MARKET_INDEX,
+    _require,
+    load_stage,
+    plan_stage,
+    scope_windows,
+    window_sensitivity,
+)
 
 REPORT_KIND = "historical_masked_rl_financial_report"
 SEED_RULE = "equal_capital_per_seed_mean_nav"
@@ -76,6 +83,7 @@ def read_output(stage, output):
         marker.get("kind") == RUN_KIND
         and marker.get("stage_sha256") == stage["sha256"]
         and marker.get("policies_sha256") == stage["policies"]["sha256"]
+        and marker.get("sensitivity") == stage.get("sensitivity")
         and marker.get("final_test_opened") is False
         and summary.get("kind") == RUN_KIND
         and summary.get("identity_sha256") == _digest(marker)
@@ -438,12 +446,16 @@ def _tables(sections):
     return metrics, contrasts, equity
 
 
-def build_report(stage_path, outputs, destination, *, benchmarks=None):
+def build_report(stage_path, outputs, destination, *, benchmarks=None, sensitivity=False):
     """Leer las salidas, calcular familias y escribir el informe, sus tablas y el patrimonio.
 
-    `benchmarks` asigna a un mercado la ruta y la huella de los niveles de su índice.
+    `benchmarks` asigna a un mercado la ruta y la huella de los niveles de su índice. Con
+    `sensitivity` el informe lee salidas de la sensibilidad de ventanas, y nunca mezcla
+    salidas de esa sensibilidad con las de la etapa principal.
     """
     stage = load_stage(stage_path)
+    if sensitivity:
+        stage = window_sensitivity(stage)
     policies = stage["policies"]
     report = policies["report"]
     declared = report["benchmarks"]
@@ -473,6 +485,7 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None):
         kind=REPORT_KIND,
         stage_sha256=stage["sha256"],
         policies_sha256=policies["sha256"],
+        sensitivity=stage.get("sensitivity"),
         declared=dict(report=report, contrasts=policies["contrasts"]),
         conventions=dict(CONVENTIONS, seeds=SEED_RULE, windows=WINDOW_RULE, difference=DIFFERENCE),
         benchmarks={
@@ -518,9 +531,16 @@ def main(argv=None):
         metavar=("MERCADO", "NIVELES", "SHA256"),
         help="Niveles del índice declarado de un mercado, con su huella",
     )
+    parser.add_argument(
+        "--sensitivity", action="store_true", help="Informe de la sensibilidad de ventanas"
+    )
     args = parser.parse_args(argv)
     result = build_report(
-        args.stage, args.output, args.report, benchmarks=_benchmark_argument(args.benchmark)
+        args.stage,
+        args.output,
+        args.report,
+        benchmarks=_benchmark_argument(args.benchmark),
+        sensitivity=args.sensitivity,
     )
     families = [family for section in result["sections"] for family in section["families"]]
     print(

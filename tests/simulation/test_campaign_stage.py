@@ -18,7 +18,7 @@ import pytest
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
-from mars_titan.simulation import campaign_stage, native_policy_runs, window_tapes
+from mars_titan.simulation import campaign_stage, native_policy_runs, policy_plan, window_tapes
 from mars_titan.simulation.market import MarketTape
 from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.storage import read_tape, write_tape
@@ -920,3 +920,40 @@ def test_the_declared_stage_feeds_real_tapes_with_the_chain_predictor(monkeypatc
     assert checked["edition_id"] == (
         "1ac3727836462ce31c39b5438918bd6f3e0d359690c7bc79bfa87cd808c8e68c"
     )
+    # La regla fija es la principal y la expansión queda declarada, desactivada y contada.
+    assert checked["tapes_per_predictor"]["US"]["total"] == 75
+    assert checked["tapes_per_predictor"]["CN"]["total"] == 45
+    sensitivity = checked["window_sensitivity"]
+    assert sensitivity["id"] == "expanding_train_windows_v1" and sensitivity["enabled"] is False
+    assert sensitivity["tapes_per_predictor"]["US"]["total"] == 179
+    assert sensitivity["tapes_per_predictor"]["CN"]["total"] == 81
+
+
+def test_the_window_sensitivity_runs_only_when_enabled_and_never_mixes_outputs(
+    base_a, tmp_path, learning_doubles
+):
+    from mars_titan.simulation import stage_report
+
+    base = configured(base_a, tmp_path)
+    learner = fixture.ScriptedLearner()
+    with pytest.raises(ValueError, match="declarada y desactivada"):
+        fixture.run(base, tmp_path / "sensitivity", learner, sensitivity=True)
+    assert learner.calls == [] and not (tmp_path / "sensitivity").exists()
+    path = base.stage.parent / "rl-policies.json"
+    policies = json.loads(path.read_text())
+    policies["window_sensitivity"]["enabled"] = True
+    atomic_json(path, policies)
+    summary = fixture.run(base, tmp_path / "sensitivity", learner, sensitivity=True)
+    assert summary["status"] == "completed"
+    marker = json.loads((tmp_path / "sensitivity/stage.json").read_text())
+    assert marker["sensitivity"]["id"] == policies["window_sensitivity"]["id"]
+    # La sensibilidad de la prueba ajusta cada ancla con una sola evaluación.
+    assert {len(call["tapes"].train) for call in learner.calls if call["tapes"].train} == {1}
+    # Ni la etapa principal ni su informe aceptan esa salida, que tiene otra identidad.
+    with pytest.raises(ValueError, match="otra etapa"):
+        fixture.run(base, tmp_path / "sensitivity", fixture.ScriptedLearner())
+    stage = campaign_stage.load_stage(base.stage)
+    with pytest.raises(ValueError, match="no pertenece a esta etapa"):
+        stage_report.read_output(stage, tmp_path / "sensitivity")
+    read = stage_report.read_output(policy_plan.window_sensitivity(stage), tmp_path / "sensitivity")
+    assert read["receipts"]
