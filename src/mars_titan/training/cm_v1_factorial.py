@@ -33,7 +33,7 @@ from .financial_run import Paused
 from .learning_hold import require_learning_allowed
 from .mars_titan_run import retention_config
 from .mars_titan_walk_forward import ReadoutFamily, carry_readout, run_readout_window
-from .titans_walk_forward import _require, run_titans_window, view_protocol
+from .titans_walk_forward import _require, run_titans_window, unfused_attention, view_protocol
 
 DECLARATION = Path(__file__).resolve().parents[3] / "configs/titans/cm-v1-factorial.json"
 NAME = "mars_titan_cm_v1_factorial"
@@ -317,18 +317,20 @@ def cm_v1_core_fit(run, *, device="cuda:0", optimizer_factory=None):
         load_declaration(case["declaration"])["recipes"]["core_recipe"] == case["recipe"],
         "La receta del núcleo no es la de la declaración",
     )
-    report = run_cm_v1_core_window(
-        run.view,
-        run.job["window"],
-        core=case["core"],
-        seed=case["seed"],
-        output=run.folder,
-        search_case=case["search_case"],
-        declaration=case["declaration"],
-        device=device,
-        stop=run.stop,
-        optimizer_factory=optimizer_factory,
-    )
+    # El recorrido cronológico exige fastpath=False solo mientras dura el trabajo.
+    with unfused_attention():
+        report = run_cm_v1_core_window(
+            run.view,
+            run.job["window"],
+            core=case["core"],
+            seed=case["seed"],
+            output=run.folder,
+            search_case=case["search_case"],
+            declaration=case["declaration"],
+            device=device,
+            stop=run.stop,
+            optimizer_factory=optimizer_factory,
+        )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
@@ -348,18 +350,19 @@ def cm_v1_fit(run, *, device="cuda:0", optimizer_factory=None):
         load_declaration(case["declaration"])["recipes"]["readout_recipe"] == case["recipe"],
         "La receta del lector no es la de la declaración",
     )
-    report = run_cm_v1_window(
-        run.view,
-        run.parent["folder"],
-        arm=case["arm"],
-        seed=case["seed"],
-        output=run.folder,
-        search_case=case["search_case"],
-        declaration=case["declaration"],
-        device=device,
-        stop=run.stop,
-        optimizer_factory=optimizer_factory,
-    )
+    with unfused_attention():
+        report = run_cm_v1_window(
+            run.view,
+            run.parent["folder"],
+            arm=case["arm"],
+            seed=case["seed"],
+            output=run.folder,
+            search_case=case["search_case"],
+            declaration=case["declaration"],
+            device=device,
+            stop=run.stop,
+            optimizer_factory=optimizer_factory,
+        )
     if report["status"] == "paused":
         raise CampaignPaused
     _require(
@@ -376,13 +379,14 @@ def cm_v1_carry(run, *, device="cuda:0"):
     from .masked_campaign import Paused as CampaignPaused
 
     try:
-        return carry_cm_v1(
-            run.anchor["folder"],
-            run.anchor["view"],
-            run.view,
-            run.folder,
-            device=device,
-            stop=run.stop,
-        )
+        with unfused_attention():
+            return carry_cm_v1(
+                run.anchor["folder"],
+                run.anchor["view"],
+                run.view,
+                run.folder,
+                device=device,
+                stop=run.stop,
+            )
     except Paused as error:
         raise CampaignPaused from error
