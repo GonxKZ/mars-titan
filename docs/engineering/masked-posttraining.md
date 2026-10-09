@@ -223,16 +223,16 @@ La paridad con `develop` (69bc59c1) se contrastó fuera de la suite con el mismo
 
 Después de rebasar sobre `develop` (6119a7ea), 39 archivos de pruebas de postentrenamiento, campaña, referencias con cuantiles, recibos walk-forward y comparación dan 585 pruebas superadas, 55 omitidas y ninguna fallida, ejecutados uno a uno. Las omisiones son 42 por el bloqueo (pasos reales de AdamW y campañas de referencias) y 13 por la ausencia de CUDA. `ruff check`, `ruff format --check` y `scripts/check_repository.py` no dan errores.
 
-### CUDA pendiente
+### Comprobaciones CUDA
 
-Ninguna de estas comprobaciones aplica pasos de optimizador:
+Ninguna de estas comprobaciones aplica pasos de optimizador. Se ejecutaron en `cuda:0` el 9 de octubre, con 5 y 3 pruebas superadas ([resumen](../../reports/engineering/cuda-checks-20261009/README.md)):
 
 ```bash
 CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/models/test_predictive_adapters_cuda.py -q -rs
 CUBLAS_WORKSPACE_CONFIG=:4096:8 uv run pytest tests/posttraining/test_quantile_adaptation_cuda.py -q -rs
 ```
 
-La primera compara en `cuda:0` el padre y la copia con adaptadores nulos, exige igualdad exacta con los mismos núcleos y contrasta con CPU con tolerancia relativa 1e-4 y absoluta 1e-5, sin TF32. La segunda calcula en `cuda:0` y en CPU la pinball de tres casos con padres de cuantiles (GRU con cabeza y fusión, Transformer con los tres puntos y continuación de LSTM) y compara niveles con las mismas tolerancias, pérdida y gradientes. Exige además el orden de los niveles, gradiente solo en los parámetros entrenables y el padre intacto. Antes de comparar gradientes comprueba en CPU que ningún nivel está a menos de 1e-4 del objetivo, donde la pinball cambia de pendiente. En CPU la distancia mínima de los tres casos es de 0,0093.
+La primera compara en `cuda:0` el padre y la copia con adaptadores nulos y contrasta con CPU con tolerancia relativa 1e-4 y absoluta 1e-5, sin TF32. En inferencia exige igualdad exacta. En entrenamiento exige pesos efectivos idénticos bit a bit y salidas con tolerancia relativa 1e-6 y absoluta 1e-7, porque `torch.matmul` resuelve la proyección de entrada no contigua de `MultiheadAttention` con `mm` cuando un peso requiere gradiente y con `bmm` cuando no, y en CUDA ambos núcleos redondean distinto (1,5·10⁻⁸ en el Transformer). La segunda calcula en `cuda:0` y en CPU la pinball de tres casos con padres de cuantiles (GRU con cabeza y fusión, Transformer con los tres puntos y continuación de LSTM) y compara niveles con las mismas tolerancias, pérdida y gradientes. Exige además el orden de los niveles, gradiente solo en los parámetros entrenables y el padre intacto. Antes de comparar gradientes comprueba en CPU que ningún nivel está a menos de 1e-4 del objetivo, donde la pinball cambia de pendiente. En CPU la distancia mínima de los tres casos es de 0,0093.
 
 La cola y la etapa solo se han recorrido en CPU con los diagnósticos de `run_case`. Su recorrido en `cuda:0` con la reserva de la GPU no tiene todavía una comprobación propia.
 

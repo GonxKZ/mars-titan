@@ -147,9 +147,4 @@ Las recetas [`chronological-training.json`](../../configs/titans/chronological-t
 
 La salida de MAC es `y ⊙ M(y)`. En los fixtures su escala absoluta es pequeña, entre 10⁻⁵ y 10⁻² según la entrada, porque multiplica dos magnitudes pequeñas. El bias evita el colapso de la memoria, pero no cambia esa escala. El [contraste con el artículo](titans-mac-output-scale.md) atribuye la escala a la omisión del residual y la LayerNorm de la memoria y mide el componente que los añade.
 
-Estas medidas proceden de fixtures aleatorios en CPU. No predicen el comportamiento con datos reales, no seleccionan hiperparámetros por validación y no acreditan una mejora predictiva. La comprobación CUDA queda pendiente:
-
-```bash
-CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=2 uv run --no-sync python benchmarks/titans_gate_retention.py \
-  --device cuda:0 --output reports/engineering/titans-gate-retention-cuda-<fecha>.json
-```
+Estas medidas proceden de fixtures aleatorios. No predicen el comportamiento con datos reales, no seleccionan hiperparámetros por validación y no acreditan una mejora predictiva. La repetición en `cuda:0` del 9 de octubre ([recibo](../../reports/engineering/cuda-checks-20261009/titans-gate-retention-cuda.json)) coincide con el recibo CPU con una diferencia relativa máxima de 3,6·10⁻⁶ en FP32 y 5,7·10⁻¹⁴ en FP64 sobre 2.460 valores.

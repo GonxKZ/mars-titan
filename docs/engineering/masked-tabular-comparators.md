@@ -68,12 +68,12 @@ Ninguna de estas opciones está activada. Cada una exigiría otra identidad y su
 
 Las pruebas nuevas cubren los bits, la población común, la ausencia de fuga de objetivos, la paridad estricta, la propagación de la política en la búsqueda tabular y el plan de memoria. Se ejecutaron en CPU con `CUDA_VISIBLE_DEVICES=-1`, sin ajustes ni pasos de optimizador. Los estimadores se sustituyen por capturas que recorren la factoría y se detienen. Catorce mutaciones dirigidas de la lógica nueva hacen fallar alguna prueba.
 
-Quedan pendientes en `cuda:0`, sin ejecutar rondas:
+Comprobación en `cuda:0`, sin ejecutar rondas:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 uv run --no-sync pytest -q tests/models/test_external_cache_cuda.py
 ```
 
-La primera prueba construye páginas en disco con 20.000 filas aleatorias de 1.719 columnas y contrasta los bytes reales con la estimación densa. La segunda comprueba que la guardia detiene la construcción. En ambas `xgb.train` se sustituye por una excepción. La paridad de `fit_ridge_blocks` y las pruebas CUDA anteriores de Ridge y XGBoost ajustan modelos sobre fixtures y esperan al levantamiento del bloqueo.
+Las dos pruebas pasan desde el 9 de octubre ([resumen](../../reports/engineering/cuda-checks-20261009/README.md)). Usan `learning_doubles`, porque la protección del aprendizaje detiene `fit_external_boosting` en su entrada y antes se omitían sin construir la caché. La primera prueba construye páginas en disco con 20.000 filas aleatorias de 1.719 columnas y contrasta los bytes reales con la estimación densa. La segunda comprueba que la guardia detiene la construcción. En ambas `xgb.train` se sustituye por una excepción. La paridad de `fit_ridge_blocks` y las pruebas CUDA anteriores de Ridge y XGBoost ajustan modelos sobre fixtures y esperan al levantamiento del bloqueo.
 
 Los padres tabulares de postentrenamiento reciben ya los cinco bits después de las modalidades. El [postentrenamiento con la edición histórica](masked-posttraining.md) describe la carga y sus comprobaciones.
