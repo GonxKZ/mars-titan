@@ -4,17 +4,23 @@ from datetime import date
 
 import numpy as np
 
+from mars_titan.training.selection import validate_selection
+
 PARTITIONS = ("train", "validation", "calibration", "evaluation")
+LABEL_INTERVAL_PURGE = "label_interval"
 _DATES = ("train_start", "first_validation_start", "final_test_start", "final_test_end")
 _MONTHS = ("validation_months", "calibration_months", "evaluation_months", "step_months")
-_FIELDS = set(_DATES + _MONTHS) | {
+_COMMON = set(_DATES + _MONTHS) | {
     "schema_version",
     "market",
     "minimum_train_months",
-    "gap_sessions",
     "primary_metric",
     "seeds",
 }
+# La versión 1 conserva su margen fijo. La 2 purga por el intervalo de cada etiqueta y
+# declara la regla de parada común antes de preparar las vistas.
+_FIELDS = {1: _COMMON | {"gap_sessions"}, 2: _COMMON | {"purge", "selection"}}
+_SELECTION = {"metric", "stopping", "patience", "min_delta", "max_epochs"}
 
 
 def _add_months(day, months):
@@ -27,9 +33,10 @@ def _timestamp(day):
 
 
 def _validate(config):
-    if not isinstance(config, dict) or set(config) != _FIELDS:
+    version = config.get("schema_version") if isinstance(config, dict) else None
+    if type(version) is not int or version not in _FIELDS or set(config) != _FIELDS[version]:
         raise ValueError("La configuración temporal tiene campos ausentes o desconocidos")
-    if config["schema_version"] != 1 or config["market"] not in {"US", "CN"}:
+    if config["market"] not in {"US", "CN"}:
         raise ValueError("Versión o mercado no admitidos")
     if config["primary_metric"] != "session_mae":
         raise ValueError("El criterio primario de selección debe ser session_mae")
@@ -39,10 +46,19 @@ def _validate(config):
     for key in _MONTHS + ("minimum_train_months",):
         if type(config[key]) is not int or not 1 <= config[key] <= 240:
             raise ValueError("Las duraciones deben ser meses enteros positivos y acotados")
-    if config["step_months"] != config["evaluation_months"]:
+    if version == 1 and config["step_months"] != config["evaluation_months"]:
         raise ValueError("Las ventanas de evaluación deben ser consecutivas y no solaparse")
-    if type(config["gap_sessions"]) is not int or not 0 <= config["gap_sessions"] <= 20:
+    if version == 1 and (
+        type(config["gap_sessions"]) is not int or not 0 <= config["gap_sessions"] <= 20
+    ):
         raise ValueError("El margen debe contener entre cero y veinte sesiones")
+    if version == 2:
+        # Un paso múltiplo de la evaluación permite declarar un subconjunto de años sin solapes.
+        if config["step_months"] % config["evaluation_months"]:
+            raise ValueError("Las ventanas de evaluación no pueden solaparse")
+        if config["purge"] != LABEL_INTERVAL_PURGE:
+            raise ValueError("La purga debe derivarse del intervalo de cada etiqueta")
+        stopping_rule(config)
     seeds = config["seeds"]
     if (
         not isinstance(seeds, list)
@@ -60,6 +76,23 @@ def _validate(config):
     ):
         raise ValueError("El orden temporal o la historia mínima de entrenamiento no son válidos")
     return dates
+
+
+def stopping_rule(config):
+    """Devolver la regla común de selección y parada declarada por un protocolo v2."""
+    rule = config.get("selection") if isinstance(config, dict) else None
+    if (
+        not isinstance(rule, dict)
+        or not _SELECTION <= set(rule) <= _SELECTION | {"minimum_epochs"}
+        or type(rule["max_epochs"]) is not int
+        or not 1 <= rule["max_epochs"] <= 1000
+    ):
+        raise ValueError("La regla de parada necesita métrica, modo, paciencia y máximo")
+    validate_selection(
+        {key: value for key, value in rule.items() if key != "max_epochs"},
+        epochs=rule["max_epochs"],
+    )
+    return dict(rule)
 
 
 def build_folds(config):
@@ -103,11 +136,21 @@ class FoldPartitioner:
         for name in PARTITIONS:
             start, end = map(_timestamp, fold[name])
             position = int(np.searchsorted(self.sessions, end))
-            gap = config["gap_sessions"] if name != "evaluation" else 0
+            # En la versión 2 la única purga es que la etiqueta madure antes del final del tramo.
+            fixed = config["schema_version"] == 1 and name != "evaluation"
+            gap = config["gap_sessions"] if fixed else 0
             cutoff = self.sessions[position - gap] if gap and position >= gap else end
             self.bounds.append((name, start, end, cutoff))
         self.test_start = _timestamp(config["final_test_start"])
         self.test_end = _timestamp(config["final_test_end"])
+
+    def nominal_partitions(self, prediction_at):
+        """Nombrar el tramo nominal de cada decisión para registrar la frontera de una purga."""
+        prediction = np.asarray(prediction_at)
+        names = np.full(len(prediction), "outside_window", dtype="U14")
+        for name, start, end, _ in self.bounds:
+            names[(prediction >= start) & (prediction < end)] = name
+        return names
 
     def assign(self, prediction_at, available_at, label_available_at, *, eligible=None):
         """Asignar sin usar activos ni valores del objetivo para elegir los cortes."""

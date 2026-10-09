@@ -150,6 +150,10 @@ def prepare_joint_temporal_corpus(
                     has_all_partitions=all(all(view["counts"].values()) for view in views.values()),
                 )
             )
+            if "purged_by_boundary" in views["US"]:
+                summaries[-1]["market_purged_by_boundary"] = {
+                    market: view["purged_by_boundary"] for market, view in views.items()
+                }
         evidence = {}
         for market, report in local_reports.items():
             relative = f"markets/{market}/report.json"
