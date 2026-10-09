@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "walk_forward_comparison",
   "name": "historical-masked-2000",
   "status": "declared_before_evaluation",
@@ -338,5 +338,42 @@
         ]
       }
     }
+  },
+  "modality_strata": {
+    "status": "secondary_descriptive",
+    "declared_at": "2026-10-09",
+    "use": "description_only_not_for_model_selection_or_primary_conclusion",
+    "presence_source": "view_evaluation_labels_and_samples_presence_v1",
+    "always_present": [
+      "prices",
+      "charts",
+      "macro"
+    ],
+    "strata": {
+      "news_and_fundamentals": {
+        "news": true,
+        "fundamentals": true
+      },
+      "news_only": {
+        "news": true,
+        "fundamentals": false
+      },
+      "fundamentals_only": {
+        "news": false,
+        "fundamentals": true
+      },
+      "neither": {
+        "news": false,
+        "fundamentals": false
+      }
+    },
+    "focus": "news_and_fundamentals",
+    "metrics": [
+      "mae"
+    ],
+    "recalibrate": false,
+    "min_rows": 1000,
+    "min_sessions": 50,
+    "multiplicity": "bonferroni_over_strata_and_views_with_max_t_within_family"
   }
 }

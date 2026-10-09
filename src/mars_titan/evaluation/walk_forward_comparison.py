@@ -34,6 +34,7 @@ from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import masked_inputs, policy_identity
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.evaluation import modality_strata
 from mars_titan.evaluation.forecast_panel import WEIGHTINGS, ForecastPanel, SessionSeries
 from mars_titan.evaluation.forecast_scores import COVERAGE_ERROR, SessionScores, score_sessions
 from mars_titan.evaluation.paired_comparisons import compare_series, delta, interaction, level
@@ -77,6 +78,7 @@ _CONFIG_FIELDS = {
     "calibration",
     "comparison",
 }
+STRATA_FIELD = "modality_strata"
 _METRIC_FIELDS = {"primary", "market_weighting", "rank_ic_min_assets", "quantile_head"}
 _CALIBRATION_FIELDS = {"method", "partition", "nominals", "groups", "min_rows", "order_rule"}
 _COMPARISON_FIELDS = {
@@ -210,10 +212,12 @@ def load_config(path):
     """Validar la configuración declarada antes de abrir ninguna predicción."""
     path = Path(path)
     config, digest = read_manifest(path, 1024**2)
+    version = config.get("schema_version") if isinstance(config, dict) else None
     _require(
         isinstance(config, dict)
-        and set(config) == _CONFIG_FIELDS
-        and config["schema_version"] == 1
+        and type(version) is int
+        and version in (1, 2)
+        and set(config) == _CONFIG_FIELDS | ({STRATA_FIELD} if version == 2 else set())
         and config["kind"] == CONFIG_KIND
         and config["status"] == DECLARED
         and config["partition"] == "evaluation"
@@ -284,6 +288,12 @@ def load_config(path):
         "Las comparaciones deben empezar por el MAE y usar métricas por sesión",
     )
     families = _families(comparison["families"], arms)
+    if version == 2:
+        _require(
+            masked_inputs(config["input_policy"]),
+            "Los estratos de presencia necesitan la política de entradas con máscaras",
+        )
+        modality_strata.declaration(config[STRATA_FIELD], SERIES_METRICS)
     resolved = {
         scope: _protocols(path.parent, scope, declared) for scope, declared in scopes.items()
     }
