@@ -9,25 +9,43 @@ from .prices import check_ordering_rtol, ordering_excess
 
 
 def chart_png(
-    prices: np.ndarray, *, end_index: int, context: int = 64, ordering_rtol: float = 0.0
+    prices: np.ndarray,
+    *,
+    end_index: int,
+    context: int = 64,
+    ordering_rtol: float = 0.0,
+    present: np.ndarray | None = None,
 ) -> bytes:
     """Dibujar la ventana tal como llega.
 
     `ordering_rtol` solo relaja la comprobación de coherencia con la tolerancia declarada por
-    la auditoría de precios. Los valores no se corrigen ni se recortan.
+    la auditoría de precios. Los valores no se corrigen ni se recortan. `present` indica qué
+    sesiones de la ventana tienen fila. Una sesión ausente en todo el mercado deja su posición
+    vacía, sin vela. Sin `present`, todas las sesiones tienen fila y el dibujo no cambia.
     """
     check_ordering_rtol(ordering_rtol)
-    if context < 2 or end_index < context - 1 or end_index >= len(prices):
+    slots = np.ones(context, dtype=bool) if present is None else np.asarray(present)
+    rows = int(slots.sum()) if slots.dtype == np.bool_ else -1
+    if (
+        context < 2
+        or slots.shape != (context,)
+        or rows < 2
+        or not slots[-1]
+        or end_index < rows - 1
+        or end_index >= len(prices)
+    ):
         raise ValueError("No hay suficientes observaciones pasadas para el gráfico")
-    window = np.asarray(prices[end_index - context + 1 : end_index + 1], dtype=np.float64)
-    if window.shape != (context, 4) or not np.isfinite(window).all() or (window <= 0).any():
+    window = np.asarray(prices[end_index - rows + 1 : end_index + 1], dtype=np.float64)
+    if window.shape != (rows, 4) or not np.isfinite(window).all() or (window <= 0).any():
         raise ValueError("El gráfico necesita valores OHLC positivos y finitos")
     low, high = window[:, 2].min(), window[:, 1].max()
     span = max(high - low, high * 1e-9)
     image = Image.new("RGB", (224, 224), "#fafafa")
     draw = ImageDraw.Draw(image)
     width = max(1, min(4, int(200 / context / 2)))
-    for i, (opening, upper, lower, close) in enumerate(window):
+    for i, (opening, upper, lower, close) in zip(
+        np.flatnonzero(slots).tolist(), window, strict=True
+    ):
         if (lower > min(opening, close) or upper < max(opening, close)) and (
             not ordering_rtol or ordering_excess(opening, upper, lower, close) > ordering_rtol
         ):
