@@ -97,6 +97,18 @@ class MarketTape:
         self.prediction_times = _times(times if prediction_times is None else prediction_times)
         if self.prediction_times.shape != times.shape or (self.prediction_times > times).any():
             raise ValueError("Las predicciones contienen información posterior al cierre")
+        if domain == "real":
+            # Una predicción dentro de muestra filtraría el ajuste del padre a la política.
+            fits = audit.get("prediction_fit_ends")
+            if (
+                not isinstance(fits, list)
+                or any(type(value) is not int for value in fits)
+                or _times(fits).shape != times.shape
+                or (_times(fits) > self.prediction_times).any()
+            ):
+                raise ValueError(
+                    "Las predicciones históricas necesitan un ajuste anterior a cada decisión"
+                )
         self.open_times = (
             self.close_times - min(23_400_000_000, int(np.diff(times).min()) // 2)
             if open_times is None
@@ -121,6 +133,9 @@ class MarketTape:
                 raise ValueError("La acción corporativa está duplicada")
             if action.asset not in self.assets or action.effective_at not in self.open_times:
                 raise ValueError("La acción corporativa no pertenece al calendario")
+            if action.effective_at == self.open_times[0]:
+                # El episodio empieza en el primer cierre y no ejecuta esa apertura.
+                raise ValueError("La acción corporativa es anterior a la primera decisión")
             ids.add(action.id)
         self.identity = dict(
             domain=domain,
