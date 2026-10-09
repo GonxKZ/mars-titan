@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <span>
 #include <string_view>
 #include <system_error>
@@ -156,7 +157,8 @@ struct DecimalNumber {
 // La representación más corta que recupera el mismo double coincide con repr de Python.
 bool shortest_decimal(double value, DecimalNumber &result) noexcept {
     std::array<char, shortest_characters> buffer{};
-    const auto written = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value,
+    const auto written = std::to_chars(std::to_address(buffer.begin()),
+                                       std::to_address(buffer.end()), value,
                                        std::chars_format::scientific);
     if (written.ec != std::errc{}) {
         return false;
@@ -181,22 +183,28 @@ bool shortest_decimal(double value, DecimalNumber &result) noexcept {
         digits = digits * decimal_base + static_cast<uint64_t>(character - '0');
         fraction += decimals ? 1 : 0;
     }
+    // to_chars escribe siempre el signo y al menos dos cifras del exponente.
     auto exponent_text = text.substr(marker + 1);
-    if (!exponent_text.empty() && exponent_text.front() == '+') {
-        exponent_text.remove_prefix(1);
-    }
-    int exponent = 0;
-    const auto *end = exponent_text.data() + exponent_text.size();
-    const auto parsed = std::from_chars(exponent_text.data(), end, exponent);
-    if (parsed.ec != std::errc{} || parsed.ptr != end) {
+    if (exponent_text.size() < 2 ||
+        (exponent_text.front() != '+' && exponent_text.front() != '-')) {
         return false;
     }
-    result = {digits, exponent - fraction};
+    const bool negative = exponent_text.front() == '-';
+    exponent_text.remove_prefix(1);
+    int exponent = 0;
+    for (const char character : exponent_text) {
+        if (character < '0' || character > '9') {
+            return false;
+        }
+        exponent = exponent * static_cast<int>(decimal_base) + (character - '0');
+    }
+    result = {digits, (negative ? -exponent : exponent) - fraction};
     return true;
 }
 
 // coefficient * 10^exponent redondeado a céntimos por la mitad hacia arriba, como
 // Decimal.quantize(Decimal("0.01"), ROUND_HALF_UP) seguido de float().
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool rounded_cents(Wide coefficient, int exponent, double &result) noexcept {
     const int shift = exponent + cent_decimals;
     Wide cents = coefficient;

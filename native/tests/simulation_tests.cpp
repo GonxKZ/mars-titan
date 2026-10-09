@@ -47,6 +47,8 @@ int fail(const char *message) {
     return 1;
 }
 
+// Los casos de redondeo y las rejillas de precios se leen mejor con sus valores literales.
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
 // Casos conocidos del redondeo decimal de Python y errores de la banda.
 int price_limits_round_half_up_to_the_cent() {
     constexpr double band = 0.1;
@@ -83,6 +85,7 @@ int price_limits_round_half_up_to_the_cent() {
     }
     return 0;
 }
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers)
 } // namespace
 
 int main() {
@@ -200,12 +203,15 @@ int main() {
             next_positions.data(), next_accounts.data(), trades.data(), error.data(),
             error.size());
     };
+    // La comparación de bytes es deliberada: v2 sin reglas debe reproducir v1 bit a bit.
+    // NOLINTBEGIN(bugprone-suspicious-memory-comparison)
     if (step_rules(nullptr) != MT_SIM_OK ||
         std::memcmp(v1_positions.data(), next_positions.data(), sizeof(v1_positions)) != 0 ||
         std::memcmp(v1_accounts.data(), next_accounts.data(), sizeof(v1_accounts)) != 0 ||
         std::memcmp(v1_trades.data(), trades.data(), sizeof(v1_trades)) != 0) {
         return fail("v2 sin reglas no reproduce v1");
     }
+    // NOLINTEND(bugprone-suspicious-memory-comparison)
     // La apertura de 10 supera el límite de 9,60 sobre un cierre previo de 8. La de 20 no
     // alcanza el de 24.
     std::array<mt_rules_v1, assets> rules{{{0, limited_reference, limit_band, 0, 0, 0, 0},

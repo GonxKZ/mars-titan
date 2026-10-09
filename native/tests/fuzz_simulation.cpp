@@ -32,6 +32,7 @@ constexpr std::size_t rules_input = 10;
 constexpr double minimum_step = 100;
 constexpr double band_step = 0.05;
 constexpr double tax_step = 0.001;
+constexpr uint32_t sell_tax_levels = 5;
 constexpr double round_lot = 100;
 constexpr double reference_ratio = 0.9;
 } // namespace
@@ -82,7 +83,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
                            (seed & 1U) != 0 ? unknown : close * reference_ratio,
                            static_cast<double>(seed % 4) * band_step,
                            static_cast<double>(seed % 2) * tax_step,
-                           static_cast<double>(seed % 5) * tax_step,
+                           static_cast<double>(seed % sell_tax_levels) * tax_step,
                            (seed & 2U) != 0 ? 1U : 0U,
                            0};
         if ((seed & 4U) != 0) {

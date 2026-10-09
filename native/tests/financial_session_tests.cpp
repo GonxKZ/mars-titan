@@ -31,6 +31,7 @@ constexpr double ordinary_volume = 1000;
 constexpr double tolerance = 1e-10;
 constexpr std::size_t digest_length = 64;
 constexpr uint8_t full_exposure_action = 5;
+constexpr double board_lot = 100;
 
 void require(bool condition, std::string_view message) {
     if (!condition) {
@@ -361,7 +362,8 @@ void ties_follow_asset_identity_and_bad_tapes_fail() {
 }
 
 // Reglas de un tablero con lote de 100, resto impar, banda del 10 % y timbre de venta.
-InstrumentRules a_share(double lot = 100, double minimum = 0, double buy_tax = 0) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+InstrumentRules a_share(double lot = board_lot, double minimum = 0, double buy_tax = 0) {
     constexpr int64_t forever = int64_t{1} << 62;
     constexpr double band = 0.1;
     constexpr double sell_tax = 0.001;
@@ -420,6 +422,7 @@ void lots_minimum_and_purchase_tax_follow_the_instrument() {
     constexpr double taxed_purchase = 99;
     constexpr double star_minimum = 200;
     constexpr double odd_holding = 150;
+    constexpr double bonus_ratio = 1.5;
     auto taxed = tape();
     taxed->instruments = {a_share(1, 0, buy_tax)};
     FinancialSession reserve(taxed, parameters());
@@ -434,10 +437,10 @@ void lots_minimum_and_purchase_tax_follow_the_instrument() {
             "Una compra inferior al mínimo no se ejecuta");
     auto odd = tape(4);
     odd->instruments = {a_share()};
-    odd->actions = {CorporateAction{"bonus", 0, CorporateKind::split, 4, 1.5, std::nullopt,
-                                    true}};
+    odd->actions = {CorporateAction{"bonus", 0, CorporateKind::split, 4, bonus_ratio,
+                                    std::nullopt, true}};
     std::fill_n(odd->prices.begin() + static_cast<std::ptrdiff_t>(2 * price_width), volume_column,
-                price / 1.5);
+                price / bonus_ratio);
     FinancialSession session(odd, parameters());
     static_cast<void>(session.step(full_exposure_action));
     const auto sale = session.step(1);
