@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "historical_masked_campaign",
+  "status": "declared_not_executed",
+  "name": "historical-masked-2000-b",
+  "variant": "B",
+  "retrain_every_months": 36,
+  "comparison": "../evaluation/historical-masked-2000-comparison.json",
+  "scopes": ["US", "CN", "US+CN"],
+  "neural": {
+    "arms": {
+      "rnn": "rnn",
+      "lstm": "lstm",
+      "gru": "gru",
+      "dlinear": "dlinear",
+      "transformer_compact": "transformer"
+    },
+    "case_indices": [0, 10],
+    "search_seed": 42,
+    "head": "quantile_head_v1",
+    "batch_size": 256,
+    "context_sessions": 64,
+    "checkpoint_seconds": 300,
+    "prediction_retention": "heldout_full_train_sessions_v1"
+  },
+  "tabular": {
+    "config": "tabular-historical-masked.json",
+    "arms": {
+      "ridge": "ridge",
+      "xgboost": "xgboost"
+    },
+    "cpu_workers": 1
+  },
+  "limits": {
+    "max_training_jobs": 629,
+    "max_prediction_jobs": 532
+  },
+  "final_test_opened": false
+}

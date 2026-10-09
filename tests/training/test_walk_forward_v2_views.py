@@ -340,3 +340,25 @@ def test_plan_and_protocol_rules_compare_mode_minimum_and_budget():
     assert temporal_search._stopping(convergence) == temporal_search._stopping(plateau)
     for change in (dict(minimum_epochs=4), dict(minimum_epochs=0), dict(patience=6)):
         assert temporal_search._stopping(convergence | change) != temporal_search._stopping(plateau)
+
+
+def test_search_limit_is_declared_by_the_plan_and_still_protects(joint_views, tmp_path):
+    # Las cinco familias con tres semillas planifican 50 ejecuciones en 13 ventanas.
+    full = dict(
+        models=["rnn", "lstm", "gru", "dlinear", "transformer"], finalist_seeds=[42, 43, 44]
+    )
+    with pytest.raises(ValueError, match="650 ejecuciones.*límite declarado de 512"):
+        temporal_search.check_temporal_search(plan(tmp_path, **full), joint_views.output)
+    with pytest.raises(ValueError, match="límite declarado de 649"):
+        temporal_search.check_temporal_search(
+            plan(tmp_path, **full, max_runs=649), joint_views.output
+        )
+    result = temporal_search.check_temporal_search(
+        plan(tmp_path, **full, max_runs=650), joint_views.output
+    )
+    assert result["planned_runs"] == 650 and result["runs_per_fold"] == 50
+    for wrong in (0, 4097, 650.0, "650"):
+        with pytest.raises(ValueError, match="límite declarado"):
+            temporal_search.check_temporal_search(
+                plan(tmp_path, **full, max_runs=wrong), joint_views.output
+            )

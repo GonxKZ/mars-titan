@@ -34,10 +34,21 @@ from mars_titan.models.baselines.external_boosting import (
 from .checkpoints import StopRequest
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
-from .tabular_corpus import _matrix, _predict, feature_order
+from .reference_run import FULL_TRAIN_VALIDATION, PREDICTION_RETENTIONS
+from .tabular_corpus import _matrix, _predict, feature_order, retained_partitions
 
 # Opciones del recorrido que no son parámetros del ajuste externo.
-_READER_OPTIONS = {"batch_size", "max_validation_cache_bytes", "input_policy"}
+_READER_OPTIONS = {
+    "batch_size",
+    "max_validation_cache_bytes",
+    "input_policy",
+    "prediction_retention",
+}
+
+
+def _partitions(options):
+    """Las opciones sin el campo conservan la retención anterior de ajuste y validación."""
+    return retained_partitions(options.get("prediction_retention", FULL_TRAIN_VALIDATION))
 
 
 class _Paused(Exception):
@@ -175,8 +186,12 @@ def run_external_reference(
     stop=None,
     input_policy=STRICT_INPUTS,
     max_disk_cache_bytes=None,
+    prediction_retention=FULL_TRAIN_VALIDATION,
 ):
     """Recorrer todas las filas admitidas sin abrir el test ni reducir la población.
+
+    Con la retención reservada se escriben validación, calibración y evaluación por
+    fila del modelo seleccionado y el ajuste solo se resume.
 
     Antes de crear la salida se estima la caché con la población declarada y se
     falla si no cabe en los presupuestos de RAM o disco ni en lo disponible.
@@ -186,6 +201,7 @@ def run_external_reference(
         raise ValueError("El lote o el modo de recuperación no son válidos")
     if input_policy not in INPUT_POLICIES:
         raise ValueError("La política de entradas no está admitida")
+    retained_partitions(prediction_retention)
     masked = masked_inputs(input_policy)
     if masked and not on_host and max_disk_cache_bytes is None:
         raise ValueError("La edición con máscaras necesita un presupuesto de disco explícito")
@@ -250,6 +266,8 @@ def run_external_reference(
         options["input_policy"] = input_policy
     if max_disk_cache_bytes is not None:
         options["max_disk_cache_bytes"] = max_disk_cache_bytes
+    if prediction_retention != FULL_TRAIN_VALIDATION:
+        options["prediction_retention"] = prediction_retention
     identity = _identity(dataset, options, cp, xgb)
     output.mkdir(parents=True, exist_ok=resume)
     lock = os.open(output / ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
@@ -312,7 +330,9 @@ def run_external_reference(
                 selected = _load(output, report["checkpoint"], report["samples"]["train"])
                 if selected.audit["rounds"] != report["selected_round"]:
                     raise ValueError("El modelo seleccionado no conserva su ronda")
-            for partition in ("train", "validation"):
+            if set(report["predictions"]) != set(_partitions(options)):
+                raise ValueError("Las predicciones terminadas no siguen la retención declarada")
+            for partition in _partitions(options):
                 item = report["predictions"][partition]
                 path = output / f"{partition}-predictions.parquet"
                 safe_destination(path)
@@ -435,7 +455,7 @@ def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
             confirm(model)
         restored = _load(output, report["checkpoint"], report["samples"]["train"])
         predictions = {}
-        for partition in ("train", "validation"):
+        for partition in _partitions(options):
             if stop.requested:
                 raise _Paused
             path = output / f"{partition}-predictions.parquet"
@@ -450,6 +470,18 @@ def _execute(dataset, output, report, parent, cp, xgb, stop, plan=None):
                 presence=presence,
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
+        if "train" not in predictions:
+            # Las particiones reservadas ya han comparado el modelo recargado.
+            report["train_metrics"] = _predict(
+                model,
+                None,
+                dataset,
+                "train",
+                batch_size,
+                None,
+                dtype=np.float32,
+                presence=presence,
+            )
         if "selection" in options and (
             not report["selection"]["stop_reason"]
             or report["selected_round"] != restored.booster.num_boosted_rounds()
@@ -497,6 +529,9 @@ def main():
     parser.add_argument("--disk-cache", action="store_true")
     parser.add_argument("--max-disk-cache-bytes", type=int)
     parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
+    parser.add_argument(
+        "--prediction-retention", choices=PREDICTION_RETENTIONS, default=FULL_TRAIN_VALIDATION
+    )
     parser.add_argument("--resume", action="store_true")
     options = vars(parser.parse_args())
     options["on_host"] = not options.pop("disk_cache")

@@ -30,6 +30,16 @@ from mars_titan.models.baselines.ridge import RidgeModel, fit_ridge_blocks
 
 from .corpus_inputs import CorpusDataset
 from .learning_hold import require_learning_allowed
+from .reference_run import FULL_TRAIN_VALIDATION, PREDICTION_RETENTIONS
+
+
+def retained_partitions(retention):
+    """Particiones con tabla por fila. La retención reservada solo resume el ajuste."""
+    if retention not in PREDICTION_RETENTIONS:
+        raise ValueError("La retención de predicciones no pertenece al contrato")
+    if retention == FULL_TRAIN_VALIDATION:
+        return ("train", "validation")
+    return ("validation", "calibration", "evaluation")
 
 
 def feature_order(input_policy):
@@ -62,6 +72,11 @@ def _predict(
     dtype=np.float64,
     presence=False,
 ):
+    """Predecir una partición completa. Sin destino solo se resumen los errores.
+
+    Sin `restored` no se repite la comparación con el modelo recargado, como en las
+    predicciones de un modelo ya confirmado en otra ventana.
+    """
     count, square, absolute, zero_square, zero_absolute = 0, 0.0, 0.0, 0.0, 0.0
     sessions = SessionErrors()
 
@@ -71,9 +86,8 @@ def _predict(
             matrix, target = _matrix(batch, dtype, presence=presence), batch["target"]
             prediction = model.predict(matrix)
             if (
-                not np.array_equal(prediction, restored.predict(matrix))
-                or not np.isfinite(prediction).all()
-            ):
+                restored is not None and not np.array_equal(prediction, restored.predict(matrix))
+            ) or not np.isfinite(prediction).all():
                 raise ValueError(
                     "Las predicciones restauradas difieren o contienen valores no finitos"
                 )
@@ -98,7 +112,11 @@ def _predict(
                 )
             )
 
-    atomic_parquet_batches(destination, tables())
+    if destination is None:
+        for _ in tables():
+            pass
+    else:
+        atomic_parquet_batches(destination, tables())
     if count != dataset.manifest["counts"][partition] or not count:
         raise ValueError("Las predicciones no recorren exactamente la población declarada")
     return dict(
@@ -120,9 +138,15 @@ def run_tabular_reference(
     batch_size: int = 256,
     max_matrix_bytes: int = 256 * 1024**2,
     input_policy: str = STRICT_INPUTS,
+    prediction_retention: str = FULL_TRAIN_VALIDATION,
 ) -> dict:
-    """Ajustar todas las filas o declarar falta de presupuesto, nunca reducir la población."""
+    """Ajustar todas las filas o declarar falta de presupuesto, nunca reducir la población.
+
+    La retención reservada escribe validación, calibración y evaluación por fila y
+    resume el ajuste sin tabla. La retención anterior conserva ajuste y validación.
+    """
     require_learning_allowed("el ajuste de la referencia tabular")
+    partitions = retained_partitions(prediction_retention)
     if (
         kind not in {"ridge", "boosting"}
         or input_policy not in INPUT_POLICIES
@@ -195,6 +219,9 @@ def run_tabular_reference(
         },
         **policy_identity(input_policy),
     )
+    # El campo solo aparece fuera de la retención anterior, que conserva su recibo.
+    if prediction_retention != FULL_TRAIN_VALIDATION:
+        report["prediction_retention"] = prediction_retention
     output.mkdir(parents=True, exist_ok=False)
     if kind == "boosting" and estimated > max_matrix_bytes:
         report.update(
@@ -240,12 +267,17 @@ def run_tabular_reference(
             report["parameters"] = model.estimator.get_params()
         report["checkpoint"] = dict(path=checkpoint.name, sha256=sha256(checkpoint))
         predictions = {}
-        for partition in ("train", "validation"):
+        for partition in partitions:
             path = output / f"{partition}-predictions.parquet"
             metrics = _predict(
                 model, restored, dataset, partition, batch_size, path, presence=masked
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
+        if "train" not in partitions:
+            # Las particiones reservadas ya han comparado el modelo recargado.
+            report["train_metrics"] = _predict(
+                model, None, dataset, "train", batch_size, None, presence=masked
+            )
         if any(sha256(root / name) != digest for name, digest in code.items()):
             raise ValueError("El código ha cambiado durante el ajuste")
         report.update(
@@ -279,6 +311,9 @@ def main():
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--max-matrix-bytes", type=int, default=256 * 1024**2)
     parser.add_argument("--input-policy", choices=INPUT_POLICIES, default=STRICT_INPUTS)
+    parser.add_argument(
+        "--prediction-retention", choices=PREDICTION_RETENTIONS, default=FULL_TRAIN_VALIDATION
+    )
     args = parser.parse_args()
     result = run_tabular_reference(
         args.manifest,
@@ -288,6 +323,7 @@ def main():
         batch_size=args.batch_size,
         max_matrix_bytes=args.max_matrix_bytes,
         input_policy=args.input_policy,
+        prediction_retention=args.prediction_retention,
     )
     print(json.dumps(result, indent=2))
 
