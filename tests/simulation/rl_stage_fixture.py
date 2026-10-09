@@ -95,8 +95,12 @@ def write_configs(folder, variant):
     return campaign, folder / "rl-stage.json"
 
 
-def base_campaign(root, variant):
-    """Vistas, campaña base con los dobles de la etapa de adaptadores y edición sintética."""
+def base_campaign(root, variant, *, ending=None):
+    """Vistas, campaña base con los dobles de la etapa de adaptadores y edición sintética.
+
+    `ending` es la posición de 2023 en la que termina la serie de A0000, el activo con
+    predicciones que forma el universo, si termina.
+    """
     campaign, stage = write_configs(root / "config", variant)
     data = fixture(root / "data", ("US",))
     hold = root / "hold.json"
@@ -120,7 +124,7 @@ def base_campaign(root, variant):
     assert summary["status"] == "completed"
     assets = {
         "US": [
-            edition_fixture.Asset("A0000", base=20.0),
+            edition_fixture.Asset("A0000", base=20.0, end=ending),
             edition_fixture.Asset("B0001", base=30.0),
             # Instrumento del índice de mercado. Sin predicciones, no entra en el universo.
             edition_fixture.Asset("SPY", base=300.0),

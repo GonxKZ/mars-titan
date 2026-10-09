@@ -59,6 +59,14 @@ REASONS = (
 )
 
 
+class NoAdmittedAssets(ValueError):
+    """Ningún activo pedido cumple las condiciones de la cinta. Conserva sus motivos."""
+
+    def __init__(self, excluded):
+        super().__init__("Ningún activo cumple las condiciones de la cinta reconstruida")
+        self.excluded = dict(sorted(excluded.items()))
+
+
 def _microseconds(moment):
     return int(moment.timestamp()) * 1_000_000 + moment.microsecond
 
@@ -345,7 +353,7 @@ def build_reconstructed_tape(
         for name, value in asset_counts.items():
             counts[name] = counts.get(name, 0) + value
     if not frames:
-        raise ValueError("Ningún activo cumple las condiciones de la cinta reconstruida")
+        raise NoAdmittedAssets(excluded)
     assets = [key for key, _ in frames]
     scores, dropped = _scores(windows, predictions, segment, market, decisions, owner, assets)
     exclusions = {reason: list(excluded.values()).count(reason) for reason in REASONS}

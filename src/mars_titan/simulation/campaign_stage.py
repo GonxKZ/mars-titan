@@ -68,6 +68,7 @@ from .policy_plan import (
     load_stage,
     plan_stage,
 )
+from .reconstructed_tape import NoAdmittedAssets
 
 RUN_KIND = "historical_masked_rl_stage_run"
 RECEIPT_KIND = "masked_rl_job"
@@ -678,17 +679,21 @@ class _Tapes:
         if (folder / "manifest.json").is_file():
             tape = read_tape(folder)
         else:
-            tape, report = window_tapes.build_segment_tape(
-                self.edition,
-                receipt,
-                values,
-                market=job["market"],
-                role=role,
-                lag=self.lag,
-                # El universo guarda claves `mercado/símbolo` y la edición pide símbolos.
-                symbols=[asset.split("/", 1)[1] for asset in universe],
-            )
-            if tuple(tape.assets) != universe:
+            try:
+                tape, report = window_tapes.build_segment_tape(
+                    self.edition,
+                    receipt,
+                    values,
+                    market=job["market"],
+                    role=role,
+                    lag=self.lag,
+                    # El universo guarda claves `mercado/símbolo` y la edición pide símbolos.
+                    symbols=[asset.split("/", 1)[1] for asset in universe],
+                )
+            except NoAdmittedAssets as error:
+                # Excluir todo el universo es el mismo fallo que excluir una parte de él.
+                tape, report = None, dict(excluded=error.excluded)
+            if tape is None or tuple(tape.assets) != universe:
                 # Solo la evaluación puede excluir un activo del universo: el universo se
                 # eligió entre los admitidos en ajuste y validación.
                 _require(role == "evaluation", f"El universo no es admisible en {role}")

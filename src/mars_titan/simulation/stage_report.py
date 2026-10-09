@@ -27,6 +27,8 @@ Reglas declaradas antes de ver resultados:
   una pregunta separada y el coste principal declarado es el que se interpreta primero.
 - El índice chino se calcula con niveles del CSI 300 (`simulation.index_benchmark`) si se
   suministran con su huella, y se marca con su base.
+- Una ventana sin evaluación porque una serie del universo termina dentro del tramo se
+  publica en `survival`. La sensibilidad con retornos de salida declarada es secundaria.
 """
 
 import argparse
@@ -60,6 +62,7 @@ REPORT_KIND = "historical_masked_rl_financial_report"
 SEED_RULE = "equal_capital_per_seed_mean_nav"
 WINDOW_RULE = "liquidated_last_close_then_chained_windows"
 DIFFERENCE = "primary_minus_control"
+SERIES_ENDS = "series_ends_in_tape"
 STATUSES = ("completed", "paused")
 _RECEIPT_BYTES = 64 * 1024**2
 
@@ -305,6 +308,32 @@ def _family(found, windows, arms, *, planned, benchmark, market, capital, cost):
     return dict(family, returns=returns)
 
 
+def survival(policies, output):
+    """Ventanas sin evaluación porque una serie del universo termina dentro del tramo.
+
+    La regla principal excluye esas ventanas para todos los brazos. La sensibilidad
+    declarada, con retornos de salida, es secundaria y queda pendiente si hay alguna.
+    """
+    affected = {}
+    for receipt in output["receipts"].values():
+        failure = receipt["identity"]["tapes"]["failure"]
+        if not failure or failure.get("reason") != "universe_assets_excluded":
+            continue
+        ended = {a for a, reason in failure["excluded"].items() if reason == SERIES_ENDS}
+        if ended:
+            job = receipt["job"]
+            key = (job["scope"], job["market"], job["window"])
+            affected[key] = affected.get(key, set()) | ended
+    return dict(
+        policies["survival_sensitivity"],
+        status="secondary_evaluation_pending" if affected else "no_affected_windows",
+        affected=[
+            dict(scope=scope, market=market, window=window, assets=sorted(assets))
+            for (scope, market, window), assets in sorted(affected.items())
+        ],
+    )
+
+
 def _bootstrap(family, report, primary):
     returns = family.pop("returns", None)
     if returns is None or len(returns) < 2:
@@ -435,8 +464,9 @@ def build_report(stage_path, outputs, destination, *, benchmarks=None):
             _bootstrap(family, report, policies["contrasts"]["primary"])
             for family in families(stage, output, levels)
         ]
+        exits = survival(policies, output)
         output.pop("receipts")
-        sections.append(dict(output=output, families=found))
+        sections.append(dict(output=output, families=found, survival=exits))
     metrics, contrasts, equity = _tables(sections)
     result = dict(
         schema_version=1,

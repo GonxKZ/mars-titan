@@ -284,3 +284,26 @@ def test_the_campaign_command_writes_the_report(base, stage_output, tmp_path, ca
     printed = json.loads(capsys.readouterr().out)
     assert printed["families"] == 8 and printed["with_bootstrap"] == 8
     assert printed["missing_benchmarks"] == ["CN"]
+
+
+def test_a_universe_series_ending_in_evaluation_is_listed_for_the_survival_sensitivity(
+    tmp_path_factory, tmp_path, learning_doubles
+):
+    # A0000 deja de cotizar en octubre de 2023, dentro de la evaluación de fold-003.
+    base = fixture.base_campaign(tmp_path_factory.mktemp("ending"), "A", ending=200)
+    fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
+    result, found = report_of(base, [tmp_path / "stage"], tmp_path / "report")
+    survival = result["sections"][0]["survival"]
+    assert survival["status"] == "secondary_evaluation_pending"
+    assert survival["exit_returns"] == [0.0, -0.3, -1.0] and survival["role"] == "secondary"
+    assert survival["affected"] == [
+        dict(scope="US", market="US", window="fold-003", assets=["US/A0000"])
+    ]
+    assert found[("gru", 10)]["windows"] == ["fold-002"]
+    assert found[("gru", 10)]["excluded"]["fold-003"]["reason"] == "failed_episodes"
+
+
+def test_without_ending_series_the_survival_sensitivity_has_no_window(base, stage_output, tmp_path):
+    result, _ = report_of(base, [stage_output], tmp_path / "report")
+    survival = result["sections"][0]["survival"]
+    assert survival["status"] == "no_affected_windows" and survival["affected"] == []

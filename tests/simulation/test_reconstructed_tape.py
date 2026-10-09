@@ -15,7 +15,11 @@ from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.simulation.environment import FinancialEnv
 from mars_titan.simulation.market import RECONSTRUCTED_CONTRACT, MarketTape
 from mars_titan.simulation.market_rules import china_a_share_instrument
-from mars_titan.simulation.reconstructed_tape import build_reconstructed_tape, read_edition
+from mars_titan.simulation.reconstructed_tape import (
+    NoAdmittedAssets,
+    build_reconstructed_tape,
+    read_edition,
+)
 from tests.environments.walk_forward_fixture import microseconds
 from tests.simulation.native_library import requires_native_library
 from tests.simulation.policy_tape_fixture import monthly_window
@@ -105,6 +109,12 @@ def test_only_verified_assets_enter_and_every_exclusion_has_a_reason(edition):
     cn, cn_report = build(edition, "CN")
     assert cn_report["excluded"] == {"CN/600010.SS": "unverified_rows_in_tape"}
     assert cn.currency == "CNY" and len(cn.assets) == 3
+
+
+def test_a_tape_without_admitted_assets_reports_every_exclusion(edition):
+    with pytest.raises(NoAdmittedAssets) as raised:
+        build(edition, symbols=["EEE"])
+    assert raised.value.excluded == {"US/EEE": "series_ends_in_tape"}
 
 
 def test_identity_declares_the_reconstructed_treatment_and_its_limits(edition):
