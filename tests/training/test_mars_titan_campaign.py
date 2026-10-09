@@ -148,7 +148,8 @@ def test_with_every_section_declared_no_compared_arm_lacks_a_producer(tmp_path):
         limits=dict(max_training_jobs=100_000, max_prediction_jobs=100_000),
     )
     report = plan.check_campaign(path)
-    assert report["pending_families"] == {}
+    # Solo queda el control en línea, cuyos trabajos declara la campaña A por etapas.
+    assert set(report["pending_families"]) == {plan.ONLINE_CONTROL}
     campaign = plan.load_campaign(path)
     compared = campaign["comparison_config"]["arms"]
     planned = {job["arm"] for job in plan.plan_campaign(campaign)}

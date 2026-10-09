@@ -50,8 +50,10 @@ TITANS_RECIPE = "titans_financial_chronological_v1"
 # Repite titans_walk_forward.SEARCHED sin importar PyTorch. Una prueba lo fija.
 TITANS_SEARCHED = ("learning_rate", "max_grad_norm")
 FIT, CARRY = "fit", "carry"
-# El control en línea parte del estado elegido de otro brazo en su misma ventana.
+# El control en línea parte del estado elegido de otro brazo en su misma ventana. Su brazo
+# en la comparación pertenece a la familia ONLINE_CONTROL.
 ONLINE = "online"
+ONLINE_CONTROL = "online_control"
 # GRU candidata con banco episódico. Repite candidate_run.RECIPE sin importar PyTorch.
 EPISODIC = "episodic_gru"
 CANDIDATE_RECIPE = "candidate_gru_chronological_v1"
@@ -112,6 +114,16 @@ EXTENSION_POINTS = {
             "y su declaración. Falta declararla en las campañas A y B después de medir la "
             "penalización C y el lector en cuda:0. La declaración preparada está en "
             "historical-masked-campaign-extensions.json"
+        ),
+    ),
+    ONLINE_CONTROL: dict(
+        issue=443,
+        pending=(
+            "El ejecutor del control en línea existe y el motor lo registra como trabajo "
+            "online, que parte de transformer_compact y usa las etiquetas y el tope del banco "
+            "de mars_titan_m1 en la misma ventana y semilla. Sus trabajos y su regla se "
+            "declaran en la sección online_controls de la campaña A por etapas. Esta campaña "
+            "no la declara"
         ),
     ),
 }
