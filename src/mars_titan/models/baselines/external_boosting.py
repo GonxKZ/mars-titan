@@ -23,6 +23,11 @@ MAX_MODEL_BYTES = 128 * 1024**2
 MAX_DISK_CACHE_BYTES = 4 * 1024**4
 
 
+# Sin remuestreo de filas ni columnas: cada árbol ve todas las filas reales de la ventana.
+# La política de datos de la campaña lo comprueba antes de planificar.
+ROW_SAMPLING = dict(subsample=1.0, colsample_bytree=1.0)
+
+
 def free_disk_bytes(path):
     """Espacio libre del sistema de archivos que alojará la ruta, aunque aún no exista."""
     path = Path(path).absolute()
@@ -502,8 +507,7 @@ def fit_external_boosting(
                 max_bin=max_bin,
                 max_depth=max_depth,
                 learning_rate=learning_rate,
-                subsample=1.0,
-                colsample_bytree=1.0,
+                **ROW_SAMPLING,
                 seed=seed,
                 nthread=4,
             )

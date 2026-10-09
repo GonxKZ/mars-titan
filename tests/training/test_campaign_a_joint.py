@@ -20,6 +20,7 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, eligible_folds
 from mars_titan.training import campaign_budget as budget
+from mars_titan.training import campaign_data_policy as data_policy
 from mars_titan.training import campaign_numerics as numerics
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
@@ -152,6 +153,8 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         (lambda v: v["numerics"].update(float32_matmul_precision="high"), "FP32 estricto"),
         (lambda v: v["numerics"].update(cuda_matmul_allow_tf32=0), "FP32 estricto"),
         (lambda v: v.pop("numerics"), "contrato"),
+        (lambda v: v.update(data_policy="real_and_synthetic"), "real_edition_only"),
+        (lambda v: v.pop("data_policy"), "contrato"),
     ],
     ids=[
         "xgboost_not_declared_deterministic",
@@ -170,6 +173,8 @@ def test_extra_seeds_repeat_only_the_selected_case_after_every_search_of_the_sco
         "matmul_precision_high",
         "matmul_flag_not_boolean",
         "v2_without_numerics",
+        "other_data_policy",
+        "v2_without_data_policy",
     ],
 )
 def test_v2_rejects_declarations_that_break_the_seed_stopping_or_memory_rules(
@@ -888,3 +893,93 @@ def test_target_counts_purge_a_label_that_matures_exactly_at_the_boundary(tmp_pa
     protocol = json.loads(US_V2.read_text())
     counts = budget.target_window_counts(tmp_path / "labels", protocol)
     assert counts["fold-000"] == dict(train=1, validation=0, calibration=0, evaluation=0)
+
+
+# Política de datos: solo la edición real
+
+
+def test_the_plan_checks_every_declared_document_of_the_campaign_and_its_stages():
+    value = campaign()
+    names = [path.name for path in data_policy.documents(value, plan.LATER_STAGES)]
+    assert names == [
+        "historical-masked-campaign-a-v2.json",
+        "tabular-historical-masked-v2.json",
+        "chronological-training-historical-masked.json",
+        "chronological-training.json",
+        "episodic-readout-historical-masked.json",
+        "cm-v1-factorial.json",
+        "historical-masked-adapter-stage-a-v2.json",
+        "adapter-matrix-v2.json",
+        "historical-masked-rl-stage-a-v2.json",
+        "historical-masked-rl-policies.json",
+        "historical-masked-ablation-stage-a-v2.json",
+    ]
+    assert len(plan.plan_campaign(value)) == 2322
+    assert plan.check_campaign(CAMPAIGN)["data_policy"] == "real_edition_only"
+
+
+@pytest.mark.parametrize(
+    ("stage", "matrix", "message"),
+    [
+        (dict(scenario="hmm_regimes"), {}, "clave .scenario"),
+        (dict(environment=dict(kind="synthetic_market")), {}, "valor .environment.kind"),
+        (dict(environment=dict(source="simulated")), {}, "fuente .environment.source"),
+        ({}, dict(budget=dict(augmentation=True)), "clave .budget.augmentation"),
+        ({}, dict(input_policy="strict_four_modalities_v1"), "no es la política"),
+        ({}, dict(rows="resampled_with_replacement"), "valor .rows"),
+    ],
+    ids=[
+        "stage_scenario",
+        "synthetic_environment",
+        "simulated_source",
+        "augmented_adapters",
+        "another_input_policy",
+        "resampled_rows",
+    ],
+)
+def test_the_plan_rejects_synthetic_resampled_or_foreign_data_in_a_registered_stage(
+    tmp_path, monkeypatch, stage, matrix, message
+):
+    path = edited(tmp_path, lambda value: None)
+    value = plan.load_campaign(path)
+    folder = tmp_path / "stages"
+    folder.mkdir()
+    atomic_json(folder / "matrix.json", dict(kind="matrix", **matrix))
+    atomic_json(
+        folder / "stage.json",
+        dict(kind="stage", campaign=str(path.resolve()), matrix="matrix.json", **stage),
+    )
+    clean = dict(stages={}, joint_stage=str(folder / "other.json"))
+    atomic_json(folder / "other.json", dict(campaign=str(CAMPAIGN.resolve())))
+    monkeypatch.setattr(
+        plan,
+        "LATER_STAGES",
+        dict(clean=clean, dirty=dict(stages=dict(A=str(folder / "stage.json")))),
+    )
+    with pytest.raises(ValueError, match=message):
+        plan.plan_campaign(value)
+
+
+def test_the_plan_rejects_row_resampling_in_xgboost_and_views_of_another_edition(monkeypatch):
+    from mars_titan.models.baselines import external_boosting
+
+    value = campaign()
+    monkeypatch.setattr(external_boosting, "ROW_SAMPLING", dict(subsample=0.8, colsample_bytree=1))
+    with pytest.raises(ValueError, match="XGBoost remuestrea"):
+        plan.plan_campaign(value)
+    monkeypatch.undo()
+    with pytest.raises(ValueError, match="vistas de la edición histórica"):
+        plan.plan_campaign(dict(value, input_policy="strict_four_modalities_v1"))
+
+
+def test_findings_read_keys_and_values_but_not_the_prose_that_explains_a_decision():
+    document = dict(
+        pending=["decidida con fixtures técnicos"],
+        cases=[dict(name="ok"), dict(name="bootstrap_rows")],
+        tapes="reconstructed_tapes",
+        source="edition_views",
+    )
+    assert data_policy.findings(document, "p", "doc") == [
+        "doc: valor .cases[1].name='bootstrap_rows'"
+    ]
+    assert data_policy.findings(dict(dataset="toy"), "p", "doc") == ["doc: fuente .dataset='toy'"]

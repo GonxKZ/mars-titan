@@ -17,8 +17,9 @@ sus dos núcleos son trabajos auxiliares sin traslado y cada brazo parte de uno 
 las mismas reglas, para medir y contar sin cambiar su archivo.
 
 La versión 2 de la configuración declara además la política de semillas, la regla de parada,
-las opciones de memoria pendientes, el orden de ejecución y la precisión numérica, que solo
-admite FP32 estricto (`campaign_numerics`). Con `by_window` el plan recorre
+las opciones de memoria pendientes, el orden de ejecución, la precisión numérica, que solo
+admite FP32 estricto (`campaign_numerics`), y la política de datos, que solo admite la edición
+real verificada (`campaign_data_policy`). Con `by_window` el plan recorre
 cada ventana de campaña completa antes de la siguiente (`campaign_schedule`). Los brazos de
 cada ámbito salen de la comparación: con su diseño conjunto, el ámbito conjunto ajusta todos
 los brazos y cada ámbito de un mercado solo los controles separados, con los auxiliares que
@@ -47,7 +48,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, masked_inputs
 from mars_titan.evaluation import walk_forward_comparison as comparison
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 
-from . import campaign_numerics, campaign_schedule
+from . import campaign_data_policy, campaign_numerics, campaign_schedule
 from .reference_design import PINBALL, QUANTILE_HEAD, candidate_indices, design_cases
 
 CAMPAIGN_KIND = "historical_masked_campaign"
@@ -196,7 +197,14 @@ _NEURAL = {
     "prediction_retention",
 }
 # Campos que añade la versión 2 de la configuración.
-_FIELDS_V2 = {"seed_policy", "stopping", "memory_options", "execution", "numerics"}
+_FIELDS_V2 = {
+    "seed_policy",
+    "stopping",
+    "memory_options",
+    "execution",
+    "numerics",
+    "data_policy",
+}
 _SEED_POLICY = {"search_seed", "selected_case_seeds", "deterministic_arms"}
 # Único modo de parada conectado: la regla del protocolo. La parada conjunta de los brazos
 # emparejados se añadirá aquí como otro modo, con sus grupos, cuando exista su ejecutor.
@@ -727,6 +735,7 @@ def load_campaign(path):
             "La campaña declara su orden de ejecución: by_scope o by_window",
         )
         campaign_numerics.declared(config["numerics"])
+        campaign_data_policy.declared(config["data_policy"])
     campaign = dict(
         config,
         sha256=digest,
@@ -981,7 +990,13 @@ def arm_output(campaign, arm):
 
 
 def plan_campaign(campaign):
-    """Enumerar todos los trabajos con sus dependencias sin leer vistas ni datos."""
+    """Enumerar todos los trabajos con sus dependencias sin leer vistas ni datos.
+
+    Con `data_policy` declarada, comprueba antes la política de datos de la campaña y de
+    sus etapas registradas (`campaign_data_policy`).
+    """
+    if campaign.get("data_policy") is not None:
+        campaign_data_policy.check(campaign, LATER_STAGES)
     jobs = []
     for scope in campaign["scopes"]:
         specs = _arm_specs(campaign, scope)
@@ -1108,6 +1123,7 @@ def check_campaign(path):
         stopping=campaign.get("stopping", {"mode": STOPPING_MODES[0]}),
         execution_order=execution_order(campaign),
         numerics=campaign.get("numerics"),
+        data_policy=campaign.get("data_policy"),
         memory_options=campaign.get("memory_options"),
         launch_blockers=launch_blockers(campaign),
         pending_families=pending_families(campaign),

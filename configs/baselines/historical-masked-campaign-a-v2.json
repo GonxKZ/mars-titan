@@ -73,6 +73,7 @@
   },
   "stopping": {"mode": "protocol"},
   "execution": {"order": "by_window"},
+  "data_policy": "real_edition_only",
   "numerics": {
     "float32_matmul_precision": "highest",
     "cuda_matmul_allow_tf32": false,
