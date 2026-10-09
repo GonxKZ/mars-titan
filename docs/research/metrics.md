@@ -501,7 +501,9 @@ de cada brazo. Tomar M1 como base de K es una propuesta pendiente de revisión.
 M3 todavía no está definida en el código y su brazo exige esa definición antes
 de evaluar. La versión 2 de la configuración añade los
 [estratos por presencia de modalidades](#estratos-por-presencia-de-modalidades),
-un análisis secundario que no cambia nada de lo anterior.
+un análisis secundario que no cambia nada de lo anterior. La versión 3 añade la
+[ablación de modalidades en inferencia](#ablación-de-modalidades-en-inferencia),
+otro análisis secundario que tampoco cambia las salidas anteriores.
 
 Falta conectar los productores de predicciones. Las referencias neuronales con
 retención `heldout_full_train_sessions_v1` ya escriben archivos por tramo con
@@ -652,6 +654,141 @@ activo, al mercado y al periodo, así que un MAE menor en
 harían falta controles con la misma fila y la modalidad enmascarada. Los
 contrastes entre brazos dentro de un estrato sí son emparejados, porque todos los
 brazos evalúan las mismas filas.
+
+## Ablación de modalidades en inferencia
+
+Es un análisis secundario y descriptivo, declarado el 9 de octubre de 2026 antes
+de cualquier resultado. Los estratos comparan subpoblaciones distintas. La
+ablación compara cada fila consigo misma: el estado elegido de cada brazo,
+semilla y ventana vuelve a predecir la evaluación con noticias, fundamentales o
+ambos leídos como ausentes, sin reentrenar ni recalibrar. Mide cuánto depende
+cada brazo de esas modalidades en las filas que las tenían. No se usa para
+seleccionar modelos, configuraciones ni épocas, y no cambia la conclusión que se
+extraiga del MAE residual por sesión de toda la población.
+
+### Declaración
+
+La sección `modality_ablation` de la versión 3 de la
+[configuración](../../configs/evaluation/historical-masked-2000-comparison.json)
+fija el estatus (`secondary_descriptive`), el uso permitido, las tres variantes
+(`mask_news`, `mask_fundamentals` y `mask_news_and_fundamentals`), el
+enmascaramiento, la causa de ausencia (`modality_ablation`), el estado de
+partida, la política de memoria, el tramo (`evaluation`), las filas, la métrica,
+la prohibición de recalibrar, los umbrales, la corrección por comparaciones
+múltiples y lo que el análisis no mide. Su huella SHA-256 al declararla es
+`c942946e1c2bcbd3d2e700cb0cdc0932b5451b4487ccf4bb57dfe97c2eff61c1`. El cargador
+rechaza cualquier otro valor de esos campos y una versión 3 sin la sección. Las
+configuraciones de versión 1 y 2 producen las mismas salidas que antes de este
+cambio. Se comprobó en procesos separados frente al código anterior con 17
+huellas idénticas: lotes del lector y observaciones de la ruta normal, informe y
+`sessions.parquet` de las versiones 1 y 2, traslados neuronal y tabular y las
+predicciones de una ventana de Titans-MAC.
+
+### Enmascaramiento
+
+`data/modality_ablation.py` escribe en la tabla de muestras lo mismo que tiene
+una ausencia real según el contrato de máscaras: bit de presencia falso, vector
+con el relleno de ausencia (`missing_fill`, cero en valores, máscaras y edades),
+disponibilidad nula y la causa `modality_ablation` en `missing_reasons`. Las
+noticias pasan además a cero eventos, porque el lector exige que presencia y
+recuento coincidan. Las filas que ya carecían de la modalidad conservan su causa
+original. Después la tabla pasa por las mismas comprobaciones que cualquier
+muestra. La fila original se valida antes de enmascararla, así que una fila
+incoherente no queda oculta.
+
+`CorpusDataset(..., modality_ablation=...)` aplica la variante en
+`_sample_group`, el único punto de decodificación de los lotes supervisados, de
+las observaciones y del índice de observaciones de los modelos con memoria. La
+identidad de la vista no cambia y la ablación se declara en un campo propio de
+cada recibo. Las pruebas comparan la lectura enmascarada con un corpus generado
+con la modalidad ausente de verdad y obtienen los mismos lotes, observaciones y
+eventos del índice, con y sin bloques. Sin el parámetro, la lectura no cambia.
+
+### Estado, memoria y calibración
+
+- **Estado.** En una ventana reentrenada se usa el estado elegido en ella y en una
+  ventana trasladada de la variante B, el del ancla que la campaña base traslada.
+  Se reutiliza el traslado de cada familia (referencias neuronales y tabulares,
+  GRU candidata, Titans-MAC, MARS-TITAN y CM-v1) con el parámetro
+  `modality_ablation`. Solo se predice la evaluación. La propia ventana del ancla
+  solo se admite con la ablación, porque su estado se eligió con la validación,
+  anterior a la calibración y a la evaluación.
+- **Memoria.** Titans-MAC, MARS-TITAN, CM-v1 y la GRU candidata tienen estado en
+  línea. Su predicción enmascarada recorre el calentamiento y el tramo con las
+  mismas entradas ablacionadas y empieza con la memoria inicial, igual que la
+  predicción original. La pregunta es qué ocurre si la modalidad no existe en
+  todo lo que el modelo observa. Enmascarar solo las filas medidas mezclaría dos
+  regímenes de entrada en la misma memoria y no correspondería a ninguna ausencia
+  real. Por eso, en estos modelos, una fila sin la modalidad puede cambiar de
+  predicción. El informe cuenta esas filas por ventana (`unaffected_changed`) y no
+  las usa en la métrica. En un modelo sin memoria ese recuento debe ser cero y las
+  pruebas lo comprueban. Con pesos iniciales y un optimizador que no modifica
+  pesos, la predicción enmascarada de Titans-MAC coincide bit a bit con la del
+  mismo estado sobre un corpus sin noticias ni fundamentales.
+- **Calibración.** Los cuantiles enmascarados se corrigen con el calibrador común
+  de la ventana, ajustado una vez con las predicciones originales de calibración.
+  Nunca se vuelve a ajustar y las pruebas cuentan el mismo número de ajustes con y
+  sin ablación.
+
+### Métrica, filas e incertidumbre
+
+Las filas afectadas por una variante son las filas evaluadas con al menos una de
+sus modalidades presente, leídas de la vista como en los estratos. Son las únicas
+cuya entrada cambia. La métrica es la diferencia emparejada del MAE por sesión en
+esas filas,
+$\Delta=\operatorname{MAE}^{\text{enmascarado}}-\operatorname{MAE}^{\text{original}}$,
+con la ponderación declarada, uniendo ventanas, para el ámbito y para cada
+mercado. Un valor positivo indica que el error del brazo crece sin la modalidad.
+Se informan también la cobertura y la anchura de los intervalos del 80 % y del
+95 % de ambas predicciones con el mismo calibrador, y los recuentos de filas
+afectadas y no afectadas por ventana y mercado.
+
+Para cada variante y vista, los contrastes forman una familia sobre los brazos
+con `compare_series` y el contraste enmascarado menos original. Las semillas se
+promedian sesión a sesión y el bloque, las réplicas, la semilla y la sensibilidad
+son los de la comparación principal. Entre variantes y vistas se aplica
+Bonferroni sobre tres variantes por el número de vistas: 9 celdas en US+CN, con
+confianza $1-0{,}05/9\approx 0{,}99444$, y 3 en US o en CN, con $1-0{,}05/3\approx
+0{,}98333$. Los umbrales son los de los estratos, 1.000 filas y 50 sesiones. Por
+debajo, la celda aparece con su motivo y sin métricas.
+
+### Etapa, recuento y coste
+
+`training/modality_ablation_stage.py` es una etapa posterior de la campaña
+(`LATER_STAGES`) que se ejecuta con `scripts/run_masked_campaign.py ablation
+check|run|sources`. Parte de una campaña base confirmada, comprueba la protección
+del aprendizaje antes de crear salidas y antes de cada trabajo pendiente, e
+instala durante la ejecución un gancho global que rechaza cualquier paso de un
+optimizador de PyTorch. Cada trabajo confirma su identidad, el estado de partida
+y unas filas y objetivos iguales a los de la campaña base en esa ventana.
+`sources` publica el manifiesto que lee la comparación con `--ablation-sources`.
+Sin ese manifiesto, la sección queda `not_computed` y el resto del informe no
+cambia.
+
+Las etapas declaradas para A y B prevén 4.185 predicciones cada una, 1.395 por
+variante: 31 pares de brazo y semilla (cinco referencias neuronales y cuatro
+brazos de Titans-MAC con tres semillas, XGBoost con tres y Ridge con una) en 19
+ventanas de US, 13 de CN y 13 de US+CN. B cuesta lo mismo que A porque cada
+ventana predice con el estado que la campaña usa en ella. El comando `throughput`
+acepta `--ablation-stage` y estima sus horas con los caudales de inferencia ya
+medidos, con la evaluación y su calentamiento en las familias cronológicas. Los
+tabulares quedan sin estimar. No se ha medido el coste del análisis sobre la
+edición real.
+
+### Qué no mide
+
+- No mide un efecto causal económico. Enmascarar cambia la entrada del modelo, no
+  la información disponible en el mercado.
+- Dependencia no es utilidad. Un brazo puede cambiar mucho su predicción sin la
+  modalidad y no ganar precisión con ella, o al revés.
+- No equivale a entrenar sin la modalidad. El estado se ajustó con ella y no se
+  ha adaptado a su ausencia, mientras que un modelo entrenado sin ella podría
+  compensarla con otras entradas.
+- Una fila enmascarada combina rasgos poco frecuentes en el ajuste, como un activo
+  grande sin noticias. El modelo puede extrapolar en esas combinaciones.
+- Las filas con noticias o fundamentales no son una muestra al azar. Las
+  diferencias entre variantes describen poblaciones distintas, igual que los
+  estratos.
 
 ## Coste medido
 
