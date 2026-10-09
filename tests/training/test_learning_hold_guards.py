@@ -346,6 +346,27 @@ ENTRY_POINTS = {
             out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
         ),
     ),
+    "mars_titan_walk_forward": _simple(
+        "mars_titan.training.mars_titan_walk_forward",
+        "_parent",
+        lambda m, out: m.run_mars_titan_window(
+            out.with_name("v.json"),
+            out.with_name("parent"),
+            out.with_name("r.json"),
+            components={"episodic_bank": "m1"},
+            seed=42,
+            output=out,
+            search_case="lr1e-4",
+            device="cpu",
+        ),
+    ),
+    "carry_mars_titan": _simple(
+        "mars_titan.training.mars_titan_walk_forward",
+        "read_manifest",
+        lambda m, out: m.carry_mars_titan(
+            out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
+        ),
+    ),
 }
 
 

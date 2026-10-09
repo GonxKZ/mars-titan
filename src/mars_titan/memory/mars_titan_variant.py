@@ -83,15 +83,10 @@ def _associative(value, allowed):
     return MatureCorrection(memory, key=value["key"])
 
 
-def select_variant(declaration, components, *, base):
-    """Validar la combinación pedida contra la declaración y devolver su variante."""
-    if not isinstance(components, dict) or not isinstance(base, dict):
-        raise ValueError("La variante necesita componentes y la identidad del núcleo")
-    if base.get("architecture") != "titans_mac" or set(base) != _BASE_FIELDS:
-        raise ValueError("La base debe ser la identidad de un núcleo Titans-MAC")
-    if base["configuration"].get("variant") != "mac_online":
-        raise ValueError("MARS-TITAN parte de Titans-MAC mac_online")
-    canonical(base)
+def check_components(declaration, components):
+    """Validar una combinación sin núcleo: componentes normalizados y corrección B6."""
+    if not isinstance(components, dict):
+        raise ValueError("La variante necesita sus componentes declarados")
     declared = declaration["components"]
     for name, value in components.items():
         component = declared.get(name)
@@ -128,6 +123,19 @@ def select_variant(declaration, components, *, base):
             rule=memory.rule, key=correction.key, rate=memory.rate, forgetting=memory.forgetting
         )
     canonical(components)
+    return components, correction
+
+
+def select_variant(declaration, components, *, base):
+    """Validar la combinación pedida contra la declaración y devolver su variante."""
+    if not isinstance(base, dict):
+        raise ValueError("La variante necesita la identidad del núcleo")
+    if base.get("architecture") != "titans_mac" or set(base) != _BASE_FIELDS:
+        raise ValueError("La base debe ser la identidad de un núcleo Titans-MAC")
+    if base["configuration"].get("variant") != "mac_online":
+        raise ValueError("MARS-TITAN parte de Titans-MAC mac_online")
+    canonical(base)
+    components, correction = check_components(declaration, components)
     return MarsTitanVariant(base=base, components=components, correction=correction)
 
 
