@@ -66,7 +66,7 @@ El 9 de octubre de 2026, antes de cualquier resultado, el autor decidió cambiar
 
 `configs/evaluation/historical-masked-joint-cn-walk-forward-v3.json` es el protocolo US v2 con `market="CN"`. La unión exige que los dos protocolos solo difieran en el mercado, así que US+CN usa `historical-masked-us-walk-forward-v2.json` para US y este archivo para CN. Las ventanas conjuntas coinciden fecha a fecha con las de US, con los mismos identificadores.
 
-Las filas de China en las seis primeras ventanas salen de los objetivos con la misma regla que las vistas (ajuste, validación, calibración y evaluación):
+Las filas de China en las seis primeras ventanas salen de los objetivos `targets-v3` con la misma regla que las vistas (ajuste, validación, calibración y evaluación):
 
 | Ventana | Validación desde | Filas CN | Cuenta para CN |
 | --- | --- | --- | --- |
@@ -199,49 +199,24 @@ uv run --no-sync python -m mars_titan.training.temporal_search \
   --config <plan de referencias de versión 4> --views <vistas conjuntas v2> --check
 ```
 
-Las vistas conjuntas v3 se preparan con la campaña A v2, que aplica la elegibilidad de China. No se han generado. Ocuparían unos 8,3 GB y tardarían unos 76 minutos, por proporción con las 13 ventanas de la v2 (5,7 GB y 52 minutos). La preparación espera a la confirmación del autor y a la revisión del hueco de datos chinos entre mayo y julio de 2019, que se ve en la validación de `fold-015` (40.605 filas CN frente a unas 90.000 en las ventanas vecinas):
+Las vistas de la campaña A v2 no se han generado. El 9 de octubre se aprobó regenerar la edición como v3.1, que recupera unos 1,58 millones de ventanas de precios rechazadas por redondeo OHLC (un 10 % más en US y un 4 % más en CN) y admite con máscara las sesiones sin datos en todo el mercado, como el 29 y el 30 de abril de 2019 en CN. Por eso los tres ámbitos (US+CN desde 2004 y los controles US y CN) se prepararán sobre la v3.1 y sus objetivos `targets-v3.1`, y no sobre la v3. Las vistas v3 de US y CN pasan la comprobación de la campaña A v2, pero la v3.1 las sustituye. Las órdenes reciben la edición como parámetro y no se ejecutarán hasta que la v3.1 esté verificada:
 
 ```bash
 uv run --no-sync python scripts/run_masked_campaign.py prepare \
   --campaign configs/baselines/historical-masked-campaign-a-v2.json \
-  --parent <supervisión histórica>/targets-v3/manifest.json \
-  --output <vistas conjuntas v3> --scope US+CN
+  --parent <edición v3.1>/targets-v3.1/manifest.json --output <vistas A v2>
 uv run --no-sync python scripts/run_masked_campaign.py views \
   --campaign configs/baselines/historical-masked-campaign-a-v2.json \
-  --views US+CN=<vistas conjuntas v3>/US+CN --views US=<vistas>/US --views CN=<vistas>/CN
+  --views US+CN=<vistas A v2>/US+CN --views US=<vistas A v2>/US --views CN=<vistas A v2>/CN
+uv run --no-sync python scripts/run_masked_campaign.py budget \
+  --campaign configs/baselines/historical-masked-campaign-a-v2.json \
+  --views US+CN=<vistas A v2>/US+CN --views US=<vistas A v2>/US --views CN=<vistas A v2>/CN \
+  --write-counts <recuentos v3.1> --rate 16000 --epochs 10
 ```
 
-Las vistas US y CN de la campaña A sirven sin cambios para los controles separados. La comprobación de vistas de la campaña A v2 las acepta con sus 19 y 13 ventanas. Un verificador local independiente, adaptado del de la campaña A, recalcula las fronteras, comprueba fila a fila la purga y los objetivos, recalcula la elegibilidad de China frente a la declarada y compara cada ventana conjunta con su gemela por mercado (US v2 en las 19 y CN v2 en las elegibles).
+Con las proporciones de la v3, las vistas ocuparían unos 17 GB (unos 9 GB las conjuntas, porque cada ventana guarda una fila por muestra de todos los activos) y tardarían unas 2,5 horas preparadas una tras otra, o algo menos de hora y media con los tres ámbitos en paralelo. Un verificador local independiente, adaptado del de la campaña A y parametrizado por la edición, recalcula las fronteras, comprueba fila a fila la purga y los objetivos de los tres ámbitos, recalcula la elegibilidad de China frente a la declarada y compara cada ventana conjunta con su gemela por mercado (US en las 19 y CN en las elegibles). Sobre vistas del corpus técnico termina sin fallos y detecta un objetivo alterado y una fila elegible perdida.
 
-`--check` valida informes, ventanas, población, política y regla de parada, y devuelve la identidad y el número de trabajos previstos sin reservar la GPU ni entrenar. La búsqueda lee la política de entradas del plan, como hace la búsqueda de referencias, y exige que las vistas declaren la misma. Un plan estricto no puede leer vistas con máscaras ni al revés. El plan debe usar `arms=["US+CN"]` con las vistas conjuntas y el mercado correspondiente con las vistas de un solo mercado.
-
-## Vistas de la campaña A
-
-Las vistas reales de la campaña A se prepararon el 9 de octubre sobre los objetivos `targets-v3`, con la [configuración de A](../../configs/baselines/historical-masked-campaign-a.json) y el runtime `7a9e93e3`. Cada ámbito se preparó en un proceso de un hilo que repite el cuerpo del bucle de `prepare_views`, y los tres procesos terminaron con código 0. Después, `run_masked_campaign.py prepare` con la campaña A sobre `targets-v3/manifest.json` validó los tres destinos con su comprobación oficial y también terminó con código 0. El [recibo](../../reports/data/campaign-a-views-20261009.json) conserva las huellas de los informes, los recuentos de cada ventana, las filas purgadas y los tiempos.
-
-| Ámbito | Ventanas | Entrenamiento | Validación | Calibración | Evaluación | Purgadas en fronteras | Preparación |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| US | 19 | 108.111.890 | 6.084.968 | 3.087.269 | 12.826.460 | 194.849 | 50 min |
-| CN | 13 | 16.903.888 | 1.015.019 | 525.177 | 2.105.339 | 34.300 | 16 min |
-| US+CN | 13 | 113.180.071 | 5.899.203 | 2.999.327 | 12.357.256 | 189.557 | 52 min |
-
-Los recuentos suman todas las ventanas de cada ámbito, así que una fila cuenta una vez por cada ventana que la usa. Las filas de entrenamiento quedan alrededor del 97 % de la cota nominal de la [tabla anterior](#ventanas-y-filas-nominales) (111,1, 17,4 y 116,1 millones). La evaluación de la última ventana, el año 2023, coincide en los tres ámbitos con las filas de validación de `targets-v3`: 1.027.173 en US, 194.649 en CN y 1.221.822 en US+CN. Las vistas ocupan 12,9 GB de datos y 13,9 GB en disco contando sus directorios. Los tiempos son de reloj, con los tres procesos ejecutándose a la vez.
-
-Una verificación independiente, escrita sin reutilizar el código que preparó las vistas, recorrió los 5.008 activos con objetivos y las 45 ventanas. Comprobó:
-
-- las fronteras de cada ventana, recalculadas desde los protocolos, y la purga por el intervalo de cada etiqueta,
-- que ningún objetivo queda fuera de su ventana y que ninguna decisión ni maduración llega a 2024,
-- que cada objetivo es idéntico bit a bit al de `targets-v3`,
-- que no se pierde ninguna fila elegible y que los recuentos coinciden con los manifiestos de cada ventana,
-- que US+CN reproduce exactamente las vistas por mercado con las mismas fronteras.
-
-Terminó sin fallos en 8 minutos con cinco procesos. Las vistas, el verificador y su informe son locales, y el recibo guarda la huella de los dos últimos. Ninguna de estas pasadas ajustó modelos ni abrió 2024. La campaña no se ha lanzado.
-
-## Comprobaciones técnicas
-
-Las pruebas de `tests/evaluation/test_walk_forward_v2.py` comprueban los límites de cada ventana, el primer año con tres años de etiquetas, la coincidencia entre ventanas conjuntas y US, la purga en cada frontera, la frontera exacta, la ausencia de filas de 2024 en tramos de desarrollo, la invariancia al cambiar o reordenar el sufijo futuro, la equivalencia con el margen anterior para etiquetas de la sesión siguiente, la regla de parada con secuencias fijadas en los dos modos y la paridad de los seis protocolos v1 mediante huellas calculadas antes del cambio.
-
-Las pruebas de `tests/training/test_walk_forward_v2_views.py` preparan vistas sobre un corpus técnico con filas en todos los años, desde febrero de 2000 en US y julio de 2006 en CN. Comparan los recuentos por ventana, tramo, mercado y año con una derivación independiente, comprueban `purged_by_boundary`, el rechazo de una ventana conjunta con CN vacío, la comprobación de la búsqueda sin GPU, la lectura de la política desde un plan de versión 4, el rechazo de planes estrictos o con otra parada y la paridad de las vistas v1. La invariancia del objetivo residual ante cambios futuros ya la cubre `tests/data/test_budget_targets.py`.
+Los recuentos de filas de esta sección y de la [campaña](training-campaign-2000.md#campaña-a-v2-con-modelo-conjunto) salen de `targets-v3` y cambiarán con la v3.1. `budget --targets <objetivos v3.1>/labels --write-counts` los recalcula antes de preparar las vistas, y `budget --views` después.
 
 Las pruebas de `tests/training/test_campaign_a_joint.py` comprueban la elegibilidad por intervalos idénticos, la unión con China vacía solo donde no cuenta y el rechazo en el resto, la exclusión de las filas no elegibles en calibración y evaluación con sus recuentos, el emparejamiento de los brazos prestados con su ventana y su vista y el rechazo de declaraciones ambiguas del diseño conjunto.
 

@@ -117,6 +117,7 @@ El control de MARS-TITAN es `mars_titan_m1` por cuatro motivos fijados antes de 
 | `stopping` | `{"mode": "protocol"}`, presupuesto fijo del protocolo. Es el punto de conexión de la parada conjunta, que entrará como otro modo con sus grupos. Cualquier otro modo se rechaza hoy |
 | `memory_options` | `accumulation_rows` de Titans-MAC, GRU candidata y CM-v1 y `recompute` de la GRU candidata, todos `pending`. `check` los lista como impedimentos y `run` se niega a empezar hasta que coincidan con el valor de su receta |
 | `execution` | `{"order": "by_window"}`. La campaña recorre cada ventana completa antes de la siguiente |
+| `numerics` | FP32 estricto: `float32_matmul_precision="highest"`, `cuda_matmul_allow_tf32=false` y `cudnn_allow_tf32=false`. Es el único valor admitido |
 | Límites | 2.322 ajustes y ninguna predicción trasladada |
 
 Cada finalista depende de todas las búsquedas de su brazo y ventana y, si el brazo parte de otro, del finalista del padre con la misma semilla. Su identidad guarda el caso elegido, la búsqueda ganadora y la huella de su recibo, de modo que un cambio en una búsqueda confirmada invalida el finalista al reanudar. La selección solo lee el MAE por sesión de validación del recibo, con desempate por identificador. La comparación resume cada semilla por separado y contrasta la media sesión a sesión de las semillas.
@@ -131,7 +132,13 @@ Cada finalista depende de todas las búsquedas de su brazo y ventana y, si el br
 
 Por ventana conjunta hay 87 ajustes neuronales: 21 brazos o núcleos con dos casos y dos finalistas, y la GRU candidata con un caso y dos finalistas. Las etapas posteriores solo usan el modelo conjunto: 1.653 ajustes de adaptadores, 3.534 predicciones de la ablación de modalidades y 2.160 ajustes y 1.584 referencias de políticas. La cinta US de políticas recorre 15 ventanas (2009 a 2023) y la CN 9 (2015 a 2023), las dos con las predicciones del modelo conjunto en su mercado.
 
-Las filas salen de los objetivos con la regla de las vistas, en el [informe de recuentos](../../reports/data/campaign-a-v2-window-counts-20261009.json). Los de US y CN coinciden exactamente con las vistas ya verificadas. US+CN suma 125.553.766 filas de ajuste, 7.292.172 de validación, 3.721.369 de calibración y 15.434.391 de evaluación en sus 19 ventanas.
+Las filas salen de los objetivos `targets-v3` con la regla de las vistas, en el [informe de recuentos](../../reports/data/campaign-a-v2-window-counts-20261009.json). Los de US y CN coinciden exactamente con las vistas ya verificadas. US+CN suma 125.553.766 filas de ajuste, 7.292.172 de validación, 3.721.369 de calibración y 15.434.391 de evaluación en sus 19 ventanas. Las vistas de la campaña v2 se prepararán sobre la edición v3.1, así que estos recuentos se [recalcularán](walk-forward-2000.md#comparación-con-los-controles-separados) con sus objetivos.
+
+#### Precisión numérica
+
+Por orden del autor del 9 de octubre (no inventar datos ni perder precisión), la campaña v2 declara FP32 estricto en `numerics`. Los 86 registros de precisión de la campaña de referencias del 6 de octubre (identidades y medidas de `real-campaign-20261006`) indican `float32_matmul_precision="highest"` y `cuda_matmul_allow_tf32=false`, pero `cudnn_allow_tf32=true`, el valor por defecto de PyTorch, que permite TF32 en los RNN de cuDNN (RNN, LSTM y GRU). La campaña v2 lo desactiva. Es un cambio de configuración declarado antes de lanzar, no una corrección por resultados, y no cambia ningún hiperparámetro (lote, épocas, paciencia ni `max_bin`).
+
+El lanzador fija los tres indicadores antes de crear modelos y otra vez antes de cada trabajo. Al confirmar exige que sigan igual y que el informe del ejecutor no registre otro valor con ninguno de los nombres que usan los informes del proyecto, guarda la precisión en cada recibo y rechaza al reanudar un recibo con otra. Las etapas de adaptadores y de ablación aplican la misma precisión de su campaña base, y la medida de caudal mide con ella. El caudal de 16.000 muestras-época por segundo de la proyección se midió con TF32 permitido en cuDNN, así que puede ser optimista para los brazos recurrentes.
 
 #### Orden ventana a ventana
 
@@ -421,7 +428,7 @@ La campaña se ejecuta en una RTX 4070 Laptop de 8 GB con el perfil de energía 
 
 - Terminar el código y las implementaciones pendientes y revisar un resumen de su estado. Hasta entonces la protección de aprendizaje sigue activa.
 - Registrar la huella de la configuración que se lance. La campaña A v2 ya copia la declaración ampliada ([#363](https://github.com/GonxKZ/mars-titan/issues/363)).
-- Preparar y verificar las vistas conjuntas v3, pendientes de la confirmación del autor y de la revisión del hueco de datos chinos entre mayo y julio de 2019.
+- Preparar y verificar las vistas de los tres ámbitos de la campaña v2 sobre la edición v3.1, cuando esa edición esté verificada, y recalcular con ella los recuentos y la proyección de horas.
 - Fijar las opciones de memoria pendientes de la campaña A v2 y conectar la parada conjunta en su sección `stopping`.
 - Elegir, si la medida de caudal no cabe en el presupuesto, entre las palancas de la [proyección de horas](#proyección-de-horas).
 - Comparación parcial con las referencias, si se quiere evaluarlas antes de conectar las demás familias.
