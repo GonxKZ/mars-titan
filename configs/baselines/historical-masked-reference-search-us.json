@@ -1,0 +1,48 @@
+{
+  "schema_version": 4,
+  "scope": "full_corpus",
+  "arms": [
+    "US"
+  ],
+  "models": [
+    "rnn",
+    "lstm",
+    "gru",
+    "dlinear",
+    "transformer"
+  ],
+  "case_indices": [
+    0,
+    10
+  ],
+  "search_seed": 42,
+  "finalist_seeds": [
+    42,
+    43,
+    44
+  ],
+  "max_epochs": 30,
+  "patience": 5,
+  "min_delta": 1e-05,
+  "batch_size": 256,
+  "context_sessions": 64,
+  "checkpoint_seconds": 300,
+  "posttraining_epochs": 5,
+  "posttraining_learning_rate": 0.0001,
+  "posttraining_losses": [
+    "mae",
+    "mse"
+  ],
+  "continuation_selection": {
+    "metric": "session_mae",
+    "patience": 5,
+    "min_delta": 1e-05
+  },
+  "pooled_weightings": [
+    "natural"
+  ],
+  "final_test_opened": false,
+  "input_policy": "historical_masked_2000_v1",
+  "stopping": "fixed_budget",
+  "prediction_retention": "heldout_full_train_sessions_v1"
+}
