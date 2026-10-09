@@ -99,6 +99,9 @@ La agregación entre sesiones es explícita en cada resumen
 mismo. Es la regla primaria ya declarada en este documento. Con `market`, se
 promedia dentro de cada mercado y después se da el mismo peso a cada mercado
 con al menos una sesión definida. Si se usa, debe declararse antes de evaluar.
+En los años sin etiquetas residuales de China (antes de 2006), esa ponderación
+solo promedia Estados Unidos, así que la regla para las ventanas tempranas debe
+fijarse igual para todos los modelos.
 
 Para una métrica por sesión $m_s$ definida en el conjunto $\mathcal D$:
 
@@ -315,11 +318,13 @@ dígito por el orden de las sumas del producto matricial.
 La longitud de bloque no tiene valor por defecto y debe fijarse antes de ver los
 resultados. Como propuesta, $L\approx P^{1/3}$ (unos 14 días con 2.500 días de
 evaluación) con sensibilidad declarada en `sensitivity_block_lengths`, por
-ejemplo 5, 10 y 40. Una evaluación de tres meses tiene unos 63 días, así que
-ahí corresponderían bloques de 4 o 5. Si $L\ge P$ no se da intervalo y se
-informa el motivo. Los bloques recorren los días observados en orden y no
-distinguen un hueco entre ventanas de una continuidad real. Ventanas disjuntas
-deben compararse por separado o declararse como una sola serie.
+ejemplo 5, 10 y 40. Un año de evaluación tiene unos 252 días y daría bloques
+de unos 6. Una evaluación de tres meses tiene unos 63 días y daría bloques de 4
+o 5. Si $L\ge P$ no se da intervalo y se informa el motivo. Los bloques
+recorren los días observados en orden y no distinguen un hueco entre ventanas
+de una continuidad real. Los años de evaluación consecutivos del walk-forward
+son contiguos y pueden concatenarse. Ventanas disjuntas deben compararse por
+separado o declararse como una sola serie.
 
 ### Familias de afirmaciones
 
