@@ -33,10 +33,11 @@ temporal y el presupuesto. La edición histórica adicional conserva todos los
 datos utilizables de FinMultiTime desde 2000, con ausencias explícitas. Se separa
 del control estricto y utiliza validación temporal, ablaciones e incertidumbre.
 Este documento es una base de redacción. La preparación de datos y los ensayos
-de referencia ya tienen informes separados. La edición desde 2000 y sus
-objetivos residuales están verificados y las etapas de la campaña están
-implementadas y comprobadas sin aprendizaje, pero ningún modelo se ha entrenado
-sobre ella y la comparación confirmatoria sigue pendiente.
+de referencia ya tienen informes separados. La edición desde 2000, sus
+objetivos residuales y las vistas walk-forward de la campaña están
+verificados. Las etapas de la campaña están implementadas y comprobadas sin
+aprendizaje, pero ningún modelo se ha entrenado sobre la edición y la
+comparación confirmatoria sigue pendiente.
 \end{abstract}
 \tableofcontents
 
@@ -186,6 +187,18 @@ La regla común de parada usa un presupuesto fijo de 30 épocas y conserva el
 mejor estado según el MAE residual de validación. El año 2024 permanece
 sellado.
 
+Las vistas de la campaña A se prepararon y verificaron el 9 de octubre. Sumadas
+sobre sus ventanas, dan 108.111.890 filas de entrenamiento y 12.826.460 de
+evaluación en Estados Unidos, 16.903.888 y 2.105.339 en China y 113.180.071 y
+12.357.256 en la unión de ambos mercados, y ocupan 12,9~GB. Una verificación
+independiente, que no reutiliza el código de preparación, recalculó las
+fronteras desde los protocolos y comprobó la purga por intervalo de etiqueta,
+que ningún objetivo queda fuera de su ventana ni llega a 2024, que los
+objetivos coinciden bit a bit con los generados, que no se pierde ninguna fila
+elegible y que la unión de mercados reproduce las vistas por mercado. No se
+entrenará ningún modelo hasta terminar el código y las implementaciones
+pendientes y revisar un resumen de su estado.
+
 \begin{table}[htbp]
 \centering
 \small
@@ -196,14 +209,15 @@ ha ejecutado con aprendizaje y la campaña no se ha lanzado.}
 Etapa & Implementado y comprobado sin aprendizaje & Pendiente \\
 \midrule
 Edición y objetivos & Edición v3 codificada y verificada, objetivos
-residuales generados y recalculados de forma independiente & Conciliar las
-filas en las vistas de cada ventana \\
-Protocolo & Ventanas v2, purga por intervalo y regla de parada común &
-Terminar las vistas reales, en preparación \\
+residuales generados y recalculados de forma independiente & Ninguno antes
+del lanzamiento \\
+Protocolo & Ventanas v2, purga por intervalo y regla de parada común. Vistas
+de la campaña A preparadas y verificadas & Ninguno antes del lanzamiento \\
 Campaña base & Variante A elegida, con 2.385 ajustes en su configuración y
 4.680 con la declaración ampliada de todas las familias. Recibos por trabajo y
-reanudación & Fijar las opciones de memoria y copiar a la configuración la GRU
-episódica, MARS-TITAN y CM-v1 \\
+reanudación & Fijar las opciones de memoria, copiar a la configuración la GRU
+episódica, MARS-TITAN y CM-v1 y revisar un resumen del código antes de
+entrenar \\
 Adaptadores & Matriz v2 por ventana con pinball para padres de cuantiles,
 con 3.915 ajustes en A. Pruebas CUDA de adaptadores y cuantiles superadas &
 Recorrido de la etapa en \texttt{cuda:0} y comparación declarada de los
