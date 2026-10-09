@@ -1,0 +1,656 @@
+{
+ "schema_version": 1,
+ "kind": "historical_price_gap_audit",
+ "checked_on": "2026-10-09",
+ "scope": "price rows and 64-session windows before 2024, no labels recomputed, no training",
+ "inputs": {
+  "encoded_edition": "encoded-history-v3-cpu-words",
+  "encoded_manifest_sha256": "2fa8a0ea51eb14f87257c02576b40bcd1fca92e6b18809f9b744b78a1c571658",
+  "prepared_edition": "prepared-accounting-v1",
+  "prepared_manifest_sha256": "1fe498e441b34f9b935b41bd5574cc2d34609a727eb3dba6962a271279aba407",
+  "targets_edition": "targets-v3",
+  "targets_manifest_sha256": "528dd13d1064caa98437676230dbf884cad062cde8b29db58004bd928637617b",
+  "csi300_factor": "price-factor-2006-2023-v16",
+  "csi300_factor_prices_sha256": "b96cd9729f0d3fc9dc0144c9d676d4da6b91898ad8f482b32db3364afe2b3cbc",
+  "calendars": "exchange_calendars 4.13.2, XSHG and XNYS",
+  "source_copy": "dataset/time_series (read only)"
+ },
+ "admission_rule": "incomplete_price_window: 64 consecutive calendar sessions with an accepted price row",
+ "simulation_matches_edition": {
+  "assets": 5023,
+  "prepared_session_mismatches": 0,
+  "sample_session_mismatches": 0
+ },
+ "cn_2019": {
+  "market_wide_absent_sessions": [
+   "2019-04-29",
+   "2019-04-30"
+  ],
+  "source_files_with_those_sessions": 0,
+  "source_files": 810,
+  "calendar_contains_them": true,
+  "csi300_factor_contains_them": true,
+  "sse_captures_with_those_sessions": {
+   "captures": 10,
+   "listed_in_2019": 9,
+   "containing": 9,
+   "capture_example_sha256": "fcfef5a5974b4b3778a8e5b1a576cf4e2f35cf6fc97e7437e1ac594630da84e6"
+  },
+  "sessions_without_samples": {
+   "first": "2019-04-29",
+   "last": "2019-08-01",
+   "count": 65
+  },
+  "defective_rows_2019_01_07": {
+   "rows": 240,
+   "exchange": "SS",
+   "defect": "open below low, equal to previous session open in SSE captures"
+  },
+  "months": [
+   {
+    "month": "2018-12",
+    "calendar_sessions": 20,
+    "sessions_with_prices": 20,
+    "sessions_with_samples": 20,
+    "price_rows": 14952,
+    "samples": 14335,
+    "accepted_labels": 14279,
+    "windows_with_rounding_tolerance": 14820
+   },
+   {
+    "month": "2019-01",
+    "calendar_sessions": 22,
+    "sessions_with_prices": 22,
+    "sessions_with_samples": 22,
+    "price_rows": 16256,
+    "samples": 11600,
+    "accepted_labels": 11335,
+    "windows_with_rounding_tolerance": 11840
+   },
+   {
+    "month": "2019-02",
+    "calendar_sessions": 15,
+    "sessions_with_prices": 15,
+    "sessions_with_samples": 15,
+    "price_rows": 11291,
+    "samples": 7493,
+    "accepted_labels": 7435,
+    "windows_with_rounding_tolerance": 7615
+   },
+   {
+    "month": "2019-03",
+    "calendar_sessions": 21,
+    "sessions_with_prices": 21,
+    "sessions_with_samples": 21,
+    "price_rows": 15847,
+    "samples": 10464,
+    "accepted_labels": 10379,
+    "windows_with_rounding_tolerance": 10668
+   },
+   {
+    "month": "2019-04",
+    "calendar_sessions": 21,
+    "sessions_with_prices": 19,
+    "sessions_with_samples": 19,
+    "price_rows": 14388,
+    "samples": 11820,
+    "accepted_labels": 10997,
+    "windows_with_rounding_tolerance": 12069
+   },
+   {
+    "month": "2019-05",
+    "calendar_sessions": 20,
+    "sessions_with_prices": 20,
+    "sessions_with_samples": 0,
+    "price_rows": 15167,
+    "samples": 0,
+    "accepted_labels": 0,
+    "windows_with_rounding_tolerance": 0
+   },
+   {
+    "month": "2019-06",
+    "calendar_sessions": 19,
+    "sessions_with_prices": 19,
+    "sessions_with_samples": 0,
+    "price_rows": 14426,
+    "samples": 0,
+    "accepted_labels": 0,
+    "windows_with_rounding_tolerance": 0
+   },
+   {
+    "month": "2019-07",
+    "calendar_sessions": 23,
+    "sessions_with_prices": 23,
+    "sessions_with_samples": 0,
+    "price_rows": 17571,
+    "samples": 0,
+    "accepted_labels": 0,
+    "windows_with_rounding_tolerance": 0
+   },
+   {
+    "month": "2019-08",
+    "calendar_sessions": 22,
+    "sessions_with_prices": 22,
+    "sessions_with_samples": 21,
+    "price_rows": 16867,
+    "samples": 15669,
+    "accepted_labels": 15534,
+    "windows_with_rounding_tolerance": 15930
+   },
+   {
+    "month": "2019-09",
+    "calendar_sessions": 20,
+    "sessions_with_prices": 20,
+    "sessions_with_samples": 20,
+    "price_rows": 15355,
+    "samples": 14921,
+    "accepted_labels": 14818,
+    "windows_with_rounding_tolerance": 15195
+   }
+  ],
+  "masked_absent_session_variant_extra_windows": 47570
+ },
+ "rounding": {
+  "rtol": 1e-09,
+  "CN": {
+   "restored_rows": 3454,
+   "assets": 392,
+   "extra_windows": 109001,
+   "windows_v3": 2668116,
+   "windows_with_tolerance": 2777117,
+   "max_relative_excess": 4.458454894708076e-16,
+   "rows_before_2024_strict": 2891924,
+   "rows_before_2024_tolerant": 2895378,
+   "strict_rows_changed": 0,
+   "restored_flat_zero_volume_rows": 1793,
+   "by_year": [
+    {
+     "year": 2006,
+     "windows_v3": 72879,
+     "windows_with_tolerance": 79040,
+     "restored_rows": 477
+    },
+    {
+     "year": 2007,
+     "windows_v3": 105958,
+     "windows_with_tolerance": 114816,
+     "restored_rows": 204
+    },
+    {
+     "year": 2008,
+     "windows_v3": 114724,
+     "windows_with_tolerance": 125577,
+     "restored_rows": 244
+    },
+    {
+     "year": 2009,
+     "windows_v3": 119099,
+     "windows_with_tolerance": 127270,
+     "restored_rows": 178
+    },
+    {
+     "year": 2010,
+     "windows_v3": 125875,
+     "windows_with_tolerance": 134694,
+     "restored_rows": 188
+    },
+    {
+     "year": 2011,
+     "windows_v3": 139659,
+     "windows_with_tolerance": 148030,
+     "restored_rows": 303
+    },
+    {
+     "year": 2012,
+     "windows_v3": 147064,
+     "windows_with_tolerance": 155950,
+     "restored_rows": 190
+    },
+    {
+     "year": 2013,
+     "windows_v3": 148210,
+     "windows_with_tolerance": 154940,
+     "restored_rows": 209
+    },
+    {
+     "year": 2014,
+     "windows_v3": 153534,
+     "windows_with_tolerance": 160993,
+     "restored_rows": 198
+    },
+    {
+     "year": 2015,
+     "windows_v3": 153555,
+     "windows_with_tolerance": 164117,
+     "restored_rows": 341
+    },
+    {
+     "year": 2016,
+     "windows_v3": 162149,
+     "windows_with_tolerance": 168049,
+     "restored_rows": 361
+    },
+    {
+     "year": 2017,
+     "windows_v3": 170849,
+     "windows_with_tolerance": 174286,
+     "restored_rows": 171
+    },
+    {
+     "year": 2018,
+     "windows_v3": 174174,
+     "windows_with_tolerance": 178334,
+     "restored_rows": 177
+    },
+    {
+     "year": 2019,
+     "windows_v3": 117768,
+     "windows_with_tolerance": 120070,
+     "restored_rows": 67
+    },
+    {
+     "year": 2020,
+     "windows_v3": 182077,
+     "windows_with_tolerance": 186510,
+     "restored_rows": 77
+    },
+    {
+     "year": 2021,
+     "windows_v3": 191131,
+     "windows_with_tolerance": 193180,
+     "restored_rows": 35
+    },
+    {
+     "year": 2022,
+     "windows_v3": 193881,
+     "windows_with_tolerance": 195241,
+     "restored_rows": 23
+    },
+    {
+     "year": 2023,
+     "windows_v3": 195530,
+     "windows_with_tolerance": 196020,
+     "restored_rows": 11
+    }
+   ]
+  },
+  "US": {
+   "restored_rows": 59123,
+   "assets": 2243,
+   "extra_windows": 1466381,
+   "windows_v3": 14407908,
+   "windows_with_tolerance": 15874289,
+   "max_relative_excess": 1.379975759260035e-15,
+   "rows_before_2024_strict": 16090522,
+   "rows_before_2024_tolerant": 16149645,
+   "strict_rows_changed": 0,
+   "by_year": [
+    {
+     "year": 2000,
+     "windows_v3": 193001,
+     "windows_with_tolerance": 246458,
+     "restored_rows": 3999
+    },
+    {
+     "year": 2001,
+     "windows_v3": 267724,
+     "windows_with_tolerance": 337670,
+     "restored_rows": 3553
+    },
+    {
+     "year": 2002,
+     "windows_v3": 285125,
+     "windows_with_tolerance": 357004,
+     "restored_rows": 3697
+    },
+    {
+     "year": 2003,
+     "windows_v3": 302592,
+     "windows_with_tolerance": 373672,
+     "restored_rows": 2998
+    },
+    {
+     "year": 2004,
+     "windows_v3": 327935,
+     "windows_with_tolerance": 398539,
+     "restored_rows": 2988
+    },
+    {
+     "year": 2005,
+     "windows_v3": 358236,
+     "windows_with_tolerance": 422218,
+     "restored_rows": 2743
+    },
+    {
+     "year": 2006,
+     "windows_v3": 387360,
+     "windows_with_tolerance": 446700,
+     "restored_rows": 2607
+    },
+    {
+     "year": 2007,
+     "windows_v3": 425747,
+     "windows_with_tolerance": 490214,
+     "restored_rows": 2960
+    },
+    {
+     "year": 2008,
+     "windows_v3": 459760,
+     "windows_with_tolerance": 534577,
+     "restored_rows": 3030
+    },
+    {
+     "year": 2009,
+     "windows_v3": 482707,
+     "windows_with_tolerance": 554175,
+     "restored_rows": 2597
+    },
+    {
+     "year": 2010,
+     "windows_v3": 512227,
+     "windows_with_tolerance": 580284,
+     "restored_rows": 2419
+    },
+    {
+     "year": 2011,
+     "windows_v3": 545778,
+     "windows_with_tolerance": 614751,
+     "restored_rows": 2787
+    },
+    {
+     "year": 2012,
+     "windows_v3": 568202,
+     "windows_with_tolerance": 640420,
+     "restored_rows": 2862
+    },
+    {
+     "year": 2013,
+     "windows_v3": 600136,
+     "windows_with_tolerance": 676998,
+     "restored_rows": 2748
+    },
+    {
+     "year": 2014,
+     "windows_v3": 649858,
+     "windows_with_tolerance": 721264,
+     "restored_rows": 2871
+    },
+    {
+     "year": 2015,
+     "windows_v3": 704863,
+     "windows_with_tolerance": 769651,
+     "restored_rows": 2664
+    },
+    {
+     "year": 2016,
+     "windows_v3": 748831,
+     "windows_with_tolerance": 812757,
+     "restored_rows": 2445
+    },
+    {
+     "year": 2017,
+     "windows_v3": 785405,
+     "windows_with_tolerance": 848225,
+     "restored_rows": 2191
+    },
+    {
+     "year": 2018,
+     "windows_v3": 840292,
+     "windows_with_tolerance": 904008,
+     "restored_rows": 2149
+    },
+    {
+     "year": 2019,
+     "windows_v3": 909161,
+     "windows_with_tolerance": 969439,
+     "restored_rows": 1945
+    },
+    {
+     "year": 2020,
+     "windows_v3": 980247,
+     "windows_with_tolerance": 1033648,
+     "restored_rows": 1334
+    },
+    {
+     "year": 2021,
+     "windows_v3": 1013579,
+     "windows_with_tolerance": 1047303,
+     "restored_rows": 852
+    },
+    {
+     "year": 2022,
+     "windows_v3": 1026933,
+     "windows_with_tolerance": 1048779,
+     "restored_rows": 409
+    },
+    {
+     "year": 2023,
+     "windows_v3": 1032209,
+     "windows_with_tolerance": 1045535,
+     "restored_rows": 275
+    }
+   ]
+  },
+  "note": "every restored row has the close outside the high-low range by at most a few float64 units, open and close are kept"
+ },
+ "defective_rows_kept_excluded": {
+  "CN": {
+   "defective_rows": 308,
+   "kinds": {
+    "open_outside": 241,
+    "close_outside": 67
+   },
+   "nonfinite_or_nonpositive": 2,
+   "top_dates": [
+    [
+     "2019-01-07",
+     240
+    ],
+    [
+     "2020-05-29",
+     37
+    ],
+    [
+     "2020-11-30",
+     9
+    ],
+    [
+     "2015-09-28",
+     7
+    ],
+    [
+     "2010-10-29",
+     2
+    ],
+    [
+     "2020-06-19",
+     2
+    ],
+    [
+     "2020-08-31",
+     2
+    ],
+    [
+     "2007-11-05",
+     1
+    ],
+    [
+     "2020-12-30",
+     1
+    ],
+    [
+     "2020-09-08",
+     1
+    ],
+    [
+     "2015-12-25",
+     1
+    ],
+    [
+     "2020-11-16",
+     1
+    ]
+   ]
+  },
+  "US": {
+   "defective_rows": 688,
+   "kinds": {
+    "open_outside": 440,
+    "close_outside": 248
+   },
+   "nonfinite_or_nonpositive": 3488,
+   "top_dates": [
+    [
+     "2021-05-05",
+     30
+    ],
+    [
+     "2023-06-05",
+     25
+    ],
+    [
+     "2015-03-30",
+     9
+    ],
+    [
+     "2020-03-16",
+     2
+    ],
+    [
+     "2020-09-11",
+     2
+    ],
+    [
+     "2020-10-15",
+     2
+    ],
+    [
+     "2023-11-27",
+     2
+    ],
+    [
+     "2013-01-22",
+     2
+    ],
+    [
+     "2014-02-11",
+     2
+    ],
+    [
+     "2013-04-12",
+     2
+    ],
+    [
+     "2015-11-09",
+     1
+    ],
+    [
+     "2015-12-02",
+     1
+    ]
+   ]
+  }
+ },
+ "walk_forward_partitions": [
+  {
+   "evaluation_year": 2019,
+   "market": "CN",
+   "validation": {
+    "start": "2018-04-01",
+    "end": "2018-10-01",
+    "calendar_sessions": 124,
+    "sessions_with_labels": 124,
+    "accepted_labels": 88551
+   },
+   "calibration": {
+    "start": "2018-10-01",
+    "end": "2019-01-01",
+    "calendar_sessions": 60,
+    "sessions_with_labels": 60,
+    "accepted_labels": 42761
+   },
+   "evaluation": {
+    "start": "2019-01-01",
+    "end": "2020-01-01",
+    "calendar_sessions": 244,
+    "sessions_with_labels": 178,
+    "accepted_labels": 115801
+   }
+  },
+  {
+   "evaluation_year": 2019,
+   "market": "US",
+   "validation": {
+    "start": "2018-04-01",
+    "end": "2018-10-01",
+    "calendar_sessions": 127,
+    "sessions_with_labels": 127,
+    "accepted_labels": 418303
+   },
+   "calibration": {
+    "start": "2018-10-01",
+    "end": "2019-01-01",
+    "calendar_sessions": 63,
+    "sessions_with_labels": 63,
+    "accepted_labels": 212904
+   },
+   "evaluation": {
+    "start": "2019-01-01",
+    "end": "2020-01-01",
+    "calendar_sessions": 252,
+    "sessions_with_labels": 252,
+    "accepted_labels": 894305
+   }
+  },
+  {
+   "evaluation_year": 2020,
+   "market": "CN",
+   "validation": {
+    "start": "2019-04-01",
+    "end": "2019-10-01",
+    "calendar_sessions": 125,
+    "sessions_with_labels": 59,
+    "accepted_labels": 41349
+   },
+   "calibration": {
+    "start": "2019-10-01",
+    "end": "2020-01-01",
+    "calendar_sessions": 61,
+    "sessions_with_labels": 61,
+    "accepted_labels": 45303
+   },
+   "evaluation": {
+    "start": "2020-01-01",
+    "end": "2021-01-01",
+    "calendar_sessions": 243,
+    "sessions_with_labels": 243,
+    "accepted_labels": 180595
+   }
+  },
+  {
+   "evaluation_year": 2020,
+   "market": "US",
+   "validation": {
+    "start": "2019-04-01",
+    "end": "2019-10-01",
+    "calendar_sessions": 127,
+    "sessions_with_labels": 127,
+    "accepted_labels": 450333
+   },
+   "calibration": {
+    "start": "2019-10-01",
+    "end": "2020-01-01",
+    "calendar_sessions": 64,
+    "sessions_with_labels": 64,
+    "accepted_labels": 233548
+   },
+   "evaluation": {
+    "start": "2020-01-01",
+    "end": "2021-01-01",
+    "calendar_sessions": 253,
+    "sessions_with_labels": 253,
+    "accepted_labels": 966574
+   }
+  }
+ ]
+}
