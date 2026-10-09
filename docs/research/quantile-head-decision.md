@@ -1,6 +1,6 @@
 # Propuesta sobre la cabeza de cuantiles
 
-Estado: propuesta registrada el 9 de octubre de 2026 para [#22](https://github.com/GonxKZ/mars-titan/issues/22). No está implementada en ningún modelo ni aprobada. Debe decidirse antes de entrenar, cuando se levante el bloqueo de aprendizaje, porque cambia la salida y la identidad de varias arquitecturas.
+Estado: propuesta registrada el 9 de octubre de 2026 para [#22](https://github.com/GonxKZ/mars-titan/issues/22). Ese mismo día se adoptó la opción B con sus seis condiciones. La cabeza, la pérdida, las identidades nuevas y el control declarado están implementados según la [guía de ingeniería](../engineering/quantile-head.md). La calibración común sigue pendiente y no se ha entrenado ningún modelo. El texto siguiente conserva la propuesta tal como se registró.
 
 ## Estado comprobado en el código
 

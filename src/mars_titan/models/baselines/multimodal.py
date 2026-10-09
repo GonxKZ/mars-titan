@@ -6,6 +6,7 @@ from copy import deepcopy
 import torch
 from torch import nn
 
+from ..quantile_head import QUANTILE_HEAD, QuantileHead
 from .dlinear import DLinear
 from .transformer import CompactPriceTransformer, transformer_options
 
@@ -16,6 +17,8 @@ STRICT_FUSION = "strict_original"
 # Mismo nombre que la identidad de FinancialPredictor para la misma semántica de fusión.
 PRESENCE_FUSION = "zero_after_projection_then_concat_presence"
 MASK_FUSIONS = (STRICT_FUSION, PRESENCE_FUSION)
+SCALAR_HEAD = "scalar"
+HEADS = (SCALAR_HEAD, QUANTILE_HEAD)
 
 
 def validate_architecture(hidden_size, layers, dropout):
@@ -41,6 +44,9 @@ class MultimodalReference(nn.Module):
     La representación compartida permite añadir después una cabeza separada.
     Con la fusión con presencia, cada proyección de una modalidad ausente se
     anula y los cinco bits de presencia se concatenan antes de la fusión.
+    La cabeza `quantile_head_v1` sustituye la salida escalar por cinco cuantiles
+    ordenados. Se construye la última, así que el tronco consume el mismo
+    generador y recibe los mismos pesos iniciales que la variante escalar.
     """
 
     def __init__(
@@ -54,11 +60,15 @@ class MultimodalReference(nn.Module):
         dropout=0.0,
         transformer=None,
         mask_fusion=STRICT_FUSION,
+        head=SCALAR_HEAD,
     ):
         super().__init__()
         self.architecture = validate_architecture(hidden_size, layers, dropout)
         if not isinstance(mask_fusion, str) or mask_fusion not in MASK_FUSIONS:
             raise ValueError("La fusión de ausencias no pertenece al contrato de las referencias")
+        if not isinstance(head, str) or head not in HEADS:
+            raise ValueError("La cabeza de salida no pertenece al contrato de las referencias")
+        self.emits_quantiles = head == QUANTILE_HEAD
         self.presence_fusion = mask_fusion == PRESENCE_FUSION
         if (
             kind not in {*_RECURRENT, "dlinear", "transformer"}
@@ -108,7 +118,8 @@ class MultimodalReference(nn.Module):
         for layer in range(layers):
             width = len(MODALITIES) * hidden_size + presence_width if layer == 0 else hidden_size
             blocks.extend((nn.Linear(width, hidden_size), nn.SiLU(), nn.Dropout(dropout)))
-        self.fusion, self.head = nn.Sequential(*blocks), nn.Linear(hidden_size, 1)
+        self.fusion = nn.Sequential(*blocks)
+        self.head = QuantileHead(hidden_size) if self.emits_quantiles else nn.Linear(hidden_size, 1)
 
     @property
     def configuration(self):
@@ -123,6 +134,9 @@ class MultimodalReference(nn.Module):
             result["price_encoder_contract"] = self.price_encoder.configuration
         if self.presence_fusion:
             result["mask_fusion"] = PRESENCE_FUSION
+        # La configuración escalar no cambia. Solo la variante de cuantiles añade el campo.
+        if self.emits_quantiles:
+            result["head"] = QUANTILE_HEAD
         return result
 
     def _presence(self, presence, batch, device):
@@ -191,7 +205,10 @@ class MultimodalReference(nn.Module):
         return fused
 
     def forward(self, inputs, presence=None):
-        output = self.head(self.encode(inputs, presence)).squeeze(-1)
+        """Devolver [lote] con la cabeza escalar o [lote, 5] cuantiles ordenados."""
+        output = self.head(self.encode(inputs, presence))
+        if not self.emits_quantiles:
+            output = output.squeeze(-1)
         if self.kind == "transformer" and not torch.isfinite(output).all():
             raise ValueError("La salida Transformer contiene valores no finitos")
         return output

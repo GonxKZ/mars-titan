@@ -31,6 +31,15 @@ from mars_titan.models.baselines.transformer import (
     transformer_options,
     validate_attention_budget,
 )
+from mars_titan.models.quantile_head import (
+    CONTRACT,
+    LEVELS,
+    PINBALL,
+    QUANTILE_COLUMNS,
+    QUANTILE_HEAD,
+    median,
+    pinball_loss,
+)
 from mars_titan.profiling import CostProbe
 
 from .checkpoints import (
@@ -109,11 +118,12 @@ _SOURCES = (
 )
 
 
-def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS):
+def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS, head=None):
     """Compartir versiones, política numérica y transformaciones entre todos los casos.
 
-    El Transformer y la lectura con máscaras añaden sus huellas solo en esos casos.
-    Así, la identidad de las referencias estrictas anteriores conserva sus campos.
+    El Transformer, la lectura con máscaras y la cabeza de cuantiles añaden sus
+    huellas solo en esos casos. Así, la identidad de las referencias estrictas y
+    escalares anteriores conserva sus campos.
     """
     root = Path(__file__).parents[1]
     sources = _SOURCES
@@ -121,6 +131,8 @@ def scientific_identity(*, kind=None, input_policy=STRICT_INPUTS):
         sources += ("models/baselines/transformer.py",)
     if masked_inputs(input_policy):
         sources += ("data/input_policy.py",)
+    if head == QUANTILE_HEAD:
+        sources += ("models/quantile_head.py",)
     return dict(
         torch=str(torch.__version__),
         cuda=torch.version.cuda,
@@ -152,7 +164,7 @@ def _options(
 ):
     required = {"kind", "loss", "learning_rate", "seed", "epochs", "huber_delta"}
     if (
-        not required <= set(case) <= required | {"architecture", "selection"}
+        not required <= set(case) <= required | {"architecture", "selection", "head"}
         or case["kind"] not in KINDS
         or type(case["epochs"]) is not int
         or not 1 <= case["epochs"] <= 1000
@@ -191,7 +203,16 @@ def _options(
             transformer_options(architecture["transformer"])
     if "selection" in case:
         validate_selection(case["selection"], epochs=case["epochs"])
-    validate_loss(case["loss"], case["huber_delta"])
+    # La ruta escalar se identifica por la ausencia del campo. La cabeza de cuantiles
+    # solo admite su pinball y conserva huber_delta para compartir el esquema del caso.
+    if "head" in case:
+        if case["head"] != QUANTILE_HEAD or "architecture" not in case:
+            raise ValueError("La cabeza de cuantiles necesita su nombre y una arquitectura")
+        if case["loss"] != PINBALL:
+            raise ValueError("La cabeza de cuantiles se ajusta con su pérdida pinball")
+        validate_loss("mae", case["huber_delta"])
+    else:
+        validate_loss(case["loss"], case["huber_delta"])
     if os.environ.get("CUBLAS_WORKSPACE_CONFIG") not in {":4096:8", ":16:8"}:
         raise ValueError("Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch")
 
@@ -255,6 +276,16 @@ def _session_table(errors, zero):
     )
 
 
+def _point(emitted, target, quantiles):
+    """Separar la predicción puntual y, con la cabeza de cuantiles, sus cinco niveles."""
+    if quantiles and emitted.shape != (len(target), len(LEVELS)):
+        raise ValueError("La cabeza de cuantiles debe devolver cinco niveles por fila")
+    prediction = median(emitted) if quantiles else emitted
+    if prediction.shape != target.shape:
+        raise ValueError("Predicción y etiqueta no tienen la misma forma")
+    return prediction
+
+
 def _evaluate(
     model,
     dataset,
@@ -265,8 +296,13 @@ def _evaluate(
     destination=None,
     sessions=None,
     stop=None,
+    quantiles=False,
 ):
-    """Evaluar una partición completa. `sessions` resume filas sin guardarlas una a una."""
+    """Evaluar una partición completa. `sessions` resume filas sin guardarlas una a una.
+
+    Con `quantiles`, la predicción puntual es la mediana y las tablas por fila añaden
+    los cinco niveles en las columnas del contrato de la cabeza.
+    """
     if destination is not None and sessions is not None:
         raise ValueError("Una evaluación guarda filas completas o un resumen por sesión")
     model.eval()
@@ -283,9 +319,8 @@ def _evaluate(
             ):
                 if stop is not None and stop.requested:
                     raise _Pause
-                predicted = _forward(model, batch, device)
-                if predicted.shape != batch["target"].shape:
-                    raise ValueError("Predicción y etiqueta no tienen la misma forma")
+                emitted = _forward(model, batch, device)
+                predicted = _point(emitted, batch["target"], quantiles)
                 predictions = predicted.cpu().numpy()
                 accumulator.update(
                     batch["market"],
@@ -300,19 +335,23 @@ def _evaluate(
                     digests["predictions"].update(predictions.astype("<f4").tobytes())
                 if destination is None:
                     continue
-                yield pa.table(
-                    {
-                        "sample_id": batch["sample_ids"],
-                        "asset_id": ["/".join(key.split("/")[:2]) for key in batch["sample_ids"]],
-                        "market": batch["market"],
-                        "prediction_at": pa.array(
-                            batch["prediction_at"], type=pa.timestamp("us", tz="UTC")
-                        ),
-                        "target": batch["target"],
-                        "prediction": predictions,
-                        "zero": np.zeros(len(predictions), dtype=np.float64),
-                    }
-                )
+                columns = {
+                    "sample_id": batch["sample_ids"],
+                    "asset_id": ["/".join(key.split("/")[:2]) for key in batch["sample_ids"]],
+                    "market": batch["market"],
+                    "prediction_at": pa.array(
+                        batch["prediction_at"], type=pa.timestamp("us", tz="UTC")
+                    ),
+                    "target": batch["target"],
+                    "prediction": predictions,
+                    "zero": np.zeros(len(predictions), dtype=np.float64),
+                }
+                if quantiles:
+                    # La mediana se guarda dos veces con los mismos bits: como predicción
+                    # puntual y como su nivel, igual que exige ForecastPanel.
+                    levels = emitted.cpu().numpy()
+                    columns.update(zip(QUANTILE_COLUMNS, levels.T, strict=True))
+                yield pa.table(columns)
 
     if destination is None:
         for _ in tables():
@@ -394,6 +433,7 @@ def _parent(parent, dataset, case, model, batch_size, weighting, input_policy=ST
         or identity["case"]["kind"] != case["kind"]
         or identity["case"]["seed"] != case["seed"]
         or identity["case"].get("architecture") != case.get("architecture")
+        or identity["case"].get("head") != case.get("head")
         or identity["batch_size"] != batch_size
         or identity["weighting"] != weighting
         or any(identity.get(key) != inputs.get(key) for key in ("input_policy", "mask_contract"))
@@ -401,7 +441,9 @@ def _parent(parent, dataset, case, model, batch_size, weighting, input_policy=ST
     ):
         raise ValueError("El origen no corresponde a la población, arquitectura y semilla")
     checkpoint = report["checkpoint"]
-    current = scientific_identity(kind=case["kind"], input_policy=input_policy)
+    current = scientific_identity(
+        kind=case["kind"], input_policy=input_policy, head=case.get("head")
+    )
     if any(identity.get(k) != v for k, v in current.items()):
         raise ValueError("El entorno o el código no coincide con el origen de la continuación")
     state = _confirmed_state(parent, identity, checkpoint, report.get("selection"))
@@ -438,6 +480,7 @@ def run_reference_case(
         prediction_retention=prediction_retention,
     )
     masked = masked_inputs(input_policy)
+    quantiles = case.get("head") == QUANTILE_HEAD
     start = time.perf_counter()
     device = require_cuda()
     dataset = configured_corpus(manifest, input_policy=input_policy)
@@ -468,6 +511,7 @@ def run_reference_case(
             context=dataset.context,
             mask_fusion=PRESENCE_FUSION if masked else STRICT_FUSION,
             **case["architecture"],
+            **({"head": QUANTILE_HEAD} if quantiles else {}),
         )
         if "architecture" in case
         else CostProbe(case["kind"], dimensions, context=dataset.context)
@@ -477,7 +521,7 @@ def run_reference_case(
         initialize_from, dataset, case, model, batch_size, weighting, input_policy
     )
     identity = dict(
-        **scientific_identity(kind=case["kind"], input_policy=input_policy),
+        **scientific_identity(kind=case["kind"], input_policy=input_policy, head=case.get("head")),
         manifest_sha256=dataset.identity,
         case=case,
         model_family="scientific_multimodal_reference"
@@ -504,6 +548,8 @@ def run_reference_case(
         identity["mask_fusion"] = PRESENCE_FUSION
     if prediction_retention != FULL_TRAIN_VALIDATION:
         identity["prediction_retention"] = prediction_retention
+    if quantiles:
+        identity["output_head"] = dict(CONTRACT)
     optimizer = torch.optim.AdamW(model.parameters(), lr=case["learning_rate"])
     report_path = output / "run.json"
     if resume and report_path.exists():
@@ -588,7 +634,9 @@ def run_reference_case(
     try:
         save()
         if initialization is not None and selection_options and selection is None:
-            baseline = _evaluate(model, dataset, batch_size, device=device, stop=stop)
+            baseline = _evaluate(
+                model, dataset, batch_size, device=device, stop=stop, quantiles=quantiles
+            )
             report["initial_validation"] = baseline
             selection = initial_selection(baseline["session_mae"], selection_options)
             save(best=True)
@@ -608,10 +656,11 @@ def run_reference_case(
             for batch in iterator:
                 optimizer.zero_grad(set_to_none=True)
                 target = torch.from_numpy(batch["target"]).to(device, dtype=torch.float32)
-                prediction = _forward(model, batch, device)
-                if prediction.shape != target.shape:
-                    raise ValueError("Predicción y etiqueta no tienen la misma forma")
-                if case["loss"] == "huber":
+                emitted = _forward(model, batch, device)
+                prediction = _point(emitted, target, quantiles)
+                if quantiles:
+                    loss = pinball_loss(emitted, target, reduction="none")
+                elif case["loss"] == "huber":
                     loss = torch.nn.functional.huber_loss(
                         prediction, target, delta=case["huber_delta"], reduction="none"
                     )
@@ -648,7 +697,9 @@ def run_reference_case(
             statistics["elapsed_seconds"] += time.perf_counter() - segment
             if statistics["samples"] != dataset.manifest["counts"]["train"]:
                 raise ValueError("La época no recorrió exactamente toda la población")
-            validation = _evaluate(model, dataset, batch_size, device=device, stop=stop)
+            validation = _evaluate(
+                model, dataset, batch_size, device=device, stop=stop, quantiles=quantiles
+            )
             history.append(dict(epoch=epoch + 1, train=_metrics(statistics), validation=validation))
             epoch, cursor, statistics = epoch + 1, None, _statistics()
             if selection_options:
@@ -686,6 +737,7 @@ def run_reference_case(
                 partition=partition,
                 destination=path,
                 stop=stop,
+                quantiles=quantiles,
             )
             predictions[partition] = dict(path=path.name, sha256=sha256(path), metrics=metrics)
             if not legacy:
@@ -700,6 +752,7 @@ def run_reference_case(
                 partition="train",
                 sessions=path,
                 stop=stop,
+                quantiles=quantiles,
             )
             report["train_summary"] = dict(
                 path=path.name, sha256=sha256(path), bytes=path.stat().st_size, metrics=metrics
