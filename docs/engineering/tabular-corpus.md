@@ -37,6 +37,12 @@ predicciones en Parquet por bloques. Se comprueba que el modelo restaurado
 predice exactamente igual. El RSS registrado es el máximo de vida del proceso,
 no una reserva atribuible exclusivamente al último ajuste.
 
+Con `--input-policy historical_masked_2000_v1` el ejecutor lee la edición
+histórica con máscaras y añade al final los cinco bits de presencia del lector.
+Sin esa opción conserva el contrato estricto y su recibo. La adaptación, sus
+recibos y sus comprobaciones se describen en
+[Ridge y XGBoost con la edición de máscaras](masked-tabular-comparators.md).
+
 El ajuste tabular no tiene todavía reanudación interna de estadísticas o árboles.
 Una interrupción deja su recibo y no se sobrescribe. Para repetir el ajuste se
 necesita otra salida. Las predicciones terminadas conservan ambas particiones y

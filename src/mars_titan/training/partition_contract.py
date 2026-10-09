@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.input_policy import STRICT_INPUTS
 from mars_titan.environments.cohorts import FINAL_TEST_START_US, VALIDATION_START_US
 from mars_titan.evaluation.splits import PARTITIONS
 
@@ -14,9 +15,9 @@ LEGACY_BOUNDS = {
 }
 
 
-def supervision_bounds(source, *, market=None):
+def supervision_bounds(source, *, market=None, input_policy=STRICT_INPUTS):
     """Validar las particiones sin utilizar sus etiquetas para definir los cortes."""
-    contracts = temporal_contracts(source)
+    contracts = temporal_contracts(source, input_policy=input_policy)
     counts = source.get("counts", {})
     expected = set(PARTITIONS) if contracts else set(LEGACY_BOUNDS)
     if (
@@ -36,7 +37,7 @@ def supervision_bounds(source, *, market=None):
         market = next(iter(contracts))
     if market not in contracts:
         raise ValueError("El mercado no pertenece a la supervisión temporal")
-    verified = TemporalInputs(contracts[market])
+    verified = TemporalInputs(contracts[market], input_policy=input_policy)
     if verified.partitioner.test_start != FINAL_TEST_START_US:
         raise ValueError("El postentrenamiento no puede cambiar el test final reservado")
     return {
