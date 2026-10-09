@@ -65,3 +65,31 @@ def test_price_reader_returns_the_nearest_double_to_every_source_text(tmp_path):
     prices, _ = read_prices(path, MarketClock("US", "2024-01-01", "2025-01-01"))
     row = prices.loc[0, ["open", "high", "low", "close", "volume"]].to_numpy(dtype=np.float64)
     assert _bits(row) == _bits([float(t) for t in (o, h, lo, c, "1234567")])
+
+
+def test_parser_comparison_counts_the_legacy_error_and_finds_no_exact_mismatch(tmp_path):
+    from mars_titan.data.source_numbers import compare_number_parsers
+
+    path = tmp_path / "A.csv"
+    rows = [
+        f"2024-07-0{i + 1},{text},{text},{text},{text},10,0.0,0.0"
+        for i, text in enumerate(APPROXIMATED)
+    ]
+    path.write_text(
+        "Date,Open,High,Low,Close,Volume,Dividends,Stock Splits\n" + "\n".join(rows) + "\n"
+    )
+    counts = compare_number_parsers(path, ["Open", "High", "Low", "Close", "Volume", "Missing"])
+    assert counts["values"] == 15 and counts["absent"] == 0
+    assert counts["exact_mismatches"] == counts["pattern_rejected_float_accepted"] == 0
+    assert counts["legacy_mismatches"] == 12 and counts["legacy_max_ulps"] == 1
+
+
+def test_parser_comparison_reports_texts_that_only_python_float_accepts(tmp_path):
+    from mars_titan.data.source_numbers import compare_number_parsers
+
+    path = tmp_path / "A.csv"
+    path.write_text("Date,Open,Volume\n2024-07-01,1_000,NA\n2024-07-02,7.64,\n")
+    counts = compare_number_parsers(path, ["Open", "Volume"])
+    assert counts["values"] == 4 and counts["absent"] == 2
+    assert counts["pattern_rejected_float_accepted"] == 1
+    assert counts["exact_mismatches"] == 0
