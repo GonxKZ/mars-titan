@@ -1,5 +1,6 @@
 """Apoyo común de la suite que no depende de ningún dominio del proyecto."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -29,6 +30,12 @@ def cuda_available():
 requires_cuda = pytest.mark.skipif(
     not cuda_available(), reason="Requiere cuda:0, que no está visible en esta ejecución"
 )
+
+
+def skip_without_episodic_native():
+    """Omitir con su motivo una preparación que carga el enlace episódico nativo sin declararlo."""
+    if not os.environ.get("MARS_TITAN_EPISODIC_NATIVE"):
+        pytest.skip("Falta el enlace episódico nativo compilado (MARS_TITAN_EPISODIC_NATIVE)")
 
 
 def strict_problems(environment, cuda=cuda_available):
