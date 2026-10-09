@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scope": "Delta CUDA de KLPO sin Adam: pérdidas, gradientes y recuperación de actores MLP y GRU fijados",
+  "driver": "Sonda técnica privada de la PR #362 (delta_cuda.cpp), recompilada contra native-ppo-release de esta rama",
+  "driver_source_sha256": "1ef4141f60a694ed89acfd5ecac07577c6646235f6cb813e16ecef9e11d15f08",
+  "fixtures_sha256": "440d9d24864a1d1c2624ac13f2c8e5a8134aaf1febb282b9cad350789f5844af",
+  "binary_sha256": "c12e36b169bd58878c01816a18ea0b44cda45f275cd17df5d5aa2d8fb08c5449",
+  "tested_runtime_commit": "2f0e5f72",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0",
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+    "OMP_NUM_THREADS": "1",
+    "PYTORCH_ALLOC_CONF": "per_process_memory_fraction:0.01640066307368286"
+  },
+  "allocator_cap_bytes": 134217728,
+  "result": {
+    "cases": [
+      {
+        "gradient_error_max": 7.152557373046875e-07,
+        "kind": "mlp",
+        "loss_error": 8.114645766443829e-08,
+        "parameters_sha256": "68c0eeedbdc4b55fae961342a22ead420b677dd8fceb202db044476125ef8f3d",
+        "roundtrip_gradients_exact": true,
+        "updates": 0
+      },
+      {
+        "gradient_error_max": 1.0728836059570312e-06,
+        "kind": "gru",
+        "loss_error": 7.788054384727516e-08,
+        "parameters_sha256": "a230e6a8f0588d7ebfa49933c31034656518c4f0a651dfb342157d026d98e521",
+        "roundtrip_gradients_exact": true,
+        "updates": 0
+      }
+    ],
+    "device": "cuda:0",
+    "global_rng_unchanged": true,
+    "peak_allocated_bytes": 76267008,
+    "peak_reserved_bytes": 90177536,
+    "scope": "fixed_actor_loss_gradients_and_roundtrip",
+    "updates": 0
+  },
+  "reference_revision": "be88f4d902fa1a407dc579dfddf2284583fdee85",
+  "matches_reference": {
+    "gradient_error_max": true,
+    "parameters_sha256": true,
+    "peak_allocated_bytes": true,
+    "peak_reserved_bytes": true
+  },
+  "not_executed": "update_ready, terminal_step y Adam::step. El tramo de referencia y oleada forzada no forma parte de esta sonda.",
+  "optimizer_steps": 0
+}
