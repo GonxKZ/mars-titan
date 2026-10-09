@@ -18,6 +18,7 @@ from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.storage import atomic_json
 from mars_titan.environments.walk_forward_receipt import read_window_receipt
 from mars_titan.simulation import campaign_stage
+from mars_titan.simulation.native_runtime import library_path
 from mars_titan.simulation.storage import read_tape
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.simulation import rl_stage_fixture as fixture
@@ -417,3 +418,26 @@ def test_script_checks_the_policy_stage_and_runs_it_only_without_the_hold(
     with pytest.raises(LearningHoldError):
         script["main"](arguments)
     assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.skipif(library_path() is None, reason="Falta la biblioteca nativa de simulación")
+def test_references_with_native_accounting_match_the_python_accounting(
+    base_a, tmp_path, learning_doubles
+):
+    # El ejecutor de referencias del repositorio usa la contabilidad nativa en EE. UU.
+    python = fixture.run(base_a, tmp_path / "python", fixture.ScriptedLearner())
+    native = fixture.run(base_a, tmp_path / "native", fixture.ScriptedLearner(), backend="native")
+    assert python["status"] == native["status"] == "completed"
+    found = {name: receipts(tmp_path / name) for name in ("python", "native")}
+    references = [job for job, r in found["python"].items() if r["identity"]["kind"] == "reference"]
+    assert len(references) == 6
+    for job in references:
+        for ours, theirs in zip(
+            found["python"][job]["evaluation"], found["native"][job]["evaluation"], strict=True
+        ):
+            assert ours.keys() == theirs.keys() and ours["status"] == theirs["status"]
+            for key, value in ours.items():
+                if isinstance(value, float):
+                    assert theirs[key] == pytest.approx(value, rel=1e-12, abs=1e-12), key
+                else:
+                    assert theirs[key] == value, key

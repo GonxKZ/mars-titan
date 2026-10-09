@@ -177,9 +177,31 @@ def test_tapes_share_one_universe_and_record_an_excluded_asset_as_failed_episode
         mean_liquidated_log_growth=None,
         denominator="completed",
     )
+    # Un informe que presenta un episodio completo sobre la cinta fallida se rechaza.
+    completed = dict(records[0], status="completed", reason=None, net_return=0.0)
+    completed.update(liquidated_net_return=0.0, max_drawdown=0.0)
+    report = dict(status="completed", transitions=0, updates=0, selection=None, policy=None)
+    report["evaluation"] = [completed, *records[1:]]
+    with pytest.raises(ValueError, match="cinta de evaluación fallida"):
+        campaign_stage.check_report(STAGE, dict(id="job", kind="reference"), report, opened)
     # Al reanudar se leen el universo, las cintas y el fallo confirmados.
     resumed = tapes(tmp_path, assets).open(JOB)
     assert resumed.identity == opened.identity and resumed.universe == opened.universe
+
+
+def test_only_the_evaluation_tape_may_lose_a_universe_asset(tmp_path, monkeypatch):
+    assets = LIQUID[1:3]
+    build = window_tapes.build_segment_tape
+
+    def losing(edition, receipt, values, *, market, role, lag, symbols=None):
+        # La cinta de ajuste pierde un activo que el universo admitió.
+        if symbols is not None and role == "train":
+            symbols = symbols[1:]
+        return build(edition, receipt, values, market=market, role=role, lag=lag, symbols=symbols)
+
+    monkeypatch.setattr(window_tapes, "build_segment_tape", losing)
+    with pytest.raises(ValueError, match="no es admisible en train"):
+        tapes(tmp_path, assets).open(JOB)
 
 
 def test_confirmed_universe_and_tapes_reject_another_receipt(tmp_path):
@@ -223,6 +245,21 @@ def test_a_policy_cannot_train_or_validate_with_predictions_of_a_later_fit(tmp_p
         window_tapes.build_segment_tape(
             tmp_path / "nowhere", forged, values, market="US", role="evaluation", lag=0
         )
+
+
+def test_a_later_receipt_renamed_as_an_earlier_window_is_rejected_by_its_segments(tmp_path):
+    assets = LIQUID[1:3]
+    honest = source_for(assets)
+
+    def renamed(scope, market, window, predictor):
+        # El recibo de 2023 se presenta con el nombre de la ventana de ajuste de 2021.
+        if window != "fold-016":
+            return honest(scope, market, window, predictor)
+        receipt, values = honest(scope, market, "fold-018", predictor)
+        return dataclasses.replace(receipt, fold=window), values
+
+    with pytest.raises(ValueError, match="tramos posteriores a su evaluación"):
+        tapes(tmp_path, assets, source=renamed).open(JOB)
 
 
 def test_tapes_from_another_market_are_rejected(tmp_path):

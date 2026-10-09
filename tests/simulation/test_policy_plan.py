@@ -153,6 +153,13 @@ def _policy(name, **values):
     return lambda v: v["policies"][name].update(values)
 
 
+def _klpo_second(value):
+    # Double DQN pasa delante de KLPO y los controles siguen ese orden declarado.
+    items = list(value["policies"].items())
+    value["policies"] = dict([items[-1], *items[:-1]])
+    value["contrasts"]["controls"] = [*list(value["policies"])[1:], *value["references"]]
+
+
 INVALID_POLICIES = {
     "seeds": lambda v: v.update(seeds=[42, 43]),
     "predictor_mae": lambda v: v["selection"].update(metric="session_mae"),
@@ -160,6 +167,7 @@ INVALID_POLICIES = {
     "early_stopping": lambda v: v["selection"].update(early_stopping=True),
     "primary_not_klpo": lambda v: v["contrasts"].update(primary="double_dqn"),
     "klpo_not_first": lambda v: v.update(policies=dict(reversed(list(v["policies"].items())))),
+    "klpo_second_with_matching_controls": _klpo_second,
     "missing_control": lambda v: v["contrasts"]["controls"].pop(),
     "missing_reference": lambda v: v.update(references=["cash", "hold_initial"]),
     "unknown_reference": lambda v: v.update(references=["cash", "hold_initial", "oracle"]),
@@ -209,6 +217,7 @@ REASONS = {
     "early_stopping": "presupuesto fijo",
     "primary_not_klpo": "KLPO es el brazo principal",
     "klpo_not_first": "va primero",
+    "klpo_second_with_matching_controls": "va primero",
     "missing_control": "con todos los demás",
     "missing_reference": "tres referencias",
     "unknown_reference": "tres referencias",
