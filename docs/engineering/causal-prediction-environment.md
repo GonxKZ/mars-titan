@@ -78,8 +78,13 @@ acción si los créditos corresponden a cohortes anteriores.
 
 ## Presupuesto y recuperación
 
-El espacio permite hasta 4.096 activos por cohorte. El bloque de observación
-tiene por defecto un límite de 64 MiB y la cola admite hasta 65.536 etiquetas.
+El espacio permite hasta 8.192 activos por cohorte (`MAX_COHORT_ASSETS`). La
+población preparada desde 2000 llega a 4.200 activos US en una misma sesión de
+noviembre de 2023, por encima del límite anterior de 4.096. Con las formas de la
+edición histórica (precios 64×5, noticias 384, gráficos 512, fundamentales 45 y
+macro 420), cada activo ocupa 6.725 bytes en la observación rellenada. La sesión
+más poblada necesita unos 28 MB y el máximo de 8.192 activos unos 55 MB, dentro
+del límite por defecto de 64 MiB. La cola admite hasta 65.536 etiquetas.
 Una entrada que supera el presupuesto falla sin avanzar el estado confirmado.
 Estos límites no autorizan omitir empresas. Si una edición admisible los supera,
 debe revisarse la representación antes de ejecutar esa edición.

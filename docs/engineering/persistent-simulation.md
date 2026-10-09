@@ -26,6 +26,12 @@ La observación contiene, por activo, predicción, peso, último retorno de cier
 
 PPO conserva el bootstrap al truncar y corta la recurrencia de ventajas entre episodios. Double DQN anula el bootstrap al terminar por ruina. Esta distinción sigue el [contrato de Gymnasium](https://gymnasium.farama.org/tutorials/gymnasium_basics/handling_time_limits/). Los algoritmos se basan en [PPO](https://arxiv.org/abs/1707.06347) y [Double DQN](https://arxiv.org/abs/1509.06461).
 
+El generador NumPy del entrenador procede de un hijo de `SeedSequence(seed)` y no de `default_rng(seed)`, que es el que construye los mundos sintéticos. Antes, con las mismas semillas, la exploración, el muestreo del replay y el barajado repetían los números que generaron el mundo. La identidad registra el esquema `seed_sequence_spawn_v1`. El entrenamiento rechaza cintas con cierres ausentes, porque la transición inválida se excluiría del objetivo y ocultaría la pérdida de la posición. La campaña publica como fallida una evaluación cuya valoración queda incompleta y cuenta esos casos en su recibo.
+
+Las cintas y carteras Python admiten 8.192 activos y 2.097.152 celdas, de modo que un año completo de los 4.202 activos US de la población preparada cabe en una cinta. En el máximo, precios y predicciones en `float64` ocupan 96 MiB por copia. La biblioteca C++ conserva el límite de 4.096 activos y el motor nativo rechaza explícitamente una cinta mayor.
+
+`FinancialEnv(..., instruments=...)` aplica reglas declaradas por activo, como lotes, bandas diarias e impuestos por fecha, y añade su huella a la identidad del entorno. Las de acciones A de Shanghái y Shenzhen y sus fuentes están en la [revisión de reglas chinas](china-market-rules.md). Solo el motor Python las aplica.
+
 Cada punto de control incluye redes, optimizador, RNG, replay o recorrido PPO parcial, cursor y estado contable. Se confirma un estado inicial antes de la primera transición. El índice mantiene dos estados íntegros y permite recuperar el anterior si el último archivo está dañado. Cambiar código, fuentes o presupuesto exige otra ejecución. Los resultados de evaluación no seleccionan hiperparámetros ni abren el test.
 
 ## Ejecución local
