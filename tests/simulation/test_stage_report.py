@@ -307,3 +307,33 @@ def test_without_ending_series_the_survival_sensitivity_has_no_window(base, stag
     result, _ = report_of(base, [stage_output], tmp_path / "report")
     survival = result["sections"][0]["survival"]
     assert survival["status"] == "no_affected_windows" and survival["affected"] == []
+
+
+def test_survival_lists_only_universe_exclusions_caused_by_an_ending_series():
+    # Una ventana fallida por filas sin verificar o por falta de predicciones no depende de
+    # un retorno de salida. Solo cuentan los activos del universo cuya serie termina.
+    policies = fixture.policies()
+
+    def receipt(window, failure):
+        job = dict(scope="US", market="US", window=window)
+        return dict(job=job, identity=dict(tapes=dict(failure=failure)))
+
+    excluded = "universe_assets_excluded"
+    receipts = dict(
+        a=receipt(
+            "fold-005",
+            dict(
+                reason=excluded,
+                excluded={"US/X": "series_ends_in_tape", "US/Y": "unverified_rows_in_tape"},
+            ),
+        ),
+        b=receipt("fold-005", dict(reason=excluded, excluded={"US/Z": "series_ends_in_tape"})),
+        c=receipt("fold-006", dict(reason=excluded, excluded={"US/Y": "unverified_rows_in_tape"})),
+        d=receipt("fold-007", dict(reason="predictor_without_predictions")),
+        e=receipt("fold-008", None),
+    )
+    result = stage_report.survival(policies, dict(receipts=receipts))
+    assert result["status"] == "secondary_evaluation_pending"
+    assert result["affected"] == [
+        dict(scope="US", market="US", window="fold-005", assets=["US/X", "US/Z"])
+    ]
