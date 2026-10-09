@@ -500,3 +500,39 @@ def test_masked_predictions_without_aggregates_are_compacted_not_released(
         record = receipt["prediction"]
         state_of = prediction_files.verify(staged / record["path"], record["sha256"])
         assert state_of == prediction_files.COMPACTED
+
+
+def test_jobs_declared_not_regenerable_are_compacted_without_regenerating(
+    base,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    """Un trabajo con `regenerable=False`, como uno con actualizaciones en línea, se conserva."""
+    on_cpu(monkeypatch)
+    monkeypatch.setenv(HOLD_ENV, str(base.hold))
+    output = tmp_path / "campaign"
+    shutil.copytree(base.output, output, symlinks=True)
+    path, campaign = schedule(base, tmp_path)
+    windows = rolling.load_schedule(path, campaign)
+    state = rolling.Rolling(
+        rolling.load_retention(DECLARATION), base.campaign, base.views, output, windows
+    )
+    target = state.base_state(0)[1][0]["id"]
+    original = rolling.Rolling.base_state
+
+    def marked(self, index):
+        found, jobs = original(self, index)
+        return found, [dict(job, regenerable=False) if job["id"] == target else job for job in jobs]
+
+    monkeypatch.setattr(rolling.Rolling, "base_state", marked)
+    rolling.run_rolling(state, Calls().runners())
+    tables = tables_of(state, target, output)
+    for path_of, digest in tables.values():
+        assert prediction_files.verify(path_of, digest) == prediction_files.COMPACTED
+        record = prediction_files.entry(path_of)
+        restored = prediction_files.read(path_of, digest)
+        assert prediction_files.content_digest(restored) == record["content_sha256"]
+    report = state.folder / "regeneration-reports" / f"{rolling._name(f'base:{target}')}.json"
+    assert not report.exists()
+    release = state.ledger()["windows"][windows[0]["id"]]["phases"]["release"]
+    assert release["declared_not_regenerable"] == 1

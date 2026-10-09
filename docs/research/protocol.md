@@ -118,6 +118,7 @@ La [declaración](../../configs/baselines/historical-masked-retention-v2.json) f
 - Una tabla por fila de la base o de la ablación solo se libera si se regenera por inferencia desde el estado elegido, con el mismo código, el mismo orden de lotes y FP32 estricto (sin TF32 en cuBLAS ni en cuDNN), y sale idéntica bit a bit a la huella de contenido registrada. El ajuste que se predijo con otra precisión no se regenera.
 - Si la regeneración no es idéntica, la tabla se compacta sin pérdida (tabla común de filas por ventana y tramo y decimales propios, con lectura bit a bit) y se conserva. Nunca se cuantiza ni se guarda en float16.
 - Las evaluaciones que leerá una política posterior y las tablas de los adaptadores se compactan sin pérdida y se conservan hasta su último lector.
+- Un trabajo marcado en el plan con `regenerable: false` (predicciones que dependen de actualizaciones en línea) se compacta sin pérdida y se conserva sin regenerarlo. Esta regla se añadió el 10 de octubre de 2026, también antes de cualquier resultado.
 
 Con estas reglas «conservar» significa poder recuperar exactamente. Las predicciones de cada sesión siguen emitiéndose con el estado previo a su actualización y se comparan con su huella antes de liberar el archivo. La orden `run_masked_campaign.py regenerate` las vuelve a escribir cuando alguien necesite leerlas. Las métricas o los estratos nuevos que no estén en los agregados exigirán esa regeneración, que tiene un coste de cómputo.
 

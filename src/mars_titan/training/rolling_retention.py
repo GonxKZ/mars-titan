@@ -382,7 +382,9 @@ class Rolling:
         """Liberar o compactar las tablas de las ventanas hasta `index` que nadie leerá."""
         base, jobs = self.base_state(index)
         keep = self.policy_keep(base, index)
-        totals = dict(released=0, compacted=0, kept_for_policies=0, not_regenerable=0)
+        totals = dict(
+            released=0, kept_for_policies=0, not_regenerable=0, declared_not_regenerable=0
+        )
         freed = 0
         for job in jobs:
             receipt = base.receipts[job["id"]]
@@ -392,6 +394,12 @@ class Rolling:
             if keep.get(job["id"], -1) > index:
                 # Una política posterior leerá su evaluación: se compacta y se conserva.
                 totals["kept_for_policies"] += 1
+                freed += self._compact(job, tables)
+                continue
+            if job.get("regenerable", True) is False:
+                # El plan declara que sus predicciones dependen de algo más que la inferencia
+                # (por ejemplo, actualizaciones en línea): se compacta sin regenerar.
+                totals["declared_not_regenerable"] += 1
                 freed += self._compact(job, tables)
                 continue
 
