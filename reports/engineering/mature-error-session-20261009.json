@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-09T01:07:41.741775+00:00",
+  "issues": [
+    19,
+    23
+  ],
+  "recipe": "episodic_m2_three_index_v1",
+  "bank_checkpoint": "186280abd55123b0aa07972b25cc11340af341c8",
+  "bank_recovery_fix": "f76ebb90950189c9559d8eab2b90ea20ec8f0d7e",
+  "archive_preflight_commit": "785c93a8a0f0cd3f3704dcdc0d2776d4eb06e286",
+  "base_commit": "bbc806f3fb4164d9381c9edfb2599c83562f0beb",
+  "sources": {
+    "src/mars_titan/memory/write_policy.py": "2facfaa3eaba4850be77ada56f9c5089ded79b3b7be78151636a96085cdee3ff",
+    "src/mars_titan/memory/financial_session.py": "ccae791f749b3f3740b8fe034c7cbb569060fc99c04746c5e7c4f8066fad0d7b",
+    "tests/memory/test_write_policy.py": "76669349789e60ba59cd3497f4eff4ceee5035bdcd09501e40d1eacb7fdf7c6a",
+    "tests/memory/test_financial_session_m2.py": "08e997072e40b1bf73bf879c647291943c7f2d7334aff1ddd278fef5e4221532",
+    "tests/memory/test_financial_session_controls.py": "7cff0ce1645d86369fc5cafe992644755ea283d0f6af7a5815fd1b58f9a30c42",
+    "src/mars_titan/memory/native_memory_archive.py": "0090ebfc1e7a25e50ecdb9def824bcea349eedeacd71b06acfe79ad30c5a4d23",
+    "tests/memory/test_native_memory_archive.py": "8c0025740ddfd0c62f25e07e60470f0a90e6a9128bd7d3b618c4805e1a8e2e9e"
+  },
+  "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d",
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "device": "cpu",
+    "model_dtype": "float64",
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "host_exclusive": false,
+    "cpu_quota_percent": 200,
+    "memory_max_bytes": 3221225472,
+    "memory_swap_max_bytes": 0,
+    "blas_openmp_threads": 2,
+    "fastpath": false,
+    "mac_sdpa_backend": "math"
+  },
+  "technical_checks": {
+    "passed": 68,
+    "bank_tests": 37,
+    "consumer_tests": 10,
+    "archive_tests": 21,
+    "pytest_seconds": 20.32,
+    "process_seconds": 21.43,
+    "process_peak_rss_kib": 774992,
+    "process_swaps": 0,
+    "coverage_enabled": true,
+    "source_manifests": "manual_fixture_no_estimation",
+    "fitted_labels": false,
+    "optimizer_steps": 0,
+    "shared_parameter_updates": 0,
+    "model_forward_executed": true,
+    "scientific_evaluation": false,
+    "CUDA_executed": false,
+    "quota_configurations": 1021,
+    "prior_compatibility": {
+      "passed": 48,
+      "included_four_C_by_retention_paths": true,
+      "final_delta": "Solo las guardas M2 de recuperación cambiaron después de esta pasada."
+    }
+  },
+  "integration": {
+    "existing_consumer": "FinancialSession",
+    "task": "residual",
+    "horizon": 1,
+    "fixture_flows": 4,
+    "B_mem": 4,
+    "quota_values": [
+      2,
+      1,
+      1
+    ],
+    "K": 1,
+    "phase": "validation",
+    "admission": "m2",
+    "cm_m": "disabled",
+    "C": "disabled",
+    "trajectories": 3,
+    "decisions_per_trajectory": 5,
+    "settlement_events_per_trajectory": 1,
+    "issued_per_trajectory": 20,
+    "matured_per_trajectory": 16,
+    "pending_per_trajectory": 4,
+    "physical_blocks": [
+      4,
+      1
+    ],
+    "reversed_input_and_feedback_order": true,
+    "partition_tolerance": {
+      "rtol": 1e-12,
+      "atol": 1e-12
+    },
+    "interrupted_boundary": "before_commit",
+    "recovery_snapshot_and_continuation_exact": true,
+    "retained_indices_exact": true,
+    "global_torch_rng_unchanged": true,
+    "late_score_mutation_rejected": true,
+    "inconsistent_recent_index_rejected": true,
+    "selective_index_checked_against_retained_union": true,
+    "m0_m1_own_identity_recovery_checked": true,
+    "incompatible_configurations_and_m3_rejected": true
+  },
+  "non_idempotent_key": {
+    "raw_prefix": [
+      11.0,
+      19.0,
+      1.0
+    ],
+    "trailing_zeros": 61,
+    "second_coordinate_once": 0.8645299077033997,
+    "second_coordinate_twice": 0.8645299673080444,
+    "proposals": 3,
+    "recoveries": 3,
+    "retained_copies_match_first_normalization_bits": true
+  },
+  "coverage": {
+    "tools": {
+      "coverage": "7.16.2",
+      "radon": "6.0.1"
+    },
+    "convention": "Líneas y ramas de coverage.py. CCN de funciones, métodos y closures de Radon, sin agregados Class ni duplicados. CRAP=C²(1−cobertura de líneas)³+C. Los rangos de closures pueden solaparse con su función contenedora.",
+    "scope": "68 pruebas CPU del banco M2, inspección de archivos nativos y su integración con etiquetas manuales. No sustituye todas las pruebas históricas de la sesión.",
+    "files": [
+      {
+        "path": "src/mars_titan/memory/financial_session.py",
+        "sha256": "ccae791f749b3f3740b8fe034c7cbb569060fc99c04746c5e7c4f8066fad0d7b",
+        "coverage": {
+          "covered_lines": 343,
+          "num_statements": 411,
+          "percent_covered": 78.27648114901257,
+          "percent_covered_display": "78",
+          "missing_lines": 68,
+          "excluded_lines": 0,
+          "percent_statements_covered": 83.45498783454988,
+          "percent_statements_covered_display": "83",
+          "num_branches": 146,
+          "num_partial_branches": 41,
+          "covered_branches": 93,
+          "missing_branches": 53,
+          "percent_branches_covered": 63.6986301369863,
+          "percent_branches_covered_display": "64"
+        },
+        "highest_crap": [
+          {
+            "name": "FinancialSession._compact_inputs",
+            "line": 745,
+            "complexity": 11,
+            "line_coverage": 0.07692307692307693,
+            "crap": 106.16977696859355
+          },
+          {
+            "name": "FinancialSession._prepare_event",
+            "line": 500,
+            "complexity": 40,
+            "line_coverage": 0.8636363636363636,
+            "crap": 44.05709992486852
+          },
+          {
+            "name": "FinancialSession._verify_bundle",
+            "line": 769,
+            "complexity": 29,
+            "line_coverage": 0.75,
+            "crap": 42.140625
+          },
+          {
+            "name": "FinancialSession._resolve",
+            "line": 654,
+            "complexity": 27,
+            "line_coverage": 0.7758620689655172,
+            "crap": 35.20868526794867
+          }
+        ]
+      },
+      {
+        "path": "src/mars_titan/memory/native_memory_archive.py",
+        "sha256": "0090ebfc1e7a25e50ecdb9def824bcea349eedeacd71b06acfe79ad30c5a4d23",
+        "coverage": {
+          "covered_lines": 83,
+          "num_statements": 90,
+          "percent_covered": 89.0625,
+          "percent_covered_display": "89",
+          "missing_lines": 7,
+          "excluded_lines": 0,
+          "percent_statements_covered": 92.22222222222223,
+          "percent_statements_covered_display": "92",
+          "num_branches": 38,
+          "num_partial_branches": 7,
+          "covered_branches": 31,
+          "missing_branches": 7,
+          "percent_branches_covered": 81.57894736842105,
+          "percent_branches_covered_display": "82"
+        },
+        "highest_crap": [
+          {
+            "name": "verify_memory_archives",
+            "line": 168,
+            "complexity": 24,
+            "line_coverage": 0.9523809523809523,
+            "crap": 24.062196307094265
+          },
+          {
+            "name": "_verify_descriptors",
+            "line": 132,
+            "complexity": 21,
+            "line_coverage": 0.8888888888888888,
+            "crap": 21.60493827160494
+          },
+          {
+            "name": "_metadata",
+            "line": 106,
+            "complexity": 15,
+            "line_coverage": 0.8571428571428571,
+            "crap": 15.65597667638484
+          },
+          {
+            "name": "_tensor",
+            "line": 59,
+            "complexity": 15,
+            "line_coverage": 1.0,
+            "crap": 15.0
+          }
+        ]
+      },
+      {
+        "path": "src/mars_titan/memory/write_policy.py",
+        "sha256": "2facfaa3eaba4850be77ada56f9c5089ded79b3b7be78151636a96085cdee3ff",
+        "coverage": {
+          "covered_lines": 176,
+          "num_statements": 189,
+          "percent_covered": 89.80392156862744,
+          "percent_covered_display": "90",
+          "missing_lines": 13,
+          "excluded_lines": 0,
+          "percent_statements_covered": 93.12169312169313,
+          "percent_statements_covered_display": "93",
+          "num_branches": 66,
+          "num_partial_branches": 13,
+          "covered_branches": 53,
+          "missing_branches": 13,
+          "percent_branches_covered": 80.3030303030303,
+          "percent_branches_covered_display": "80"
+        },
+        "highest_crap": [
+          {
+            "name": "MatureErrorBank._check_receipt",
+            "line": 285,
+            "complexity": 26,
+            "line_coverage": 1.0,
+            "crap": 26.0
+          },
+          {
+            "name": "MatureErrorBank._verify",
+            "line": 203,
+            "complexity": 19,
+            "line_coverage": 0.8125,
+            "crap": 21.379638671875
+          },
+          {
+            "name": "MatureErrorBank.propose",
+            "line": 377,
+            "complexity": 21,
+            "line_coverage": 0.9565217391304348,
+            "crap": 21.036245582312812
+          },
+          {
+            "name": "MatureErrorBank._check_receipt_shape",
+            "line": 235,
+            "complexity": 16,
+            "line_coverage": 0.7857142857142857,
+            "crap": 18.518950437317784
+          }
+        ]
+      }
+    ]
+  },
+  "mutation_checks": {
+    "detected": 8,
+    "total": 8,
+    "isolated_source_import_verified": true,
+    "cases": [
+      {
+        "name": "signed_score",
+        "source": "mars_titan/memory/write_policy.py",
+        "selected": "test_write_policy.py::test_selective_index_keeps_exact_absolute_errors_and_canonical_ties",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 1.8679573659901507,
+        "source_sha256": "360d024cda9b07e8808c4004ff29cad484fef3be734a7ddf2d0f7c377ac7f55e",
+        "log_sha256": "c6141ab603440f3d66ed15f9aa69a5bf1636107772feb6d45b6f850c84afa3cb"
+      },
+      {
+        "name": "reversed_tie",
+        "source": "mars_titan/memory/write_policy.py",
+        "selected": "test_write_policy.py::test_selective_index_keeps_exact_absolute_errors_and_canonical_ties",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 1.7679580900003202,
+        "source_sha256": "460028d7026e90ca34a46a249f786e75ab3ddfcc46c8cdf5c416d69e96d40efc",
+        "log_sha256": "9182198ee0f060aed0fb3eb24b44a54e7c76b050aea7adb1a5ed512a8d186809"
+      },
+      {
+        "name": "double_normalization",
+        "source": "mars_titan/memory/write_policy.py",
+        "selected": "test_write_policy.py::test_non_idempotent_keys_are_normalized_once_across_indices_and_recovery",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 1.8176317369943717,
+        "source_sha256": "b8c6f3d51567f4cb667969da874f383a48abe1dd839ee69b442561803a71bd77",
+        "log_sha256": "b8a76caa2a00fb6b454ec56108e2bbbd92d9fccfeca3abb6232d67d078263739"
+      },
+      {
+        "name": "no_budget_check",
+        "source": "mars_titan/memory/write_policy.py",
+        "selected": "test_write_policy.py::test_proposal_budget_and_future_labels_preserve_the_original",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 1.8176410379965091,
+        "source_sha256": "c2103eeeed9d74e6ad01b22fa8db15d91e73172e171567174d85e05c52926833",
+        "log_sha256": "7c00eec02f8a5d15a81ca7b0c015aa2615ab6080cd7d9bccaa1bdbf523a799b7"
+      },
+      {
+        "name": "recent_only_maximum",
+        "source": "mars_titan/memory/write_policy.py",
+        "selected": "test_write_policy.py::test_recent_index_must_match_the_mature_ids_preserved_in_the_receipt",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 1.7669893330021296,
+        "source_sha256": "11631a8907299e61fd159fbfce8eb6e9ed99b102f2679c83c37cc79a6535b940",
+        "log_sha256": "d3b64bdd4d2488ca9055718890ed104a9151c4b9fa114a7b60df811e60e36d47"
+      },
+      {
+        "name": "no_score_provenance",
+        "source": "mars_titan/memory/financial_session.py",
+        "selected": "test_financial_session_m2.py::test_recovery_rejects_a_score_different_from_the_emitted_prediction",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 3.020512297996902,
+        "source_sha256": "80b275eaf2cd84ca211f2f732a172633121ee17021b700389d15163584aeb851",
+        "log_sha256": "210dbd30621af672c2dfc13c3af6724d3591804f1b957c08e8c445d15f4b17bd"
+      },
+      {
+        "name": "label_as_error",
+        "source": "mars_titan/memory/financial_session.py",
+        "selected": "test_financial_session_m2.py::test_m2_uses_original_mature_error_without_filtering_observations",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 2.9193793200101936,
+        "source_sha256": "71efe7d25b669f20c5aea869c36666815c189048cebd99f71ffeb3c250466d48",
+        "log_sha256": "c5a191f10547a8d6c8daf63f2ce3207e751856072237ccb69ed961a836346cde"
+      },
+      {
+        "name": "ignore_union_errors",
+        "source": "mars_titan/memory/financial_session.py",
+        "selected": "test_financial_session_m2.py::test_recovery_rejects_a_selective_index_worse_than_another_retained_episode",
+        "detected": true,
+        "exit_code": 1,
+        "seconds": 3.020900478004478,
+        "source_sha256": "d839f902c369077636753f9b3c61a20066832e1307233e116a08cec48b07f91a",
+        "log_sha256": "10f9a471829263c01b12111a3525bf2a81ada46fe74125cb219d21445b71dbfd"
+      }
+    ],
+    "scope": "Selector y coordinación de la emisión. No incluye mutaciones nuevas del preflight de archivos.",
+    "initial_harness": "La primera pasada importó src del worktree por la configuración pytest y no aplicó las mutaciones. Se conserva aparte y no cuenta como detección."
+  },
+  "bounded_bank_cost": {
+    "B_mem": 1024,
+    "initial_candidates": 1024,
+    "incoming_candidates": 8192,
+    "index_offers": 24576,
+    "results": [
+      {
+        "repetition": 0,
+        "proposed_seconds": 0.17875573100172915,
+        "snapshot_seconds": 0.02972282000700943,
+        "restore_seconds": 0.03451548400335014,
+        "cycle_seconds": 0.27544463600497693,
+        "traced_python_peak_bytes": 3358002,
+        "process_peak_rss_before_bytes": 551272448,
+        "process_peak_rss_after_bytes": 574337024,
+        "estimated_peak_bytes": 58720256,
+        "native_archives_bytes": 617985,
+        "slots": 1024,
+        "unique_episodes": 993,
+        "seen": 9216,
+        "exact_recovery": true
+      },
+      {
+        "repetition": 1,
+        "proposed_seconds": 0.17173551699670497,
+        "snapshot_seconds": 0.02937845299311448,
+        "restore_seconds": 0.033342288006679155,
+        "cycle_seconds": 0.2677777359931497,
+        "traced_python_peak_bytes": 3340742,
+        "process_peak_rss_before_bytes": 574337024,
+        "process_peak_rss_after_bytes": 575119360,
+        "estimated_peak_bytes": 58720256,
+        "native_archives_bytes": 617985,
+        "slots": 1024,
+        "unique_episodes": 993,
+        "seen": 9216,
+        "exact_recovery": true
+      },
+      {
+        "repetition": 2,
+        "proposed_seconds": 0.17015495400119107,
+        "snapshot_seconds": 0.02946853199682664,
+        "restore_seconds": 0.03343028300150763,
+        "cycle_seconds": 0.26598768899566494,
+        "traced_python_peak_bytes": 3342692,
+        "process_peak_rss_before_bytes": 575119360,
+        "process_peak_rss_after_bytes": 576167936,
+        "estimated_peak_bytes": 58720256,
+        "native_archives_bytes": 617985,
+        "slots": 1024,
+        "unique_episodes": 993,
+        "seen": 9216,
+        "exact_recovery": true
+      }
+    ],
+    "process_seconds": 2.35,
+    "process_peak_rss_kib": 622588,
+    "limits": [
+      "El pico trazado omite asignaciones internas C++/ATen. El RSS es del proceso entero.",
+      "La estimación de trabajo es conservadora para registros y copias acotados, no una cota certificada del asignador.",
+      "La medición incluye propuestas, archivos en memoria y recuperación. No representa el corpus ni el predictor."
+    ]
+  },
+  "archive_preflight": {
+    "parser": "PyTorchFileReader",
+    "descriptor_parser": "pickle.Unpickler con constructores de descriptores cerrados",
+    "maximum_metadata_bytes": 16384,
+    "maximum_opcodes": 512,
+    "maximum_memo_entries": 512,
+    "expected_container_records": 11,
+    "tensor_storages": 4,
+    "total_budget_formula": "estimated_bytes(0) + encoded_archive_bytes + 2 * expanded_archive_bytes",
+    "exact_limit_and_one_byte_below_checked": true,
+    "indices_sum_checked": true,
+    "valid_native_versions": [
+      1,
+      2
+    ],
+    "valid_row_counts": [
+      0,
+      1,
+      8
+    ],
+    "valid_archive_bytes_unchanged": true,
+    "torch_tensor_rebuilder_not_called": true,
+    "rejection_probe": {
+      "accepted": false,
+      "error": "Los archivos expandidos superan el presupuesto conjunto",
+      "expanded_added_bytes": 83886080,
+      "encoded_archive_bytes": 87146,
+      "budget_bytes": 17825792,
+      "process_peak_rss_before_bytes": 548679680,
+      "process_peak_rss_after_bytes": 548679680,
+      "peak_rss_increase_bytes": 0,
+      "sources": {
+        "native_memory_archive.py": "0090ebfc1e7a25e50ecdb9def824bcea349eedeacd71b06acfe79ad30c5a4d23",
+        "write_policy.py": "2facfaa3eaba4850be77ada56f9c5089ded79b3b7be78151636a96085cdee3ff"
+      },
+      "native_sha256": "e7559ed4fba7f43d665520d7831390669d349339c05b51577da8549daf93123d"
+    },
+    "independent_review_scope": "Inspección estática y archivos válidos. No se atribuye repetición independiente de archivos alterados tras limitar ese examen."
+  },
+  "limits": [
+    "La composición CUDA M2 está pendiente. Las comprobaciones CPU no la sustituyen.",
+    "La validación de S usa la evidencia retenida y no reconstruye episodios descartados.",
+    "La cobertura focal no sustituye las pruebas previas de toda la sesión. La compactación existente no se recorrió completamente en esta batería.",
+    "El presupuesto M2 describe su banco. Las entradas, estados rápidos, cola y predictor conservan sus límites adicionales del consumidor.",
+    "M0/M1 conservan su ruta. Toda identidad nueva incluye los hashes efectivos y no admite trasplantar checkpoints históricos.",
+    "M3 y las alternativas de consolidación M siguen sin activar. No hay resultados predictivos ni habilitación de aprendizaje.",
+    "No se recompiló el componente nativo. Su límite LSan previo no se declara resuelto por estas pruebas."
+  ],
+  "evidence_sha256": {
+    "recent-recovery-red.log": "998027605e86dc61fa8316593658b83d304e506509d7952fb1707b76e5db730b",
+    "selective-recovery-red.log": "46be638ec06b4d60764a669cfc94579a0c544fe9882a7a21fd4960efaf6d5ae3",
+    "final-quality/tests.log": "b25927bd23735aae5bcc5670f794e73b05e0caf3446add8dfd2128e195ab4b78",
+    "final-quality/coverage.json": "5389aa2c8f3483ebad67bc9ab87e4d91fdba12cee11a2c37225ae2681e14c004",
+    "final-quality/quality.json": "9d2b94fce8a86ab40bdff5b87293d574657987f78f092fabc620776bbbc4dc2c",
+    "mutations-verified.json": "311644f929bf70a11277ba4cb8d2c19ed4013ac1d07f5092b91dc10e08431cff",
+    "mutations-final-delta.json": "0f482656c502f8c6dacb595b6816446af5ba7ac069ebf95b8baad4d0d4c540ab",
+    "final-cost/bank-cost.json": "aa7f8b8684ea91a8753643db5c87869f47568e746631fe44186d4b8a9e375aa5",
+    "final-cost/benchmark.log": "33f1e714a7e187d78511b8634bb59a0c251c1091f3623d677e59447f4ee9590a",
+    "session-red.log": "403214c5ade39400188052b3db428be4044ff0f0f79750f7a1247894619d5551",
+    "session-third.log": "7d830e1a8c93c696bb1606d01f7d837853259969488398183c792c97adebf479",
+    "integration-quality.log": "ed729fb9404f3f934aae893acd9d92558ce729a1ce57d7f8e5f56ab5142f9400",
+    "archive-preflight-red.log": "1e37a1fa47ebed6e3528d2c01de641b1501afcf3e0c51a5fc6f85732722d7d0a",
+    "archive-preflight-second.log": "63e0a71d6118f7bf6e17380f0c83563db3e4f792e0e7209188e062238e55d94b",
+    "archive-budget-fix.json": "0c6ca57f04ac9b3f6d54108cad7c06c040b06fe6fc493be2b6ee1b933f49e02e",
+    "archive-final-quality/tests.log": "3f6cc0ef6f594aedad583af62033e74b0009434cb04080327d33ea1a768650c5",
+    "archive-final-quality/coverage.json": "84708e4d7969b51e0b31cdd917654a9b1902e6005bddeef1b41280d11b341ec9",
+    "archive-final-quality/quality.json": "a79bb916d80a83f30455844ef12bfe74fce54086599bf705789a0a846f19e4b0",
+    "archive-final-cost/bank-cost.json": "1507075c4b05176f9fefc705a298e9ca105886ab7ebfeb025557246a1ef681b3",
+    "archive-final-cost/benchmark.log": "adfe5cf6b71df7c33b21edcb8732fefcb2d4ffa5412f00a5bc7612152a9c18c0"
+  }
+}

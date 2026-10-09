@@ -109,8 +109,11 @@ y momentum y puede omitir direcciones expansivas. El codec episódico conserva
 una representación fija de las entradas y sus máscaras. El consumidor
 cronológico conecta el banco, la lectura y los estados por bloques con
 parámetros compartidos congelados. M0/M1 y la recuperación conjunta están
-comprobados en CPU/CUDA. M2/M3 y la aceptación de las fases históricas completas
-siguen pendientes. No hay una mejora predictiva medida de estas variantes.
+comprobados en CPU/CUDA. M2 añade tres índices con cupos 50/25/25 y error de la
+emisión original. Su comprobación CUDA focal comprende FP32/FP64, $K=1$,
+$B_{\mathrm{mem}}=4$ y C desactivado. M3, la consolidación M sobre M2 y la
+aceptación de las fases históricas completas siguen pendientes. No hay una
+mejora predictiva medida de estas variantes.
 
 La comparación de refuerzo conserva PPO y Double DQN. Están implementados tres
 controladores PPO: recorte con diagnóstico KL, penalización KL adaptativa y
