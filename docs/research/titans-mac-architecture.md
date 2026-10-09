@@ -219,7 +219,6 @@ El [entrenador cronológico del lector](../engineering/mars-titan-extensions.md#
 ### Pendiente antes de poder ejecutarla
 
 - La conexión de la vista reducida, del régimen y de la selección de documentos en los puntos indicados, cada una con su prueba de paridad, y la emisión de B6 en el recorrido por ventanas.
-- La medida de M3 en la orden de caudal, que todavía no estima sus escalas con el tramo de entrenamiento de la ventana medida.
 - La medida de memoria y caudal del lector en `cuda:0` y la declaración de la sección `mars_titan` en las campañas A y B.
 - La edición histórica desde 2000 verificada. Hasta entonces no se ejecuta ningún ajuste ni comparación.
 
