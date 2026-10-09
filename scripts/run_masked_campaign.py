@@ -14,7 +14,8 @@ candidata, MARS-TITAN y CM-v1 y sus recuentos. `storage` estima el disco de la c
 etapas con los recuentos de las vistas y tablas sintéticas, sin leer objetivos ni ajustar.
 `budget` proyecta las horas de una campaña con un caudal supuesto o medido y el factor de
 caudal necesario para un objetivo de horas. `schedule` muestra las fases de cada ventana de
-campaña con sus trabajos, en el orden en que se ejecutan.
+campaña con sus trabajos, en el orden en que se ejecutan. `disjunction` comprueba sobre las
+vistas y los recibos, sin ajustar, la disjunción de filas del walk-forward por etapas.
 """
 
 import sys
@@ -26,6 +27,7 @@ from mars_titan.training import (
     campaign_extensions,
     campaign_schedule,
     campaign_throughput,
+    chain_disjunction,
     masked_campaign,
     modality_ablation_stage,
     storage_budget,
@@ -48,6 +50,8 @@ def main(argv=None):
         return rl_stage.main(argv[1:])
     if argv[:1] == ["ablation"]:
         return modality_ablation_stage.main(argv[1:])
+    if argv[:1] == ["disjunction"]:
+        return chain_disjunction.main(argv[1:])
     if argv[:1] == ["storage"]:
         return storage_budget.main(argv[1:])
     return masked_campaign.main(argv)

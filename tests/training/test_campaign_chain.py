@@ -5,17 +5,25 @@ técnico, las alteran en sitio y las restauran, y escriben recibos de la cadena 
 se ajusta, no hay pasos de optimizador y la GPU no se usa.
 """
 
+import json
 import math
+from pathlib import Path
 
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data.storage import atomic_json, sha256
+from mars_titan.environments.walk_forward_receipt import RECEIPT_KIND
 from mars_titan.training import campaign_chain as chain
 from mars_titan.training import campaign_online_controls as online
 from mars_titan.training import campaign_plan as plan
 from mars_titan.training import campaign_schedule as order
+from mars_titan.training import chain_disjunction as disjunction
 from mars_titan.training import masked_campaign as engine
-from tests.training.test_campaign_a_joint import CAMPAIGN, CONFIGS, edited
+from tests.training.test_campaign_a_joint import CAMPAIGN, CONFIGS, edited, reduced
+from tests.training.test_walk_forward_v2_views import fixture
 
 JOINT = "US+CN"
 
@@ -405,3 +413,320 @@ def test_variant_b_is_counted_but_never_launched(tmp_path, learning_doubles):
     with pytest.raises(ValueError, match="no se puede lanzar"):
         engine.run_campaign(path, {}, tmp_path / "out")
     assert not (tmp_path / "out").exists()
+
+
+# Verificador de disjunción sobre vistas preparadas
+
+
+@pytest.fixture(scope="module")
+def views(tmp_path_factory):
+    root = tmp_path_factory.mktemp("chain-views")
+    data = fixture(root / "data", ("US", "CN"))
+    campaign_path, _ = reduced(root / "config")
+    checked = engine.prepare_views(campaign_path, data.parent, root / "views")
+    value = plan.load_campaign(campaign_path)
+    paths = {scope: root / "views" / scope for scope in checked}
+    return value, paths, disjunction.verify(value, paths, workers=2)
+
+
+def test_the_verifier_proves_every_disjunction_on_prepared_views(views):
+    value, paths, report = views
+    assert report["failures"] == [] and report["training_executed"] is False
+    for scope in value["scopes"]:
+        windows = report["scopes"][scope]
+        assert "posttraining" not in windows["fold-000"]
+        for window, summary in list(windows.items())[1:]:
+            post = summary["posttraining"]
+            start = micros(post["fit"][0])
+            assert post["overlap"] == 0 and post["new_rows"]["rows"] > 0
+            assert post["parent_max_maturity"] < start <= post["new_min_decision"]
+            assert post["new_max_decision"] < micros(post["fit"][1])
+            assert summary["misplaced"] == summary["after_cutoff"] == 0, window
+    # Recuento independiente de las filas nuevas de US/fold-001 desde las etiquetas.
+    manifest = json.loads((paths["US"] / "fold-001" / "manifest.json").read_text())
+    start, end = (micros(day) for day in report["scopes"]["US"]["fold-001"]["posttraining"]["fit"])
+    rows, keys = 0, []
+    for path in sorted(Path(manifest["roots"]["labels"]).glob("US/*/labels.parquet")):
+        table = pq.read_table(path, columns=["sample_row", "prediction_at", "partition"])
+        moment = table["prediction_at"].cast(pa.int64()).to_numpy()
+        train = np.asarray(table["partition"].to_pylist(), dtype=object) == "train"
+        new = train & (moment >= start) & (moment < end)
+        rows += int(new.sum())
+        keys += [(path.parent.name, row) for row in table["sample_row"].to_numpy()[new]]
+    expected = chain.row_fingerprint(["US"] * len(keys), [k[0] for k in keys], [k[1] for k in keys])
+    assert report["scopes"]["US"]["fold-001"]["posttraining"]["new_rows"] == dict(
+        rows=rows, sha256=expected[1]
+    )
+    # La evaluación de US es la misma en el ámbito conjunto y en el separado.
+    joint = report["scopes"][JOINT]["fold-006"]["markets"]
+    assert (
+        joint["US"]["evaluation"]
+        == report["scopes"]["US"]["fold-006"]["markets"]["US"]["evaluation"]
+    )
+    assert (
+        joint["CN"]["evaluation"]
+        == report["scopes"]["CN"]["fold-000"]["markets"]["CN"]["evaluation"]
+    )
+
+
+class Tampered:
+    """Cambiar en sitio el archivo de etiquetas de un activo y restaurarlo al salir."""
+
+    def __init__(self, views, scope, window, change):
+        manifest = json.loads((views[scope] / window / "manifest.json").read_text())
+        asset = next(a for a in manifest["assets"] if a["market"] == "US")
+        self.path = Path(manifest["roots"]["labels"]) / "US" / asset["symbol"] / "labels.parquet"
+        self.change = change
+
+    def __enter__(self):
+        self.original = self.path.read_bytes()
+        table = pq.read_table(self.path)
+        pq.write_table(self.change(table), self.path)
+        return self
+
+    def __exit__(self, *_):
+        self.path.write_bytes(self.original)
+
+
+def _set(table, column, index, value):
+    values = table[column].to_pylist()
+    values[index] = value
+    return table.set_column(
+        table.schema.get_field_index(column), column, pa.array(values, table[column].type)
+    )
+
+
+def _first(table, partition, after=None):
+    moments = table["prediction_at"].to_pylist()
+    for index, name in enumerate(table["partition"].to_pylist()):
+        if name == partition and (after is None or moments[index].isoformat() >= after):
+            return index
+    raise AssertionError(partition)
+
+
+def test_the_verifier_detects_a_parent_row_inside_the_new_rows(views):
+    value, paths, _ = views
+
+    def into_parent(table):
+        # La primera fila de evaluación de 2005 pasa a la calibración del padre.
+        return _set(table, "partition", _first(table, "evaluation"), "calibration")
+
+    with Tampered(paths, "US", "fold-000", into_parent):
+        failures = disjunction.verify(value, paths, workers=2)["failures"]
+    assert "US/fold-000: 1 filas fuera de su tramo" in failures
+    assert "US/fold-001: 1 filas nuevas ya las usó el padre" in failures
+    assert "US/fold-001: una etiqueta del padre madura con las filas nuevas" in failures
+
+
+def test_the_verifier_detects_a_row_of_2024(views):
+    value, paths, _ = views
+
+    def late(table):
+        index = _first(table, "evaluation")
+        moment = np.datetime64("2024-01-03", "us").astype(object)
+        return _set(table, "target_available_at", index, moment)
+
+    with Tampered(paths, "US", "fold-018", late):
+        failures = disjunction.verify(value, paths, workers=2)["failures"]
+    assert "US/fold-018: 1 filas de 2024" in failures
+    assert "US/fold-018: 1 filas fuera de su tramo" in failures
+
+
+def test_the_verifier_detects_different_test_rows_between_scopes(views):
+    value, paths, _ = views
+
+    def dropped(table):
+        return _set(table, "partition", _first(table, "evaluation"), None)
+
+    with Tampered(paths, "US", "fold-006", dropped):
+        failures = disjunction.verify(value, paths, workers=2)["failures"]
+    assert any(f.startswith("US: evaluaciones distintas") and "US/fold-006" in f for f in failures)
+
+
+def test_the_verifier_detects_base_receipts_with_other_test_rows(views, tmp_path):
+    value, paths, _ = views
+    for name, digest in (("a", "1" * 64), ("b", "2" * 64)):
+        atomic_json(
+            tmp_path / "jobs" / JOINT / "fold-001" / name / "receipt.json",
+            dict(
+                identity=dict(id=name, scope=JOINT, window="fold-001"),
+                predictions=dict(evaluation=dict(rows_sha256=digest)),
+            ),
+        )
+    report = disjunction.verify(value, paths, campaign_output=tmp_path, workers=2)
+    assert report["failures"] == [f"{JOINT}/fold-001: los recibos base evalúan filas distintas"]
+    assert report["base_receipts"][f"{JOINT}/fold-001"]["jobs"] == 2
+
+
+def write_selection(root, value, report, *, change=None, receipt_change=None):
+    """Selección de la cadena de US/fold-001 para gru con un adaptador elegido."""
+    scope, window, arm, seed = "US", "fold-001", "gru", 42
+    summary = report["scopes"][scope][window]
+    resolved = value["comparison_config"]["resolved_scopes"][scope]
+    folder = chain.chain_folder(root, scope, window, arm, seed)
+    until = summary["markets"]["US"]["max_maturity"]["calibration"]
+    job = f"{scope}/{window}/gru__head/fit-s42"
+    receipt = dict(
+        kind=RECEIPT_KIND,
+        schema_version=1,
+        protocol=resolved["protocols"]["US"],
+        fold=resolved["windows"][window],
+        parent=dict(id=job, sha256="a" * 64),
+        labels_used_until=until,
+        predictions=dict(
+            evaluation=dict(rows=summary["markets"]["US"]["evaluation"]["rows"], sha256="b" * 64)
+        ),
+    )
+    if receipt_change:
+        receipt_change(receipt)
+    atomic_json(folder / "US.json", receipt)
+    post = summary["posttraining"]
+    document = dict(
+        kind=chain.SELECTION_KIND,
+        schema_version=1,
+        campaign_sha256=value["sha256"],
+        stage_sha256="c" * 64,
+        scope=scope,
+        window=window,
+        base_arm=arm,
+        seed=seed,
+        rule=chain.RULE,
+        parent_window="fold-000",
+        parent=dict(
+            job="US/fold-000/gru/search-0", receipt_sha256="d" * 64, checkpoint_sha256="e" * 64
+        ),
+        candidates=[
+            candidate("frozen_parent", "US/fold-001/gru__frozen_parent/carry-s42", 1.0),
+            dict(candidate("adapter", job, 0.5), receipt_sha256="a" * 64),
+        ],
+        selected=dict(kind="adapter", arm="gru__head", job=job, receipt_sha256="a" * 64),
+        state=dict(path="jobs/x/state.pt", sha256="f" * 64),
+        fit_rows=dict(
+            first_decision=post["new_min_decision"],
+            last_decision=post["new_max_decision"],
+            **post["new_rows"],
+        ),
+        markets=dict(US=sha256(folder / "US.json")),
+        labels_used_until=receipt["labels_used_until"],
+        confirmed_at_utc="2026-10-10T00:00:00+00:00",
+    )
+    if change:
+        change(document)
+    atomic_json(folder / chain.SELECTION, document)
+    return folder
+
+
+def test_a_chain_selection_that_follows_the_contract_passes(views, tmp_path):
+    value, paths, report = views
+    write_selection(tmp_path, value, report)
+    checked = disjunction.verify(value, paths, posttraining=tmp_path, workers=2)
+    assert checked["failures"] == []
+    tapes = checked["selections"]["US/fold-001/gru__chain/seed-42"]["tapes"]["US"]
+    assert tapes["labels_used_until"] < tapes["first_decision"]
+    document = chain.read_selection(tmp_path, "US", "fold-001", "gru", 42)
+    assert document["selected"]["kind"] == "adapter" and set(document["receipts"]) == {"US"}
+    assert chain.read_selection(tmp_path, "US", "fold-002", "gru", 42) is None
+
+
+@pytest.mark.parametrize(
+    ("change", "receipt_change", "message"),
+    [
+        (
+            None,
+            lambda r: r.update(labels_used_until=r["labels_used_until"] - 1),
+            "anterior a las que usó",
+        ),
+        (
+            lambda d: d["fit_rows"].update(rows=d["fit_rows"]["rows"] - 1),
+            None,
+            "las filas de ajuste no son las filas nuevas",
+        ),
+        (
+            None,
+            lambda r: r["predictions"]["evaluation"].update(rows=1),
+            "no tiene las filas de la vista",
+        ),
+    ],
+    ids=["label_before_calibration", "other_fit_rows", "other_test_rows"],
+)
+def test_the_verifier_rejects_chain_receipts_that_break_a_frontier(
+    views, tmp_path, change, receipt_change, message
+):
+    value, paths, report = views
+    write_selection(tmp_path, value, report, change=change, receipt_change=receipt_change)
+    failures = disjunction.verify(value, paths, posttraining=tmp_path, workers=2)["failures"]
+    assert len(failures) == 1 and message in failures[0]
+
+
+@pytest.mark.parametrize(
+    ("change", "receipt_change", "message"),
+    [
+        (
+            lambda d: d.update(
+                selected=dict(
+                    kind="frozen_parent",
+                    arm="gru",
+                    job=d["candidates"][0]["job"],
+                    receipt_sha256="0" * 64,
+                )
+            ),
+            None,
+            "no sigue la regla",
+        ),
+        (lambda d: d.update(fit_rows=None), None, "no sigue la regla"),
+        (lambda d: d.update(parent_window=None), None, "elige el estado de la base"),
+        (lambda d: d.update(parent_window="fold-005"), None, "no parte de la ventana anterior"),
+        (lambda d: d.update(rule="lowest_test_error"), None, "no cumple su contrato"),
+        (lambda d: d["markets"].update(US="0" * 64), None, "no corresponde a su selección"),
+        (None, lambda r: r["parent"].update(id="other"), "no es el del predictor elegido"),
+        (
+            lambda d: d.update(labels_used_until=d["labels_used_until"] + 1),
+            None,
+            "no es el del predictor elegido",
+        ),
+    ],
+    ids=[
+        "frozen_without_better_score",
+        "adapter_without_fit_rows",
+        "first_window_with_candidates",
+        "other_parent_window",
+        "other_rule",
+        "changed_receipt",
+        "receipt_of_another_job",
+        "different_last_label",
+    ],
+)
+def test_reading_a_chain_selection_rejects_a_broken_contract(
+    views, tmp_path, change, receipt_change, message
+):
+    value, paths, report = views
+    write_selection(tmp_path, value, report, change=change, receipt_change=receipt_change)
+    with pytest.raises(ValueError, match=message):
+        disjunction.verify(value, paths, posttraining=tmp_path, workers=2)
+
+
+def test_the_cli_writes_the_report_and_fails_with_any_finding(views, tmp_path):
+    value, paths, _ = views
+    argv = ["--campaign", value["path"], "--output", str(tmp_path / "report.json")]
+    argv += [f"--views={scope}={path}" for scope, path in paths.items()] + ["--workers", "2"]
+    assert disjunction.main(argv) == 0
+    written = json.loads((tmp_path / "report.json").read_text())
+    assert written["kind"] == disjunction.KIND and written["failures"] == []
+    folder = tmp_path / "jobs" / JOINT / "fold-002"
+    for name, digest in (("a", "1" * 64), ("b", "2" * 64)):
+        atomic_json(
+            folder / name / "receipt.json",
+            dict(
+                identity=dict(id=name, scope=JOINT, window="fold-002"),
+                predictions=dict(evaluation=dict(rows_sha256=digest)),
+            ),
+        )
+    assert disjunction.main([*argv, "--campaign-output", str(tmp_path)]) == 1
+
+
+def test_the_verifier_can_check_some_scopes_only(views):
+    value, paths, _ = views
+    report = disjunction.verify(value, {"US": paths["US"]}, scopes=["US"], workers=2)
+    assert list(report["scopes"]) == ["US"] and report["failures"] == []
+    with pytest.raises(ValueError, match="no es de la campaña"):
+        disjunction.verify(value, paths, scopes=["EU"], workers=2)
