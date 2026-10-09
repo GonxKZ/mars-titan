@@ -730,6 +730,8 @@ def main():
 
     started = time.perf_counter()
     if device.type == "cuda":
+        # Las estadísticas de memoria exigen un contexto CUDA ya creado.
+        torch.cuda.init()
         torch.cuda.reset_peak_memory_stats(device)
     neural_memory, memory_models, lucidrains_files = load_lucidrains(args.lucidrains_root)
     naive, fla_files = load_fla(args.fla_root)

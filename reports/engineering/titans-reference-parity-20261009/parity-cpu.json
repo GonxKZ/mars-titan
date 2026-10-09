@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_utc": "2026-10-09T22:41:02+00:00",
+  "created_utc": "2026-10-09T22:43:01+00:00",
   "device": "cpu",
   "tolerances": {
     "float32": {
@@ -76,7 +76,7 @@
     "project_files_sha256": {
       "src/mars_titan/models/titans/neural_memory.py": "cc558d70e7e137ba897417bb6db0efff1c079c673f72cdd5855929808f171588",
       "src/mars_titan/models/titans/config.py": "db1b8769af777c11f3921ba8cb90b16e4c427cbfbac380436268d121be74cac5",
-      "benchmarks/titans_reference_parity.py": "8ec3f0486dbaa46f0aaeafa11a0a2d251b16d38d12d4f49a9104bf80a4051d49"
+      "benchmarks/titans_reference_parity.py": "5d90338d3e0e3d51f96a2e1a86fe474987da438f60e4002f20a602ab0113d7c8"
     }
   },
   "lucidrains_exact": [
@@ -2797,5 +2797,5 @@
       }
     }
   },
-  "seconds": 5.49
+  "seconds": 5.72
 }
