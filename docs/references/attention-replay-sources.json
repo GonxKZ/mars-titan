@@ -1562,5 +1562,33 @@
       6
     ],
     "verification_date": "2026-10-04"
+  },
+  {
+    "id": "romano2019cqr",
+    "title": "Conformalized Quantile Regression",
+    "authors": [
+      "Yaniv Romano",
+      "Evan Patterson",
+      "Emmanuel J. Candès"
+    ],
+    "year": 2019,
+    "doi": "10.48550/arXiv.1905.03222",
+    "url": "https://arxiv.org/abs/1905.03222v1",
+    "access": "Preprint arXiv v1 del 8 de mayo de 2019. Ficha y PDF abiertos. Leídos la sección 2 (ecuaciones 9 a 11, algoritmo 1 y teorema 1) y el apéndice A sobre cuantiles empíricos. No se corroboró la edición en actas y no se atribuye lectura integral.",
+    "read_version": {
+      "type": "preprint",
+      "url": "https://arxiv.org/pdf/1905.03222v1",
+      "passages": [
+        "Sección 2: ecuaciones 9 a 11, algoritmo 1 y teorema 1",
+        "Apéndice A: cuantiles empíricos"
+      ]
+    },
+    "relevance": "Corrección conformal común de los intervalos de quantile_head_v1 en el tramo de calibración. Su garantía marginal exige intercambiabilidad, que la dependencia temporal de los retornos no asegura.",
+    "redistribution": "unknown",
+    "phase": [
+      4,
+      6
+    ],
+    "verification_date": "2026-10-09"
   }
 ]
