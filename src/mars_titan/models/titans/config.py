@@ -33,6 +33,10 @@ def _logit(probability: float) -> float:
     return math.log(probability) - math.log1p(-probability)
 
 
+# Valor por defecto de torch.nn.LayerNorm. Las fuentes no fijan el épsilon de la memoria.
+LAYER_NORM_EPS = 1e-5
+
+
 @dataclass(frozen=True)
 class GateBias:
     """Tasas iniciales declaradas para entrada nula. Los pesos conservan la dependencia."""
@@ -76,9 +80,15 @@ class MemoryConfig:
     max_state_bytes: int = 64 * 1024 * 1024
     parameter_seed: int = 42
     gate_bias: GateBias | None = None
+    # M(x) = x + LN(MLP(x)), sección 3.3 de las actas. LN sin afinidad aprendida.
+    residual_layer_norm: bool = False
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
+        if type(self.residual_layer_norm) is not bool:
+            raise ValueError("residual_layer_norm debe ser booleano")
+        if self.residual_layer_norm and self.dim < 2:
+            raise ValueError("LayerNorm sobre una sola dimensión anula siempre la lectura")
         bounded_integer(self.depth, "depth", 1, 2)
         bounded_integer(self.max_batch, "max_batch", 1, 256)
         bounded_integer(self.max_tokens, "max_tokens", 1, 256)
@@ -101,12 +111,21 @@ class MemoryConfig:
     def identity(self) -> dict:
         fields = asdict(self)
         gate_bias = fields.pop("gate_bias")
-        # Sin bias se conserva literalmente la identidad v1 y su huella.
+        residual = fields.pop("residual_layer_norm")
+        # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
             if gate_bias is None
             else {"gate_bias": {**gate_bias, "init": "constant_logit_bias_v1_weight_draws"}}
         )
+        if residual:
+            extension["memory_function"] = {
+                "form": "input_plus_layer_norm_of_mlp",
+                "source": "neurips_2025_section_3_3",
+                "layer_norm_eps": LAYER_NORM_EPS,
+                "layer_norm_affine": False,
+                "expansion": 1,
+            }
         return {
             **fields,
             **extension,
@@ -114,8 +133,8 @@ class MemoryConfig:
             "architecture": "square_mlp",
             "hidden_activation": "gelu_exact",
             "bias": False,
-            "residual": False,
-            "layer_norm": False,
+            "residual": residual,
+            "layer_norm": residual,
             "normalization_eps": 1e-12,
             "loss_reduction": "sum_per_token_per_flow",
             "forgetting_broadcast": "output_rows_each_matrix",

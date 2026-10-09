@@ -190,6 +190,18 @@ def _financial_comparators(tmp_path, monkeypatch):
     return main, double
 
 
+def _titans_window_script(tmp_path, monkeypatch):
+    import torch
+
+    main, double = _script("run_titans_walk_forward.py", "run_titans_window", monkeypatch)
+    # La CLI desactiva la ruta fusionada de atención. Aquí no se cambia el estado global.
+    monkeypatch.setattr(torch.backends.mha, "set_fastpath_enabled", lambda value: None)
+    arguments = ["--view", str(tmp_path / "v.json"), "--protocol", str(tmp_path / "p.json")]
+    arguments += ["--window", "fold-000", "--recipe", str(tmp_path / "r.json")]
+    arguments += ["--variant", "mac_online", "--seed", "42", "--device", "cpu"]
+    return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
+
+
 ENTRY_POINTS = {
     "reference_run": _simple(
         "mars_titan.training.reference_run",
@@ -312,6 +324,28 @@ ENTRY_POINTS = {
     "benchmark_native_ppo": _native_benchmark,
     "benchmark_adaptive_rl": _adaptive_benchmark,
     "run_financial_comparators": _financial_comparators,
+    "titans_walk_forward": _simple(
+        "mars_titan.training.titans_walk_forward",
+        "_protocol",
+        lambda m, out: m.run_titans_window(
+            out.with_name("v.json"),
+            out.with_name("p.json"),
+            "fold-000",
+            out.with_name("r.json"),
+            variant="mac_online",
+            seed=42,
+            output=out,
+            device="cpu",
+        ),
+    ),
+    "run_titans_walk_forward": _titans_window_script,
+    "carry_titans": _simple(
+        "mars_titan.training.titans_walk_forward",
+        "read_manifest",
+        lambda m, out: m.carry_titans(
+            out.with_name("a"), out.with_name("a.json"), out.with_name("v.json"), out, device="cpu"
+        ),
+    ),
 }
 
 

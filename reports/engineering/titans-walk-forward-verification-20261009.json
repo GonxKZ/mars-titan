@@ -1,0 +1,248 @@
+{
+ "schema_version": 1,
+ "recorded_at_utc": "2026-10-09T08:27:25+00:00",
+ "tested_head": "8a8e5a5e698eb67d95e1d0167abd0fc128bef136",
+ "base": "6119a7ea1f3b6274633f48b76bf53199d90f08df",
+ "scope": "Ventana walk-forward, traslado de la variante B y registro en la campaña con máscaras de los cuatro controles de Titans-MAC, en CPU, sin pasos de optimizador ni entrenamiento",
+ "source_sha256": {
+  "src/mars_titan/training/titans_walk_forward.py": "6cf39b07df849f2ace86b5373350475618ca10abe5ca597ecdc7727b5c710d6c",
+  "src/mars_titan/training/financial_run.py": "97a6ea9c0f102a06e75ee572905a5a3eadf73144e2aec006bb4fc39b684f0c90",
+  "src/mars_titan/training/graph_memory.py": "beebe0b7a0e52438d83cb22d3b514d1c554f58ee2c509eac5220f16098f8f6d2",
+  "src/mars_titan/training/campaign_plan.py": "0399a35158c06ba9e7cd6cadacc4a5e4932e46c879cf3137a8cf004a798fdfb1",
+  "src/mars_titan/training/masked_campaign.py": "17c690fedf1846a8ddc68b51466663e215d8664c16df0d7fd00f9cb80e4daa5a",
+  "src/mars_titan/models/titans/neural_memory.py": "cc558d70e7e137ba897417bb6db0efff1c079c673f72cdd5855929808f171588",
+  "src/mars_titan/models/titans/financial.py": "86d67692371638271f1dc6f7e78ffcfdc1f4cd52b8821bafea497268f59a96fe",
+  "scripts/run_titans_walk_forward.py": "c1c8e55b4dd67b326e43ee6bbe83c1436b7ceb96e965515b0dbe5b81c04b388f",
+  "configs/titans/chronological-training.json": "b030fd3c6149561d1a722502181ee7b380a1a9278d8ee9a6df563fd04bdd9802",
+  "configs/titans/chronological-training-quantile.json": "e72fd925b86914785646b9edaa9898322efb6fd0b0ff8fb10e87e52b1bf03ed8",
+  "tests/training/test_titans_walk_forward.py": "d8ce586eec13461c7ec2ac31a9ddb09e294f92b4ddb9d7e74e8f0d6162560d90",
+  "tests/training/test_titans_campaign.py": "688b8496eb4806afb2bad2dc95530aab1bf6e57cc3178a9ad66383b155592082",
+  "tests/training/test_financial_run_accumulation.py": "694ffe6fb368fe96c459dbb7231687ba9b685e27200654a8b524ad6298e5d004",
+  "tests/models/titans/test_memory_residual_norm.py": "bbeedebc5247f088d4ec9c7c68d3284f02a87824604c9206f2a43b100b6e1647"
+ },
+ "environment": {
+  "python": "3.12.14",
+  "torch": "2.14.0+cu130",
+  "pyarrow": "25.0.1",
+  "numpy": "2.5.3",
+  "threads": "OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, sin pytest-xdist",
+  "device": "cpu con CUDA_VISIBLE_DEVICES=-1",
+  "concurrent_load": "Carga media cercana a 9 por otros procesos. Los tiempos son orientativos"
+ },
+ "native_binding": {
+  "sha256": "3fb8b98af1582b3b8c616525e5bfbf3bf5d03f834b8d8caa7080fbd89a30ec43",
+  "preset": "native-candidate-release",
+  "cuda": false,
+  "used_by": [
+   "tests/memory/test_financial_session.py",
+   "tests/memory/test_financial_run_session.py",
+   "tests/training/test_candidate_walk_forward.py"
+  ],
+  "note": "Enlace ya compilado para la GRU candidata, cargado en solo lectura con MARS_TITAN_EPISODIC_NATIVE. Es el mismo que registra candidate-walk-forward-20261009.json"
+ },
+ "tests": {
+  "runner": "Un archivo por ejecución con uv run --no-sync python -m pytest -q -p no:cacheprovider <archivo>",
+  "files": [
+   {
+    "path": "tests/training/test_campaign_plan.py",
+    "passed": 28,
+    "skipped": 0,
+    "seconds": 1.51
+   },
+   {
+    "path": "tests/training/test_campaign_throughput.py",
+    "passed": 8,
+    "skipped": 0,
+    "seconds": 3.88
+   },
+   {
+    "path": "tests/training/test_learning_hold.py",
+    "passed": 14,
+    "skipped": 0,
+    "seconds": 1.77
+   },
+   {
+    "path": "tests/training/test_learning_hold_guards.py",
+    "passed": 101,
+    "skipped": 0,
+    "seconds": 4.06
+   },
+   {
+    "path": "tests/environments/test_walk_forward_receipt.py",
+    "passed": 38,
+    "skipped": 0,
+    "seconds": 0.15
+   },
+   {
+    "path": "tests/evaluation/test_walk_forward_comparison.py",
+    "passed": 26,
+    "skipped": 0,
+    "seconds": 1.75
+   },
+   {
+    "path": "tests/training/test_walk_forward_v2_views.py",
+    "passed": 15,
+    "skipped": 1,
+    "seconds": 9.94
+   },
+   {
+    "path": "tests/training/test_carried_predictions.py",
+    "passed": 11,
+    "skipped": 0,
+    "seconds": 4.0
+   },
+   {
+    "path": "tests/training/test_financial_run.py",
+    "passed": 31,
+    "skipped": 1,
+    "seconds": 37.71
+   },
+   {
+    "path": "tests/training/test_financial_run_quantiles.py",
+    "passed": 9,
+    "skipped": 1,
+    "seconds": 6.77
+   },
+   {
+    "path": "tests/training/test_financial_run_accumulation.py",
+    "passed": 30,
+    "skipped": 0,
+    "seconds": 102.99
+   },
+   {
+    "path": "tests/models/titans",
+    "passed": 418,
+    "skipped": 0,
+    "seconds": 10.63
+   },
+   {
+    "path": "tests/memory/test_financial_observation_blocks.py",
+    "passed": 11,
+    "skipped": 0,
+    "seconds": 10.79
+   },
+   {
+    "path": "tests/memory/test_financial_observation_source.py",
+    "passed": 5,
+    "skipped": 1,
+    "seconds": 2.61
+   },
+   {
+    "path": "tests/memory/test_financial_session.py",
+    "passed": 21,
+    "skipped": 0,
+    "seconds": 20.58
+   },
+   {
+    "path": "tests/memory/test_financial_run_session.py",
+    "passed": 1,
+    "skipped": 0,
+    "seconds": 1.92
+   },
+   {
+    "path": "tests/training/test_titans_walk_forward.py",
+    "passed": 36,
+    "skipped": 0,
+    "seconds": 67.82
+   },
+   {
+    "path": "tests/training/test_masked_campaign.py",
+    "passed": 18,
+    "skipped": 0,
+    "seconds": 80.2
+   },
+   {
+    "path": "tests/training/test_titans_campaign.py",
+    "passed": 13,
+    "skipped": 0,
+    "seconds": 224.4
+   },
+   {
+    "path": "tests/training/test_candidate_walk_forward.py",
+    "passed": 23,
+    "skipped": 0,
+    "seconds": 37.2
+   }
+  ],
+  "passed": 857,
+  "skipped": 4,
+  "skipped_reason": "Comprobaciones que exigen cuda:0 o vistas reales",
+  "ruff": true,
+  "format": true,
+  "check_repository": true,
+  "optimizer_steps": 0
+ },
+ "mutations": {
+  "runner": "Sustitución dirigida, una por ejecución, con el archivo de pruebas filtrado por -k",
+  "rounds": [
+   {
+    "name": "ventana, entrenador y memoria residual",
+    "base": "8ffb95aa",
+    "total": 32,
+    "detected_first": 26,
+    "detected": 32,
+    "note": "Las seis supervivientes motivaron pruebas nuevas antes de cerrar la ronda"
+   },
+   {
+    "name": "registro en la campaña y traslado",
+    "base": "8ffb95aa",
+    "total": 11,
+    "detected_first": 9,
+    "detected": 11,
+    "note": "Cuantiles leídos por familia y traslado sin conciliar filas sobrevivían. Se añadieron dos pruebas"
+   },
+   {
+    "name": "filas de la vista, protección del traslado y sección titans_mac",
+    "base": "6119a7ea",
+    "total": 9,
+    "detected_first": 9,
+    "detected": 9,
+    "cases": [
+     "view_rows_unchecked",
+     "scored_labels_unchecked",
+     "carry_view_rows_unchecked",
+     "carry_guard_removed",
+     "titans_policy_unchecked",
+     "titans_section_dropped",
+     "optional_sections_ignored",
+     "titans_model_named_by_kind",
+     "connected_family_still_pending"
+    ]
+   }
+  ],
+  "detected": 52,
+  "total": 52,
+  "note": "Las dos primeras rondas se ejecutaron antes del rebase sobre 6119a7ea. Dos de sus líneas mutadas cambiaron después (lectura de cuantiles, que ahora llega de #395, y conciliación del traslado, sustituida por check_view_rows), y la tercera ronda cubre su versión actual"
+ },
+ "rows": {
+  "rule": "Cada tramo predicho contiene exactamente las filas de la vista (mercado, activo, instante y objetivo) y cada etiqueta puntuada llega al destino",
+  "checked_with": "check_view_rows de candidate_walk_forward y la huella de filas de la campaña frente a los demás brazos",
+  "corpus": "técnico con vistas v2 sobre US"
+ },
+ "campaign_counts_if_declared": {
+  "A": {
+   "training_jobs": 2205,
+   "prediction_jobs": 0,
+   "added_training": 540
+  },
+  "B": {
+   "training_jobs": 833,
+   "prediction_jobs": 868,
+   "added_training": 204,
+   "added_prediction": 336
+  },
+  "declared_in_campaigns": false,
+  "note": "Cuatro brazos de Titans sin la sección episodic_gru. Con las dos secciones, B tendría 884 ajustes y 952 traslados y A 2.340 ajustes"
+ },
+ "related_receipts": [
+  "reports/engineering/titans-mac-output-scale-20261009.json",
+  "reports/engineering/titans-chronological-memory-20261009.json"
+ ],
+ "not_executed": [
+  "Entrenamiento, piloto o evaluación científica",
+  "Pasos de optimizador sobre parámetros compartidos",
+  "Ventanas sobre la edición real",
+  "Comprobaciones en cuda:0"
+ ],
+ "final_test_opened": false
+}

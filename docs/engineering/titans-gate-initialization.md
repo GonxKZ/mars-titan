@@ -145,7 +145,7 @@ Las recetas [`chronological-training.json`](../../configs/titans/chronological-t
 
 ## Límites
 
-La salida de MAC es `y ⊙ M(y)`. En los fixtures su escala absoluta es pequeña, entre 10⁻⁵ y 10⁻² según la entrada, porque multiplica dos magnitudes pequeñas. El bias evita el colapso de la memoria, pero no cambia esa escala, que pertenece a la puerta de salida y al ajuste externo.
+La salida de MAC es `y ⊙ M(y)`. En los fixtures su escala absoluta es pequeña, entre 10⁻⁵ y 10⁻² según la entrada, porque multiplica dos magnitudes pequeñas. El bias evita el colapso de la memoria, pero no cambia esa escala. El [contraste con el artículo](titans-mac-output-scale.md) atribuye la escala a la omisión del residual y la LayerNorm de la memoria y mide el componente que los añade.
 
 Estas medidas proceden de fixtures aleatorios en CPU. No predicen el comportamiento con datos reales, no seleccionan hiperparámetros por validación y no acreditan una mejora predictiva. La comprobación CUDA queda pendiente:
 

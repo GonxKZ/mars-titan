@@ -85,12 +85,15 @@ def chronological_corpus(
     last="2023-02-28",
     group_size=8,
     perturb_after=None,
+    perturb_before=None,
     widths=(4, 3, 1, 2),
 ):
     """Escribir una supervisión histórica con máscaras sin pasar por modelos ni objetivos reales.
 
     `perturb_after` altera entradas, precios posteriores y etiquetas que maduran después
-    de ese instante, para comprobar que el pasado del recorrido no cambia.
+    de ese instante, para comprobar que el pasado del recorrido no cambia. `perturb_before`
+    altera solo las modalidades distintas del precio en las decisiones anteriores a ese
+    instante, sin tocar precios ni etiquetas.
     """
     root = Path(root)
     news, charts, concepts, indicators = widths
@@ -138,11 +141,12 @@ def chronological_corpus(
             moment = clock().decisions[position]
             at = micros(moment)
             future = perturb_after is not None and at > perturb_after
+            past = perturb_before is not None and at < perturb_before
             news_present = (index + asset) % 3 == 0
             fundamentals_present = (index + asset) % 2 == 0
             macro_present = index % 5 != 4
             noise = generator.normal(0, 1, news + charts + 2).astype(np.float32)
-            if future:
+            if future or past:
                 noise = noise * 3 + 1
             presence = [True, news_present, True, fundamentals_present, macro_present]
             samples.append(
