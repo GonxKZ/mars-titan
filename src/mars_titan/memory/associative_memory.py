@@ -305,3 +305,73 @@ class AssociativeMemory:
             writes=payload["writes"],
             cursor=tuple(cursor) if isinstance(cursor, list) else cursor,
         )
+
+
+CORRECTION_KEYS = ("codec", "constant")
+
+
+@dataclass(frozen=True)
+class MatureCorrection:
+    """Corrección escalar de la predicción del núcleo leída de A, el componente B6.
+
+    Con `codec`, la clave es la entrada del codec del banco normalizada en L2 y FP64. Con
+    `constant`, la única clave es 1 y A se reduce a un corrector de sesgo, el control que
+    permite descartar la dependencia de la clave. El valor escrito es la etiqueta madura menos
+    la predicción del núcleo, es decir, la emitida antes de sumar la corrección.
+    """
+
+    memory: AssociativeMemoryConfig
+    key: str = "codec"
+
+    def __post_init__(self):
+        if not isinstance(self.memory, AssociativeMemoryConfig) or self.key not in CORRECTION_KEYS:
+            raise ValueError("La corrección necesita su memoria y una clave codec o constant")
+        if self.memory.value_size != 1 or self.memory.key_size != (
+            64 if self.key == "codec" else 1
+        ):
+            raise ValueError("La corrección escalar usa claves de 64 o 1 coordenadas y valor 1")
+
+    def identity(self):
+        return dict(
+            schema_version=1,
+            kind="mature_scalar_correction",
+            memory=self.memory.identity(),
+            key=self.key,
+            key_normalization="l2_fp64_of_codec_key_inputs"
+            if self.key == "codec"
+            else "constant_one",
+            value="mature_label_minus_core_prediction",
+            read="matrix_of_previous_generation_for_the_whole_event",
+            ids="write_count_plus_offset_in_native_canonical_outcome_order",
+            proximal_weights="uniform_over_event_cohort",
+        )
+
+    def keys(self, key_inputs):
+        """Claves FP64 [filas, d] desde las entradas FP32 del codec, en el mismo orden."""
+        values = torch.as_tensor(key_inputs)
+        if values.ndim != 2 or values.shape[1] != 64 or values.dtype != torch.float32:
+            raise ValueError("La corrección necesita las entradas FP32 de 64 coordenadas del codec")
+        if self.key == "constant":
+            return torch.ones((values.shape[0], 1), dtype=torch.float64)
+        values = values.to(dtype=torch.float64, device="cpu")
+        norms = torch.linalg.vector_norm(values, dim=1, keepdim=True)
+        if not torch.isfinite(values).all() or (norms == 0).any():
+            raise ValueError("La clave del codec necesita valores finitos y norma positiva")
+        return values / norms
+
+    def feedback(self, *, ids, decision_at, available_at, keys, values):
+        """Resultados maduros de un evento con pesos uniformes si la regla es proximal."""
+        rows = len(ids)
+        weights = (
+            torch.full((rows,), 1.0 / rows, dtype=torch.float64)
+            if self.memory.rule == "proximal" and rows
+            else None
+        )
+        return MatureFeedback(
+            ids=torch.tensor(ids, dtype=torch.int64),
+            decision_at=torch.tensor(decision_at, dtype=torch.int64),
+            available_at=torch.tensor(available_at, dtype=torch.int64),
+            keys=keys,
+            values=torch.tensor(values, dtype=torch.float64).reshape(rows, 1),
+            weights=weights,
+        )
