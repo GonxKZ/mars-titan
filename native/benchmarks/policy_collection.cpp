@@ -2,7 +2,8 @@
 //
 // Mide por separado el paso del entorno, la copia de observaciones, la inferencia del actor
 // y del crítico con sus copias de vuelta, las ventajas GAE, la recogida completa de PPO con
-// `PpoTrainer::advance` antes de su primera actualización, una oleada de KLPO y el forward
+// `PpoTrainer::advance` antes de su primera actualización, el primer paso de un entrenador
+// recién creado, que también admite la CPU, una oleada de KLPO y el forward
 // y backward de un minilote PPO. Ninguna medida crea un paso de Adam: al terminar se exige
 // que los parámetros conserven su huella y que no haya pasos de optimizador. Con `--repeat`
 // las recogidas PPO y KLPO se repiten para medir varios procesos simultáneos.
@@ -61,6 +62,7 @@ constexpr std::size_t gradient_rows = 64;
 constexpr std::size_t evaluation_repeats = 3;
 constexpr std::size_t maximum_trainer_rollout = 16384;
 constexpr std::size_t diagnostic_transitions = 32;
+constexpr std::size_t first_tick_repeats = 64;
 constexpr std::size_t trainer_rollout_bytes = std::size_t{256} * 1024 * 1024;
 constexpr double microseconds = 1e6;
 constexpr double stage_capital = 1'000'000;
@@ -91,7 +93,7 @@ struct Options {
     int threads = 1;
     // Repeticiones de las recogidas PPO y KLPO para medir procesos simultáneos en régimen estable.
     std::size_t repeat = 1;
-    // Fases omitidas: inference, gae, gradient, trainer, klpo o evaluation.
+    // Fases omitidas: inference, gae, gradient, trainer, first_tick, klpo o evaluation.
     std::set<std::string, std::less<>> skip;
 };
 
@@ -134,7 +136,7 @@ Options parse(std::span<char*> arguments) {
             result.workers = count(value);
         } else if (name == "--skip") {
             require(value == "inference" || value == "gae" || value == "gradient" || value == "trainer" ||
-                        value == "klpo" || value == "evaluation",
+                        value == "first_tick" || value == "klpo" || value == "evaluation",
                     "Fase desconocida");
             result.skip.emplace(value);
         } else if (name == "--threads") {
@@ -402,6 +404,40 @@ Json measure_trainer(const std::vector<BatchInput>& all_inputs, const Options& o
     return result;
 }
 
+// Primer paso de un entrenador recién creado con todos los entornos. Es la única recogida a escala
+// completa que admite la CPU: su diagnóstico de 32 transiciones cubre dos pasos de 16 entornos y el
+// segundo ya cerraría el recorrido. El primer paso no tiene un bootstrap anterior que reutilizar, así
+// que muestrea con su propio forward, como la recogida anterior a esa reutilización.
+Json measure_first_tick(const std::vector<BatchInput>& inputs, const Options& options) {
+    const bool diagnostic = options.device == "cpu";
+    PpoTrainingConfig config;
+    config.total_transitions = 2 * inputs.size();
+    config.rollout_transitions = config.total_transitions;
+    config.rollout_bytes = trainer_rollout_bytes;
+    config.workers = options.workers;
+    config.seed = seed;
+    require(!diagnostic || config.total_transitions <= diagnostic_transitions,
+            "El primer paso en CPU necesita como mucho 16 entornos");
+    mars_titan::learning::PpoObjectiveConfig objective;
+    objective.kind = mars_titan::learning::PpoObjectiveKind::clip_full_kl;
+    std::vector<double> seconds;
+    for (std::size_t call = 0; call < options.warmup + first_tick_repeats; ++call) {
+        PpoTrainer trainer(inputs, config, PpoHyperparameters{}, options.device, diagnostic, {}, objective);
+        const auto fingerprint = trainer.policy().parameter_fingerprint();
+        const auto elapsed = timed([&] { require(trainer.advance(), "La recogida terminó antes de lo previsto"); });
+        require(trainer.optimizer_steps() == 0 && trainer.policy().optimizer_steps() == 0 &&
+                    trainer.policy().parameter_fingerprint() == fingerprint && trainer.partial_ticks() == 1,
+                "El primer paso PPO llegó a una actualización");
+        if (call >= options.warmup) {
+            seconds.push_back(elapsed);
+        }
+    }
+    auto result = summary(seconds, static_cast<double>(inputs.size()));
+    result["diagnostic"] = diagnostic;
+    result["lanes"] = inputs.size();
+    return result;
+}
+
 // Una oleada KLPO hasta la fase ready y el forward y backward de su objetivo, sin Adam.
 Json measure_klpo(const std::vector<BatchInput>& inputs, const Options& options) {
     KlpoCollectionOptions collection;
@@ -649,6 +685,10 @@ int run(const Options& options) {
     if (wanted("gradient")) {
         RECORD_USER_SCOPE("phase_minibatch_gradient");
         report["ppo_minibatch"] = measure_gradient(environment, options);
+    }
+    if (wanted("first_tick")) {
+        RECORD_USER_SCOPE("phase_ppo_first_tick");
+        report["ppo_trainer_first_tick"] = measure_first_tick(inputs, options);
     }
     const auto first = std::chrono::system_clock::now();
     std::vector<Json> passes;
